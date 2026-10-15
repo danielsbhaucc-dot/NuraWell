@@ -4,6 +4,8 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 
+import { decryptStringArray, encryptStringArray } from '@/lib/crypto/pii';
+
 import {
   DEFAULT_MENTORSHIP_STRATEGY,
   MentorshipStrategySchema,
@@ -58,7 +60,17 @@ export async function fetchUserMentorshipStrategy(
     return rowToStrategy(null, userId);
   }
 
-  return rowToStrategy((data as Record<string, unknown> | null) ?? null, userId);
+  const row = (data as Record<string, unknown> | null) ?? null;
+  if (row && 'medical_red_flags' in row) {
+    try {
+      row.medical_red_flags = decryptStringArray(row.medical_red_flags, userId);
+    } catch (e) {
+      console.warn('[mentorship] decrypt red flags failed', e instanceof Error ? e.message : 'unknown');
+      // לא חושפים ciphertext למודל; דגל כללי שומר על זהירות
+      row.medical_red_flags = ['קיים דגל רפואי (לא ניתן לפענוח)'];
+    }
+  }
+  return rowToStrategy(row, userId);
 }
 
 export async function upsertUserMentorshipStrategy(
@@ -75,7 +87,7 @@ export async function upsertUserMentorshipStrategy(
       psychological_approach: strategy.psychological_approach,
       active_blockers: strategy.active_blockers,
       current_focus: strategy.current_focus,
-      medical_red_flags: strategy.medical_red_flags,
+      medical_red_flags: encryptStringArray(strategy.medical_red_flags, userId),
       next_best_action: strategy.next_best_action,
       updated_at: nowIso,
     },
