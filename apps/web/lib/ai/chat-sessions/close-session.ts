@@ -1,3 +1,4 @@
+import { decProfileResult, encryptTableRow } from '@/lib/crypto/pii-fields';
 import { withAiUser } from '@/lib/ai/usage-meter';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { ingestConversationToVector } from '../chat-memory/conversation-vector';
@@ -79,7 +80,7 @@ export async function closeChatSession(
     (select) =>
       supabase
         .from('chat_sessions')
-        .update(updatePayload)
+        .update(encryptTableRow('chat_sessions', updatePayload, params.userId))
         .eq('id', params.sessionId)
         .eq('user_id', params.userId)
         .select(select)
@@ -94,7 +95,7 @@ export async function closeChatSession(
       (select) =>
         supabase
           .from('chat_sessions')
-          .update(withoutTitle)
+          .update(encryptTableRow('chat_sessions', withoutTitle, params.userId))
           .eq('id', params.sessionId)
           .eq('user_id', params.userId)
           .select(select)
@@ -135,7 +136,7 @@ export async function closeChatSession(
       .from('profiles')
       .select('ai_context')
       .eq('id', params.userId)
-      .maybeSingle();
+      .maybeSingle().then(decProfileResult(params.userId));
     const prevRollup = (prof?.ai_context as { chat_summary?: string } | null)?.chat_summary;
     await withAiUser(params.userId, () => rollupUserChatContext(supabase, {
       userId: params.userId,

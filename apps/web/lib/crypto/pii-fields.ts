@@ -173,7 +173,7 @@ export const AI_CONTEXT_ENC_KEYS = [
 export function encryptAiContext<T>(ctx: T, userId: string): T {
   if (!ctx || typeof ctx !== 'object' || Array.isArray(ctx)) return ctx;
   const out: Row = { ...(ctx as Row) };
-  for (const k of AI_CONTEXT_ENC_KEYS) if (k in out && out[k] !== null && out[k] !== undefined) out[k] = encryptJson(out[k], userId);
+  for (const k of AI_CONTEXT_ENC_KEYS) if (k in out && out[k] !== null && out[k] !== undefined && !isEncrypted(out[k])) out[k] = encryptJson(out[k], userId);
   return out as T;
 }
 

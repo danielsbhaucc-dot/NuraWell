@@ -1,3 +1,4 @@
+import { decTableResult } from '@/lib/crypto/pii-fields';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 export type TranscriptAccessGrant = {
@@ -54,8 +55,8 @@ export async function fetchUserTranscriptAccessGrants(
   if (sessionIds.length > 0) {
     const { data: sessions } = await client
       .from('chat_sessions')
-      .select('id, title')
-      .in('id', sessionIds);
+      .select('id, user_id, title')
+      .in('id', sessionIds).then(decTableResult('chat_sessions'));
     for (const s of sessions ?? []) {
       if (s.id && s.title) titlesBySession[s.id as string] = s.title as string;
     }

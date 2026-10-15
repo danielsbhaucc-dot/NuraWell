@@ -1,3 +1,4 @@
+import { decProfileResult, encryptProfilePatch } from '@/lib/crypto/pii-fields';
 import { decInteractionResult } from '@/lib/crypto/pii-fields';
 import { withAiUser } from '@/lib/ai/usage-meter';
 import { insertNotification } from '@/lib/notifications/deliver';
@@ -275,7 +276,7 @@ async function runMasterCron() {
           .from('profiles')
           .select('ai_context')
           .eq('id', userId)
-          .single();
+          .single().then(decProfileResult(userId));
 
         if (profErr) throw new Error(profErr.message);
 
@@ -283,7 +284,7 @@ async function runMasterCron() {
           {}) as AiUserContext;
         const merged = { ...current, ...patch };
 
-        const { error: upErr } = await admin.from('profiles').update({ ai_context: merged }).eq('id', userId);
+        const { error: upErr } = await admin.from('profiles').update(encryptProfilePatch({ ai_context: merged }, userId)).eq('id', userId);
         if (upErr) throw new Error(upErr.message);
         analyzed++;
       } catch (e) {
@@ -301,7 +302,7 @@ async function runMasterCron() {
     .select('id, full_name, last_active_at, ai_context, streak_days')
     .gte('streak_days', 7)
     .gte('last_active_at', threeDaysAgoIso)
-    .limit(maxCelebrate);
+    .limit(maxCelebrate).then(decProfileResult());
 
   if (celErr) {
     errors.push(`profiles celebrate: ${celErr.message}`);
@@ -397,7 +398,7 @@ async function runMasterCron() {
     .not('last_active_at', 'is', null)
     .lt('last_active_at', twoDaysAgoIso)
     .order('last_active_at', { ascending: false })
-    .limit(maxNudge);
+    .limit(maxNudge).then(decProfileResult());
 
   if (stErr) {
     errors.push(`profiles churn: ${stErr.message}`);
@@ -511,7 +512,7 @@ async function runMasterCron() {
           const merged = { ...ctx, ...buildCrisisCooldownPatch() };
           const { error: coolErr } = await admin
             .from('profiles')
-            .update({ ai_context: merged })
+            .update(encryptProfilePatch({ ai_context: merged }, userId))
             .eq('id', userId);
           if (coolErr) {
             errors.push(`crisis_cooldown ${userId}: ${coolErr.message}`);
@@ -631,14 +632,14 @@ async function runMasterCron() {
       .select('id, full_name, ai_context, last_active_at, created_at')
       .eq('onboarding_completed', true)
       .gte('last_active_at', thirtyDaysAgoIso)
-      .limit(maxJourneyCompanion * 4),
+      .limit(maxJourneyCompanion * 4).then(decProfileResult()),
     admin
       .from('profiles')
       .select('id, full_name, ai_context, last_active_at, created_at')
       .eq('onboarding_completed', true)
       .is('last_active_at', null)
       .gte('created_at', sevenDaysAgoIso)
-      .limit(maxJourneyCompanion * 2),
+      .limit(maxJourneyCompanion * 2).then(decProfileResult()),
   ]);
 
   const journeyCandidateRowsMap = new Map<

@@ -1,3 +1,4 @@
+import { decProfileResult } from '@/lib/crypto/pii-fields';
 import { enterAiUsage } from '@/lib/ai/usage-meter';
 import { NextResponse } from 'next/server';
 
@@ -41,7 +42,7 @@ export async function GET(request: Request) {
       .from('profiles')
       .select('full_name, gender, ai_context')
       .eq('id', user.id)
-      .maybeSingle();
+      .maybeSingle().then(decProfileResult(user.id));
 
     const profile = (profileRow ?? null) as {
       full_name: string | null;
