@@ -1,4 +1,5 @@
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import { ensureOpsAdminServer } from '@/lib/auth/ensure-ops-admin-server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { decideAction } from '@/lib/ceo/actions';
@@ -14,7 +15,8 @@ const STATUS: Record<string, string> = { pending: 'ממתין', approved: 'או�
 async function decide(formData: FormData) {
   'use server';
   await ensureOpsAdminServer();
-  await decideAction(createAdminClient(), String(formData.get('id')), formData.get('approve') === '1', 'admin:panel');
+  const r = await decideAction(createAdminClient(), String(formData.get('id')), formData.get('approve') === '1', 'admin:panel');
+  if (r.stepupUrl) redirect(r.stepupUrl);
   revalidatePath('/ops/ceo');
 }
 
@@ -32,6 +34,7 @@ export default async function OpsCeoPage() {
       <div className="flex items-center justify-between gap-2">
         <h1 className="text-2xl font-black text-primary-900">{CEO_NAME} · מנכ&quot;ל AI</h1>
         <a href="/ops/ceo/settings" className="rounded-xl bg-primary-100/40 px-3 py-1.5 text-sm font-semibold text-primary-900 hover:bg-primary-100/70">הגדרות</a>
+        <a href="/ops/ceo/security" className="rounded-xl bg-primary-100/40 px-3 py-1.5 text-sm font-semibold text-primary-900 hover:bg-primary-100/70">🔐 אבטחה</a>
       </div>
       <p className="text-sm text-primary-800/80">כל שינוי ש{CEO_NAME} מציע ממתין כאן ובטלגרם לאישור שלך. פג תוקף אחרי 24 שעות.</p>
       <h2 className="text-lg font-bold text-primary-900">ממתין לאישור ({pending?.length ?? 0})</h2>

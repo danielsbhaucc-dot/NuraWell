@@ -495,3 +495,18 @@ export function toolSpecs() {
     function: { name: t.name, description: (t.destructive ? '[DESTRUCTIVE · REQUIRES APPROVAL] ' : t.write ? '[REQUIRES DANIEL APPROVAL] ' : '') + t.description, parameters: z.toJSONSchema(t.schema) as Record<string, unknown> },
   }));
 }
+
+/** Hebrew capability manifest for the system prompt, generated from the registry so it never drifts. */
+const CAP_HE: Record<string, string> = {
+  metrics: 'מדדים מרכזיים לתקופה', business_metrics: 'MRR, מנויים, נטישה, עלות AI', list_users: 'רשימת משתמשים (לא פעילים/חדשים/בלי אונבורדינג)',
+  user_detail: 'פרטי משתמש, משימות, אירועים, SOS', almog_quality_sample: 'דגימת הודעות של אלמוג לבקרת איכות', errors: 'שגיאות שרת',
+  content_overview: 'מפת תחנות ושיעורים', list_pending_actions: 'פעולות שמחכות לאישור', set_test_user: 'סימון משתמש בדיקה',
+  pause_user_notifications: 'השהיית/חידוש התראות למשתמש', set_step_published: 'פרסום/הסתרת שיעור', create_draft_step: 'טיוטת שיעור חדשה',
+  create_demo_link: 'קישור דמו לאורח', db_read: 'קריאה מכל טבלת ניהול', db_insert: 'הוספת רשומה', db_update: 'עדכון רשומות',
+  db_delete: 'מחיקה (בלתי הפיך)', send_user_notification: 'התראה למשתמש בקול של אלמוג', delete_user: 'מחיקת חשבון (בלתי הפיך)',
+  owner_tasks_list: 'משימות פתוחות של דניאל', owner_task_create: 'פתיחת משימה לדניאל', owner_task_update: 'עדכון משימה של דניאל',
+  journey_agent_start: 'הפעלת סוכן התוכן על חומר גלם', journey_agent_reply: 'תשובה לסוכן התוכן', journey_agent_sessions_list: 'סשנים של סוכן התוכן',
+};
+export function capabilityManifest(): string {
+  return CEO_TOOLS.map((t) => `• ${t.name}: ${CAP_HE[t.name] ?? t.description.slice(0, 80)}${t.destructive ? ' [בלתי הפיך]' : t.write ? ' [באישור]' : ''}`).join('\n');
+}

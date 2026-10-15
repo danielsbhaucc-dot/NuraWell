@@ -1,6 +1,8 @@
 import type { CeoButton, CeoChannel } from './channel';
 import { mdToPlain, mdToTelegramHtml } from './format';
 
+const tgButton = (b: CeoButton) => (b.url ? { text: b.text, url: b.url } : { text: b.text, callback_data: b.data });
+
 /** Telegram's built-in 🎉 message effect. */
 export const EFFECT_CELEBRATE = '5046509860389126442';
 const MAX = 3500; // Telegram limit is 4096; leave room for HTML escaping
@@ -52,7 +54,7 @@ export function createTelegramChannel(fetchImpl: typeof fetch = fetch, getToken:
       for (let i = 0; i < parts.length; i++) {
         const last = i === parts.length - 1;
         const markup = last && buttons?.length
-          ? { reply_markup: { inline_keyboard: buttons.map((row) => row.map((b: CeoButton) => ({ text: b.text, callback_data: b.data }))) } }
+          ? { reply_markup: { inline_keyboard: buttons.map((row) => row.map(tgButton)) } }
           : {};
         try {
           await api('sendMessage', { chat_id: chatId, text: mdToTelegramHtml(parts[i]), parse_mode: 'HTML', disable_web_page_preview: true, ...markup, ...(last ? effect : {}) }, fetchImpl, getToken);
@@ -66,7 +68,7 @@ export function createTelegramChannel(fetchImpl: typeof fetch = fetch, getToken:
     async ack(ref, text, buttons) {
       if (ref.callbackId) await api('answerCallbackQuery', { callback_query_id: ref.callbackId }, fetchImpl, getToken);
       if (text && ref.messageId) {
-        const markup = buttons?.length ? { reply_markup: { inline_keyboard: buttons.map((row) => row.map((b: CeoButton) => ({ text: b.text, callback_data: b.data }))) } } : {};
+        const markup = buttons?.length ? { reply_markup: { inline_keyboard: buttons.map((row) => row.map(tgButton)) } } : {};
         await api('editMessageText', { chat_id: ref.chatId, message_id: ref.messageId, text: mdToPlain(text).slice(0, MAX), disable_web_page_preview: true, ...markup }, fetchImpl, getToken);
       }
     },

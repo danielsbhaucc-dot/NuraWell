@@ -5,7 +5,7 @@ import type { CeoButton } from './channel';
 import { approvalCardFor, audit, proposeAction } from './actions';
 import { detectDemoIntent } from './intents';
 import { CEO_CHAT_MODEL, CEO_CONTENT_MODEL, CEO_STRONG_MODEL, complete } from './llm';
-import { TOOL_BY_NAME, toolSpecs } from './tools';
+import { capabilityManifest, TOOL_BY_NAME, toolSpecs } from './tools';
 import { israelTimeContext } from './time-context';
 import { openOwnerTasks } from './owner-tasks';
 
@@ -54,7 +54,8 @@ export const CEO_SYSTEM_PROMPT = `אתה ${CEO_NAME}, מנכ"ל ה-AI של NuraW
   • "תעיף את השיעור על מים מהאוויר" → set_step_published=false (הסתרה, לא מחיקה)
   • "תבדוק אם אלמוג מדבר יפה" → almog_quality_sample
   • "יש באגים?" / "משהו נשבר?" → errors
-  שאל שאלת הבהרה קצרה אחת רק כשבאמת אי אפשר לדעת (למשל שני משתמשים באותו שם). אחרת פעל, כי כל שינוי ממילא מחכה לאישור.
+- שילוב פעולות: בקשה אחת יכולה לדרוש כמה כלים ברצף (קודם לקרוא ולמצוא מזהה, ואז להכין טיוטה; או כמה טיוטות, למשל "תן לאלכס ולדנה גישה" → שני קישורי דמו). תכנן בשקט ובצע.
+- ודאות: אם אתה בטוח בכוונה, פעל מיד (שינויים ממילא מחכים לאישור). אם הוודאות לא גבוהה (שתי פרשנויות סבירות, שם שמתאים לכמה משתמשים, לא ברור על מי או על מה מדובר, או פעולה בלתי הפיכה בלי פרטים), אל תנחש ואל תקרא לכלי כתיבה: שאל שאלה אחת קצרה וטבעית, כמו בן אדם ("לאיזה אלכס, כהן או לוי?", "להסתיר את השיעור או למחוק אותו לגמרי?"). אפשר להציע שתי אפשרויות.
 - קישורי דמו נוצרים רק עם create_demo_link (השרת מייצר את הקישור). לעולם אל תמציא טוקן או hash ואל תכתוב לטבלאות של טוקנים.
 - בתשובות לדניאל: בלי JSON, בלי שמות טבלאות, מזהים או hash. כרטיס האישור נשלח אוטומטית, אז אל תחזור על פרטיו. אם כלי נכשל, הסבר בעברית פשוטה מה לא הצליח ומה אפשר לעשות, בלי הודעת השגיאה הטכנית.
 - אם כלי לא החזיר נתון מסוים, אל תציין מספר עבורו. קרא לכלי הנכון (metrics לרוב השאלות הכמותיות).
@@ -121,7 +122,7 @@ export async function runCeoTurn(db: SupabaseClient, chatKey: string, userText: 
   const snapshot = await liveSnapshot(db);
 
   const messages: Msg[] = [
-    { role: 'system', content: CEO_SYSTEM_PROMPT },
+    { role: 'system', content: `${CEO_SYSTEM_PROMPT}\n\n## היכולות שלך (כל הכלים)\n${capabilityManifest()}\n• draft_lesson_content: כתיבת תוכן שיעור מלא (טקסט בלבד)` },
     { role: 'system', content: `${israelTimeContext()}\n\nתמונת מצב חיה (24 שעות אחרונות, מ-SQL):\n${snapshot}${conv?.summary ? `\n\nסיכום שיחה קודמת: ${conv.summary}` : ''}` },
     ...turns,
     { role: 'user', content: userText },
