@@ -100,10 +100,15 @@ import { shouldAttemptMemoryRecall } from '../../../../../lib/ai/memory-recall/e
 import { decideEmojiReaction } from '../../../../../lib/ai/emoji-reaction/decide-emoji-reaction';
 import {
   encodeEmojiReactionMarker,
+  extractEmojiReactionFix,
   headerEncodeEmojiReaction,
   stripEmojiReactionMarker,
 } from '../../../../../lib/ai/emoji-reaction/marker';
-import { persistUserEmojiReaction } from '../../../../../lib/ai/emoji-reaction/persist-user-reaction';
+import {
+  applyEmojiReactionFix,
+  buildPreviousReactionPromptBlock,
+  persistUserEmojiReaction,
+} from '../../../../../lib/ai/emoji-reaction/persist-user-reaction';
 import type { MentorEmojiReaction } from '../../../../../lib/ai/emoji-reaction/types';
 import {
   enqueuePendingChatLog,
@@ -3644,6 +3649,7 @@ async function handleChatPost(request: Request) {
       console.info('[ai/chat]', { debug_id: debugId, stage: 'context_budget_v2', before: b.before, after: b.after, trimmed: b.trimmed, dropped: b.dropped, sizes: sectionSizes(contextSections) });
       contextSections.splice(0, contextSections.length, ...b.sections);
     }
+    const previousReactionBlock = buildPreviousReactionPromptBlock(dbTurns ?? [], lastUserText);
     const dynamicSystemPrompt = [
       '— מה שידוע לך על השיחה הזו —',
       writerPersona,
@@ -3653,6 +3659,7 @@ async function handleChatPost(request: Request) {
       '— פנייה אישית —',
       addressingFooter,
       turnStance,
+      previousReactionBlock,
       '',
       mcfg.finalGuardrails,
       buildAlmogVoiceSticky(mcfg.writer),
@@ -3752,6 +3759,26 @@ async function handleChatPost(request: Request) {
         }
 
         const assistantText = preferSanitizedWriterOutput(stripRawChatUi(stripEmojiReactionMarker(t)));
+        const reactionFix = extractEmojiReactionFix(t);
+        if (reactionFix) {
+          after(async () => {
+            try {
+              const r = await applyEmojiReactionFix(supabase, {
+                sessionId,
+                userId: user.id,
+                currentUserMessage: lastUserText,
+                fix: reactionFix,
+              });
+              console.info('[ai/chat]', { debug_id: debugId, stage: 'emoji_reaction_fix', action: reactionFix.action, applied: r.applied });
+            } catch (fixErr) {
+              console.warn('[ai/chat]', {
+                debug_id: debugId,
+                stage: 'emoji_reaction_fix_failed',
+                error: fixErr instanceof Error ? fixErr.message : String(fixErr),
+              });
+            }
+          });
+        }
         if (!assistantText) {
           console.warn('[ai/chat]', {
             debug_id: debugId,
