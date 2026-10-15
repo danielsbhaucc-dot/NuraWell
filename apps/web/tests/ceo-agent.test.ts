@@ -8,7 +8,7 @@ vi.mock('@/lib/admin/business-metrics', () => ({ buildBusinessMetrics: vi.fn(asy
 vi.mock('@/lib/api/rate-limit', () => ({ consumeRateLimit: vi.fn(async () => ({ ok: true })) }));
 
 import { complete, isTechnicalSafe, _resetDeepseekState } from '@/lib/ceo/llm';
-import { decideAction, proposeAction } from '@/lib/ceo/actions';
+import { approvalCard, decideAction, proposeAction } from '@/lib/ceo/actions';
 import { runCeoTurn } from '@/lib/ceo/agent';
 import { handleTelegramUpdate, verifyTelegramSecret } from '@/lib/ceo/webhook';
 import { createTelegramChannel, splitMessage } from '@/lib/ceo/telegram';
@@ -121,7 +121,9 @@ describe('agent turn + mocked Telegram', () => {
       .mockResolvedValueOnce({ message: { role: 'assistant', content: 'יש 2 משתמשים. הכנתי פעולה לאישורך.' } });
     const r = await runCeoTurn(db, 'telegram:42', 'מה המצב?', { complete: llm as never });
     expect(r.text).toContain('2 משתמשים');
-    expect(r.buttons[0][0].data).toMatch(/^ceo:a:/);
+    expect(r.cards?.[0].buttons[0][0].data).toMatch(/^ceo:a:/);
+    expect(r.cards?.[0].buttons[0].map((b) => b.text)).toEqual(['✅ אשר', '✏️ ערוך', '❌ דחה']);
+    expect(r.cards?.[0].text).not.toMatch(/[{}]|[0-9a-f]{8}-[0-9a-f]{4}/);
     expect(t.profiles[0].notify_test_opt_in).toBe(false);
     expect((t.ceo_conversations[0].turns as unknown[]).length).toBe(2);
     const toolMsg = llm.mock.calls[1][0].messages.find((m: { role: string }) => m.role === 'tool');
@@ -200,7 +202,9 @@ describe('full admin tools + routing', () => {
     expect(() => upd.schema.parse({ table: 'auth_users', match: { id: 'x' }, patch: {} })).toThrow();
     expect(() => upd.schema.parse({ table: 'profiles', match: {}, patch: { full_name: 'a' } })).toThrow();
     const a = await proposeAction(db, 'delete_user', { userId: '11111111-1111-4111-8111-111111111111' });
-    expect(a.summary).toMatch(/^⚠️ בלתי הפיך/);
+    expect(a.destructive).toBe(true);
+    expect(approvalCard(a).text).toContain('בלתי הפיכה');
+    expect(a.summary).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}/);
   });
 });
 
@@ -267,5 +271,19 @@ describe('owner task tracker', () => {
     const c = TOOL_BY_NAME.get('owner_task_create')!;
     expect(() => c.schema.parse({ title: 'לתקן באג', origin: 'code' })).toThrow();
     expect(c.description).toMatch(/ONLY if it truly requires a human/);
+  });
+});
+
+describe('demo links via dedicated tool', () => {
+  it('generic writes to token tables are blocked; create_demo_link is a write tool with a human summary', async () => {
+    const { TOOL_BY_NAME: T } = await import('@/lib/ceo/tools');
+    const ins = T.get('db_insert')!;
+    expect(() => ins.schema.parse({ table: 'demo_access_links', row: { guest_name: 'x' } })).toThrow();
+    const demo = T.get('create_demo_link')!;
+    expect(demo.write).toBe(true);
+    expect(demo.secretResult).toBe(true);
+    const s = demo.summarize!(demo.schema.parse({ guest_name: 'אורי', hours: 24 }));
+    expect(s).toBe('יצירת קישור דמו לאורי, בתוקף ליממה');
+    expect(s).not.toMatch(/token|hash|demo_access/);
   });
 });

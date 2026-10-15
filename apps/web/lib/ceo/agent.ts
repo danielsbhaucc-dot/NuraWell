@@ -2,7 +2,7 @@ import type OpenAI from 'openai';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { AI_MODELS } from '@/lib/ai/client';
 import type { CeoButton } from './channel';
-import { audit, proposeAction } from './actions';
+import { approvalCard, audit, proposeAction } from './actions';
 import { CEO_CHAT_MODEL, CEO_CONTENT_MODEL, CEO_STRONG_MODEL, complete } from './llm';
 import { TOOL_BY_NAME, toolSpecs } from './tools';
 import { israelTimeContext } from './time-context';
@@ -46,6 +46,8 @@ export const CEO_SYSTEM_PROMPT = `אתה ${CEO_NAME}, מנכ"ל ה-AI של NuraW
 - היה יוזם: אם אתה רואה בנתונים בעיה או הזדמנות שדניאל לא שאל עליהן, ציין אותן בשורה אחת בסוף.
 - צרף קישור לפאנל כשכלי מחזיר link.
 - כשדניאל מבקש שינוי, קרא מיד לכלי המתאים (הוא רק יוצר בקשת אישור). אל תתאר שאתה "תיצור בקשה", פשוט צור אותה.
+- קישורי דמו נוצרים רק עם create_demo_link (השרת מייצר את הקישור). לעולם אל תמציא טוקן או hash ואל תכתוב לטבלאות של טוקנים.
+- בתשובות לדניאל: בלי JSON, בלי שמות טבלאות, מזהים או hash. כרטיס האישור נשלח אוטומטית, אז אל תחזור על פרטיו. אם כלי נכשל, הסבר בעברית פשוטה מה לא הצליח ומה אפשר לעשות, בלי הודעת השגיאה הטכנית.
 - אם כלי לא החזיר נתון מסוים, אל תציין מספר עבורו. קרא לכלי הנכון (metrics לרוב השאלות הכמותיות).
 - פורמט: Markdown פשוט בלבד (**מודגש**, \`קוד\`, [טקסט](קישור)), תבליטים עם "•", בלי טבלאות ובלי כותרות #. אל תפתח בשם שלך.`;
 
@@ -90,7 +92,7 @@ export async function liveSnapshot(db: SupabaseClient): Promise<string> {
   }
 }
 
-export type TurnResult = { text: string; buttons: CeoButton[][]; model?: string };
+export type TurnResult = { text: string; buttons: CeoButton[][]; cards?: { text: string; buttons: CeoButton[][] }[]; model?: string };
 
 export async function runCeoTurn(db: SupabaseClient, chatKey: string, userText: string, deps: { complete?: typeof complete } = {}): Promise<TurnResult> {
   const llm = deps.complete ?? complete;
@@ -107,6 +109,7 @@ export async function runCeoTurn(db: SupabaseClient, chatKey: string, userText: 
   const tools = [...toolSpecs(), CONTENT_TOOL];
   const model = pickModel(userText);
   const buttons: CeoButton[][] = [];
+  const cards: { text: string; buttons: CeoButton[][] }[] = [];
   let text = '';
 
   for (let i = 0; i < 6; i++) {
@@ -129,7 +132,7 @@ export async function runCeoTurn(db: SupabaseClient, chatKey: string, userText: 
           if (!t) throw new Error('unknown tool');
           if (t.write) {
             const a = await proposeAction(db, t.name, args);
-            buttons.push([{ text: `${t.destructive ? '⚠️' : '✅'} אשר: ${a.summary}`.slice(0, 60), data: `ceo:a:${a.id}` }, { text: '❌ בטל', data: `ceo:r:${a.id}` }]);
+            cards.push(approvalCard(a));
             out = { status: 'pending_approval', id: a.id };
           } else {
             out = await t.run(db, t.schema.parse(args));
@@ -142,10 +145,10 @@ export async function runCeoTurn(db: SupabaseClient, chatKey: string, userText: 
       messages.push({ role: 'tool', tool_call_id: c.id, content: JSON.stringify(out).slice(0, 12_000) });
     }
   }
-  if (!text) text = buttons.length ? 'הכנתי פעולות לאישורך.' : 'לא הצלחתי להשלים, נסה לנסח שוב.';
+  if (!text) text = cards.length ? 'הכנתי לך טיוטה לאישור 👇' : 'לא הצלחתי להשלים, נסה לנסח שוב.';
 
   await saveMemory(db, chatKey, conv?.summary ?? '', [...turns, { role: 'user', content: userText }, { role: 'assistant', content: text }], llm);
-  return { text, buttons, model };
+  return { text, buttons, cards, model };
 }
 
 const KEEP = 8;

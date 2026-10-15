@@ -42,7 +42,7 @@ async function handleTelegramUpdateInner(db: SupabaseClient, channel: CeoChannel
       await channel.ack({ callbackId: cb.id, chatId, messageId: cb.message?.message_id }, msg);
       return { task: kind };
     }
-    const r = await decideAction(db, id, kind === 'a', `admin:${chatId}`);
+    const r = await decideAction(db, id, kind === 'a', `admin:${chatId}`, { edit: kind === 'e' });
     await channel.ack({ callbackId: cb.id, chatId, messageId: cb.message?.message_id }, r.text);
     return { decided: r.ok };
   }
@@ -55,5 +55,6 @@ async function handleTelegramUpdateInner(db: SupabaseClient, channel: CeoChannel
   }
   const r = await (deps.runTurn ?? runCeoTurn)(db, `${channel.name}:${chatId}`, text.slice(0, 4000));
   await channel.send(chatId, r.text, r.buttons);
+  for (const c of r.cards ?? []) await channel.send(chatId, c.text, c.buttons);
   return { ok: true };
 }

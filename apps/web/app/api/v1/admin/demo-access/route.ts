@@ -3,11 +3,9 @@ import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
 import { readJsonBody } from '@/lib/api/json-request';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { publicAppBaseNoSlashFromServer } from '@/lib/public-app-url';
 import { getPublicCdnImageUrl } from '@/lib/cdn/public-images';
 import { createDemoAccessSchema } from '@/lib/demo-access/validation';
-import { generateDemoAccessToken, hashDemoAccessToken } from '@/lib/demo-access/token';
-import { hashDemoPassword } from '@/lib/demo-access/password';
+import { createDemoAccessLink } from '@/lib/demo-access/create';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -101,65 +99,13 @@ export async function POST(request: Request) {
   }
 
   const admin = createAdminClient();
-  const { data: targetProfile } = await admin
-    .from('profiles')
-    .select('id, role, full_name')
-    .eq('id', parsed.data.target_user_id)
-    .maybeSingle();
-
-  if (!targetProfile) {
-    return NextResponse.json({ error: 'משתמש היעד לא נמצא.' }, { status: 404 });
-  }
-
-  // אזהרה רכה: מותר גם admin — RLS + עוגיית דמו חוסמים הרשאות מנהל בזמן הסשן.
-  const { data: au } = await admin.auth.admin.getUserById(parsed.data.target_user_id);
-  if (!au?.user?.email) {
-    return NextResponse.json({ error: 'למשתמש היעד אין אימייל מאומת במערכת.' }, { status: 400 });
-  }
-
-  const rawToken = generateDemoAccessToken();
-  const tokenHash = hashDemoAccessToken(rawToken);
-  const expiresAt = new Date(Date.now() + parsed.data.ttl_minutes * 60_000).toISOString();
-  const passwordHash =
-    parsed.data.password && parsed.data.password.trim().length >= 4
-      ? hashDemoPassword(parsed.data.password.trim())
-      : null;
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: inserted, error } = await (admin as any)
-    .from('demo_access_links')
-    .insert({
-      token_hash: tokenHash,
-      target_user_id: parsed.data.target_user_id,
-      guest_name: parsed.data.guest_name?.trim() || null,
-      reason: parsed.data.reason.trim(),
-      password_hash: passwordHash,
-      expires_at: expiresAt,
-      created_by: auth.user.id,
-      max_claims: parsed.data.max_claims ?? null,
-    })
-    .select('id, expires_at, guest_name, reason')
-    .single();
-
-  if (error || !inserted) {
-    console.error('[demo-access] insert', error?.message);
-    return NextResponse.json({ error: error?.message ?? 'יצירת קישור נכשלה.' }, { status: 500 });
-  }
-
-  const appBase = await publicAppBaseNoSlashFromServer(admin);
-  const demoUrl = `${appBase}/demo/${rawToken}`;
-
+  const r = await createDemoAccessLink(admin, { ...parsed.data, created_by: auth.user.id });
+  if (!r.ok) return NextResponse.json({ error: r.error }, { status: r.status });
+  const { ok: _ok, ...body } = r;
   return NextResponse.json({
-    id: inserted.id,
-    demo_url: demoUrl,
-    expires_at: inserted.expires_at,
-    guest_name: inserted.guest_name,
-    reason: inserted.reason,
-    target_role: targetProfile.role,
-    target_name: targetProfile.full_name,
-    requires_password: Boolean(passwordHash),
+    ...body,
     admin_target_note:
-      targetProfile.role === 'admin'
+      r.target_role === 'admin'
         ? 'משתמש היעד הוא מנהל — בזמן סשן הדמו הרשאות המנהל חסומות (גם ב-RLS).'
         : null,
   });
