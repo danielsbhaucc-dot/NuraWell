@@ -214,7 +214,8 @@ export async function proxy(request: NextRequest) {
   /** דומיין Ops משרת רק את הפאנל; /login, /guides וכו׳ → דף הבית של הפאנל */
   if (effectiveOpsHost) {
     const skipPanelGate =
-      pathname.startsWith('/api') || pathname.startsWith('/_next');
+      pathname.startsWith('/api') || pathname.startsWith('/_next') ||
+      pathname === '/gideon' || pathname.startsWith('/gideon/'); // passkey step-up pages (rpId = Ops host)
     if (!skipPanelGate && !isOpsPanelBrowserPath(pathname)) {
       return applySecurityHeaders(NextResponse.redirect(new URL('/', request.url)));
     }
