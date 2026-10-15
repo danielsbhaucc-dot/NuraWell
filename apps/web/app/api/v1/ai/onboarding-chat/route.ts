@@ -1,4 +1,5 @@
-import { decProfileResult, encryptProfilePatch } from '@/lib/crypto/pii-fields';
+import { sealProfilePatch } from '@/lib/crypto/pii-seal';
+import { decProfileResult } from '@/lib/crypto/pii-fields';
 import { enterAiUsage } from '@/lib/ai/usage-meter';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -161,7 +162,7 @@ export async function POST(request: Request) {
     if (parsed.data.persist) {
       const patch = publicExtractedToProfilePatch(mergedPublic);
       if (Object.keys(patch).length > 0) {
-        const { error } = await supabase.from('profiles').update(encryptProfilePatch(patch, user.id)).eq('id', user.id);
+        const { error } = await supabase.from('profiles').update(await sealProfilePatch(patch, user.id)).eq('id', user.id);
         persisted = !error;
       } else {
         persisted = true;

@@ -1,5 +1,5 @@
+import { sealProfilePatch } from '@/lib/crypto/pii-seal';
 'use server';
-import { encryptProfilePatch } from '@/lib/crypto/pii-fields';
 import { buildSafetyScreening } from '@/lib/onboarding/safety-screening';
 
 import { z } from 'zod';
@@ -271,7 +271,7 @@ export async function completeOnboarding(
   const admin = createAdminClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error: profileError } = await (admin.from('profiles') as any)
-    .update(encryptProfilePatch({
+    .update(await sealProfilePatch({
       full_name: data.full_name,
       gender: data.gender,
       date_of_birth: data.date_of_birth,

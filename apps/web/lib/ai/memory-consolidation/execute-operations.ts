@@ -1,4 +1,4 @@
-import { encryptTableRow } from '@/lib/crypto/pii-fields';
+import { sealTableRow } from '@/lib/crypto/pii-seal';
 import { isStorableMemoryText } from '../safety/memory-text-guard';
 /**
  * ביצוע פעולות זיכרון ב-Supabase — יעיל, עם ולידציה מקדימה של insight_id.
@@ -66,7 +66,7 @@ export async function executeMemoryOperations(params: {
           const textChanged = op.insight_text.trim() !== duplicate.insight_text.trim();
           const { error } = await admin
             .from('user_insights')
-            .update(encryptTableRow('user_insights', {
+            .update(await sealTableRow('user_insights', {
               insight_text: op.insight_text,
               actionability_score: Math.max(duplicate.actionability_score, op.actionability_score),
               confidence: op.confidence,
@@ -101,7 +101,7 @@ export async function executeMemoryOperations(params: {
 
         const { data: inserted, error } = await admin
           .from('user_insights')
-          .insert(encryptTableRow('user_insights', {
+          .insert(await sealTableRow('user_insights', {
             user_id: userId,
             category: op.category,
             insight_text: op.insight_text,
@@ -147,7 +147,7 @@ export async function executeMemoryOperations(params: {
 
         const { error } = await admin
           .from('user_insights')
-          .update(encryptTableRow('user_insights', {
+          .update(await sealTableRow('user_insights', {
             category,
             insight_text: op.insight_text,
             dedupe_key: key,
@@ -184,7 +184,7 @@ export async function executeMemoryOperations(params: {
       if (op.op === 'DEPRECATE') {
         const { error } = await admin
           .from('user_insights')
-          .update(encryptTableRow('user_insights', {
+          .update(await sealTableRow('user_insights', {
             status: INSIGHT_STATUS.DEPRECATED,
             metadata: mergeMetadata(existing.metadata, {
               consolidation_reason: op.reason,
@@ -205,7 +205,7 @@ export async function executeMemoryOperations(params: {
       if (op.op === 'VERIFY') {
         const { error } = await admin
           .from('user_insights')
-          .update(encryptTableRow('user_insights', {
+          .update(await sealTableRow('user_insights', {
             status: INSIGHT_STATUS.NEEDS_VERIFICATION,
             metadata: mergeMetadata(existing.metadata, {
               verify_prompt: op.verify_prompt,

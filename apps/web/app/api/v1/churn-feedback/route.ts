@@ -1,4 +1,5 @@
-import { decProfileResult, encryptProfilePatch } from '@/lib/crypto/pii-fields';
+import { sealProfilePatch } from '@/lib/crypto/pii-seal';
+import { decProfileResult } from '@/lib/crypto/pii-fields';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { readJsonBody } from '../../../../lib/api/json-request';
@@ -120,7 +121,7 @@ export async function POST(request: Request) {
     const reng = readReengagementContext(aiContext);
     await sb
       .from('profiles')
-      .update(encryptProfilePatch({
+      .update(await sealProfilePatch({
         ai_context: {
           ...aiContext,
           reengagement: { ...reng, exit_survey_answered_at: new Date().toISOString() },

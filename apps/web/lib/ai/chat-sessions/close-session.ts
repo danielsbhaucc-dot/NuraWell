@@ -1,4 +1,5 @@
-import { decProfileResult, encryptTableRow } from '@/lib/crypto/pii-fields';
+import { sealTableRow } from '@/lib/crypto/pii-seal';
+import { decProfileResult } from '@/lib/crypto/pii-fields';
 import { withAiUser } from '@/lib/ai/usage-meter';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { ingestConversationToVector } from '../chat-memory/conversation-vector';
@@ -80,7 +81,7 @@ export async function closeChatSession(
     (select) =>
       supabase
         .from('chat_sessions')
-        .update(encryptTableRow('chat_sessions', updatePayload, params.userId))
+        .update(await sealTableRow('chat_sessions', updatePayload, params.userId))
         .eq('id', params.sessionId)
         .eq('user_id', params.userId)
         .select(select)
@@ -95,7 +96,7 @@ export async function closeChatSession(
       (select) =>
         supabase
           .from('chat_sessions')
-          .update(encryptTableRow('chat_sessions', withoutTitle, params.userId))
+          .update(await sealTableRow('chat_sessions', withoutTitle, params.userId))
           .eq('id', params.sessionId)
           .eq('user_id', params.userId)
           .select(select)

@@ -1,4 +1,5 @@
-import { decProfileResult, encryptProfilePatch } from '@/lib/crypto/pii-fields';
+import { sealProfilePatch } from '@/lib/crypto/pii-seal';
+import { decProfileResult } from '@/lib/crypto/pii-fields';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { generateMentorSystemPrompt, calculateDailyCheckInTimes } from '@/lib/ai/generate-mentor-system-prompt';
 import { ingestOnboardingIntoVectorMemory } from '@/lib/ai/ingest-onboarding-vector-memory';
@@ -94,7 +95,7 @@ export async function applyAdminProfilePatch(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error: upErr } = await admin
     .from('profiles')
-    .update(encryptProfilePatch({
+    .update(await sealProfilePatch({
       full_name: merged.full_name,
       gender: merged.gender,
       main_goal: merged.main_goal,

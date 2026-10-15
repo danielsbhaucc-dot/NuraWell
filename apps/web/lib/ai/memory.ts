@@ -1,4 +1,5 @@
-import { decProfileResult, encryptProfilePatch } from '@/lib/crypto/pii-fields';
+import { sealProfilePatch } from '@/lib/crypto/pii-seal';
+import { decProfileResult } from '@/lib/crypto/pii-fields';
 import { pruneExpiredAvoidPushUntil } from './avoid-push';
 import type { JourneyFollowUp } from './journey-follow-up-promise';
 import type { LifeContext } from './life-context';
@@ -450,7 +451,7 @@ export async function updateAiContext(
 
   const { error: updateError } = await supabase
     .from('profiles')
-    .update(encryptProfilePatch({ ai_context: merged }, userId))
+    .update(await sealProfilePatch({ ai_context: merged }, userId))
     .eq('id', userId);
 
   if (updateError) {

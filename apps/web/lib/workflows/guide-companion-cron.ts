@@ -1,4 +1,5 @@
-import { decProfileResult, encryptProfilePatch } from '@/lib/crypto/pii-fields';
+import { sealProfilePatch } from '@/lib/crypto/pii-seal';
+import { decProfileResult } from '@/lib/crypto/pii-fields';
 import { withAiUser } from '@/lib/ai/usage-meter';
 import { readGuideRules } from '../guides/guide-rules';
 import { isStorableMemoryText } from '../ai/safety/memory-text-guard';
@@ -207,7 +208,7 @@ export async function runGuideCompanionForUser(
     guide_companion: snapshot,
   };
 
-  const { error } = await admin.from('profiles').update(encryptProfilePatch({ ai_context: merged }, userId)).eq('id', userId);
+  const { error } = await admin.from('profiles').update(await sealProfilePatch({ ai_context: merged }, userId)).eq('id', userId);
   if (error) throw new Error(error.message);
 
   /** unified task model: Almog's guide pick is offered as a task (user chooses in the plan). */
