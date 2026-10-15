@@ -1,76 +1,141 @@
 /**
- * שלד מייל משותף — RTL, טבלאות, inline styles בלבד (Gmail/Outlook/Apple Mail).
- * בלי תלות בקבצים אחרים: משמש גם ליצירת תבניות ה-Auth של Supabase (scripts/build-auth-email-templates.ts).
+ * שלד מייל משותף (כיוון B: חם וצבעוני, בפלטת המותג).
+ * RTL עמיד ל-Gmail: dir=rtl + align=right על כל table/td, text-align inline, בלי <style>,
+ * גרדיאנט עם bgcolor כגיבוי, בלי margin שלילי, כפתור VML ל-Outlook.
+ * בלי תלות בקבצים אחרים: משמש גם לתבניות ה-Auth של Supabase (scripts/build-auth-email-templates.ts).
  */
 
-export const EMAIL_FONT = "Rubik,Heebo,'Segoe UI',Arial,Helvetica,sans-serif";
+export const EMAIL_FONT = "Heebo,Rubik,'Segoe UI',Arial,Helvetica,sans-serif";
 
-const C = {
-  page: '#eef5ec',
-  card: '#ffffff',
+/** צבעים מ-globals.css + הזהב של הלוגו. אין לבן טהור: קרם במקום. */
+export const EMAIL_COLORS = {
+  page: '#f3f8f0',
+  card: '#f7fbf4',
+  cream: '#fbf7ec',
+  soft: '#f5faf2',
   ink: '#1a2e23',
-  muted: '#5b6b62',
-  faint: '#8a978f',
+  secondary: '#4a6354',
+  muted: '#7a9185',
   brand: '#0f3d2e',
+  brand700: '#0b6b4b',
   leaf: '#6fc49a',
-  button: '#0f6e4f',
-  line: '#dfe9e1',
-  soft: '#f3f8f0',
+  gold: '#c9a24a',
+  goldSoft: '#f6ecd2',
+  line: '#e2ebe5',
 };
+const C = EMAIL_COLORS;
 
 export type EmailLayoutInput = {
-  /** טקסט תצוגה מקדימה בתיבת הדואר */
   preheader: string;
-  /** תווית קטנה מעל הכותרת, למשל "אלמוג · NuraWell" */
+  /** תווית קטנה מעל הכותרת */
   eyebrow?: string;
   heading: string;
-  /** HTML פנימי (פסקאות מ-emailParagraph וכו׳) */
+  /** שורת משנה בכותרת */
+  subheading?: string;
   bodyHtml: string;
   cta?: { label: string; url: string };
-  /** HTML אחרי הכפתור (קישור חלופי, הערות) */
   afterCtaHtml?: string;
-  footerNote?: string;
-  /** בסיס לכתובת הלוגו (https://...) או ביטוי תבנית כמו {{ .SiteURL }} */
+  /** חתימה אישית (HTML) */
+  signatureHtml?: string;
+  /** כתובת תמיכה לשורת "התיבה לא נבדקת" */
+  supportEmail?: string;
+  /** בסיס לנכסים (https://...) או {{ .SiteURL }} */
   assetOrigin: string;
 };
 
+export const EMAIL_SUPPORT_ADDRESS = 'support@nurawell.ai';
+
 export function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-export function emailParagraph(html: string, opts: { muted?: boolean; small?: boolean } = {}): string {
-  const color = opts.muted ? C.muted : C.ink;
+const td = (style: string, inner: string, extra = '') =>
+  `<td dir="rtl" align="right"${extra} style="direction:rtl;text-align:right;${style}">${inner}</td>`;
+const table = (inner: string, style = '', extra = '') =>
+  `<table role="presentation" dir="rtl" align="right" width="100%" cellpadding="0" cellspacing="0" border="0"${extra} style="direction:rtl;${style}">${inner}</table>`;
+
+export function emailParagraph(html: string, opts: { muted?: boolean; small?: boolean; center?: boolean } = {}): string {
+  const color = opts.muted ? C.secondary : C.ink;
   const size = opts.small ? 14 : 16;
-  return `<p dir="rtl" style="margin:0 0 16px;color:${color};font-family:${EMAIL_FONT};font-size:${size}px;line-height:1.65;direction:rtl;text-align:right">${html}</p>`;
+  const align = opts.center ? 'center' : 'right';
+  return `<p dir="rtl" align="${align}" style="margin:0 0 16px;color:${color};font-family:${EMAIL_FONT};font-size:${size}px;line-height:1.7;direction:rtl;text-align:${align}">${html}</p>`;
 }
 
+/** קופסה חמה (זהב רך) להערות */
 export function emailNotice(html: string): string {
-  return `<table role="presentation" dir="rtl" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 20px;direction:rtl"><tr><td dir="rtl" align="right" style="background:#fff7e6;border:1px solid #f5c26b;border-radius:10px;padding:12px 14px;color:#7a4b00;font-family:${EMAIL_FONT};font-size:14px;line-height:1.5;font-weight:600;direction:rtl;text-align:right">${html}</td></tr></table>`;
+  return table(
+    `<tr>${td(`background:${C.goldSoft};border:1px solid ${C.gold};border-radius:16px;padding:14px 18px;color:${C.brand};font-family:${EMAIL_FONT};font-size:14px;line-height:1.6`, html, ` bgcolor="${C.goldSoft}"`)}</tr>`,
+    'margin:0 0 20px'
+  );
 }
 
 /** טבלת סיכום תווית/ערך */
-export function emailSummaryTable(rows: Array<[string, string]>): string {
+export function emailSummaryTable(rows: Array<[string, string]>, title?: string): string {
   const trs = rows
-    .map(
-      ([k, v], i) =>
-        `<tr><td dir="rtl" align="right" valign="top" style="padding:10px 14px;${i ? `border-top:1px solid ${C.line};` : ''}color:${C.muted};font-family:${EMAIL_FONT};font-size:14px;line-height:1.4;direction:rtl;text-align:right;width:40%">${k}</td><td dir="rtl" align="right" valign="top" style="padding:10px 14px;${i ? `border-top:1px solid ${C.line};` : ''}color:${C.brand};font-family:${EMAIL_FONT};font-size:14px;line-height:1.4;font-weight:600;direction:rtl;text-align:right">${v}</td></tr>`
-    )
+    .map(([k, v], i) => {
+      const b = i ? `border-top:1px solid ${C.line};` : '';
+      return `<tr>${td(`${b}padding:13px 18px;width:40%;color:${C.muted};font-family:${EMAIL_FONT};font-size:14px;line-height:1.4`, k, ' valign="top"')}${td(`${b}padding:13px 18px;color:${C.brand};font-family:${EMAIL_FONT};font-size:15px;line-height:1.4;font-weight:600`, v, ' valign="top"')}</tr>`;
+    })
     .join('');
-  return `<table role="presentation" dir="rtl" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 20px;background:${C.soft};border:1px solid ${C.line};border-radius:12px;border-collapse:separate;direction:rtl">${trs}</table>`;
+  const head = title
+    ? `<p dir="rtl" align="right" style="margin:8px 0 12px;color:${C.brand700};font-family:${EMAIL_FONT};font-size:17px;font-weight:800;direction:rtl;text-align:right"><span style="color:${C.gold}">✦</span> ${title}</p>`
+    : '';
+  return head + table(trs, `background:${C.soft};border:1px solid ${C.line};border-radius:20px;border-collapse:separate;margin:0 0 26px`, ` bgcolor="${C.soft}"`);
+}
+
+/** קוד חד-פעמי גדול וקריא */
+export function emailCode(code: string): string {
+  return table(
+    `<tr><td dir="ltr" align="center" bgcolor="${C.goldSoft}" style="background:${C.goldSoft};border:2px dashed ${C.gold};border-radius:20px;padding:20px 12px;text-align:center"><span dir="ltr" style="font-family:'Courier New',Consolas,monospace;font-size:36px;line-height:1.2;font-weight:700;letter-spacing:10px;color:${C.brand}">${code}</span></td></tr>`,
+    'margin:4px 0 20px'
+  );
 }
 
 function button(label: string, url: string): string {
-  return `<table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0" style="margin:8px auto 20px"><tr><td align="center" bgcolor="${C.button}" style="border-radius:10px;background:${C.button}"><a href="${url}" target="_blank" style="display:inline-block;padding:14px 32px;font-family:${EMAIL_FONT};font-size:16px;font-weight:700;line-height:1.2;color:#ffffff;text-decoration:none;border-radius:10px">${label}</a></td></tr></table>`;
+  return `<table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0" style="margin:8px auto 22px"><tr><td align="center" bgcolor="${C.brand700}" style="border-radius:26px;background:${C.brand700}">
+<!--[if mso]><v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${url}" style="height:52px;v-text-anchor:middle;width:260px" arcsize="50%" stroke="f" fillcolor="${C.brand700}"><w:anchorlock/><center style="color:${C.cream};font-family:Arial,sans-serif;font-size:16px;font-weight:bold">${label}</center></v:roundrect><![endif]-->
+<!--[if !mso]><!--><a href="${url}" target="_blank" style="display:inline-block;padding:0 38px;height:52px;line-height:52px;font-family:${EMAIL_FONT};font-size:16px;font-weight:700;color:${C.cream};text-decoration:none;border-radius:26px;background:${C.brand700}">${label}</a><!--<![endif]-->
+</td></tr></table>`;
+}
+
+export function emailFallbackLink(url: string): string {
+  return emailParagraph(
+    `הכפתור התעצל? אפשר להעתיק את הקישור הזה לדפדפן:<br><a href="${url}" dir="ltr" style="color:${C.brand700};word-break:break-all;text-decoration:underline">${url}</a>`,
+    { muted: true, small: true }
+  );
+}
+
+/** חתימה של דולב */
+export function dolevSignature(line: string): string {
+  const avatar = `<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" valign="middle" width="46" height="46" bgcolor="${C.brand}" style="width:46px;height:46px;border-radius:23px;background:${C.brand};color:${C.cream};font-family:${EMAIL_FONT};font-size:20px;font-weight:800;text-align:center">ד</td></tr></table>`;
+  const text = `<strong style="color:${C.brand}">דולב</strong> <span style="color:${C.gold}">·</span> NuraWell<br>${line}`;
+  const inner = table(
+    `<tr>${td('width:60px;padding-left:14px', avatar, ' valign="middle" width="60"')}${td(`font-family:${EMAIL_FONT};font-size:15px;line-height:1.55;color:${C.secondary}`, text, ' valign="middle"')}</tr>`
+  );
+  return table(
+    `<tr>${td('padding:16px 18px', inner, ` bgcolor="${C.cream}"`)}</tr>`,
+    `background:${C.cream};border-radius:20px;border-collapse:separate;margin:26px 0 0`,
+    ` bgcolor="${C.cream}"`
+  );
 }
 
 export function renderEmailLayout(i: EmailLayoutInput): string {
   const origin = i.assetOrigin.replace(/\/$/, '');
+  const support = i.supportEmail ?? EMAIL_SUPPORT_ADDRESS;
+  const header = `<tr><td dir="rtl" align="center" bgcolor="${C.brand}" style="direction:rtl;text-align:center;background-color:${C.brand};background-image:linear-gradient(135deg,${C.brand} 0%,${C.brand700} 100%);border-radius:28px 28px 0 0;padding:34px 28px 30px">
+<a href="${origin}" target="_blank" style="text-decoration:none"><img src="${origin}/brand/email-lockup-on-dark.png" width="200" height="45" alt="NuraWell" style="display:block;margin:0 auto 22px;border:0;width:200px;height:auto;max-width:200px"></a>
+${i.eyebrow ? `<p dir="rtl" align="center" style="margin:0 0 8px;color:${C.gold};font-family:${EMAIL_FONT};font-size:13px;font-weight:700;letter-spacing:0.5px;direction:rtl;text-align:center">${i.eyebrow}</p>` : ''}
+<h1 dir="rtl" align="center" style="margin:0;color:${C.cream};font-family:Rubik,${EMAIL_FONT};font-size:28px;line-height:1.35;font-weight:800;direction:rtl;text-align:center">${i.heading}</h1>
+${i.subheading ? `<p dir="rtl" align="center" style="margin:10px 0 0;color:#cfe6da;font-family:${EMAIL_FONT};font-size:16px;line-height:1.5;direction:rtl;text-align:center">${i.subheading}</p>` : ''}
+</td></tr>
+<tr><td height="4" bgcolor="${C.gold}" style="height:4px;line-height:4px;font-size:0;background:${C.gold}">&nbsp;</td></tr>`;
+  const body = `<tr>${td(`background:${C.card};border-radius:0 0 28px 28px;padding:30px 28px 30px`, `${i.bodyHtml}${i.cta ? button(i.cta.label, i.cta.url) : ''}${i.afterCtaHtml ?? ''}${i.signatureHtml ?? ''}`, ` bgcolor="${C.card}"`)}</tr>`;
+  const footer = `<tr><td dir="rtl" align="center" style="direction:rtl;text-align:center;padding:22px 18px 0">
+<p dir="rtl" align="center" style="margin:0 0 6px;color:${C.muted};font-family:${EMAIL_FONT};font-size:13px;line-height:1.65;direction:rtl;text-align:center">את התיבה הזאת אף אחד לא קורא (גם לא דולב 🙈), אז תשובות לכאן לא יגיעו.<br>יש שאלה? כתבו לנו ל-<a href="mailto:${support}" dir="ltr" style="color:${C.brand700};text-decoration:underline">${support}</a> ונחזור אליכם.</p>
+<p dir="rtl" align="center" style="margin:0;color:${C.muted};font-family:${EMAIL_FONT};font-size:12px;line-height:1.6;direction:rtl;text-align:center">NuraWell <span style="color:${C.gold}">·</span> ליווי אישי לאורח חיים בריא</p>
+</td></tr>`;
   return `<!DOCTYPE html>
-<html lang="he" dir="rtl" xmlns="http://www.w3.org/1999/xhtml">
+<html lang="he" dir="rtl" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -79,37 +144,15 @@ export function renderEmailLayout(i: EmailLayoutInput): string {
 <meta name="supported-color-schemes" content="light only">
 <title>${i.heading}</title>
 </head>
-<body dir="rtl" style="margin:0;padding:0;background:${C.page};direction:rtl;text-align:right;-webkit-text-size-adjust:100%">
+<body dir="rtl" bgcolor="${C.page}" style="margin:0;padding:0;background:${C.page};direction:rtl;text-align:right;-webkit-text-size-adjust:100%">
 <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:${C.page}">${i.preheader}&#8203;&nbsp;&#8203;&nbsp;&#8203;&nbsp;&#8203;&nbsp;&#8203;&nbsp;</div>
-<table role="presentation" dir="rtl" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${C.page}" style="background:${C.page};direction:rtl">
-<tr><td align="center" style="padding:28px 12px">
-<table role="presentation" dir="rtl" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;width:100%;direction:rtl">
-<tr><td align="center" style="padding:0 0 18px">
-<a href="${origin}" target="_blank" style="text-decoration:none"><img src="${origin}/icon-192.png" width="44" height="44" alt="NuraWell" style="display:block;margin:0 auto;border:0;border-radius:12px"></a>
-<div style="margin-top:8px;font-family:${EMAIL_FONT};font-size:17px;font-weight:700;color:${C.brand};letter-spacing:0.3px" dir="ltr">NuraWell</div>
-</td></tr>
-<tr><td dir="rtl" align="right" bgcolor="${C.card}" style="background:${C.card};border:1px solid ${C.line};border-radius:16px;padding:32px 28px;direction:rtl;text-align:right">
-${i.eyebrow ? `<p dir="rtl" style="margin:0 0 6px;color:${C.button};font-family:${EMAIL_FONT};font-size:13px;font-weight:700;direction:rtl;text-align:right">${i.eyebrow}</p>` : ''}
-<h1 dir="rtl" style="margin:0 0 18px;color:${C.brand};font-family:${EMAIL_FONT};font-size:24px;line-height:1.35;font-weight:700;direction:rtl;text-align:right">${i.heading}</h1>
-${i.bodyHtml}
-${i.cta ? button(i.cta.label, i.cta.url) : ''}
-${i.afterCtaHtml ?? ''}
-</td></tr>
-<tr><td dir="rtl" align="center" style="padding:20px 16px 0;direction:rtl;text-align:center">
-<p dir="rtl" style="margin:0 0 6px;color:${C.faint};font-family:${EMAIL_FONT};font-size:12px;line-height:1.6;direction:rtl;text-align:center">${i.footerNote ?? 'NuraWell · ליווי אישי לאורח חיים בריא'}</p>
-<p dir="rtl" style="margin:0;color:${C.faint};font-family:${EMAIL_FONT};font-size:12px;line-height:1.6;direction:rtl;text-align:center">זה מייל אוטומטי, אין צורך להשיב אליו.</p>
-</td></tr>
+<table role="presentation" dir="rtl" align="center" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${C.page}" style="direction:rtl;background:${C.page}"><tr><td dir="rtl" align="center" style="direction:rtl;padding:24px 10px">
+<table role="presentation" dir="rtl" align="center" width="100%" cellpadding="0" cellspacing="0" border="0" style="direction:rtl;max-width:580px;width:100%">
+${header}
+${body}
+${footer}
 </table>
-</td></tr>
-</table>
+</td></tr></table>
 </body>
 </html>`;
-}
-
-/** קישור חלופי כשהכפתור לא עובד */
-export function emailFallbackLink(url: string): string {
-  return emailParagraph(
-    `אם הכפתור לא עובד, אפשר להעתיק את הקישור הזה לדפדפן:<br><a href="${url}" dir="ltr" style="color:${C.button};word-break:break-all;text-decoration:underline">${url}</a>`,
-    { muted: true, small: true }
-  );
 }

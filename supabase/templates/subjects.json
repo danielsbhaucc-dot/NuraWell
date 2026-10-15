@@ -1,8 +1,8 @@
 {
-  "confirmation": "אישור כתובת המייל שלך ב-NuraWell",
-  "magic_link": "קישור הכניסה שלך ל-NuraWell",
-  "recovery": "איפוס הסיסמה שלך ב-NuraWell",
-  "email_change": "אישור החלפת כתובת המייל ב-NuraWell",
-  "invite": "הוזמנת להצטרף ל-NuraWell",
-  "reauthentication": "קוד האימות שלך ב-NuraWell"
+  "confirmation": "רגע לפני שמתחילים: אישור המייל ב-NuraWell",
+  "magic_link": "הקוד שלכם לכניסה ל-NuraWell",
+  "recovery": "איפוס הסיסמה ב-NuraWell",
+  "email_change": "אישור כתובת המייל החדשה ב-NuraWell",
+  "invite": "הוזמנתם ל-NuraWell 🌿",
+  "reauthentication": "קוד האימות שלכם ב-NuraWell"
 }
