@@ -5,7 +5,7 @@
  * בלי תלות בקבצים אחרים: משמש גם לתבניות ה-Auth של Supabase (scripts/build-auth-email-templates.ts).
  */
 
-export const EMAIL_FONT = "Heebo,Rubik,'Segoe UI',Arial,Helvetica,sans-serif";
+export const EMAIL_FONT = "-apple-system,BlinkMacSystemFont,'SF Pro Text','SF Hebrew',Heebo,Rubik,'Segoe UI',Arial,Helvetica,sans-serif";
 
 /** צבעים מ-globals.css + הזהב של הלוגו. אין לבן טהור: קרם במקום. */
 export const EMAIL_COLORS = {
@@ -66,7 +66,7 @@ export function emailParagraph(html: string, opts: { muted?: boolean; small?: bo
 /** קופסה חמה (זהב רך) להערות */
 export function emailNotice(html: string): string {
   return table(
-    `<tr>${td(`background:${C.goldSoft};border:1px solid ${C.gold};border-radius:16px;padding:14px 18px;color:${C.brand};font-family:${EMAIL_FONT};font-size:14px;line-height:1.6`, html, ` bgcolor="${C.goldSoft}"`)}</tr>`,
+    `<tr>${td(`background:${C.goldSoft};border:0.5px solid ${C.gold};border-radius:18px;padding:14px 18px;color:${C.brand};font-family:${EMAIL_FONT};font-size:14px;line-height:1.6`, html, ` bgcolor="${C.goldSoft}"`)}</tr>`,
     'margin:0 0 20px'
   );
 }
@@ -75,26 +75,31 @@ export function emailNotice(html: string): string {
 export function emailSummaryTable(rows: Array<[string, string]>, title?: string): string {
   const trs = rows
     .map(([k, v], i) => {
-      const b = i ? `border-top:1px solid ${C.goldSoft};` : '';
-      return `<tr>${td(`${b}padding:13px 18px;width:40%;color:${C.muted};font-family:${EMAIL_FONT};font-size:14px;line-height:1.4`, k, ' valign="top"')}${td(`${b}padding:13px 18px;color:${C.brand};font-family:${EMAIL_FONT};font-size:15px;line-height:1.4;font-weight:600`, v, ' valign="top"')}</tr>`;
+      const b = i ? `border-top:0.5px solid #e6dfcc;` : '';
+      return `<tr>${td(`${b}padding:14px 18px;width:42%;color:${C.muted};font-family:${EMAIL_FONT};font-size:15px;line-height:1.4`, k, ' valign="top"')}${td(`${b}padding:14px 18px;color:${C.ink};font-family:${EMAIL_FONT};font-size:15px;line-height:1.4;font-weight:600`, v, ' valign="top"')}</tr>`;
     })
     .join('');
   const head = title
-    ? `<p dir="rtl" align="right" style="margin:6px 0 12px;color:${C.brand};font-family:Rubik,${EMAIL_FONT};font-size:18px;font-weight:800;direction:rtl;text-align:right">🌟 ${title}</p>`
+    ? `<p dir="rtl" align="right" style="margin:6px 4px 8px;color:${C.muted};font-family:${EMAIL_FONT};font-size:13px;font-weight:600;letter-spacing:0.3px;direction:rtl;text-align:right">🌟 ${title}</p>`
     : '';
-  return head + table(trs, `background:${C.cream};border:1px solid ${C.goldSoft};border-radius:20px;border-collapse:separate;margin:0 0 28px`, ` bgcolor="${C.cream}"`);
+  return head + table(trs, `background:${C.cream};border:0.5px solid #e6dfcc;border-radius:18px;border-collapse:separate;margin:0 0 28px;box-shadow:0 1px 3px rgba(15,61,46,0.06)`, ` bgcolor="${C.cream}"`);
+}
+
+/** קו מפריד עדין (hairline) בין קטעים */
+export function emailDivider(): string {
+  return table(`<tr><td height="1" style="height:1px;line-height:1px;font-size:0;padding:0;border-top:0.5px solid #e2dccb">&nbsp;</td></tr>`, 'margin:6px 0 22px');
 }
 
 /** קוד חד-פעמי גדול וקריא */
 export function emailCode(code: string): string {
   return table(
-    `<tr><td dir="ltr" align="center" bgcolor="${C.goldSoft}" style="background:${C.goldSoft};border:2px dashed ${C.gold};border-radius:20px;padding:20px 12px;text-align:center"><span dir="ltr" style="font-family:'Courier New',Consolas,monospace;font-size:36px;line-height:1.2;font-weight:700;letter-spacing:10px;color:${C.brand}">${code}</span></td></tr>`,
+    `<tr><td dir="ltr" align="center" bgcolor="${C.goldSoft}" style="background:${C.goldSoft};border:1px solid ${C.gold};border-radius:22px;padding:22px 12px;box-shadow:0 1px 3px rgba(15,61,46,0.08);text-align:center"><span dir="ltr" style="font-family:'Courier New',Consolas,monospace;font-size:36px;line-height:1.2;font-weight:700;letter-spacing:10px;color:${C.brand}">${code}</span></td></tr>`,
     'margin:4px 0 20px'
   );
 }
 
 function button(label: string, url: string): string {
-  return `<table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0" style="margin:10px auto 24px"><tr><td align="center" bgcolor="${C.brand700}" style="border-radius:26px;background:${C.brand700}">
+  return `<table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0" style="margin:10px auto 24px"><tr><td align="center" bgcolor="${C.brand700}" style="border-radius:27px;background:${C.brand700};box-shadow:0 6px 16px rgba(11,107,75,0.28)">
 <!--[if mso]><v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${url}" style="height:52px;v-text-anchor:middle;width:260px" arcsize="50%" stroke="f" fillcolor="${C.brand700}"><w:anchorlock/><center style="color:${C.cream};font-family:Arial,sans-serif;font-size:16px;font-weight:bold">${label}</center></v:roundrect><![endif]-->
 <!--[if !mso]><!--><a href="${url}" target="_blank" style="display:inline-block;padding:0 42px;height:54px;line-height:54px;font-family:${EMAIL_FONT};font-size:17px;font-weight:700;color:${C.cream};text-decoration:none;border-radius:26px;background:${C.brand700}">${label}</a><!--<![endif]-->
 </td></tr></table>`;
@@ -111,28 +116,29 @@ export function emailFallbackLink(url: string): string {
 export function dolevSignature(line: string): string {
   const text = `<strong style="color:${C.brand};font-size:16px">דולב</strong> 👋<br>${line}`;
   return table(
-    `<tr>${td(`padding:18px 20px;background:${C.goldSoft};border-radius:20px;font-family:${EMAIL_FONT};font-size:15px;line-height:1.6;color:${C.secondary}`, text, ` bgcolor="${C.goldSoft}"`)}</tr>`,
-    'border-collapse:separate;margin:28px 0 0'
+    `<tr>${td(`padding:18px 20px;background:${C.goldSoft};border-radius:22px;box-shadow:0 1px 3px rgba(15,61,46,0.06);font-family:${EMAIL_FONT};font-size:15px;line-height:1.6;color:${C.secondary}`, text, ` bgcolor="${C.goldSoft}"`)}</tr>`,
+    'border-collapse:separate;margin:24px 0 0'
   );
 }
 
 export function renderEmailLayout(i: EmailLayoutInput): string {
   const origin = i.assetOrigin.replace(/\/$/, '');
   const support = i.supportEmail ?? EMAIL_SUPPORT_ADDRESS;
-  const header = `<tr><td dir="rtl" align="center" bgcolor="${C.brand}" style="direction:rtl;text-align:center;background-color:${C.brand};background-image:linear-gradient(180deg,${C.brand} 0%,${C.brand700} 100%);border-radius:30px 30px 0 0;padding:38px 28px ${i.introHtml ? '46px' : '34px'}">
-<a href="${origin}" target="_blank" style="text-decoration:none"><img src="${origin}/brand/email-lockup-on-dark.png" width="190" height="42" alt="NuraWell" style="display:block;margin:0 auto 24px;border:0;width:190px;height:auto;max-width:190px"></a>
+  const header = `<tr><td dir="rtl" align="center" bgcolor="${C.brand}" style="direction:rtl;text-align:center;background-color:${C.brand};background-image:linear-gradient(180deg,${C.brand} 0%,${C.brand700} 100%);border-radius:34px 34px 0 0;padding:38px 28px ${i.introHtml ? '46px' : '34px'}">
+<a href="${origin}" target="_blank" style="text-decoration:none"><img src="${origin}/brand/email-logo-header.png" width="210" height="41" alt="NuraWell" style="display:block;margin:0 auto 24px;border:0;width:210px;height:auto;max-width:210px"></a>
 ${i.eyebrow ? `<p dir="rtl" align="center" style="margin:0 0 10px;font-family:${EMAIL_FONT};direction:rtl;text-align:center"><span style="display:inline-block;background:${C.gold};color:${C.brand};font-size:12px;font-weight:800;padding:5px 14px;border-radius:999px">${i.eyebrow}</span></p>` : ''}
-<h1 dir="rtl" align="center" style="margin:0;color:${C.cream};font-family:Rubik,${EMAIL_FONT};font-size:31px;line-height:1.3;font-weight:800;direction:rtl;text-align:center">${i.heading}</h1>
+<h1 dir="rtl" align="center" style="margin:0;color:${C.cream};font-family:${EMAIL_FONT};font-size:31px;line-height:1.3;font-weight:800;direction:rtl;text-align:center">${i.heading}</h1>
 ${i.subheading ? `<p dir="rtl" align="center" style="margin:10px 0 0;color:#d6ecdf;font-family:${EMAIL_FONT};font-size:17px;line-height:1.5;font-weight:500;direction:rtl;text-align:center">${i.subheading}</p>` : ''}
 </td></tr>`;
   // "חפיפה" בטוחה ל-Gmail: שורה שחצייה העליון בצבע ההדר והתחתון בצבע הגוף, והכרטיס יושב באמצע (בלי margin שלילי).
   const intro = i.introHtml
     ? `<tr><td dir="rtl" align="center" bgcolor="${C.card}" style="direction:rtl;background-color:${C.card};background-image:linear-gradient(180deg,${C.brand700} 0%,${C.brand700} 50%,${C.card} 50%,${C.card} 100%);padding:0 22px">
-${table(`<tr>${td(`background:${C.cream};border:1px solid ${C.goldSoft};border-radius:22px;padding:22px 22px 6px;box-shadow:0 10px 28px rgba(15,61,46,0.16)`, i.introHtml, ` bgcolor="${C.cream}"`)}</tr>`, 'border-collapse:separate')}
+${table(`<tr>${td(`background:${C.cream};border:1px solid ${C.goldSoft};border-radius:26px;padding:22px 22px 6px;box-shadow:0 1px 2px rgba(15,61,46,0.06),0 12px 32px rgba(15,61,46,0.14)`, i.introHtml, ` bgcolor="${C.cream}"`)}</tr>`, 'border-collapse:separate')}
 </td></tr>`
     : `<tr><td height="4" bgcolor="${C.gold}" style="height:4px;line-height:4px;font-size:0;background:${C.gold}">&nbsp;</td></tr>`;
-  const body = `<tr>${td(`background:${C.card};border-radius:0 0 30px 30px;padding:${i.introHtml ? '28px' : '30px'} 28px 34px`, `${i.bodyHtml}${i.cta ? button(i.cta.label, i.cta.url) : ''}${i.afterCtaHtml ?? ''}${i.signatureHtml ?? ''}`, ` bgcolor="${C.card}"`)}</tr>`;
-  const footer = `<tr><td dir="rtl" align="center" style="direction:rtl;text-align:center;padding:22px 18px 0">
+  const body = `<tr>${td(`background:${C.card};border-radius:0 0 34px 34px;padding:${i.introHtml ? '28px' : '30px'} 28px 34px`, `${i.bodyHtml}${i.cta ? button(i.cta.label, i.cta.url) : ''}${i.afterCtaHtml ? emailDivider() + i.afterCtaHtml : ''}${i.signatureHtml ?? ''}`, ` bgcolor="${C.card}"`)}</tr>`;
+  const footer = `<tr><td dir="rtl" align="center" style="direction:rtl;text-align:center;padding:24px 18px 0">
+<div style="width:44px;height:4px;border-radius:2px;background:${C.gold};opacity:0.55;margin:0 auto 16px;font-size:0;line-height:0">&nbsp;</div>
 <p dir="rtl" align="center" style="margin:0 0 6px;color:${C.muted};font-family:${EMAIL_FONT};font-size:13px;line-height:1.65;direction:rtl;text-align:center">את התיבה הזאת אף אחד לא קורא (גם לא דולב 🙈), אז תשובות לכאן לא יגיעו.<br>יש שאלה? כתבו לנו ל-<a href="mailto:${support}" dir="ltr" style="color:${C.brand700};text-decoration:underline">${support}</a> ונחזור אליכם.</p>
 <p dir="rtl" align="center" style="margin:0;color:${C.muted};font-family:${EMAIL_FONT};font-size:12px;line-height:1.6;direction:rtl;text-align:center">NuraWell <span style="color:${C.gold}">·</span> ליווי אישי לאורח חיים בריא</p>
 </td></tr>`;
