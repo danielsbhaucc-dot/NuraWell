@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { verifyStepup } from '@/lib/ceo/security';
+import { createStepupLink, verifyStepup } from '@/lib/ceo/security';
+import { issueRecoveryCodes } from '@/lib/ceo/recovery';
 import { decideAction } from '@/lib/ceo/actions';
-import { alertOwner, clientIp, limitIp, noStore } from '@/lib/ceo/stepup-http';
-import { OPS_MFA_COOKIE, opsMfaCookieOptions, signOpsMfa } from '@/lib/auth/ops-mfa';
+import { alertOwner, limitIp, noStore } from '@/lib/ceo/stepup-http';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -27,11 +27,14 @@ export async function POST(request: Request) {
     await alertOwner(r.text);
     return NextResponse.json({ ok: r.ok, text: r.text }, noStore);
   }
-  if (v.purpose === 'ops_login' && v.userId) {
-    const res = NextResponse.json({ ok: true, text: 'נכנסת ללוח הבקרה.' }, noStore);
-    res.cookies.set(OPS_MFA_COOKIE, signOpsMfa(v.userId), opsMfaCookieOptions);
-    await db.from('admin_audit_log').insert({ actor_id: v.userId, method: 'LOGIN', path: '/ops (passkey)', ip: clientIp(request) });
-    return res;
+  if (v.grant === 'register' && v.userId) {
+    // existing key verified → hand out a registration link for the new device
+    return NextResponse.json({ ok: true, text: 'אומת. עובר לרישום המפתח החדש…', redirect: await createStepupLink(db, 'register', { userId: v.userId }) }, noStore);
+  }
+  if (v.grant === 'recovery' && v.userId) {
+    const codes = await issueRecoveryCodes(db, v.userId);
+    await alertOwner('🔑 נוצרו קודי שחזור חדשים לגדעון (הקודמים בוטלו).');
+    return NextResponse.json({ ok: true, text: 'קודי שחזור חדשים (מוצגים פעם אחת בלבד):', recoveryCodes: codes }, noStore);
   }
   if (v.purpose === 'settings') await alertOwner('🔐 הגדרות האבטחה של גדעון שונו (אומת עם Face ID).');
   if (v.purpose === 'remove_key') await alertOwner('🔑 מפתח Face ID הוסר מגדעון (אומת עם Face ID).');

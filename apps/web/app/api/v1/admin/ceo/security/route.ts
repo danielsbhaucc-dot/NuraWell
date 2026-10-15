@@ -3,7 +3,8 @@ import { z } from 'zod';
 import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { createStepupLink, killSwitch, securityState } from '@/lib/ceo/security';
+import { createStepupLink, killSwitch, recordFailure, securityState } from '@/lib/ceo/security';
+import { consumeRecoveryCode } from '@/lib/ceo/recovery';
 import { alertOwner } from '@/lib/ceo/stepup-http';
 
 export const runtime = 'nodejs';
@@ -13,12 +14,13 @@ export async function GET(request: Request) {
   const auth = await requireOpsApiAdmin(request);
   if (!auth.ok) return auth.response;
   const db = createAdminClient();
-  const [state, { data: keys }] = await Promise.all([securityState(db), db.from('admin_passkeys').select('id, label, created_at, last_used_at').order('created_at')]);
-  return NextResponse.json({ state, passkeys: keys ?? [] }, { headers: { 'Cache-Control': 'no-store' } });
+  const [state, { data: keys }, { count: recoveryLeft }] = await Promise.all([securityState(db), db.from('admin_passkeys').select('id, label, created_at, last_used_at').order('created_at'), db.from('admin_recovery_codes').select('id', { count: 'exact', head: true }).is('used_at', null)]);
+  return NextResponse.json({ state, passkeys: keys ?? [], recovery_left: recoveryLeft ?? 0 }, { headers: { 'Cache-Control': 'no-store' } });
 }
 
 const Body = z.discriminatedUnion('action', [
-  z.object({ action: z.literal('register_link') }),
+  z.object({ action: z.literal('register_link'), recovery_code: z.string().max(40).optional() }),
+  z.object({ action: z.literal('recovery_codes') }),
   z.object({ action: z.literal('unlock_link') }),
   z.object({ action: z.literal('kill'), reason: z.string().max(200).default('Ops') }),
   z.object({ action: z.literal('remove_key'), id: z.string().uuid() }),
@@ -35,8 +37,22 @@ export async function POST(request: Request) {
   const db = createAdminClient();
   const actor = `ops:${auth.user.id}`; // eslint-disable-line @typescript-eslint/no-unused-vars
   switch (p.data.action) {
-    case 'register_link':
-      return NextResponse.json({ url: await createStepupLink(db, 'register', { userId: auth.user.id }) });
+    case 'register_link': {
+      // first key: admin login is enough. More keys: an existing key (Face ID, also via phone QR) or a recovery code.
+      const { data: keys } = await db.from('admin_passkeys').select('id').eq('user_id', auth.user.id).limit(1);
+      if (!keys?.length) return NextResponse.json({ url: await createStepupLink(db, 'register', { userId: auth.user.id }) });
+      if (p.data.recovery_code) {
+        if (!(await consumeRecoveryCode(db, auth.user.id, p.data.recovery_code))) {
+          await recordFailure(db, 'bad recovery code', alertOwner);
+          return NextResponse.json({ error: 'קוד שחזור שגוי או משומש' }, { status: 403 });
+        }
+        await alertOwner('🔑 נעשה שימוש בקוד שחזור כדי להוסיף מפתח לגדעון. אם זה לא אתה, כבה את גדעון מ-Ops.');
+        return NextResponse.json({ url: await createStepupLink(db, 'register', { userId: auth.user.id }) });
+      }
+      return NextResponse.json({ url: await createStepupLink(db, 'verify', { userId: auth.user.id, payload: { grant: 'register' } }) });
+    }
+    case 'recovery_codes':
+      return NextResponse.json({ url: await createStepupLink(db, 'verify', { userId: auth.user.id, payload: { grant: 'recovery' } }) });
     case 'unlock_link':
       // turning Gideon back on / clearing lockout = admin session + passkey on the next page
       return NextResponse.json({ url: await createStepupLink(db, 'unlock', { userId: auth.user.id, next: '/ceo/security' }) });

@@ -13,6 +13,8 @@ export function GideonSecurityPanel() {
   const [trust, setTrust] = useState(240);
   const [reverify, setReverify] = useState(1440);
   const [regUrl, setRegUrl] = useState<string | null>(null);
+  const [code, setCode] = useState('');
+  const [recoveryLeft, setRecoveryLeft] = useState(0);
 
   const load = useCallback(async () => {
     const r = await fetch('/api/v1/admin/ceo/security', { credentials: 'include' });
@@ -20,6 +22,7 @@ export function GideonSecurityPanel() {
     if (!r.ok) return setErr(d.error ?? 'טעינה נכשלה');
     setSt(d.state);
     setKeys(d.passkeys);
+    setRecoveryLeft(d.recovery_left ?? 0);
     setTrust(d.state.stepup_trust_minutes);
     setReverify(d.state.reverify_minutes);
   }, []);
@@ -80,13 +83,29 @@ export function GideonSecurityPanel() {
             </li>
           )) : <li>עוד לא נרשם מפתח. בלי מפתח, פעולות רגישות חסומות והכניסה ל-Ops היא בסיסמה בלבד.</li>}
         </ul>
-        <button className="mt-3 rounded-2xl bg-slate-900 px-4 py-2.5 font-semibold text-white" onClick={async () => { const d = await post({ action: 'register_link' }); if (d?.url) setRegUrl(d.url); }}>
-          + רישום מפתח חדש
-        </button>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button className="rounded-2xl bg-slate-900 px-4 py-2.5 font-semibold text-white" onClick={async () => { const d = await post({ action: 'register_link' }); if (d?.url) setRegUrl(d.url); }}>
+            + מפתח חדש{keys.length ? ' (אישור עם מפתח קיים)' : ''}
+          </button>
+          {keys.length ? (
+            <button className="rounded-2xl border px-4 py-2.5 font-semibold" onClick={async () => { const d = await post({ action: 'recovery_codes' }); if (d?.url) window.location.href = d.url; }}>
+              קודי שחזור חדשים (נותרו {recoveryLeft})
+            </button>
+          ) : null}
+        </div>
+        {keys.length ? (
+          <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
+            <span>אין מפתח זמין? קוד שחזור:</span>
+            <input dir="ltr" value={code} onChange={(e) => setCode(e.target.value)} placeholder="XXXX-XXXX-XXXX" className="rounded-xl border px-3 py-1.5 font-mono" />
+            <button className="rounded-xl border px-3 py-1.5" disabled={code.length < 12} onClick={async () => { const d = await post({ action: 'register_link', recovery_code: code }); setCode(''); if (d?.url) setRegUrl(d.url); }}>המשך</button>
+          </div>
+        ) : null}
         {regUrl ? (
-          <p className="mt-3 break-all text-sm">
-            פתח בטלפון תוך 10 דקות (בדפדפן, לא בתוך טלגרם): <a className="text-emerald-700 underline" href={regUrl}>{regUrl}</a>
-          </p>
+          <div className="mt-3 space-y-2 text-sm">
+            <a className="inline-block rounded-2xl bg-emerald-700 px-4 py-2.5 font-semibold text-white" href={regUrl}>המשך במכשיר הזה</a>
+            <p className="break-all">או פתח במכשיר אחר תוך 10 דקות (בדפדפן, לא בתוך טלגרם): <span dir="ltr">{regUrl}</span></p>
+            <p className="text-slate-500">במחשב: Windows Hello / Touch ID, או סריקת QR עם הטלפון.</p>
+          </div>
         ) : null}
       </section>
 

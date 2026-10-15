@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireApiAdmin } from './route-guards';
 import { createAdminClient } from '../supabase/admin';
-import { OPS_MFA_COOKIE, readCookie, verifyOpsMfa } from '../auth/ops-mfa';
 import {
   isAppHostOpsFallback,
   isOpsPanelBrowserPath,
@@ -52,20 +51,15 @@ export async function requireOpsApiAdmin(request: Request): Promise<SessionOk | 
   const res = await requireApiAdmin(request);
   if (!res.ok) return res;
 
-  // 2nd factor (same rule as the Ops pages): enrolled admins need a valid Face ID session cookie.
   const admin = createAdminClient();
-  const { data: keys } = await admin.from('admin_passkeys').select('id').eq('user_id', res.user.id).limit(1);
-  if (keys?.length && !verifyOpsMfa(readCookie(request.headers.get('cookie'), OPS_MFA_COOKIE), res.user.id)) {
-    return { ok: false, response: NextResponse.json({ error: 'נדרש אימות Face ID מחדש. רענן את הדף.' }, { status: 401 }) };
-  }
 
   // audit every admin mutation (who, what, when, from where); never the body
   if (request.method !== 'GET' && request.method !== 'HEAD') {
     const path = new URL(request.url).pathname;
-    void admin
+    const { error } = await admin
       .from('admin_audit_log')
       .insert({ actor_id: res.user.id, method: request.method, path, ip: (request.headers.get('x-real-ip') || request.headers.get('x-forwarded-for')?.split(',')[0] || '').trim() || null })
-      .then(({ error }) => { if (error) console.error('[admin-audit]', error.message); });
+    if (error) console.error('[admin-audit]', error.message);
   }
   return res;
 }

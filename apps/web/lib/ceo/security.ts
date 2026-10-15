@@ -2,6 +2,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { opsCanonicalHostname } from '@/lib/ops-host';
 import { b64u, newChallenge, verifyAssertion, verifyRegistration } from './webauthn';
+import { issueRecoveryCodes } from './recovery';
 
 /**
  * Gideon stolen-phone protection.
@@ -140,7 +141,8 @@ export async function linkOptions(db: SupabaseClient, token: string) {
   }
   if (r.purpose === 'settings') summary = `שינוי הגדרות אבטחה: חלון אמון ${r.payload?.trust_minutes} דק׳, אימות תקופתי ${r.payload?.reverify_minutes} דק׳`;
   if (r.purpose === 'remove_key') summary = `הסרת מפתח: ${String(r.payload?.label ?? '')}`;
-  if (r.purpose === 'ops_login') summary = 'כניסה ללוח הבקרה';
+  if (r.payload?.grant === 'register') summary = 'אישור עם מפתח קיים כדי להוסיף מפתח חדש';
+  if (r.payload?.grant === 'recovery') summary = 'יצירת קודי שחזור חדשים';
   const { data: keys } = await db.from('admin_passkeys').select('credential_id');
   return { purpose: r.purpose, challenge, rpId: rpId(), summary, allow: (keys ?? []).map((k: { credential_id: string }) => k.credential_id) };
 }
@@ -161,10 +163,13 @@ export async function registerPasskey(
   try {
     const v = verifyRegistration({ ...body, challenge: r.challenge, rpId: rpId(), origins: rpOrigins() });
     if (!(await consume(db, r.id))) return { ok: false as const, error: 'הקישור כבר נוצל.' };
+    const { data: existing } = await db.from('admin_passkeys').select('id').eq('user_id', r.user_id).limit(1);
     const { error } = await db.from('admin_passkeys').insert({ user_id: r.user_id, credential_id: body.credentialId, public_key: body.publicKey, alg: body.alg, sign_count: v.signCount, label: (body.label ?? '').slice(0, 60) });
     if (error) throw new Error(error.message);
     await audit(db, 'admin', 'passkey_registered', { label: body.label ?? '' });
-    return { ok: true as const };
+    // first key → issue recovery codes (shown once on this page)
+    const recoveryCodes = existing?.length ? undefined : await issueRecoveryCodes(db, r.user_id);
+    return { ok: true as const, recoveryCodes };
   } catch (e) {
     console.error('[ceo-stepup] register', e instanceof Error ? e.message : e);
     return { ok: false as const, error: 'הרישום נכשל. נסה שוב.' };
@@ -216,7 +221,7 @@ export async function verifyStepup(db: SupabaseClient, token: string, body: Step
   if (r.purpose === 'remove_key' && r.payload?.keyId) await db.from('admin_passkeys').delete().eq('id', String(r.payload.keyId));
   if (r.purpose === 'settings' || r.purpose === 'remove_key') await audit(db, 'passkey', r.purpose, r.payload ?? {});
   await audit(db, 'passkey', `stepup_ok_${r.purpose}`, {}, r.action_id ?? undefined);
-  return { ok: true as const, purpose: r.purpose, actionId: r.action_id, userId: r.user_id };
+  return { ok: true as const, purpose: r.purpose, actionId: r.action_id, userId: r.user_id, grant: (r.payload?.grant as string | undefined) ?? null };
 }
 
 /** Kill switch: instant, no step-up needed to turn OFF Gideon (only to turn back on). */

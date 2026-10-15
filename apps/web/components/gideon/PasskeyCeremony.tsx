@@ -20,6 +20,7 @@ export function PasskeyCeremony({ mode }: { mode: 'register' | 'verify' }) {
   const [msg, setMsg] = useState<string>('טוען…');
   const [done, setDone] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [codes, setCodes] = useState<string[] | null>(null);
   const token = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('t') ?? '' : '';
 
   useEffect(() => {
@@ -60,7 +61,8 @@ export function PasskeyCeremony({ mode }: { mode: 'register' | 'verify' }) {
           body: JSON.stringify({ t: token, credentialId: enc(cred.rawId), clientDataJSON: enc(res.clientDataJSON), authenticatorData: enc(res.getAuthenticatorData()), publicKey: enc(pk), alg: res.getPublicKeyAlgorithm(), label }),
         });
         const d = await r.json().catch(() => ({}));
-        setMsg(r.ok ? '✅ Face ID נרשם. אפשר לסגור את החלון.' : d.error ?? 'הרישום נכשל.');
+        if (d.recoveryCodes) setCodes(d.recoveryCodes);
+        setMsg(r.ok ? (d.recoveryCodes ? '✅ המפתח נרשם. שמור את קודי השחזור במקום בטוח (מנהל סיסמאות). הם מוצגים פעם אחת בלבד:' : '✅ המפתח נרשם. אפשר לסגור את החלון.') : d.error ?? 'הרישום נכשל.');
         setDone(r.ok);
       } else {
         const cred = (await navigator.credentials.get({
@@ -73,6 +75,11 @@ export function PasskeyCeremony({ mode }: { mode: 'register' | 'verify' }) {
           body: JSON.stringify({ t: token, credentialId: enc(cred.rawId), clientDataJSON: enc(res.clientDataJSON), authenticatorData: enc(res.authenticatorData), signature: enc(res.signature) }),
         });
         const d = await r.json().catch(() => ({}));
+        if (r.ok && typeof d.redirect === 'string' && d.redirect.startsWith(`https://${opts.rpId}/gideon/`)) {
+          window.location.replace(d.redirect);
+          return;
+        }
+        if (d.recoveryCodes) setCodes(d.recoveryCodes);
         const next = safeNext(new URLSearchParams(window.location.search).get('next'));
         if (r.ok && next) {
           window.location.replace(next);
@@ -96,10 +103,13 @@ export function PasskeyCeremony({ mode }: { mode: 'register' | 'verify' }) {
       {opts?.summary ? <p className="rounded-2xl bg-slate-100 px-4 py-3 text-base">{opts.summary}</p> : null}
       {opts && !done ? (
         <button onClick={run} disabled={busy} className="w-full rounded-2xl bg-emerald-700 px-5 py-4 text-lg font-semibold text-white disabled:opacity-60">
-          {busy ? 'מאמת…' : mode === 'register' ? 'רשום עם Face ID / טביעת אצבע' : 'אשר עם Face ID / טביעת אצבע'}
+          {busy ? 'מאמת…' : mode === 'register' ? 'רשום מפתח (Face ID / טביעת אצבע / Windows Hello)' : 'אשר עם Face ID / טביעת אצבע'}
         </button>
       ) : null}
       {msg ? <p className="whitespace-pre-line text-base text-slate-700">{msg}</p> : null}
+      {codes ? (
+        <pre dir="ltr" className="w-full select-all rounded-2xl bg-slate-900 p-4 text-left font-mono text-lg leading-8 text-white">{codes.join('\n')}</pre>
+      ) : null}
     </main>
   );
 }

@@ -11,7 +11,6 @@ import {
   requestHostname,
 } from './lib/ops-host';
 import { resolvePublicAppOriginForOpsRedirect } from './lib/public-app-url';
-import { OPS_MFA_COOKIE, opsMfaCookieOptions, signOpsMfa, verifyOpsMfa } from './lib/auth/ops-mfa';
 import {
   APP_HOME_PATH,
   MARKETING_PATHS_REDIRECT_WHEN_AUTHED,
@@ -344,23 +343,21 @@ export async function proxy(request: NextRequest) {
       return applySecurityHeaders(NextResponse.redirect(new URL(APP_HOME_PATH, mainOrigin)));
     }
 
-    /** 2nd factor: once the admin has a passkey, Ops needs a fresh Face ID session (idle 30m / max 12h). */
-    const { data: enrolled } = await supabase.rpc('admin_has_passkey');
-    if (enrolled === true) {
-      const opsHost = opsCanonicalHostname();
-      if (appHostOpsPath && opsHost) {
-        // passkeys are bound to the Ops host — move there
-        const target = new URL(`https://${opsHost}${pathname.replace(/^\/ops/, '') || '/'}${request.nextUrl.search}`);
-        return applySecurityHeaders(NextResponse.redirect(target));
-      }
-      const mfa = verifyOpsMfa(request.cookies.get(OPS_MFA_COOKIE)?.value, user.id);
-      if (!mfa) {
-        const back = `${pathname}${request.nextUrl.search}`;
-        return applySecurityHeaders(NextResponse.redirect(new URL(`/gideon/ops-login?next=${encodeURIComponent(back)}`, request.url)));
-      }
-      if (Date.now() - mfa.seen > 5 * 60_000) {
-        response.cookies.set(OPS_MFA_COOKIE, signOpsMfa(user.id, Date.now(), mfa.iat), opsMfaCookieOptions); // sliding idle timeout
-      }
+    /** Ops idle timeout: no Ops activity for OPS_IDLE_MINUTES (default 60) → sign out of this host's session. */
+    const idleMs = Math.max(5, Number(process.env.OPS_IDLE_MINUTES || 60)) * 60_000;
+    const seen = Number(request.cookies.get('nw_ops_seen')?.value || 0);
+    const nowMs = Date.now();
+    if (seen && nowMs - seen > idleMs) {
+      await supabase.auth.signOut({ scope: 'local' });
+      const loginUrl = new URL('/login', mainOrigin);
+      loginUrl.searchParams.set('reason', 'ops_idle');
+      const out = NextResponse.redirect(loginUrl);
+      for (const c of response.cookies.getAll()) out.cookies.set(c);
+      out.cookies.set('nw_ops_seen', '', { path: '/', maxAge: 0 });
+      return applySecurityHeaders(out);
+    }
+    if (!seen || nowMs - seen > 60_000) {
+      response.cookies.set('nw_ops_seen', String(nowMs), { httpOnly: true, secure: true, sameSite: 'lax', path: '/', maxAge: 12 * 3600 });
     }
   }
 
