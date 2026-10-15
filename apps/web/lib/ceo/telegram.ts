@@ -1,6 +1,8 @@
 import type { CeoButton, CeoChannel } from './channel';
 import { mdToPlain, mdToTelegramHtml } from './format';
 
+/** Telegram's built-in 🎉 message effect. */
+export const EFFECT_CELEBRATE = '5046509860389126442';
 const MAX = 3500; // Telegram limit is 4096; leave room for HTML escaping
 
 /** Bot token: admin-set (encrypted in gideon_settings) → env TELEGRAM_BOT_TOKEN. */
@@ -43,7 +45,9 @@ export function splitMessage(text: string, max = MAX): string[] {
 export function createTelegramChannel(fetchImpl: typeof fetch = fetch, getToken: () => Promise<string | null> = resolveBotToken): CeoChannel {
   return {
     name: 'telegram',
-    async send(chatId, text, buttons) {
+    async send(chatId, text, buttons, opts) {
+      // message effects work only in private chats (positive ids)
+      const effect = opts?.effect === 'celebrate' && /^\d+$/.test(chatId) ? { message_effect_id: EFFECT_CELEBRATE } : {};
       const parts = splitMessage(text);
       for (let i = 0; i < parts.length; i++) {
         const last = i === parts.length - 1;
@@ -51,7 +55,7 @@ export function createTelegramChannel(fetchImpl: typeof fetch = fetch, getToken:
           ? { reply_markup: { inline_keyboard: buttons.map((row) => row.map((b: CeoButton) => ({ text: b.text, callback_data: b.data }))) } }
           : {};
         try {
-          await api('sendMessage', { chat_id: chatId, text: mdToTelegramHtml(parts[i]), parse_mode: 'HTML', disable_web_page_preview: true, ...markup }, fetchImpl, getToken);
+          await api('sendMessage', { chat_id: chatId, text: mdToTelegramHtml(parts[i]), parse_mode: 'HTML', disable_web_page_preview: true, ...markup, ...(last ? effect : {}) }, fetchImpl, getToken);
         } catch (e) {
           // HTML parse error (400) → resend as plain text
           if (!/failed: 400/.test(String(e))) throw e;
@@ -59,11 +63,18 @@ export function createTelegramChannel(fetchImpl: typeof fetch = fetch, getToken:
         }
       }
     },
-    async ack(ref, text) {
+    async ack(ref, text, buttons) {
       if (ref.callbackId) await api('answerCallbackQuery', { callback_query_id: ref.callbackId }, fetchImpl, getToken);
       if (text && ref.messageId) {
-        await api('editMessageText', { chat_id: ref.chatId, message_id: ref.messageId, text: mdToPlain(text).slice(0, MAX), disable_web_page_preview: true }, fetchImpl, getToken);
+        const markup = buttons?.length ? { reply_markup: { inline_keyboard: buttons.map((row) => row.map((b: CeoButton) => ({ text: b.text, callback_data: b.data }))) } } : {};
+        await api('editMessageText', { chat_id: ref.chatId, message_id: ref.messageId, text: mdToPlain(text).slice(0, MAX), disable_web_page_preview: true, ...markup }, fetchImpl, getToken);
       }
+    },
+    async typing(chatId) {
+      await api('sendChatAction', { chat_id: chatId, action: 'typing' }, fetchImpl, getToken).catch(() => {});
+    },
+    async react(chatId, messageId, emoji) {
+      await api('setMessageReaction', { chat_id: chatId, message_id: messageId, reaction: [{ type: 'emoji', emoji }] }, fetchImpl, getToken).catch(() => {});
     },
   };
 }
