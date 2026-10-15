@@ -87,7 +87,7 @@ export function emailSummaryTable(rows: Array<[string, string]>, title?: string)
 
 /** קו מפריד עדין (hairline) בין קטעים */
 export function emailDivider(): string {
-  return table(`<tr><td height="1" style="height:1px;line-height:1px;font-size:0;padding:0;border-top:0.5px solid #e2dccb">&nbsp;</td></tr>`, 'margin:6px 0 22px');
+  return table(`<tr><td height="1" style="height:1px;line-height:1px;font-size:0;padding:0;border-top:1px solid #ecdfbd">&nbsp;</td></tr>`, 'margin:6px 0 22px');
 }
 
 /** קוד חד-פעמי גדול וקריא */
@@ -124,7 +124,7 @@ export function dolevSignature(line: string): string {
 export function renderEmailLayout(i: EmailLayoutInput): string {
   const origin = i.assetOrigin.replace(/\/$/, '');
   const support = i.supportEmail ?? EMAIL_SUPPORT_ADDRESS;
-  const header = `<tr><td dir="rtl" align="center" bgcolor="${C.brand}" style="direction:rtl;text-align:center;background-color:${C.brand};background-image:linear-gradient(180deg,${C.brand} 0%,${C.brand700} 100%);border-radius:34px 34px 0 0;padding:38px 28px ${i.introHtml ? '46px' : '34px'}">
+  const header = `<tr><td dir="rtl" align="center" bgcolor="${C.brand}" style="direction:rtl;text-align:center;background-color:${C.brand};background-image:linear-gradient(180deg,${C.brand} 0%,${C.brand700} 100%);border-radius:34px 34px 0 0;padding:38px 28px ${i.introHtml ? '64px' : '34px'}">
 <a href="${origin}" target="_blank" style="text-decoration:none"><img src="${origin}/brand/email-logo-header.png" width="210" height="41" alt="NuraWell" style="display:block;margin:0 auto 24px;border:0;width:210px;height:auto;max-width:210px"></a>
 ${i.eyebrow ? `<p dir="rtl" align="center" style="margin:0 0 10px;font-family:${EMAIL_FONT};direction:rtl;text-align:center"><span style="display:inline-block;background:${C.gold};color:${C.brand};font-size:12px;font-weight:800;padding:5px 14px;border-radius:999px">${i.eyebrow}</span></p>` : ''}
 <h1 dir="rtl" align="center" style="margin:0;color:${C.cream};font-family:${EMAIL_FONT};font-size:31px;line-height:1.3;font-weight:800;direction:rtl;text-align:center">${i.heading}</h1>
@@ -132,8 +132,8 @@ ${i.subheading ? `<p dir="rtl" align="center" style="margin:10px 0 0;color:#d6ec
 </td></tr>`;
   // "חפיפה" בטוחה ל-Gmail: שורה שחצייה העליון בצבע ההדר והתחתון בצבע הגוף, והכרטיס יושב באמצע (בלי margin שלילי).
   const intro = i.introHtml
-    ? `<tr><td dir="rtl" align="center" bgcolor="${C.card}" style="direction:rtl;background-color:${C.card};background-image:linear-gradient(180deg,${C.brand700} 0%,${C.brand700} 50%,${C.card} 50%,${C.card} 100%);padding:0 22px">
-${table(`<tr>${td(`background:${C.cream};border:1px solid ${C.goldSoft};border-radius:26px;padding:22px 22px 6px;box-shadow:0 1px 2px rgba(15,61,46,0.06),0 12px 32px rgba(15,61,46,0.14)`, i.introHtml, ` bgcolor="${C.cream}"`)}</tr>`, 'border-collapse:separate')}
+    ? `<tr><td dir="rtl" align="center" bgcolor="${C.card}" style="direction:rtl;background-color:${C.card};background-image:linear-gradient(180deg,${C.brand700} 0%,${C.brand700} 58%,${C.card} 58%,${C.card} 100%);padding:0 18px">
+${table(`<tr>${td(`background:${C.cream};border:1px solid ${C.goldSoft};border-top:4px solid ${C.gold};border-radius:28px;padding:24px 22px 8px;box-shadow:0 2px 4px rgba(15,61,46,0.10),0 18px 40px rgba(15,61,46,0.28)`, i.introHtml, ` bgcolor="${C.cream}"`)}</tr>`, 'border-collapse:separate')}
 </td></tr>`
     : `<tr><td height="4" bgcolor="${C.gold}" style="height:4px;line-height:4px;font-size:0;background:${C.gold}">&nbsp;</td></tr>`;
   const body = `<tr>${td(`background:${C.card};border-radius:0 0 34px 34px;padding:${i.introHtml ? '28px' : '30px'} 28px 34px`, `${i.bodyHtml}${i.cta ? button(i.cta.label, i.cta.url) : ''}${i.afterCtaHtml ? emailDivider() + i.afterCtaHtml : ''}${i.signatureHtml ?? ''}`, ` bgcolor="${C.card}"`)}</tr>`;
