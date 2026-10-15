@@ -228,7 +228,7 @@ export const dynamic = 'force-dynamic';
  * אזור קרוב ל-EU (מתאים לישראל/אירופה מול Supabase EU וספקי AI).
  * ניתן לשנות בפרויקט אם ה-DB באזור אחר.
  */
-export const preferredRegion = 'syd1'; // next to Supabase (Sydney); fra1 meant a cross-world hop per DB query
+export const preferredRegion = 'fra1'; // next to Supabase (Frankfurt, eu-central-1)
 
 const chatBodySchema = z.object({
   /** `useChat` sends UI messages (with parts). Keep it flexible. */

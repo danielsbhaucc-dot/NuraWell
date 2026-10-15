@@ -6,7 +6,7 @@ import { requireApiSession } from '../../../../../lib/api/route-guards';
 
 export const runtime = 'edge';
 // Edge runs next to the user by default (fra1) — every Supabase round-trip then crosses to Sydney. Pin next to the DB.
-export const preferredRegion = 'syd1';
+export const preferredRegion = 'fra1';
 
 /**
  * POST — מסמן הרגל מים/יומי בצעד הפעיל (ניצחון זעיר מהצ'אט).

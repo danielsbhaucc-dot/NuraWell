@@ -4,7 +4,7 @@
   "outputDirectory": ".next",
   "installCommand": "npm install --legacy-peer-deps",
   "regions": [
-    "syd1"
+    "fra1"
   ],
   "ignoreCommand": "bash ../../scripts/vercel-ignore-build.sh"
 }
