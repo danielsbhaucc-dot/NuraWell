@@ -1,3 +1,4 @@
+import { decProfileResult } from '@/lib/crypto/pii-fields';
 import { withAiUser } from '@/lib/ai/usage-meter';
 /**
  * 🫀 לב הפעימה — Program Orchestrator.
@@ -308,7 +309,7 @@ export async function runProgramOrchestrator(
     .select('id, full_name, ai_context, pending_ai_proposal, program_state_updated_at')
     .eq('onboarding_completed', true)
     .order('program_state_updated_at', { ascending: true, nullsFirst: true })
-    .limit(cap);
+    .limit(cap).then(decProfileResult());
 
   if (error) {
     errors.push(`scan_failed:${error.message}`);

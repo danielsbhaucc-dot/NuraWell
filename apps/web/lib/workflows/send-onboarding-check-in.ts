@@ -1,3 +1,4 @@
+import { decProfileResult } from '@/lib/crypto/pii-fields';
 import { withAiUser } from '@/lib/ai/usage-meter';
 import { insertNotification } from '@/lib/notifications/deliver';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -629,7 +630,7 @@ async function fetchProfileScheduleForCheckIn(admin: SupabaseClient, userId: str
     .from('profiles')
     .select('wake_up_time, sleep_time, dinner_time, meal_schedule, ai_context')
     .eq('id', userId)
-    .maybeSingle();
+    .maybeSingle().then(decProfileResult(userId));
   const row = data as {
     wake_up_time?: string | null;
     sleep_time?: string | null;

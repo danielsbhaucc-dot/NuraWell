@@ -1,3 +1,4 @@
+import { decProfileResult } from '@/lib/crypto/pii-fields';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { AiUserContext } from '../ai/memory';
 import {
@@ -331,7 +332,7 @@ export async function fetchJourneyCompanionContext(
         .from('profiles')
         .select('created_at, onboarding_completed, ai_context')
         .eq('id', userId)
-        .maybeSingle(),
+        .maybeSingle().then(decProfileResult(userId)),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       admin
         .from('journey_steps')

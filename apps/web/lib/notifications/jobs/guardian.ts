@@ -1,3 +1,4 @@
+import { decProfileResult } from '@/lib/crypto/pii-fields';
 import { decryptJson } from '@/lib/crypto/pii';
 import { evaluateNotifyGate } from '@/lib/notifications/notify-recipients';
 import { insertNotification } from '@/lib/notifications/deliver';
@@ -183,7 +184,7 @@ export async function handlePost(request: Request) {
     .from('profiles')
     .select('id, full_name, ai_context, engagement_status, last_responded_at')
     .eq('id', payload.userId)
-    .maybeSingle();
+    .maybeSingle().then(decProfileResult(payload.userId));
   if (profileError) return NextResponse.json({ ok: false, error: profileError.message }, { status: 500 });
   if (!profileData) return NextResponse.json({ ok: false, error: 'User not found' }, { status: 404 });
 

@@ -1,4 +1,34 @@
 import { UPSTASH_NAMESPACE_USER_MEMORY } from './rag-config';
+import { decryptString, encryptString, isEncrypted } from '@/lib/crypto/pii';
+
+/** שדות טקסט חופשי במטא-דאטה — נשמרים ב-Upstash כ-ciphertext בלבד (bound ל-userId). */
+const VECTOR_META_SENSITIVE = ['text', 'title', 'summary', 'snippet', 'obstacle', 'detail'] as const;
+
+export function sealVectorMetadata<M extends Record<string, unknown>>(meta: M): M {
+  const uid = typeof meta.userId === 'string' ? meta.userId : '';
+  if (!uid) return meta;
+  const out: Record<string, unknown> = { ...meta };
+  for (const k of VECTOR_META_SENSITIVE) {
+    const v = out[k];
+    if (typeof v === 'string' && v && !isEncrypted(v)) out[k] = encryptString(v, uid);
+  }
+  return out as M;
+}
+
+export function openVectorMetadata<M>(meta: M): M {
+  if (!meta || typeof meta !== 'object') return meta;
+  const m = meta as Record<string, unknown>;
+  const uid = typeof m.userId === 'string' ? m.userId : '';
+  if (!uid) return meta;
+  const out: Record<string, unknown> = { ...m };
+  for (const k of VECTOR_META_SENSITIVE) {
+    const v = out[k];
+    if (typeof v === 'string' && isEncrypted(v)) {
+      try { out[k] = decryptString(v, uid); } catch { out[k] = ''; }
+    }
+  }
+  return out as M;
+}
 
 import { MEMORY_FACT_CATEGORIES, type MemoryFactCategory } from './memory-dossier/types';
 
@@ -117,7 +147,7 @@ export async function queryUserMemoryVectors(params: {
     }
   );
 
-  return json.result ?? [];
+  return (json.result ?? []).map((h) => ({ ...h, metadata: openVectorMetadata(h.metadata) }));
 }
 
 export async function upsertUserMemoryVector(params: {
@@ -133,10 +163,10 @@ export async function upsertUserMemoryVector(params: {
     {
       id: params.id,
       vector: params.vector,
-      metadata: {
+      metadata: sealVectorMetadata({
         ...params.metadata,
         schema: params.metadata.schema ?? 'nw-memory-v1',
-      },
+      }),
     }
   );
 }
@@ -214,7 +244,7 @@ export async function listUserMemoryVectors(userId: string): Promise<UserMemoryL
 
     const vectors = page.vectors ?? [];
     for (const v of vectors) {
-      const meta = v.metadata;
+      const meta = openVectorMetadata(v.metadata);
       if (!meta || typeof meta !== 'object') continue;
       const metaUserId = (meta as { userId?: string }).userId;
       if (metaUserId !== userId) continue;

@@ -1,3 +1,4 @@
+import { decTableResult } from '@/lib/crypto/pii-fields';
 import { hasPlaceholderCorruption } from '../safety/memory-text-guard';
 /**
  * הזרקת קונטקסט (Retrieval) — עם פילטור אגרסיבי למניעת ניפוח חלון-הקשר.
@@ -37,7 +38,7 @@ export async function getMentorContext(
       .order('mention_count', { ascending: false })
       .order('last_seen_at', { ascending: false })
       .limit(maxInsights)
-      .returns<InsightRow[]>(),
+      .returns<InsightRow[]>().then(decTableResult('user_insights', userId)),
     supabase
       .from('user_insights')
       .select(INSIGHT_COLUMNS)
@@ -48,7 +49,7 @@ export async function getMentorContext(
       .order('mention_count', { ascending: false })
       .order('last_seen_at', { ascending: false })
       .limit(1)
-      .returns<InsightRow[]>(),
+      .returns<InsightRow[]>().then(decTableResult('user_insights', userId)),
     supabase
       .from('user_insights')
       .select(INSIGHT_COLUMNS)
@@ -56,7 +57,7 @@ export async function getMentorContext(
       .eq('status', INSIGHT_STATUS.NEEDS_VERIFICATION)
       .order('updated_at', { ascending: false })
       .limit(3)
-      .returns<InsightRow[]>(),
+      .returns<InsightRow[]>().then(decTableResult('user_insights', userId)),
     supabase
       .from('user_insights')
       .select('insight_text, metadata')
@@ -65,7 +66,7 @@ export async function getMentorContext(
       .like('dedupe_key', 'pattern:%')
       .order('last_seen_at', { ascending: false })
       .limit(3)
-      .returns<Array<{ insight_text: string; metadata: PatternMetaLite | null }>>(),
+      .returns<Array<{ insight_text: string; metadata: PatternMetaLite | null }>>().then(decTableResult('user_insights', userId)),
   ]);
 
   const insights = (insightsRes.error ? [] : insightsRes.data ?? []).filter(

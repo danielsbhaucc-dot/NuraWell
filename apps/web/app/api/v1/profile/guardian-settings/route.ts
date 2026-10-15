@@ -1,3 +1,4 @@
+import { decProfileResult } from '@/lib/crypto/pii-fields';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -27,7 +28,7 @@ export async function GET(request: NextRequest) {
       .from('profiles')
       .select('ai_context')
       .eq('id', auth.user.id)
-      .maybeSingle();
+      .maybeSingle().then(decProfileResult(auth.user.id));
 
     const ctx = (row as { ai_context?: Record<string, unknown> } | null)?.ai_context ?? null;
     return NextResponse.json({ ok: true, ...readGuardianUserSettings(ctx) });

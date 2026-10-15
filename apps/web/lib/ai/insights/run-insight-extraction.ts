@@ -1,4 +1,4 @@
-import { decInteractionResult } from '@/lib/crypto/pii-fields';
+import { decInteractionResult, decTableResult } from '@/lib/crypto/pii-fields';
 import { withAiUser } from '@/lib/ai/usage-meter';
 /**
  * אורקסטרטור מנוע התובנות: מושך את ההודעות האחרונות מ-session צ'אט, מריץ את
@@ -83,7 +83,7 @@ export async function runInsightExtraction(params: {
     .eq('user_id', userId)
     .eq('status', INSIGHT_STATUS.ACTIVE)
     .order('actionability_score', { ascending: false })
-    .limit(30);
+    .limit(30).then(decTableResult('user_insights', userId));
 
   // 3) חילוץ.
   const extraction = await withAiUser(userId, () => extractInsights({

@@ -1,3 +1,4 @@
+import { decProfileResult, decTableResult, encryptTableRow } from '@/lib/crypto/pii-fields';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { closeChatSession } from '@/lib/ai/chat-sessions/close-session';
@@ -67,7 +68,7 @@ async function selectUserChatSessions(
       .select(select)
       .eq('user_id', userId)
       .order('updated_at', { ascending: false })
-      .limit(50);
+      .limit(50).then(decTableResult('chat_sessions', userId));
     if (!error) return { data: data ?? [], error: null };
     lastError = error;
     if (!isMissingColumnError(error)) break;
@@ -88,7 +89,7 @@ async function selectUserChatSession(
       .select(select)
       .eq('id', sessionId)
       .eq('user_id', userId)
-      .maybeSingle();
+      .maybeSingle().then(decTableResult('chat_sessions', userId));
     if (!error) return { data, error: null };
     lastError = error;
     if (!isMissingColumnError(error)) break;
@@ -256,8 +257,8 @@ export async function GET(request: Request, context: RouteContext) {
       .select('type, period_key, session_count, ai_insight, updated_at')
       .eq('user_id', userId)
       .order('updated_at', { ascending: false })
-      .limit(30),
-    admin.from('profiles').select('ai_context, admin_transcript_access_at').eq('id', userId).maybeSingle(),
+      .limit(30).then(decTableResult('chat_periodic_summaries', userId)),
+    admin.from('profiles').select('ai_context, admin_transcript_access_at').eq('id', userId).maybeSingle().then(decProfileResult(userId)),
     userHasGlobalTranscriptConsent(admin, userId),
   ]);
 
@@ -371,7 +372,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     const now = new Date().toISOString();
     let reopened = await admin
       .from('chat_sessions')
-      .update({ status: 'open', closed_at: null, updated_at: now })
+      .update(encryptTableRow('chat_sessions', { status: 'open', closed_at: null, updated_at: now }, userId))
       .eq('id', sessionId)
       .eq('user_id', userId)
       .select('id, status, title, summary')
@@ -379,7 +380,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     if (reopened.error && isMissingColumnError(reopened.error)) {
       reopened = await admin
         .from('chat_sessions')
-        .update({ status: 'open', closed_at: null, updated_at: now })
+        .update(encryptTableRow('chat_sessions', { status: 'open', closed_at: null, updated_at: now }, userId))
         .eq('id', sessionId)
         .eq('user_id', userId)
         .select('id, status, summary')

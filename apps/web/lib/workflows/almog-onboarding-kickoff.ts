@@ -1,3 +1,4 @@
+import { decProfileResult } from '@/lib/crypto/pii-fields';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { isAvoidPushActive } from '../ai/avoid-push';
 import {
@@ -104,7 +105,7 @@ export async function checkKickoffEligibility(
     .from('profiles')
     .select('id, onboarding_completed, created_at, ai_context')
     .eq('id', userId)
-    .maybeSingle();
+    .maybeSingle().then(decProfileResult(userId));
 
   if (profErr) return { ok: false, reason: `db_error:${profErr.message}` };
   if (!profile) return { ok: false, reason: 'no_profile' };

@@ -1,3 +1,4 @@
+import { decTableResult, encryptTableRow } from '@/lib/crypto/pii-fields';
 import { decInteractionResult } from '@/lib/crypto/pii-fields';
 /**
  * 🌙 Nightly behaviour-pattern insights batch (runs inside /api/v1/ai/cron/memory-pipeline full run).
@@ -151,7 +152,7 @@ export async function runPatternInsightsBatch(
   const res: PatternBatchResult = { users: 0, llm_calls: 0, upserted: 0, expired: 0, repaired: 0, proposals: 0, errors: 0 };
 
   // repair: anonymiser placeholders make an insight meaningless → deprecate (row kept for audit)
-  const { data: activeAll } = await admin.from('user_insights').select('id, insight_text, metadata').eq('status', INSIGHT_STATUS.ACTIVE).limit(2000);
+  const { data: activeAll } = await admin.from('user_insights').select('id, user_id, insight_text, metadata').eq('status', INSIGHT_STATUS.ACTIVE).limit(2000).then(decTableResult('user_insights'));
   for (const r of (activeAll ?? []) as Array<{ id: string; insight_text: string; metadata: Record<string, unknown> | null }>) {
     if (!hasPlaceholderCorruption(r.insight_text)) continue;
     const { error } = await admin
@@ -179,7 +180,7 @@ export async function runPatternInsightsBatch(
         .from('user_insights')
         .select('id, dedupe_key, insight_text, mention_count, status, metadata')
         .eq('user_id', userId)
-        .like('dedupe_key', 'pattern:%');
+        .like('dedupe_key', 'pattern:%').then(decTableResult('user_insights', userId));
       const existing = (existingData ?? []) as ExistingRow[];
       const g = await gatherEvents(admin, userId, sinceIso);
 
@@ -211,7 +212,7 @@ export async function runPatternInsightsBatch(
             last_seen_at: nowIso,
             metadata: meta,
           };
-          const { error } = await admin.from('user_insights').upsert(row, { onConflict: 'user_id,dedupe_key' });
+          const { error } = await admin.from('user_insights').upsert(encryptTableRow('user_insights', row, userId), { onConflict: 'user_id,dedupe_key' });
           if (error) res.errors += 1;
           else res.upserted += 1;
         }

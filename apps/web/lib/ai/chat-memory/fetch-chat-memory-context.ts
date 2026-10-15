@@ -1,3 +1,4 @@
+import { decTableResult } from '@/lib/crypto/pii-fields';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { formatConversationFilePromptBlock } from '../chat-conversation-file';
 
@@ -52,7 +53,7 @@ export async function fetchRecentClosedSessionSummaries(
     .eq('status', 'closed')
     .not('summary', 'is', null)
     .order('closed_at', { ascending: false })
-    .limit(limit);
+    .limit(limit).then(decTableResult('chat_sessions', userId));
 
   if (error) throw error;
   return (data ?? []) as ClosedSessionBrief[];
@@ -74,7 +75,7 @@ export async function fetchLatestChatPeriodicSummaries(
       .eq('type', type)
       .order('period_key', { ascending: false })
       .limit(1)
-      .maybeSingle();
+      .maybeSingle().then(decTableResult('chat_periodic_summaries', userId));
     if (data?.ai_insight?.trim()) {
       rows.push(data as ChatPeriodicSummaryRow);
     }

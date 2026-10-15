@@ -58,7 +58,9 @@ const MEAS_SPEC = { numeric: MEASUREMENT_ENC_NUMERIC, json: [] as const, text: M
 
 /** patch לכתיבה ל-profiles (id = userId) */
 export function encryptProfilePatch<T extends Row>(patch: T, userId: string): T {
-  return mapFields(patch, userId, PROFILE_SPEC, 'enc');
+  const out = mapFields(patch, userId, PROFILE_SPEC, 'enc') as Row;
+  if ('ai_context' in out) out.ai_context = encryptAiContext(out.ai_context, userId);
+  return out as T;
 }
 
 /** שורת profiles שנקראה (userId = row.id אם לא ניתן) */
@@ -66,7 +68,9 @@ export function decryptProfileRow<T extends Row | null | undefined>(row: T, user
   if (!row) return row;
   const uid = userId ?? (row.id as string | undefined);
   if (!uid) return row;
-  return mapFields(row as Row, uid, PROFILE_SPEC, 'dec') as T;
+  const out = mapFields(row as Row, uid, PROFILE_SPEC, 'dec') as Row;
+  if ('ai_context' in out) out.ai_context = decryptAiContext(out.ai_context, uid);
+  return out as T;
 }
 
 export function decryptProfileRows<T extends Row>(rows: T[] | null | undefined): T[] {
@@ -137,3 +141,79 @@ export const decInteractionResult =
   (userId?: string) =>
   <R extends QueryResult>(r: R): R =>
     mapResult(r, (row) => decryptInteractionRow(row, userId ?? (row.user_id as string | undefined)));
+
+/* ───────────── טקסט נגזר-שיחה (סיכומים, זיכרונות, תובנות) ───────────── */
+
+/** עמודות טקסט מוצפנות לפי טבלה; userId מעמודת user_id */
+export const TABLE_ENC_TEXT = {
+  chat_sessions: ['title', 'summary', 'preview_text'],
+  pending_chat_logs: ['raw_chat_text'],
+  user_memories: ['memory_text'],
+  user_insights: ['insight_text'],
+  chat_periodic_summaries: ['ai_insight'],
+} as const;
+export type EncTextTable = keyof typeof TABLE_ENC_TEXT;
+
+/** תת-מפתחות טקסט חופשי ב-profiles.ai_context (שאר המפתחות — דגלים/enum — נשארים) */
+export const AI_CONTEXT_ENC_KEYS = [
+  'chat_summary',
+  'struggles',
+  'notes',
+  'tone_notes',
+  'core_insight',
+  'main_blocker',
+  'current_goal',
+  'current_focus',
+  'weakness_pattern',
+  'life_context',
+  'pending_focus',
+  'dashboard_brief',
+] as const;
+
+export function encryptAiContext<T>(ctx: T, userId: string): T {
+  if (!ctx || typeof ctx !== 'object' || Array.isArray(ctx)) return ctx;
+  const out: Row = { ...(ctx as Row) };
+  for (const k of AI_CONTEXT_ENC_KEYS) if (k in out && out[k] !== null && out[k] !== undefined && !isEncrypted(out[k])) out[k] = encryptJson(out[k], userId);
+  return out as T;
+}
+
+export function decryptAiContext<T>(ctx: T, userId: string): T {
+  if (!ctx || typeof ctx !== 'object' || Array.isArray(ctx)) return ctx;
+  const out: Row = { ...(ctx as Row) };
+  for (const k of AI_CONTEXT_ENC_KEYS) {
+    if (!(k in out)) continue;
+    try {
+      out[k] = decryptJson(out[k], userId);
+    } catch {
+      delete out[k];
+    }
+  }
+  return out as T;
+}
+
+export function encryptTableRow<T extends Row>(table: EncTextTable, row: T, userId: string): T {
+  const out: Row = { ...row };
+  for (const f of TABLE_ENC_TEXT[table]) if (f in out) out[f] = encText(out[f], userId);
+  return out as T;
+}
+
+export function decryptTableRow<T extends Row | null | undefined>(table: EncTextTable, row: T, userId?: string): T {
+  if (!row) return row;
+  const uid = userId ?? (row.user_id as string | undefined);
+  if (!uid) return row;
+  const out: Row = { ...(row as Row) };
+  for (const f of TABLE_ENC_TEXT[table]) {
+    if (!(f in out)) continue;
+    try {
+      out[f] = decText(out[f], uid);
+    } catch {
+      out[f] = null;
+    }
+  }
+  return out as T;
+}
+
+export const decTableResult =
+  (table: EncTextTable, userId?: string) =>
+  <R extends QueryResult>(r: R): R =>
+    mapResult(r, (row) => decryptTableRow(table, row, userId ?? (row.user_id as string | undefined)));

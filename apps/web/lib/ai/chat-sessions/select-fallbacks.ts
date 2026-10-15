@@ -1,3 +1,4 @@
+import { decTableResult } from '@/lib/crypto/pii-fields';
 import { normalizeCloseReason } from './close-reason';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { ChatSessionKind, ChatSessionListItem } from './types';
@@ -115,7 +116,7 @@ export async function selectUserChatSessionList(
         .select(select)
         .eq('user_id', userId)
         .order('updated_at', { ascending: false })
-        .limit(limit)
+        .limit(limit).then(decTableResult('chat_sessions', userId))
   );
 }
 
@@ -132,7 +133,7 @@ export async function selectChatSessionRow(
         .select(select)
         .eq('id', params.sessionId)
         .eq('user_id', params.userId)
-        .maybeSingle()
+        .maybeSingle().then(decTableResult('chat_sessions', params.userId))
   );
 }
 
@@ -148,6 +149,6 @@ export async function selectChatSessionDetail(
         .select(select)
         .eq('id', params.sessionId)
         .eq('user_id', params.userId)
-        .maybeSingle()
+        .maybeSingle().then(decTableResult('chat_sessions', params.userId))
   );
 }

@@ -3,8 +3,10 @@
  * הרצה: PII_ENCRYPTION_KEY=... SUPABASE_ACCESS_TOKEN=... SUPABASE_PROJECT_REF=... npx jiti apps/web/scripts/encrypt-existing-pii.ts
  * לא מדפיס ערכים, רק ספירות.
  */
+import { sealVectorMetadata } from '../lib/ai/upstash-vector-rest';
+import { UPSTASH_NAMESPACE_USER_MEMORY, UPSTASH_NAMESPACE_CONVERSATION_MEMORY } from '../lib/ai/rag-config';
 import { DOSSIER_ENCRYPTED_FIELDS, encryptJson, encryptStringArray, isEncrypted } from '../lib/crypto/pii';
-import { encryptChatContent, encryptMeasurementPatch, encryptProfilePatch, PROFILE_ENC_JSON, PROFILE_ENC_NUMERIC, PROFILE_ENC_TEXT } from '../lib/crypto/pii-fields';
+import { encryptAiContext, encryptTableRow, TABLE_ENC_TEXT, type EncTextTable, encryptChatContent, encryptMeasurementPatch, encryptProfilePatch, PROFILE_ENC_JSON, PROFILE_ENC_NUMERIC, PROFILE_ENC_TEXT } from '../lib/crypto/pii-fields';
 
 const REF = process.env.SUPABASE_PROJECT_REF!;
 const TOKEN = process.env.SUPABASE_ACCESS_TOKEN!;
@@ -90,6 +92,59 @@ async function main() {
     await sql(`update public.ai_interactions a set content = v.c from (values ${values}) as v(id, c) where a.id = v.id`);
     chatEnc += batch.length;
   }
+  // derived text tables (batched, idempotent)
+  const derived: Record<string, number> = {};
+  for (const table of Object.keys(TABLE_ENC_TEXT) as EncTextTable[]) {
+    const cols = TABLE_ENC_TEXT[table] as readonly string[];
+    const where = cols.map((c) => `(${c} is not null and ${c} <> '' and ${c} not like 'enc:v1:%')`).join(' or ');
+    derived[table] = 0;
+    for (;;) {
+      const batch = await sql<Record<string, unknown>>(`select id, user_id, ${cols.join(', ')} from public.${table} where ${where} limit 200`);
+      if (!batch.length) break;
+      for (const r of batch) {
+        const todo: Record<string, unknown> = {};
+        for (const c of cols) if (typeof r[c] === 'string' && r[c] !== '' && !isEncrypted(r[c])) todo[c] = r[c];
+        const enc = encryptTableRow(table, todo, r.user_id as string);
+        const sets = Object.entries(enc).map(([c, v]) => `${c} = ${lit(String(v))}`);
+        await sql(`update public.${table} set ${sets.join(', ')} where id = ${lit(String(r.id))}`);
+      }
+      derived[table] += batch.length;
+    }
+  }
+  // profiles.ai_context sub-keys
+  let aiCtxEnc = 0;
+  const crow = await sql<{ id: string; ai_context: Record<string, unknown> | null }>(`select id, ai_context from public.profiles where ai_context is not null`);
+  for (const r of crow) {
+    const next = encryptAiContext(r.ai_context, r.id);
+    if (JSON.stringify(next) === JSON.stringify(r.ai_context)) continue;
+    await sql(`update public.profiles set ai_context = ${lit(JSON.stringify(next))}::jsonb where id = ${lit(r.id)}`);
+    aiCtxEnc++;
+  }
+  // Upstash vectors: re-seal plaintext metadata (no re-embedding; same vector ids)
+  const vec: Record<string, number> = {};
+  const VURL = process.env.UPSTASH_VECTOR_REST_URL?.replace(/\/+$/, '');
+  const VTOK = process.env.UPSTASH_VECTOR_REST_TOKEN;
+  if (VURL && VTOK) {
+    for (const ns of [UPSTASH_NAMESPACE_USER_MEMORY, UPSTASH_NAMESPACE_CONVERSATION_MEMORY]) {
+      vec[ns] = 0;
+      let cursor = '0';
+      for (let g = 0; g < 1000; g++) {
+        const r = await fetch(`${VURL}/range/${encodeURIComponent(ns)}`, { method: 'POST', headers: { Authorization: `Bearer ${VTOK}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ cursor, limit: 100, includeMetadata: true, includeVectors: true }) });
+        if (!r.ok) throw new Error(`range ${r.status}`);
+        const j = (await r.json()) as { result?: { nextCursor?: string; vectors?: Array<{ id: string; vector: number[]; metadata?: Record<string, unknown> }> } };
+        const vs = j.result?.vectors ?? [];
+        const todo = vs.filter((v) => v.metadata && JSON.stringify(sealVectorMetadata(v.metadata)) !== JSON.stringify(v.metadata));
+        if (todo.length) {
+          const u = await fetch(`${VURL}/upsert/${encodeURIComponent(ns)}`, { method: 'POST', headers: { Authorization: `Bearer ${VTOK}`, 'Content-Type': 'application/json' }, body: JSON.stringify(todo.map((v) => ({ id: v.id, vector: v.vector, metadata: sealVectorMetadata(v.metadata!) }))) });
+          if (!u.ok) throw new Error(`upsert ${u.status}`);
+          vec[ns] += todo.length;
+        }
+        if (!j.result?.nextCursor || !vs.length) break;
+        cursor = j.result.nextCursor;
+      }
+    }
+  }
+  console.log(JSON.stringify({ derived, aiCtxEnc, vectorsResealed: vec }));
   console.log(JSON.stringify({ profilesEnc, profilesTotal: prows.length, measEnc, measTotal: mrows.length, chatEnc }));
   console.log(JSON.stringify({ dossierRowsEncrypted: dossiers, dossierRowsTotal: rows.length, strategyRowsEncrypted: strategies, strategyRowsTotal: srows.length }));
 }

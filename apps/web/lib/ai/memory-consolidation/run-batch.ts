@@ -1,3 +1,4 @@
+import { decTableResult } from '@/lib/crypto/pii-fields';
 import { withAiUser } from '@/lib/ai/usage-meter';
 /**
  * אורקסטרטור Memory Consolidation — אצווה יומית (05:00 IL, master cron).
@@ -44,7 +45,7 @@ async function fetchUnprocessedLogs(
     .eq('processed', false)
     .lte('created_at', beforeIso)
     .order('created_at', { ascending: true })
-    .limit(limit);
+    .limit(limit).then(decTableResult('pending_chat_logs'));
 
   if (error) {
     console.warn('[memory-consolidation] fetch logs failed', error.message);
@@ -64,7 +65,7 @@ async function fetchInsightsForUser(
     .eq('user_id', userId)
     .in('status', [...MENTOR_VISIBLE_STATUSES, 'DEPRECATED'])
     .order('updated_at', { ascending: false })
-    .limit(MAX_INSIGHTS_PER_USER);
+    .limit(MAX_INSIGHTS_PER_USER).then(decTableResult('user_insights', userId));
 
   if (error) {
     console.warn('[memory-consolidation] fetch insights failed', { userId, error: error.message });

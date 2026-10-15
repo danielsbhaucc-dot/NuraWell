@@ -1,3 +1,4 @@
+import { decTableResult } from '@/lib/crypto/pii-fields';
 /**
  * חיפוש טקסטואלי (ilike) — fallback כש-Upstash או embedding נכשלים.
  */
@@ -69,7 +70,6 @@ export async function searchUserMemoryTextFallback(
   topic: string,
   dbCategories?: InsightCategory[]
 ): Promise<UserMemoryHit[]> {
-  const pattern = `%${escapeIlike(topic)}%`;
   const tokens = topicTokens(topic);
 
   let q = supabase
@@ -77,25 +77,23 @@ export async function searchUserMemoryTextFallback(
     .select('id, insight_text, status, category, created_at, updated_at')
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
-    .limit(MAX_RESULTS * 2);
+    .limit(200); // insight_text מוצפן — אין ilike; מסננים אחרי פענוח
 
   if (dbCategories?.length) {
     q = q.in('category', dbCategories);
   }
 
-  const orParts = [`insight_text.ilike.${pattern}`];
-  for (const token of tokens) {
-    orParts.push(`insight_text.ilike.%${escapeIlike(token)}%`);
-  }
-  q = q.or(orParts.join(','));
-
-  const { data, error } = await q;
+  const { data, error } = await q.then(decTableResult('user_insights', userId));
   if (error) {
     console.warn('[memory-recall] text fallback failed', { code: error.code, message: error.message });
     return [];
   }
 
-  const rows = (data ?? []) as InsightRow[];
+  const topicLower = topic.toLowerCase();
+  const rows = ((data ?? []) as InsightRow[]).filter((r) => {
+    const t = (r.insight_text ?? '').toLowerCase();
+    return t.includes(topicLower) || tokens.some((tok) => t.includes(tok));
+  });
   return rankMemoryHits(rows, topic, tokens).slice(0, MAX_RESULTS).map((row) => ({
     id: row.id,
     fact: row.insight_text,

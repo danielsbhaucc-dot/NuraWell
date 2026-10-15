@@ -1,3 +1,4 @@
+import { decProfileResult } from '@/lib/crypto/pii-fields';
 import type { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
 import { createClient } from '../../../../lib/supabase/server';
@@ -121,7 +122,7 @@ export default async function CourseDetailPage({ params }: PageProps) {
     .from('profiles')
     .select('full_name, gender, ai_context')
     .eq('id', user.id)
-    .single();
+    .single().then(decProfileResult(user.id));
 
   const profile = profileRow as {
     full_name: string | null;
