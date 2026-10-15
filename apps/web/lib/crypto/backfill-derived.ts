@@ -1,4 +1,5 @@
 /**
+import { sealTableRow } from './pii-seal';
  * Backfill בפרודקשן (המפתח קיים רק ב-Vercel): מצפין שורות טקסט ישנות + מטא-דאטה ב-Upstash.
  * idempotent, מוגבל בזמן; רץ מתוך ה-master cron עד שאין יותר מה להצפין. לא מדפיס ערכים.
  */
@@ -27,7 +28,7 @@ export async function backfillDerivedPii(admin: SupabaseClient, budgetMs = 60_00
         const todo: Row = {};
         for (const c of cols) if (typeof r[c] === 'string' && r[c] !== '' && !isEncrypted(r[c])) todo[c] = r[c];
         if (!Object.keys(todo).length) continue;
-        const { error: uErr } = await admin.from(table).update(encryptTableRow(table, todo, r.user_id as string)).eq('id', r.id as string);
+        const { error: uErr } = await admin.from(table).update(await sealTableRow(table, todo, r.user_id as string)).eq('id', r.id as string);
         if (uErr) throw new Error(`${table} update: ${uErr.message}`);
         out[table] += 1;
       }

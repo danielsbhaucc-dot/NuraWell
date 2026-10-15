@@ -55,7 +55,7 @@ export async function bumpChatSessionTurn(
   const { error } = await supabase.rpc('bump_chat_session_turn', {
     p_session_id: params.sessionId,
     p_user_id: params.userId,
-    p_preview: preview ? (await sealTableRow('chat_sessions', { preview_text: preview }, params.userId).preview_text as string) : preview,
+    p_preview: preview ? ((await sealTableRow('chat_sessions', { preview_text: preview }, params.userId)).preview_text as string) : preview,
   });
   if (!error) return;
 

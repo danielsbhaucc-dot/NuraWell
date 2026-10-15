@@ -6,7 +6,7 @@ beforeAll(() => {
 
 describe('derived-text encryption', () => {
   it('encrypts/decrypts table rows bound to user', async () => {
-    const { encryptTableRow, decryptTableRow, encryptAiContext, decryptAiContext } = await import('./pii-fields');
+    const { encryptTableRow, decryptTableRow, encryptAiContext, decryptAiContext } = await import('@/lib/crypto/pii-fields');
     const enc = encryptTableRow('chat_sessions', { title: 'שיחה על אכילה רגשית', summary: 's', status: 'open' }, 'u1');
     expect(String(enc.title).startsWith('enc:v1:')).toBe(true);
     expect(enc.status).toBe('open');
