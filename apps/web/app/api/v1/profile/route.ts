@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { NextRequest, NextResponse } from 'next/server';
 
 /** נקודות קצה קלות (Supabase + Zod) — Edge ב-Vercel לזמני תגובה גלובליים קצרים */
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 // Edge runs next to the user by default (fra1) — every Supabase round-trip then crosses to Sydney. Pin next to the DB.
 export const preferredRegion = 'fra1';
 import { readJsonBody } from '../../../../lib/api/json-request';

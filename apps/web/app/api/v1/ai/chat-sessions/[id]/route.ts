@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { selectChatSessionDetail } from '@/lib/ai/chat-sessions/select-fallbacks';
 import { requireApiSession } from '@/lib/api/route-guards';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 // Edge runs next to the user by default (fra1) — every Supabase round-trip then crosses to Sydney. Pin next to the DB.
 export const preferredRegion = 'fra1';
 export const dynamic = 'force-dynamic';

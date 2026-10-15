@@ -1,3 +1,4 @@
+import { decProfileResult } from '@/lib/crypto/pii-fields';
 import { filterNotifyEligibleUserIds } from '@/lib/notifications/notify-recipients';
 import { NextResponse } from 'next/server';
 import { Client as WorkflowClient } from '@upstash/workflow';
@@ -308,7 +309,7 @@ async function runHabitCheckpointCron(request: Request) {
      * ל-Identity Reconnection, engagement_status ל-persistence.
      */
     const { data: profiles, error: profErr } = await selectWithFallbacks(
-      (select) => admin.from('profiles').select(select).in('id', progressUserIds.slice(0, 2000)),
+      (select) => admin.from('profiles').select(select).in('id', progressUserIds.slice(0, 2000)).then(decProfileResult()),
       PROFILE_SELECTS
     );
 

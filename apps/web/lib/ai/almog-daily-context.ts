@@ -1,3 +1,4 @@
+import { decInteractionResult } from '@/lib/crypto/pii-fields';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import type { TodayAlmogTouch } from './almog-notify-day-context';
@@ -48,7 +49,7 @@ export async function fetchTodayChatTurns(
     .in('role', ['user', 'assistant'])
     .gte('created_at', dayStartIso)
     .order('created_at', { ascending: true })
-    .limit(MAX_CHAT_TURNS);
+    .limit(MAX_CHAT_TURNS).then(decInteractionResult(userId));
 
   if (error || !Array.isArray(data)) return [];
 

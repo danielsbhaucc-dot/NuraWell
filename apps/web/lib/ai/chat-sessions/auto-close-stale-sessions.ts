@@ -1,3 +1,4 @@
+import { decInteractionResult } from '@/lib/crypto/pii-fields';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { closeChatSession } from './close-session';
 import { FAREWELL_CLOSE_MS, isFarewellMessage, type ChatCloseReason } from './close-reason';
@@ -112,7 +113,7 @@ async function fetchLastTurnBySession(
     .eq('user_id', userId)
     .in('session_id', sessionIds)
     .in('role', ['user', 'assistant'])
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false }).then(decInteractionResult(userId));
 
   if (error) throw error;
 

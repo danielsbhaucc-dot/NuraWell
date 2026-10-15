@@ -10,7 +10,7 @@ import { readJsonBody } from '../../../../../lib/api/json-request';
 import { requireApiSession } from '../../../../../lib/api/route-guards';
 
 /** Vercel Edge — תגובת משוב AI מהירה */
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const preferredRegion = 'fra1'; // next to Supabase (Frankfurt, eu-central-1)
 

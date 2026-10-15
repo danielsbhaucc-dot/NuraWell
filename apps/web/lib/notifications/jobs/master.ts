@@ -1,3 +1,4 @@
+import { decInteractionResult } from '@/lib/crypto/pii-fields';
 import { withAiUser } from '@/lib/ai/usage-meter';
 import { insertNotification } from '@/lib/notifications/deliver';
 import { evaluateNotifyGate, filterNotifyEligibleUserIds } from '@/lib/notifications/notify-recipients';
@@ -231,7 +232,7 @@ async function runMasterCron() {
           .eq('user_id', userId)
           .gte('created_at', sinceIso)
           .order('created_at', { ascending: false })
-          .limit(40);
+          .limit(40).then(decInteractionResult(userId));
 
         if (linesErr) throw new Error(linesErr.message);
         const rows = (lines ?? []) as { role: string; content: string; context_type: string | null }[];

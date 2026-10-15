@@ -1,4 +1,5 @@
 'use server';
+import { encryptProfilePatch } from '@/lib/crypto/pii-fields';
 import { buildSafetyScreening } from '@/lib/onboarding/safety-screening';
 
 import { z } from 'zod';
@@ -270,7 +271,7 @@ export async function completeOnboarding(
   const admin = createAdminClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error: profileError } = await (admin.from('profiles') as any)
-    .update({
+    .update(encryptProfilePatch({
       full_name: data.full_name,
       gender: data.gender,
       date_of_birth: data.date_of_birth,
@@ -301,7 +302,7 @@ export async function completeOnboarding(
         ...(screening.no_weight ? { safety_no_weight: true } : {}),
         ...(screening.fluid_restriction ? { safety_fluid_restriction: true } : {}),
       },
-    })
+    }, userId))
     .eq('id', userId);
 
   if (profileError) {

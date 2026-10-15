@@ -1,7 +1,7 @@
 import { RELAY_HEADER } from '@/lib/ai/openrouter-relay';
 
 /** Internal relay: see lib/ai/openrouter-relay.ts. Pinned to iad1, next to OpenRouter / OpenAI. */
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 export const preferredRegion = 'iad1';
 export const dynamic = 'force-dynamic';
 

@@ -1,3 +1,4 @@
+import { decInteractionResult } from '@/lib/crypto/pii-fields';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { parseMentorEmojiReaction } from '../emoji-reaction/marker';
 import type { ChatTranscriptTurn } from './types';
@@ -25,8 +26,8 @@ export async function fetchChatSessionTranscript(
     .in('role', ['user', 'assistant']);
 
   const { data, error } = limit
-    ? await base.order('created_at', { ascending: false }).limit(limit)
-    : await base.order('created_at', { ascending: true });
+    ? await base.order('created_at', { ascending: false }).limit(limit).then(decInteractionResult(params.userId))
+    : await base.order('created_at', { ascending: true }).then(decInteractionResult(params.userId));
 
   if (error) throw error;
 

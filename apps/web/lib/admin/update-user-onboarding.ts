@@ -1,3 +1,4 @@
+import { decProfileResult, encryptProfilePatch } from '@/lib/crypto/pii-fields';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { generateMentorSystemPrompt, calculateDailyCheckInTimes } from '@/lib/ai/generate-mentor-system-prompt';
 import { ingestOnboardingIntoVectorMemory } from '@/lib/ai/ingest-onboarding-vector-memory';
@@ -35,7 +36,7 @@ export async function applyAdminProfilePatch(
       wake_up_time, sleep_time, dinner_time, meal_count, meal_schedule, preferred_channel`
     )
     .eq('id', userId)
-    .maybeSingle();
+    .maybeSingle().then(decProfileResult(userId));
 
   if (readErr || !existing) {
     return { ok: false, error: 'פרופיל לא נמצא' };
@@ -93,7 +94,7 @@ export async function applyAdminProfilePatch(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error: upErr } = await admin
     .from('profiles')
-    .update({
+    .update(encryptProfilePatch({
       full_name: merged.full_name,
       gender: merged.gender,
       main_goal: merged.main_goal,
@@ -110,7 +111,7 @@ export async function applyAdminProfilePatch(
       meal_schedule: mealSchedule.length ? mealSchedule : null,
       ai_check_in_times: checkInTimes,
       ai_system_prompt: systemPrompt,
-    })
+    }, userId))
     .eq('id', userId);
 
   if (upErr) {

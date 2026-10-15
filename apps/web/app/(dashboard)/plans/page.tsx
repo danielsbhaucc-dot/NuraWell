@@ -1,3 +1,4 @@
+import { decProfileResult } from '@/lib/crypto/pii-fields';
 import { summarizeJourneyProgress } from '@/lib/journey/journey-progress-summary';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
@@ -40,7 +41,7 @@ export default async function PlansPage({ searchParams }: { searchParams: Promis
   const [plan, offers, { data: profile }, { data: stations }, { data: steps }, { data: progress }] = await Promise.all([
     getPlan(admin, user.id),
     listOffers(admin, user.id),
-    supabase.from('profiles').select('full_name, gender, main_goal, main_obstacle, main_obstacle_detail').eq('id', user.id).maybeSingle(),
+    supabase.from('profiles').select('full_name, gender, main_goal, main_obstacle, main_obstacle_detail').eq('id', user.id).maybeSingle().then(decProfileResult(user.id)),
     supabase.from('journey_stations').select('id, title, sort_order, habit_key, track, description').order('sort_order'),
     supabase.from('journey_steps').select('id, station_id').eq('is_published', true),
     supabase.from('journey_progress').select('step_id, is_completed').eq('user_id', user.id),

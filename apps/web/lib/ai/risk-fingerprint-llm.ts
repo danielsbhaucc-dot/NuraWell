@@ -1,3 +1,4 @@
+import { decInteractionResult } from '@/lib/crypto/pii-fields';
 import { decryptJson, encryptJson } from '@/lib/crypto/pii';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -175,7 +176,7 @@ export async function computeRiskFingerprintForUser(
       .eq('role', 'user')
       .gte('created_at', since)
       .order('created_at', { ascending: false })
-      .limit(120),
+      .limit(120).then(decInteractionResult(userId)),
     admin
       .from('journey_task_executions')
       .select('created_at, outcome')

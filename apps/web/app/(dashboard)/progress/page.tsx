@@ -1,3 +1,4 @@
+import { decProfileResult } from '@/lib/crypto/pii-fields';
 import { summarizeJourneyProgress } from '../../../lib/journey/journey-progress-summary';
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
@@ -36,7 +37,7 @@ export default async function ProgressPage() {
     .from('profiles')
     .select('full_name, gender, current_weight_kg, safety_screening, created_at')
     .eq('id', user.id)
-    .maybeSingle();
+    .maybeSingle().then(decProfileResult(user.id));
 
   const firstName = firstNameFrom(profile?.full_name ?? null);
   const gender = (profile?.gender ?? null) as ProfileGender;

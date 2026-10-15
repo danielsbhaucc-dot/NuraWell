@@ -1,3 +1,4 @@
+import { decProfileResult } from '@/lib/crypto/pii-fields';
 import { withAiUser } from '@/lib/ai/usage-meter';
 /**
  * send-passive-presence-notification.ts
@@ -80,7 +81,7 @@ async function fetchPassiveUserContext(
     .from('profiles')
     .select('main_goal, main_obstacle, main_obstacle_detail')
     .eq('id', userId)
-    .maybeSingle();
+    .maybeSingle().then(decProfileResult(userId));
 
   const row = profile as {
     main_goal?: string | null;
