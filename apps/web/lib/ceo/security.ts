@@ -97,24 +97,27 @@ export const rpOrigins = () => [`https://${rpId()}`, ...(process.env.NODE_ENV ==
 const hashToken = (t: string) => createHash('sha256').update(t).digest('hex');
 
 /** One-time link (10 min) bound to a purpose (+ action). Only its hash is stored. */
-export async function createStepupLink(db: SupabaseClient, purpose: 'approve' | 'unlock' | 'register' | 'verify', opts: { actionId?: string; userId?: string } = {}) {
+export type Purpose = 'approve' | 'unlock' | 'register' | 'verify' | 'ops_login' | 'settings' | 'remove_key';
+export async function createStepupLink(db: SupabaseClient, purpose: Purpose, opts: { actionId?: string; userId?: string; payload?: Record<string, unknown>; next?: string } = {}) {
   const token = b64u.enc(randomBytes(32));
   const { error } = await db.from('webauthn_challenges').insert({
     purpose,
     action_id: opts.actionId ?? null,
     user_id: opts.userId ?? null,
     token_hash: hashToken(token),
+    payload: opts.payload ?? null,
     expires_at: new Date(Date.now() + LINK_TTL_MS).toISOString(),
   });
   if (error) throw new Error(error.message);
   const page = purpose === 'register' ? 'passkey' : 'verify';
-  return `https://${rpId()}/gideon/${page}?t=${token}`;
+  const next = opts.next && /^\/[A-Za-z0-9/_?=&.-]*$/.test(opts.next) && !opts.next.startsWith('//') ? `&next=${encodeURIComponent(opts.next)}` : '';
+  return `https://${rpId()}/gideon/${page}?t=${token}${next}`;
 }
 
-type ChallengeRow = { id: string; purpose: string; action_id: string | null; user_id: string | null; challenge: string | null; expires_at: string; used_at: string | null };
+type ChallengeRow = { id: string; purpose: string; action_id: string | null; user_id: string | null; challenge: string | null; expires_at: string; used_at: string | null; payload: Record<string, unknown> | null };
 async function loadLink(db: SupabaseClient, token: string): Promise<ChallengeRow | null> {
   if (!/^[A-Za-z0-9_-]{40,60}$/.test(token)) return null;
-  const { data } = await db.from('webauthn_challenges').select('id, purpose, action_id, user_id, challenge, expires_at, used_at').eq('token_hash', hashToken(token)).maybeSingle();
+  const { data } = await db.from('webauthn_challenges').select('id, purpose, action_id, user_id, challenge, expires_at, used_at, payload').eq('token_hash', hashToken(token)).maybeSingle();
   const r = data as ChallengeRow | null;
   if (!r || r.used_at || Date.parse(r.expires_at) <= Date.now()) return null;
   return r;
@@ -135,6 +138,9 @@ export async function linkOptions(db: SupabaseClient, token: string) {
     const { data: p } = await db.from('profiles').select('full_name').eq('id', r.user_id ?? '').maybeSingle();
     return { purpose: r.purpose, challenge, rpId: rpId(), user: { id: b64u.enc(Buffer.from(String(r.user_id))), name: 'admin', displayName: (p as { full_name?: string } | null)?.full_name || 'Admin' } };
   }
+  if (r.purpose === 'settings') summary = `שינוי הגדרות אבטחה: חלון אמון ${r.payload?.trust_minutes} דק׳, אימות תקופתי ${r.payload?.reverify_minutes} דק׳`;
+  if (r.purpose === 'remove_key') summary = `הסרת מפתח: ${String(r.payload?.label ?? '')}`;
+  if (r.purpose === 'ops_login') summary = 'כניסה ללוח הבקרה';
   const { data: keys } = await db.from('admin_passkeys').select('credential_id');
   return { purpose: r.purpose, challenge, rpId: rpId(), summary, allow: (keys ?? []).map((k: { credential_id: string }) => k.credential_id) };
 }
@@ -187,9 +193,10 @@ export async function verifyStepup(db: SupabaseClient, token: string, body: Step
   if (!r || r.purpose === 'register' || !r.challenge) return { ok: false as const, error: 'הקישור לא תקף או שפג תוקפו.' };
   const s = await securityState(db);
   if (r.purpose !== 'unlock' && s.locked_until && Date.parse(s.locked_until) > Date.now()) return { ok: false as const, error: 'גדעון נעול זמנית.' };
-  const { data: key } = await db.from('admin_passkeys').select('id, public_key, alg, sign_count').eq('credential_id', body.credentialId).maybeSingle();
+  const { data: key } = await db.from('admin_passkeys').select('id, user_id, public_key, alg, sign_count').eq('credential_id', body.credentialId).maybeSingle();
   try {
     if (!key) throw new Error('unknown credential');
+    if (r.user_id && (key as { user_id: string }).user_id !== r.user_id) throw new Error('credential of another user');
     const k = key as { id: string; public_key: string; alg: number; sign_count: number };
     const v = verifyAssertion({ ...body, publicKey: k.public_key, alg: k.alg, storedSignCount: Number(k.sign_count), challenge: r.challenge, rpId: rpId(), origins: rpOrigins() });
     if (!(await consume(db, r.id))) throw new Error('link already used');
@@ -204,9 +211,12 @@ export async function verifyStepup(db: SupabaseClient, token: string, body: Step
     last_verified_at: new Date(now).toISOString(),
     trusted_until: new Date(now + s.stepup_trust_minutes * 60_000).toISOString(),
     ...(r.purpose === 'unlock' ? { locked_until: null, disabled: false, disabled_reason: null } : {}),
+    ...(r.purpose === 'settings' && r.payload ? { stepup_trust_minutes: Number(r.payload.trust_minutes), reverify_minutes: Number(r.payload.reverify_minutes) } : {}),
   });
+  if (r.purpose === 'remove_key' && r.payload?.keyId) await db.from('admin_passkeys').delete().eq('id', String(r.payload.keyId));
+  if (r.purpose === 'settings' || r.purpose === 'remove_key') await audit(db, 'passkey', r.purpose, r.payload ?? {});
   await audit(db, 'passkey', `stepup_ok_${r.purpose}`, {}, r.action_id ?? undefined);
-  return { ok: true as const, purpose: r.purpose, actionId: r.action_id };
+  return { ok: true as const, purpose: r.purpose, actionId: r.action_id, userId: r.user_id };
 }
 
 /** Kill switch: instant, no step-up needed to turn OFF Gideon (only to turn back on). */
@@ -221,6 +231,7 @@ export async function invalidateTrust(db: SupabaseClient, why: string) {
   await audit(db, 'system', 'trust_invalidated', { why });
 }
 
+/** @deprecated direct write — security settings now change only after a passkey step-up (purpose 'settings'). */
 export async function setTrustSettings(db: SupabaseClient, actor: string, trustMinutes: number, reverifyMinutes: number) {
   await patchState(db, { stepup_trust_minutes: trustMinutes, reverify_minutes: reverifyMinutes });
   await audit(db, actor, 'trust_settings', { trustMinutes, reverifyMinutes });

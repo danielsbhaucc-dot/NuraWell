@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 type State = { disabled: boolean; disabled_reason: string | null; locked_until: string | null; failed_stepups: number; stepup_trust_minutes: number; reverify_minutes: number; trusted_until: string | null; last_verified_at: string | null };
-type Key = { label: string; created_at: string; last_used_at: string | null };
+type Key = { id: string; label: string; created_at: string; last_used_at: string | null };
 const fmt = (s: string | null) => (s ? new Date(s).toLocaleString('he-IL', { timeZone: 'Asia/Jerusalem' }) : '—');
 
 export function GideonSecurityPanel() {
@@ -64,7 +64,21 @@ export function GideonSecurityPanel() {
       <section className="rounded-3xl border border-slate-200 bg-white p-5">
         <h2 className="text-lg font-bold">מפתחות Face ID / טביעת אצבע</h2>
         <ul className="mt-2 space-y-1 text-sm">
-          {keys.length ? keys.map((k, i) => <li key={i}>🔑 {k.label || 'מפתח'} · נרשם {fmt(k.created_at)} · שימוש אחרון {fmt(k.last_used_at)}</li>) : <li>עוד לא נרשם מפתח. בלי מפתח, פעולות רגישות חסומות.</li>}
+          {keys.length ? keys.map((k) => (
+            <li key={k.id} className="flex items-center justify-between gap-2">
+              <span>🔑 {k.label || 'מפתח'} · נרשם {fmt(k.created_at)} · שימוש אחרון {fmt(k.last_used_at)}</span>
+              <button
+                className="rounded-xl border border-red-200 px-2 py-1 text-xs text-red-700"
+                onClick={async () => {
+                  if (!confirm(keys.length === 1 ? 'זה המפתח האחרון. בלעדיו, כניסה ל-Ops תחזור לסיסמה בלבד ופעולות רגישות ייחסמו. להסיר?' : 'להסיר את המפתח?')) return;
+                  const d = await post({ action: 'remove_key', id: k.id });
+                  if (d?.url) window.location.href = d.url;
+                }}
+              >
+                הסר (Face ID)
+              </button>
+            </li>
+          )) : <li>עוד לא נרשם מפתח. בלי מפתח, פעולות רגישות חסומות והכניסה ל-Ops היא בסיסמה בלבד.</li>}
         </ul>
         <button className="mt-3 rounded-2xl bg-slate-900 px-4 py-2.5 font-semibold text-white" onClick={async () => { const d = await post({ action: 'register_link' }); if (d?.url) setRegUrl(d.url); }}>
           + רישום מפתח חדש
@@ -84,8 +98,8 @@ export function GideonSecurityPanel() {
         <label className="mt-3 block text-sm">אימות תקופתי לכל אישור (דקות, 0 = כבוי)
           <input type="number" min={0} max={20160} value={reverify} onChange={(e) => setReverify(Number(e.target.value))} className="mt-1 w-full rounded-xl border px-3 py-2" />
         </label>
-        <button className="mt-3 rounded-2xl bg-slate-900 px-4 py-2.5 font-semibold text-white" onClick={async () => { await post({ action: 'trust', trust_minutes: trust, reverify_minutes: reverify }); await load(); }}>
-          שמירה
+        <button className="mt-3 rounded-2xl bg-slate-900 px-4 py-2.5 font-semibold text-white" onClick={async () => { const d = await post({ action: 'trust', trust_minutes: trust, reverify_minutes: reverify }); if (d?.url) window.location.href = d.url; }}>
+          שמירה (Face ID)
         </button>
       </section>
     </div>

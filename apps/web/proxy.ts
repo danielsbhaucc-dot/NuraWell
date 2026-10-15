@@ -11,6 +11,7 @@ import {
   requestHostname,
 } from './lib/ops-host';
 import { resolvePublicAppOriginForOpsRedirect } from './lib/public-app-url';
+import { OPS_MFA_COOKIE, opsMfaCookieOptions, signOpsMfa, verifyOpsMfa } from './lib/auth/ops-mfa';
 import {
   APP_HOME_PATH,
   MARKETING_PATHS_REDIRECT_WHEN_AUTHED,
@@ -341,6 +342,25 @@ export async function proxy(request: NextRequest) {
 
     if (!profile || profile.role !== 'admin') {
       return applySecurityHeaders(NextResponse.redirect(new URL(APP_HOME_PATH, mainOrigin)));
+    }
+
+    /** 2nd factor: once the admin has a passkey, Ops needs a fresh Face ID session (idle 30m / max 12h). */
+    const { data: enrolled } = await supabase.rpc('admin_has_passkey');
+    if (enrolled === true) {
+      const opsHost = opsCanonicalHostname();
+      if (appHostOpsPath && opsHost) {
+        // passkeys are bound to the Ops host — move there
+        const target = new URL(`https://${opsHost}${pathname.replace(/^\/ops/, '') || '/'}${request.nextUrl.search}`);
+        return applySecurityHeaders(NextResponse.redirect(target));
+      }
+      const mfa = verifyOpsMfa(request.cookies.get(OPS_MFA_COOKIE)?.value, user.id);
+      if (!mfa) {
+        const back = `${pathname}${request.nextUrl.search}`;
+        return applySecurityHeaders(NextResponse.redirect(new URL(`/gideon/ops-login?next=${encodeURIComponent(back)}`, request.url)));
+      }
+      if (Date.now() - mfa.seen > 5 * 60_000) {
+        response.cookies.set(OPS_MFA_COOKIE, signOpsMfa(user.id, Date.now(), mfa.iat), opsMfaCookieOptions); // sliding idle timeout
+      }
     }
   }
 

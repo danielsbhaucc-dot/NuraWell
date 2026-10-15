@@ -17,6 +17,7 @@ export function PasskeyCeremony({ mode }: { mode: 'register' | 'verify' }) {
 
   useEffect(() => {
     void (async () => {
+      if (!token) return setMsg('הקישור לא תקף.');
       const r = await fetch('/api/v1/ceo/stepup/options', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ t: token }) });
       const d = await r.json().catch(() => ({}));
       if (!r.ok) return setMsg(d.error ?? 'הקישור לא תקף.');
@@ -65,7 +66,12 @@ export function PasskeyCeremony({ mode }: { mode: 'register' | 'verify' }) {
           body: JSON.stringify({ t: token, credentialId: enc(cred.rawId), clientDataJSON: enc(res.clientDataJSON), authenticatorData: enc(res.authenticatorData), signature: enc(res.signature) }),
         });
         const d = await r.json().catch(() => ({}));
-        setMsg(r.ok ? `✅ ${d.text ?? 'אומת'}\nאפשר לחזור לטלגרם.` : d.error ?? 'האימות נכשל.');
+        const next = new URLSearchParams(window.location.search).get('next');
+        if (r.ok && next && next.startsWith('/') && !next.startsWith('//')) {
+          window.location.replace(next);
+          return;
+        }
+        setMsg(r.ok ? `✅ ${d.text ?? 'אומת'}${opts.purpose === 'approve' ? '\nאפשר לחזור לטלגרם.' : ''}` : d.error ?? 'האימות נכשל.');
         setDone(r.ok);
       }
     } catch {
@@ -75,7 +81,7 @@ export function PasskeyCeremony({ mode }: { mode: 'register' | 'verify' }) {
     }
   };
 
-  const title = mode === 'register' ? 'רישום Face ID לגדעון' : opts?.purpose === 'unlock' ? 'שחרור גדעון' : 'אישור פעולה רגישה';
+  const title = mode === 'register' ? 'רישום Face ID' : opts?.purpose === 'unlock' ? 'שחרור גדעון' : opts?.purpose === 'ops_login' ? 'כניסה ללוח הבקרה' : 'אישור פעולה רגישה';
   return (
     <main dir="rtl" className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center gap-5 px-6 text-center">
       <div className="text-5xl">🔐</div>
