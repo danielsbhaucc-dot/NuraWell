@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { OPS_IDLE_MS, signOpsMfa, verifyOpsMfa } from '@/lib/auth/ops-mfa';
 
-process.env.OPS_MFA_SECRET = 'x'.repeat(40);
+process.env.OPS_SESSION_SIGNING_KEY = 'x'.repeat(40);
 describe('ops mfa cookie', () => {
   it('valid for the same user, rejects other user / tamper / idle / absolute', () => {
     const now = Date.now();

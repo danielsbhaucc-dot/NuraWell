@@ -2,7 +2,7 @@ import { createHmac, hkdfSync, timingSafeEqual } from 'node:crypto';
 
 /**
  * Ops second factor: after a passkey (Face ID) check the server sets a signed, httpOnly cookie bound to the
- * admin's user id. Idle timeout 30 min (sliding), absolute 12 h. Stateless HMAC; key from OPS_MFA_SECRET or
+ * admin's user id. Idle timeout 30 min (sliding), absolute 12 h. Stateless HMAC; key from OPS_SESSION_SIGNING_KEY or
  * HKDF(SUPABASE_SERVICE_ROLE_KEY). Logging out of Supabase / another user → uid mismatch → invalid.
  */
 export const OPS_MFA_COOKIE = 'nw_ops_mfa';
@@ -12,8 +12,8 @@ export const OPS_ABSOLUTE_MS = 12 * 60 * 60_000;
 type Payload = { u: string; iat: number; seen: number };
 
 function key(): Buffer {
-  const configured = process.env.OPS_MFA_SECRET?.trim();
-  if (configured && configured.length >= 32) return Buffer.from(hkdfSync('sha256', configured, 'nurawell-ops-mfa', 'v1', 32));
+  const signingKey = process.env.OPS_SESSION_SIGNING_KEY?.trim();
+  if (signingKey && signingKey.length >= 32) return Buffer.from(hkdfSync('sha256', signingKey, 'nurawell-ops-mfa', 'v1', 32));
   const base = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
   if (!base) throw new Error('no OPS_MFA key');
   return Buffer.from(hkdfSync('sha256', base, 'nurawell-ops-mfa', 'v1', 32));
