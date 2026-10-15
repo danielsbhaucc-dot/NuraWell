@@ -5,6 +5,13 @@ import { useEffect, useState } from 'react';
 const enc = (b: ArrayBuffer) => btoa(String.fromCharCode(...new Uint8Array(b))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 const dec = (s: string) => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s.length + 3) % 4)), (c) => c.charCodeAt(0));
 
+/** Same-origin relative path only (no scheme, no //, no backslashes). */
+function safeNext(raw: string | null): string | null {
+  if (!raw || !/^\/[A-Za-z0-9/_\-?=&.%]*$/.test(raw) || raw.startsWith('//')) return null;
+  const u = new URL(raw, window.location.origin);
+  return u.origin === window.location.origin ? `${u.pathname}${u.search}` : null;
+}
+
 type Opts = { purpose: string; challenge: string; rpId: string; summary?: string | null; allow?: string[]; user?: { id: string; name: string; displayName: string } };
 
 /** Face ID / fingerprint ceremony for a one-time Gideon link (register or verify). */
@@ -66,8 +73,8 @@ export function PasskeyCeremony({ mode }: { mode: 'register' | 'verify' }) {
           body: JSON.stringify({ t: token, credentialId: enc(cred.rawId), clientDataJSON: enc(res.clientDataJSON), authenticatorData: enc(res.authenticatorData), signature: enc(res.signature) }),
         });
         const d = await r.json().catch(() => ({}));
-        const next = new URLSearchParams(window.location.search).get('next');
-        if (r.ok && next && next.startsWith('/') && !next.startsWith('//')) {
+        const next = safeNext(new URLSearchParams(window.location.search).get('next'));
+        if (r.ok && next) {
           window.location.replace(next);
           return;
         }

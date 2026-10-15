@@ -12,8 +12,8 @@ export const OPS_ABSOLUTE_MS = 12 * 60 * 60_000;
 type Payload = { u: string; iat: number; seen: number };
 
 function key(): Buffer {
-  const explicit = process.env.OPS_MFA_SECRET?.trim();
-  if (explicit && explicit.length >= 32) return Buffer.from(explicit);
+  const configured = process.env.OPS_MFA_SECRET?.trim();
+  if (configured && configured.length >= 32) return Buffer.from(hkdfSync('sha256', configured, 'nurawell-ops-mfa', 'v1', 32));
   const base = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
   if (!base) throw new Error('no OPS_MFA key');
   return Buffer.from(hkdfSync('sha256', base, 'nurawell-ops-mfa', 'v1', 32));
