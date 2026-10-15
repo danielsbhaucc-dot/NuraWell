@@ -1,3 +1,4 @@
+import { auditAdminRequest } from '@/lib/api/require-ops-api-admin';
 import { decProfileResult } from '@/lib/crypto/pii-fields';
 import { NextResponse } from 'next/server';
 
@@ -77,6 +78,7 @@ export async function GET(request: Request) {
   if (roleRow?.role !== 'admin') {
     return NextResponse.json({ error: 'admins only' }, { status: 403 });
   }
+  if (new URL(request.url).searchParams.get('send') === '1') await auditAdminRequest(request, auth.user.id);
 
   const userId = auth.user.id;
   const url = new URL(request.url);

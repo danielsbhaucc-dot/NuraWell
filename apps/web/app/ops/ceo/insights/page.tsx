@@ -1,5 +1,5 @@
 import { revalidatePath } from 'next/cache';
-import { ensureOpsAdminServer } from '@/lib/auth/ensure-ops-admin-server';
+import { ensureOpsAdminServer, opsActorId } from '@/lib/auth/ensure-ops-admin-server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { TOOL_BY_NAME } from '@/lib/ceo/tools';
 import { setOwnerTask } from '@/lib/ceo/owner-tasks';
@@ -17,7 +17,7 @@ async function taskAction(formData: FormData) {
   const id = String(formData.get('id'));
   const kind = String(formData.get('kind'));
   await setOwnerTask(db, id, kind === 'done' ? { status: 'done' } : { snoozeDays: kind === 'week' ? 7 : 1 });
-  await db.from('admin_audit_log').insert({ method: 'ACTION', path: `/ops/ceo/insights task:${kind}`, detail: { id } });
+  await db.from('admin_audit_log').insert({ actor_id: await opsActorId(), method: 'ACTION', path: `/ops/ceo/insights task:${kind}`, detail: { id } });
   revalidatePath('/ops/ceo/insights');
 }
 

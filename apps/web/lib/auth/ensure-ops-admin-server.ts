@@ -75,3 +75,10 @@ export async function ensureOpsAdminServer(): Promise<void> {
     redirect(app ? `${app}/home` : '/home');
   }
 }
+
+/** Current Ops admin id (for audit rows written from server actions). */
+export async function opsActorId(): Promise<string | null> {
+  const { createClient } = await import('@/lib/supabase/server');
+  const { data } = await (await createClient()).auth.getUser();
+  return data.user?.id ?? null;
+}
