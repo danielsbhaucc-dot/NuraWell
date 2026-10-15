@@ -1,4 +1,5 @@
-import { decProfileResult, encryptProfilePatch } from '@/lib/crypto/pii-fields';
+import { sealProfilePatch } from '@/lib/crypto/pii-seal';
+import { decProfileResult } from '@/lib/crypto/pii-fields';
 import { decInteractionResult } from '@/lib/crypto/pii-fields';
 import { withAiUser } from '@/lib/ai/usage-meter';
 import { insertNotification } from '@/lib/notifications/deliver';
@@ -284,7 +285,7 @@ async function runMasterCron() {
           {}) as AiUserContext;
         const merged = { ...current, ...patch };
 
-        const { error: upErr } = await admin.from('profiles').update(encryptProfilePatch({ ai_context: merged }, userId)).eq('id', userId);
+        const { error: upErr } = await admin.from('profiles').update(await sealProfilePatch({ ai_context: merged }, userId)).eq('id', userId);
         if (upErr) throw new Error(upErr.message);
         analyzed++;
       } catch (e) {
@@ -512,7 +513,7 @@ async function runMasterCron() {
           const merged = { ...ctx, ...buildCrisisCooldownPatch() };
           const { error: coolErr } = await admin
             .from('profiles')
-            .update(encryptProfilePatch({ ai_context: merged }, userId))
+            .update(await sealProfilePatch({ ai_context: merged }, userId))
             .eq('id', userId);
           if (coolErr) {
             errors.push(`crisis_cooldown ${userId}: ${coolErr.message}`);

@@ -1,4 +1,5 @@
-import { decProfileResult, encryptProfilePatch } from '@/lib/crypto/pii-fields';
+import { sealProfilePatch } from '@/lib/crypto/pii-seal';
+import { decProfileResult } from '@/lib/crypto/pii-fields';
 import { NextResponse } from 'next/server';
 import { authorizeCronRequest } from '../../../../../../lib/api/authorize-cron';
 import { maybeReturnCronIdleSkip } from '../../../../../../lib/api/cron-idle-guard';
@@ -234,7 +235,7 @@ async function runHabitTargetTune(request: Request) {
         },
       };
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await admin.from('profiles').update(encryptProfilePatch({ ai_context: merged }, userId)).eq('id', userId);
+      await admin.from('profiles').update(await sealProfilePatch({ ai_context: merged }, userId)).eq('id', userId);
     }
   }
 

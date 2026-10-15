@@ -1,4 +1,5 @@
-import { decProfileResult, encryptProfilePatch } from '@/lib/crypto/pii-fields';
+import { sealProfilePatch } from '@/lib/crypto/pii-seal';
+import { decProfileResult } from '@/lib/crypto/pii-fields';
 /**
  * אחרי insert ל-notifications — ניסיון push למכשיר (לא חוסם).
  */
@@ -49,6 +50,6 @@ export async function deliverWebPushAfterAlmogNotification(
     const next = { ...ctx };
     delete next.web_push;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await admin.from('profiles').update(encryptProfilePatch({ ai_context: next }, userId)).eq('id', userId);
+    await admin.from('profiles').update(await sealProfilePatch({ ai_context: next }, userId)).eq('id', userId);
   }
 }

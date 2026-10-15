@@ -1,4 +1,5 @@
-import { decProfileResult, encryptProfilePatch } from '@/lib/crypto/pii-fields';
+import { sealProfilePatch } from '@/lib/crypto/pii-seal';
+import { decProfileResult } from '@/lib/crypto/pii-fields';
 /**
  * עדכוני DB ל-ai_context.reengagement (מערכת הנטישה):
  *   - readReengagementContext  — קריאה מנורמלת (sent_moves תמיד מערך).
@@ -92,7 +93,7 @@ export async function patchReengagementContext(
 
     await admin
       .from('profiles')
-      .update(encryptProfilePatch({ ai_context: { ...ctx, reengagement: nextReng } }, userId))
+      .update(await sealProfilePatch({ ai_context: { ...ctx, reengagement: nextReng } }, userId))
       .eq('id', userId);
   } catch (e) {
     await reportError(e, {
@@ -138,7 +139,7 @@ export async function markExitSurveyAnswered(
     };
     await db
       .from('profiles')
-      .update(encryptProfilePatch({ ai_context: { ...ctx, reengagement: nextReng } }, userId))
+      .update(await sealProfilePatch({ ai_context: { ...ctx, reengagement: nextReng } }, userId))
       .eq('id', userId);
   } catch (e) {
     await reportError(e, {
@@ -175,7 +176,7 @@ export async function patchPassiveTouch(
     const nextReng: ReengagementContext = { ...reng, [key]: now.toISOString() };
     await admin
       .from('profiles')
-      .update(encryptProfilePatch({ ai_context: { ...ctx, reengagement: nextReng } }, userId))
+      .update(await sealProfilePatch({ ai_context: { ...ctx, reengagement: nextReng } }, userId))
       .eq('id', userId);
   } catch (e) {
     await reportError(e, {

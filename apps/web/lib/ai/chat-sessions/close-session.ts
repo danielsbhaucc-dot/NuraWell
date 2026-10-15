@@ -1,4 +1,5 @@
-import { decProfileResult, encryptTableRow } from '@/lib/crypto/pii-fields';
+import { sealTableRow } from '@/lib/crypto/pii-seal';
+import { decProfileResult } from '@/lib/crypto/pii-fields';
 import { withAiUser } from '@/lib/ai/usage-meter';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { ingestConversationToVector } from '../chat-memory/conversation-vector';
@@ -75,12 +76,13 @@ export async function closeChatSession(
   };
   if (title) updatePayload.title = title;
 
+  const sealedPayload = await sealTableRow('chat_sessions', updatePayload, params.userId);
   let updatedResult = await queryWithColumnFallbacks<Record<string, unknown>>(
     CHAT_SESSION_CLOSE_SELECTS,
     (select) =>
       supabase
         .from('chat_sessions')
-        .update(encryptTableRow('chat_sessions', updatePayload, params.userId))
+        .update(sealedPayload)
         .eq('id', params.sessionId)
         .eq('user_id', params.userId)
         .select(select)
@@ -90,12 +92,13 @@ export async function closeChatSession(
   if (updatedResult.error && isMissingColumnError(updatedResult.error)) {
     // older schema: drop optional columns (title / close_reason) and retry
     const { title: _title, close_reason: _reason, ...withoutTitle } = updatePayload;
+    const sealedWithout = await sealTableRow('chat_sessions', withoutTitle, params.userId);
     updatedResult = await queryWithColumnFallbacks<Record<string, unknown>>(
       CHAT_SESSION_CLOSE_SELECTS,
       (select) =>
         supabase
           .from('chat_sessions')
-          .update(encryptTableRow('chat_sessions', withoutTitle, params.userId))
+          .update(sealedWithout)
           .eq('id', params.sessionId)
           .eq('user_id', params.userId)
           .select(select)

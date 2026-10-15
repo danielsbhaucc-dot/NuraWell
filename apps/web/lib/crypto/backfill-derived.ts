@@ -4,6 +4,7 @@
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { isEncrypted } from './pii';
+import { sealTableRow } from './pii-seal';
 import { encryptAiContext, encryptTableRow, TABLE_ENC_TEXT, type EncTextTable } from './pii-fields';
 import { sealVectorMetadata, isUpstashVectorConfigured } from '@/lib/ai/upstash-vector-rest';
 import { UPSTASH_NAMESPACE_CONVERSATION_MEMORY, UPSTASH_NAMESPACE_USER_MEMORY } from '@/lib/ai/rag-config';
@@ -27,7 +28,7 @@ export async function backfillDerivedPii(admin: SupabaseClient, budgetMs = 60_00
         const todo: Row = {};
         for (const c of cols) if (typeof r[c] === 'string' && r[c] !== '' && !isEncrypted(r[c])) todo[c] = r[c];
         if (!Object.keys(todo).length) continue;
-        const { error: uErr } = await admin.from(table).update(encryptTableRow(table, todo, r.user_id as string)).eq('id', r.id as string);
+        const { error: uErr } = await admin.from(table).update(await sealTableRow(table, todo, r.user_id as string)).eq('id', r.id as string);
         if (uErr) throw new Error(`${table} update: ${uErr.message}`);
         out[table] += 1;
       }

@@ -1,4 +1,5 @@
-import { decTableResult, encryptTableRow } from '@/lib/crypto/pii-fields';
+import { sealTableRow } from '@/lib/crypto/pii-seal';
+import { decTableResult } from '@/lib/crypto/pii-fields';
 import { decInteractionResult } from '@/lib/crypto/pii-fields';
 /**
  * 🌙 Nightly behaviour-pattern insights batch (runs inside /api/v1/ai/cron/memory-pipeline full run).
@@ -212,7 +213,7 @@ export async function runPatternInsightsBatch(
             last_seen_at: nowIso,
             metadata: meta,
           };
-          const { error } = await admin.from('user_insights').upsert(encryptTableRow('user_insights', row, userId), { onConflict: 'user_id,dedupe_key' });
+          const { error } = await admin.from('user_insights').upsert(await sealTableRow('user_insights', row, userId), { onConflict: 'user_id,dedupe_key' });
           if (error) res.errors += 1;
           else res.upserted += 1;
         }

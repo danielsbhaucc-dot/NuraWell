@@ -1,4 +1,4 @@
-import { encryptTableRow } from '@/lib/crypto/pii-fields';
+import { sealTableRow } from '@/lib/crypto/pii-seal';
 import { isStorableMemoryText } from '../safety/memory-text-guard';
 import type { ExtractedMemoryFact } from '../extract-memory-facts';
 import { normalizeFactTextForDedupe, stableMemoryVectorId } from '../memory-fact-dedupe';
@@ -131,10 +131,10 @@ async function upsertMemoryRow(params: {
     .maybeSingle();
 
   if (existing?.id) {
-    const { error } = await admin.from('user_memories').update(encryptTableRow('user_memories', row, row.user_id)).eq('id', existing.id);
+    const { error } = await admin.from('user_memories').update(await sealTableRow('user_memories', row, row.user_id)).eq('id', existing.id);
     if (error) throw error;
   } else {
-    const { error } = await admin.from('user_memories').insert(encryptTableRow('user_memories', row, row.user_id));
+    const { error } = await admin.from('user_memories').insert(await sealTableRow('user_memories', row, row.user_id));
     if (error) throw error;
   }
 }

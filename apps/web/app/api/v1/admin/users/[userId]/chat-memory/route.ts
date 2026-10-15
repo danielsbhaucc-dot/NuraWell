@@ -1,4 +1,5 @@
-import { decProfileResult, decTableResult, encryptTableRow } from '@/lib/crypto/pii-fields';
+import { sealTableRow } from '@/lib/crypto/pii-seal';
+import { decProfileResult, decTableResult } from '@/lib/crypto/pii-fields';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { closeChatSession } from '@/lib/ai/chat-sessions/close-session';
@@ -372,7 +373,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     const now = new Date().toISOString();
     let reopened = await admin
       .from('chat_sessions')
-      .update(encryptTableRow('chat_sessions', { status: 'open', closed_at: null, updated_at: now }, userId))
+      .update(await sealTableRow('chat_sessions', { status: 'open', closed_at: null, updated_at: now }, userId))
       .eq('id', sessionId)
       .eq('user_id', userId)
       .select('id, status, title, summary')
@@ -380,7 +381,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     if (reopened.error && isMissingColumnError(reopened.error)) {
       reopened = await admin
         .from('chat_sessions')
-        .update(encryptTableRow('chat_sessions', { status: 'open', closed_at: null, updated_at: now }, userId))
+        .update(await sealTableRow('chat_sessions', { status: 'open', closed_at: null, updated_at: now }, userId))
         .eq('id', sessionId)
         .eq('user_id', userId)
         .select('id, status, summary')

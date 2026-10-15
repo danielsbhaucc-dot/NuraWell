@@ -1,4 +1,5 @@
-import { decProfileResult, encryptProfilePatch } from '@/lib/crypto/pii-fields';
+import { sealProfilePatch } from '@/lib/crypto/pii-seal';
+import { decProfileResult } from '@/lib/crypto/pii-fields';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -70,7 +71,7 @@ export async function POST(request: Request) {
   const patch = extractedToProfilePatch(key as DiscreteFieldKey, applied.extracted[key] as string | number);
   const { error } = await auth.supabase
     .from('profiles')
-    .update(encryptProfilePatch({ ...patch, updated_at: new Date().toISOString() }, auth.user.id))
+    .update(await sealProfilePatch({ ...patch, updated_at: new Date().toISOString() }, auth.user.id))
     .eq('id', auth.user.id);
 
   if (error) {
