@@ -1,3 +1,4 @@
+import { auditAdminRequest } from '@/lib/api/require-ops-api-admin';
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '../../../../../lib/supabase/admin';
 import { requireApiSession } from '../../../../../lib/api/route-guards';
@@ -108,6 +109,7 @@ export async function POST(request: Request) {
   if (roleRow?.role !== 'admin') {
     return NextResponse.json({ error: 'admins only' }, { status: 403 });
   }
+  await auditAdminRequest(request, auth.user.id);
 
   let body: { userId?: string } = {};
   try {

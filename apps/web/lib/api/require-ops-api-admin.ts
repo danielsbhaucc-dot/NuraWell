@@ -63,3 +63,11 @@ export async function requireOpsApiAdmin(request: Request): Promise<SessionOk | 
   }
   return res;
 }
+
+/** Audit an admin mutation from routes that do their own admin check. Never logs bodies. */
+export async function auditAdminRequest(request: Request, actorId: string): Promise<void> {
+  const { error } = await createAdminClient()
+    .from('admin_audit_log')
+    .insert({ actor_id: actorId, method: request.method, path: new URL(request.url).pathname + (new URL(request.url).searchParams.has('send') ? '?send' : ''), ip: (request.headers.get('x-real-ip') || request.headers.get('x-forwarded-for')?.split(',')[0] || '').trim() || null });
+  if (error) console.error('[admin-audit]', error.message);
+}
