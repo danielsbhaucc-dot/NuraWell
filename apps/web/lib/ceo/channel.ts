@@ -1,5 +1,5 @@
 /** Channel-agnostic outbound interface (Telegram today; WhatsApp etc. later implement the same shape). */
-export type CeoButton = { text: string; data: string };
+export type CeoButton = { text: string; data: string; url?: string };
 export interface CeoChannel {
   readonly name: string;
   send(chatId: string, text: string, buttons?: CeoButton[][], opts?: { effect?: 'celebrate' }): Promise<void>;

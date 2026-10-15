@@ -120,6 +120,7 @@ const PUBLIC_ROUTES = [
   '/register/verified',
   '/auth/callback',
   '/demo',
+  '/gideon', // passkey step-up pages: one-time link + WebAuthn are the auth
   '/about',
   '/contact',
   '/terms',
@@ -301,9 +302,13 @@ export async function proxy(request: NextRequest) {
   const devOpsPath =
     Boolean(isLocal && process.env.NODE_ENV === 'development' && pathname.startsWith('/ops')) || appHostOpsPath;
 
+  /** Gideon passkey pages live at the top level on every host (rpId = Ops host); not gated, not rewritten. */
+  const isGideonStepup = pathname === '/gideon' || pathname.startsWith('/gideon/');
+
   const needsOpsGate =
-    devOpsPath ||
-    (effectiveOpsHost && !pathname.startsWith('/api') && !pathname.startsWith('/_next'));
+    !isGideonStepup &&
+    (devOpsPath ||
+      (effectiveOpsHost && !pathname.startsWith('/api') && !pathname.startsWith('/_next')));
 
   /** קליטת סשן מגשר — בלי משתמש עדיין; לא לשכתב ל־/ops/auth/… */
   const isOpsSessionIngest = pathname === '/auth/ops-ingest';
@@ -339,7 +344,7 @@ export async function proxy(request: NextRequest) {
   }
 
   /** Rewrite: ops.nurawell.ai/ → /ops, ops.nurawell.ai/journey → /ops/journey */
-  if (effectiveOpsHost && !pathname.startsWith('/api') && !pathname.startsWith('/_next')) {
+  if (effectiveOpsHost && !isGideonStepup && !pathname.startsWith('/api') && !pathname.startsWith('/_next')) {
     const url = request.nextUrl.clone();
     if (pathname === '/' || pathname === '') {
       url.pathname = '/ops';
