@@ -37,6 +37,7 @@ const CSP_DIRECTIVES: Record<string, string[]> = {
     "'self'",
     ...(IS_DEV ? ["'unsafe-eval'"] : []),
     'https://va.vercel-scripts.com',
+    'https://telegram.org', // Telegram Mini App SDK (/gideon/app)
   ],
   'style-src': ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
   'img-src': [
@@ -341,6 +342,23 @@ export async function proxy(request: NextRequest) {
 
     if (!profile || profile.role !== 'admin') {
       return applySecurityHeaders(NextResponse.redirect(new URL(APP_HOME_PATH, mainOrigin)));
+    }
+
+    /** Ops idle timeout: no Ops activity for OPS_IDLE_MINUTES (default 60) → sign out of this host's session. */
+    const idleMs = Math.max(5, Number(process.env.OPS_IDLE_MINUTES || 60)) * 60_000;
+    const seen = Number(request.cookies.get('nw_ops_seen')?.value || 0);
+    const nowMs = Date.now();
+    if (seen && nowMs - seen > idleMs) {
+      await supabase.auth.signOut({ scope: 'local' });
+      const loginUrl = new URL('/login', mainOrigin);
+      loginUrl.searchParams.set('reason', 'ops_idle');
+      const out = NextResponse.redirect(loginUrl);
+      for (const c of response.cookies.getAll()) out.cookies.set(c);
+      out.cookies.set('nw_ops_seen', '', { path: '/', maxAge: 0 });
+      return applySecurityHeaders(out);
+    }
+    if (!seen || nowMs - seen > 60_000) {
+      response.cookies.set('nw_ops_seen', String(nowMs), { httpOnly: true, secure: true, sameSite: 'lax', path: '/', maxAge: 12 * 3600 });
     }
   }
 

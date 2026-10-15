@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireApiAdmin } from './route-guards';
+import { createAdminClient } from '../supabase/admin';
 import {
   isAppHostOpsFallback,
   isOpsPanelBrowserPath,
@@ -47,5 +48,18 @@ export async function requireOpsApiAdmin(request: Request): Promise<SessionOk | 
     };
   }
 
-  return requireApiAdmin(request);
+  const res = await requireApiAdmin(request);
+  if (!res.ok) return res;
+
+  const admin = createAdminClient();
+
+  // audit every admin mutation (who, what, when, from where); never the body
+  if (request.method !== 'GET' && request.method !== 'HEAD') {
+    const path = new URL(request.url).pathname;
+    const { error } = await admin
+      .from('admin_audit_log')
+      .insert({ actor_id: res.user.id, method: request.method, path, ip: (request.headers.get('x-real-ip') || request.headers.get('x-forwarded-for')?.split(',')[0] || '').trim() || null })
+    if (error) console.error('[admin-audit]', error.message);
+  }
+  return res;
 }
