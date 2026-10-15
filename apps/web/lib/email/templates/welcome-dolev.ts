@@ -2,7 +2,7 @@ import type { OnboardingProfileForChat } from '@/lib/ai/onboarding-chat-context'
 import type { OnboardingGender } from '@/lib/onboarding/types';
 import { welcomeEmailCopy } from '@/lib/email/welcome-email-copy';
 import { publicAppOriginSync } from '@/lib/public-app-url';
-import { emailNotice, emailParagraph, emailSummaryTable, renderEmailLayout } from '@/lib/email/layout';
+import { dolevSignature, EMAIL_SUPPORT_ADDRESS, emailParagraph, emailSummaryTable, escapeHtml, renderEmailLayout } from '@/lib/email/layout';
 
 const GOAL_HE: Record<string, string> = {
   weight_loss: 'ירידה במשקל',
@@ -50,7 +50,8 @@ export function buildWelcomeDolevEmailHtml(
       profile.meal_schedule.map((m) => `${m.time} (${m.label})`).join(', ')
     : 'לפי לוח כללי';
 
-  const table = emailSummaryTable([
+  const table = emailSummaryTable(
+    [
     ['מטרה', profile.main_goal ? (GOAL_HE[profile.main_goal] ?? profile.main_goal) : '—'],
     [
       'חלון קשה',
@@ -62,23 +63,19 @@ export function buildWelcomeDolevEmailHtml(
     ],
     ['השכמה / שינה', `${profile.wake_up_time ?? '—'} · ${profile.sleep_time ?? '—'}`],
     ['ארוחות', meals],
-  ]);
+  ],
+    copy.summaryTitle
+  );
 
   return renderEmailLayout({
     assetOrigin: origin,
-    preheader: copy.summaryTitle,
+    preheader: copy.preheader,
     eyebrow: 'דולב · NuraWell',
-    heading: copy.headline,
-    bodyHtml: [
-      emailNotice(copy.noReplyTop),
-      emailParagraph(copy.intro),
-      emailParagraph(`<strong>${copy.summaryTitle}</strong><br><span style="color:#5b6b62;font-size:14px">${copy.summarySubtitle}</span>`),
-      table,
-      emailParagraph(copy.closing, { muted: true, small: true }),
-    ].join(''),
+    heading: escapeHtml(copy.headline),
+    subheading: copy.subheading,
+    bodyHtml: [emailParagraph(escapeHtml(copy.intro)), table, emailParagraph(escapeHtml(copy.closing))].join(''),
     cta: { label: copy.cta, url: `${origin}/home` },
-    afterCtaHtml: emailNotice(copy.noReplyBottom),
-    footerNote: 'דולב · מנהל ההרשמה · NuraWell',
+    signatureHtml: dolevSignature(copy.signature),
   });
 }
 
@@ -89,13 +86,11 @@ export function buildWelcomeDolevEmailText(
 ): string {
   const copy = welcomeEmailCopy(firstName, gender);
   const origin = appOrigin?.replace(/\/$/, '') || publicAppOriginSync();
-  return `${copy.noReplyTop}
-
-${copy.textPlain}
+  return `${copy.textPlain}
 
 ${copy.cta}: ${origin}/home
 
-${copy.noReplyBottom}`;
+את התיבה הזאת אף אחד לא קורא. שאלות? ${EMAIL_SUPPORT_ADDRESS}`;
 }
 
 export function welcomeDolevEmailSubject(firstName: string, gender?: OnboardingGender | null): string {

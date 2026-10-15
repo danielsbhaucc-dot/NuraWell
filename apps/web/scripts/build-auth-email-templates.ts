@@ -1,79 +1,100 @@
 /**
  * יוצר את תבניות ה-Auth של Supabase מהשלד המשותף (lib/email/layout.ts).
  * הרצה: npx jiti apps/web/scripts/build-auth-email-templates.ts
- * פלט: supabase/templates/*.html (+ subjects.json). מוחלים ב-Management API / Dashboard.
+ * פלט: supabase/templates/*.html + subjects.json. מוחלים דרך Management API.
+ * נוסח ניטרלי-מגדר (רבים): ב-user_metadata אין gender, ותנאי Go על שדה חסר מסוכן.
  */
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { emailFallbackLink, emailParagraph, renderEmailLayout } from '../lib/email/layout';
+import { dolevSignature, emailCode, emailFallbackLink, emailNotice, emailParagraph, renderEmailLayout } from '../lib/email/layout';
 
 const URL_VAR = '{{ .ConfirmationURL }}';
 const SITE = '{{ .SiteURL }}';
+const CODE = '{{ .Token }}';
 
-type T = { key: string; subject: string; preheader: string; heading: string; body: string[]; cta: string; after?: string };
-
-const ignore = 'אם לא ביקשת את זה, אפשר פשוט להתעלם מהמייל הזה. שום דבר לא ישתנה בחשבון שלך.';
+type T = {
+  key: string;
+  subject: string;
+  preheader: string;
+  heading: string;
+  subheading?: string;
+  body: string[];
+  code?: boolean;
+  cta?: string;
+  note?: string;
+  sign: string;
+};
 
 export const AUTH_TEMPLATES: T[] = [
   {
     key: 'confirmation',
-    subject: 'אישור כתובת המייל שלך ב-NuraWell',
-    preheader: 'עוד לחיצה אחת ומתחילים',
-    heading: 'ברוכים הבאים ל-NuraWell 🌿',
-    body: ['איזה כיף שהצטרפת! כדי להתחיל, צריך רק לאשר שזו כתובת המייל שלך.'],
+    subject: 'רגע לפני שמתחילים: אישור המייל ב-NuraWell',
+    preheader: 'לחיצה אחת קטנה, ואנחנו יוצאים לדרך',
+    heading: 'כמעט בפנים! 🌿',
+    subheading: 'נשאר רק לאשר שזה באמת המייל שלכם',
+    body: ['היי, כאן דולב. שמחתי לראות שנרשמתם! לפני שנתחיל, צריך לוודא שהמייל הזה באמת שלכם ולא של השכן. לחיצה על הכפתור וזהו.'],
     cta: 'אישור המייל',
-    after: ignore,
+    note: 'לא נרשמתם ל-NuraWell? כנראה מישהו התבלבל בכתובת. אפשר פשוט להתעלם מהמייל, שום דבר לא יקרה.',
+    sign: 'מחכה לכם בצד השני',
   },
   {
     key: 'magic_link',
-    subject: 'קישור הכניסה שלך ל-NuraWell',
-    preheader: 'לחיצה אחת ואתה בפנים',
-    heading: 'כניסה ל-NuraWell',
-    body: ['ביקשת להיכנס לחשבון. הקישור תקף לזמן קצר ולשימוש אחד בלבד.'],
-    cta: 'כניסה לחשבון',
-    after: ignore,
+    subject: 'הקוד שלכם לכניסה ל-NuraWell',
+    preheader: 'קוד חד-פעמי (וגם קישור, למי שממהר)',
+    heading: 'הקוד שלכם מוכן 🔑',
+    subheading: 'בלי סיסמאות, בלי כאב ראש',
+    body: ['ביקשתם להיכנס? הנה הקוד. מקלידים אותו באפליקציה, או לוחצים על הכפתור, מה שנוח יותר.'],
+    code: true,
+    cta: 'כניסה בלחיצה',
+    note: 'הקוד והקישור תקפים לזמן קצר ולשימוש אחד. אם לא ביקשתם להיכנס, אפשר להתעלם. בלי הקוד אף אחד לא נכנס.',
+    sign: 'שומר על הדלת בשבילכם',
   },
   {
     key: 'recovery',
-    subject: 'איפוס הסיסמה שלך ב-NuraWell',
-    preheader: 'קישור לבחירת סיסמה חדשה',
-    heading: 'איפוס סיסמה',
-    body: ['קיבלנו בקשה לאפס את הסיסמה לחשבון שלך. בלחיצה על הכפתור אפשר לבחור סיסמה חדשה.'],
+    subject: 'איפוס הסיסמה ב-NuraWell',
+    preheader: 'קורה לכולם, הנה קישור לסיסמה חדשה',
+    heading: 'שכחתם סיסמה? קורה לכולם',
+    subheading: 'בוחרים חדשה תוך דקה',
+    body: ['קיבלנו בקשה לאפס את הסיסמה שלכם. לוחצים על הכפתור, בוחרים סיסמה חדשה, וחוזרים לעניינים.'],
     cta: 'בחירת סיסמה חדשה',
-    after: 'אם לא ביקשת לאפס סיסמה, אפשר להתעלם מהמייל. הסיסמה הנוכחית נשארת כמו שהיא.',
+    note: 'לא ביקשתם לאפס? אפשר להתעלם מהמייל, והסיסמה הנוכחית נשארת כמו שהיא.',
+    sign: 'גם אני שוכח סיסמאות, אל דאגה',
   },
   {
     key: 'email_change',
-    subject: 'אישור החלפת כתובת המייל ב-NuraWell',
-    preheader: 'צריך לאשר את הכתובת החדשה',
-    heading: 'החלפת כתובת מייל',
+    subject: 'אישור כתובת המייל החדשה ב-NuraWell',
+    preheader: 'צריך רק לאשר את הכתובת החדשה',
+    heading: 'מחליפים כתובת? 📬',
+    subheading: 'עוד לחיצה אחת ומסיימים',
     body: [
-      'ביקשת להחליף את כתובת המייל בחשבון מ-<span dir="ltr">{{ .Email }}</span> ל-<span dir="ltr">{{ .NewEmail }}</span>.',
-      'כדי להשלים את ההחלפה, צריך לאשר בלחיצה על הכפתור.',
+      'ביקשתם להחליף את כתובת המייל בחשבון מ-<span dir="ltr">{{ .Email }}</span> ל-<span dir="ltr">{{ .NewEmail }}</span>.',
+      'כדי שנדע שזה באמת אתם, צריך לאשר בלחיצה על הכפתור.',
     ],
     cta: 'אישור הכתובת החדשה',
-    after: 'אם לא ביקשת את השינוי, אל תלחץ על הכפתור, ומומלץ להחליף סיסמה.',
+    note: 'לא ביקשתם את השינוי? אל תלחצו על הכפתור, ומומלץ להחליף סיסמה ליתר ביטחון.',
+    sign: 'דואג שהמיילים יגיעו למקום הנכון',
   },
   {
     key: 'invite',
-    subject: 'הוזמנת להצטרף ל-NuraWell',
-    preheader: 'ההזמנה שלך מחכה',
-    heading: 'הוזמנת ל-NuraWell 🌿',
-    body: ['מישהו הזמין אותך להצטרף ל-NuraWell, ליווי אישי לאורח חיים בריא, בקצב שלך.'],
+    subject: 'הוזמנתם ל-NuraWell 🌿',
+    preheader: 'מישהו חשב עליכם, וההזמנה מחכה',
+    heading: 'יש לכם הזמנה! 🎉',
+    subheading: 'ליווי אישי לאורח חיים בריא, בקצב שלכם',
+    body: ['היי, כאן דולב. מישהו חשב עליכם והזמין אתכם להצטרף ל-NuraWell. מבטיח שזה יותר כיף מזה שזה נשמע.'],
     cta: 'קבלת ההזמנה',
-    after: 'אם לא ציפית להזמנה, אפשר להתעלם מהמייל.',
+    note: 'לא ציפיתם להזמנה? אפשר פשוט להתעלם מהמייל.',
+    sign: 'שומר לכם מקום',
   },
   {
     key: 'reauthentication',
-    subject: 'קוד האימות שלך ב-NuraWell',
+    subject: 'קוד האימות שלכם ב-NuraWell',
     preheader: 'קוד חד-פעמי לאישור הפעולה',
-    heading: 'קוד אימות',
-    body: [
-      'זה הקוד לאישור הפעולה בחשבון שלך:',
-      '<span dir="ltr" style="display:inline-block;font-size:28px;font-weight:700;letter-spacing:6px;color:#0f3d2e">{{ .Token }}</span>',
-    ],
-    cta: '',
-    after: ignore,
+    heading: 'רק מוודאים שזה אתם 🔐',
+    subheading: 'קוד קצר, וממשיכים',
+    body: ['כדי לאשר את הפעולה בחשבון, מקלידים את הקוד הזה באפליקציה:'],
+    code: true,
+    note: 'הקוד תקף לזמן קצר. לא ביקשתם? אפשר להתעלם, ובלי הקוד שום דבר לא משתנה.',
+    sign: 'קצת זהיר, אבל זה בשבילכם',
   },
 ];
 
@@ -81,10 +102,13 @@ export function renderAuthTemplate(t: T): { html: string } {
   const html = renderEmailLayout({
     assetOrigin: SITE,
     preheader: t.preheader,
+    eyebrow: 'דולב · NuraWell',
     heading: t.heading,
-    bodyHtml: t.body.map((b) => emailParagraph(b)).join(''),
+    subheading: t.subheading,
+    bodyHtml: t.body.map((b) => emailParagraph(b)).join('') + (t.code ? emailCode(CODE) : ''),
     cta: t.cta ? { label: t.cta, url: URL_VAR } : undefined,
-    afterCtaHtml: (t.cta ? emailFallbackLink(URL_VAR) : '') + (t.after ? emailParagraph(t.after, { muted: true, small: true }) : ''),
+    afterCtaHtml: (t.cta ? emailFallbackLink(URL_VAR) : '') + (t.note ? emailNotice(t.note) : ''),
+    signatureHtml: dolevSignature(t.sign),
   });
   return { html };
 }
