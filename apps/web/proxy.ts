@@ -37,6 +37,7 @@ const CSP_DIRECTIVES: Record<string, string[]> = {
     "'self'",
     ...(IS_DEV ? ["'unsafe-eval'"] : []),
     'https://va.vercel-scripts.com',
+    'https://telegram.org', // Telegram Mini App SDK (/gideon/app)
   ],
   'style-src': ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
   'img-src': [

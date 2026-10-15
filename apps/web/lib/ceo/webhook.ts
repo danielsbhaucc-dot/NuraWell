@@ -7,7 +7,8 @@ import { runCeoTurn } from './agent';
 import type { CeoChannel } from './channel';
 import { allowedChatIds } from './channel';
 import { setOwnerTask } from './owner-tasks';
-import { invalidateTrust, killSwitch, securityState } from './security';
+import { invalidateTrust, killSwitch, requestDevice, securityState } from './security';
+import { detectDeviceChange } from './intents';
 
 type Update = {
   message?: { chat: { id: number }; text?: string; message_id?: number };
@@ -45,6 +46,12 @@ async function handleTelegramUpdateInner(db: SupabaseClient, channel: CeoChannel
     await channel.send(chatId, '⛔ גדעון כבוי. כל הפעולות הממתינות בוטלו. הפעלה מחדש: Ops ← גדעון ← אבטחה (דורש Face ID).');
     return { killed: true };
   }
+  if (detectDeviceChange(rawText)) {
+    const replace = /(החלפתי|חדש|נגנב|איבדתי|אבד)/.test(rawText);
+    const { existing } = await requestDevice(db, chatId, replace);
+    await channel.send(chatId, existing ? 'כבר יש בקשה פתוחה. אשר אותה בלוח הבקרה ונתקדם.' : 'שלחתי לך התראה בלוח הבקרה, תאשר אותה ונתקדם 👍');
+    return { deviceRequest: true };
+  }
   if (sec.disabled) {
     if (u.callback_query) await channel.ack({ callbackId: u.callback_query.id, chatId });
     else await channel.send(chatId, '⛔ גדעון כבוי כרגע. אפשר להפעיל מחדש מ-Ops ← גדעון ← אבטחה.');
@@ -75,7 +82,7 @@ async function handleTelegramUpdateInner(db: SupabaseClient, channel: CeoChannel
     const r = await decideAction(db, id, kind === 'a', `admin:${chatId}`, { edit: kind === 'e' });
     if (r.stepupUrl) {
       await channel.ack({ callbackId: cb.id, chatId, messageId: cb.message?.message_id }, r.text, [
-        [{ text: '🔐 אשר עם Face ID', data: '', url: r.stepupUrl }],
+        [{ text: '🔐 אשר עם Face ID', data: '', webApp: r.stepupUrl }],
         [{ text: '❌ דחה', data: `ceo:r:${id}` }],
       ]);
       return { stepup: true };

@@ -48,3 +48,11 @@ export function detectDemoIntent(text: string): DemoIntent | null {
   const guest_name = nameOf(t);
   return { ...(guest_name ? { guest_name } : {}), hours: hoursOf(t) };
 }
+
+/** "החלפתי טלפון", "יש לי טלפון חדש", "איבדתי את הטלפון", "תרשום לי Face ID" → device (re)registration request. */
+export function detectDeviceChange(text: string): boolean {
+  const t = text.replace(/[?!.,]+/g, ' ').replace(/\s+/g, ' ').trim();
+  if (t.length > 120) return false;
+  if (/(החלפתי|חדש|נגנב|איבדתי|אבד|הלך לי)\s*(את\s*ה)?(טלפון|מכשיר|פלאפון|אייפון|נייד)|(טלפון|מכשיר|פלאפון|אייפון|נייד)\s*(חדש|נגנב|אבד)/.test(t)) return true;
+  return /(תרשום|לרשום|רישום|להגדיר|תגדיר|להפעיל|תפעיל)\s*(לי\s*)?(את\s*)?(face ?id|פייס ?איי?די|טביעת אצבע|זיהוי פנים)/i.test(t);
+}

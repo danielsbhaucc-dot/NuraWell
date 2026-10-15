@@ -338,7 +338,7 @@ describe('stolen-phone protection', () => {
     expect(a.sensitive).toBe(true);
     const r = await decideAction(db, a.id, true, 'x');
     expect(r.ok).toBe(false);
-    expect(r.stepupUrl).toMatch(/\/gideon\/verify\?t=[A-Za-z0-9_-]{40,}/);
+    expect(r.stepupUrl).toMatch(/\/gideon\/app\?t=[A-Za-z0-9_-]{40,}/);
     expect(t.ceo_pending_actions[0].status).toBe('pending');
     expect(t.webauthn_challenges[0].token_hash).toMatch(/^[0-9a-f]{64}$/); // only the hash is stored
   });

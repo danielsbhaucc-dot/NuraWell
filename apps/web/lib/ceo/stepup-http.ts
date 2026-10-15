@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { consumeRateLimit } from '@/lib/api/rate-limit';
-import { createTelegramChannel } from './telegram';
+import { createTelegramChannel, resolveBotToken } from './telegram';
+export { resolveBotToken };
 import { allowedChatIds } from './channel';
 
 export function clientIp(req: Request): string {
@@ -15,3 +16,8 @@ export async function alertOwner(text: string) {
   for (const id of allowedChatIds()) await ch.send(id, text).catch(() => {});
 }
 export const noStore = { headers: { 'Cache-Control': 'no-store' } };
+
+/** Send a one-time Mini App button (Face ID inside Telegram) to the verified chat. Never a plain link. */
+export async function sendMiniAppButton(chatId: string, text: string, url: string, buttonText = '🔐 Face ID') {
+  await createTelegramChannel().send(chatId, text, [[{ text: buttonText, data: '', webApp: url }]]);
+}

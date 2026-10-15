@@ -1,14 +1,14 @@
-import { createHash, randomBytes } from 'node:crypto';
+import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { opsCanonicalHostname } from '@/lib/ops-host';
-import { b64u, newChallenge, verifyAssertion, verifyRegistration } from './webauthn';
-import { issueRecoveryCodes } from './recovery';
+import { publicAppBaseNoSlashSync } from '@/lib/public-app-url';
+import { deviceSecretDigest, verifyInitData } from './miniapp';
 
 /**
  * Gideon stolen-phone protection.
  * - Routine approvals: one tap in Telegram.
- * - Sensitive (deletes, permission/security, bulk, kill-switch off): passkey (Face ID / fingerprint) step-up
- *   via a one-time link bound to the action, then a trust window (default 4h) with no re-prompt.
+ * - Sensitive (deletes, permission/security, bulk, kill-switch off): Face ID inside Telegram (Mini App
+ *   BiometricManager) via a one-time Mini App button bound to the action and the chat, then a trust window.
+ * - Devices are registered only after Daniel approves the request in Ops (admin login); Gideon never sends links.
  * - Periodic re-verification: every N minutes (default 24h) even routine approvals need one passkey check.
  * - Kill switch + lockout (5 failed step-ups → 30 min) + alerts. Kill switch / new chat invalidate trust.
  */
@@ -64,8 +64,9 @@ export function isSensitive(tool: string, args: Record<string, unknown>, destruc
 }
 
 export async function hasPasskey(db: SupabaseClient): Promise<boolean> {
-  const { data } = await db.from('admin_passkeys').select('id').limit(1);
-  return Boolean(data?.length);
+  const { data } = await db.from('admin_passkeys').select('id, activated_at');
+  const now = Date.now();
+  return (data ?? []).some((k: { activated_at?: string | null }) => !k.activated_at || Date.parse(k.activated_at) <= now);
 }
 
 export type Gate = { ok: true } | { ok: false; reason: 'disabled' | 'locked' | 'stepup' | 'no_passkey'; text: string };
@@ -91,16 +92,21 @@ export async function gateApproval(db: SupabaseClient, sensitive: boolean, now =
   return { ok: true };
 }
 
-export function rpId(): string {
-  return (process.env.CEO_STEPUP_RP_ID || opsCanonicalHostname() || 'nurawell.vercel.app').trim().toLowerCase();
+/** Mini App lives on the public app host (never the Ops host). */
+export function miniAppBase(): string {
+  return (process.env.CEO_MINIAPP_BASE || publicAppBaseNoSlashSync() || 'https://nurawell.vercel.app').replace(/\/$/, '');
 }
-export const rpOrigins = () => [`https://${rpId()}`, ...(process.env.NODE_ENV === 'development' ? ['http://localhost:3000'] : [])];
 const hashToken = (t: string) => createHash('sha256').update(t).digest('hex');
+const b64u = (b: Buffer) => b.toString('base64url');
 
-/** One-time link (10 min) bound to a purpose (+ action). Only its hash is stored. */
-export type Purpose = 'approve' | 'unlock' | 'register' | 'verify' | 'ops_login' | 'settings' | 'remove_key';
-export async function createStepupLink(db: SupabaseClient, purpose: Purpose, opts: { actionId?: string; userId?: string; payload?: Record<string, unknown>; next?: string } = {}) {
-  const token = b64u.enc(randomBytes(32));
+export type Purpose = 'approve' | 'unlock' | 'register' | 'settings' | 'remove_key';
+/** One-time Mini App URL (10 min) bound to purpose (+ action / Telegram user). Only its hash is stored. */
+export async function createStepupLink(
+  db: SupabaseClient,
+  purpose: Purpose,
+  opts: { actionId?: string; userId?: string; payload?: Record<string, unknown> } = {},
+) {
+  const token = b64u(randomBytes(32));
   const { error } = await db.from('webauthn_challenges').insert({
     purpose,
     action_id: opts.actionId ?? null,
@@ -110,41 +116,41 @@ export async function createStepupLink(db: SupabaseClient, purpose: Purpose, opt
     expires_at: new Date(Date.now() + LINK_TTL_MS).toISOString(),
   });
   if (error) throw new Error(error.message);
-  const page = purpose === 'register' ? 'passkey' : 'verify';
-  const next = opts.next && /^\/[A-Za-z0-9/_?=&.-]*$/.test(opts.next) && !opts.next.startsWith('//') ? `&next=${encodeURIComponent(opts.next)}` : '';
-  return `https://${rpId()}/gideon/${page}?t=${token}${next}`;
+  return `${miniAppBase()}/gideon/app?t=${token}`;
 }
 
-type ChallengeRow = { id: string; purpose: string; action_id: string | null; user_id: string | null; challenge: string | null; expires_at: string; used_at: string | null; payload: Record<string, unknown> | null };
+type ChallengeRow = { id: string; purpose: string; action_id: string | null; user_id: string | null; expires_at: string; used_at: string | null; payload: Record<string, unknown> | null };
 async function loadLink(db: SupabaseClient, token: string): Promise<ChallengeRow | null> {
   if (!/^[A-Za-z0-9_-]{40,60}$/.test(token)) return null;
-  const { data } = await db.from('webauthn_challenges').select('id, purpose, action_id, user_id, challenge, expires_at, used_at, payload').eq('token_hash', hashToken(token)).maybeSingle();
+  const { data } = await db.from('webauthn_challenges').select('id, purpose, action_id, user_id, expires_at, used_at, payload').eq('token_hash', hashToken(token)).maybeSingle();
   const r = data as ChallengeRow | null;
   if (!r || r.used_at || Date.parse(r.expires_at) <= Date.now()) return null;
   return r;
 }
 
-/** Issue a fresh WebAuthn challenge for a valid link. */
-export async function linkOptions(db: SupabaseClient, token: string) {
+/** initData must be signed by our bot, fresh, from an allowlisted Telegram user, and (if bound) the same user. */
+function checkTelegram(initData: string, botToken: string | null, allowed: Set<string>, boundTo?: unknown): string | null {
+  if (!botToken) return null;
+  const v = verifyInitData(initData, botToken);
+  if (!v || !allowed.has(v.userId)) return null;
+  if (boundTo && String(boundTo) !== v.userId) return null;
+  return v.userId;
+}
+
+/** What the Mini App shows before Face ID (Hebrew summary only, no internal links). */
+export async function linkInfo(db: SupabaseClient, token: string) {
   const r = await loadLink(db, token);
   if (!r) return null;
-  const challenge = newChallenge();
-  await db.from('webauthn_challenges').update({ challenge }).eq('id', r.id).is('used_at', null);
   let summary: string | null = null;
   if (r.action_id) {
     const { data } = await db.from('ceo_pending_actions').select('summary').eq('id', r.action_id).maybeSingle();
     summary = (data as { summary?: string } | null)?.summary ?? null;
   }
-  if (r.purpose === 'register') {
-    const { data: p } = await db.from('profiles').select('full_name').eq('id', r.user_id ?? '').maybeSingle();
-    return { purpose: r.purpose, challenge, rpId: rpId(), user: { id: b64u.enc(Buffer.from(String(r.user_id))), name: 'admin', displayName: (p as { full_name?: string } | null)?.full_name || 'Admin' } };
-  }
   if (r.purpose === 'settings') summary = `שינוי הגדרות אבטחה: חלון אמון ${r.payload?.trust_minutes} דק׳, אימות תקופתי ${r.payload?.reverify_minutes} דק׳`;
-  if (r.purpose === 'remove_key') summary = `הסרת מפתח: ${String(r.payload?.label ?? '')}`;
-  if (r.payload?.grant === 'register') summary = 'אישור עם מפתח קיים כדי להוסיף מפתח חדש';
-  if (r.payload?.grant === 'recovery') summary = 'יצירת קודי שחזור חדשים';
-  const { data: keys } = await db.from('admin_passkeys').select('credential_id');
-  return { purpose: r.purpose, challenge, rpId: rpId(), summary, allow: (keys ?? []).map((k: { credential_id: string }) => k.credential_id) };
+  if (r.purpose === 'remove_key') summary = `הסרת מכשיר: ${String(r.payload?.label ?? '')}`;
+  if (r.purpose === 'unlock') summary = 'שחרור גדעון והפעלה מחדש';
+  if (r.purpose === 'register') summary = r.payload?.replace ? 'רישום Face ID במכשיר החדש (המכשירים הקודמים יוסרו)' : 'רישום Face ID במכשיר הזה';
+  return { purpose: r.purpose, summary };
 }
 
 /** Atomically consume a link (single use → replay-protected). */
@@ -153,27 +159,46 @@ async function consume(db: SupabaseClient, id: string): Promise<boolean> {
   return Boolean(data?.length);
 }
 
-export async function registerPasskey(
-  db: SupabaseClient,
-  token: string,
-  body: { credentialId: string; clientDataJSON: string; authenticatorData: string; publicKey: string; alg: number; label?: string },
-) {
+/**
+ * Register this phone: server creates a 256-bit device secret, the Mini App stores it in Telegram's
+ * biometric storage (Face ID) and only its digest is kept here. replace → older devices are removed.
+ */
+export async function registerDevice(db: SupabaseClient, token: string, initData: string, botToken: string | null, allowed: Set<string>, label: string) {
   const r = await loadLink(db, token);
-  if (!r || r.purpose !== 'register' || !r.challenge || !r.user_id) return { ok: false as const, error: 'הקישור לא תקף או שפג תוקפו.' };
-  try {
-    const v = verifyRegistration({ ...body, challenge: r.challenge, rpId: rpId(), origins: rpOrigins() });
-    if (!(await consume(db, r.id))) return { ok: false as const, error: 'הקישור כבר נוצל.' };
-    const { data: existing } = await db.from('admin_passkeys').select('id').eq('user_id', r.user_id).limit(1);
-    const { error } = await db.from('admin_passkeys').insert({ user_id: r.user_id, credential_id: body.credentialId, public_key: body.publicKey, alg: body.alg, sign_count: v.signCount, label: (body.label ?? '').slice(0, 60) });
-    if (error) throw new Error(error.message);
-    await audit(db, 'admin', 'passkey_registered', { label: body.label ?? '' });
-    // first key → issue recovery codes (shown once on this page)
-    const recoveryCodes = existing?.length ? undefined : await issueRecoveryCodes(db, r.user_id);
-    return { ok: true as const, recoveryCodes };
-  } catch (e) {
-    console.error('[ceo-stepup] register', e instanceof Error ? e.message : e);
-    return { ok: false as const, error: 'הרישום נכשל. נסה שוב.' };
+  if (!r || r.purpose !== 'register') return { ok: false as const, error: 'הקישור לא תקף או שפג תוקפו.' };
+  const tgUser = checkTelegram(initData, botToken, allowed, r.payload?.telegramUserId);
+  if (!tgUser) return { ok: false as const, error: 'אפשר לרשום רק מתוך הצ׳אט המאומת של דניאל.' };
+  if (!(await consume(db, r.id))) return { ok: false as const, error: 'הקישור כבר נוצל.' };
+  const secret = b64u(randomBytes(32));
+  const deviceId = b64u(randomBytes(16));
+  const now = new Date().toISOString();
+  const { error } = await db.from('admin_passkeys').insert({
+    user_id: r.user_id, credential_id: deviceId, public_key: deviceSecretDigest(secret), alg: 0, kind: 'tg_bio',
+    telegram_user_id: tgUser, label: label.slice(0, 60), activated_at: '9999-12-31T00:00:00Z', replaces_before: r.payload?.replace ? now : null,
+  });
+  if (error) {
+    console.error('[ceo-device] register', error.message);
+    return { ok: false as const, error: 'הרישום נכשל.' };
   }
+  await audit(db, `tg:${tgUser}`, 'device_registered_pending', { label });
+  return { ok: true as const, deviceId, secret };
+}
+
+/** After the phone saved the secret behind Face ID: activate, and (device change) remove the older devices. */
+export async function confirmDevice(db: SupabaseClient, initData: string, botToken: string | null, allowed: Set<string>, deviceId: string, secret: string) {
+  const tgUser = checkTelegram(initData, botToken, allowed);
+  if (!tgUser) return false;
+  const { data } = await db.from('admin_passkeys').select('id, public_key, telegram_user_id, replaces_before, created_at').eq('credential_id', deviceId).maybeSingle();
+  const k = data as { id: string; public_key: string; telegram_user_id: string; replaces_before: string | null; created_at: string } | null;
+  if (!k || k.telegram_user_id !== tgUser) return false;
+  const a = Buffer.from(deviceSecretDigest(secret));
+  const b = Buffer.from(k.public_key);
+  if (a.length !== b.length || !timingSafeEqual(a, b)) return false;
+  if (Date.now() - Date.parse(k.created_at) > LINK_TTL_MS) return false;
+  await db.from('admin_passkeys').update({ activated_at: new Date().toISOString() }).eq('id', k.id);
+  if (k.replaces_before) await db.from('admin_passkeys').delete().neq('id', k.id);
+  await audit(db, `tg:${tgUser}`, 'device_activated', { replaced: Boolean(k.replaces_before) });
+  return true;
 }
 
 async function audit(db: SupabaseClient, actor: string, event: string, detail: Record<string, unknown> = {}, actionId?: string) {
@@ -190,22 +215,26 @@ export async function recordFailure(db: SupabaseClient, why: string, alert?: (te
   if (lock) await alert?.(`🔒 גדעון ננעל ל-${LOCK_MINUTES} דקות אחרי ${failed} ניסיונות אימות כושלים. אם זה לא אתה, הפעל את מתג הכיבוי ב-Ops.`).catch(() => {});
 }
 
-export type StepupBody = { credentialId: string; clientDataJSON: string; authenticatorData: string; signature: string };
+export type StepupBody = { initData: string; deviceId: string; secret: string };
 
-/** Verify an assertion for a link; on success opens the trust window and returns what to do next. */
-export async function verifyStepup(db: SupabaseClient, token: string, body: StepupBody, alert?: (text: string) => Promise<void>) {
+/** Verify Face ID (device secret released by Telegram biometric storage) for a link; opens the trust window. */
+export async function verifyStepup(db: SupabaseClient, token: string, body: StepupBody, botToken: string | null, allowed: Set<string>, alert?: (text: string) => Promise<void>) {
   const r = await loadLink(db, token);
-  if (!r || r.purpose === 'register' || !r.challenge) return { ok: false as const, error: 'הקישור לא תקף או שפג תוקפו.' };
+  if (!r || r.purpose === 'register') return { ok: false as const, error: 'הקישור לא תקף או שפג תוקפו.' };
   const s = await securityState(db);
   if (r.purpose !== 'unlock' && s.locked_until && Date.parse(s.locked_until) > Date.now()) return { ok: false as const, error: 'גדעון נעול זמנית.' };
-  const { data: key } = await db.from('admin_passkeys').select('id, user_id, public_key, alg, sign_count').eq('credential_id', body.credentialId).maybeSingle();
   try {
-    if (!key) throw new Error('unknown credential');
-    if (r.user_id && (key as { user_id: string }).user_id !== r.user_id) throw new Error('credential of another user');
-    const k = key as { id: string; public_key: string; alg: number; sign_count: number };
-    const v = verifyAssertion({ ...body, publicKey: k.public_key, alg: k.alg, storedSignCount: Number(k.sign_count), challenge: r.challenge, rpId: rpId(), origins: rpOrigins() });
+    const tgUser = checkTelegram(body.initData, botToken, allowed);
+    if (!tgUser) throw new Error('bad initData / chat');
+    const { data: key } = await db.from('admin_passkeys').select('id, public_key, telegram_user_id, activated_at').eq('credential_id', body.deviceId).maybeSingle();
+    const k = key as { id: string; public_key: string; telegram_user_id: string | null; activated_at: string } | null;
+    if (!k || Date.parse(k.activated_at) > Date.now()) throw new Error('unknown device');
+    if (k.telegram_user_id && k.telegram_user_id !== tgUser) throw new Error('device of another chat');
+    const a = Buffer.from(deviceSecretDigest(body.secret));
+    const b = Buffer.from(k.public_key);
+    if (a.length !== b.length || !timingSafeEqual(a, b)) throw new Error('bad device secret');
     if (!(await consume(db, r.id))) throw new Error('link already used');
-    await db.from('admin_passkeys').update({ sign_count: v.signCount, last_used_at: new Date().toISOString() }).eq('id', k.id);
+    await db.from('admin_passkeys').update({ last_used_at: new Date().toISOString() }).eq('id', k.id);
   } catch (e) {
     await recordFailure(db, e instanceof Error ? e.message : String(e), alert);
     return { ok: false as const, error: 'האימות נכשל.' };
@@ -219,9 +248,8 @@ export async function verifyStepup(db: SupabaseClient, token: string, body: Step
     ...(r.purpose === 'settings' && r.payload ? { stepup_trust_minutes: Number(r.payload.trust_minutes), reverify_minutes: Number(r.payload.reverify_minutes) } : {}),
   });
   if (r.purpose === 'remove_key' && r.payload?.keyId) await db.from('admin_passkeys').delete().eq('id', String(r.payload.keyId));
-  if (r.purpose === 'settings' || r.purpose === 'remove_key') await audit(db, 'passkey', r.purpose, r.payload ?? {});
-  await audit(db, 'passkey', `stepup_ok_${r.purpose}`, {}, r.action_id ?? undefined);
-  return { ok: true as const, purpose: r.purpose, actionId: r.action_id, userId: r.user_id, grant: (r.payload?.grant as string | undefined) ?? null };
+  await audit(db, 'faceid', `stepup_ok_${r.purpose}`, r.payload ?? {}, r.action_id ?? undefined);
+  return { ok: true as const, purpose: r.purpose, actionId: r.action_id };
 }
 
 /** Kill switch: instant, no step-up needed to turn OFF Gideon (only to turn back on). */
@@ -236,8 +264,22 @@ export async function invalidateTrust(db: SupabaseClient, why: string) {
   await audit(db, 'system', 'trust_invalidated', { why });
 }
 
-/** @deprecated direct write — security settings now change only after a passkey step-up (purpose 'settings'). */
-export async function setTrustSettings(db: SupabaseClient, actor: string, trustMinutes: number, reverifyMinutes: number) {
-  await patchState(db, { stepup_trust_minutes: trustMinutes, reverify_minutes: reverifyMinutes });
-  await audit(db, actor, 'trust_settings', { trustMinutes, reverifyMinutes });
+/** Telegram asks for a (new) device → pending request in Ops. No link is sent until Daniel approves there. */
+export async function requestDevice(db: SupabaseClient, chatId: string, replace: boolean) {
+  const { data: open } = await db.from('gideon_device_requests').select('id').eq('status', 'pending').eq('chat_id', chatId).limit(1);
+  if (open?.length) return { id: (open[0] as { id: string }).id, existing: true };
+  const { data, error } = await db.from('gideon_device_requests').insert({ chat_id: chatId, replace }).select('id').single();
+  if (error) throw new Error(error.message);
+  await audit(db, `tg:${chatId}`, 'device_requested', { replace });
+  return { id: (data as { id: string }).id, existing: false };
+}
+
+/** Ops approves → returns the one-time Mini App registration URL (to be sent to that chat as a web_app button). */
+export async function approveDeviceRequest(db: SupabaseClient, id: string, adminId: string) {
+  const { data } = await db.from('gideon_device_requests').update({ status: 'approved', decided_at: new Date().toISOString(), decided_by: adminId }).eq('id', id).eq('status', 'pending').select('chat_id, replace').maybeSingle();
+  const r = data as { chat_id: string; replace: boolean } | null;
+  if (!r) return null;
+  const url = await createStepupLink(db, 'register', { userId: adminId, payload: { replace: r.replace, telegramUserId: r.chat_id } });
+  await audit(db, `ops:${adminId}`, 'device_request_approved', { replace: r.replace });
+  return { chatId: r.chat_id, url, replace: r.replace };
 }
