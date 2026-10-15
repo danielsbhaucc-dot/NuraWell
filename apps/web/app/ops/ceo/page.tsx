@@ -15,7 +15,9 @@ const STATUS: Record<string, string> = { pending: 'ממתין', approved: 'או�
 async function decide(formData: FormData) {
   'use server';
   await ensureOpsAdminServer();
-  const r = await decideAction(createAdminClient(), String(formData.get('id')), formData.get('approve') === '1', 'admin:panel');
+  const db = createAdminClient();
+  const r = await decideAction(db, String(formData.get('id')), formData.get('approve') === '1', 'admin:panel');
+  await db.from('admin_audit_log').insert({ method: 'ACTION', path: '/ops/ceo decide', detail: { id: String(formData.get('id')), approve: formData.get('approve') === '1' } });
   if (r.stepupUrl) redirect(r.stepupUrl);
   revalidatePath('/ops/ceo');
 }
@@ -35,6 +37,7 @@ export default async function OpsCeoPage() {
         <h1 className="text-2xl font-black text-primary-900">{CEO_NAME} · מנכ&quot;ל AI</h1>
         <a href="/ops/ceo/settings" className="rounded-xl bg-primary-100/40 px-3 py-1.5 text-sm font-semibold text-primary-900 hover:bg-primary-100/70">הגדרות</a>
         <a href="/ops/ceo/security" className="rounded-xl bg-primary-100/40 px-3 py-1.5 text-sm font-semibold text-primary-900 hover:bg-primary-100/70">🔐 אבטחה</a>
+        <a href="/ops/ceo/insights" className="rounded-xl bg-primary-100/40 px-3 py-1.5 text-sm font-semibold text-primary-900 hover:bg-primary-100/70">משימות ואיכות</a>
       </div>
       <p className="text-sm text-primary-800/80">כל שינוי ש{CEO_NAME} מציע ממתין כאן ובטלגרם לאישור שלך. פג תוקף אחרי 24 שעות.</p>
       <h2 className="text-lg font-bold text-primary-900">ממתין לאישור ({pending?.length ?? 0})</h2>

@@ -36,3 +36,9 @@ describe('ambiguous → no fast path (model chains or asks)', () => {
     expect(detectDemoIntent(text)).toBeNull();
   });
 });
+
+import { detectDeviceChange } from '@/lib/ceo/intents';
+describe('device change intent', () => {
+  it.each(['החלפתי טלפון', 'יש לי טלפון חדש', 'איבדתי את הטלפון', 'תרשום לי Face ID', 'להגדיר פייס איידי', 'הטלפון נגנב'])('%s', (t) => expect(detectDeviceChange(t)).toBe(true));
+  it.each(['מה המצב', 'תן לאלכס גישה', 'כמה משתמשים חדשים יש', 'אלכס החליף טלפון?'])('not: %s', (t) => expect(detectDeviceChange(t)).toBe(false));
+});

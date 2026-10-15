@@ -1,7 +1,8 @@
-import type { CeoButton, CeoChannel } from './channel';
+import { stripOpsLinks, type CeoButton, type CeoChannel } from './channel';
 import { mdToPlain, mdToTelegramHtml } from './format';
 
-const tgButton = (b: CeoButton) => (b.url ? { text: b.text, url: b.url } : { text: b.text, callback_data: b.data });
+const tgButton = (b: CeoButton) =>
+  b.webApp ? { text: b.text, web_app: { url: b.webApp } } : b.url ? { text: b.text, url: b.url } : { text: b.text, callback_data: b.data };
 
 /** Telegram's built-in 🎉 message effect. */
 export const EFFECT_CELEBRATE = '5046509860389126442';
@@ -50,7 +51,7 @@ export function createTelegramChannel(fetchImpl: typeof fetch = fetch, getToken:
     async send(chatId, text, buttons, opts) {
       // message effects work only in private chats (positive ids)
       const effect = opts?.effect === 'celebrate' && /^\d+$/.test(chatId) ? { message_effect_id: EFFECT_CELEBRATE } : {};
-      const parts = splitMessage(text);
+      const parts = splitMessage(stripOpsLinks(text));
       for (let i = 0; i < parts.length; i++) {
         const last = i === parts.length - 1;
         const markup = last && buttons?.length
@@ -69,7 +70,7 @@ export function createTelegramChannel(fetchImpl: typeof fetch = fetch, getToken:
       if (ref.callbackId) await api('answerCallbackQuery', { callback_query_id: ref.callbackId }, fetchImpl, getToken);
       if (text && ref.messageId) {
         const markup = buttons?.length ? { reply_markup: { inline_keyboard: buttons.map((row) => row.map(tgButton)) } } : {};
-        await api('editMessageText', { chat_id: ref.chatId, message_id: ref.messageId, text: mdToPlain(text).slice(0, MAX), disable_web_page_preview: true, ...markup }, fetchImpl, getToken);
+        await api('editMessageText', { chat_id: ref.chatId, message_id: ref.messageId, text: mdToPlain(stripOpsLinks(text)).slice(0, MAX), disable_web_page_preview: true, ...markup }, fetchImpl, getToken);
       }
     },
     async typing(chatId) {
