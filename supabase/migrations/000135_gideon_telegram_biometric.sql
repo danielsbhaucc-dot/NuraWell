@@ -1,6 +1,8 @@
 -- Gideon step-up moves to Telegram Mini App BiometricManager (Face ID inside Telegram).
 -- admin_passkeys now holds Telegram devices: credential_id = device id, public_key = sha256 of the
 -- device's biometric-protected secret (secret lives only in the phone's secure storage).
+delete from public.admin_passkeys; -- browser WebAuthn keys are no longer accepted
+alter table public.webauthn_challenges alter column challenge drop not null;
 alter table public.admin_passkeys
   add column if not exists kind text not null default 'tg_bio',
   add column if not exists telegram_user_id text,
