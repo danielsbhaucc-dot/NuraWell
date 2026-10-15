@@ -14,6 +14,7 @@ import { MemorySearchIndicator } from './MemorySearchIndicator';
 import { messagesHavePendingRecallTool } from '../../lib/ai/memory-recall/detect-pending-recall';
 import {
   extractDisplayTextFromChatMessage,
+  extractEmojiReactionFixFromChatMessage,
   extractEmojiReactionFromChatMessage,
   extractChatUiFromChatMessage,
   normalizeDisplayText,
@@ -756,9 +757,11 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
 
   const [memoryRecallWriterActive, setMemoryRecallWriterActive] = useState(false);
   /** תגובות אימוג'י לפי מזהה הודעת משתמש (לייב + היסטוריה). */
+  /** null = אלמוג הסיר את התגובה (גובר על metadata מההיסטוריה). */
   const [emojiReactionsByUserMsgId, setEmojiReactionsByUserMsgId] = useState<
-    Record<string, MentorEmojiReaction>
+    Record<string, MentorEmojiReaction | null>
   >({});
+  const appliedReactionFixRef = useRef<Set<string>>(new Set());
   const attachReactionRef = useRef<(reaction: MentorEmojiReaction) => void>(() => {});
   const pendingReactionRef = useRef<MentorEmojiReaction | null>(null);
 
@@ -907,6 +910,32 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
     attachReactionRef.current(fromStream);
   }, [messages, emojiReactionsByUserMsgId]);
 
+  /** אלמוג מתקן/מסיר תגובה קודמת שלו (⟦NW_RX_FIX⟧ בתשובה האחרונה). */
+  useEffect(() => {
+    const lastAssistant = [...messages].reverse().find((m) => m.role === 'assistant');
+    if (!lastAssistant?.id || appliedReactionFixRef.current.has(lastAssistant.id)) return;
+    const fix = extractEmojiReactionFixFromChatMessage(lastAssistant as ChatDisplayMessage);
+    if (!fix) return;
+    const assistantIdx = messages.lastIndexOf(lastAssistant);
+    const lastUserIdx = messages.map((m) => m.role).lastIndexOf('user');
+    // היעד: הודעת משתמש עם תגובה, לפני ההודעה הנוכחית שהתשובה הזו עונה עליה
+    let targetId: string | undefined;
+    for (let i = Math.min(assistantIdx, lastUserIdx) - 1; i >= 0; i -= 1) {
+      const m = messages[i];
+      if (m?.role !== 'user' || !m.id) continue;
+      const meta = (m as { metadata?: { emojiReaction?: MentorEmojiReaction } }).metadata;
+      const current = m.id in emojiReactionsByUserMsgId ? emojiReactionsByUserMsgId[m.id] : meta?.emojiReaction;
+      if (current?.emoji) {
+        targetId = m.id;
+        break;
+      }
+    }
+    appliedReactionFixRef.current.add(lastAssistant.id);
+    if (!targetId) return;
+    const id = targetId;
+    setEmojiReactionsByUserMsgId((map) => ({ ...map, [id]: fix.action === 'remove' ? null : fix.reaction }));
+  }, [messages, emojiReactionsByUserMsgId]);
+
   /** סנכרון תגובות מהיסטוריה (metadata על הודעות משתמש). */
   useEffect(() => {
     const fromHistory: Record<string, MentorEmojiReaction> = {};
@@ -922,7 +951,7 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
       let changed = false;
       const next = { ...prev };
       for (const [id, reaction] of Object.entries(fromHistory)) {
-        if (!next[id]) {
+        if (!(id in next)) {
           next[id] = reaction;
           changed = true;
         }
@@ -1706,7 +1735,9 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
                 ).metadata?.emojiReaction;
                 const userReaction =
                   isUser && msg.id
-                    ? emojiReactionsByUserMsgId[msg.id] ?? metaReaction ?? null
+                    ? msg.id in emojiReactionsByUserMsgId
+                      ? emojiReactionsByUserMsgId[msg.id] ?? null
+                      : metaReaction ?? null
                     : null;
                 return (
                   <div

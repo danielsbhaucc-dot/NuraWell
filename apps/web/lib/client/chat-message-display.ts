@@ -6,7 +6,9 @@ import { extractResolvedChatUi, stripAllChatUiMarkers, type ResolvedChatUi } fro
 import type { UIMessage } from 'ai';
 import {
   extractEmojiReactionMarker,
+  extractEmojiReactionFix,
   stripEmojiReactionMarker,
+  type EmojiReactionFix,
 } from '../ai/emoji-reaction/marker';
 import type { MentorEmojiReaction } from '../ai/emoji-reaction/types';
 import { preferSanitizedWriterOutput } from '../ai/sanitize-writer-output';
@@ -164,6 +166,20 @@ export function extractEmojiReactionFromChatMessage(
   }
   if (typeof message.content === 'string' && message.content.trim()) {
     return extractEmojiReactionMarker(message.content);
+  }
+  return null;
+}
+
+/** תיקון/הסרה של תגובה קודמת שאלמוג הטמיע בתשובה (אם יש). */
+export function extractEmojiReactionFixFromChatMessage(message: ChatDisplayMessage): EmojiReactionFix | null {
+  const parts = Array.isArray(message.parts) ? message.parts : [];
+  const fromParts = textFromParts(parts);
+  if (fromParts) {
+    const hit = extractEmojiReactionFix(fromParts);
+    if (hit) return hit;
+  }
+  if (typeof message.content === 'string' && message.content.trim()) {
+    return extractEmojiReactionFix(message.content);
   }
   return null;
 }

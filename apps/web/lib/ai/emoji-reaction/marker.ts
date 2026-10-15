@@ -5,6 +5,8 @@
 import type { MentorEmojiReaction } from './types';
 
 const MARKER_RE = /⟦NW_RX:(\{[\s\S]*?\})⟧/g;
+/** אלמוג מתקן/מסיר תגובה קודמת שלו: ⟦NW_RX_FIX:{"e":"🙏"}⟧ או ⟦NW_RX_FIX:{"remove":true}⟧ */
+const FIX_RE = /⟦NW_RX_FIX:(\{[\s\S]*?\})⟧/g;
 
 function utf8ToBase64(value: string): string {
   const bytes = new TextEncoder().encode(value);
@@ -82,6 +84,8 @@ export function extractEmojiReactionMarker(text: string): MentorEmojiReaction | 
 export function stripEmojiReactionMarker(text: string): string {
   if (!text) return text;
   return text
+    .replace(FIX_RE, '')
+    .replace(/⟦NW_RX_FIX:[^⟧]*$/, '')
     .replace(MARKER_RE, '')
     // unfinished marker while streaming
     .replace(/⟦NW_RX:[^⟧]*$/, '')
@@ -108,4 +112,33 @@ export function headerDecodeEmojiReaction(raw: string | null | undefined): Mento
   } catch {
     return null;
   }
+}
+
+export type EmojiReactionFix = { action: 'remove' } | { action: 'replace'; reaction: MentorEmojiReaction };
+
+export function encodeEmojiReactionFix(fix: EmojiReactionFix): string {
+  const payload = fix.action === 'remove' ? { remove: true } : { e: fix.reaction.emoji, v: fix.reaction.verb };
+  return `⟦NW_RX_FIX:${JSON.stringify(payload)}⟧`;
+}
+
+/** מחלץ תיקון תגובה (האחרון בטקסט). */
+export function extractEmojiReactionFix(text: string): EmojiReactionFix | null {
+  if (!text) return null;
+  FIX_RE.lastIndex = 0;
+  let last: EmojiReactionFix | null = null;
+  let match: RegExpExecArray | null;
+  while ((match = FIX_RE.exec(text)) != null) {
+    try {
+      const raw = JSON.parse(match[1]!) as Record<string, unknown>;
+      if (raw.remove === true) {
+        last = { action: 'remove' };
+        continue;
+      }
+      const reaction = parseMentorEmojiReaction(raw);
+      if (reaction) last = { action: 'replace', reaction };
+    } catch {
+      /* ignore malformed */
+    }
+  }
+  return last;
 }
