@@ -1,3 +1,4 @@
+import { decryptJson } from '@/lib/crypto/pii';
 import { evaluateNotifyGate } from '@/lib/notifications/notify-recipients';
 import { insertNotification } from '@/lib/notifications/deliver';
 import { NextResponse } from 'next/server';
@@ -193,10 +194,10 @@ export async function handlePost(request: Request) {
     .eq('user_id', payload.userId)
     .maybeSingle();
 
-  const riskSignals =
-    dossierData && isRecord((dossierData as { risk_signals?: unknown }).risk_signals)
-      ? ((dossierData as { risk_signals: Record<string, unknown> }).risk_signals)
-      : {};
+  const storedRisk = dossierData
+    ? decryptJson<unknown>((dossierData as { risk_signals?: unknown }).risk_signals, payload.userId)
+    : null;
+  const riskSignals = isRecord(storedRisk) ? storedRisk : {};
   const counts = await countGuardianTouches(admin, payload.userId, now);
   const recentlyActive = await userRecentlyActive(admin, profile, now);
 

@@ -1,3 +1,4 @@
+import { decryptJson, encryptJson } from '@/lib/crypto/pii';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { normalizeFrictionCategory, normalizeStrategyType } from './almog-commitments/friction';
@@ -246,10 +247,9 @@ export async function persistRiskFingerprint(
     .eq('user_id', userId)
     .maybeSingle();
 
+  const storedRisk = existing ? decryptJson<unknown>(existing.risk_signals, userId) : null;
   const currentRisk =
-    existing && typeof existing === 'object' && existing.risk_signals && typeof existing.risk_signals === 'object'
-      ? (existing.risk_signals as Record<string, unknown>)
-      : {};
+    storedRisk && typeof storedRisk === 'object' ? (storedRisk as Record<string, unknown>) : {};
 
   const riskSignals = {
     ...currentRisk,
@@ -258,7 +258,7 @@ export async function persistRiskFingerprint(
 
   const { error } = await admin.from('user_memory_dossier').upsert({
     user_id: userId,
-    risk_signals: riskSignals,
+    risk_signals: encryptJson(riskSignals, userId),
   });
   if (error) throw new Error(error.message);
 }
