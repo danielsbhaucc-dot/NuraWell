@@ -372,3 +372,36 @@ describe('stolen-phone protection', () => {
     expect(t.gideon_settings[0].disabled).toBe(true);
   });
 });
+
+describe('capabilities + clarify vs act', () => {
+  it('system prompt carries a manifest of every tool', async () => {
+    const { db } = fakeDb();
+    const llm = vi.fn().mockResolvedValueOnce({ message: { role: 'assistant', content: 'בסדר' } });
+    await runCeoTurn(db, 'telegram:42', 'מה אתה יודע לעשות?', { complete: llm as never });
+    const sys = llm.mock.calls[0][0].messages[0].content as string;
+    const { CEO_TOOLS } = await import('@/lib/ceo/tools');
+    for (const t of CEO_TOOLS) expect(sys).toContain(`• ${t.name}:`);
+    expect(sys).toContain('ודאות');
+  });
+  it('ambiguous request: model asks a question → no approval card is created', async () => {
+    const { db, t } = fakeDb();
+    const llm = vi.fn().mockResolvedValueOnce({ message: { role: 'assistant', content: 'להסתיר את השיעור או למחוק אותו לגמרי?' } });
+    const r = await runCeoTurn(db, 'telegram:42', 'תעיף את השיעור הזה', { complete: llm as never });
+    expect(r.text).toMatch(/\?$/);
+    expect(r.cards ?? []).toHaveLength(0);
+    expect(t.ceo_pending_actions).toHaveLength(0);
+  });
+  it('clear multi-step request: chained tool calls produce one card per action', async () => {
+    const { db, t } = fakeDb();
+    const llm = vi
+      .fn()
+      .mockResolvedValueOnce({ message: { role: 'assistant', content: null, tool_calls: [
+        { id: 'c1', type: 'function', function: { name: 'create_demo_link', arguments: '{"guest_name":"אלכס"}' } },
+        { id: 'c2', type: 'function', function: { name: 'create_demo_link', arguments: '{"guest_name":"דנה"}' } },
+      ] } })
+      .mockResolvedValueOnce({ message: { role: 'assistant', content: 'הכנתי שני קישורים לאישור.' } });
+    const r = await runCeoTurn(db, 'telegram:42', 'תן לאלכס ולדנה גישה', { complete: llm as never });
+    expect(r.cards).toHaveLength(2);
+    expect(t.ceo_pending_actions.map((a) => (a.args as { guest_name: string }).guest_name)).toEqual(['אלכס', 'דנה']);
+  });
+});

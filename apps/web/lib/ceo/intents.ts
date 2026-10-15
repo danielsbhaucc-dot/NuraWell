@@ -41,7 +41,10 @@ export function detectDemoIntent(text: string): DemoIntent | null {
   if (t.length > 200 || QUESTION_ABOUT.test(t)) return null;
   if (/(בטל|תבטל|מחק|תמחק|סגור|תסגור|נתק|תנתק|חסום|כמה|רשימת|תראה לי את)/.test(t)) return null;
   const demoish = DEMO_HINT.test(t) || (VERB.test(t) && OBJ.test(t) && /גישה/.test(t));
-  if (!demoish || !VERB.test(t) && !/^(דמו|לינק|קישור)/.test(t)) return null;
+  if (!demoish || (!VERB.test(t) && !/^(דמו|לינק דמו|קישור דמו)\s+ל?[א-ת]{2,}/.test(t))) return null;
+  // more than one guest ("לאלכס ולדנה") or an explicit account choice → let the model chain/clarify
+  if (/(^|\s)ל[א-ת]{2,}\s+ול?[א-ת]{2,}/.test(t)) return null;
+  if (/(בחשבון|לחשבון|על החשבון|כמשתמש)/.test(t)) return null;
   const guest_name = nameOf(t);
   return { ...(guest_name ? { guest_name } : {}), hours: hoursOf(t) };
 }
