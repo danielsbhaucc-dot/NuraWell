@@ -778,6 +778,16 @@ async function runMasterCron() {
     }
   }
 
+  // --- PII backfill (idempotent; stops doing work once everything is ciphertext)
+  if (process.env.PII_BACKFILL_IN_MASTER?.trim() !== '0') {
+    try {
+      const { backfillDerivedPii } = await import('@/lib/crypto/backfill-derived');
+      console.log('[cron/master] pii_backfill', JSON.stringify(await backfillDerivedPii(admin as never, 45_000)));
+    } catch (e) {
+      errors.push(`pii_backfill: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+
   // --- Nightly memory chain (session close → rollups → behaviour patterns) in its own invocation
   let memoryPipelineKick: { ok: boolean; reason?: string } | null = null;
   if (process.env.MEMORY_PIPELINE_KICK_FROM_MASTER?.trim() !== '0') {
