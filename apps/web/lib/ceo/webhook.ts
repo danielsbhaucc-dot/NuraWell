@@ -7,6 +7,7 @@ import { runCeoTurn } from './agent';
 import type { CeoChannel } from './channel';
 import { allowedChatIds } from './channel';
 import { setOwnerTask } from './owner-tasks';
+import { invalidateTrust, killSwitch, securityState } from './security';
 
 type Update = {
   message?: { chat: { id: number }; text?: string; message_id?: number };
@@ -24,7 +25,31 @@ export async function handleTelegramUpdate(...a: Parameters<typeof handleTelegra
 
 async function handleTelegramUpdateInner(db: SupabaseClient, channel: CeoChannel, u: Update, deps: { runTurn?: typeof runCeoTurn } = {}) {
   const chatId = String(u.message?.chat.id ?? u.callback_query?.message?.chat.id ?? '');
-  if (!chatId || !allowedChatIds().has(chatId)) return { ignored: true }; // silent for strangers
+  if (!chatId) return { ignored: true };
+  if (!allowedChatIds().has(chatId)) {
+    // silent for strangers, but tell Daniel (once a day per chat) and drop the passkey trust window
+    const once = await consumeRateLimit({ key: chatId, namespace: 'ceo-stranger', limit: 1, windowSeconds: 86_400 });
+    if (once.ok) {
+      await invalidateTrust(db, 'unknown chat').catch(() => {});
+      for (const id of allowedChatIds()) {
+        await channel.send(id, `⚠️ צ'אט לא מוכר ניסה לדבר עם גדעון (מסתיים ב-${chatId.slice(-4)}). לא קיבל תשובה. אם זה לא אתה, אפשר לכבות את גדעון מ-Ops.`).catch(() => {});
+      }
+    }
+    return { ignored: true };
+  }
+
+  const sec = await securityState(db);
+  const rawText = u.message?.text?.trim() ?? '';
+  if (/^\/(lock|kill)$|^(כבה|תכבה) את עצמך$/.test(rawText)) {
+    await killSwitch(db, `admin:${chatId}`, 'telegram command');
+    await channel.send(chatId, '⛔ גדעון כבוי. כל הפעולות הממתינות בוטלו. הפעלה מחדש: Ops ← גדעון ← אבטחה (דורש Face ID).');
+    return { killed: true };
+  }
+  if (sec.disabled) {
+    if (u.callback_query) await channel.ack({ callbackId: u.callback_query.id, chatId });
+    else await channel.send(chatId, '⛔ גדעון כבוי כרגע. אפשר להפעיל מחדש מ-Ops ← גדעון ← אבטחה.');
+    return { disabled: true };
+  }
 
   const rl = await consumeRateLimit({ key: chatId, namespace: 'ceo-min', limit: 20, windowSeconds: 60 });
   const rlDay = await consumeRateLimit({ key: chatId, namespace: 'ceo-day', limit: 300, windowSeconds: 86_400 });
@@ -48,6 +73,13 @@ async function handleTelegramUpdateInner(db: SupabaseClient, channel: CeoChannel
       return { target: Boolean(card) };
     }
     const r = await decideAction(db, id, kind === 'a', `admin:${chatId}`, { edit: kind === 'e' });
+    if (r.stepupUrl) {
+      await channel.ack({ callbackId: cb.id, chatId, messageId: cb.message?.message_id }, r.text, [
+        [{ text: '🔐 אשר עם Face ID', data: '', url: r.stepupUrl }],
+        [{ text: '❌ דחה', data: `ceo:r:${id}` }],
+      ]);
+      return { stepup: true };
+    }
     if (r.celebrate) {
       // the link gets its own message with a 🎉 effect; the card just flips to "approved"
       await channel.ack({ callbackId: cb.id, chatId, messageId: cb.message?.message_id }, '✅ אושר');

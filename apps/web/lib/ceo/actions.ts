@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { CeoButton } from './channel';
 import { TOOL_BY_NAME } from './tools';
+import { createStepupLink, gateApproval, isSensitive } from './security';
 
 export async function audit(db: SupabaseClient, actor: string, event: string, detail: Record<string, unknown> = {}, tool?: string, actionId?: string) {
   await db.from('ceo_audit_log').insert({ actor, event, tool: tool ?? null, action_id: actionId ?? null, detail });
@@ -15,7 +16,7 @@ export async function proposeAction(db: SupabaseClient, tool: string, args: Reco
   const { data, error } = await db.from('ceo_pending_actions').insert({ tool, args: parsed, summary, channel }).select('id, summary').single();
   if (error) throw new Error(error.message);
   await audit(db, 'ceo', 'action_proposed', { summary }, tool, data.id);
-  return { ...(data as { id: string; summary: string }), destructive: Boolean(t.destructive), tool, args: parsed as Record<string, unknown> };
+  return { ...(data as { id: string; summary: string }), destructive: Boolean(t.destructive), sensitive: isSensitive(tool, parsed as Record<string, unknown>, Boolean(t.destructive)), tool, args: parsed as Record<string, unknown> };
 }
 
 const UUID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
@@ -33,12 +34,12 @@ export async function humanizeIds(db: SupabaseClient, text: string): Promise<str
 }
 
 /** Approval card: short Hebrew, RTL-first, no JSON/table names/hashes. */
-export function approvalCard(a: { id: string; summary: string; destructive?: boolean }): { text: string; buttons: CeoButton[][] } {
+export function approvalCard(a: { id: string; summary: string; destructive?: boolean; sensitive?: boolean }): { text: string; buttons: CeoButton[][] } {
   const text = `${a.destructive ? '⚠️ **פעולה בלתי הפיכה**\n' : ''}📝 **מחכה לאישור שלך**\n${a.summary}`;
   return {
     text,
     buttons: [[
-      { text: '✅ אשר', data: `ceo:a:${a.id}` },
+      { text: a.sensitive ? '🔐 אשר' : '✅ אשר', data: `ceo:a:${a.id}` },
       { text: '✏️ ערוך', data: `ceo:e:${a.id}` },
       { text: '❌ דחה', data: `ceo:r:${a.id}` },
     ]],
@@ -66,7 +67,7 @@ export async function demoTargetCandidates(db: SupabaseClient): Promise<{ list: 
 /** Card for any pending action; demo links get a target picker (one button per account, ✓ on the selected one). */
 export async function approvalCardFor(
   db: SupabaseClient,
-  a: { id: string; summary: string; destructive?: boolean; tool?: string; args?: Record<string, unknown> },
+  a: { id: string; summary: string; destructive?: boolean; sensitive?: boolean; tool?: string; args?: Record<string, unknown> },
 ): Promise<{ text: string; buttons: CeoButton[][] }> {
   const card = approvalCard(a);
   if (a.tool !== 'create_demo_link') return card;
@@ -100,8 +101,27 @@ const fmtIL = (iso: string) =>
  * Approve/reject. Atomic claim (status pending → approved) so a double-tap or Telegram retry
  * can never execute twice; expired actions are refused.
  */
-export async function decideAction(db: SupabaseClient, id: string, approve: boolean, actor: string, opts: { edit?: boolean } = {}): Promise<{ ok: boolean; text: string; celebrate?: boolean }> {
+export async function decideAction(
+  db: SupabaseClient,
+  id: string,
+  approve: boolean,
+  actor: string,
+  opts: { edit?: boolean; stepupVerified?: boolean } = {},
+): Promise<{ ok: boolean; text: string; celebrate?: boolean; stepupUrl?: string }> {
   const now = new Date().toISOString();
+  if (approve) {
+    const { data: pend } = await db.from('ceo_pending_actions').select('tool, args, status').eq('id', id).maybeSingle();
+    if (pend && pend.status === 'pending') {
+      const t0 = TOOL_BY_NAME.get(String(pend.tool));
+      const sensitive = isSensitive(String(pend.tool), (pend.args ?? {}) as Record<string, unknown>, Boolean(t0?.destructive));
+      const g = opts.stepupVerified ? await gateApproval(db, false, Date.now(), { skipStepup: true }) : await gateApproval(db, sensitive);
+      if (!g.ok) {
+        await audit(db, actor, `approval_blocked_${g.reason}`, {}, String(pend.tool), id);
+        if (g.reason === 'stepup') return { ok: false, text: g.text, stepupUrl: await createStepupLink(db, 'approve', { actionId: id }) };
+        return { ok: false, text: g.text };
+      }
+    }
+  }
   const { data: claimed } = await db
     .from('ceo_pending_actions')
     .update({ status: approve ? 'approved' : 'rejected', decided_at: now })

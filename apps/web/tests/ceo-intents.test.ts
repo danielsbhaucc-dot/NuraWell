@@ -30,3 +30,9 @@ describe('demo-link intent', () => {
     expect(detectDemoIntent(text)).toBeNull();
   });
 });
+
+describe('ambiguous → no fast path (model chains or asks)', () => {
+  it.each(['תן לאלכס ולדנה גישה', 'תפתח לאלכס דמו על החשבון של רוני', 'גישה לאלכס?', 'דמו'])('%s', (text) => {
+    expect(detectDemoIntent(text)).toBeNull();
+  });
+});
