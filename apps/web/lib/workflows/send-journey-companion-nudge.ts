@@ -1,3 +1,4 @@
+import { decProfileResult } from '@/lib/crypto/pii-fields';
 import { withAiUser } from '@/lib/ai/usage-meter';
 import { insertNotification } from '@/lib/notifications/deliver';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -115,7 +116,7 @@ async function fetchJourneyMotivationProfile(
     .from('profiles')
     .select('ai_context, main_goal, main_obstacle, main_obstacle_detail')
     .eq('id', userId)
-    .maybeSingle();
+    .maybeSingle().then(decProfileResult(userId));
 
   return { userGoal: extractUserGoal((data ?? null) as MotivationProfileRow | null) };
 }

@@ -1,3 +1,4 @@
+import { decProfileResult } from '@/lib/crypto/pii-fields';
 import { NextResponse } from 'next/server';
 import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
@@ -30,7 +31,7 @@ export async function GET(request: Request) {
       current_weight_kg, goal_weight_kg`
     )
     .order('created_at', { ascending: false })
-    .limit(200);
+    .limit(200).then(decProfileResult());
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

@@ -1,3 +1,4 @@
+import { decProfileResult } from '@/lib/crypto/pii-fields';
 import type { Metadata } from 'next';
 import { createClient } from '../../../lib/supabase/server';
 import { createAdminClient } from '../../../lib/supabase/admin';
@@ -64,7 +65,7 @@ export default async function JourneyRoute() {
       .from('profiles')
       .select('full_name, main_obstacle, main_obstacle_detail, weakest_time_of_day')
       .eq('id', user.id)
-      .maybeSingle(),
+      .maybeSingle().then(decProfileResult(user.id)),
   ]);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

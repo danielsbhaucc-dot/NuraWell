@@ -1,3 +1,4 @@
+import { decProfileResult } from '@/lib/crypto/pii-fields';
 import { serve } from '@upstash/workflow/nextjs';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { requireQstashConfigured } from '@/lib/workflows/require-qstash-configured';
@@ -27,7 +28,7 @@ const { POST: workflowPost } = serve<Body>(async (context) => {
         welcome_email_sent_at, onboarding_completed`
       )
       .eq('id', userId)
-      .maybeSingle();
+      .maybeSingle().then(decProfileResult(userId));
 
     if (!profile?.onboarding_completed) {
       return { ok: false as const, reason: 'onboarding_incomplete' };

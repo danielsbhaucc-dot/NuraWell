@@ -1,3 +1,4 @@
+import { decProfileResult } from '@/lib/crypto/pii-fields';
 import { insertNotification } from '@/lib/notifications/deliver';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { sendResendEmail } from '@/lib/email/resend';
@@ -30,7 +31,7 @@ export async function sendWelcomeAlmogEmail(userId: string): Promise<SendWelcome
       almog_intro_email_sent_at, onboarding_completed, dolev_welcome_seen_at`
     )
     .eq('id', userId)
-    .maybeSingle();
+    .maybeSingle().then(decProfileResult(userId));
 
   if (!profile?.onboarding_completed) {
     return { ok: false, reason: 'onboarding_incomplete' };

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { requireApiSession } from '../../../../lib/api/route-guards';
 import { jerusalemDateKey } from '../../../../lib/journey/task-schedule';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 // Edge runs next to the user by default (fra1) — every Supabase round-trip then crosses to Sydney. Pin next to the DB.
 export const preferredRegion = 'fra1';
 export const dynamic = 'force-dynamic';

@@ -1,3 +1,4 @@
+import { decProfileResult } from '@/lib/crypto/pii-fields';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -115,7 +116,7 @@ async function fetchProfile(admin: AdminClient, userId: string) {
       'id, full_name, ai_context, ai_check_in_times, ai_system_prompt, onboarding_completed, last_active_at'
     )
     .eq('id', userId)
-    .maybeSingle();
+    .maybeSingle().then(decProfileResult(userId));
 
   if (error) throw new Error(error.message);
   return data as {

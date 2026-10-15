@@ -1,3 +1,4 @@
+import { decInteractionResult, decProfileResult } from '@/lib/crypto/pii-fields';
 import { NURAWELL_CHAT_SYSTEM_PROMPT_V2, ALMOG_CHAT_FINAL_GUARDRAILS_V2, almogPromptV2Enabled } from '../../../../../lib/ai/prompts-v2';
 import { budgetHistoryV2, budgetContextSectionsV2, sectionSizes } from '../../../../../lib/ai/context-budget-v2';
 import { createRawUiStreamFilter, encodeResolvedChatUi, hasResolvedContent, parseRawChatUi, resolveChatUi, stripRawChatUi } from '@/lib/ai/chat-ui/blocks';
@@ -2146,7 +2147,7 @@ async function fetchChatProfileRow(
         ai_check_in_times, onboarding_completed`
       )
       .eq('id', userId)
-      .maybeSingle();
+      .maybeSingle().then(decProfileResult(userId));
     const profile = (data ?? null) as {
       full_name?: string | null;
       phone?: string | null;
@@ -2653,7 +2654,7 @@ async function handleChatPost(request: Request) {
       .gte('created_at', new Date(Date.now() - 21 * 86400000).toISOString())
       .lte('created_at', new Date(Date.now() - 15000).toISOString())
       .order('created_at', { ascending: false })
-      .limit(80);
+      .limit(80).then(decInteractionResult(user.id));
     const { buildRepetitionHint } = await import('../../../../../lib/ai/repetition-hint');
     return buildRepetitionHint(
       lastUserText,

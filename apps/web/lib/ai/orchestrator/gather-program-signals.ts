@@ -1,3 +1,4 @@
+import { decInteractionResult } from '@/lib/crypto/pii-fields';
 /**
  * 📡 איסוף אותות הפעילות ל-Program Orchestrator.
  *
@@ -90,7 +91,7 @@ async function detectReportedDifficulty(
     .eq('role', 'user')
     .gte('created_at', sinceIso)
     .order('created_at', { ascending: false })
-    .limit(6);
+    .limit(6).then(decInteractionResult(userId));
 
   for (const row of (data ?? []) as Array<{ content?: string }>) {
     if (typeof row.content === 'string' && detectRelapseInMessage(row.content)) return true;

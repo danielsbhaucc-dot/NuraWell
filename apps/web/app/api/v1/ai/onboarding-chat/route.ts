@@ -1,3 +1,4 @@
+import { decProfileResult, encryptProfilePatch } from '@/lib/crypto/pii-fields';
 import { enterAiUsage } from '@/lib/ai/usage-meter';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -109,7 +110,7 @@ export async function POST(request: Request) {
         'gender, full_name, main_goal, current_weight_kg, goal_weight_kg, weakest_time_of_day, main_obstacle, main_obstacle_detail, wake_up_time, sleep_time'
       )
       .eq('id', user.id)
-      .maybeSingle();
+      .maybeSingle().then(decProfileResult(user.id));
 
     const dbFlags = buildFlagsFromProfileRow(profileRow);
     const dbPublic = buildPublicExtractedFromProfileRow(profileRow);
@@ -160,7 +161,7 @@ export async function POST(request: Request) {
     if (parsed.data.persist) {
       const patch = publicExtractedToProfilePatch(mergedPublic);
       if (Object.keys(patch).length > 0) {
-        const { error } = await supabase.from('profiles').update(patch).eq('id', user.id);
+        const { error } = await supabase.from('profiles').update(encryptProfilePatch(patch, user.id)).eq('id', user.id);
         persisted = !error;
       } else {
         persisted = true;

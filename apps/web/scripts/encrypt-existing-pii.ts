@@ -4,6 +4,7 @@
  * לא מדפיס ערכים, רק ספירות.
  */
 import { DOSSIER_ENCRYPTED_FIELDS, encryptJson, encryptStringArray, isEncrypted } from '../lib/crypto/pii';
+import { encryptChatContent, encryptMeasurementPatch, encryptProfilePatch, PROFILE_ENC_JSON, PROFILE_ENC_NUMERIC, PROFILE_ENC_TEXT } from '../lib/crypto/pii-fields';
 
 const REF = process.env.SUPABASE_PROJECT_REF!;
 const TOKEN = process.env.SUPABASE_ACCESS_TOKEN!;
@@ -50,6 +51,46 @@ async function main() {
     );
     strategies++;
   }
+  // profiles
+  const pcols = [...PROFILE_ENC_NUMERIC, ...PROFILE_ENC_JSON, ...PROFILE_ENC_TEXT];
+  const prows = await sql<Record<string, unknown>>(`select id, ${pcols.join(', ')} from public.profiles`);
+  let profilesEnc = 0;
+  for (const r of prows) {
+    const uid = r.id as string;
+    const todo: Record<string, unknown> = {};
+    for (const c of pcols) if (r[c] !== null && r[c] !== undefined && !isEncrypted(r[c])) todo[c] = r[c];
+    if (!Object.keys(todo).length) continue;
+    const enc = encryptProfilePatch(todo, uid);
+    const sets = Object.entries(enc).map(([c, v]) =>
+      (PROFILE_ENC_JSON as readonly string[]).includes(c) ? `${c} = to_jsonb(${lit(String(v))}::text)` : `${c} = ${v === null ? 'null' : lit(String(v))}`
+    );
+    await sql(`update public.profiles set ${sets.join(', ')} where id = ${lit(uid)}`);
+    profilesEnc++;
+  }
+  // user_measurements
+  const mrows = await sql<Record<string, unknown>>(`select id, user_id, weight_kg, height_cm, bmi, notes from public.user_measurements`);
+  let measEnc = 0;
+  for (const r of mrows) {
+    const todo: Record<string, unknown> = {};
+    for (const c of ['weight_kg', 'height_cm', 'bmi', 'notes']) if (r[c] !== null && r[c] !== undefined && !isEncrypted(r[c])) todo[c] = r[c];
+    if (!Object.keys(todo).length) continue;
+    const enc = encryptMeasurementPatch(todo, r.user_id as string);
+    const sets = Object.entries(enc).map(([c, v]) => `${c} = ${v === null ? 'null' : lit(String(v))}`);
+    await sql(`update public.user_measurements set ${sets.join(', ')} where id = ${lit(String(r.id))}`);
+    measEnc++;
+  }
+  // ai_interactions.content (batched)
+  let chatEnc = 0;
+  for (;;) {
+    const batch = await sql<{ id: string; user_id: string; content: string }>(
+      `select id, user_id, content from public.ai_interactions where content not like 'enc:v1:%' limit 200`
+    );
+    if (!batch.length) break;
+    const values = batch.map((b) => `(${lit(String(b.id))}::uuid, ${lit(encryptChatContent(b.content ?? '', b.user_id))})`).join(',');
+    await sql(`update public.ai_interactions a set content = v.c from (values ${values}) as v(id, c) where a.id = v.id`);
+    chatEnc += batch.length;
+  }
+  console.log(JSON.stringify({ profilesEnc, profilesTotal: prows.length, measEnc, measTotal: mrows.length, chatEnc }));
   console.log(JSON.stringify({ dossierRowsEncrypted: dossiers, dossierRowsTotal: rows.length, strategyRowsEncrypted: strategies, strategyRowsTotal: srows.length }));
 }
 

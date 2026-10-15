@@ -1,3 +1,4 @@
+import { decInteractionResult } from '@/lib/crypto/pii-fields';
 /**
  * שומר תגובת אימוג'י על הודעת המשתמש האחרונה בסשן (metadata).
  */
@@ -24,7 +25,7 @@ export async function persistUserEmojiReaction(
     .eq('user_id', params.userId)
     .eq('role', 'user')
     .order('created_at', { ascending: false })
-    .limit(6);
+    .limit(6).then(decInteractionResult(params.userId));
 
   if (error) throw error;
 

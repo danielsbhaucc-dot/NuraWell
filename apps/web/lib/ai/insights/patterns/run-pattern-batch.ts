@@ -1,3 +1,4 @@
+import { decInteractionResult } from '@/lib/crypto/pii-fields';
 /**
  * 🌙 Nightly behaviour-pattern insights batch (runs inside /api/v1/ai/cron/memory-pipeline full run).
  *
@@ -68,7 +69,7 @@ async function gatherEvents(admin: SupabaseClient, userId: string, sinceIso: str
   const [tasks, sos, chat, prof] = await Promise.all([
     admin.from('task_events').select('kind, occurred_at, definition_id').eq('user_id', userId).in('kind', ['done', 'missed', 'partial']).gte('occurred_at', sinceIso).limit(500),
     admin.from('guardian_sos_events').select('created_at, trigger').eq('user_id', userId).gte('created_at', sinceIso).limit(200),
-    admin.from('ai_interactions').select('created_at, content').eq('user_id', userId).eq('role', 'user').gte('created_at', sinceIso).order('created_at', { ascending: true }).limit(150),
+    admin.from('ai_interactions').select('created_at, content').eq('user_id', userId).eq('role', 'user').gte('created_at', sinceIso).order('created_at', { ascending: true }).limit(150).then(decInteractionResult(userId)),
     admin.from('profiles').select('full_name').eq('id', userId).maybeSingle(),
   ]);
   const events: BehaviourEvent[] = [

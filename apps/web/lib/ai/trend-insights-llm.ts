@@ -1,3 +1,4 @@
+import { decMeasurementResult, decProfileResult } from '@/lib/crypto/pii-fields';
 import { ALMOG_NUTRITION_SAFETY_RULES } from './safety/nutrition-safety';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -160,8 +161,8 @@ export async function buildTrendInsight(params: {
       .select('measured_at, weight_kg')
       .eq('user_id', userId)
       .order('measured_at', { ascending: false })
-      .limit(20),
-    supabase.from('profiles').select('goal_weight_kg').eq('id', userId).maybeSingle(),
+      .limit(20).then(decMeasurementResult(userId)),
+    supabase.from('profiles').select('goal_weight_kg').eq('id', userId).maybeSingle().then(decProfileResult(userId)),
   ]);
 
   const goalKg =

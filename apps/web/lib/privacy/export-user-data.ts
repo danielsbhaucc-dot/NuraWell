@@ -1,3 +1,4 @@
+import { decProfileResult } from '@/lib/crypto/pii-fields';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { LEGAL_POLICY_VERSION } from './constants';
 
@@ -52,7 +53,7 @@ export async function buildUserDataExport(
   userId: string
 ): Promise<UserDataExport> {
   const [{ data: profile }, { data: consents }, authUser] = await Promise.all([
-    admin.from('profiles').select('*').eq('id', userId).maybeSingle(),
+    admin.from('profiles').select('*').eq('id', userId).maybeSingle().then(decProfileResult(userId)),
     admin.from('user_consents').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
     admin.auth.admin.getUserById(userId),
   ]);

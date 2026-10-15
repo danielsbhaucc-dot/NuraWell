@@ -1,3 +1,4 @@
+import { decProfileResult } from '@/lib/crypto/pii-fields';
 import { ALMOG_NUTRITION_SAFETY_RULES } from './safety/nutrition-safety';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -111,7 +112,7 @@ export async function buildAdaptiveNextStep(params: {
       .from('profiles')
       .select('main_obstacle, main_obstacle_detail, weakest_time_of_day')
       .eq('id', userId)
-      .maybeSingle(),
+      .maybeSingle().then(decProfileResult(userId)),
   ]);
 
   if (!report) {

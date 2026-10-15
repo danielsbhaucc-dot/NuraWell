@@ -1,3 +1,4 @@
+import { decProfileResult } from '@/lib/crypto/pii-fields';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
@@ -32,7 +33,7 @@ export async function GET(request: Request, context: RouteContext) {
     .from('profiles')
     .select('*')
     .eq('id', userId)
-    .maybeSingle();
+    .maybeSingle().then(decProfileResult(userId));
 
   if (error || !profile) {
     return NextResponse.json({ error: 'משתמש לא נמצא' }, { status: 404 });

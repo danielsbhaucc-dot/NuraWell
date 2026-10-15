@@ -145,13 +145,7 @@ export function buildOnboardingVectorFacts(profile: OnboardingProfileForChat): A
     text: `מטרה מההרשמה: ${goal}.`,
   });
 
-  if (profile.current_weight_kg != null && profile.goal_weight_kg != null) {
-    facts.push({
-      key: 'weight',
-      category: 'schedule',
-      text: `משקל בהרשמה: ${profile.current_weight_kg} ק"ג, יעד ${profile.goal_weight_kg} ק"ג.`,
-    });
-  }
+  // משקל לא נשלח לאינדקס וקטורי חיצוני (Upstash/embeddings) — נשמר מוצפן ב-DB בלבד.
 
   if (weakest) {
     facts.push({

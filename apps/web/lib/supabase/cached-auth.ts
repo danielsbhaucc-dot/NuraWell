@@ -1,3 +1,4 @@
+import { decProfileResult } from '@/lib/crypto/pii-fields';
 /**
  * React cache — איחוד getUser/profile בתוך אותו request (layout + page).
  */
@@ -25,6 +26,6 @@ export const getCachedDashboardProfile = cache(async (userId: string) => {
       onboarding_completed`
     )
     .eq('id', userId)
-    .maybeSingle();
+    .maybeSingle().then(decProfileResult(userId));
   return profile;
 });
