@@ -86,6 +86,7 @@ export async function decideAction(db: SupabaseClient, id: string, approve: bool
     await db.from('ceo_pending_actions').update({ status: 'failed', result: { error: msg } }).eq('id', id);
     await audit(db, actor, 'action_failed', { error: msg }, claimed.tool, id);
     console.error('[ceo] action failed', claimed.tool, msg);
-    return { ok: false, text: `⚠️ לא הצלחתי לבצע: ${claimed.summary}\nלא בוצע שום שינוי חלקי שדורש טיפול. הפרטים הטכניים נשמרו ביומן, ואפשר לבקש ממני לנסות שוב.` };
+    const userFacing = /[\u0590-\u05FF]/.test(msg) ? `\n${msg}` : '';
+    return { ok: false, text: `⚠️ לא הצלחתי לבצע: ${claimed.summary}${userFacing}\nהפרטים הטכניים נשמרו ביומן. אפשר לבקש ממני לבדוק מה קרה, או לנסות שוב.` };
   }
 }
