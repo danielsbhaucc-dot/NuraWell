@@ -2,14 +2,14 @@ import { withAiUsage } from '@/lib/ai/usage-meter';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { timingSafeEqualStr } from '@/lib/api/timing-safe-equal';
 import { consumeRateLimit } from '@/lib/api/rate-limit';
-import { decideAction } from './actions';
+import { decideAction, setActionTarget } from './actions';
 import { runCeoTurn } from './agent';
 import type { CeoChannel } from './channel';
 import { allowedChatIds } from './channel';
 import { setOwnerTask } from './owner-tasks';
 
 type Update = {
-  message?: { chat: { id: number }; text?: string };
+  message?: { chat: { id: number }; text?: string; message_id?: number };
   callback_query?: { id: string; data?: string; message?: { chat: { id: number }; message_id: number } };
 };
 
@@ -42,8 +42,19 @@ async function handleTelegramUpdateInner(db: SupabaseClient, channel: CeoChannel
       await channel.ack({ callbackId: cb.id, chatId, messageId: cb.message?.message_id }, msg);
       return { task: kind };
     }
+    if (kind === 't') {
+      const card = await setActionTarget(db, id, cb.data.split(':')[3] ?? '');
+      await channel.ack({ callbackId: cb.id, chatId, messageId: cb.message?.message_id }, card?.text ?? 'הפעולה כבר טופלה או שפג תוקפה.', card?.buttons);
+      return { target: Boolean(card) };
+    }
     const r = await decideAction(db, id, kind === 'a', `admin:${chatId}`, { edit: kind === 'e' });
-    await channel.ack({ callbackId: cb.id, chatId, messageId: cb.message?.message_id }, r.text);
+    if (r.celebrate) {
+      // the link gets its own message with a 🎉 effect; the card just flips to "approved"
+      await channel.ack({ callbackId: cb.id, chatId, messageId: cb.message?.message_id }, '✅ אושר');
+      await channel.send(chatId, r.text, undefined, { effect: 'celebrate' });
+    } else {
+      await channel.ack({ callbackId: cb.id, chatId, messageId: cb.message?.message_id }, r.text);
+    }
     return { decided: r.ok };
   }
 
@@ -53,6 +64,9 @@ async function handleTelegramUpdateInner(db: SupabaseClient, channel: CeoChannel
     await channel.send(chatId, 'שלום דניאל, אני כאן. אפשר לשאול אותי כל דבר על המערכת.');
     return { ok: true };
   }
+  const msgId = u.message?.message_id;
+  if (msgId) await channel.react?.(chatId, msgId, '👀');
+  await channel.typing?.(chatId);
   const r = await (deps.runTurn ?? runCeoTurn)(db, `${channel.name}:${chatId}`, text.slice(0, 4000));
   await channel.send(chatId, r.text, r.buttons);
   for (const c of r.cards ?? []) await channel.send(chatId, c.text, c.buttons);

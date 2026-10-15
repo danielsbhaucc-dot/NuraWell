@@ -288,7 +288,7 @@ const GENERIC: CeoTool[] = [
     name: 'create_demo_link',
     secretResult: true,
     description:
-      'Create a demo access link for a guest (the ONLY way to create demo links — never db_insert into demo_access_links). The server generates the token, stores only its hash and returns the real URL after approval. Target = the default demo account set in the Ops dashboard; pass targetUserId only if Daniel names a specific account (find it with list_users / db_read profiles).',
+      'יצירת קישור דמו (גישת אורח זמנית) — "תן לאלכס גישה", "תפתח דמו לדנה". Create a demo access link for a guest (the ONLY way to create demo links — never db_insert into demo_access_links). The server generates the token, stores only its hash and returns the real URL after approval. Target = the default demo account set in the Ops dashboard; pass targetUserId only if Daniel names a specific account (find it with list_users / db_read profiles).',
     schema: z.object({
       guest_name: z.string().trim().min(1).max(80).optional(),
       hours: z.number().int().min(1).max(168).default(24),

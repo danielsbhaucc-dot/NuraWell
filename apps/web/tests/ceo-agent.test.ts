@@ -287,3 +287,36 @@ describe('demo links via dedicated tool', () => {
     expect(s).not.toMatch(/token|hash|demo_access/);
   });
 });
+
+describe('demo fast path + picker + effects', () => {
+  it('"תן לאלכס גישה" becomes a demo card with a target picker, no LLM call', async () => {
+    const { db, t } = fakeDb();
+    t.profiles.push({ id: '22222222-2222-4222-8222-222222222222', full_name: 'Test', role: 'test' });
+    const llm = vi.fn();
+    const r = await runCeoTurn(db, 'telegram:42', 'תן לאלכס גישה', { complete: llm as never });
+    expect(llm).not.toHaveBeenCalled();
+    expect(t.ceo_pending_actions[0].tool).toBe('create_demo_link');
+    expect((t.ceo_pending_actions[0].args as { guest_name: string }).guest_name).toBe('אלכס');
+    const card = r.cards![0];
+    expect(card.buttons.some((row) => row[0].data.startsWith('ceo:t:'))).toBe(true);
+    expect(card.buttons.at(-1)!.map((b) => b.text)).toEqual(['✅ אשר', '✏️ ערוך', '❌ דחה']);
+  });
+  it('picker button sets the target and re-renders the card', async () => {
+    const { db, t } = fakeDb();
+    t.profiles.push({ id: '22222222-2222-4222-8222-222222222222', full_name: 'Test', role: 'test' });
+    const a = await proposeAction(db, 'create_demo_link', { guest_name: 'אלכס' });
+    const f = tgFetch();
+    await handleTelegramUpdate(db, createTelegramChannel(f as never), { callback_query: { id: 'cb', data: `ceo:t:${a.id}:22222222`, message: { chat: { id: 42 }, message_id: 9 } } });
+    expect((t.ceo_pending_actions[0].args as { targetUserId: string }).targetUserId).toBe('22222222-2222-4222-8222-222222222222');
+    const edit = f.mock.calls.find((c) => String((c as unknown[])[0]).endsWith('editMessageText')) as unknown[];
+    const body = JSON.parse(String((edit[1] as { body: string }).body));
+    expect(body.reply_markup.inline_keyboard.flat().find((b: { text: string }) => b.text.startsWith('✓'))?.text).toMatch(/^✓ Test/);
+  });
+  it('incoming message gets 👀 reaction + typing', async () => {
+    const { db } = fakeDb();
+    const f = tgFetch();
+    await handleTelegramUpdate(db, createTelegramChannel(f as never), { message: { chat: { id: 42 }, text: 'היי', message_id: 5 } }, { runTurn: async () => ({ text: 'שלום', buttons: [] }) });
+    const methods = f.mock.calls.map((c) => String((c as unknown[])[0]).split('/').pop());
+    expect(methods.slice(0, 2)).toEqual(['setMessageReaction', 'sendChatAction']);
+  });
+});

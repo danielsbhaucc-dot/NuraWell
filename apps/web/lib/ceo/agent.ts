@@ -2,7 +2,8 @@ import type OpenAI from 'openai';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { AI_MODELS } from '@/lib/ai/client';
 import type { CeoButton } from './channel';
-import { approvalCard, audit, proposeAction } from './actions';
+import { approvalCardFor, audit, proposeAction } from './actions';
+import { detectDemoIntent } from './intents';
 import { CEO_CHAT_MODEL, CEO_CONTENT_MODEL, CEO_STRONG_MODEL, complete } from './llm';
 import { TOOL_BY_NAME, toolSpecs } from './tools';
 import { israelTimeContext } from './time-context';
@@ -46,6 +47,14 @@ export const CEO_SYSTEM_PROMPT = `אתה ${CEO_NAME}, מנכ"ל ה-AI של NuraW
 - היה יוזם: אם אתה רואה בנתונים בעיה או הזדמנות שדניאל לא שאל עליהן, ציין אותן בשורה אחת בסוף.
 - צרף קישור לפאנל כשכלי מחזיר link.
 - כשדניאל מבקש שינוי, קרא מיד לכלי המתאים (הוא רק יוצר בקשת אישור). אל תתאר שאתה "תיצור בקשה", פשוט צור אותה.
+- הבנת כוונה: דניאל כותב בעברית מדוברת, קצרה ולפעמים עם סלנג. פרש לפי הכוונה ולא לפי המילים. דוגמאות:
+  • "תן לאלכס גישה" / "תפתח לאלכס דמו" / "תזרוק לינק דמו לאלכס" → create_demo_link עם guest_name="אלכס"
+  • "תשתיק את דנה לשבוע" / "שדנה לא תקבל התראות כמה ימים" → pause_user_notifications (7 ימים)
+  • "מה קורה עם המשתמשים?" / "מי נעלם לי?" → list_users filter=inactive
+  • "תעיף את השיעור על מים מהאוויר" → set_step_published=false (הסתרה, לא מחיקה)
+  • "תבדוק אם אלמוג מדבר יפה" → almog_quality_sample
+  • "יש באגים?" / "משהו נשבר?" → errors
+  שאל שאלת הבהרה קצרה אחת רק כשבאמת אי אפשר לדעת (למשל שני משתמשים באותו שם). אחרת פעל, כי כל שינוי ממילא מחכה לאישור.
 - קישורי דמו נוצרים רק עם create_demo_link (השרת מייצר את הקישור). לעולם אל תמציא טוקן או hash ואל תכתוב לטבלאות של טוקנים.
 - בתשובות לדניאל: בלי JSON, בלי שמות טבלאות, מזהים או hash. כרטיס האישור נשלח אוטומטית, אז אל תחזור על פרטיו. אם כלי נכשל, הסבר בעברית פשוטה מה לא הצליח ומה אפשר לעשות, בלי הודעת השגיאה הטכנית.
 - אם כלי לא החזיר נתון מסוים, אל תציין מספר עבורו. קרא לכלי הנכון (metrics לרוב השאלות הכמותיות).
@@ -98,6 +107,17 @@ export async function runCeoTurn(db: SupabaseClient, chatKey: string, userText: 
   const llm = deps.complete ?? complete;
   const { data: conv } = await db.from('ceo_conversations').select('summary, turns').eq('chat_key', chatKey).maybeSingle();
   const turns: { role: 'user' | 'assistant'; content: string }[] = (conv?.turns as never) ?? [];
+
+  // Fast path: demo-link requests never depend on the model understanding slang.
+  const demo = detectDemoIntent(userText);
+  if (demo) {
+    const a = await proposeAction(db, 'create_demo_link', demo);
+    const card = await approvalCardFor(db, a);
+    const text = `מכין קישור דמו${demo.guest_name ? ` ל${demo.guest_name}` : ''}. בחר חשבון ואשר 👇`;
+    await saveMemory(db, chatKey, conv?.summary ?? '', [...turns, { role: 'user', content: userText }, { role: 'assistant', content: text }], llm);
+    return { text, buttons: [], cards: [card] };
+  }
+
   const snapshot = await liveSnapshot(db);
 
   const messages: Msg[] = [
@@ -132,7 +152,7 @@ export async function runCeoTurn(db: SupabaseClient, chatKey: string, userText: 
           if (!t) throw new Error('unknown tool');
           if (t.write) {
             const a = await proposeAction(db, t.name, args);
-            cards.push(approvalCard(a));
+            cards.push(await approvalCardFor(db, a));
             out = { status: 'pending_approval', id: a.id };
           } else {
             out = await t.run(db, t.schema.parse(args));
