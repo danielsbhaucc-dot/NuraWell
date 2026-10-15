@@ -1,3 +1,4 @@
+import { auditAdminRequest } from '@/lib/api/require-ops-api-admin';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { readJsonBody } from '@/lib/api/json-request';
@@ -129,6 +130,7 @@ export const POST = async (request: Request) => {
 export async function DELETE(request: Request) {
   const auth = await requireApiAdmin(request);
   if (!auth.ok) return auth.response;
+  await auditAdminRequest(request, auth.user.id);
 
   await clearDemoEnrollment(createAdminClient(), auth.user.id);
   return NextResponse.json({ ok: true });

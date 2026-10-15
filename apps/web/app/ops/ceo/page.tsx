@@ -1,6 +1,7 @@
 import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
-import { ensureOpsAdminServer } from '@/lib/auth/ensure-ops-admin-server';
+import { allowedChatIds } from '@/lib/ceo/channel';
+import { sendMiniAppButton } from '@/lib/ceo/stepup-http';
+import { ensureOpsAdminServer, opsActorId } from '@/lib/auth/ensure-ops-admin-server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { decideAction } from '@/lib/ceo/actions';
 import { CEO_NAME } from '@/lib/ceo/agent';
@@ -17,8 +18,12 @@ async function decide(formData: FormData) {
   await ensureOpsAdminServer();
   const db = createAdminClient();
   const r = await decideAction(db, String(formData.get('id')), formData.get('approve') === '1', 'admin:panel');
-  await db.from('admin_audit_log').insert({ method: 'ACTION', path: '/ops/ceo decide', detail: { id: String(formData.get('id')), approve: formData.get('approve') === '1' } });
-  if (r.stepupUrl) redirect(r.stepupUrl);
+  await db.from('admin_audit_log').insert({ actor_id: await opsActorId(), method: 'ACTION', path: '/ops/ceo decide', detail: { id: String(formData.get('id')), approve: formData.get('approve') === '1' } });
+  if (r.stepupUrl) {
+    // Face ID happens only inside Telegram: send the one-time Mini App button there.
+    const chat = [...allowedChatIds()][0];
+    if (chat) await sendMiniAppButton(chat, `🔐 ${r.text || 'פעולה רגישה'}\nאשר עם Face ID:`, r.stepupUrl);
+  }
   revalidatePath('/ops/ceo');
 }
 
