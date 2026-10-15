@@ -1,3 +1,4 @@
+import { decryptDossierRow, encryptJson } from '@/lib/crypto/pii';
 import { rowToDossier } from './format-dossier-prompt';
 import type { UserMemoryDossier } from './types';
 
@@ -21,8 +22,12 @@ export async function fetchUserMemoryDossier(
       return null;
     }
 
-    return rowToDossier((data as Record<string, unknown> | null) ?? null, userId);
-  } catch {
+    return rowToDossier(
+      decryptDossierRow((data as Record<string, unknown> | null) ?? null, userId),
+      userId
+    );
+  } catch (e) {
+    console.warn('[memory-dossier] fetch/decrypt failed', e instanceof Error ? e.message : 'unknown');
     return null;
   }
 }
@@ -42,10 +47,10 @@ export async function upsertUserMemoryDossier(
       habit_memory: dossier.habit_memory,
       schedule_memory: dossier.schedule_memory,
       personal_context: dossier.personal_context,
-      health_context: dossier.health_context,
-      psychology: dossier.psychology,
+      health_context: encryptJson(dossier.health_context, dossier.user_id),
+      psychology: encryptJson(dossier.psychology, dossier.user_id),
       coaching_profile: dossier.coaching_profile,
-      risk_signals: dossier.risk_signals,
+      risk_signals: encryptJson(dossier.risk_signals, dossier.user_id),
       inferred_insights: dossier.inferred_insights,
       source_stats: dossier.source_stats,
     },
