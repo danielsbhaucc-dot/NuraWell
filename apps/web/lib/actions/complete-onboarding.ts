@@ -1,5 +1,5 @@
-import { sealProfilePatch } from '@/lib/crypto/pii-seal';
 'use server';
+import { sealProfilePatch } from '@/lib/crypto/pii-seal';
 import { buildSafetyScreening } from '@/lib/onboarding/safety-screening';
 
 import { z } from 'zod';
