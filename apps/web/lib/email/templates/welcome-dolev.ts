@@ -53,12 +53,6 @@ export function buildWelcomeDolevEmailHtml(
   const table = emailSummaryTable([
     ['מטרה', profile.main_goal ? (GOAL_HE[profile.main_goal] ?? profile.main_goal) : '—'],
     [
-      'משקל נוכחי / יעד',
-      profile.current_weight_kg != null && profile.goal_weight_kg != null
-        ? `${profile.current_weight_kg} ק״ג · יעד ${profile.goal_weight_kg} ק״ג`
-        : '—',
-    ],
-    [
       'חלון קשה',
       profile.weakest_time_of_day ? (WEAKEST_HE[profile.weakest_time_of_day] ?? profile.weakest_time_of_day) : '—'
     ],
