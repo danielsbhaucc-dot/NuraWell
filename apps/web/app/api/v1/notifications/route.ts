@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 // Edge runs next to the user by default (fra1) — every Supabase round-trip then crosses to Sydney. Pin next to the DB.
 export const preferredRegion = 'fra1';
 import { z } from 'zod';

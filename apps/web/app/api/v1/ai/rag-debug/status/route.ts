@@ -1,7 +1,7 @@
 import { requireApiAdmin } from '../../../../../../lib/api/route-guards';
 import { isUpstashVectorConfigured } from '../../../../../../lib/ai/upstash-vector-rest';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const preferredRegion = 'fra1'; // next to Supabase (Frankfurt, eu-central-1)
 

@@ -13,7 +13,7 @@ import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
 
 /** Edge — אותו דפוס כמו צ'אט RAG; embeddings דרך fetch. */
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export const preferredRegion = 'fra1';

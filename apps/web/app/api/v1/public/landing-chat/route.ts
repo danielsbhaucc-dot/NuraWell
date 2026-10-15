@@ -5,7 +5,7 @@ import { consumeMultiRateLimits, rateLimitResponse } from '../../../../../lib/ap
 import { groqCompatFetch } from '@/lib/ai/groq-compat';
 
 /** Edge — סטרימינג מהיר וקרוב ל-POP, בלי תלות ב-Node APIs. */
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 
 /**
  * דמו AI ציבורי לדף הנחיתה (/v2). מטרה: לתת טעימה אמיתית מ"אלמוג" בלי התחברות,
