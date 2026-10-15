@@ -50,7 +50,8 @@ export function buildWelcomeAlmogEmailHtml(
       profile.meal_schedule.map((m) => `${m.time} (${m.label})`).join(', ')
     : 'לפי לוח כללי';
 
-  const table = emailSummaryTable([
+  const table = emailSummaryTable(
+    [
     ['מטרה', profile.main_goal ? (GOAL_HE[profile.main_goal] ?? profile.main_goal) : '—'],
     [
       'חלון קשה',
@@ -62,21 +63,22 @@ export function buildWelcomeAlmogEmailHtml(
     ],
     ['השכמה / שינה', `${profile.wake_up_time ?? '—'} · ${profile.sleep_time ?? '—'}`],
     ['ארוחות', meals],
-  ]);
+    ],
+    'מה שאני כבר יודע עליך'
+  );
 
   return renderEmailLayout({
     assetOrigin: origin,
     preheader: 'קיבלתי את מה שמילאת בהרשמה, הנה הסיכום שלך',
     eyebrow: 'אלמוג · NuraWell',
-    heading: `שלום ${name} 🌿`,
+    heading: `שלום ${name}, אלמוג כאן 🌿`,
+    subheading: 'נעים להכיר, באמת',
     bodyHtml: [
-      emailParagraph('איזה כיף שהצטרפת! קיבלתי את כל מה שמילאת בהרשמה, ואני כבר מתכנן איך ללוות אותך בקצב שלך, בלי שיפוט ובלי לחץ.'),
-      emailParagraph('<strong>מה ששמרתי עליך:</strong>'),
-      table,
-      emailParagraph(`בקרוב ${gc.willReceive} ממני גם הודעות באפליקציה בזמנים שמתאימים לך, במיוחד לפני הרגעים הקשים.`, { muted: true, small: true }),
+      emailParagraph('דולב העביר לי את התיק שלך (בעדינות, אל דאגה). אני כבר מתכנן איך ללוות אותך בקצב שלך, בלי שיפוט ובלי לחץ. ובלי הרצאות, מבטיח.'),
+            table,
+      emailParagraph(`בקרוב ${gc.willReceive} ממני גם הודעות באפליקציה בזמנים שמתאימים לך, במיוחד לפני הרגעים הקשים.`, { muted: true }),
     ].join(''),
     cta: { label: 'כניסה לאפליקציה', url: `${origin}/home` },
-    footerNote: 'אלמוג · המנטור האישי שלך ב-NuraWell',
   });
 }
 

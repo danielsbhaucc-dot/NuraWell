@@ -1,41 +1,46 @@
 import type { OnboardingGender } from '@/lib/onboarding/types';
-import { genderCopy } from '@/lib/onboarding/gender-copy';
+
+/** בוחר נוסח לפי מגדר; כשלא ידוע: נוסח רבים/ניטרלי */
+export function byGender(gender: OnboardingGender | '' | null | undefined, male: string, female: string, neutral: string): string {
+  if (gender === 'male') return male;
+  if (gender === 'female') return female;
+  return neutral;
+}
 
 export type WelcomeEmailCopy = {
   subject: string;
+  preheader: string;
   headline: string;
+  subheading: string;
   intro: string;
   summaryTitle: string;
-  summarySubtitle: string;
   closing: string;
   cta: string;
-  noReplyTop: string;
-  noReplyBottom: string;
+  signature: string;
   textPlain: string;
 };
 
+/** מייל ברוכים הבאים מדולב (אחרי אישור המייל). בלי הומור על גוף/משקל/בריאות. */
 export function welcomeEmailCopy(
   firstName: string,
   gender: OnboardingGender | null | undefined
 ): WelcomeEmailCopy {
-  const gc = genderCopy(gender ?? '');
-  const name = firstName.trim() || 'חברים';
+  const name = firstName.trim() || 'היי';
+  const g = (m: string, f: string, n: string) => byGender(gender, m, f, n);
 
-  const almogVerb = gender === 'female' ? 'תלווה' : 'ילווה';
-  const intro = `${name}, שמחתי לאשר את האימייל שלך! קיבלתי את כל מה שמילאת בהרשמה — ושמרתי לך סיכום קצר כאן למטה. מכאן אלמוג ${almogVerb} אותך במסע, ואני כאן אם ${gc.wantReturn} לחזור לשאלות על ההרשמה.`;
-
-  const supportLine = `לשאלות ותמיכה ${gc.useSupport} באפליקציה או בדף יצירת קשר.`;
+  const intro = `${name}, ${g('אתה', 'את', 'אתם')} רשמית בפנים! 🎉 אני דולב, זה שעבר על כל מה ש${g('מילאת', 'מילאת', 'מילאתם')} בהרשמה (כן, קראתי הכל, גם את החלק עם שעות השינה). שמרתי לך כאן סיכום קטן, שיהיה לך בצד.`;
+  const closing = `מכאן אני מעביר את המקל לאלמוג, שי${g('לווה אותך', 'לווה אותך', 'לווה אתכם')} מעכשיו, בקצב ${g('שלך', 'שלך', 'שלכם')}, בלי לחץ ובלי שיפוט. אני מבטיח שהוא נחמד יותר ממני. טוב, כמעט 😉`;
 
   return {
-    subject: `${name}, ${gc.welcome} ל-NuraWell — דולב כאן`,
-    headline: `${name}, ${gc.welcome}! 🌿`,
+    subject: `${name}, ${g('ברוך הבא', 'ברוכה הבאה', 'ברוכים הבאים')} ל-NuraWell 🌿`,
+    preheader: `שמרתי לך סיכום של ההרשמה, ויש פה גם מישהו ש${g('כדאי לך', 'כדאי לך', 'כדאי לכם')} להכיר`,
+    headline: `${name}, ${g('ברוך הבא', 'ברוכה הבאה', 'ברוכים הבאים')}! 🌿`,
+    subheading: 'המסע מתחיל ממש עכשיו',
     intro,
-    summaryTitle: 'דו״ח סיכום ההרשמה — מדולב',
-    summarySubtitle: 'מה ששמרתי עליך:',
-    closing: 'בהצלחה רבה במסע — בקצב שלך, בלי שיפוט ובלי לחץ.',
-    cta: 'כניסה לאפליקציה',
-    noReplyTop: '⚠️ אין להשיב לכתובת מייל זו — התיבה אינה מנוטרת',
-    noReplyBottom: `שוב — אין להשיב למייל זה. ${supportLine}`,
-    textPlain: `⚠️ אין להשיב לכתובת מייל זו\n\n${name}, ${gc.welcome} ל-NuraWell!\n\n${intro}\n\n— דולב · Dolev · NuraWell`,
+    summaryTitle: 'מה ששמרתי עליך',
+    closing,
+    cta: g('יאללה, לאפליקציה', 'יאללה, לאפליקציה', 'יאללה, לאפליקציה'),
+    signature: 'זה שקרא את כל הטופס עד הסוף',
+    textPlain: `${name}, ${g('ברוך הבא', 'ברוכה הבאה', 'ברוכים הבאים')} ל-NuraWell!\n\n${intro}\n\n${closing}\n\nדולב · NuraWell`,
   };
 }
