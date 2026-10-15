@@ -15,7 +15,7 @@ export async function proposeAction(db: SupabaseClient, tool: string, args: Reco
   const { data, error } = await db.from('ceo_pending_actions').insert({ tool, args: parsed, summary, channel }).select('id, summary').single();
   if (error) throw new Error(error.message);
   await audit(db, 'ceo', 'action_proposed', { summary }, tool, data.id);
-  return { ...(data as { id: string; summary: string }), destructive: Boolean(t.destructive) };
+  return { ...(data as { id: string; summary: string }), destructive: Boolean(t.destructive), tool, args: parsed as Record<string, unknown> };
 }
 
 const UUID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
@@ -45,6 +45,54 @@ export function approvalCard(a: { id: string; summary: string; destructive?: boo
   };
 }
 
+type Candidate = { id: string; label: string };
+/** Demo-link target candidates: the Ops default first, then test/admin accounts (no real users' names in Telegram). */
+export async function demoTargetCandidates(db: SupabaseClient): Promise<{ list: Candidate[]; defaultId: string | null }> {
+  const { readDemoDefaultTarget } = await import('@/lib/demo-access/create');
+  const defaultId = await readDemoDefaultTarget(db).catch(() => null);
+  const { data } = await db.from('profiles').select('id, full_name, role').in('role', ['test', 'admin']).limit(5);
+  const rows = (data ?? []) as { id: string; full_name: string | null; role: string }[];
+  if (defaultId && !rows.some((r) => r.id === defaultId)) {
+    const { data: d } = await db.from('profiles').select('id, full_name, role').eq('id', defaultId).maybeSingle();
+    if (d) rows.unshift(d as never);
+  }
+  const roleHe = (r: string) => (r === 'admin' ? 'מנהל' : r === 'test' ? 'בדיקה' : 'משתמש');
+  const list = rows
+    .sort((a, b) => (a.id === defaultId ? -1 : b.id === defaultId ? 1 : 0))
+    .map((r) => ({ id: r.id, label: `${r.full_name?.trim() || 'ללא שם'} · ${roleHe(r.role)}${r.id === defaultId ? ' · ברירת מחדל' : ''}` }));
+  return { list, defaultId };
+}
+
+/** Card for any pending action; demo links get a target picker (one button per account, ✓ on the selected one). */
+export async function approvalCardFor(
+  db: SupabaseClient,
+  a: { id: string; summary: string; destructive?: boolean; tool?: string; args?: Record<string, unknown> },
+): Promise<{ text: string; buttons: CeoButton[][] }> {
+  const card = approvalCard(a);
+  if (a.tool !== 'create_demo_link') return card;
+  const { list, defaultId } = await demoTargetCandidates(db);
+  const selected = (a.args?.targetUserId as string | undefined) ?? defaultId;
+  const picker = list.map((c) => [{ text: `${c.id === selected ? '✓ ' : ''}${c.label}`.slice(0, 60), data: `ceo:t:${a.id}:${c.id.slice(0, 8)}` }]);
+  const who = list.find((c) => c.id === selected)?.label.split(' · ')[0];
+  const text = `${card.text}\n${who ? `חשבון: ${who}` : '⚠️ לא נבחר חשבון, בחר למטה'}\nאפשר להחליף חשבון בכפתורים למטה.`;
+  return { text, buttons: [...picker, ...card.buttons] };
+}
+
+/** Change the target account of a pending demo-link action (from the picker). */
+export async function setActionTarget(db: SupabaseClient, id: string, idPrefix: string) {
+  const { data: act } = await db.from('ceo_pending_actions').select('id, tool, args, status, expires_at').eq('id', id).maybeSingle();
+  if (!act || act.status !== 'pending' || act.tool !== 'create_demo_link' || String(act.expires_at) <= new Date().toISOString()) return null;
+  const { list } = await demoTargetCandidates(db);
+  const pick = list.find((c) => c.id.startsWith(idPrefix));
+  if (!pick) return null;
+  const t = TOOL_BY_NAME.get('create_demo_link')!;
+  const args = t.schema.parse({ ...(act.args as Record<string, unknown>), targetUserId: pick.id });
+  const summary = await humanizeIds(db, t.summarize?.(args) ?? 'קישור דמו');
+  await db.from('ceo_pending_actions').update({ args, summary }).eq('id', id).eq('status', 'pending');
+  await audit(db, 'admin', 'action_target_changed', {}, 'create_demo_link', id);
+  return approvalCardFor(db, { id, summary, tool: 'create_demo_link', args });
+}
+
 const fmtIL = (iso: string) =>
   new Date(iso).toLocaleString('he-IL', { timeZone: 'Asia/Jerusalem', day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' });
 
@@ -52,7 +100,7 @@ const fmtIL = (iso: string) =>
  * Approve/reject. Atomic claim (status pending → approved) so a double-tap or Telegram retry
  * can never execute twice; expired actions are refused.
  */
-export async function decideAction(db: SupabaseClient, id: string, approve: boolean, actor: string, opts: { edit?: boolean } = {}): Promise<{ ok: boolean; text: string }> {
+export async function decideAction(db: SupabaseClient, id: string, approve: boolean, actor: string, opts: { edit?: boolean } = {}): Promise<{ ok: boolean; text: string; celebrate?: boolean }> {
   const now = new Date().toISOString();
   const { data: claimed } = await db
     .from('ceo_pending_actions')
@@ -80,7 +128,7 @@ export async function decideAction(db: SupabaseClient, id: string, approve: bool
     await audit(db, actor, 'action_done', { result: stored }, claimed.tool, id);
     const link = typeof result?.link === 'string' ? result.link : '';
     const exp = typeof result?.expires_at === 'string' ? `\nבתוקף עד ${fmtIL(result.expires_at)}` : '';
-    return { ok: true, text: `✅ בוצע: ${claimed.summary}${link ? `\n${link}` : ''}${exp}` };
+    return { ok: true, text: `✅ בוצע: ${claimed.summary}${link ? `\n${link}` : ''}${exp}`, celebrate: claimed.tool === 'create_demo_link' };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     await db.from('ceo_pending_actions').update({ status: 'failed', result: { error: msg } }).eq('id', id);

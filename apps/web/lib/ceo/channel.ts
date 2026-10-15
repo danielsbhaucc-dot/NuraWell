@@ -2,9 +2,12 @@
 export type CeoButton = { text: string; data: string };
 export interface CeoChannel {
   readonly name: string;
-  send(chatId: string, text: string, buttons?: CeoButton[][]): Promise<void>;
-  /** Acknowledge a button press and optionally replace the original message text. */
-  ack(ref: { callbackId?: string; chatId: string; messageId?: number }, text?: string): Promise<void>;
+  send(chatId: string, text: string, buttons?: CeoButton[][], opts?: { effect?: 'celebrate' }): Promise<void>;
+  /** Acknowledge a button press and optionally replace the original message text (and keyboard). */
+  ack(ref: { callbackId?: string; chatId: string; messageId?: number }, text?: string, buttons?: CeoButton[][]): Promise<void>;
+  /** Optional niceties (best-effort, never throw). */
+  typing?(chatId: string): Promise<void>;
+  react?(chatId: string, messageId: number, emoji: string): Promise<void>;
 }
 
 /** Comma/space separated allowlist from env. Empty => nobody (fail closed). */
