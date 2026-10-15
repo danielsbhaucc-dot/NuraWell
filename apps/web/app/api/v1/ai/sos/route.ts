@@ -27,7 +27,7 @@ import { createAdminClient } from '../../../../../lib/supabase/admin';
 
 export const runtime = 'edge';
 // Edge runs next to the user by default (fra1) — every Supabase round-trip then crosses to Sydney. Pin next to the DB.
-export const preferredRegion = 'syd1';
+export const preferredRegion = 'fra1';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 10;
 
