@@ -73,7 +73,8 @@ export function buildWelcomeDolevEmailHtml(
     eyebrow: 'דולב · NuraWell',
     heading: escapeHtml(copy.headline),
     subheading: copy.subheading,
-    bodyHtml: [emailParagraph(escapeHtml(copy.intro)), table, emailParagraph(escapeHtml(copy.closing))].join(''),
+    introHtml: emailParagraph(escapeHtml(copy.intro)),
+    bodyHtml: [table, emailParagraph(escapeHtml(copy.closing))].join(''),
     cta: { label: copy.cta, url: `${origin}/home` },
     signatureHtml: dolevSignature(copy.signature),
   });

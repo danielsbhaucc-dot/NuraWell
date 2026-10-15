@@ -40,7 +40,7 @@ export function welcomeEmailCopy(
     summaryTitle: 'מה ששמרתי עליך',
     closing,
     cta: g('יאללה, לאפליקציה', 'יאללה, לאפליקציה', 'יאללה, לאפליקציה'),
-    signature: 'זה שקרא את כל הטופס עד הסוף',
+    signature: `מכאן אלמוג לוקח ${g('אותך', 'אותך', 'אתכם')}. אני? חוזר לקרוא טפסים 📋`,
     textPlain: `${name}, ${g('ברוך הבא', 'ברוכה הבאה', 'ברוכים הבאים')} ל-NuraWell!\n\n${intro}\n\n${closing}\n\nדולב · NuraWell`,
   };
 }
