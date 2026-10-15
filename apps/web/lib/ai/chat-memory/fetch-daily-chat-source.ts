@@ -1,3 +1,4 @@
+import { decTableResult } from '@/lib/crypto/pii-fields';
 import { decInteractionResult } from '@/lib/crypto/pii-fields';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { israelDayUtcBounds } from './chat-period-keys';
@@ -48,7 +49,7 @@ export async function fetchDailyChatSource(
       .eq('status', 'closed')
       .gte('closed_at', start.toISOString())
       .lte('closed_at', end.toISOString())
-      .limit(20),
+      .limit(20).then(decTableResult('chat_sessions', userId)),
     admin
       .from('chat_sessions')
       .select('live_conversation_file, updated_at')

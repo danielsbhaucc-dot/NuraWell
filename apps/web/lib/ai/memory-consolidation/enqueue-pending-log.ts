@@ -1,3 +1,4 @@
+import { encryptTableRow } from '@/lib/crypto/pii-fields';
 /**
  * אגירה פסיבית של צ'אטים — ללא LLM. נשמר ב-pending_chat_logs לעיבוד אצווה יומי (05:00 IL, master cron).
  */
@@ -28,12 +29,12 @@ export async function enqueuePendingChatLog(params: {
   const text = params.rawChatText.trim().slice(0, MAX_LOG_CHARS);
   if (text.length < MIN_LOG_CHARS) return { enqueued: false };
 
-  const { error } = await params.admin.from('pending_chat_logs').insert({
+  const { error } = await params.admin.from('pending_chat_logs').insert(encryptTableRow('pending_chat_logs', {
     user_id: params.userId,
     raw_chat_text: text,
     source_session_id: params.sessionId ?? null,
     processed: false,
-  });
+  }, params.userId));
 
   if (error) {
     console.warn('[memory-consolidation] enqueue failed', {

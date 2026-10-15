@@ -1,3 +1,4 @@
+import { decProfileResult, encryptProfilePatch } from '@/lib/crypto/pii-fields';
 import { pruneExpiredAvoidPushUntil } from './avoid-push';
 import type { JourneyFollowUp } from './journey-follow-up-promise';
 import type { LifeContext } from './life-context';
@@ -231,7 +232,7 @@ export async function buildUserContext(
     .from('profiles')
     .select('full_name, last_active_at, ai_context')
     .eq('id', userId)
-    .single();
+    .single().then(decProfileResult(userId));
 
   const profile = (profileData ?? null) as ProfileRow | null;
   if (!profile) {
@@ -407,7 +408,7 @@ export async function updateAiContext(
     .from('profiles')
     .select('ai_context')
     .eq('id', userId)
-    .single();
+    .single().then(decProfileResult(userId));
 
   const current = ((existing as { ai_context: AiUserContext | null } | null)?.ai_context ?? {}) as AiUserContext;
 
@@ -449,7 +450,7 @@ export async function updateAiContext(
 
   const { error: updateError } = await supabase
     .from('profiles')
-    .update({ ai_context: merged })
+    .update(encryptProfilePatch({ ai_context: merged }, userId))
     .eq('id', userId);
 
   if (updateError) {

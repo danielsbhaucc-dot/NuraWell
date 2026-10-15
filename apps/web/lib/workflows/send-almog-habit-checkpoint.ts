@@ -1,3 +1,4 @@
+import { decProfileResult, encryptProfilePatch } from '@/lib/crypto/pii-fields';
 import { withAiUser } from '@/lib/ai/usage-meter';
 import { insertNotification } from '@/lib/notifications/deliver';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -210,7 +211,7 @@ async function fetchProfileScheduleHints(admin: SupabaseClient, userId: string) 
     .from('profiles')
     .select('wake_up_time, sleep_time, dinner_time, meal_schedule, ai_context')
     .eq('id', userId)
-    .maybeSingle();
+    .maybeSingle().then(decProfileResult(userId));
   const row = data as {
     wake_up_time?: string | null;
     sleep_time?: string | null;
@@ -328,13 +329,13 @@ async function clearHabitTuneFlag(admin: SupabaseClient, userId: string): Promis
       .from('profiles')
       .select('ai_context')
       .eq('id', userId)
-      .maybeSingle();
+      .maybeSingle().then(decProfileResult(userId));
     const ctx = (data?.ai_context ?? {}) as Record<string, unknown>;
     if (!ctx.almog_habit_tune) return;
     const next = { ...ctx };
     delete next.almog_habit_tune;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await admin.from('profiles').update({ ai_context: next }).eq('id', userId);
+    await admin.from('profiles').update(encryptProfilePatch({ ai_context: next }, userId)).eq('id', userId);
   } catch (e) {
     await reportError(e, {
       source: 'habit-checkpoint.clear-habit-tune-flag',

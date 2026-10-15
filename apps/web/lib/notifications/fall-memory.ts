@@ -1,3 +1,4 @@
+import { decProfileResult } from '@/lib/crypto/pii-fields';
 import { decInteractionResult } from '@/lib/crypto/pii-fields';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -71,7 +72,7 @@ async function inferFallReason(
       .from('profiles')
       .select('ai_context')
       .eq('id', userId)
-      .maybeSingle(),
+      .maybeSingle().then(decProfileResult(userId)),
   ]);
 
   const chatRows = Array.isArray(chatRes?.data) ? chatRes.data : [];

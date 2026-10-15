@@ -1,3 +1,4 @@
+import { decProfileResult } from '@/lib/crypto/pii-fields';
 import { NextResponse } from 'next/server';
 
 import { createAdminClient } from '../../../../../lib/supabase/admin';
@@ -72,7 +73,7 @@ export async function GET(request: Request) {
     .from('profiles')
     .select('role, last_responded_at, notification_count, meal_count, meal_schedule, ai_context')
     .eq('id', auth.user.id)
-    .maybeSingle();
+    .maybeSingle().then(decProfileResult(auth.user.id));
   if (roleRow?.role !== 'admin') {
     return NextResponse.json({ error: 'admins only' }, { status: 403 });
   }

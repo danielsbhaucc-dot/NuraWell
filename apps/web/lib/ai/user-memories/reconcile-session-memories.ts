@@ -1,3 +1,4 @@
+import { encryptTableRow } from '@/lib/crypto/pii-fields';
 import { isStorableMemoryText } from '../safety/memory-text-guard';
 import type { ExtractedMemoryFact } from '../extract-memory-facts';
 import { normalizeFactTextForDedupe, stableMemoryVectorId } from '../memory-fact-dedupe';
@@ -89,7 +90,7 @@ async function upsertMemoryRow(params: {
   prevMeta?: UserMemoryVectorMetadata | null;
 }): Promise<void> {
   const now = new Date().toISOString();
-  const text = params.memoryText.replace(/\s+/g, ' ').trim();
+  const text = params.memoryText.replace(/\s+/g, ' ').trim().slice(0, 600);
 
   if (isUpstashVectorConfigured()) {
     const meta: UserMemoryVectorMetadata = {
@@ -130,10 +131,10 @@ async function upsertMemoryRow(params: {
     .maybeSingle();
 
   if (existing?.id) {
-    const { error } = await admin.from('user_memories').update(row).eq('id', existing.id);
+    const { error } = await admin.from('user_memories').update(encryptTableRow('user_memories', row, row.user_id)).eq('id', existing.id);
     if (error) throw error;
   } else {
-    const { error } = await admin.from('user_memories').insert(row);
+    const { error } = await admin.from('user_memories').insert(encryptTableRow('user_memories', row, row.user_id));
     if (error) throw error;
   }
 }

@@ -1,3 +1,4 @@
+import { decProfileResult, encryptProfilePatch } from '@/lib/crypto/pii-fields';
 import { withAiUser } from '@/lib/ai/usage-meter';
 import { readGuideRules } from '../guides/guide-rules';
 import { isStorableMemoryText } from '../ai/safety/memory-text-guard';
@@ -206,7 +207,7 @@ export async function runGuideCompanionForUser(
     guide_companion: snapshot,
   };
 
-  const { error } = await admin.from('profiles').update({ ai_context: merged }).eq('id', userId);
+  const { error } = await admin.from('profiles').update(encryptProfilePatch({ ai_context: merged }, userId)).eq('id', userId);
   if (error) throw new Error(error.message);
 
   /** unified task model: Almog's guide pick is offered as a task (user chooses in the plan). */
@@ -239,7 +240,7 @@ export async function runGuideCompanionBatch(admin: AdminDb): Promise<{
     .select('id, full_name, gender, ai_context, last_active_at')
     .eq('onboarding_completed', true)
     .gte('last_active_at', thirtyDaysAgo)
-    .limit(maxUsers * 3);
+    .limit(maxUsers * 3).then(decProfileResult());
 
   if (error) throw new Error(error.message);
 
