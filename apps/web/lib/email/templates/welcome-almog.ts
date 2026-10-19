@@ -73,8 +73,8 @@ export function buildWelcomeAlmogEmailHtml(
     eyebrow: 'אלמוג · NuraWell',
     heading: `שלום ${name}, אלמוג כאן 🌿`,
     subheading: 'נעים להכיר, באמת',
+    introHtml: emailParagraph('דולב העביר לי את התיק שלך (בעדינות, אל דאגה). אני כבר מתכנן איך ללוות אותך בקצב שלך, בלי שיפוט ובלי לחץ. ובלי הרצאות, מבטיח.'),
     bodyHtml: [
-      emailParagraph('דולב העביר לי את התיק שלך (בעדינות, אל דאגה). אני כבר מתכנן איך ללוות אותך בקצב שלך, בלי שיפוט ובלי לחץ. ובלי הרצאות, מבטיח.'),
             table,
       emailParagraph(`בקרוב ${gc.willReceive} ממני גם הודעות באפליקציה בזמנים שמתאימים לך, במיוחד לפני הרגעים הקשים.`, { muted: true }),
     ].join(''),
