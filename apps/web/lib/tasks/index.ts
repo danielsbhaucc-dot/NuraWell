@@ -272,7 +272,7 @@ export function planForPrompt(plan: PlanTask[]): string {
     .map((t, i) => {
       const lvl = t.current_level === 0 ? 'רמה מקורית' : t.current_level < 0 ? `הוקלה (${t.current_level})` : `הוקשתה (+${t.current_level})`;
       const merged = t.history.find((h) => h.kind === 'merged' && Date.now() - new Date(h.occurred_at).getTime() < 7 * 86_400_000);
-      return `${i + 1}. ${t.level.title} [${lvl}] היום ${t.doneToday}/${t.targetToday}, רצף ${t.streakDays} ימים${t.is_main ? ' (משימה ראשית)' : ''}${merged ? ' (לאחרונה איחדת לתוכה משימות כמעט זהות של המשתמש; אפשר להזכיר בטבעיות אם רלוונטי)' : ''}`;
+      return `${i + 1}. ${t.level.title} [${lvl}] היום ${t.doneToday}/${t.targetToday}, רצף ${t.streakDays} ימים${t.is_main ? ' (משימה ראשית)' : ''}${t.status === 'paused' ? ' (מוקפאת זמנית — הוקטנה לצעד קטן יותר, תחזור בהדרגה)' : ''}${merged ? ' (לאחרונה איחדת לתוכה משימות כמעט זהות של המשתמש; אפשר להזכיר בטבעיות אם רלוונטי)' : ''}`;
     })
     .join('\n');
 }
