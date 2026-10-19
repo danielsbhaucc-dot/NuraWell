@@ -124,8 +124,11 @@ export function dolevSignature(line: string): string {
 export function renderEmailLayout(i: EmailLayoutInput): string {
   const origin = i.assetOrigin.replace(/\/$/, '');
   const support = i.supportEmail ?? EMAIL_SUPPORT_ADDRESS;
-  const header = `<tr><td dir="rtl" align="center" bgcolor="${C.brand}" style="direction:rtl;text-align:center;background-color:${C.brand};background-image:linear-gradient(180deg,${C.brand} 0%,${C.brand700} 100%);border-radius:34px 34px 0 0;padding:38px 28px ${i.introHtml ? '64px' : '34px'}">
-<a href="${origin}" target="_blank" style="text-decoration:none"><img src="${origin}/brand/email-logo-header.png" width="210" height="41" alt="NuraWell" style="display:block;margin:0 auto 24px;border:0;width:210px;height:auto;max-width:210px"></a>
+  // שורת לוגו בצבע אחיד = רקע ה-PNG (#0f3d2e אפוי), כך שאין "קופסה" גם כשהגרדיאנט נתמך; הגרדיאנט מתחיל מאותו צבע בשורה הבאה.
+  const header = `<tr><td dir="rtl" align="center" bgcolor="${C.brand}" style="direction:rtl;text-align:center;background-color:${C.brand};border-radius:34px 34px 0 0;padding:30px 28px 0">
+<a href="${origin}" target="_blank" style="text-decoration:none;color:${C.cream}"><img src="${origin}/brand/email-logo-header.png" width="224" height="51" alt="NuraWell" style="display:block;margin:0 auto;border:0;outline:none;width:224px;height:auto;max-width:224px;background-color:${C.brand};color:${C.cream};font-family:${EMAIL_FONT};font-size:26px;line-height:51px;font-weight:700;text-align:center"></a>
+</td></tr>
+<tr><td dir="rtl" align="center" bgcolor="${C.brand}" style="direction:rtl;text-align:center;background-color:${C.brand};background-image:linear-gradient(180deg,${C.brand} 0%,${C.brand700} 100%);padding:16px 28px ${i.introHtml ? '64px' : '34px'}">
 ${i.eyebrow ? `<p dir="rtl" align="center" style="margin:0 0 10px;font-family:${EMAIL_FONT};direction:rtl;text-align:center"><span style="display:inline-block;background:${C.gold};color:${C.brand};font-size:12px;font-weight:800;padding:5px 14px;border-radius:999px">${i.eyebrow}</span></p>` : ''}
 <h1 dir="rtl" align="center" style="margin:0;color:${C.cream};font-family:${EMAIL_FONT};font-size:31px;line-height:1.3;font-weight:800;direction:rtl;text-align:center">${i.heading}</h1>
 ${i.subheading ? `<p dir="rtl" align="center" style="margin:10px 0 0;color:#d6ecdf;font-family:${EMAIL_FONT};font-size:17px;line-height:1.5;font-weight:500;direction:rtl;text-align:center">${i.subheading}</p>` : ''}
