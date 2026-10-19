@@ -99,7 +99,7 @@ export function miniAppBase(): string {
 const hashToken = (t: string) => createHash('sha256').update(t).digest('hex');
 const b64u = (b: Buffer) => b.toString('base64url');
 
-export type Purpose = 'approve' | 'unlock' | 'register' | 'settings' | 'remove_key';
+export type Purpose = 'approve' | 'unlock' | 'register' | 'settings' | 'remove_key' | 'ops_login';
 /** One-time Mini App URL (10 min) bound to purpose (+ action / Telegram user). Only its hash is stored. */
 export async function createStepupLink(
   db: SupabaseClient,
@@ -149,6 +149,7 @@ export async function linkInfo(db: SupabaseClient, token: string) {
   if (r.purpose === 'settings') summary = `שינוי הגדרות אבטחה: חלון אמון ${r.payload?.trust_minutes} דק׳, אימות תקופתי ${r.payload?.reverify_minutes} דק׳`;
   if (r.purpose === 'remove_key') summary = `הסרת מכשיר: ${String(r.payload?.label ?? '')}`;
   if (r.purpose === 'unlock') summary = 'שחרור גדעון והפעלה מחדש';
+  if (r.purpose === 'ops_login') summary = `אישור כניסה ל-Ops: ${String(r.payload?.label ?? 'מכשיר חדש')}`;
   if (r.purpose === 'register') summary = r.payload?.replace ? 'רישום Face ID במכשיר החדש (המכשירים הקודמים יוסרו)' : 'רישום Face ID במכשיר הזה';
   return { purpose: r.purpose, summary };
 }
@@ -249,7 +250,7 @@ export async function verifyStepup(db: SupabaseClient, token: string, body: Step
   });
   if (r.purpose === 'remove_key' && r.payload?.keyId) await db.from('admin_passkeys').delete().eq('id', String(r.payload.keyId));
   await audit(db, 'faceid', `stepup_ok_${r.purpose}`, r.payload ?? {}, r.action_id ?? undefined);
-  return { ok: true as const, purpose: r.purpose, actionId: r.action_id };
+  return { ok: true as const, purpose: r.purpose, actionId: r.action_id, payload: r.payload };
 }
 
 /** Kill switch: instant, no step-up needed to turn OFF Gideon (only to turn back on). */

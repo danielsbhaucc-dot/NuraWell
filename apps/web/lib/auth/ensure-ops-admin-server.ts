@@ -1,6 +1,6 @@
 import { cache } from 'react';
 import { headers } from 'next/headers';
-import { redirect } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import { createClient } from '../supabase/server';
 import {
   isAppHostOpsFallback,
@@ -44,7 +44,7 @@ export const ensureOpsAdminServer = cache(async (): Promise<void> => {
     isOpsHostname(forwardedHost) || isOpsPreviewHostname(forwardedHost) || appHostOps;
 
   if (process.env.NODE_ENV === 'production' && !allowedOpsHost && !isLocalDev) {
-    redirect(appSync ? `${appSync}/home` : '/home');
+    notFound();
   }
 
   const { supabase, user, profile } = await getOpsSessionContext();
@@ -57,18 +57,18 @@ export const ensureOpsAdminServer = cache(async (): Promise<void> => {
   const path = h.get('x-pathname') || '/';
   const opsReturnPath = isOpsPanelBrowserPath(path) ? path : '/';
 
-  if (!user) {
-    if (appHostOps) {
-      const p = path.startsWith('/ops') ? path : '/ops';
-      redirect(`/login?redirect=${encodeURIComponent(p)}`);
-    }
-    // Ops host has its own /login (same-origin cookies) — never bounce to the public *.vercel.app host.
-    redirect(`/login?redirect=${encodeURIComponent(opsReturnPath)}`);
-  }
-
-  if (!profile || profile.role !== 'admin' || (await hasActiveDemoAccessSession(user.id))) {
-    redirect(appHostOps ? await appHome() : '/login?reason=no_access');
-  }
+  // Ops stealth: no session / demo / non-admin / untrusted device → generic 404 (never a login redirect or hint)
+  void opsReturnPath;
+  void appHome;
+  if (!user) notFound();
+  if (!profile || profile.role !== 'admin' || (await hasActiveDemoAccessSession(user.id))) notFound();
+  const { opsDeviceGate } = await import('../ops/device-gate');
+  const { cookies } = await import('next/headers');
+  const { DEVICE_COOKIE } = await import('../ops/device-trust');
+  const { createAdminClient } = await import('../supabase/admin');
+  const { data: sess } = await supabase.auth.getSession();
+  const gate = await opsDeviceGate(createAdminClient(), user.id, (await cookies()).get(DEVICE_COOKIE)?.value, sess.session?.access_token, h.get('user-agent'));
+  if (!gate.ok) notFound();
 });
 
 /** Current Ops admin id (for audit rows written from server actions). */

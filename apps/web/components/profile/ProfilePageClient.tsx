@@ -137,10 +137,10 @@ export function ProfilePageClient({
     { label: 'רצף ימים', value: profile?.streak_days ?? 0, icon: Flame, color: '#f97316' },
   ];
 
-  const opsUrl = process.env.NEXT_PUBLIC_OPS_URL?.replace(/\/$/, '');
   const navItems = [
-    ...(profile?.role === 'admin' && opsUrl && !isDemoAccess
-      ? [{ label: 'פאנל ניהול', href: `${opsUrl}/`, emoji: '🛠️' }]
+    // admins only (server-checked again on the page; non-admins get a 404)
+    ...(profile?.role === 'admin' && !isDemoAccess
+      ? [{ label: 'פאנל ניהול', href: '/auth/bridge-to-ops', emoji: '🛠️' }]
       : []),
     { label: 'בית', href: '/home', emoji: '🏠' },
     { label: 'ההתקדמות שלי', href: '/progress', emoji: '📊' },

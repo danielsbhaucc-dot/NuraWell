@@ -52,6 +52,14 @@ async function handleTelegramUpdateInner(db: SupabaseClient, channel: CeoChannel
     await channel.send(chatId, existing ? 'כבר יש בקשה פתוחה. אשר אותה בלוח הבקרה ונתקדם.' : 'שלחתי לך התראה בלוח הבקרה, תאשר אותה ונתקדם 👍', undefined, { kind: 'reply' });
     return { deviceRequest: true };
   }
+  // Ops login approvals: "זה לא אני" works even when Gideon is off; one-tap only in the bootstrap window.
+  const lcb = u.callback_query?.data?.match(/^ceo:(la|ld):([0-9a-f-]{36})$/);
+  if (lcb && u.callback_query) {
+    const { handleLoginCallback } = await import('@/lib/ops/device-callbacks');
+    const msg = await handleLoginCallback(db, lcb[1] as 'la' | 'ld', lcb[2], chatId);
+    await channel.ack({ callbackId: u.callback_query.id, chatId, messageId: u.callback_query.message?.message_id }, msg);
+    return { opsLogin: lcb[1] };
+  }
   if (sec.disabled) {
     if (u.callback_query) await channel.ack({ callbackId: u.callback_query.id, chatId });
     else await channel.send(chatId, '⛔ גדעון כבוי כרגע. אפשר להפעיל מחדש מ-Ops ← גדעון ← אבטחה.', undefined, { kind: 'reply' });
