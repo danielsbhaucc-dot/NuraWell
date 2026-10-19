@@ -144,7 +144,7 @@ export async function runChallengeDailyCron(
         if (!exists) {
           await sendChallengeNotification(admin, {
             userId: row.user_id,
-            title: `יום ${dayIndex} — בוא/י נתחיל`,
+            title: `יום ${dayIndex} — מתחילים`,
             body: `${firstName}, האתגר ממשיך! היום מחולק למשימות קטנות — כל אחת מהן נספרת כהצלחה.`,
             actionUrl: '/challenge/dashboard',
             type: 'reminder',

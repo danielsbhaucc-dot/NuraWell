@@ -14,20 +14,20 @@ export function firstNameFromFullName(fullName: string | null | undefined): stri
 
 /** פנייה מותאמת מין */
 export function addressUser(firstName: string, gender: GenderCopy): string {
-  if (gender === 'male') return `${firstName}, אחי`;
-  if (gender === 'female') return `${firstName}, אחותי`;
+  // ALMOG_VOICE: no pet names/slang ("אחי"/"אחותי") — same mature register for everyone.
+  void gender;
   return firstName;
 }
 
 export function excitedAlmogLine(firstName: string, gender: GenderCopy): string {
   const addr = addressUser(firstName, gender);
   if (gender === 'male') {
-    return `${addr}! אני כל כך נרגש להתחיל איתך את האתגר הזה.`;
+    return `${addr}! אני ממש מתרגש להתחיל איתך את האתגר הזה.`;
   }
   if (gender === 'female') {
-    return `${addr}! אני ממש מתרגשת להתחיל איתך את האתגר הזה.`;
+    return `${addr}! אני ממש מתרגש להתחיל איתך את האתגר הזה.`;
   }
-  return `${firstName}! אני ממש מתרגש/ת להתחיל איתך את האתגר הזה.`;
+  return `${firstName}! אני ממש מתרגש להתחיל את האתגר הזה יחד.`;
 }
 
 export function waitingHeadline(firstName: string, gender: GenderCopy): string {

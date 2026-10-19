@@ -76,7 +76,7 @@ export function discreteFieldPrivacyIntro(
 /** אישור דיסקרטי בלי לחשוף את הערך בצ'אט */
 export function discreteFieldAck(key: DiscreteFieldKey, gender: 'male' | 'female' | null): string {
   const labels: Record<DiscreteFieldKey, string> = {
-    full_name: gender === 'female' ? 'קיבלתי את השם — תודה!' : 'קיבלתי את השם — תודה אחי!',
+    full_name: gender === 'female' ? 'קיבלתי את השם — תודה!' : 'קיבלתי את השם — תודה!',
     current_weight_kg: 'המשקל הנוכחי נשמר אצלי בצורה מאובטחת ✓',
     goal_weight_kg: 'יעד המשקל נרשם — נלך על זה ביחד',
     wake_up_time: 'שעת ההשכמה נקלטה ✓',

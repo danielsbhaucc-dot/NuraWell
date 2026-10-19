@@ -113,7 +113,7 @@ export async function POST(request: Request) {
       user_id: auth.user.id,
       event_type: 'interview_complete',
       title: 'סיימת את הריאיון עם אלמוג',
-      description: 'עכשיו אני מכיר/ה אותך יותר טוב — ואזהה את ההצלחות שלך.',
+      description: 'עכשיו אני מכיר אותך יותר טוב — ואזהה את ההצלחות שלך.',
       detected_by: 'rule',
       evidence: { insights },
     });
