@@ -1,0 +1,33 @@
+version = 1
+
+test_patterns = [
+  "**/tests/**",
+  "**/*.test.ts",
+  "**/*.test.tsx",
+  "**/e2e/**",
+]
+
+exclude_patterns = [
+  "**/node_modules/**",
+  "**/.next/**",
+  "supabase/migrations/**",
+  "**/*.generated.ts",
+  "apps/web/public/**",
+]
+
+[[analyzers]]
+name = "javascript"
+
+  [analyzers.meta]
+  plugins = ["react"]
+  environment = ["nodejs", "browser"]
+  # Next.js app is ES modules + TypeScript: exported top-level functions are module-scoped (JS-0067 false positive).
+  module_system = "es-modules"
+  dialect = "typescript"
+  skip_doc_coverage = ["module", "function", "class"]
+
+[[analyzers]]
+name = "secrets"
+
+[[analyzers]]
+name = "sql"
