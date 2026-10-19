@@ -132,7 +132,7 @@ export async function GET(request: Request) {
         .limit(500),
       supabase
         .from('almog_assignments')
-        .select('id, title, status, schedule')
+        .select('id, title, status, schedule, parent_assignment_id')
         .eq('user_id', user.id)
         .in('status', ['active', 'frozen'])
         .order('given_at', { ascending: false })

@@ -17,8 +17,11 @@ import {
   writePendingProposal,
   writeProgramState,
 } from '../../../../../../lib/ai/orchestrator/program-store';
-import { applyPivotOverride } from '../../../../../../lib/ai/orchestrator/daily-action-instances';
-import { bridgeOrchestratorPivotToAlmog } from '../../../../../../lib/ai/almog-commitments/bridge-journey-recovery';
+import {
+  acceptPivot,
+  claimPendingProposal,
+  isProposalExpired,
+} from '../../../../../../lib/ai/orchestrator/pivot-lifecycle';
 import { persistRecoveryInsight } from '../../../../../../lib/ai/almog-commitments/persist-recovery-insight';
 
 export const runtime = 'nodejs';
@@ -33,9 +36,16 @@ export async function GET(request: Request) {
     const admin = createAdminClient();
     const row = await readProgramRow(admin, auth.user.id);
 
+    let proposal = row?.pending_ai_proposal ?? null;
+    // stale card (e.g. months old) — never show it, and free the slot for a fresh evaluation
+    if (proposal && isProposalExpired(proposal)) {
+      await writePendingProposal(admin, auth.user.id, null).catch(() => null);
+      proposal = null;
+    }
+
     return NextResponse.json({
       program_state: row?.program_state ?? null,
-      proposal: row?.pending_ai_proposal ?? null,
+      proposal,
     });
   } catch (error) {
     console.error('[API /v1/ai/program/proposal GET]', error);
@@ -65,16 +75,14 @@ export async function POST(request: Request) {
     }
 
     const admin = createAdminClient();
-    const row = await readProgramRow(admin, auth.user.id);
-    const proposal = row?.pending_ai_proposal ?? null;
-
-    // idempotency — אם אין הצעה / id לא תואם, התייחס כבר-טופל (200, no-op).
-    if (!proposal || proposal.id !== proposalId) {
+    // atomic compare-and-clear: a double tap / second tab gets already_resolved and writes nothing
+    const proposal = await claimPendingProposal(admin, auth.user.id, proposalId);
+    if (!proposal) {
       return NextResponse.json({ ok: true, already_resolved: true });
     }
-
-    // ניקוי ההצעה תמיד — היא נענתה.
-    await writePendingProposal(admin, auth.user.id, null);
+    if (decision === 'accept' && isProposalExpired(proposal)) {
+      return NextResponse.json({ ok: true, already_resolved: true, expired: true });
+    }
 
     if (decision === 'accept' && proposal.kind === 'level_up' && proposal.next_step?.title) {
       // קבלת "Level Up" → הצעד הבא הופך לפוקוס הנוכחי, והמצב חוזר ל-maintaining.
@@ -87,25 +95,17 @@ export async function POST(request: Request) {
     }
 
     if (decision === 'accept' && proposal.kind === 'pivot' && proposal.next_step?.title) {
-      // 🔁 The Override Mutation — צעד-המיקרו הופך ל"משימה של היום" עם מחזור-חיים.
-      await applyPivotOverride(admin, auth.user.id, {
-        displayTitle: proposal.next_step.title,
-        originalTitle: proposal.next_step.restore_to ?? null,
-        proposalId: proposal.id,
-      }).catch((err) => console.error('[program/proposal] pivot override failed', err));
-
-      const bridge = await bridgeOrchestratorPivotToAlmog({
-        admin,
-        userId: auth.user.id,
-        microTitle: proposal.next_step.title,
-        originalTitle: proposal.next_step.restore_to ?? null,
-        proposalId: proposal.id,
-      }).catch((err) => {
-        console.error('[program/proposal] pivot almog bridge failed', err);
-        return {} as { assignment_id?: string };
-      });
-
-      if (bridge.assignment_id) {
+      // park the EXISTING original + one linked tiny task (no copies) — see pivot-lifecycle.ts
+      let res;
+      try {
+        res = await acceptPivot(admin, auth.user.id, proposal);
+      } catch (err) {
+        console.error('[program/proposal] pivot accept failed', err);
+        // put the card back so the user's retry really applies it
+        await writePendingProposal(admin, auth.user.id, proposal).catch(() => null);
+        return NextResponse.json({ error: 'pivot_failed' }, { status: 500 });
+      }
+      if (res.micro_assignment_id && !res.already) {
         await persistRecoveryInsight(admin, {
           userId: auth.user.id,
           taskTitle: proposal.next_step.restore_to ?? proposal.next_step.title,

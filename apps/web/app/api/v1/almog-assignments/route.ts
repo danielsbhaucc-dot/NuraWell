@@ -9,6 +9,7 @@ import {
   scheduleRecoveryEncouragement,
   type StepDifficultyRating,
 } from '../../../../lib/ai/almog-commitments/recovery-plan-engine';
+import { undoPivotOnDrop } from '../../../../lib/ai/orchestrator/pivot-lifecycle';
 import { persistRecoveryInsight } from '../../../../lib/ai/almog-commitments/persist-recovery-insight';
 import { decTableResult } from '@/lib/crypto/pii-fields';
 
@@ -530,7 +531,7 @@ export async function POST(request: Request) {
     for (const id of targetIds) {
       const { data: dropRow } = await admin
         .from('almog_assignments')
-        .select('id, history')
+        .select('id, history, parent_assignment_id, metadata')
         .eq('id', id)
         .eq('user_id', user.id)
         .maybeSingle();
@@ -544,6 +545,10 @@ export async function POST(request: Request) {
         })
         .eq('id', id)
         .eq('user_id', user.id);
+      // dropping a "take it smaller" tiny step un-parks the original (never left frozen forever)
+      await undoPivotOnDrop(admin, user.id, dropRow as never, nowIso).catch((e) =>
+        console.warn('[almog-assignments] pivot undo failed', e)
+      );
     }
   } else if (data.action === 'reactivate') {
     await admin

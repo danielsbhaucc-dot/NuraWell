@@ -114,22 +114,23 @@ export async function gatherProgramSignals(
     fetchJourneyCompanionContext(admin, userId),
     fetchTrueLastActiveByUser(admin, [userId], now),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // task_events = the unified log (journey executions are mirrored into it by trigger, and plan / Almog
+    // task completions only exist here) — reading only journey_task_executions flagged active users as struggling.
     admin
-      .from('journey_task_executions')
-      .select('date_key, outcome')
+      .from('task_events')
+      .select('date_key, kind')
       .eq('user_id', userId)
-      .gte('completed_at', sinceIso)
-      .limit(500),
+      .in('kind', ['done', 'partial'])
+      .gte('occurred_at', sinceIso)
+      .limit(1000),
     detectReportedDifficulty(admin, userId, aiCtx, now),
   ]);
 
   const doneDateKeys = new Set<string>();
   let doneTodayCount = 0;
-  for (const row of (execRes.data ?? []) as Array<{ date_key?: string; outcome?: string }>) {
+  for (const row of (execRes.data ?? []) as Array<{ date_key?: string; kind?: string }>) {
     const key = typeof row.date_key === 'string' ? row.date_key : '';
     if (!key) continue;
-    // רק ביצוע מוצלח נחשב ל-streak (לא attempt_failed/skipped).
-    if (row.outcome && row.outcome !== 'completed' && row.outcome !== 'partial') continue;
     doneDateKeys.add(key);
     if (key === todayKey) doneTodayCount++;
   }
@@ -140,8 +141,12 @@ export async function gatherProgramSignals(
   const openAcceptedCount = companion?.snapshot.openAcceptedCount ?? 0;
   const hasOpenTasksToday = openAcceptedCount > 0;
   // החמצת חלון: יש משימות פתוחות, אפס ביצוע היום, וכבר עבר לפחות יום פעיל.
+  // only once the day is mostly over (Israel ≥ 17:00) — a morning with nothing done yet is not a "miss"
+  const israelHourNow = Number(
+    new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Jerusalem', hour: '2-digit', hour12: false }).format(now)
+  );
   const missedActiveWindow =
-    hasOpenTasksToday && doneTodayCount === 0 && daysSinceLastActive >= 1;
+    hasOpenTasksToday && doneTodayCount === 0 && daysSinceLastActive >= 1 && israelHourNow >= 17;
 
   // יש לאן להתקדם כל עוד המסע עדיין לא הסתיים (companion != null מסמן צעד פתוח).
   const hasNextStepAvailable = companion != null;

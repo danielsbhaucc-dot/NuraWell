@@ -23,6 +23,7 @@ import type { JourneyCompanionContext } from '../../workflows/journey-companion'
 import type { AiUserContext } from '../memory';
 import { isGroqLaneAvailable } from '../groq-compat';
 import { HEBREW_JSON_VALUES_RULE } from '../hebrew-output-rules';
+import { tinyStepTitle } from './shrink-task-title';
 
 export type BuildProposalInput = {
   decision: ProgramStateDecision;
@@ -31,7 +32,28 @@ export type BuildProposalInput = {
   companion: JourneyCompanionContext | null;
   /** רצף הימים — לשיקוף "מגיע לך" ב-level_up. */
   consecutiveCompletedDays: number;
+  /** pivot: the user's actual open task that is hard right now (exact title) — what gets shrunk and restored. */
+  targetTaskTitle?: string | null;
 };
+
+/** The concrete task a pivot is about (never a vague step name when we know the real task). */
+function pivotFocus(input: BuildProposalInput): string {
+  return (
+    input.targetTaskTitle?.trim() ||
+    input.aiCtx.current_focus ||
+    input.companion?.stepTitle ||
+    'ההרגל שלך'
+  );
+}
+
+/** Reject generic / unchanged / overlong LLM tiny-step titles. */
+export function isGoodTinyTitle(title: string | null, original: string): title is string {
+  if (!title) return false;
+  const t = title.trim();
+  if (t.length < 4 || t.length > 70) return false;
+  if (/גרסה\s+(זעירה|קטנה|מוקטנת)|מיקרו/.test(t)) return false;
+  return t.replace(/\s+/g, ' ') !== original.replace(/\s+/g, ' ').trim();
+}
 
 const SAFETY_BLOCK = `אתה אלמוג — מאמן הרגלים וחבר תומך, *לא* מטפל/דיאטן/רופא. אלמוג הוא גבר: כשאתה מדבר על עצמך — תמיד בלשון זכר (אני מבין, אני שמח, הייתי בטוח), גם כשהמשתמשת היא אישה. הפנייה למשתמש — לפי המגדר שלו.
 אסור: לאבחן, לתת ייעוץ קליני, לדבר בשפת "שמירה/איסור אוכל", או להאשים. אכילה היא לא כישלון.
@@ -54,9 +76,15 @@ function stateInstruction(input: BuildProposalInput): string {
     case 'daily_kickoff':
       return `מצב: MAINTAINING. המשתמש מתקדם תקין ב-"${focus}".${goal}
 המשימה: פתיחת יום חמה וקצרה שמחזקת מומנטום בלי להוסיף עומס. בלי משימה חדשה — רק נוכחות מעודדת ותזכורת עדינה ל"למה".`;
-    case 'pivot':
-      return `מצב: STRUGGLING. למשתמש קשה כרגע ב-"${focus}" (${input.decision.reason}).${goal}
-המשימה: בלי לחץ ובלי אשמה. הצע *הורדת הילוך* — גרסה זעירה של הצעד שאי-אפשר להיכשל בה (micro-step downgrade), כדי להחזיר תחושת הצלחה. ולידציה רכה קודם.`;
+    case 'pivot': {
+      const task = pivotFocus(input);
+      return `מצב: STRUGGLING. למשתמש קשה כרגע עם המשימה "${task}" (${input.decision.reason}).${goal}
+המשימה: בלי לחץ ובלי אשמה. ולידציה רכה קודם, ואז הצע להקטין זמנית את *אותה משימה בדיוק* לצעד שאי-אפשר להיכשל בו.
+next_step_title = שם המשימה המוקטנת עצמה, כמו שתופיע ברשימת המשימות: אותו הרגל, אותו הקשר, רק קטן יותר באופן מדיד —
+חצי מהכמות, חצי מהזמן, או תנאי קל יותר. עד 8 מילים, עברית טבעית, בלי "גרסה זעירה"/"מיקרו"/"צעד קטן של".
+דוגמאות: "שתיה של 2 כוסות מים לפני צהריים" → "כוס מים אחת לפני צהריים"; "הליכה של 20 דקות אחרי ארוחת ערב" → "הליכה של 5 דקות אחרי ארוחת ערב";
+"לאכול ירק בכל ארוחה" → "ירק אחד בארוחת הצהריים"; "לכתוב יומן אכילה כל ערב" → "לרשום ארוחה אחת ביומן".`;
+    }
   }
 }
 
@@ -96,17 +124,21 @@ function fallbackProposalText(input: BuildProposalInput): {
         nextStep: null,
       };
     case 'pivot':
+    {
+      const task = pivotFocus(input);
+      const tiny = tinyStepTitle(task);
       return {
         headline: 'בוא ניקח את זה קטן יותר 💙',
-        body: `${name}, אם „${focus}” קשה כרגע — זה לגמרי בסדר. בוא נוריד הילוך לגרסה זעירה שאי-אפשר להיכשל בה, רק כדי להישאר בתנועה.`,
+        body: `${name}, אם „${task}” קשה כרגע — זה לגמרי בסדר. בוא נתחיל מ„${tiny}”, ונחזור בהדרגה כשזה ירגיש קל.`,
         nextStep: {
-          title: `גרסה זעירה של ${focus} — דקה-שתיים, רק כדי להישאר בתנועה`,
-          detail: 'צעד שאי-אפשר להיכשל בו. נטפס משם בחזרה בקצב שלך.',
+          title: tiny,
+          detail: 'אחרי 3 ימים טובים נחזור למשימה המלאה.',
           next_step_id: null,
           habit_hint: null,
-          restore_to: focus,
+          restore_to: task,
         },
       };
+    }
   }
 }
 
@@ -162,10 +194,7 @@ export async function buildProgramProposal(
   if (isGroqLaneAvailable()) {
     const kind = input.decision.proposalKind;
     const wantsNextStep = kind === 'level_up' || kind === 'pivot';
-    const restoreTo =
-      kind === 'pivot'
-        ? input.aiCtx.current_focus || input.companion?.stepTitle || 'ההרגל הנוכחי'
-        : null;
+    const restoreTo = kind === 'pivot' ? pivotFocus(input) : null;
     const system = `${SAFETY_BLOCK}
 
 ${stateInstruction(input)}
@@ -205,7 +234,13 @@ ${HEBREW_JSON_VALUES_RULE}`;
         body = b;
         model = AI_MODELS.background_groq_strong;
         if (wantsNextStep) {
-          const title = asText(parsed?.next_step_title, 120) ?? fallback.nextStep?.title ?? '';
+          const rawTitle = asText(parsed?.next_step_title, 120);
+          const title =
+            kind === 'pivot'
+              ? isGoodTinyTitle(rawTitle, restoreTo ?? '')
+                ? rawTitle
+                : fallback.nextStep?.title ?? ''
+              : rawTitle ?? fallback.nextStep?.title ?? '';
           const detail = asText(parsed?.next_step_detail, 160);
           nextStep = title
             ? {
