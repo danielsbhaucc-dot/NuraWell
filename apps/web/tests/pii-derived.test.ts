@@ -18,6 +18,13 @@ describe('derived-text encryption', () => {
     expect(decryptAiContext(ctx, 'u1')).toEqual({ chat_summary: 'x', reengagement: { a: 1 } });
   });
 
+  it('encrypts the live conversation file (raw chat text)', async () => {
+    const { encryptTableRow, decryptTableRow } = await import('@/lib/crypto/pii-fields');
+    const enc = encryptTableRow('chat_sessions', { live_conversation_file: 'משתמש: קשה לי בלילה' }, 'u1');
+    expect(String(enc.live_conversation_file).startsWith('enc:v1:')).toBe(true);
+    expect(decryptTableRow('chat_sessions', { ...enc, user_id: 'u1' }).live_conversation_file).toBe('משתמש: קשה לי בלילה');
+  });
+
   it('seals Upstash metadata text, keeps ids/category plain', async () => {
     const { sealVectorMetadata, openVectorMetadata } = await import('@/lib/ai/upstash-vector-rest');
     const m = sealVectorMetadata({ userId: 'u1', text: 'המכשול: לילה', category: 'personal' });
