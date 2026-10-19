@@ -8,6 +8,8 @@ import {
 } from '../../../../lib/validation/task-execution';
 import { jsonZodError } from '../../../../lib/validation/zod-http';
 import { jerusalemDateKey } from '../../../../lib/journey/task-schedule';
+import { encryptString } from '@/lib/crypto/pii';
+import { decTableResult } from '@/lib/crypto/pii-fields';
 
 export const runtime = 'nodejs';
 // Edge runs next to the user by default (fra1) — every Supabase round-trip then crosses to Sydney. Pin next to the DB.
@@ -116,7 +118,7 @@ export async function POST(request: Request) {
       completed_at: nowIso,
       source: source ?? 'manual',
       outcome: outcome ?? 'completed',
-      ...(note ? { note } : {}),
+      ...(note ? { note: encryptString(note, user.id) } : {}),
     };
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -127,7 +129,8 @@ export async function POST(request: Request) {
         ignoreDuplicates: false,
       })
       .select(TASK_EXECUTION_SELECT)
-      .maybeSingle();
+      .maybeSingle()
+      .then(decTableResult('journey_task_executions', user.id));
 
     if (error) {
       console.error('task-executions POST error:', {
@@ -245,7 +248,7 @@ export async function GET(request: Request) {
     if (taskId) query = query.eq('task_id', taskId);
     if (stepId) query = query.eq('step_id', stepId);
 
-    const { data, error } = await query;
+    const { data, error } = await query.then(decTableResult('journey_task_executions', user.id));
     if (error) {
       console.error('task-executions GET error:', error);
       return NextResponse.json(supabaseErrorPayload(error), { status: 500 });

@@ -243,6 +243,13 @@ const match = z.record(ident, z.union([z.string(), z.number(), z.boolean()])).re
 /** Tables holding tokens/secrets: never via generic writes — they have dedicated server flows (e.g. create_demo_link). */
 export const SECRET_TABLES = new Set(['demo_access_links', 'demo_access_sessions', 'gideon_settings']);
 const SECRET_COL = /(hash|token|secret|password|api_key)/i;
+/** תוכן שיחה / בריאות / פרטי קשר: לא נשלח לספק ה-AI של גדעון (PII מינימלי). */
+const PRIVATE_COL = /^(content|note|memory_text|insight_text|source_excerpt|raw_chat_text|user_message|assistant_message|rolling_summary|live_conversation_file|phone|email|avatar_url|health_conditions|dietary_preferences|main_obstacle_detail|current_weight_kg|goal_weight_kg|height_cm|weight_kg|bmi|ai_context|transcript|extracted_insights)$/i;
+function redactCell(k: string, v: unknown): unknown {
+  if (PRIVATE_COL.test(k)) return v === null || v === undefined || v === '' ? v : '[פרטי]';
+  if (typeof v === 'string' && v.startsWith('enc:v1:')) return '[מוצפן]';
+  return typeof v === 'string' ? clip(v, 600) : v;
+}
 
 function guardWrite(table: string, row?: Record<string, unknown>) {
   if (SECRET_TABLES.has(table)) throw new Error(`table ${table} is managed by a dedicated tool (create_demo_link), not generic writes`);
@@ -325,7 +332,7 @@ const GENERIC: CeoTool[] = [
       q = applyFilters(q, (a.filters as never) ?? []);
       if (a.order) q = q.order(String(a.order), { ascending: Boolean(a.ascending) });
       const r = await rows(q.limit(Number(a.limit ?? 20)) as never);
-      return r.map((x) => Object.fromEntries(Object.entries(x as Record<string, unknown>).filter(([k]) => !SECRET_COL.test(k)).map(([k, v]) => [k, typeof v === 'string' ? clip(v, 600) : v])));
+      return r.map((x) => Object.fromEntries(Object.entries(x as Record<string, unknown>).filter(([k]) => !SECRET_COL.test(k)).map(([k, v]) => [k, redactCell(k, v)])));
     },
   },
   {
