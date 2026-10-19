@@ -2,6 +2,7 @@ import { withAiUsage } from '@/lib/ai/usage-meter';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { CEO_NAME, CEO_SYSTEM_PROMPT } from './agent';
 import { audit } from './actions';
+import { forwardButton, saveDigestDraft } from './dev-forward';
 import type { CeoChannel } from './channel';
 import { allowedChatIds, opsLink } from './channel';
 import { digestRecipients, readGideonSettings, type GideonSettings } from './settings';
@@ -81,7 +82,9 @@ export async function sendDigest(db: SupabaseClient, channel: CeoChannel, period
   const chats = digestRecipients(settings, allowedChatIds());
   if (settings.alert_topics[period]) {
     const text = await buildDigest(db, period, deps);
-    for (const c of chats) await channel.send(c, text);
+    // weekly/monthly reviews carry technical/quality findings → one-tap "🛠️ העבר לאור"
+    const draftId = period === 'daily' ? null : await saveDigestDraft(db, text).catch(() => null);
+    for (const c of chats) await channel.send(c, text, draftId ? [[forwardButton(draftId)]] : undefined);
   }
   // systemic cost alert (separate message, only when the SQL check fires with the admin thresholds)
   const anomalies = settings.alert_topics.cost ? await costAnomalies(db, settings) : [];
