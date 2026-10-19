@@ -812,6 +812,13 @@ async function runMasterCron() {
     }
   }
 
+  try {
+    const { dispatchSecurityEvents } = await import('@/lib/ops/security-events');
+    await dispatchSecurityEvents(admin);
+  } catch (e) {
+    errors.push(`security_events: ${e instanceof Error ? e.message : String(e)}`);
+  }
+
   /** chat_perf_timings retention (no pg_cron on this project): keep 30 days */
   try {
     await admin

@@ -26,6 +26,11 @@ export async function POST(request: Request) {
     await alertOwner(r.text, 'reply'); // result of Daniel's own Face ID approval
     return NextResponse.json({ ok: r.ok, text: r.ok ? 'בוצע.' : 'לא הצלחתי לבצע.' }, noStore);
   }
+  if (v.purpose === 'ops_login') {
+    const { decideRequest } = await import('@/lib/ops/device-trust');
+    const d = await decideRequest(db, String(v.payload?.requestId ?? ''), true, 'telegram_faceid');
+    return NextResponse.json({ ok: Boolean(d), text: d ? 'הכניסה אושרה. אפשר לחזור לדפדפן.' : 'הבקשה פגה או כבר טופלה.' }, noStore);
+  }
   const text = { unlock: 'גדעון שוחרר ופעיל.', settings: 'ההגדרות נשמרו.', remove_key: 'המכשיר הוסר.' }[v.purpose as 'unlock'] ?? 'אומת.';
   await alertOwner(`🔐 ${text}`, 'reply');
   return NextResponse.json({ ok: true, text }, noStore);

@@ -16,6 +16,9 @@ import {
   MARKETING_PATHS_REDIRECT_WHEN_AUTHED,
 } from './lib/navigation/app-home-path';
 import { handleChallengeMiddleware } from './lib/challenge/middleware-challenge';
+import { isDeviceCheckPath, opsDeviceGate } from './lib/ops/device-gate';
+import { consumeRateLimit } from './lib/api/rate-limit';
+import { DEVICE_COOKIE } from './lib/ops/device-trust';
 import { DEMO_ACCESS_COOKIE, clearDemoAccessCookieOptions, parseDemoAccessCookie } from './lib/demo-access/cookie';
 import { killDeadDemoAuthSessions } from './lib/demo-access/active-session';
 import { hasActiveDemoAccessSession } from './lib/demo-access/active-session';
@@ -120,6 +123,8 @@ const PUBLIC_ROUTES = [
   '/register/check-email',
   '/register/verified',
   '/auth/callback',
+  '/auth/bridge-to-ops', // admin-only page: server returns 404 to everyone else
+  '/device-check', // same
   '/demo',
   '/gideon', // passkey step-up pages: one-time link + WebAuthn are the auth
   '/about',
@@ -140,6 +145,8 @@ const EMAIL_VERIFY_EXEMPT = [
   '/register/check-email',
   '/register/verified',
   '/auth/callback',
+  '/auth/bridge-to-ops', // admin-only page: server returns 404 to everyone else
+  '/device-check', // same
 ];
 
 function copyCookies(from: NextResponse, to: NextResponse) {
@@ -203,6 +210,13 @@ export async function proxy(request: NextRequest) {
     res.headers.set('x-nonce', nonce);
     return res;
   }
+  /** Ops stealth: anyone without admin session + trusted device sees the app's generic 404 (same as any missing page). */
+  async function stealthNotFound(): Promise<NextResponse> {
+    const ip = (request.headers.get('x-real-ip') || request.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown').trim();
+    const rl = await consumeRateLimit({ key: ip, namespace: 'ops-probe', limit: 120, windowSeconds: 600 }).catch(() => ({ ok: true }));
+    if (!rl.ok) return applySecurityHeaders(new NextResponse('Too Many Requests', { status: 429, headers: { 'Retry-After': '600' } }));
+    return applySecurityHeaders(NextResponse.rewrite(new URL('/__nf', request.url), { request: { headers: requestHeaders } }));
+  }
 
   if (!supabaseUrl || !supabaseKey) {
     if (process.env.NODE_ENV === 'development') {
@@ -213,7 +227,9 @@ export async function proxy(request: NextRequest) {
   }
 
   /** Ops host has its own login page (same-origin auth cookies; never bounce to the public *.vercel.app host). */
-  const isOpsLoginPage = effectiveOpsHost && pathname === '/login';
+  /** Ops has NO login page: the old /login on the Ops host (and device-check there) is a plain 404. */
+  const isOpsDeviceCheck = isDeviceCheckPath(pathname);
+  if (effectiveOpsHost && (pathname === '/login' || isOpsDeviceCheck)) return stealthNotFound();
 
   /** דומיין Ops משרת רק את הפאנל (+ /login משלו); /guides וכו׳ → דף הבית של הפאנל */
   /** Old Ops URLs → their merged pages, as one server redirect (no client double-load, no `/ops/...` leak). */
@@ -224,11 +240,10 @@ export async function proxy(request: NextRequest) {
 
   if (effectiveOpsHost) {
     const skipPanelGate =
-      isOpsLoginPage ||
       pathname.startsWith('/api') || pathname.startsWith('/_next') ||
       pathname === '/gideon' || pathname.startsWith('/gideon/'); // passkey step-up pages (rpId = Ops host)
     if (!skipPanelGate && !isOpsPanelBrowserPath(pathname)) {
-      return applySecurityHeaders(NextResponse.redirect(new URL('/', request.url)));
+      return stealthNotFound();
     }
   }
 
@@ -302,35 +317,13 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  if (isOpsLoginPage) {
-    if (user) {
-      const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
-      const isAdmin = profile?.role === 'admin' && !(await hasActiveDemoAccessSession(user.id));
-      if (isAdmin) {
-        const target = safeOpsReturnPath(request.nextUrl.searchParams.get('redirect'));
-        const out = NextResponse.redirect(new URL(target, request.nextUrl.origin));
-        copyCookies(response, out);
-        return applySecurityHeaders(out);
-      }
-      // Signed in on the Ops host but not an admin → drop this host's session, show login with a notice.
-      await supabase.auth.signOut({ scope: 'local' });
-      if (request.nextUrl.searchParams.get('reason') !== 'no_access') {
-        const out = NextResponse.redirect(new URL('/login?reason=no_access', request.nextUrl.origin));
-        copyCookies(response, out);
-        return applySecurityHeaders(out);
-      }
-    }
-    response.headers.set('X-Robots-Tag', 'noindex, nofollow');
-    return applySecurityHeaders(response);
-  }
-
   /** גישה ישירה ל־/ops מהדומיין הציבורי — כאילו לא קיים */
   const appHostOpsPath =
     isAppHostOpsFallback(incomingHost) && (pathname === '/ops' || pathname.startsWith('/ops/'));
   const canUseOpsPathPrefix =
     (isLocal && process.env.NODE_ENV === 'development') || effectiveOpsHost || appHostOpsPath;
   if (pathname.startsWith('/ops') && !canUseOpsPathPrefix) {
-    return applySecurityHeaders(NextResponse.redirect(new URL(APP_HOME_PATH, request.url)));
+    return stealthNotFound();
   }
 
   const devOpsPath =
@@ -351,14 +344,7 @@ export async function proxy(request: NextRequest) {
     /** Login always stays on the requesting host (Ops host has its own /login) — never the public *.vercel.app. */
     const loginOrigin = request.nextUrl.origin;
     if (!user) {
-      const loginUrl = new URL('/login', loginOrigin);
-      const opsReturnPath = appHostOpsPath
-        ? `${pathname}${request.nextUrl.search}`
-        : isOpsPanelBrowserPath(pathname)
-        ? `${pathname}${request.nextUrl.search}`
-        : '/';
-      loginUrl.searchParams.set('redirect', opsReturnPath);
-      return applySecurityHeaders(NextResponse.redirect(loginUrl));
+      return stealthNotFound();
     }
 
     // Cookie is a fast path; DB session is authoritative (cookie may be missing on ops host).
@@ -370,13 +356,7 @@ export async function proxy(request: NextRequest) {
       : await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
 
     if (isDemo || !profile || profile.role !== 'admin') {
-      if (devOpsPath) {
-        return applySecurityHeaders(NextResponse.redirect(new URL(APP_HOME_PATH, loginOrigin)));
-      }
-      // Ops host: don't reveal/bounce to the public app — the Ops login handles non-admins (signs out, shows notice).
-      const out = NextResponse.redirect(new URL('/login?reason=no_access', loginOrigin));
-      copyCookies(response, out);
-      return applySecurityHeaders(out);
+      return stealthNotFound();
     }
 
     /** Ops idle timeout: no Ops activity for OPS_IDLE_MINUTES (default 60) → sign out of this host's session. */
@@ -385,15 +365,28 @@ export async function proxy(request: NextRequest) {
     const nowMs = Date.now();
     if (seen && nowMs - seen > idleMs) {
       await supabase.auth.signOut({ scope: 'local' });
-      const loginUrl = new URL('/login', loginOrigin);
-      loginUrl.searchParams.set('reason', 'ops_idle');
-      const out = NextResponse.redirect(loginUrl);
+      const out = NextResponse.redirect(new URL('/', loginOrigin));
       for (const c of response.cookies.getAll()) out.cookies.set(c);
       out.cookies.set('nw_ops_seen', '', { path: '/', maxAge: 0 });
       return applySecurityHeaders(out);
     }
     if (!seen || nowMs - seen > 60_000) {
       response.cookies.set('nw_ops_seen', String(nowMs), { httpOnly: true, secure: true, sameSite: 'lax', path: '/', maxAge: 12 * 3600 });
+    }
+
+    /** New-device approval: unknown device → /device-check until approved (Telegram Face ID / trusted Ops / email / recovery code). */
+    {
+      const { createAdminClient } = await import('./lib/supabase/admin');
+      const { data: sess } = await supabase.auth.getSession();
+      const gate = await opsDeviceGate(createAdminClient(), user.id, request.cookies.get(DEVICE_COOKIE)?.value, sess.session?.access_token, request.headers.get('user-agent'), { allowBootstrap: true });
+      if (!gate.ok) return stealthNotFound();
+      if (gate.setCookie) {
+        // first trusted device (rollout bootstrap): reload so every downstream check sees the cookie
+        const out = NextResponse.redirect(request.nextUrl.clone());
+        copyCookies(response, out);
+        out.cookies.set(gate.setCookie.name, gate.setCookie.value, gate.setCookie.opts);
+        return applySecurityHeaders(out);
+      }
     }
   }
 
