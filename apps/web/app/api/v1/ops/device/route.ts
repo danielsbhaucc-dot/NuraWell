@@ -55,11 +55,12 @@ const Body = z.discriminatedUnion('action', [
   z.object({ action: z.literal('email') }),
   z.object({ action: z.literal('email_code'), code: z.string().max(12) }),
   z.object({ action: z.literal('recovery'), code: z.string().max(20) }),
+  z.object({ action: z.literal('deny_self') }),
   z.object({ action: z.literal('decide'), id: z.string().uuid(), approve: z.boolean() }),
   z.object({ action: z.literal('revoke'), id: z.string().uuid() }),
   z.object({ action: z.literal('regenerate_codes') }),
 ]);
-const PENDING_ACTIONS = new Set(['start', 'email', 'email_code', 'recovery']);
+const PENDING_ACTIONS = new Set(['start', 'email', 'email_code', 'recovery', 'deny_self']);
 
 export async function POST(request: Request) {
   const p = Body.safeParse(await request.json().catch(() => null));
@@ -79,6 +80,16 @@ export async function POST(request: Request) {
     await sendTelegramLoginCard(db, { id: r.id, user_id: uid, label, location, created_at: new Date().toISOString() });
     const res = json({ ok: true, expiresAt: r.expiresAt });
     res.cookies.set(PENDING_COOKIE, r.pendingCookie, cookieOpts(15 * 60));
+    return res;
+  }
+  if (a.action === 'deny_self') {
+    // "זה לא אני" from the waiting browser: only ever reduces access (deny request + revoke all sessions + kill switch).
+    const r = await requestForPendingCookie(db, uid, cookieOf(request, PENDING_COOKIE));
+    if (r && r.status === 'pending') await decideRequest(db, r.id, false, `self_deny:${uid}`);
+    else await db.rpc('ops_revoke_user_sessions', { p_user: uid });
+    await killSwitch(db, `ops:${uid}`, 'ops login denied from waiting page').catch(() => undefined);
+    const res = json({ ok: true });
+    res.cookies.set(PENDING_COOKIE, '', cookieOpts(0));
     return res;
   }
   if (a.action === 'email' || a.action === 'email_code' || a.action === 'recovery') {
