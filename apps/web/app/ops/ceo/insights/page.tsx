@@ -25,8 +25,10 @@ async function taskAction(formData: FormData) {
 export default async function Page() {
   await ensureOpsAdminServer();
   const db = createAdminClient();
-  const tasks = (await TOOL_BY_NAME.get('owner_tasks_list')!.run(db, {})) as Task[];
-  const sample = (await TOOL_BY_NAME.get('almog_quality_sample')!.run(db, { days: 1, limit: 12 })) as Sample;
+  const tasksTool = TOOL_BY_NAME.get('owner_tasks_list');
+  const sampleTool = TOOL_BY_NAME.get('almog_quality_sample');
+  const tasks = ((await tasksTool?.run(db, {})) ?? []) as Task[];
+  const sample = ((await sampleTool?.run(db, { days: 1, limit: 12 })) ?? { chat: [], notifications: [] }) as Sample;
   return (
     <div dir="rtl" className="mx-auto max-w-3xl space-y-6 p-4">
       <h1 className="text-2xl font-bold">גדעון · משימות ובקרת איכות</h1>
@@ -51,8 +53,8 @@ export default async function Page() {
       <section className="rounded-3xl border bg-white p-5">
         <h2 className="text-lg font-bold">דגימת הודעות של אלמוג (24 שעות)</h2>
         <ul className="mt-3 space-y-2 text-sm">
-          {sample.chat.map((c, i) => <li key={`c${i}`} className="rounded-xl bg-slate-50 px-3 py-2">💬 {c.text}</li>)}
-          {sample.notifications.map((n, i) => <li key={`n${i}`} className="rounded-xl bg-slate-50 px-3 py-2">🔔 <b>{n.title}</b> {n.body}</li>)}
+          {sample.chat.map((c) => <li key={`c${c.at}${c.text.slice(0, 24)}`} className="rounded-xl bg-slate-50 px-3 py-2">💬 {c.text}</li>)}
+          {sample.notifications.map((n) => <li key={`n${n.at}${n.title}`} className="rounded-xl bg-slate-50 px-3 py-2">🔔 <b>{n.title}</b> {n.body}</li>)}
           {!sample.chat.length && !sample.notifications.length ? <li className="text-slate-500">אין הודעות ב-24 השעות האחרונות.</li> : null}
         </ul>
       </section>

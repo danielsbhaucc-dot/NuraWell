@@ -6,6 +6,7 @@ import { ChevronLeft, Loader2 } from 'lucide-react';
 import type { ChallengeEatingWindowLesson } from '@/lib/challenge/content';
 import type { EatingWindowConfig } from '@/lib/challenge/types';
 import { DemoExitBanner } from './DemoExitBanner';
+import { sanitizeLessonHtml } from '@/lib/sanitize-lesson-html';
 
 type Step = 'lesson' | 'confirm';
 
@@ -64,7 +65,8 @@ export function ChallengeEatingWindowClient() {
 
           <div
             className="prose prose-invert prose-sm mt-6 max-w-none leading-relaxed text-white/80 prose-p:my-3 prose-strong:text-emerald-200"
-            dangerouslySetInnerHTML={{ __html: lesson.body_html }}
+            // skipcq: JS-0440 -- HTML is sanitized (allowlist) on save and on render
+            dangerouslySetInnerHTML={{ __html: sanitizeLessonHtml(lesson.body_html) }}
           />
 
           {lesson.video_url ? (

@@ -1,3 +1,4 @@
+import { sanitizeLessonHtml } from '@/lib/sanitize-lesson-html';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { readJsonBody } from '@/lib/api/json-request';
@@ -42,7 +43,7 @@ export async function PATCH(request: Request) {
 
   const lesson: ChallengeEatingWindowLesson = {
     title: parsed.data.title,
-    body_html: parsed.data.body_html,
+    body_html: sanitizeLessonHtml(parsed.data.body_html),
     video_url: parsed.data.video_url ?? null,
   };
 

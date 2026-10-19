@@ -58,7 +58,7 @@ export async function fetchDailyChatSource(
       .gte('updated_at', start.toISOString())
       .lte('updated_at', end.toISOString())
       .not('live_conversation_file', 'is', null)
-      .limit(5),
+      .limit(5).then(decTableResult('chat_sessions', userId)),
   ]);
 
   if (interactionsRes.error) throw interactionsRes.error;

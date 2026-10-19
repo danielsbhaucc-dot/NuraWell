@@ -146,7 +146,7 @@ export const decInteractionResult =
 
 /** עמודות טקסט מוצפנות לפי טבלה; userId מעמודת user_id */
 export const TABLE_ENC_TEXT = {
-  chat_sessions: ['title', 'summary', 'preview_text'],
+  chat_sessions: ['title', 'summary', 'preview_text', 'live_conversation_file'],
   pending_chat_logs: ['raw_chat_text'],
   user_memories: ['memory_text'],
   user_insights: ['insight_text'],
