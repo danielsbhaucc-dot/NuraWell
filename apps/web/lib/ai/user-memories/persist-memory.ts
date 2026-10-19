@@ -1,3 +1,4 @@
+import { sealTableRow } from '@/lib/crypto/pii-seal';
 import { embedTextForRag } from '../openrouter-embeddings';
 import { normalizeFactTextForDedupe, stableMemoryVectorId } from '../memory-fact-dedupe';
 import { UPSTASH_NAMESPACE_USER_MEMORY } from '../rag-config';
@@ -25,7 +26,7 @@ export async function persistUserMemory(params: PersistUserMemoryParams): Promis
   upstash_vector_id: string;
   skipped_reason?: string;
 }> {
-  const text = params.memoryText.replace(/\s+/g, ' ').trim();
+  const text = params.memoryText.replace(/\s+/g, ' ').trim().slice(0, 600);
   const normKey = normalizeFactTextForDedupe(text);
   const vectorId = await stableMemoryVectorId(params.userId, normKey);
   const level = params.memoryLevel ?? 2;
@@ -72,11 +73,11 @@ export async function persistUserMemory(params: PersistUserMemoryParams): Promis
   const { data, error } = existing?.id
     ? await admin
         .from('user_memories')
-        .update(row)
+        .update(await sealTableRow('user_memories', row, row.user_id))
         .eq('id', existing.id)
         .select('id, upstash_vector_id')
         .single()
-    : await admin.from('user_memories').insert(row).select('id, upstash_vector_id').single();
+    : await admin.from('user_memories').insert(await sealTableRow('user_memories', row, row.user_id)).select('id, upstash_vector_id').single();
 
   if (error) throw error;
 

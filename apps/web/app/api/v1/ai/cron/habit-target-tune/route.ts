@@ -1,3 +1,5 @@
+import { sealProfilePatch } from '@/lib/crypto/pii-seal';
+import { decProfileResult } from '@/lib/crypto/pii-fields';
 import { NextResponse } from 'next/server';
 import { authorizeCronRequest } from '../../../../../../lib/api/authorize-cron';
 import { maybeReturnCronIdleSkip } from '../../../../../../lib/api/cron-idle-guard';
@@ -218,7 +220,7 @@ async function runHabitTargetTune(request: Request) {
         .from('profiles')
         .select('ai_context')
         .eq('id', userId)
-        .maybeSingle();
+        .maybeSingle().then(decProfileResult(userId));
       const ctx = (profile?.ai_context ?? {}) as Record<string, unknown>;
       const merged = {
         ...ctx,
@@ -233,7 +235,7 @@ async function runHabitTargetTune(request: Request) {
         },
       };
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await admin.from('profiles').update({ ai_context: merged }).eq('id', userId);
+      await admin.from('profiles').update(await sealProfilePatch({ ai_context: merged }, userId)).eq('id', userId);
     }
   }
 

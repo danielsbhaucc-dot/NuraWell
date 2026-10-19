@@ -1,3 +1,4 @@
+import { decProfileResult } from '@/lib/crypto/pii-fields';
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { createClient } from '../../../../lib/supabase/server';
@@ -23,7 +24,7 @@ export default async function AlmogNudgeSettingsPage() {
     .from('profiles')
     .select('ai_context')
     .eq('id', user.id)
-    .single();
+    .single().then(decProfileResult(user.id));
 
   const ctx = (row?.ai_context ?? null) as AiUserContext | null;
   const avoidPush = ctx?.avoid_push === true;

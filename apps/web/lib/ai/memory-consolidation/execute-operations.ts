@@ -1,3 +1,4 @@
+import { sealTableRow } from '@/lib/crypto/pii-seal';
 import { isStorableMemoryText } from '../safety/memory-text-guard';
 /**
  * ביצוע פעולות זיכרון ב-Supabase — יעיל, עם ולידציה מקדימה של insight_id.
@@ -65,7 +66,7 @@ export async function executeMemoryOperations(params: {
           const textChanged = op.insight_text.trim() !== duplicate.insight_text.trim();
           const { error } = await admin
             .from('user_insights')
-            .update({
+            .update(await sealTableRow('user_insights', {
               insight_text: op.insight_text,
               actionability_score: Math.max(duplicate.actionability_score, op.actionability_score),
               confidence: op.confidence,
@@ -76,7 +77,7 @@ export async function executeMemoryOperations(params: {
                 evidence: op.evidence,
                 consolidation_reason: 'dedupe_merge_on_add',
               }),
-            })
+            }, userId))
             .eq('id', duplicate.id)
             .eq('user_id', userId);
 
@@ -100,7 +101,7 @@ export async function executeMemoryOperations(params: {
 
         const { data: inserted, error } = await admin
           .from('user_insights')
-          .insert({
+          .insert(await sealTableRow('user_insights', {
             user_id: userId,
             category: op.category,
             insight_text: op.insight_text,
@@ -113,7 +114,7 @@ export async function executeMemoryOperations(params: {
             last_seen_at: nowIso,
             source_session_id: params.sessionId ?? null,
             metadata: op.evidence ? { evidence: op.evidence } : {},
-          })
+          }, userId))
           .select('id, created_at, updated_at')
           .single();
 
@@ -146,7 +147,7 @@ export async function executeMemoryOperations(params: {
 
         const { error } = await admin
           .from('user_insights')
-          .update({
+          .update(await sealTableRow('user_insights', {
             category,
             insight_text: op.insight_text,
             dedupe_key: key,
@@ -158,7 +159,7 @@ export async function executeMemoryOperations(params: {
             metadata: mergeMetadata(existing.metadata, {
               consolidation_reason: op.reason,
             }),
-          })
+          }, userId))
           .eq('id', op.insight_id)
           .eq('user_id', userId);
 
@@ -183,13 +184,13 @@ export async function executeMemoryOperations(params: {
       if (op.op === 'DEPRECATE') {
         const { error } = await admin
           .from('user_insights')
-          .update({
+          .update(await sealTableRow('user_insights', {
             status: INSIGHT_STATUS.DEPRECATED,
             metadata: mergeMetadata(existing.metadata, {
               consolidation_reason: op.reason,
               deprecated_at: nowIso,
             }),
-          })
+          }, userId))
           .eq('id', op.insight_id)
           .eq('user_id', userId);
 
@@ -204,14 +205,14 @@ export async function executeMemoryOperations(params: {
       if (op.op === 'VERIFY') {
         const { error } = await admin
           .from('user_insights')
-          .update({
+          .update(await sealTableRow('user_insights', {
             status: INSIGHT_STATUS.NEEDS_VERIFICATION,
             metadata: mergeMetadata(existing.metadata, {
               verify_prompt: op.verify_prompt,
               consolidation_reason: op.reason,
               verification_requested_at: nowIso,
             }),
-          })
+          }, userId))
           .eq('id', op.insight_id)
           .eq('user_id', userId);
 

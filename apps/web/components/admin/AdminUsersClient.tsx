@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { UserQuickActions } from './UserQuickActions';
 import { useSearchParams } from 'next/navigation';
 import {
   Activity,
@@ -641,6 +642,7 @@ export function AdminUsersClient() {
                         initial={detail?.profile?.notify_test_opt_in === true}
                         isAdminAccount={detail?.profile?.role === 'admin'}
                       />
+                      <UserQuickActions userId={selectedId} />
                       <Section icon={User} title="זהות אישית" tone="emerald">
                         <Field label="שם מלא" className="sm:col-span-2">
                           <input

@@ -1,4 +1,5 @@
-import { encryptMeasurementPatch, encryptProfilePatch } from '@/lib/crypto/pii-fields';
+import { sealProfilePatch } from '@/lib/crypto/pii-seal';
+import { encryptMeasurementPatch } from '@/lib/crypto/pii-fields';
 /**
  * זיהוי משקל מהודעת צ'אט — עדכון user_measurements בלי טופס.
  */
@@ -57,7 +58,7 @@ export async function applyWeightFromUserMessage(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await supabase
     .from('profiles')
-    .update(encryptProfilePatch({ current_weight_kg: weightKg }, userId))
+    .update(await sealProfilePatch({ current_weight_kg: weightKg }, userId))
     .eq('id', userId);
 
   return { logged: true, weightKg };

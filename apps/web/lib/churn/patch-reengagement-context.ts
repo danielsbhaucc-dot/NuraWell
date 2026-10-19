@@ -1,3 +1,5 @@
+import { sealProfilePatch } from '@/lib/crypto/pii-seal';
+import { decProfileResult } from '@/lib/crypto/pii-fields';
 /**
  * עדכוני DB ל-ai_context.reengagement (מערכת הנטישה):
  *   - readReengagementContext  — קריאה מנורמלת (sent_moves תמיד מערך).
@@ -74,7 +76,7 @@ export async function patchReengagementContext(
       .from('profiles')
       .select('ai_context')
       .eq('id', userId)
-      .maybeSingle();
+      .maybeSingle().then(decProfileResult(userId));
 
     const ctx = (data?.ai_context ?? {}) as Record<string, unknown>;
     const reng = readReengagementContext(ctx);
@@ -91,7 +93,7 @@ export async function patchReengagementContext(
 
     await admin
       .from('profiles')
-      .update({ ai_context: { ...ctx, reengagement: nextReng } })
+      .update(await sealProfilePatch({ ai_context: { ...ctx, reengagement: nextReng } }, userId))
       .eq('id', userId);
   } catch (e) {
     await reportError(e, {
@@ -128,7 +130,7 @@ export async function markExitSurveyAnswered(
       .from('profiles')
       .select('ai_context')
       .eq('id', userId)
-      .maybeSingle();
+      .maybeSingle().then(decProfileResult(userId));
     const ctx = (data?.ai_context ?? {}) as Record<string, unknown>;
     const reng = readReengagementContext(ctx);
     const nextReng: ReengagementContext = {
@@ -137,7 +139,7 @@ export async function markExitSurveyAnswered(
     };
     await db
       .from('profiles')
-      .update({ ai_context: { ...ctx, reengagement: nextReng } })
+      .update(await sealProfilePatch({ ai_context: { ...ctx, reengagement: nextReng } }, userId))
       .eq('id', userId);
   } catch (e) {
     await reportError(e, {
@@ -162,7 +164,7 @@ export async function patchPassiveTouch(
       .from('profiles')
       .select('ai_context')
       .eq('id', userId)
-      .maybeSingle();
+      .maybeSingle().then(decProfileResult(userId));
     const ctx = (data?.ai_context ?? {}) as Record<string, unknown>;
     const reng = readReengagementContext(ctx);
     const key =
@@ -174,7 +176,7 @@ export async function patchPassiveTouch(
     const nextReng: ReengagementContext = { ...reng, [key]: now.toISOString() };
     await admin
       .from('profiles')
-      .update({ ai_context: { ...ctx, reengagement: nextReng } })
+      .update(await sealProfilePatch({ ai_context: { ...ctx, reengagement: nextReng } }, userId))
       .eq('id', userId);
   } catch (e) {
     await reportError(e, {

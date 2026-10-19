@@ -37,6 +37,7 @@ const CSP_DIRECTIVES: Record<string, string[]> = {
     "'self'",
     ...(IS_DEV ? ["'unsafe-eval'"] : []),
     'https://va.vercel-scripts.com',
+    'https://telegram.org', // Telegram Mini App SDK (/gideon/app)
   ],
   'style-src': ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
   'img-src': [
@@ -120,6 +121,7 @@ const PUBLIC_ROUTES = [
   '/register/verified',
   '/auth/callback',
   '/demo',
+  '/gideon', // passkey step-up pages: one-time link + WebAuthn are the auth
   '/about',
   '/contact',
   '/terms',
@@ -213,7 +215,8 @@ export async function proxy(request: NextRequest) {
   /** דומיין Ops משרת רק את הפאנל; /login, /guides וכו׳ → דף הבית של הפאנל */
   if (effectiveOpsHost) {
     const skipPanelGate =
-      pathname.startsWith('/api') || pathname.startsWith('/_next');
+      pathname.startsWith('/api') || pathname.startsWith('/_next') ||
+      pathname === '/gideon' || pathname.startsWith('/gideon/'); // passkey step-up pages (rpId = Ops host)
     if (!skipPanelGate && !isOpsPanelBrowserPath(pathname)) {
       return applySecurityHeaders(NextResponse.redirect(new URL('/', request.url)));
     }
@@ -301,9 +304,13 @@ export async function proxy(request: NextRequest) {
   const devOpsPath =
     Boolean(isLocal && process.env.NODE_ENV === 'development' && pathname.startsWith('/ops')) || appHostOpsPath;
 
+  /** Gideon passkey pages live at the top level on every host (rpId = Ops host); not gated, not rewritten. */
+  const isGideonStepup = pathname === '/gideon' || pathname.startsWith('/gideon/');
+
   const needsOpsGate =
-    devOpsPath ||
-    (effectiveOpsHost && !pathname.startsWith('/api') && !pathname.startsWith('/_next'));
+    !isGideonStepup &&
+    (devOpsPath ||
+      (effectiveOpsHost && !pathname.startsWith('/api') && !pathname.startsWith('/_next')));
 
   /** קליטת סשן מגשר — בלי משתמש עדיין; לא לשכתב ל־/ops/auth/… */
   const isOpsSessionIngest = pathname === '/auth/ops-ingest';
@@ -336,10 +343,27 @@ export async function proxy(request: NextRequest) {
     if (!profile || profile.role !== 'admin') {
       return applySecurityHeaders(NextResponse.redirect(new URL(APP_HOME_PATH, mainOrigin)));
     }
+
+    /** Ops idle timeout: no Ops activity for OPS_IDLE_MINUTES (default 60) → sign out of this host's session. */
+    const idleMs = Math.max(5, Number(process.env.OPS_IDLE_MINUTES || 60)) * 60_000;
+    const seen = Number(request.cookies.get('nw_ops_seen')?.value || 0);
+    const nowMs = Date.now();
+    if (seen && nowMs - seen > idleMs) {
+      await supabase.auth.signOut({ scope: 'local' });
+      const loginUrl = new URL('/login', mainOrigin);
+      loginUrl.searchParams.set('reason', 'ops_idle');
+      const out = NextResponse.redirect(loginUrl);
+      for (const c of response.cookies.getAll()) out.cookies.set(c);
+      out.cookies.set('nw_ops_seen', '', { path: '/', maxAge: 0 });
+      return applySecurityHeaders(out);
+    }
+    if (!seen || nowMs - seen > 60_000) {
+      response.cookies.set('nw_ops_seen', String(nowMs), { httpOnly: true, secure: true, sameSite: 'lax', path: '/', maxAge: 12 * 3600 });
+    }
   }
 
   /** Rewrite: ops.nurawell.ai/ → /ops, ops.nurawell.ai/journey → /ops/journey */
-  if (effectiveOpsHost && !pathname.startsWith('/api') && !pathname.startsWith('/_next')) {
+  if (effectiveOpsHost && !isGideonStepup && !pathname.startsWith('/api') && !pathname.startsWith('/_next')) {
     const url = request.nextUrl.clone();
     if (pathname === '/' || pathname === '') {
       url.pathname = '/ops';

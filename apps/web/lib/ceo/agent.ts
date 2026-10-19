@@ -2,9 +2,10 @@ import type OpenAI from 'openai';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { AI_MODELS } from '@/lib/ai/client';
 import type { CeoButton } from './channel';
-import { audit, proposeAction } from './actions';
+import { approvalCardFor, audit, proposeAction } from './actions';
+import { detectDemoIntent } from './intents';
 import { CEO_CHAT_MODEL, CEO_CONTENT_MODEL, CEO_STRONG_MODEL, complete } from './llm';
-import { TOOL_BY_NAME, toolSpecs } from './tools';
+import { capabilityManifest, TOOL_BY_NAME, toolSpecs } from './tools';
 import { israelTimeContext } from './time-context';
 import { openOwnerTasks } from './owner-tasks';
 
@@ -44,8 +45,19 @@ export const CEO_SYSTEM_PROMPT = `אתה ${CEO_NAME}, מנכ"ל ה-AI של NuraW
 - טיוטת שיעור: draft_lesson_content ואז create_draft_step.
 - מעקב משימות לדניאל (owner_task_*): המטרה היא SaaS שרץ לבד. כל מה שאפשר לעשות אוטומטית, עשה בעצמך או הצע לאישור. פתח משימה לדניאל רק לעבודה שדורשת אדם: צילום סרטון HeyGen, החלטה משפטית, חשבונאית או של תמחור, ופעולה בחשבון או מול ספק. ברוב הימים לא תהיה אף משימה. כשדניאל אומר שסיים, דחה או ביטל משימה, עדכן אותה מיד.
 - היה יוזם: אם אתה רואה בנתונים בעיה או הזדמנות שדניאל לא שאל עליהן, ציין אותן בשורה אחת בסוף.
-- צרף קישור לפאנל כשכלי מחזיר link.
+- לעולם אל תשלח בטלגרם כתובת של לוח הבקרה או קישור פנימי. אם צריך, כתוב "בלוח הבקרה". קישורי דמו לאורחים מותרים.
 - כשדניאל מבקש שינוי, קרא מיד לכלי המתאים (הוא רק יוצר בקשת אישור). אל תתאר שאתה "תיצור בקשה", פשוט צור אותה.
+- הבנת כוונה: דניאל כותב בעברית מדוברת, קצרה ולפעמים עם סלנג. פרש לפי הכוונה ולא לפי המילים. דוגמאות:
+  • "תן לאלכס גישה" / "תפתח לאלכס דמו" / "תזרוק לינק דמו לאלכס" → create_demo_link עם guest_name="אלכס"
+  • "תשתיק את דנה לשבוע" / "שדנה לא תקבל התראות כמה ימים" → pause_user_notifications (7 ימים)
+  • "מה קורה עם המשתמשים?" / "מי נעלם לי?" → list_users filter=inactive
+  • "תעיף את השיעור על מים מהאוויר" → set_step_published=false (הסתרה, לא מחיקה)
+  • "תבדוק אם אלמוג מדבר יפה" → almog_quality_sample
+  • "יש באגים?" / "משהו נשבר?" → errors
+- שילוב פעולות: בקשה אחת יכולה לדרוש כמה כלים ברצף (קודם לקרוא ולמצוא מזהה, ואז להכין טיוטה; או כמה טיוטות, למשל "תן לאלכס ולדנה גישה" → שני קישורי דמו). תכנן בשקט ובצע.
+- ודאות: אם אתה בטוח בכוונה, פעל מיד (שינויים ממילא מחכים לאישור). אם הוודאות לא גבוהה (שתי פרשנויות סבירות, שם שמתאים לכמה משתמשים, לא ברור על מי או על מה מדובר, או פעולה בלתי הפיכה בלי פרטים), אל תנחש ואל תקרא לכלי כתיבה: שאל שאלה אחת קצרה וטבעית, כמו בן אדם ("לאיזה אלכס, כהן או לוי?", "להסתיר את השיעור או למחוק אותו לגמרי?"). אפשר להציע שתי אפשרויות.
+- קישורי דמו נוצרים רק עם create_demo_link (השרת מייצר את הקישור). לעולם אל תמציא טוקן או hash ואל תכתוב לטבלאות של טוקנים.
+- בתשובות לדניאל: בלי JSON, בלי שמות טבלאות, מזהים או hash. כרטיס האישור נשלח אוטומטית, אז אל תחזור על פרטיו. אם כלי נכשל, הסבר בעברית פשוטה מה לא הצליח ומה אפשר לעשות, בלי הודעת השגיאה הטכנית.
 - אם כלי לא החזיר נתון מסוים, אל תציין מספר עבורו. קרא לכלי הנכון (metrics לרוב השאלות הכמותיות).
 - פורמט: Markdown פשוט בלבד (**מודגש**, \`קוד\`, [טקסט](קישור)), תבליטים עם "•", בלי טבלאות ובלי כותרות #. אל תפתח בשם שלך.`;
 
@@ -90,16 +102,27 @@ export async function liveSnapshot(db: SupabaseClient): Promise<string> {
   }
 }
 
-export type TurnResult = { text: string; buttons: CeoButton[][]; model?: string };
+export type TurnResult = { text: string; buttons: CeoButton[][]; cards?: { text: string; buttons: CeoButton[][] }[]; model?: string };
 
 export async function runCeoTurn(db: SupabaseClient, chatKey: string, userText: string, deps: { complete?: typeof complete } = {}): Promise<TurnResult> {
   const llm = deps.complete ?? complete;
   const { data: conv } = await db.from('ceo_conversations').select('summary, turns').eq('chat_key', chatKey).maybeSingle();
   const turns: { role: 'user' | 'assistant'; content: string }[] = (conv?.turns as never) ?? [];
+
+  // Fast path: demo-link requests never depend on the model understanding slang.
+  const demo = detectDemoIntent(userText);
+  if (demo) {
+    const a = await proposeAction(db, 'create_demo_link', demo);
+    const card = await approvalCardFor(db, a);
+    const text = `מכין קישור דמו${demo.guest_name ? ` ל${demo.guest_name}` : ''}. בחר חשבון ואשר 👇`;
+    await saveMemory(db, chatKey, conv?.summary ?? '', [...turns, { role: 'user', content: userText }, { role: 'assistant', content: text }], llm);
+    return { text, buttons: [], cards: [card] };
+  }
+
   const snapshot = await liveSnapshot(db);
 
   const messages: Msg[] = [
-    { role: 'system', content: CEO_SYSTEM_PROMPT },
+    { role: 'system', content: `${CEO_SYSTEM_PROMPT}\n\n## היכולות שלך (כל הכלים)\n${capabilityManifest()}\n• draft_lesson_content: כתיבת תוכן שיעור מלא (טקסט בלבד)` },
     { role: 'system', content: `${israelTimeContext()}\n\nתמונת מצב חיה (24 שעות אחרונות, מ-SQL):\n${snapshot}${conv?.summary ? `\n\nסיכום שיחה קודמת: ${conv.summary}` : ''}` },
     ...turns,
     { role: 'user', content: userText },
@@ -107,6 +130,7 @@ export async function runCeoTurn(db: SupabaseClient, chatKey: string, userText: 
   const tools = [...toolSpecs(), CONTENT_TOOL];
   const model = pickModel(userText);
   const buttons: CeoButton[][] = [];
+  const cards: { text: string; buttons: CeoButton[][] }[] = [];
   let text = '';
 
   for (let i = 0; i < 6; i++) {
@@ -129,7 +153,7 @@ export async function runCeoTurn(db: SupabaseClient, chatKey: string, userText: 
           if (!t) throw new Error('unknown tool');
           if (t.write) {
             const a = await proposeAction(db, t.name, args);
-            buttons.push([{ text: `${t.destructive ? '⚠️' : '✅'} אשר: ${a.summary}`.slice(0, 60), data: `ceo:a:${a.id}` }, { text: '❌ בטל', data: `ceo:r:${a.id}` }]);
+            cards.push(await approvalCardFor(db, a));
             out = { status: 'pending_approval', id: a.id };
           } else {
             out = await t.run(db, t.schema.parse(args));
@@ -142,10 +166,10 @@ export async function runCeoTurn(db: SupabaseClient, chatKey: string, userText: 
       messages.push({ role: 'tool', tool_call_id: c.id, content: JSON.stringify(out).slice(0, 12_000) });
     }
   }
-  if (!text) text = buttons.length ? 'הכנתי פעולות לאישורך.' : 'לא הצלחתי להשלים, נסה לנסח שוב.';
+  if (!text) text = cards.length ? 'הכנתי לך טיוטה לאישור 👇' : 'לא הצלחתי להשלים, נסה לנסח שוב.';
 
   await saveMemory(db, chatKey, conv?.summary ?? '', [...turns, { role: 'user', content: userText }, { role: 'assistant', content: text }], llm);
-  return { text, buttons, model };
+  return { text, buttons, cards, model };
 }
 
 const KEEP = 8;

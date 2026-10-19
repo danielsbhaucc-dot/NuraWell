@@ -1,3 +1,4 @@
+import { sealTableRow } from '@/lib/crypto/pii-seal';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 /** יוצר שיחה סגורה לתיעוד עדכון פרופיל — ללא transcript, ללא פתיחה מחדש */
@@ -8,7 +9,7 @@ export async function createProfileUpdateSession(
   const now = new Date().toISOString();
   const { data, error } = await supabase
     .from('chat_sessions')
-    .insert({
+    .insert(await sealTableRow('chat_sessions', {
       user_id: params.userId,
       status: 'closed',
       session_kind: 'profile_update',
@@ -16,7 +17,7 @@ export async function createProfileUpdateSession(
       summary: params.summary,
       closed_at: now,
       updated_at: now,
-    })
+    }, params.userId))
     .select('id')
     .single();
 

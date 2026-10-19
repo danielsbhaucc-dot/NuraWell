@@ -1,3 +1,5 @@
+import { sealProfilePatch } from '@/lib/crypto/pii-seal';
+import { decProfileResult } from '@/lib/crypto/pii-fields';
 /**
  * אחרי insert ל-notifications — ניסיון push למכשיר (לא חוסם).
  */
@@ -25,7 +27,7 @@ export async function deliverWebPushAfterAlmogNotification(
     .from('profiles')
     .select('ai_context, notification_prefs')
     .eq('id', userId)
-    .maybeSingle();
+    .maybeSingle().then(decProfileResult(userId));
 
   /** notification_prefs.push=false → no device push (in-app bell still shows it). */
   if (!parseNotificationPrefs((profile as { notification_prefs?: unknown } | null)?.notification_prefs).push) return;
@@ -48,6 +50,6 @@ export async function deliverWebPushAfterAlmogNotification(
     const next = { ...ctx };
     delete next.web_push;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await admin.from('profiles').update({ ai_context: next }).eq('id', userId);
+    await admin.from('profiles').update(await sealProfilePatch({ ai_context: next }, userId)).eq('id', userId);
   }
 }

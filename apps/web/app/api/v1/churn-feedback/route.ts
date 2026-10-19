@@ -1,3 +1,5 @@
+import { sealProfilePatch } from '@/lib/crypto/pii-seal';
+import { decProfileResult } from '@/lib/crypto/pii-fields';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { readJsonBody } from '../../../../lib/api/json-request';
@@ -114,17 +116,17 @@ export async function POST(request: Request) {
       .from('profiles')
       .select('ai_context')
       .eq('id', user.id)
-      .maybeSingle();
+      .maybeSingle().then(decProfileResult(user.id));
     const aiContext = (prof?.ai_context ?? {}) as Record<string, unknown>;
     const reng = readReengagementContext(aiContext);
     await sb
       .from('profiles')
-      .update({
+      .update(await sealProfilePatch({
         ai_context: {
           ...aiContext,
           reengagement: { ...reng, exit_survey_answered_at: new Date().toISOString() },
         },
-      })
+      }, user.id))
       .eq('id', user.id);
   } catch (e) {
     console.warn('[churn-feedback] mark answered failed', e);

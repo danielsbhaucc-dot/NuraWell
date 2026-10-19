@@ -1,3 +1,4 @@
+import { sealTableRow } from '@/lib/crypto/pii-seal';
 import { meteredFetch } from '@/lib/ai/usage-meter';
 /**
  * שם ענייני לשיחה — מודל זול ללא reasoning (Llama 4 Maverick) ברקע, לא בנתיב ה-UI.
@@ -155,13 +156,13 @@ export async function maybeAssignChatSessionTitle(
   if (meta.topic) patch.topic = meta.topic;
   let { error } = await supabase
     .from('chat_sessions')
-    .update(patch)
+    .update(await sealTableRow('chat_sessions', patch, params.userId))
     .eq('id', params.sessionId)
     .eq('user_id', params.userId);
   if (error && meta.topic) {
     // לפני מיגרציה 000117 — בלי topic
     delete patch.topic;
-    ({ error } = await supabase.from('chat_sessions').update(patch).eq('id', params.sessionId).eq('user_id', params.userId));
+    ({ error } = await supabase.from('chat_sessions').update(await sealTableRow('chat_sessions', patch, params.userId)).eq('id', params.sessionId).eq('user_id', params.userId));
   }
 
   if (error) {

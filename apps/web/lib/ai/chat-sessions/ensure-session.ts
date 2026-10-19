@@ -1,3 +1,4 @@
+import { sealTableRow } from '@/lib/crypto/pii-seal';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { ChatSessionRow } from './types';
 import {
@@ -17,12 +18,12 @@ export async function ensureChatSession(
   if (existing) return normalizeChatSessionRow(existing);
 
   const now = new Date().toISOString();
-  const { error: insertErr } = await supabase.from('chat_sessions').insert({
+  const { error: insertErr } = await supabase.from('chat_sessions').insert(await sealTableRow('chat_sessions', {
     id: params.sessionId,
     user_id: params.userId,
     status: 'open',
     updated_at: now,
-  });
+  }, params.userId));
   if (insertErr) throw insertErr;
 
   const { data: inserted, error: reloadErr } = await selectChatSessionRow(supabase, params);
@@ -38,7 +39,7 @@ export async function touchChatSessionActivity(
 ): Promise<void> {
   const { error } = await supabase
     .from('chat_sessions')
-    .update({ updated_at: new Date().toISOString() })
+    .update(await sealTableRow('chat_sessions', { updated_at: new Date().toISOString() }, params.userId))
     .eq('id', params.sessionId)
     .eq('user_id', params.userId)
     .eq('status', 'open');
@@ -54,16 +55,16 @@ export async function bumpChatSessionTurn(
   const { error } = await supabase.rpc('bump_chat_session_turn', {
     p_session_id: params.sessionId,
     p_user_id: params.userId,
-    p_preview: preview,
+    p_preview: preview ? ((await sealTableRow('chat_sessions', { preview_text: preview }, params.userId)).preview_text as string) : preview,
   });
   if (!error) return;
 
   await supabase
     .from('chat_sessions')
-    .update({
+    .update(await sealTableRow('chat_sessions', {
       preview_text: preview || null,
       updated_at: new Date().toISOString(),
-    })
+    }, params.userId))
     .eq('id', params.sessionId)
     .eq('user_id', params.userId);
 }

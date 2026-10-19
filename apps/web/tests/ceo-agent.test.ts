@@ -8,7 +8,7 @@ vi.mock('@/lib/admin/business-metrics', () => ({ buildBusinessMetrics: vi.fn(asy
 vi.mock('@/lib/api/rate-limit', () => ({ consumeRateLimit: vi.fn(async () => ({ ok: true })) }));
 
 import { complete, isTechnicalSafe, _resetDeepseekState } from '@/lib/ceo/llm';
-import { decideAction, proposeAction } from '@/lib/ceo/actions';
+import { approvalCard, decideAction, proposeAction } from '@/lib/ceo/actions';
 import { runCeoTurn } from '@/lib/ceo/agent';
 import { handleTelegramUpdate, verifyTelegramSecret } from '@/lib/ceo/webhook';
 import { createTelegramChannel, splitMessage } from '@/lib/ceo/telegram';
@@ -25,7 +25,7 @@ function fakeDb() {
     const b: Record<string, unknown> = {};
     const chain = () => b;
     Object.assign(b, {
-      select: chain, order: chain, limit: chain, in: chain, gte: chain, lt: chain, neq: chain,
+      select: chain, order: chain, limit: chain, in: chain, gte: chain, lt: chain, neq: chain, is: (k: string, v: unknown) => (filters.push((r) => (r[k] ?? null) === v), b),
       eq: (k: string, v: unknown) => (filters.push((r) => r[k] === v), b),
       gt: (k: string, v: string) => (filters.push((r) => String(r[k]) > v), b),
       update: (p: Record<string, unknown>) => ((op = 'update'), (payload = p), b),
@@ -39,7 +39,7 @@ function fakeDb() {
           return [r];
         }
         if (op === 'upsert') {
-          t[name] = rows.filter((r) => r.chat_key !== payload.chat_key).concat(payload);
+          { const k = 'chat_key' in payload ? 'chat_key' : 'id'; const prev = rows.find((r) => r[k] === payload[k]); t[name] = rows.filter((r) => r[k] !== payload[k]).concat({ ...(prev ?? {}), ...payload }); }
           return [payload];
         }
         const hit = rows.filter((r) => filters.every((f) => f(r)));
@@ -77,7 +77,8 @@ describe('security', () => {
     const r = await handleTelegramUpdate(db, createTelegramChannel(f as never), { message: { chat: { id: 7 }, text: 'hi' } }, { runTurn });
     expect(r).toEqual({ ignored: true });
     expect(runTurn).not.toHaveBeenCalled();
-    expect(f).not.toHaveBeenCalled();
+    // the stranger gets nothing; only the owner (42) is alerted
+    expect(f.mock.calls.every((c) => JSON.parse(String(((c as unknown[])[1] as { body: string }).body)).chat_id === '42')).toBe(true);
   });
   it('classification guard blocks personal data', () => {
     expect(isTechnicalSafe('{"errors":3,"users_total":2}')).toBe(true);
@@ -121,7 +122,9 @@ describe('agent turn + mocked Telegram', () => {
       .mockResolvedValueOnce({ message: { role: 'assistant', content: 'יש 2 משתמשים. הכנתי פעולה לאישורך.' } });
     const r = await runCeoTurn(db, 'telegram:42', 'מה המצב?', { complete: llm as never });
     expect(r.text).toContain('2 משתמשים');
-    expect(r.buttons[0][0].data).toMatch(/^ceo:a:/);
+    expect(r.cards?.[0].buttons[0][0].data).toMatch(/^ceo:a:/);
+    expect(r.cards?.[0].buttons[0].map((b) => b.text)).toEqual(['✅ אשר', '✏️ ערוך', '❌ דחה']);
+    expect(r.cards?.[0].text).not.toMatch(/[{}]|[0-9a-f]{8}-[0-9a-f]{4}/);
     expect(t.profiles[0].notify_test_opt_in).toBe(false);
     expect((t.ceo_conversations[0].turns as unknown[]).length).toBe(2);
     const toolMsg = llm.mock.calls[1][0].messages.find((m: { role: string }) => m.role === 'tool');
@@ -200,7 +203,9 @@ describe('full admin tools + routing', () => {
     expect(() => upd.schema.parse({ table: 'auth_users', match: { id: 'x' }, patch: {} })).toThrow();
     expect(() => upd.schema.parse({ table: 'profiles', match: {}, patch: { full_name: 'a' } })).toThrow();
     const a = await proposeAction(db, 'delete_user', { userId: '11111111-1111-4111-8111-111111111111' });
-    expect(a.summary).toMatch(/^⚠️ בלתי הפיך/);
+    expect(a.destructive).toBe(true);
+    expect(approvalCard(a).text).toContain('בלתי הפיכה');
+    expect(a.summary).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}/);
   });
 });
 
@@ -267,5 +272,136 @@ describe('owner task tracker', () => {
     const c = TOOL_BY_NAME.get('owner_task_create')!;
     expect(() => c.schema.parse({ title: 'לתקן באג', origin: 'code' })).toThrow();
     expect(c.description).toMatch(/ONLY if it truly requires a human/);
+  });
+});
+
+describe('demo links via dedicated tool', () => {
+  it('generic writes to token tables are blocked; create_demo_link is a write tool with a human summary', async () => {
+    const { TOOL_BY_NAME: T } = await import('@/lib/ceo/tools');
+    const ins = T.get('db_insert')!;
+    expect(() => ins.schema.parse({ table: 'demo_access_links', row: { guest_name: 'x' } })).toThrow();
+    const demo = T.get('create_demo_link')!;
+    expect(demo.write).toBe(true);
+    expect(demo.secretResult).toBe(true);
+    const s = demo.summarize!(demo.schema.parse({ guest_name: 'אורי', hours: 24 }));
+    expect(s).toBe('יצירת קישור דמו לאורי, בתוקף ליממה');
+    expect(s).not.toMatch(/token|hash|demo_access/);
+  });
+});
+
+describe('demo fast path + picker + effects', () => {
+  it('"תן לאלכס גישה" becomes a demo card with a target picker, no LLM call', async () => {
+    const { db, t } = fakeDb();
+    t.profiles.push({ id: '22222222-2222-4222-8222-222222222222', full_name: 'Test', role: 'test' });
+    const llm = vi.fn();
+    const r = await runCeoTurn(db, 'telegram:42', 'תן לאלכס גישה', { complete: llm as never });
+    expect(llm).not.toHaveBeenCalled();
+    expect(t.ceo_pending_actions[0].tool).toBe('create_demo_link');
+    expect((t.ceo_pending_actions[0].args as { guest_name: string }).guest_name).toBe('אלכס');
+    const card = r.cards![0];
+    expect(card.buttons.some((row) => row[0].data.startsWith('ceo:t:'))).toBe(true);
+    expect(card.buttons.at(-1)!.map((b) => b.text)).toEqual(['✅ אשר', '✏️ ערוך', '❌ דחה']);
+  });
+  it('picker button sets the target and re-renders the card', async () => {
+    const { db, t } = fakeDb();
+    t.profiles.push({ id: '22222222-2222-4222-8222-222222222222', full_name: 'Test', role: 'test' });
+    const a = await proposeAction(db, 'create_demo_link', { guest_name: 'אלכס' });
+    const f = tgFetch();
+    await handleTelegramUpdate(db, createTelegramChannel(f as never), { callback_query: { id: 'cb', data: `ceo:t:${a.id}:22222222`, message: { chat: { id: 42 }, message_id: 9 } } });
+    expect((t.ceo_pending_actions[0].args as { targetUserId: string }).targetUserId).toBe('22222222-2222-4222-8222-222222222222');
+    const edit = f.mock.calls.find((c) => String((c as unknown[])[0]).endsWith('editMessageText')) as unknown[];
+    const body = JSON.parse(String((edit[1] as { body: string }).body));
+    expect(body.reply_markup.inline_keyboard.flat().find((b: { text: string }) => b.text.startsWith('✓'))?.text).toMatch(/^✓ Test/);
+  });
+  it('incoming message gets 👀 reaction + typing', async () => {
+    const { db } = fakeDb();
+    const f = tgFetch();
+    await handleTelegramUpdate(db, createTelegramChannel(f as never), { message: { chat: { id: 42 }, text: 'היי', message_id: 5 } }, { runTurn: async () => ({ text: 'שלום', buttons: [] }) });
+    const methods = f.mock.calls.map((c) => String((c as unknown[])[0]).split('/').pop());
+    expect(methods.slice(0, 2)).toEqual(['setMessageReaction', 'sendChatAction']);
+  });
+});
+
+describe('stolen-phone protection', () => {
+  const sec = (t: Record<string, Record<string, unknown>[]>, s: Record<string, unknown>) => { t.gideon_settings = [{ id: 1, ...s }]; };
+  it('routine approval stays one tap without a passkey enrolled', async () => {
+    const { db, t } = fakeDb();
+    const a = await proposeAction(db, 'set_test_user', { userId: '11111111-1111-4111-8111-111111111111', enabled: true });
+    expect((await decideAction(db, a.id, true, 'x')).ok).toBe(true);
+    expect(t.profiles[0].notify_test_opt_in).toBe(true);
+  });
+  it('sensitive approval needs Face ID (returns a one-time link) and never executes on tap', async () => {
+    const { db, t } = fakeDb();
+    t.admin_passkeys = [{ id: 'k1', credential_id: 'c' }];
+    sec(t, { reverify_minutes: 0 });
+    const a = await proposeAction(db, 'delete_user', { userId: '11111111-1111-4111-8111-111111111111' });
+    expect(a.sensitive).toBe(true);
+    const r = await decideAction(db, a.id, true, 'x');
+    expect(r.ok).toBe(false);
+    expect(r.stepupUrl).toMatch(/\/gideon\/app\?t=[A-Za-z0-9_-]{40,}/);
+    expect(t.ceo_pending_actions[0].status).toBe('pending');
+    expect(t.webauthn_challenges[0].token_hash).toMatch(/^[0-9a-f]{64}$/); // only the hash is stored
+  });
+  it('trust window lets sensitive actions through; kill switch blocks everything', async () => {
+    const { db, t } = fakeDb();
+    t.admin_passkeys = [{ id: 'k1', credential_id: 'c' }];
+    sec(t, { reverify_minutes: 0, trusted_until: new Date(Date.now() + 3_600_000).toISOString() });
+    const a = await proposeAction(db, 'db_update', { table: 'journey_steps', match: { is_published: false }, patch: { is_published: true } });
+    expect(a.sensitive).toBe(true); // bulk
+    expect((await decideAction(db, a.id, true, 'x')).stepupUrl).toBeUndefined();
+    sec(t, { disabled: true });
+    const b = await proposeAction(db, 'set_test_user', { userId: '11111111-1111-4111-8111-111111111111', enabled: false });
+    expect((await decideAction(db, b.id, true, 'x')).text).toContain('מושבת');
+  });
+  it('lockout after failed step-ups', async () => {
+    const { db, t } = fakeDb();
+    t.admin_passkeys = [{ id: 'k1', credential_id: 'c' }];
+    sec(t, { locked_until: new Date(Date.now() + 600_000).toISOString() });
+    const a = await proposeAction(db, 'set_test_user', { userId: '11111111-1111-4111-8111-111111111111', enabled: true });
+    expect((await decideAction(db, a.id, true, 'x')).text).toContain('נעול');
+  });
+  it('unknown chat alerts the owner, gets no reply; /lock kills', async () => {
+    const { db, t } = fakeDb();
+    const f = tgFetch();
+    await handleTelegramUpdate(db, createTelegramChannel(f as never), { message: { chat: { id: 999 }, text: 'היי' } });
+    const sent = f.mock.calls.map((c) => JSON.parse(String(((c as unknown[])[1] as { body: string }).body)));
+    expect(sent).toHaveLength(1);
+    expect(sent[0].chat_id).toBe('42');
+    expect(sent[0].text).toContain('לא מוכר');
+    await handleTelegramUpdate(db, createTelegramChannel(tgFetch() as never), { message: { chat: { id: 42 }, text: '/lock' } });
+    expect(t.gideon_settings[0].disabled).toBe(true);
+  });
+});
+
+describe('capabilities + clarify vs act', () => {
+  it('system prompt carries a manifest of every tool', async () => {
+    const { db } = fakeDb();
+    const llm = vi.fn().mockResolvedValueOnce({ message: { role: 'assistant', content: 'בסדר' } });
+    await runCeoTurn(db, 'telegram:42', 'מה אתה יודע לעשות?', { complete: llm as never });
+    const sys = llm.mock.calls[0][0].messages[0].content as string;
+    const { CEO_TOOLS } = await import('@/lib/ceo/tools');
+    for (const t of CEO_TOOLS) expect(sys).toContain(`• ${t.name}:`);
+    expect(sys).toContain('ודאות');
+  });
+  it('ambiguous request: model asks a question → no approval card is created', async () => {
+    const { db, t } = fakeDb();
+    const llm = vi.fn().mockResolvedValueOnce({ message: { role: 'assistant', content: 'להסתיר את השיעור או למחוק אותו לגמרי?' } });
+    const r = await runCeoTurn(db, 'telegram:42', 'תעיף את השיעור הזה', { complete: llm as never });
+    expect(r.text).toMatch(/\?$/);
+    expect(r.cards ?? []).toHaveLength(0);
+    expect(t.ceo_pending_actions).toHaveLength(0);
+  });
+  it('clear multi-step request: chained tool calls produce one card per action', async () => {
+    const { db, t } = fakeDb();
+    const llm = vi
+      .fn()
+      .mockResolvedValueOnce({ message: { role: 'assistant', content: null, tool_calls: [
+        { id: 'c1', type: 'function', function: { name: 'create_demo_link', arguments: '{"guest_name":"אלכס"}' } },
+        { id: 'c2', type: 'function', function: { name: 'create_demo_link', arguments: '{"guest_name":"דנה"}' } },
+      ] } })
+      .mockResolvedValueOnce({ message: { role: 'assistant', content: 'הכנתי שני קישורים לאישור.' } });
+    const r = await runCeoTurn(db, 'telegram:42', 'תן לאלכס ולדנה גישה', { complete: llm as never });
+    expect(r.cards).toHaveLength(2);
+    expect(t.ceo_pending_actions.map((a) => (a.args as { guest_name: string }).guest_name)).toEqual(['אלכס', 'דנה']);
   });
 });

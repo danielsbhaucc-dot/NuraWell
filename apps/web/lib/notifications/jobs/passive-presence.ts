@@ -1,3 +1,4 @@
+import { decProfileResult } from '@/lib/crypto/pii-fields';
 import { NextResponse } from 'next/server';
 import { authorizeCronRequest } from '@/lib/api/authorize-cron';
 import { maybeReturnCronIdleSkip } from '@/lib/api/cron-idle-guard';
@@ -48,7 +49,7 @@ async function runPassivePresenceCron(request: Request) {
     .from('profiles')
     .select('id, ai_context')
     .eq('engagement_status', 'churned')
-    .limit(2000);
+    .limit(2000).then(decProfileResult());
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

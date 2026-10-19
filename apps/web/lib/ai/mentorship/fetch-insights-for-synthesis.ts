@@ -1,3 +1,4 @@
+import { decTableResult } from '@/lib/crypto/pii-fields';
 /**
  * שליפה ממוקדת של תובנות גולמיות לסינתזה — לא שולפים 1,000 שורות.
  */
@@ -55,7 +56,7 @@ export async function fetchInsightsForSynthesis(
     .order('mention_count', { ascending: false })
     .order('last_seen_at', { ascending: false })
     .limit(limit)
-    .returns<InsightForSynthesis[]>();
+    .returns<InsightForSynthesis[]>().then(decTableResult('user_insights', userId));
 
   if (error) {
     console.warn('[mentorship] fetch insights failed', { code: error.code, error: error.message });

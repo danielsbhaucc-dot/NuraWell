@@ -1,3 +1,5 @@
+import { sealTableRow } from '@/lib/crypto/pii-seal';
+import { decTableResult } from '@/lib/crypto/pii-fields';
 import { withAiUser } from '@/lib/ai/usage-meter';
 import { hasPlaceholderCorruption } from '../safety/memory-text-guard';
 /**
@@ -56,7 +58,7 @@ async function fetchClosedSessionsInRange(
     .gte('closed_at', startIso)
     .lte('closed_at', endIso)
     .not('summary', 'is', null)
-    .order('closed_at', { ascending: true });
+    .order('closed_at', { ascending: true }).then(decTableResult('chat_sessions', userId));
 
   if (error) throw error;
   return (data ?? []) as SessionSummaryRow[];
@@ -74,7 +76,7 @@ async function fetchChildInsights(
     .select('period_key, ai_insight')
     .eq('user_id', userId)
     .eq('type', childType)
-    .in('period_key', childKeys);
+    .in('period_key', childKeys).then(decTableResult('chat_periodic_summaries', userId));
 
   if (error) throw error;
   return (data ?? [])
@@ -111,8 +113,7 @@ async function upsertChatPeriodicSummary(
     metrics?: Record<string, unknown>;
   }
 ): Promise<void> {
-  const { error } = await admin.from('chat_periodic_summaries').upsert(
-    {
+  const { error } = await admin.from('chat_periodic_summaries').upsert(await sealTableRow('chat_periodic_summaries', {
       user_id: row.userId,
       type: row.type,
       period_key: row.periodKey,
@@ -121,7 +122,7 @@ async function upsertChatPeriodicSummary(
       ai_insight: row.aiInsight,
       ai_model: CHAT_SUMMARY_MODEL,
       updated_at: new Date().toISOString(),
-    },
+    }, row.userId),
     { onConflict: 'user_id,type,period_key' }
   );
   if (error) throw error;

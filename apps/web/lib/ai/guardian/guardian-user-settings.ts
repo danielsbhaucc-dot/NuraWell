@@ -1,3 +1,5 @@
+import { sealProfilePatch } from '@/lib/crypto/pii-seal';
+import { decProfileResult } from '@/lib/crypto/pii-fields';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { AiUserContext } from '../memory';
 
@@ -44,7 +46,7 @@ export async function updateGuardianUserSettings(
   userId: string,
   patch: Partial<Pick<GuardianUserSettings, 'opted_in' | 'muted_until'>>
 ): Promise<GuardianUserSettings> {
-  const { data: row } = await supabase.from('profiles').select('ai_context').eq('id', userId).maybeSingle();
+  const { data: row } = await supabase.from('profiles').select('ai_context').eq('id', userId).maybeSingle().then(decProfileResult(userId));
 
   const ctx = ((row as { ai_context?: Record<string, unknown> } | null)?.ai_context ?? {}) as Record<
     string,
@@ -73,7 +75,7 @@ export async function updateGuardianUserSettings(
     guardian_opted_in: nextGuardian.opted_in === true,
   };
 
-  const { error } = await supabase.from('profiles').update({ ai_context: merged }).eq('id', userId);
+  const { error } = await supabase.from('profiles').update(await sealProfilePatch({ ai_context: merged }, userId)).eq('id', userId);
   if (error) throw error;
 
   return readGuardianUserSettings(merged);

@@ -1,3 +1,5 @@
+import { sealTableRow } from '@/lib/crypto/pii-seal';
+import { decTableResult } from '@/lib/crypto/pii-fields';
 import { isStorableMemoryText } from '../safety/memory-text-guard';
 /**
  * שמירת תובנות שחולצו לטבלת `user_insights` — עם לוגיקת מיזוג (anti-duplication).
@@ -72,7 +74,7 @@ export async function persistInsights(params: {
       .select('id, insight_text, category, actionability_score, mention_count, created_at, updated_at')
       .eq('user_id', userId)
       .eq('dedupe_key', key)
-      .maybeSingle();
+      .maybeSingle().then(decTableResult('user_insights', userId));
 
     if (selectErr) {
       console.warn('[insights] select failed', { code: selectErr.code, error: selectErr.message });
@@ -85,7 +87,7 @@ export async function persistInsights(params: {
       const textChanged = insight.insight_text.trim() !== row.insight_text.trim();
       const { error: updateErr } = await admin
         .from('user_insights')
-        .update({
+        .update(await sealTableRow('user_insights', {
           insight_text: insight.insight_text,
           actionability_score: Math.max(row.actionability_score, insight.actionability_score),
           confidence: insight.confidence,
@@ -94,7 +96,7 @@ export async function persistInsights(params: {
           mention_count: row.mention_count + 1,
           last_seen_at: nowIso,
           metadata: buildMetadata(insight),
-        })
+        }, userId))
         .eq('id', row.id);
       if (updateErr) {
         console.warn('[insights] update failed', { code: updateErr.code, error: updateErr.message });
@@ -118,7 +120,7 @@ export async function persistInsights(params: {
 
     const { data: inserted, error: insertErr } = await admin
       .from('user_insights')
-      .insert({
+      .insert(await sealTableRow('user_insights', {
         user_id: userId,
         category: insight.category,
         insight_text: insight.insight_text,
@@ -131,7 +133,7 @@ export async function persistInsights(params: {
         last_seen_at: nowIso,
         source_session_id: params.sessionId ?? null,
         metadata: buildMetadata(insight),
-      })
+      }, userId))
       .select('id, created_at, updated_at')
       .single();
 

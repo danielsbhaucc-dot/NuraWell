@@ -1,3 +1,4 @@
+import { decProfileResult } from '@/lib/crypto/pii-fields';
 import { withAiUser } from '@/lib/ai/usage-meter';
 import { insertNotification } from '@/lib/notifications/deliver';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -139,7 +140,7 @@ async function fetchCoachingStyle(admin: SupabaseClient, userId: string): Promis
     .from('profiles')
     .select('ai_context')
     .eq('id', userId)
-    .maybeSingle();
+    .maybeSingle().then(decProfileResult(userId));
   const ctx = (data as { ai_context?: AiUserContext | null } | null)?.ai_context ?? null;
   return buildCoachingStylePromptBlock(ctx);
 }

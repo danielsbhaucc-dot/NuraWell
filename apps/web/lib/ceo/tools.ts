@@ -5,6 +5,7 @@ import { buildBusinessMetrics } from '@/lib/admin/business-metrics';
 import { deleteUserCompletely } from '@/lib/admin/delete-user-completely';
 import { opsLink } from './channel';
 import { openOwnerTasks, setOwnerTask } from './owner-tasks';
+import { createDemoAccessLink, resolveCeoActorUserId, readDemoDefaultTarget } from '@/lib/demo-access/create';
 
 /**
  * CEO tool registry. Read tools run immediately; write tools are NEVER executed by the model —
@@ -21,6 +22,8 @@ export type CeoTool = {
   destructive?: boolean;
   /** read: returns data for the model. write: executes after approval. */
   run: (db: Db, args: Record<string, unknown>) => Promise<unknown>;
+  /** result contains a secret (e.g. a demo URL): show once in Telegram, never persist it */
+  secretResult?: boolean;
   /** write tools: one-line Hebrew description shown on the approval card */
   summarize?: (args: Record<string, unknown>) => string;
 };
@@ -150,7 +153,7 @@ export const CEO_TOOLS: CeoTool[] = [
     description: 'Mark/unmark a user as a notification test user (profiles.notify_test_opt_in).',
     schema: z.object({ userId: uuid, enabled: z.boolean() }),
     write: true,
-    summarize: (a) => `${a.enabled ? 'סימון' : 'ביטול סימון'} משתמש ${a.userId} כמשתמש בדיקה`,
+    summarize: (a) => `${a.enabled ? 'סימון' : 'ביטול הסימון של'} ${a.userId} כמשתמש בדיקה`,
     run: async (db, a) => {
       const { error } = await db.from('profiles').update({ notify_test_opt_in: a.enabled }).eq('id', String(a.userId));
       if (error) throw new Error(error.message);
@@ -162,7 +165,7 @@ export const CEO_TOOLS: CeoTool[] = [
     description: 'Pause automatic notifications for a user for N days (0 = resume).',
     schema: z.object({ userId: uuid, days: z.number().int().min(0).max(60) }),
     write: true,
-    summarize: (a) => (Number(a.days) ? `השהיית התראות למשתמש ${a.userId} ל-${a.days} ימים` : `חידוש התראות למשתמש ${a.userId}`),
+    summarize: (a) => (Number(a.days) ? `השהיית ההתראות של ${a.userId} ל-${a.days} ימים` : `חידוש ההתראות של ${a.userId}`),
     run: async (db, a) => {
       const until = Number(a.days) ? new Date(Date.now() + Number(a.days) * 86_400_000).toISOString() : null;
       const { error } = await db.from('profiles').update({ notify_paused_until: until }).eq('id', String(a.userId));
@@ -220,13 +223,13 @@ export const CEO_TOOLS: CeoTool[] = [
 export const WRITE_TABLES = [
   'journey_stations', 'journey_steps', 'task_definitions', 'user_task_assignments', 'almog_assignments', 'almog_focus_periods',
   'notifications', 'scheduled_reminders', 'almog_knowledge', 'site_settings', 'courses', 'lessons', 'enrollments',
-  'challenge_campaigns', 'challenge_task_definitions', 'challenge_enrollments', 'demo_access_links', 'audio_playlists', 'audio_tracks',
+  'challenge_campaigns', 'challenge_task_definitions', 'challenge_enrollments', 'audio_playlists', 'audio_tracks',
   'media_assets', 'user_memories', 'subscriptions', 'profiles',
 ] as const;
 export const READ_TABLES = [
   ...WRITE_TABLES, 'task_events', 'ai_interactions', 'chat_sessions', 'guardian_sos_events', 'error_events', 'billing_events',
   'journey_progress', 'journey_task_executions', 'safety_events', 'almog_interventions', 'almog_blockers', 'almog_kickoff_status',
-  'ops_admin_notifications', 'lesson_progress', 'challenge_task_completions', 'challenge_success_events', 'user_insights',
+  'ops_admin_notifications', 'lesson_progress', 'demo_access_links', 'challenge_task_completions', 'challenge_success_events', 'user_insights',
   'notification_fall_episodes', 'ceo_audit_log', 'ceo_pending_actions', 'ceo_owner_tasks',
 ] as const;
 /** profiles: never allow role / consent / auth-adjacent columns to be changed by the agent. */
@@ -235,8 +238,14 @@ const ident = z.string().regex(/^[a-z_][a-z0-9_]*$/);
 const filt = z.array(z.object({ col: ident, op: z.enum(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'ilike', 'is', 'in']), value: z.unknown() })).max(8).default([]);
 const match = z.record(ident, z.union([z.string(), z.number(), z.boolean()])).refine((m) => Object.keys(m).length > 0, 'match must not be empty');
 
+/** Tables holding tokens/secrets: never via generic writes — they have dedicated server flows (e.g. create_demo_link). */
+export const SECRET_TABLES = new Set(['demo_access_links', 'demo_access_sessions', 'gideon_settings']);
+const SECRET_COL = /(hash|token|secret|password|api_key)/i;
+
 function guardWrite(table: string, row?: Record<string, unknown>) {
+  if (SECRET_TABLES.has(table)) throw new Error(`table ${table} is managed by a dedicated tool (create_demo_link), not generic writes`);
   if (!(WRITE_TABLES as readonly string[]).includes(table)) throw new Error(`table not writable: ${table}`);
+  if (row) for (const k of Object.keys(row)) if (SECRET_COL.test(k)) throw new Error(`column ${k} cannot be set by generic writes`);
   if (table === 'profiles' && row) for (const k of Object.keys(row)) if (!PROFILE_WRITABLE.has(k)) throw new Error(`profiles.${k} is not writable`);
 }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -244,9 +253,66 @@ function applyFilters(q: any, f: { col: string; op: string; value: unknown }[]) 
   for (const x of f) q = q[x.op](x.col, x.value);
   return q;
 }
-const short = (v: unknown) => clip(JSON.stringify(v), 160);
+const TABLE_LABEL: Record<string, string> = {
+  journey_stations: 'תחנה', journey_steps: 'שיעור', task_definitions: 'משימה', user_task_assignments: 'משימה של משתמש',
+  almog_assignments: 'משימה לאלמוג', almog_focus_periods: 'תקופת מיקוד', notifications: 'התראה', scheduled_reminders: 'תזכורת',
+  almog_knowledge: 'ידע לאלמוג', site_settings: 'הגדרת אתר', courses: 'קורס', lessons: 'שיעור', enrollments: 'הרשמה לקורס',
+  challenge_campaigns: 'אתגר', challenge_task_definitions: 'משימת אתגר', challenge_enrollments: 'הרשמה לאתגר',
+  audio_playlists: 'פלייליסט', audio_tracks: 'רצועת אודיו', media_assets: 'קובץ מדיה', user_memories: 'זיכרון של משתמש',
+  subscriptions: 'מנוי', profiles: 'פרופיל משתמש',
+};
+const tableLabel = (t: unknown) => TABLE_LABEL[String(t)] ?? 'רשומה';
+const nameOf = (r: unknown) => {
+  const o = (r ?? {}) as Record<string, unknown>;
+  const n = o.title ?? o.name ?? o.full_name ?? o.key;
+  return typeof n === 'string' && n.trim() ? ` "${clip(n.trim(), 50)}"` : '';
+};
+const FIELD_LABEL: Record<string, string> = {
+  title: 'כותרת', description: 'תיאור', body: 'תוכן', text_content: 'תוכן', is_published: 'פרסום', is_active: 'פעיל',
+  full_name: 'שם', gender: 'מגדר', notify_paused_until: 'השהיית התראות', notify_test_opt_in: 'משתמש בדיקה', current_level: 'רמה',
+  status: 'סטטוס', sort_order: 'סדר', value: 'ערך', tasks: 'משימות', summary_text: 'סיכום',
+};
+function describePatch(p: unknown): string {
+  const o = (p ?? {}) as Record<string, unknown>;
+  const parts = Object.entries(o).filter(([k]) => k !== 'title' || Object.keys(o).length === 1).map(([k, v]) => {
+    const label = FIELD_LABEL[k] ?? 'שדה נוסף';
+    if (typeof v === 'boolean') return `${label}: ${v ? 'כן' : 'לא'}`;
+    if (typeof v === 'number' || (typeof v === 'string' && v.length <= 40)) return `${label} ← ${v}`;
+    return `${label} (עודכן)`;
+  });
+  return [...new Set(parts)].slice(0, 4).join(', ') || 'שינוי שדות';
+}
 
 const GENERIC: CeoTool[] = [
+  {
+    name: 'create_demo_link',
+    secretResult: true,
+    description:
+      'יצירת קישור דמו (גישת אורח זמנית) — "תן לאלכס גישה", "תפתח דמו לדנה". Create a demo access link for a guest (the ONLY way to create demo links — never db_insert into demo_access_links). The server generates the token, stores only its hash and returns the real URL after approval. Target = the default demo account set in the Ops dashboard; pass targetUserId only if Daniel names a specific account (find it with list_users / db_read profiles).',
+    schema: z.object({
+      guest_name: z.string().trim().min(1).max(80).optional(),
+      hours: z.number().int().min(1).max(168).default(24),
+      reason: z.string().trim().min(2).max(280).default('קישור דמו מגדעון'),
+      targetUserId: uuid.optional(),
+      max_claims: z.number().int().min(1).max(500).optional(),
+    }),
+    write: true,
+    summarize: (a) => `יצירת קישור דמו${a.guest_name ? ` ל${a.guest_name}` : ''}, בתוקף ${a.hours === 24 ? 'ליממה' : `ל-${a.hours} שעות`}${a.max_claims ? `, עד ${a.max_claims} כניסות` : ''}${a.targetUserId ? `, לחשבון של ${a.targetUserId}` : ''}`,
+    run: async (db, a) => {
+      const target = (a.targetUserId as string | undefined) ?? (await readDemoDefaultTarget(db));
+      if (!target) throw new Error('לא הוגדר משתמש דמו ברירת מחדל בדשבורד (Ops ← גישת דמו)');
+      const r = await createDemoAccessLink(db, {
+        target_user_id: target,
+        reason: String(a.reason),
+        guest_name: (a.guest_name as string | undefined) ?? null,
+        ttl_minutes: Number(a.hours ?? 24) * 60,
+        max_claims: (a.max_claims as number | undefined) ?? null,
+        created_by: await resolveCeoActorUserId(db),
+      });
+      if (!r.ok) throw new Error(r.error);
+      return { ok: true, id: r.id, link: r.demo_url, expires_at: r.expires_at, guest_name: r.guest_name };
+    },
+  },
   {
     name: 'db_read',
     description: `Read any admin table (select columns, filters, order, limit≤100). Tables: ${READ_TABLES.join(', ')}. Use for anything not covered by a specific tool.`,
@@ -257,7 +323,7 @@ const GENERIC: CeoTool[] = [
       q = applyFilters(q, (a.filters as never) ?? []);
       if (a.order) q = q.order(String(a.order), { ascending: Boolean(a.ascending) });
       const r = await rows(q.limit(Number(a.limit ?? 20)) as never);
-      return r.map((x) => Object.fromEntries(Object.entries(x as Record<string, unknown>).map(([k, v]) => [k, typeof v === 'string' ? clip(v, 600) : v])));
+      return r.map((x) => Object.fromEntries(Object.entries(x as Record<string, unknown>).filter(([k]) => !SECRET_COL.test(k)).map(([k, v]) => [k, typeof v === 'string' ? clip(v, 600) : v])));
     },
   },
   {
@@ -265,7 +331,7 @@ const GENERIC: CeoTool[] = [
     description: `Insert a row (content, tasks/ladders, stations, notifications, settings, etc.). Writable: ${WRITE_TABLES.join(', ')}.`,
     schema: z.object({ table: z.enum(WRITE_TABLES), row: z.record(ident, z.unknown()) }),
     write: true,
-    summarize: (a) => `הוספה ל-${a.table}: ${short(a.row)}`,
+    summarize: (a) => `הוספת ${tableLabel(a.table)}${nameOf(a.row)}`,
     run: async (db, a) => {
       guardWrite(String(a.table), a.row as never);
       const { data, error } = await db.from(String(a.table)).insert(a.row as never).select('*').single();
@@ -278,7 +344,7 @@ const GENERIC: CeoTool[] = [
     description: 'Update rows matching an exact match object (e.g. {"id": "..."}). Use for editing lessons, ladders, levels, settings, user fields.',
     schema: z.object({ table: z.enum(WRITE_TABLES), match, patch: z.record(ident, z.unknown()) }),
     write: true,
-    summarize: (a) => `עדכון ${a.table} ${short(a.match)} ← ${short(a.patch)}`,
+    summarize: (a) => `עדכון ${tableLabel(a.table)}${nameOf(a.patch)}: ${describePatch(a.patch)}`,
     run: async (db, a) => {
       guardWrite(String(a.table), a.patch as never);
       const { data, error } = await db.from(String(a.table)).update(a.patch as never).match(a.match as never).select('*');
@@ -292,7 +358,7 @@ const GENERIC: CeoTool[] = [
     schema: z.object({ table: z.enum(WRITE_TABLES), match }),
     write: true,
     destructive: true,
-    summarize: (a) => `מחיקה מ-${a.table} ${short(a.match)}`,
+    summarize: (a) => `מחיקת ${tableLabel(a.table)}${nameOf(a.match)}`,
     run: async (db, a) => {
       guardWrite(String(a.table));
       if (a.table === 'profiles') throw new Error('use delete_user');
@@ -306,7 +372,7 @@ const GENERIC: CeoTool[] = [
     description: "Send an in-app notification to a user in Almog's voice (masculine, user's gender). Respect the fade rule; use rarely.",
     schema: z.object({ userId: uuid, title: z.string().min(2).max(80), body: z.string().min(2).max(400), action_url: z.string().max(200).default('/dashboard') }),
     write: true,
-    summarize: (a) => `התראה למשתמש ${a.userId}: "${a.title}"`,
+    summarize: (a) => `שליחת התראה ל${a.userId}: "${a.title}"`,
     run: async (db, a) => {
       const day = new Date().toISOString().slice(0, 10);
       const { error } = await db.from('notifications').insert({ user_id: a.userId, type: 'admin_message', title: a.title, body: a.body, action_url: a.action_url, icon_emoji: '💬', dedupe_key: `ceo:${a.userId}:${day}:${String(a.title).slice(0, 40)}`, metadata: { source: 'ceo' } });
@@ -320,7 +386,7 @@ const GENERIC: CeoTool[] = [
     schema: z.object({ userId: uuid }),
     write: true,
     destructive: true,
-    summarize: (a) => `מחיקה מלאה של המשתמש ${a.userId} וכל הנתונים שלו`,
+    summarize: (a) => `מחיקה מלאה של החשבון של ${a.userId} וכל הנתונים שלו`,
     run: async (db, a) => {
       const r = await deleteUserCompletely(db, String(a.userId));
       if (!r.ok) throw new Error(r.error);
@@ -428,4 +494,19 @@ export function toolSpecs() {
     type: 'function' as const,
     function: { name: t.name, description: (t.destructive ? '[DESTRUCTIVE · REQUIRES APPROVAL] ' : t.write ? '[REQUIRES DANIEL APPROVAL] ' : '') + t.description, parameters: z.toJSONSchema(t.schema) as Record<string, unknown> },
   }));
+}
+
+/** Hebrew capability manifest for the system prompt, generated from the registry so it never drifts. */
+const CAP_HE: Record<string, string> = {
+  metrics: 'מדדים מרכזיים לתקופה', business_metrics: 'MRR, מנויים, נטישה, עלות AI', list_users: 'רשימת משתמשים (לא פעילים/חדשים/בלי אונבורדינג)',
+  user_detail: 'פרטי משתמש, משימות, אירועים, SOS', almog_quality_sample: 'דגימת הודעות של אלמוג לבקרת איכות', errors: 'שגיאות שרת',
+  content_overview: 'מפת תחנות ושיעורים', list_pending_actions: 'פעולות שמחכות לאישור', set_test_user: 'סימון משתמש בדיקה',
+  pause_user_notifications: 'השהיית/חידוש התראות למשתמש', set_step_published: 'פרסום/הסתרת שיעור', create_draft_step: 'טיוטת שיעור חדשה',
+  create_demo_link: 'קישור דמו לאורח', db_read: 'קריאה מכל טבלת ניהול', db_insert: 'הוספת רשומה', db_update: 'עדכון רשומות',
+  db_delete: 'מחיקה (בלתי הפיך)', send_user_notification: 'התראה למשתמש בקול של אלמוג', delete_user: 'מחיקת חשבון (בלתי הפיך)',
+  owner_tasks_list: 'משימות פתוחות של דניאל', owner_task_create: 'פתיחת משימה לדניאל', owner_task_update: 'עדכון משימה של דניאל',
+  journey_agent_start: 'הפעלת סוכן התוכן על חומר גלם', journey_agent_reply: 'תשובה לסוכן התוכן', journey_agent_sessions_list: 'סשנים של סוכן התוכן',
+};
+export function capabilityManifest(): string {
+  return CEO_TOOLS.map((t) => `• ${t.name}: ${CAP_HE[t.name] ?? t.description.slice(0, 80)}${t.destructive ? ' [בלתי הפיך]' : t.write ? ' [באישור]' : ''}`).join('\n');
 }
