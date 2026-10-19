@@ -131,7 +131,8 @@ export function AdminShell({
   }, [sidebarOpen]);
 
   const greetingName = adminFirstName.trim();
-  const hour = new Date().getHours();
+  // Same on server (UTC) and client — avoids a hydration mismatch (React #418) on every Ops page.
+  const hour = Number(new Intl.DateTimeFormat('en-GB', { hour: 'numeric', hourCycle: 'h23', timeZone: 'Asia/Jerusalem' }).format(new Date()));
   const dayPart = hour < 12 ? 'בוקר טוב' : hour < 17 ? 'צהריים טובים' : hour < 21 ? 'ערב טוב' : 'לילה טוב';
 
   const showNavLabels = !sidebarCollapsed;
@@ -144,14 +145,14 @@ export function AdminShell({
       active
         ? {
             emerald:
-              'border border-emerald-400/50 bg-emerald-500/15 font-bold text-emerald-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] backdrop-blur-md',
+              'bg-emerald-500/12 font-bold text-emerald-900',
             violet:
-              'border border-violet-400/45 bg-violet-500/15 font-bold text-violet-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] backdrop-blur-md',
-            sky: 'border border-sky-400/45 bg-sky-500/15 font-bold text-sky-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] backdrop-blur-md',
+              'bg-violet-500/12 font-bold text-violet-900',
+            sky: 'bg-sky-500/12 font-bold text-sky-950',
             amber:
-              'border border-amber-400/50 bg-amber-400/15 font-bold text-amber-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] backdrop-blur-md',
+              'bg-amber-400/15 font-bold text-amber-950',
           }[color]
-        : 'text-slate-600 hover:bg-background-card/55 hover:text-slate-900',
+        : 'text-slate-700 hover:bg-black/4 hover:text-slate-900',
     );
 
   const bottomNavClass = (active: boolean) =>
@@ -163,16 +164,10 @@ export function AdminShell({
   return (
     <MediaManagerProvider>
     <div
-      className="min-h-dvh bg-linear-to-br from-emerald-50 via-cyan-50/80 to-violet-100/90 font-sans text-slate-900 touch-manipulation"
+      className="min-h-dvh bg-[#f2f2f7] font-sans text-slate-900 antialiased touch-manipulation"
       dir="rtl"
     >
       <OpsSessionGuard />
-      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden>
-        <div className="absolute -top-28 -inset-s-20 h-88 w-88 rounded-full bg-linear-to-br from-emerald-400/45 to-teal-400/35 blur-3xl" />
-        <div className="absolute top-1/4 -inset-e-16 h-72 w-72 rounded-full bg-linear-to-tr from-fuchsia-400/35 to-violet-400/30 blur-3xl" />
-        <div className="absolute bottom-10 inset-s-1/3 h-56 w-56 rounded-full bg-linear-to-tl from-amber-300/40 to-orange-300/30 blur-3xl" />
-        <div className="absolute bottom-0 inset-e-0 h-64 w-64 rounded-full bg-linear-to-tr from-sky-400/30 to-cyan-300/25 blur-3xl" />
-      </div>
 
       <aside
         className={cn(
@@ -184,7 +179,7 @@ export function AdminShell({
       >
         <div
           className={cn(
-            'flex h-full min-h-0 flex-col overscroll-contain border-e border-white/70 bg-background-card/50 px-3 py-5 shadow-[0_20px_56px_rgba(99,102,241,0.14)] backdrop-blur-2xl sm:px-4 sm:py-6',
+            'flex h-full min-h-0 flex-col overscroll-contain border-e border-black/5 bg-white/95 px-3 py-5 shadow-[0_0_24px_rgba(0,0,0,0.04)] backdrop-blur-xl sm:px-4 sm:py-6',
             sidebarCollapsed && 'lg:px-2 lg:py-5',
           )}
         >
@@ -208,7 +203,7 @@ export function AdminShell({
               </div>
               <span
                 className={cn(
-                  'bg-linear-to-l from-emerald-600 via-teal-600 to-cyan-700 bg-clip-text font-display text-xl font-black text-transparent sm:text-2xl',
+                  'min-w-0 truncate font-display text-xl font-black tracking-tight text-slate-900',
                   sidebarCollapsed && 'lg:hidden',
                 )}
               >
@@ -479,14 +474,13 @@ export function AdminShell({
           mainPadLg,
         )}
       >
-        <header className="safe-area-top sticky top-0 z-20 border-b border-white/50 bg-linear-to-l from-emerald-200/95 via-teal-100/90 to-cyan-100/85 shadow-[0_8px_28px_rgba(16,185,129,0.15)] backdrop-blur-xl">
-          <div className="header-grid-pattern opacity-50" aria-hidden />
+        <header className="safe-area-top sticky top-0 z-20 border-b border-black/5 bg-[#f2f2f7]/85 backdrop-blur-xl">
           <div className="relative flex min-h-15 items-center gap-2.5 px-3 py-2.5 sm:min-h-16 sm:gap-3 sm:px-4 sm:py-3">
             <div className="flex shrink-0 items-center gap-2 sm:gap-2.5 lg:hidden">
               <button
                 type="button"
                 onClick={() => setSidebarOpen(true)}
-                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-2xl border border-white/60 bg-background-card/50 text-slate-800 shadow-xs backdrop-blur-md active:scale-[0.98]"
+                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full bg-white text-slate-800 shadow-[0_1px_3px_rgba(0,0,0,0.08)] active:scale-[0.98]"
                 aria-label="פתח תפריט"
               >
                 <Menu size={22} />
@@ -499,11 +493,11 @@ export function AdminShell({
                 aria-hidden
               />
               <div className="min-w-0">
-                <p className="truncate text-[11px] font-semibold tracking-wide text-emerald-700/80 sm:text-xs">
+                <p className="truncate text-[11px] font-medium text-slate-500 sm:text-xs">
                   {dayPart} <span aria-hidden>·</span> פאנל ניהול NuraWell
                 </p>
                 <h2 className="flex min-w-0 items-center gap-1.5 truncate font-display text-base font-black leading-tight tracking-tight sm:text-lg md:text-xl">
-                  <span className="bg-linear-to-l from-emerald-700 via-teal-600 to-cyan-700 bg-clip-text text-transparent">
+                  <span className="text-slate-900">
                     {greetingName ? `שלום, ${greetingName}` : 'שלום'}
                   </span>
                   <span className="onboarding-wave-hand shrink-0" aria-hidden>
@@ -516,7 +510,7 @@ export function AdminShell({
             <div className="flex shrink-0 items-center gap-2 sm:gap-2.5">
               <AdminNotificationsBell opsHref={opsHref} />
 
-              <div className="flex items-center gap-2.5 rounded-2xl border border-white/55 bg-background-card/45 py-1 pe-1 ps-2.5 shadow-xs backdrop-blur-md sm:ps-3">
+              <div className="flex items-center gap-2.5 rounded-full bg-white py-1 pe-1 ps-2.5 shadow-[0_1px_3px_rgba(0,0,0,0.08)] sm:ps-3">
                 <div className="hidden min-w-0 flex-col items-end leading-tight sm:flex">
                   <span className="max-w-40 truncate text-sm font-bold text-emerald-950">
                     {adminDisplayName}
@@ -556,13 +550,13 @@ export function AdminShell({
           id="main-content"
           className="mx-auto w-full max-w-5xl flex-1 space-y-6 px-3 py-5 sm:space-y-8 sm:px-4 sm:py-6 md:px-6 md:py-8 safe-area-bottom"
         >
-          <AdminAiAssistantCard opsHref={opsHref} />
+          {isHome ? <AdminAiAssistantCard opsHref={opsHref} /> : null}
           {children}
         </div>
       </main>
 
       <nav
-        className="fixed bottom-0 inset-e-0 inset-s-0 z-30 flex border-t border-white/55 bg-background-card/55 px-1 py-2 shadow-[0_-8px_32px_rgba(99,102,241,0.12)] backdrop-blur-2xl safe-area-bottom lg:hidden"
+        className="fixed bottom-0 inset-e-0 inset-s-0 z-30 flex border-t border-black/8 bg-white/90 px-1 py-1.5 backdrop-blur-xl safe-area-bottom lg:hidden"
         aria-label="ניווט מהיר"
       >
         <Link href={homeHref} onClick={() => setSidebarOpen(false)} className={bottomNavClass(isHome)}>

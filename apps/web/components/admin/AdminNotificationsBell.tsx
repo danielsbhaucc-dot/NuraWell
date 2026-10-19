@@ -91,7 +91,7 @@ export function AdminNotificationsBell({ opsHref }: AdminNotificationsBellProps)
     const interval = setInterval(() => {
       // perf: לא שולפים כשהטאב מוסתר
       if (document.visibilityState === 'visible') load().catch(() => undefined);
-    }, 60_000);
+    }, 120_000);
     return () => clearInterval(interval);
   }, [load]);
 

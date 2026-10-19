@@ -21,8 +21,8 @@ export default async function OpsBusinessPage() {
   await ensureOpsAdminServer();
   const m = await buildBusinessMetrics(createAdminClient());
   return (
-    <main className="flex flex-col gap-4 p-4">
-      <h1 className="text-2xl font-black text-primary-900">מדדים עסקיים</h1>
+    <div className="flex flex-col gap-4">
+      <h1 className="px-1 font-display text-[1.75rem] font-black leading-tight tracking-tight text-slate-900">מדדים עסקיים</h1>
       <p className="text-sm text-primary-800/80">משתמשים אמיתיים בלבד (ללא מנהלים וחשבונות בדיקה) · חלון {m.windowDays} ימים</p>
       <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Stat label="משתמשים" value={m.realUsers} hint={`${m.newUsers} חדשים · ${m.onboarded} השלימו קליטה`} />
@@ -34,6 +34,6 @@ export default async function OpsBusinessPage() {
         <Stat label="עלות AI למשתמש" value={`$${m.aiCostUsdPerUser}`} hint={`$${m.aiCostUsdPerActiveUser} למשתמש פעיל · סה״כ $${m.aiCostUsdTotal}`} />
         <Stat label="מעורבות" value={m.engagementStatus.active ?? 0} hint={Object.entries(m.engagementStatus).map(([k, v]) => `${k}: ${v}`).join(' · ')} />
       </section>
-    </main>
+    </div>
   );
 }

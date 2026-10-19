@@ -60,6 +60,15 @@ export async function GET(request: Request) {
       return NextResponse.json({ scope: 'user', userId, days, pricing, ...report });
     }
 
+    // Ops home only needs two numbers: skip the daily trend, send a tiny payload, let the browser reuse it for 5 min.
+    if (url.searchParams.get('summary') === '1') {
+      const report = await buildAggregateCostReport(admin, sinceIso, days);
+      return NextResponse.json(
+        { days, averagePerActiveUser: { totalUsd: report.averagePerActiveUser?.totalUsd ?? 0 }, activeUsers: report.activeUsers ?? 0 },
+        { headers: { 'Cache-Control': 'private, max-age=300' } },
+      );
+    }
+
     const [report, trendRes] = await Promise.all([buildAggregateCostReport(admin, sinceIso, days), admin.rpc('cost_daily', { p_days: days })]);
     const byDay = new Map<string, { day: string; usd: number; active: number }>();
     for (const r of (trendRes.data ?? []) as { day: string; cost_usd: number; active_users: number }[]) {

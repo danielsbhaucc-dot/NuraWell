@@ -5,7 +5,9 @@ import { ensureOpsAdminServer, opsActorId } from '@/lib/auth/ensure-ops-admin-se
 import { createAdminClient } from '@/lib/supabase/admin';
 import { decideAction } from '@/lib/ceo/actions';
 import { CEO_NAME } from '@/lib/ceo/agent';
-import { Card } from '@/components/ui';
+import { Bot, ListChecks, Moon, Settings, ShieldCheck, Wrench } from 'lucide-react';
+import { OpsPageHeader } from '@/components/admin/OpsPageHeader';
+import { OpsGroup, OpsRow } from '@/components/admin/ios/OpsGroup';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'מנכ"ל AI' };
@@ -34,39 +36,44 @@ export default async function OpsCeoPage() {
   const now = new Date().toISOString();
   const [{ data: pending }, { data: history }] = await Promise.all([
     db.from('ceo_pending_actions').select('id, tool, summary, created_at, expires_at').eq('status', 'pending').gt('expires_at', now).order('created_at', { ascending: false }).limit(50),
-    db.from('ceo_pending_actions').select('id, tool, summary, status, created_at, decided_at, result').neq('status', 'pending').order('created_at', { ascending: false }).limit(50),
+    db.from('ceo_pending_actions').select('id, tool, summary, status, created_at, decided_at').neq('status', 'pending').order('created_at', { ascending: false }).limit(50),
   ]);
   return (
-    <main className="flex flex-col gap-4 p-4">
-      <div className="flex items-center justify-between gap-2">
-        <h1 className="text-2xl font-black text-primary-900">{CEO_NAME} · מנכ&quot;ל AI</h1>
-        <a href="/ops/ceo/settings" className="rounded-xl bg-primary-100/40 px-3 py-1.5 text-sm font-semibold text-primary-900 hover:bg-primary-100/70">הגדרות</a>
-        <a href="/ops/ceo/security" className="rounded-xl bg-primary-100/40 px-3 py-1.5 text-sm font-semibold text-primary-900 hover:bg-primary-100/70">🔐 אבטחה</a>
-        <a href="/ops/ceo/prefs" className="rounded-xl bg-primary-100/40 px-3 py-1.5 text-sm font-semibold text-primary-900 hover:bg-primary-100/70">🕯️ הוראות ושקט</a>
-        <a href="/ops/ceo/insights" className="rounded-xl bg-primary-100/40 px-3 py-1.5 text-sm font-semibold text-primary-900 hover:bg-primary-100/70">משימות ואיכות</a>
-        <a href="/ops/ceo/dev-forwards" className="rounded-xl bg-primary-100/40 px-3 py-1.5 text-sm font-semibold text-primary-900 hover:bg-primary-100/70">🛠️ הועבר לאור</a>
-      </div>
-      <p className="text-sm text-primary-800/80">כל שינוי ש{CEO_NAME} מציע ממתין כאן ובטלגרם לאישור שלך. פג תוקף אחרי 24 שעות.</p>
-      <h2 className="text-lg font-bold text-primary-900">ממתין לאישור ({pending?.length ?? 0})</h2>
-      {!pending?.length ? <Card>אין פעולות ממתינות</Card> : null}
-      {pending?.map((a) => (
-        <Card key={a.id} className="flex flex-col gap-2">
-          <div className="font-semibold text-primary-900">{a.summary}</div>
-          <div className="text-xs text-primary-700">{fmt.format(new Date(a.created_at))} · <span dir="ltr" className="font-mono">{a.tool}</span></div>
-          <form action={decide} className="flex gap-2">
-            <input type="hidden" name="id" value={a.id} />
-            <button name="approve" value="1" className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold text-white">אשר</button>
-            <button name="approve" value="0" className="rounded-lg border border-primary-200 px-4 py-2 text-sm font-bold text-primary-800">בטל</button>
-          </form>
-        </Card>
-      ))}
-      <h2 className="text-lg font-bold text-primary-900">היסטוריה</h2>
-      {history?.map((a) => (
-        <Card key={a.id} className="flex items-center justify-between gap-2 text-sm">
-          <span className="text-primary-900">{a.summary}</span>
-          <span className="shrink-0 text-xs text-primary-700">{STATUS[a.status] ?? a.status} · {fmt.format(new Date(a.decided_at ?? a.created_at))}</span>
-        </Card>
-      ))}
-    </main>
+    <div className="flex flex-col gap-6">
+      <OpsPageHeader icon={Bot} tone="violet" eyebrow="מנכ״ל AI" title={CEO_NAME} description={`כל שינוי ש${CEO_NAME} מציע ממתין כאן ובטלגרם לאישור שלך. פג תוקף אחרי 24 שעות.`} />
+
+      <OpsGroup>
+        <OpsRow href="/ops/ceo/settings" icon={Settings} tone="slate" title="הגדרות" />
+        <OpsRow href="/ops/ceo/security" icon={ShieldCheck} tone="emerald" title="אבטחה" desc="Face ID, נעילה ושחרור" />
+        <OpsRow href="/ops/ceo/prefs" icon={Moon} tone="amber" title="הוראות ושקט" desc="בקשות קבועות ושבת" />
+        <OpsRow href="/ops/ceo/insights" icon={ListChecks} tone="sky" title="משימות ואיכות" />
+        <OpsRow href="/ops/ceo/dev-forwards" icon={Wrench} tone="rose" title="הועבר לאור" />
+      </OpsGroup>
+
+      <OpsGroup title={`ממתין לאישור (${pending?.length ?? 0})`}>
+        {!pending?.length ? <p className="px-4 py-3.5 text-[15px] text-slate-500">אין פעולות ממתינות</p> : null}
+        {pending?.map((a) => (
+          <div key={a.id} className="flex flex-col gap-2 px-4 py-3">
+            <p className="line-clamp-3 break-words text-[15px] font-semibold text-slate-900">{a.summary}</p>
+            <p className="text-xs text-slate-500">{fmt.format(new Date(a.created_at))} · <span dir="ltr" className="font-mono">{a.tool}</span></p>
+            <form action={decide} className="flex gap-2">
+              <input type="hidden" name="id" value={a.id} />
+              <button name="approve" value="1" className="min-h-10 rounded-full bg-emerald-600 px-5 text-sm font-bold text-white">אשר</button>
+              <button name="approve" value="0" className="min-h-10 rounded-full bg-slate-100 px-5 text-sm font-bold text-slate-700">בטל</button>
+            </form>
+          </div>
+        ))}
+      </OpsGroup>
+
+      <OpsGroup title="היסטוריה">
+        {!history?.length ? <p className="px-4 py-3.5 text-[15px] text-slate-500">עוד אין היסטוריה</p> : null}
+        {history?.map((a) => (
+          <div key={a.id} className="flex min-w-0 items-start justify-between gap-3 px-4 py-3 text-sm">
+            <span className="line-clamp-2 min-w-0 break-words text-slate-900 [overflow-wrap:anywhere]">{a.summary}</span>
+            <span className="shrink-0 text-xs text-slate-500">{STATUS[a.status] ?? a.status} · {fmt.format(new Date(a.decided_at ?? a.created_at))}</span>
+          </div>
+        ))}
+      </OpsGroup>
+    </div>
   );
 }

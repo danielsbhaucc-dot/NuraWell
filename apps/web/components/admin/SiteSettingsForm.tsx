@@ -39,6 +39,30 @@ export function SiteSettingsForm() {
     };
   }, []);
 
+  const [preview, setPreview] = useState<{ live: boolean } | null>(null);
+
+  /** Step 1: dry-run — shows what would change and whether the domain is live. Nothing is saved. */
+  const previewProdPreset = async () => {
+    setBusy(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const res = await fetch('/api/v1/admin/site-settings?dry_run=1', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ public_app_url: PRESET_PROD }),
+      });
+      const j = await res.json();
+      if (!res.ok) setError(typeof j.error === 'string' ? j.error : 'בדיקה נכשלה');
+      else setPreview({ live: Boolean(j.live) });
+    } catch {
+      setError('בדיקה נכשלה');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  /** Step 2: explicit confirmation; the server re-checks the domain is live and refuses otherwise. */
   const applyProdPreset = async () => {
     setBusy(true);
     setError(null);
@@ -56,16 +80,12 @@ export function SiteSettingsForm() {
       }
       if (typeof j.public_app_url === 'string') setUrl(j.public_app_url);
       if (typeof j.updated_at === 'string') setUpdatedAt(j.updated_at);
-
+      setPreview(null);
       try {
         await navigator.clipboard.writeText(REMINDER_TEXT);
-        setMessage(
-          'ההפניות מ־Ops מצביעות כעת ל־NuraWell (nurawell.ai). הודעת תזכורת הועתקה ללוח — שלח לעצמך במייל/ווטסאפ ומחק אחרי שסיימת את השלב.',
-        );
+        setMessage('כתובת האתר במסד עודכנה. תזכורת להמשך המעבר הועתקה ללוח.');
       } catch {
-        setMessage(
-          `ההפניות עודכנו ל־${PRESET_PROD}. העתק ידנית את התזכורת מהתיבה למטה ושלח לעצמך.`,
-        );
+        setMessage(`כתובת האתר במסד עודכנה ל־${PRESET_PROD}.`);
       }
     } catch {
       setError('שמירה נכשלה');
@@ -114,12 +134,37 @@ export function SiteSettingsForm() {
         <button
           type="button"
           disabled={busy}
-          onClick={() => void applyProdPreset()}
+          onClick={() => void previewProdPreset()}
           className="mt-4 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-amber-600 px-6 py-3 font-bold text-white shadow-lg transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
         >
           {busy ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden /> : <Sparkles className="h-5 w-5" aria-hidden />}
-          החלף ל־NuraWell והעתק תזכורת
+          בדוק מה ישתנה
         </button>
+        {preview && (
+          <div className="mt-4 rounded-2xl bg-white/80 p-4 text-sm text-slate-800 shadow-sm" role="status">
+            <p className="font-bold">תצוגה מקדימה, שום דבר עוד לא נשמר</p>
+            <ul className="mt-2 list-disc space-y-1 pe-1 ps-5">
+              <li>ישתנה: כתובת האתר במסד ({url || '—'} ← {PRESET_PROD}).</li>
+              <li>לא ישתנה: הגדרת Vercel (NEXT_PUBLIC_APP_URL), כתובות Supabase, ה-DNS והדומיין ב-Vercel. אלה נעשים בנפרד.</li>
+              <li>
+                {preview.live ? `✅ ${PRESET_PROD} עונה.` : `⛔ ${PRESET_PROD} לא עונה עדיין, לכן השמירה תיחסם כדי לא לשבור קישורים.`}
+              </li>
+            </ul>
+            <div className="mt-3 flex gap-2">
+              <button
+                type="button"
+                disabled={busy || !preview.live}
+                onClick={() => void applyProdPreset()}
+                className="min-h-11 rounded-xl bg-emerald-700 px-4 font-bold text-white disabled:opacity-40"
+              >
+                אשר ושמור
+              </button>
+              <button type="button" onClick={() => setPreview(null)} className="min-h-11 rounded-xl bg-slate-200 px-4 font-bold text-slate-800">
+                ביטול
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="rounded-xl border border-slate-300/60 bg-slate-50/80 p-4 text-sm text-slate-700">
