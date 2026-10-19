@@ -4,6 +4,7 @@
  */
 
 import { type EmailSenderKey, resolveEmailFrom } from './senders';
+import { logDelivery } from '@/lib/logging/delivery';
 
 export type SendResendEmailInput = {
   to: string;
@@ -14,11 +15,20 @@ export type SendResendEmailInput = {
   sender?: EmailSenderKey;
   /** דורס sender — מחרוזת From מלאה ל-Resend */
   from?: string;
+  /** תיוג ללוג המשלוחים (ללא תוכן) */
+  purpose?: string;
 };
 
-export async function sendResendEmail(
-  input: SendResendEmailInput
-): Promise<{ ok: true; id?: string } | { ok: false; error: string }> {
+type SendResult = { ok: true; id?: string } | { ok: false; error: string };
+
+/** Every send is logged (ok/failed + provider message id), never content. */
+export async function sendResendEmail(input: SendResendEmailInput): Promise<SendResult> {
+  const r = await sendResendEmailRaw(input);
+  await logDelivery({ channel: 'email', purpose: input.purpose ?? input.sender ?? 'email', recipient: input.to, ok: r.ok, providerId: r.ok ? r.id : null, error: r.ok ? null : r.error });
+  return r;
+}
+
+async function sendResendEmailRaw(input: SendResendEmailInput): Promise<SendResult> {
   const apiKey = process.env.RESEND_API_KEY?.trim();
   const from = input.from?.trim() || resolveEmailFrom(input.sender ?? 'default');
 

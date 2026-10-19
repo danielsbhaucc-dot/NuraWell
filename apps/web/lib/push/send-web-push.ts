@@ -41,11 +41,20 @@ export async function sendWebPushToSubscription(
       }),
       { TTL: 60 * 60 * 4 }
     );
+    await logPush(subscription, payload.tag, true);
     return { ok: true };
   } catch (e) {
+    await logPush(subscription, payload.tag, false, e);
     return {
       ok: false,
       error: e instanceof Error ? e.message : String(e),
     };
   }
+}
+
+/** endpoint is a capability URL → only its hash/mask is logged. */
+async function logPush(sub: WebPushSubscriptionJson, tag: string | undefined, ok: boolean, error?: unknown) {
+  const { logDelivery } = await import('@/lib/logging/delivery');
+  const ep = (sub as { endpoint?: string }).endpoint ?? null;
+  await logDelivery({ channel: 'push', purpose: tag ?? 'almog', recipient: ep, ok, error });
 }

@@ -836,6 +836,13 @@ async function runMasterCron() {
     errors.push(`security_events: ${e instanceof Error ? e.message : String(e)}`);
   }
 
+  try {
+    const { runAnomalyAlerts } = await import('@/lib/logging/anomaly-alerts');
+    await runAnomalyAlerts(admin);
+  } catch (e) {
+    errors.push(`anomaly_alerts: ${e instanceof Error ? e.message : String(e)}`);
+  }
+
   /** chat_perf_timings retention (no pg_cron on this project): keep 30 days */
   try {
     await admin
@@ -846,6 +853,9 @@ async function runMasterCron() {
       .from('error_events')
       .delete()
       .lt('created_at', new Date(Date.now() - 30 * 86_400_000).toISOString());
+    // לוג משלוחים — 90 יום; רשומות אבטחה — 180 יום (לפי מדיניות הפרטיות §9)
+    await admin.from('delivery_log').delete().lt('created_at', new Date(Date.now() - 90 * 86_400_000).toISOString());
+    await admin.from('admin_audit_log').delete().eq('method', 'SECURITY').lt('created_at', new Date(Date.now() - 180 * 86_400_000).toISOString());
     // מזעור נתונים: תור חילוץ ההתחייבויות שכבר עובד — 7 ימים
     await admin
       .from('pending_almog_commitment_jobs')
