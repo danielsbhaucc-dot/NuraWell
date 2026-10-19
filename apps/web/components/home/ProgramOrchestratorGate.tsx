@@ -50,9 +50,10 @@ const KIND_ACCENT: Record<ProposalKind, string> = {
   pivot: '#7c3aed',
 };
 
-export function ProgramOrchestratorGate() {
+export function ProgramOrchestratorGate({ onAccepted }: { onAccepted?: () => void } = {}) {
   const [proposal, setProposal] = useState<ProgramProposal | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [failed, setFailed] = useState(false);
   const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
@@ -90,21 +91,29 @@ export function ProgramOrchestratorGate() {
     async (decision: 'accept' | 'decline') => {
       if (!proposal || submitting) return;
       setSubmitting(true);
+      setFailed(false);
+      let ok = false;
       try {
-        await fetch('/api/v1/ai/program/proposal', {
+        const res = await fetch('/api/v1/ai/program/proposal', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ proposal_id: proposal.id, decision }),
         });
+        ok = res.ok;
       } catch {
-        /* גם אם נכשל — סוגרים מקומית כדי לא לתקוע את המשתמש */
-      } finally {
+        ok = false;
+      }
+      setSubmitting(false);
+      // סגירה (X) תמיד סוגרת מקומית; קבלה שנכשלה נשארת עם הודעה ואפשרות לנסות שוב
+      if (ok || decision === 'decline') {
         setDismissed(true);
         setProposal(null);
-        setSubmitting(false);
+        if (ok && decision === 'accept') onAccepted?.();
+      } else {
+        setFailed(true);
       }
     },
-    [proposal, submitting]
+    [proposal, submitting, onAccepted]
   );
 
   if (!proposal || dismissed) return null;
@@ -209,14 +218,14 @@ export function ProgramOrchestratorGate() {
         <X className="h-4 w-4" />
       </button>
 
-      <div className="flex flex-row-reverse items-start gap-3.5">
+      <div className="flex flex-row items-start gap-3.5">
         <div
           className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl"
           style={{ background: `linear-gradient(145deg, ${accent}, ${accent}cc)` }}
         >
           <Icon className="h-6 w-6 text-white" strokeWidth={2.2} />
         </div>
-        <div className="flex-1 pe-6 text-start">
+        <div className="min-w-0 flex-1 pe-8 text-start">
           <p
             className="text-[15px] font-extrabold text-emerald-950"
             style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
@@ -231,8 +240,13 @@ export function ProgramOrchestratorGate() {
             className="mt-3 inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-[13px] font-bold text-white transition active:scale-[0.98] disabled:opacity-60"
             style={{ background: `linear-gradient(145deg, ${accent}, ${accent}cc)` }}
           >
-            {proposal.cta_accept_label}
+            {submitting ? 'רגע…' : proposal.cta_accept_label}
           </button>
+          {failed ? (
+            <p role="alert" className="mt-2 text-[12px] font-semibold text-rose-700">
+              משהו השתבש, נסה שוב בעוד רגע.
+            </p>
+          ) : null}
         </div>
       </div>
     </motion.div>
