@@ -208,6 +208,9 @@ export async function proxy(request: NextRequest) {
   function applySecurityHeaders(res: NextResponse): NextResponse {
     res.headers.set('Content-Security-Policy', cspHeader);
     res.headers.set('x-nonce', nonce);
+    res.headers.set('Cross-Origin-Opener-Policy', 'same-origin');
+    res.headers.set('Cross-Origin-Resource-Policy', 'same-site');
+    res.headers.set('X-Permitted-Cross-Domain-Policies', 'none');
     return res;
   }
   /** Ops stealth: anyone without admin session + trusted device sees the app's generic 404 (same as any missing page). */
