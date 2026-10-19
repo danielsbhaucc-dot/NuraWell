@@ -30,7 +30,7 @@ const ICON_BG: Record<OpsTone, string> = {
 /** One row: colored rounded-square icon, title + subtitle, chevron (points left in RTL). */
 export function OpsRow({ href, icon: Icon, tone = 'emerald', title, desc, trailing }: { href: string; icon: LucideIcon; tone?: OpsTone; title: string; desc?: string; trailing?: ReactNode }) {
   return (
-    <Link href={href} className="flex min-h-14 items-center gap-3 px-4 py-2.5 transition-colors hover:bg-black/3 active:bg-black/5">
+    <Link prefetch={false} href={href} className="flex min-h-14 items-center gap-3 px-4 py-2.5 transition-colors hover:bg-black/3 active:bg-black/5">
       <span className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-[0.6rem] text-white', ICON_BG[tone])}>
         <Icon className="h-[18px] w-[18px]" aria-hidden />
       </span>
