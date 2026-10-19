@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import type { CSSProperties, ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import {
   ArrowLeft,
@@ -25,6 +26,15 @@ const LINK_ICONS: Record<string, LucideIcon> = {
   '/guides': BookOpen,
 };
 
+function iconFor(href: string): LucideIcon {
+  try {
+    const u = href.startsWith('http') ? new URL(href).pathname : href;
+    return LINK_ICONS[u] ?? LINK_ICONS[u.replace(/\/$/, '') || '/'] ?? Home;
+  } catch {
+    return Home;
+  }
+}
+
 const secondaryBtnClass =
   'flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all hover:scale-[1.01] active:scale-95';
 const secondaryBtnStyle = {
@@ -33,23 +43,56 @@ const secondaryBtnStyle = {
   color: '#4b5563',
 } as const;
 
-function SecondaryLink({ link }: { link: NotFoundLink }) {
-  const Icon = LINK_ICONS[link.href] ?? Home;
+function isAbsolute(href: string): boolean {
+  return href.startsWith('http://') || href.startsWith('https://');
+}
+
+/** Absolute hrefs use plain <a> so the App Router never prefetches/navigates on a stealth host. */
+function NavAnchor({
+  href,
+  className,
+  style,
+  children,
+}: {
+  href: string;
+  className?: string;
+  style?: CSSProperties;
+  children: ReactNode;
+}) {
+  if (isAbsolute(href)) {
+    return (
+      <a href={href} className={className} style={style}>
+        {children}
+      </a>
+    );
+  }
   return (
-    <Link href={link.href} className={secondaryBtnClass} style={secondaryBtnStyle}>
+    <Link href={href} className={className} style={style} prefetch={false}>
+      {children}
+    </Link>
+  );
+}
+
+function SecondaryLink({ link }: { link: NotFoundLink }) {
+  const Icon = iconFor(link.href);
+  return (
+    <NavAnchor href={link.href} className={secondaryBtnClass} style={secondaryBtnStyle}>
       <Icon className="w-4 h-4" />
       <span>{link.label}</span>
-    </Link>
+    </NavAnchor>
   );
 }
 
 type Props = {
   isAuthenticated: boolean;
+  /** When set (Ops stealth), all CTAs point at this public origin. */
+  absoluteOrigin?: string | null;
 };
 
-export default function NotFoundClient({ isAuthenticated }: Props) {
-  const { primary, secondary } = getNotFoundLinks(isAuthenticated);
-  const PrimaryIcon = LINK_ICONS[primary.href] ?? Home;
+export default function NotFoundClient({ isAuthenticated, absoluteOrigin = null }: Props) {
+  const { primary, secondary } = getNotFoundLinks(isAuthenticated, absoluteOrigin);
+  const PrimaryIcon = iconFor(primary.href);
+  const leaveStealth = Boolean(absoluteOrigin);
 
   const [firstSecondary, ...restSecondary] = secondary;
 
@@ -95,7 +138,7 @@ export default function NotFoundClient({ isAuthenticated }: Props) {
         </div>
 
         <div className="space-y-3">
-          <Link
+          <NavAnchor
             href={primary.href}
             className="flex items-center justify-center gap-2 w-full py-4 rounded-2xl font-bold text-lg text-white transition-all hover:scale-[1.02] active:scale-95"
             style={{
@@ -105,18 +148,25 @@ export default function NotFoundClient({ isAuthenticated }: Props) {
           >
             <PrimaryIcon className="w-5 h-5" />
             <span>{primary.label}</span>
-          </Link>
+          </NavAnchor>
 
           <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={() => window.history.back()}
-              className={secondaryBtnClass}
-              style={secondaryBtnStyle}
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span>חזור אחורה</span>
-            </button>
+            {leaveStealth ? (
+              <NavAnchor href={primary.href} className={secondaryBtnClass} style={secondaryBtnStyle}>
+                <ArrowLeft className="w-4 h-4" />
+                <span>חזור אחורה</span>
+              </NavAnchor>
+            ) : (
+              <button
+                type="button"
+                onClick={() => window.history.back()}
+                className={secondaryBtnClass}
+                style={secondaryBtnStyle}
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>חזור אחורה</span>
+              </button>
+            )}
 
             {firstSecondary ? <SecondaryLink link={firstSecondary} /> : null}
           </div>

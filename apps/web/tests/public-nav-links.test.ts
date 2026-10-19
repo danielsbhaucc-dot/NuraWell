@@ -68,8 +68,21 @@ describe('public / app navigation link contracts', () => {
     expect(page).toContain('getUser');
     expect(page).toContain('NotFoundClient');
     expect(page).toContain('isAuthenticated');
+    expect(page).toContain('absoluteOrigin');
     expect(client).toContain('getNotFoundLinks');
     expect(client).toContain('isAuthenticated');
+    expect(client).toContain('absoluteOrigin');
+  });
+
+  it('prefixes 404 CTAs when absoluteOrigin is set (Ops stealth / CF mirror)', () => {
+    const guest = getNotFoundLinks(false, 'https://nurawell.vercel.app');
+    expect(guest.primary.href).toBe('https://nurawell.vercel.app/');
+    expect(guest.secondary.map((l) => l.href)).toEqual([
+      'https://nurawell.vercel.app/login',
+      'https://nurawell.vercel.app/about',
+      'https://nurawell.vercel.app/contact',
+    ]);
+    expect(readWeb('components/not-found/NotFoundClient.tsx')).toContain('isAbsolute');
   });
 
   it('exposes about and contact in legal nav (middleware already allows them)', () => {

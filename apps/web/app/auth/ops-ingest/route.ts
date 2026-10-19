@@ -13,7 +13,7 @@ export const maxDuration = 30;
 
 /** Anything wrong → the same generic 404 as any missing page (no hints). */
 function notFound(request: NextRequest) {
-  return NextResponse.rewrite(new URL('/__nf', request.url));
+  return NextResponse.rewrite(new URL('/__nf', request.url), { status: 404 });
 }
 
 /** Ops host: claim a one-time handoff (60 s) and mint a NEW Ops session + child device cookie. */
