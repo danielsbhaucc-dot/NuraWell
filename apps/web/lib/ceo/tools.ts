@@ -5,7 +5,7 @@ import { buildBusinessMetrics } from '@/lib/admin/business-metrics';
 import { deleteUserCompletely } from '@/lib/admin/delete-user-completely';
 import { opsLink } from './channel';
 import { openOwnerTasks, setOwnerTask } from './owner-tasks';
-import { createDevIssue, forwardSchema, type ForwardArgs } from './dev-forward';
+import { forwardToDeveloper, forwardSchema, type ForwardArgs } from './dev-forward';
 import { createDemoAccessLink, resolveCeoActorUserId, readDemoDefaultTarget } from '@/lib/demo-access/create';
 
 /**
@@ -493,18 +493,18 @@ const DEV: CeoTool[] = [
     schema: z.object({ limit: z.number().int().min(1).max(5).default(2) }),
     write: false,
     run: async (db, a) =>
-      rows(db.from('ceo_dev_forwards').select('id, created_at, status, title, issue_url, source_text').order('created_at', { ascending: false }).limit(Number(a.limit ?? 2))).then((r) =>
+      rows(db.from('ceo_dev_forwards').select('id, created_at, status, title, or_notes, source_text').order('created_at', { ascending: false }).limit(Number(a.limit ?? 2))).then((r) =>
         r.map((x) => ({ ...x, source_text: clip(x.source_text, 3000) })),
       ),
   },
   {
     name: 'forward_to_developer',
     description:
-      'Forward a technical/quality finding to Or (the developer bot) as a GitHub issue. Use when Daniel asks to pass something to Or / the developer, or offers it from a summary. Write title + problem in Hebrew AND English, anonymized evidence (NO names, emails, phones, ids — say "משתמש A"), and a concrete suggested fix. Pass forwardId when it comes from recent_digest_findings. Confirm to Daniel only after the approval result says it was created.',
+      'Forward a technical/quality finding to Or (the developer bot): saved for Or in the dev queue. Use when Daniel asks to pass something to Or / the developer, or offers it from a summary. Write title + problem in Hebrew AND English, anonymized evidence (NO names, emails, phones, ids — say "משתמש A"), and a concrete suggested fix. Pass forwardId when it comes from recent_digest_findings. Confirm to Daniel only after the approval result says it was created.',
     schema: forwardSchema,
     write: true,
-    run: (db, a) => createDevIssue(db, a as ForwardArgs),
-    summarize: (a) => `להעביר לאור (משימת פיתוח ב-GitHub): ${String(a.title ?? '')}`,
+    run: (db, a) => forwardToDeveloper(db, a as ForwardArgs),
+    summarize: (a) => `להעביר לאור: ${String(a.title ?? '')}`,
   },
 ];
 
@@ -529,7 +529,7 @@ const CAP_HE: Record<string, string> = {
   db_delete: 'מחיקה (בלתי הפיך)', send_user_notification: 'התראה למשתמש בקול של אלמוג', delete_user: 'מחיקת חשבון (בלתי הפיך)',
   owner_tasks_list: 'משימות פתוחות של דניאל', owner_task_create: 'פתיחת משימה לדניאל', owner_task_update: 'עדכון משימה של דניאל',
   journey_agent_start: 'הפעלת סוכן התוכן על חומר גלם', journey_agent_reply: 'תשובה לסוכן התוכן', journey_agent_sessions_list: 'סשנים של סוכן התוכן',
-  recent_digest_findings: 'סיכומים אחרונים שאפשר להעביר לאור', forward_to_developer: 'העברת ממצא טכני לאור (משימה ב-GitHub)',
+  recent_digest_findings: 'סיכומים אחרונים שאפשר להעביר לאור', forward_to_developer: 'העברת ממצא טכני לאור',
 };
 export function capabilityManifest(): string {
   return CEO_TOOLS.map((t) => `• ${t.name}: ${CAP_HE[t.name] ?? t.description.slice(0, 80)}${t.destructive ? ' [בלתי הפיך]' : t.write ? ' [באישור]' : ''}`).join('\n');

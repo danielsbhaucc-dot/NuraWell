@@ -39,7 +39,7 @@ export function memberSinceLabel(gender: ProfileGender, since: string): string {
 export function imperativeDontWrite(gender: ProfileGender): string {
   if (gender === 'female') return 'אל תכתבי';
   if (gender === 'male') return 'אל תכתוב';
-  return 'בלי לכתוב';
+  return 'עדיף לא לכתוב';
 }
 
 /** "תלחץ" / "תלחצי" לפי מגדר */
@@ -94,7 +94,7 @@ export function guidesAlmogCoachBody(
   if (gender === 'male') {
     return `${firstName}, הסתכלתי על ההתקדמות שלך. אם לא בטוח במה להמשיך — אני כאן לבחור איתך את הפרק או המדריך שהכי מתאים לרגע הזה.`;
   }
-  return `${firstName}, הסתכלתי על ההתקדמות שלך. אם יש התלבטות במה להמשיך — אני כאן לבחור איתך את הפרק או המדריך שהכי מתאים לרגע הזה.`;
+  return `${firstName}, הסתכלתי על ההתקדמות שלך. אם לא ברור במה להמשיך — אני כאן לבחור איתך את הפרק או המדריך שהכי מתאים לרגע הזה.`;
 }
 
 /** טקסט אלמוג בעמוד מדריך בודד */
@@ -244,7 +244,7 @@ export function progressPageAlmogHeroBody(
   const neutral = [
     `${firstName}, הסתכלתי על מה שעשית — ויש פה דברים ששווה לחגוג.`,
     `${firstName}, זה לא מבחן. זה סיכום קצר של הצעדים שלך, בלי רעש.`,
-    `${firstName}, כל נקודה כאן היא רמז — לא שיפוט. ממשיכים בקצב שנוח.`,
+    `${firstName}, כל נקודה כאן היא רמז — לא שיפוט. ממשיכים בקצב שנוח לך.`,
     `${firstName}, אני גאה בך על ההתמדה. נראה יחד מה כבר עובד.`,
   ];
   const pool = gender === 'female' ? female : gender === 'male' ? male : neutral;
@@ -282,7 +282,7 @@ export function historyPageAlmogHeroBody(
     `${firstName}, הסתכלתי על הנתונים שלך — יש כאן הרבה יותר ממה שנראה במבט ראשון.`,
   ];
   const neutral = [
-    `${firstName}, כל שורה כאן היא הוכחה לתנועה. זה לא על שלמות — זה על כיוון.`,
+    `${firstName}, כל שורה כאן היא הוכחה שיש תנועה. זה לא על שלמות — זה על כיוון.`,
     `${firstName}, הנתונים האלו מספרים סיפור. נקרא אותו יחד ונבין מה עובד.`,
     `${firstName}, גם הימים ה"חלקיים" נמצאים כאן בכוונה — כי כל ניסיון הוא צעד קדימה.`,
     `${firstName}, הסתכלתי על הנתונים שלך — יש כאן הרבה יותר ממה שנראה במבט ראשון.`,
@@ -329,5 +329,5 @@ export function progressPartialDaysMessage(count: number): string {
   if (count <= 5) {
     return `${count} ימים עם ביצוע חלקי — כל צעד קטן מצטבר למשהו גדול יותר.`;
   }
-  return `${count} ימים עם התקדמות חלקית — אין כאן ויתור, וזה מה שבאמת משנה.`;
+  return `${count} ימים עם התקדמות חלקית — לא מוותרים, וזה מה שבאמת משנה.`;
 }

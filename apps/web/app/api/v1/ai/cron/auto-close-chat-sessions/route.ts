@@ -3,6 +3,7 @@ import { autoCloseStaleSessionsBatch } from '@/lib/ai/chat-sessions/auto-close-s
 import { authorizeCronRequest } from '@/lib/api/authorize-cron';
 import { maybeReturnCronIdleSkip } from '@/lib/api/cron-idle-guard';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { notifyDevForwardsDone } from '@/lib/ceo/dev-forward-notify';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -21,6 +22,8 @@ export async function POST(request: Request) {
   }
 
   const admin = createAdminClient();
+  // Gideon: tell Daniel when Or finished a forwarded item (hourly cadence; normal send layer → Shabbat gate applies)
+  await notifyDevForwardsDone(admin).catch(() => 0);
   const idleSkip = await maybeReturnCronIdleSkip(request, admin, 'auto-close-chat-sessions');
   if (idleSkip) return idleSkip;
 
