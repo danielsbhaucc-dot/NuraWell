@@ -81,7 +81,7 @@ function fallbackProposalText(input: BuildProposalInput): {
     case 'level_up':
       return {
         headline: 'הגיע הזמן לשלב הבא? 🚀',
-        body: `${name}, שמרת על ${focus} ${input.consecutiveCompletedDays} ימים ברצף — זה בדיוק הרגע להוסיף צעד קטן חדש. בא נבנה על המומנטום.`,
+        body: `${name}, שמרת על ${focus} ${input.consecutiveCompletedDays} ימים ברצף — זה בדיוק הרגע להוסיף צעד קטן חדש. בוא נבנה על המומנטום.`,
         nextStep: {
           title: 'נוסיף מיקרו-צעד אחד קטן מעל מה שכבר עובד',
           detail: 'משהו של דקות בודדות, שקל להצליח בו כל יום.',
@@ -97,8 +97,8 @@ function fallbackProposalText(input: BuildProposalInput): {
       };
     case 'pivot':
       return {
-        headline: 'בא ניקח את זה קטן יותר 💙',
-        body: `${name}, אם ${focus} מרגיש כבד עכשיו — זה לגמרי בסדר. בוא נוריד הילוך לגרסה זעירה שאי-אפשר להיכשל בה, רק כדי להישאר בתנועה.`,
+        headline: 'בוא ניקח את זה קטן יותר 💙',
+        body: `${name}, אם „${focus}” קשה כרגע — זה לגמרי בסדר. בוא נוריד הילוך לגרסה זעירה שאי-אפשר להיכשל בה, רק כדי להישאר בתנועה.`,
         nextStep: {
           title: `גרסה זעירה של ${focus} — דקה-שתיים, רק כדי להישאר בתנועה`,
           detail: 'צעד שאי-אפשר להיכשל בו. נטפס משם בחזרה בקצב שלך.',
