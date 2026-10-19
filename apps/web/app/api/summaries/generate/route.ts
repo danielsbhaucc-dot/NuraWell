@@ -80,7 +80,17 @@ function resolvePeriodKey(type: SummaryType, periodKey: string): string {
 
 export async function POST(request: Request) {
   try {
-    // ---------- 1. Parse body ----------
+    // ---------- 1. Authorize BEFORE revealing schema details ----------
+    const cronAuthFailure = await authorizeCronRequest(request);
+    const cronAuthorized = cronAuthFailure === null;
+
+    let session: Awaited<ReturnType<typeof requireApiSession>> | null = null;
+    if (!cronAuthorized) {
+      session = await requireApiSession(request);
+      if (!session.ok) return session.response;
+    }
+
+    // ---------- 2. Parse body ----------
     const raw = await readJsonBody(request);
     if (!raw.ok) return raw.response;
 
@@ -90,16 +100,10 @@ export async function POST(request: Request) {
     const { userId, type, dispatchNotification, modelOverride } = parsed.data;
     const periodKey = resolvePeriodKey(type, parsed.data.periodKey);
 
-    // ---------- 2. Authorize ----------
-    // נסה תחילה Cron/System Bearer (ל-Upstash Schedules / GitHub Actions / curl).
-    const cronAuthFailure = await authorizeCronRequest(request);
-    const cronAuthorized = cronAuthFailure === null;
-
     let firstName: string | null = null;
     let isAdminCaller = false;
     if (!cronAuthorized) {
-      const session = await requireApiSession(request);
-      if (!session.ok) return session.response;
+      if (!session || !session.ok) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
       // משתמש רגיל יכול לייצר רק לעצמו; admin – יכול לכולם.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

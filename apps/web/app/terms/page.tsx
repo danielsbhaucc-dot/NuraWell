@@ -3,8 +3,9 @@ import Link from 'next/link';
 import { FileText, AlertTriangle, HeartPulse, Sparkles } from 'lucide-react';
 import { LegalShell } from '@/components/legal/LegalShell';
 import { LegalCard, LegalSection, LegalCallout } from '@/components/legal/LegalParts';
+import { LEGAL_SUPPORT_EMAIL } from '@/lib/legal/contact';
 
-const UPDATED_AT = '16 ביוני 2026';
+const UPDATED_AT = '19 באוקטובר 2026';
 
 export const metadata: Metadata = {
   title: 'תנאי שימוש',
@@ -204,7 +205,7 @@ export default function TermsPage() {
         <LegalSection num="19" title="יצירת קשר">
           <p>
             בכל שאלה בנוגע לתנאי השימוש ניתן לפנות אלינו בדוא&quot;ל:{' '}
-            <a href="mailto:support@nurawell.ai">support@nurawell.ai</a>.
+            <a href={`mailto:${LEGAL_SUPPORT_EMAIL}`}>{LEGAL_SUPPORT_EMAIL}</a>.
           </p>
         </LegalSection>
       </LegalCard>
