@@ -50,10 +50,12 @@ async function patchState(db: SupabaseClient, patch: Record<string, unknown>) {
   await db.from('gideon_settings').upsert({ id: 1, ...patch }, { onConflict: 'id' });
 }
 
+export const OWNER_SECURITY_TOOLS = new Set(['ops_sign_out_everywhere', 'ops_forget_device', 'ops_forget_all_devices']);
 const SENSITIVE_TABLES = new Set(['profiles', 'subscriptions', 'site_settings']);
 /** Sensitive = irreversible, permission/security-relevant, or bulk. Everything else stays one-tap. */
 export function isSensitive(tool: string, args: Record<string, unknown>, destructive = false): boolean {
   if (destructive || tool === 'db_delete' || tool === 'delete_user') return true;
+  if (OWNER_SECURITY_TOOLS.has(tool)) return true; // Face ID (if registered) before session/device changes
   if (tool === 'db_update') {
     const match = (args.match ?? {}) as Record<string, unknown>;
     if (!('id' in match) && !('user_id' in match)) return true; // bulk

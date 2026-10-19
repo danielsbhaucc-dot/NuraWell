@@ -542,6 +542,43 @@ const DEV: CeoTool[] = [
     },
   },
   {
+    name: 'ops_devices_list',
+    description: 'List Daniel\'s trusted Ops devices (id, name, last seen). Use when Daniel says "נתק אותי" / "תשכח את המכשיר" / "תשכח אותי": show the list and offer exactly three options: (1) ops_sign_out_everywhere, (2) ops_forget_device for one device, (3) ops_forget_all_devices. Never delete the account or any data.',
+    schema: z.object({}),
+    write: false,
+    run: async (db) => {
+      const { ownerAdminId } = await import('@/lib/ops/owner-actions');
+      const { listDevices } = await import('@/lib/ops/device-trust');
+      const uid = await ownerAdminId(db);
+      const list = await listDevices(db, uid);
+      return { devices: list.map((d) => ({ id: d.id, name: d.label, via: d.via, lastSeen: d.last_seen_at })), options: ['ops_sign_out_everywhere', 'ops_forget_device', 'ops_forget_all_devices'] };
+    },
+  },
+  {
+    name: 'ops_sign_out_everywhere',
+    description: 'Log Daniel out everywhere: revokes all his sessions (main site + Ops). Trusted devices stay trusted. Only on Daniel\'s explicit request in this chat. Confirm only after the result says verified.',
+    schema: z.object({}),
+    write: true,
+    summarize: () => 'ניתוק מכל החיבורים (אתר + Ops) בכל המכשירים. המכשירים נשארים מאושרים.',
+    run: async (db) => (await import('@/lib/ops/owner-actions')).signOutEverywhere(db),
+  },
+  {
+    name: 'ops_forget_device',
+    description: 'Forget one trusted Ops device (by id from ops_devices_list). Next login from it needs new-device approval. Confirm only after verified.',
+    schema: z.object({ deviceId: uuid }),
+    write: true,
+    summarize: (a) => `שכחת מכשיר מאושר (${String(a.deviceId).slice(0, 8)}…). כניסה הבאה ממנו תדרוש אישור מכשיר חדש.`,
+    run: async (db, a) => (await import('@/lib/ops/owner-actions')).forgetDevice(db, String(a.deviceId)),
+  },
+  {
+    name: 'ops_forget_all_devices',
+    description: 'Forget ALL trusted Ops devices and sign out everywhere. Next login on any device needs new-device approval. Never deletes the account or data. Confirm only after verified.',
+    schema: z.object({}),
+    write: true,
+    summarize: () => 'שכחת כל המכשירים המאושרים + ניתוק מכל החיבורים. כל כניסה הבאה תדרוש אישור מכשיר חדש.',
+    run: async (db) => (await import('@/lib/ops/owner-actions')).forgetAllDevices(db),
+  },
+  {
     name: 'report_ops_lockout',
     description: 'LAST RESORT, only when Daniel himself (this chat) says he is locked out of Ops and every approval method failed. Files a sensitive lockout item for Or. Never on behalf of anyone else. Afterwards tell Daniel Or will handle it and point him to the self-service emergency guide.',
     schema: z.object({ what_failed_he: z.string().min(3).max(600) }),

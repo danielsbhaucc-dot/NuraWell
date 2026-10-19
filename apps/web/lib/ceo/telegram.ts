@@ -1,6 +1,7 @@
 import { stripOpsLinks, type CeoButton, type CeoChannel } from './channel';
 import { mdToPlain, mdToTelegramHtml } from './format';
 import { defaultGate, type OutboundGate } from './outbound';
+import { logDelivery } from '@/lib/logging/delivery';
 
 const tgButton = (b: CeoButton) =>
   b.webApp ? { text: b.text, web_app: { url: b.webApp } } : b.url ? { text: b.text, url: b.url } : { text: b.text, callback_data: b.data };
@@ -29,7 +30,17 @@ async function api(method: string, body: unknown, fetchImpl: typeof fetch = fetc
     body: JSON.stringify(body),
   });
   // never include the URL (it contains the token) in errors
-  if (!r.ok) throw new Error(`telegram ${method} failed: ${r.status} ${(await r.text().catch(() => '')).slice(0, 200)}`);
+  const chat = (body as { chat_id?: unknown } | null)?.chat_id;
+  const isSend = /^send/.test(method);
+  if (!r.ok) {
+    const err = new Error(`telegram ${method} failed: ${r.status} ${(await r.text().catch(() => '')).slice(0, 200)}`);
+    if (isSend) await logDelivery({ channel: 'telegram', purpose: method, recipient: chat != null ? String(chat) : null, ok: false, error: err });
+    throw err;
+  }
+  if (isSend) {
+    const id = await r.clone().json().then((j: { result?: { message_id?: number } }) => j?.result?.message_id ?? null).catch(() => null);
+    await logDelivery({ channel: 'telegram', purpose: method, recipient: chat != null ? String(chat) : null, ok: true, providerId: id != null ? String(id) : null });
+  }
   return r;
 }
 

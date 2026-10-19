@@ -15,6 +15,13 @@ export const maxDuration = 30;
  * Route Handlers must not NextResponse.rewrite() to /__nf — that 500s on the Ops host.
  * Bounce to a nonexistent path so middleware serves the same stealth HTML 404.
  */
+async function fail(request: NextRequest, reason: string, userId: string | null = null) {
+  try {
+    await createAdminClient().from('admin_audit_log').insert({ actor_id: userId, method: 'SECURITY', path: 'ops_ingest_rejected', detail: { reason } });
+  } catch { /* best-effort */ }
+  return notFound(request);
+}
+
 function notFound(request: NextRequest) {
   const url = request.nextUrl.clone();
   url.pathname = `/.well-known/nw-missing/${Date.now().toString(36)}`;
@@ -33,7 +40,7 @@ export async function GET(request: NextRequest) {
     if (process.env.NODE_ENV === 'production' && !isOpsHostname(host) && !isOpsPreviewHostname(host)) return notFound(request);
     const ip = (request.headers.get('x-real-ip') || request.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown').trim();
     const rl = await consumeRateLimit({ key: ip, namespace: 'ops-ingest', limit: 10, windowSeconds: 600 });
-    if (!rl.ok) return notFound(request);
+    if (!rl.ok) return notFound(request); // not logged: would let a flood write rows
 
     const token = (request.nextUrl.searchParams.get('t') ?? '').trim();
     // Cheap reject before admin client / DB — still goes through the same bounce→404 path.
@@ -41,15 +48,15 @@ export async function GET(request: NextRequest) {
 
     const db = createAdminClient();
     const claim = await claimHandoff(db, token, request.headers);
-    if (!claim.ok) return notFound(request);
+    if (!claim.ok) return fail(request, `claim_${claim.reason}`);
 
     const { data: u } = await db.auth.admin.getUserById(claim.userId);
     const email = u.user?.email;
-    if (!email) return notFound(request);
+    if (!email) return fail(request, 'no_email', claim.userId);
     // server-side magic-link token (never emailed) → verified right here → fresh session for this host
     const { data: link, error: linkErr } = await db.auth.admin.generateLink({ type: 'magiclink', email });
     const tokenHash = link?.properties?.hashed_token;
-    if (linkErr || !tokenHash) return notFound(request);
+    if (linkErr || !tokenHash) return fail(request, 'link_failed', claim.userId);
 
     const response = NextResponse.redirect(new URL('/', request.url));
     response.headers.set('Cache-Control', 'no-store, max-age=0');
@@ -62,13 +69,13 @@ export async function GET(request: NextRequest) {
       },
     });
     const { data: v, error } = await supabase.auth.verifyOtp({ type: 'magiclink', token_hash: tokenHash });
-    if (error || v.user?.id !== claim.userId) return notFound(request);
+    if (error || v.user?.id !== claim.userId) return fail(request, 'verify_failed', claim.userId);
 
     const dev = await createTrustedDevice(db, claim.userId, deviceLabel(request.headers.get('user-agent')), 'handoff', claim.deviceId);
     response.cookies.set(DEVICE_COOKIE, dev, cookieOpts(DEVICE_MAX_AGE_S));
     await audit(db, claim.userId, 'ops_session_minted', { parent: claim.deviceId });
     return response;
   } catch {
-    return notFound(request);
+    return fail(request, 'exception');
   }
 }
