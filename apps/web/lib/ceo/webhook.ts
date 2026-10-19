@@ -2,7 +2,7 @@ import { withAiUsage } from '@/lib/ai/usage-meter';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { timingSafeEqualStr } from '@/lib/api/timing-safe-equal';
 import { consumeRateLimit } from '@/lib/api/rate-limit';
-import { decideAction, setActionTarget } from './actions';
+import { approvalCard, decideAction, setActionTarget } from './actions';
 import { runCeoTurn } from './agent';
 import type { CeoChannel } from './channel';
 import { allowedChatIds } from './channel';
@@ -73,6 +73,20 @@ async function handleTelegramUpdateInner(db: SupabaseClient, channel: CeoChannel
       const msg = !t ? 'המשימה לא נמצאה.' : kind === 'td' ? `✅ סגרתי: ${t.title}` : `⏰ נדחה ל${kind === 'ts' ? 'מחר' : 'שבוע'}: ${t.title}`;
       await channel.ack({ callbackId: cb.id, chatId, messageId: cb.message?.message_id }, msg);
       return { task: kind };
+    }
+    if (kind === 'fd') {
+      await channel.ack({ callbackId: cb.id, chatId });
+      await channel.typing?.(chatId);
+      const { proposeForwardFromDraft, extractFinding } = await import('./dev-forward');
+      const r = await proposeForwardFromDraft(db, id, { extract: extractFinding }).catch(() => null);
+      if (!r) await channel.send(chatId, 'לא מצאתי את הסיכום הזה. אפשר לכתוב לי מה להעביר לאור.');
+      else if ('already' in r) await channel.send(chatId, 'הממצאים מהסיכום הזה כבר הועברו לאור.');
+      else if ('none' in r) await channel.send(chatId, 'לא מצאתי בסיכום הזה ממצא טכני להעביר לאור.');
+      else {
+        const card = approvalCard(r.action);
+        await channel.send(chatId, card.text, card.buttons);
+      }
+      return { forward: true };
     }
     if (kind === 't') {
       const card = await setActionTarget(db, id, cb.data.split(':')[3] ?? '');
