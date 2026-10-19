@@ -65,6 +65,7 @@ export function ChallengeEatingWindowClient() {
 
           <div
             className="prose prose-invert prose-sm mt-6 max-w-none leading-relaxed text-white/80 prose-p:my-3 prose-strong:text-emerald-200"
+            // skipcq: JS-0440 -- HTML is sanitized (allowlist) on save and on render
             dangerouslySetInnerHTML={{ __html: sanitizeLessonHtml(lesson.body_html) }}
           />
 

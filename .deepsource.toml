@@ -17,14 +17,16 @@ exclude_patterns = [
 
 [[analyzers]]
 name = "javascript"
+enabled = true
 
   [analyzers.meta]
   plugins = ["react"]
-  environment = ["nodejs", "browser"]
+  environment = ["nodejs", "browser", "vitest"]
   # Next.js app is ES modules + TypeScript: exported top-level functions are module-scoped (JS-0067 false positive).
   module_system = "es-modules"
   dialect = "typescript"
-  skip_doc_coverage = ["module", "function", "class"]
+  cyclomatic_complexity_threshold = "high"
+  skip_doc_coverage = ["function-expression", "arrow-function-expression", "class-expression", "method-definition"]
 
 [[analyzers]]
 name = "secrets"
