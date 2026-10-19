@@ -136,10 +136,11 @@ ${i.subheading ? `<p dir="rtl" align="center" style="margin:10px 0 0;color:#d6ec
   // "חפיפה" בטוחה ל-Gmail: שורה שחצייה העליון בצבע ההדר והתחתון בצבע הגוף, והכרטיס יושב באמצע (בלי margin שלילי).
   const intro = i.introHtml
     ? `<tr><td dir="rtl" align="center" bgcolor="${C.card}" style="direction:rtl;background-color:${C.card};background-image:url('${origin}/brand/email-header-tab.png');background-repeat:repeat-x;background-position:top center;padding:0 12px" background="${origin}/brand/email-header-tab.png">
-${table(`<tr>${td(`background:${C.cream};border:1px solid #e6d9b8;border-top:4px solid ${C.gold};border-bottom:3px solid #d9cba4;border-radius:28px;padding:20px 18px 6px;box-shadow:0 2px 4px rgba(15,61,46,0.10),0 18px 40px rgba(15,61,46,0.28)`, i.introHtml, ` bgcolor="${C.cream}"`)}</tr>`, 'border-collapse:separate')}
+${table(`<tr>${td(`background:${C.cream};border:1px solid #e6e1d3;border-top:4px solid ${C.gold};border-bottom:3px solid #d9cba4;border-radius:28px;padding:20px 18px 6px;box-shadow:0 2px 4px rgba(15,61,46,0.10),0 18px 40px rgba(15,61,46,0.28)`, i.introHtml, ` bgcolor="${C.cream}"`)}</tr>`, 'border-collapse:separate')}
+<img src="${origin}/brand/email-card-shadow.png" width="100%" height="18" alt="" style="display:block;width:100%;height:18px;border:0;outline:none;margin:0 auto">
 </td></tr>`
     : `<tr><td height="4" bgcolor="${C.gold}" style="height:4px;line-height:4px;font-size:0;background:${C.gold}">&nbsp;</td></tr>`;
-  const body = `<tr>${td(`background:${C.card};border-radius:0 0 34px 34px;padding:${i.introHtml ? '24px' : '28px'} 18px 30px`, `${i.bodyHtml}${i.cta ? button(i.cta.label, i.cta.url) : ''}${i.afterCtaHtml ? emailDivider() + i.afterCtaHtml : ''}${i.signatureHtml ?? ''}`, ` bgcolor="${C.card}"`)}</tr>`;
+  const body = `<tr>${td(`background:${C.card};border-radius:0 0 34px 34px;padding:${i.introHtml ? '10px' : '28px'} 18px 30px`, `${i.bodyHtml}${i.cta ? button(i.cta.label, i.cta.url) : ''}${i.afterCtaHtml ? emailDivider() + i.afterCtaHtml : ''}${i.signatureHtml ?? ''}`, ` bgcolor="${C.card}"`)}</tr>`;
   const footer = `<tr><td dir="rtl" align="center" style="direction:rtl;text-align:center;padding:24px 18px 0">
 <div style="width:44px;height:4px;border-radius:2px;background:${C.gold};opacity:0.55;margin:0 auto 16px;font-size:0;line-height:0">&nbsp;</div>
 <p dir="rtl" align="center" style="margin:0 0 6px;color:${C.muted};font-family:${EMAIL_FONT};font-size:13px;line-height:1.65;direction:rtl;text-align:center">את התיבה הזאת אף אחד לא קורא (גם לא דולב 🙈), אז תשובות לכאן לא יגיעו.<br>יש שאלה? כתבו לנו ל-<a href="mailto:${support}" dir="ltr" style="color:${C.brand700};text-decoration:underline">${support}</a> ונחזור אליכם.</p>
