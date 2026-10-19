@@ -11,9 +11,19 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
 
-/** Anything wrong → the same generic 404 as any missing page (no hints). */
+/**
+ * Route Handlers must not NextResponse.rewrite() to /__nf — that 500s on the Ops host.
+ * Bounce to a nonexistent path so middleware serves the same stealth HTML 404.
+ */
 function notFound(request: NextRequest) {
-  return NextResponse.rewrite(new URL('/__nf', request.url), { status: 404 });
+  const url = request.nextUrl.clone();
+  url.pathname = `/.well-known/nw-missing/${Date.now().toString(36)}`;
+  url.search = '';
+  const res = NextResponse.redirect(url, 307);
+  res.headers.set('Cache-Control', 'no-store, max-age=0');
+  res.headers.set('X-Robots-Tag', 'noindex, nofollow');
+  res.headers.set('Referrer-Policy', 'no-referrer');
+  return res;
 }
 
 /** Ops host: claim a one-time handoff (60 s) and mint a NEW Ops session + child device cookie. */
@@ -25,8 +35,12 @@ export async function GET(request: NextRequest) {
     const rl = await consumeRateLimit({ key: ip, namespace: 'ops-ingest', limit: 10, windowSeconds: 600 });
     if (!rl.ok) return notFound(request);
 
+    const token = (request.nextUrl.searchParams.get('t') ?? '').trim();
+    // Cheap reject before admin client / DB — still goes through the same bounce→404 path.
+    if (token.length < 16) return notFound(request);
+
     const db = createAdminClient();
-    const claim = await claimHandoff(db, request.nextUrl.searchParams.get('t') ?? '', request.headers);
+    const claim = await claimHandoff(db, token, request.headers);
     if (!claim.ok) return notFound(request);
 
     const { data: u } = await db.auth.admin.getUserById(claim.userId);
@@ -55,7 +69,6 @@ export async function GET(request: NextRequest) {
     await audit(db, claim.userId, 'ops_session_minted', { parent: claim.deviceId });
     return response;
   } catch {
-    // Never leak stack/status differences for a failed claim — same generic 404 as any missing page.
     return notFound(request);
   }
 }
