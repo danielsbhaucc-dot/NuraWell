@@ -159,7 +159,7 @@ export default function OpsGuideDetailPage() {
       </Link>
 
       <div className="crystal-header rounded-2xl px-5 py-3 flex items-center justify-between gap-3">
-        <h1 className="text-xl font-black text-white">עריכת מדריך</h1>
+        <h1 className="text-xl font-black text-cream">עריכת מדריך</h1>
         <button
           type="button"
           onClick={() => void saveGuide()}
@@ -246,7 +246,7 @@ export default function OpsGuideDetailPage() {
                     setBgKey('');
                     void saveBackground('');
                   }}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-rose-500/90 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-rose-500"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-rose-500/90 px-3 py-1.5 text-xs font-bold text-cream shadow-sm hover:bg-rose-500"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                   הסר

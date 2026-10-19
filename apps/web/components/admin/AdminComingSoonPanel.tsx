@@ -88,10 +88,10 @@ function GlassAudioPlayer({ src, title }: { src: string; title: string | null })
         <button
           type="button"
           onClick={toggle}
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-600/40 transition active:scale-95"
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-emerald-500 to-teal-600 text-cream shadow-lg shadow-emerald-600/40 transition active:scale-95"
           aria-label={playing ? 'השהה' : 'נגן'}
         >
-          {playing ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 translate-x-px fill-white" />}
+          {playing ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 translate-x-px fill-cream" />}
         </button>
         <div className="min-w-0 flex-1">
           <p className="flex items-center gap-1.5 truncate text-sm font-bold text-slate-800">
@@ -207,12 +207,12 @@ function AdminComingSoonSongSection() {
 
   return (
     <section
-      className="relative overflow-hidden rounded-3xl border border-white/40 bg-background-card/40 p-5 backdrop-blur-xl"
+      className="relative overflow-hidden rounded-3xl border border-cream/40 bg-background-card/40 p-5 backdrop-blur-xl"
       dir="rtl"
     >
       <div className="pointer-events-none absolute -inset-e-16 -top-16 h-40 w-40 rounded-full bg-emerald-400/20 blur-3xl" />
       <div className="relative flex items-center gap-3">
-        <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-linear-to-br from-emerald-500 to-teal-600 text-white shadow-md">
+        <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-linear-to-br from-emerald-500 to-teal-600 text-cream shadow-md">
           <Music4 className="h-5 w-5" />
         </span>
         <div>
@@ -250,7 +250,7 @@ function AdminComingSoonSongSection() {
               onSelect: (a) => void applyAsset(a),
             })
           }
-          className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-linear-to-l from-emerald-600 to-teal-600 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-emerald-600/30 transition hover:from-emerald-700 hover:to-teal-700 disabled:opacity-50"
+          className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-linear-to-l from-emerald-600 to-teal-600 px-4 py-2 text-sm font-bold text-cream shadow-lg shadow-emerald-600/30 transition hover:from-emerald-700 hover:to-teal-700 disabled:opacity-50"
         >
           {applyBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Music4 className="h-4 w-4" />}
           {songUrl ? 'החלף שיר' : 'בחר שיר'}

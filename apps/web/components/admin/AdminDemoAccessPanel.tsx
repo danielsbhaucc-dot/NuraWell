@@ -282,7 +282,7 @@ export function AdminDemoAccessPanel() {
         <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
       ) : null}
 
-      <section className="rounded-3xl border border-teal-200/60 bg-linear-to-br from-teal-50/80 via-white to-amber-50/50 p-5 shadow-xs sm:p-6">
+      <section className="rounded-3xl border border-teal-200/60 bg-linear-to-br from-teal-50/80 via-cream to-amber-50/50 p-5 shadow-xs sm:p-6">
         <h2 className="text-lg font-black text-slate-900">פתיחת גישת דמו</h2>
         <p className="mt-1 text-sm text-slate-600">
           לינק + סיבה + שם אורח (אופציונלי) + סיסמה זמנית (אופציונלי). האורח רואה את נתוני משתמש היעד
@@ -298,7 +298,7 @@ export function AdminDemoAccessPanel() {
               value={defaultTargetId}
               disabled={busy === 'default'}
               onChange={(e) => void saveDefaultTarget(e.target.value)}
-              className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-sm"
+              className="w-full rounded-2xl border border-slate-200 bg-cream px-3 py-2.5 text-sm"
             >
               <option value="">לא הוגדר</option>
               {users.map((u) => (
@@ -315,7 +315,7 @@ export function AdminDemoAccessPanel() {
               value={userQuery}
               onChange={(e) => setUserQuery(e.target.value)}
               placeholder="שם / אימייל / test / admin…"
-              className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-sm"
+              className="w-full rounded-2xl border border-slate-200 bg-cream px-3 py-2.5 text-sm"
             />
           </label>
 
@@ -324,7 +324,7 @@ export function AdminDemoAccessPanel() {
             <select
               value={targetUserId}
               onChange={(e) => setTargetUserId(e.target.value)}
-              className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-sm"
+              className="w-full rounded-2xl border border-slate-200 bg-cream px-3 py-2.5 text-sm"
             >
               <option value="">בחרו משתמש…</option>
               {filteredUsers.map((u) => (
@@ -343,7 +343,7 @@ export function AdminDemoAccessPanel() {
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="למשל: הדגמה למפתח / סקירת מוצר לרופא"
-              className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-sm"
+              className="w-full rounded-2xl border border-slate-200 bg-cream px-3 py-2.5 text-sm"
             />
           </label>
 
@@ -353,7 +353,7 @@ export function AdminDemoAccessPanel() {
               value={guestName}
               onChange={(e) => setGuestName(e.target.value)}
               placeholder="דולב"
-              className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-sm"
+              className="w-full rounded-2xl border border-slate-200 bg-cream px-3 py-2.5 text-sm"
             />
           </label>
 
@@ -362,7 +362,7 @@ export function AdminDemoAccessPanel() {
             <select
               value={ttlMinutes}
               onChange={(e) => setTtlMinutes(Number(e.target.value))}
-              className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-sm"
+              className="w-full rounded-2xl border border-slate-200 bg-cream px-3 py-2.5 text-sm"
             >
               {TTL_OPTIONS.map((o) => (
                 <option key={o.minutes} value={o.minutes}>
@@ -379,7 +379,7 @@ export function AdminDemoAccessPanel() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="למשל: welcome-dolev"
-              className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-sm"
+              className="w-full rounded-2xl border border-slate-200 bg-cream px-3 py-2.5 text-sm"
             />
           </label>
 
@@ -392,7 +392,7 @@ export function AdminDemoAccessPanel() {
               value={maxClaims}
               onChange={(e) => setMaxClaims(e.target.value)}
               placeholder="ללא הגבלה"
-              className="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-sm"
+              className="w-full rounded-2xl border border-slate-200 bg-cream px-3 py-2.5 text-sm"
             />
           </label>
         </div>
@@ -401,7 +401,7 @@ export function AdminDemoAccessPanel() {
           type="button"
           disabled={busy === 'create' || !targetUserId || reason.trim().length < 2}
           onClick={createLink}
-          className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-teal-700 px-5 py-2.5 text-sm font-bold text-white disabled:opacity-50 sm:w-auto"
+          className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-teal-700 px-5 py-2.5 text-sm font-bold text-cream disabled:opacity-50 sm:w-auto"
         >
           {busy === 'create' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />}
           צור קישור גישה
@@ -413,7 +413,7 @@ export function AdminDemoAccessPanel() {
             <button
               type="button"
               onClick={() => copyUrl(createdUrl)}
-              className="inline-flex items-center gap-1 rounded-xl bg-emerald-700 px-3 py-2 text-xs font-bold text-white"
+              className="inline-flex items-center gap-1 rounded-xl bg-emerald-700 px-3 py-2 text-xs font-bold text-cream"
             >
               {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
               {copied ? 'הועתק' : 'העתק'}
@@ -459,7 +459,7 @@ export function AdminDemoAccessPanel() {
                     </p>
                   </div>
                   <div className="flex w-full flex-wrap gap-2 sm:w-auto">
-                    <label className="inline-flex cursor-pointer items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700">
+                    <label className="inline-flex cursor-pointer items-center gap-1 rounded-xl border border-slate-200 bg-cream px-3 py-2 text-xs font-semibold text-slate-700">
                       <ImagePlus className="h-3.5 w-3.5" />
                       רקע
                       <input
@@ -504,7 +504,7 @@ export function AdminDemoAccessPanel() {
                       type="button"
                       disabled={!!busy}
                       onClick={() => deleteLink(link.id)}
-                      className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700"
+                      className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-cream px-3 py-2 text-xs font-semibold text-slate-700"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                       מחק

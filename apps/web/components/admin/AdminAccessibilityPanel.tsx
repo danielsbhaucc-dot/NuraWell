@@ -52,7 +52,7 @@ export function AdminAccessibilityPanel() {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl border border-white/50 bg-background-card/35 p-4 backdrop-blur-xl">
+      <div className="rounded-2xl border border-cream/50 bg-background-card/35 p-4 backdrop-blur-xl">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <p className="font-display text-sm font-black text-slate-900">ביקורת alt במדיה</p>
@@ -88,8 +88,8 @@ export function AdminAccessibilityPanel() {
       </div>
 
       {audit && audit.samples.length > 0 ? (
-        <div className="overflow-hidden rounded-2xl border border-white/50 bg-background-card/30 backdrop-blur-xl">
-          <div className="border-b border-white/40 px-4 py-3">
+        <div className="overflow-hidden rounded-2xl border border-cream/50 bg-background-card/30 backdrop-blur-xl">
+          <div className="border-b border-cream/40 px-4 py-3">
             <p className="text-sm font-black text-slate-900">דוגמאות לתיקון</p>
           </div>
           <ul className="divide-y divide-slate-200/60">
@@ -106,7 +106,7 @@ export function AdminAccessibilityPanel() {
                   disabled={busyId === sample.id}
                   onClick={() => void generateAndSave(sample.id)}
                   className={cn(
-                    'inline-flex items-center gap-1 rounded-xl bg-emerald-800/85 px-3 py-2 text-xs font-bold text-white disabled:opacity-50',
+                    'inline-flex items-center gap-1 rounded-xl bg-emerald-800/85 px-3 py-2 text-xs font-bold text-cream disabled:opacity-50',
                   )}
                 >
                   {busyId === sample.id ? (

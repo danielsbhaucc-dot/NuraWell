@@ -54,7 +54,7 @@ export function OpsAdminNotificationDialog({
       zIndex={340}
       aria-labelledby="ops-notif-popup-title"
       backdropClassName="absolute inset-0 bg-slate-900/35 backdrop-blur-sm"
-      panelClassName="max-w-sm overflow-hidden rounded-3xl border border-white/50 bg-[#FFFBF5]/95 p-0 shadow-2xl backdrop-blur-xl"
+      panelClassName="max-w-sm overflow-hidden rounded-3xl border border-cream/50 bg-[#FFFBF5]/95 p-0 shadow-2xl backdrop-blur-xl"
     >
       <div className="flex items-center justify-between border-b border-[#E8D5B5] bg-[#FFF5E6]/90 px-4 py-3">
         <div className="flex items-center gap-2">
@@ -87,7 +87,7 @@ export function OpsAdminNotificationDialog({
             <Link
               href={href}
               onClick={onDismiss}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-linear-to-l from-emerald-600 to-teal-500 px-4 py-2.5 text-sm font-black text-white shadow-md"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-linear-to-l from-emerald-600 to-teal-500 px-4 py-2.5 text-sm font-black text-cream shadow-md"
             >
               <ExternalLink className="h-4 w-4" />
               פתח בפאנל

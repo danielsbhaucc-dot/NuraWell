@@ -179,7 +179,7 @@ export function AdminShell({
       >
         <div
           className={cn(
-            'flex h-full min-h-0 flex-col overscroll-contain border-e border-black/5 bg-white/95 px-3 py-5 shadow-[0_0_24px_rgba(0,0,0,0.04)] backdrop-blur-xl sm:px-4 sm:py-6',
+            'flex h-full min-h-0 flex-col overscroll-contain border-e border-black/5 bg-cream/95 px-3 py-5 shadow-[0_0_24px_rgba(0,0,0,0.04)] backdrop-blur-xl sm:px-4 sm:py-6',
             sidebarCollapsed && 'lg:px-2 lg:py-5',
           )}
         >
@@ -198,7 +198,7 @@ export function AdminShell({
               onClick={() => setSidebarOpen(false)}
               title="NuraAdmin"
             >
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-emerald-500 to-teal-600 text-lg font-black text-white shadow-lg shadow-emerald-600/35">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-emerald-500 to-teal-600 text-lg font-black text-cream shadow-lg shadow-emerald-600/35">
                 N
               </div>
               <span
@@ -214,7 +214,7 @@ export function AdminShell({
               <button
                 type="button"
                 onClick={() => setSidebarCollapsed((c) => !c)}
-                className="hidden min-h-10 min-w-10 items-center justify-center rounded-xl border border-white/50 bg-background-card/40 text-slate-700 shadow-xs backdrop-blur-md transition-colors hover:bg-background-card/70 lg:inline-flex"
+                className="hidden min-h-10 min-w-10 items-center justify-center rounded-xl border border-cream/50 bg-background-card/40 text-slate-700 shadow-xs backdrop-blur-md transition-colors hover:bg-background-card/70 lg:inline-flex"
                 aria-expanded={!sidebarCollapsed}
                 aria-label={sidebarCollapsed ? 'הרחב תפריט צד' : 'כווץ תפריט צד'}
                 title={sidebarCollapsed ? 'הרחב תפריט' : 'כווץ תפריט'}
@@ -337,7 +337,7 @@ export function AdminShell({
                 <span className={cn('truncate', !showNavLabels && 'lg:sr-only')}>אלמוג</span>
               </Link>
             ) : (
-              <div className="rounded-2xl border border-white/50 bg-background-card/35 backdrop-blur-md">
+              <div className="rounded-2xl border border-cream/50 bg-background-card/35 backdrop-blur-md">
                 <button
                   type="button"
                   onClick={() => setAlmogNavOpen((o) => !o)}
@@ -412,7 +412,7 @@ export function AdminShell({
             )}
           </nav>
 
-          <div className={cn('shrink-0 space-y-2 border-t border-white/45 pt-5', sidebarCollapsed && 'lg:pt-4')}>
+          <div className={cn('shrink-0 space-y-2 border-t border-cream/45 pt-5', sidebarCollapsed && 'lg:pt-4')}>
             <AdminMediaManagerLauncher
               className={navBtn(false, 'emerald')}
               label="ספריית מדיה"
@@ -424,7 +424,7 @@ export function AdminShell({
               onClick={() => setSidebarOpen(false)}
               className={cn(
                 navBtn(isSiteSettings, 'sky'),
-                'border border-white/40 bg-background-card/30 shadow-xs',
+                'border border-cream/40 bg-background-card/30 shadow-xs',
               )}
               title="הגדרות אתר"
             >
@@ -436,7 +436,7 @@ export function AdminShell({
               onClick={() => setSidebarOpen(false)}
               className={cn(
                 navBtn(isAccessibility, 'emerald'),
-                'border border-white/40 bg-background-card/30 shadow-xs',
+                'border border-cream/40 bg-background-card/30 shadow-xs',
               )}
               title="כלי נגישות"
             >
@@ -480,7 +480,7 @@ export function AdminShell({
               <button
                 type="button"
                 onClick={() => setSidebarOpen(true)}
-                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full bg-white text-slate-800 shadow-[0_1px_3px_rgba(0,0,0,0.08)] active:scale-[0.98]"
+                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full bg-cream text-slate-800 shadow-[0_1px_3px_rgba(0,0,0,0.08)] active:scale-[0.98]"
                 aria-label="פתח תפריט"
               >
                 <Menu size={22} />
@@ -510,7 +510,7 @@ export function AdminShell({
             <div className="flex shrink-0 items-center gap-2 sm:gap-2.5">
               <AdminNotificationsBell opsHref={opsHref} />
 
-              <div className="flex items-center gap-2.5 rounded-full bg-white py-1 pe-1 ps-2.5 shadow-[0_1px_3px_rgba(0,0,0,0.08)] sm:ps-3">
+              <div className="flex items-center gap-2.5 rounded-full bg-cream py-1 pe-1 ps-2.5 shadow-[0_1px_3px_rgba(0,0,0,0.08)] sm:ps-3">
                 <div className="hidden min-w-0 flex-col items-end leading-tight sm:flex">
                   <span className="max-w-40 truncate text-sm font-bold text-emerald-950">
                     {adminDisplayName}
@@ -521,7 +521,7 @@ export function AdminShell({
                   </span>
                 </div>
                 <div
-                  className="relative h-9 w-9 shrink-0 overflow-hidden rounded-full bg-linear-to-br from-violet-300 via-emerald-200 to-cyan-200 p-[2px] shadow-md ring-1 ring-white/70 sm:h-10 sm:w-10"
+                  className="relative h-9 w-9 shrink-0 overflow-hidden rounded-full bg-linear-to-br from-violet-300 via-emerald-200 to-cyan-200 p-[2px] shadow-md ring-1 ring-cream/70 sm:h-10 sm:w-10"
                   title={adminDisplayName}
                 >
                   <div className="relative h-full w-full overflow-hidden rounded-full bg-background-card">
@@ -556,7 +556,7 @@ export function AdminShell({
       </main>
 
       <nav
-        className="fixed bottom-0 inset-e-0 inset-s-0 z-30 flex border-t border-black/8 bg-white/90 px-1 py-1.5 backdrop-blur-xl safe-area-bottom lg:hidden"
+        className="fixed bottom-0 inset-e-0 inset-s-0 z-30 flex border-t border-black/8 bg-cream/90 px-1 py-1.5 backdrop-blur-xl safe-area-bottom lg:hidden"
         aria-label="ניווט מהיר"
       >
         <Link prefetch={false} href={homeHref} onClick={() => setSidebarOpen(false)} className={bottomNavClass(isHome)}>

@@ -141,7 +141,7 @@ export function JourneyAgentPanel({ stepId, onApply }: { stepId?: string | null;
     draft: 'bg-emerald-50 text-emerald-950 ring-1 ring-emerald-200',
     done: '',
     error: 'bg-red-50 text-red-800 ring-1 ring-red-200',
-    me: 'bg-gradient-to-l from-violet-600 to-blue-600 text-white',
+    me: 'bg-gradient-to-l from-violet-600 to-blue-600 text-cream',
   };
 
   return (
@@ -149,14 +149,14 @@ export function JourneyAgentPanel({ stepId, onApply }: { stepId?: string | null;
       {!sessionId || (!busy && lines.length === 0) ? (
         <>
           <textarea value={source} onChange={(e) => setSource(e.target.value)} disabled={busy} className="input-field min-h-[140px] leading-relaxed" placeholder="הדביקו כאן את התוכן הגולמי (תמלול / מחקרים / קישורים). הסוכן יקרא, יגיד מה הוא חושב, ישאל אם צריך, ויכתוב את כל הסעיפים חוץ מהווידאו." />
-          <button type="button" onClick={start} disabled={busy || source.trim().length < 40} className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-l from-violet-600 to-blue-600 px-4 py-2.5 text-sm font-bold text-white shadow-lg disabled:opacity-50">
+          <button type="button" onClick={start} disabled={busy || source.trim().length < 40} className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-l from-violet-600 to-blue-600 px-4 py-2.5 text-sm font-bold text-cream shadow-lg disabled:opacity-50">
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />} הפעל את הסוכן
           </button>
         </>
       ) : null}
 
       {lines.length > 0 && (
-        <div className="space-y-2 rounded-2xl bg-white/70 p-3 ring-1 ring-violet-200">
+        <div className="space-y-2 rounded-2xl bg-cream/70 p-3 ring-1 ring-violet-200">
           <div className="flex items-center justify-between text-xs font-black text-violet-900">
             <span className="flex items-center gap-1.5"><Bot className="h-4 w-4" /> סוכן המסעות {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}</span>
             <span>{progress}%</span>
@@ -191,13 +191,13 @@ export function JourneyAgentPanel({ stepId, onApply }: { stepId?: string | null;
           {!busy && sessionId && (
             <div className="flex gap-2">
               <input className="input-field flex-1" value={comment} onChange={(e) => setComment(e.target.value)} placeholder={draft ? 'בקש שינוי ("השאלות קלות מדי", "משימה פשוטה יותר")…' : 'הערה לסוכן (לא חובה)…'} onKeyDown={(e) => { if (e.key === 'Enter' && (comment.trim() || questions.length)) reply(); }} />
-              <button type="button" onClick={reply} disabled={!comment.trim() && questions.length === 0} className="inline-flex items-center gap-1 rounded-xl bg-violet-600 px-3 py-2 text-sm font-bold text-white disabled:opacity-40"><Send className="h-4 w-4 -scale-x-100" /> {questions.length ? 'ענה והמשך' : 'שלח'}</button>
+              <button type="button" onClick={reply} disabled={!comment.trim() && questions.length === 0} className="inline-flex items-center gap-1 rounded-xl bg-violet-600 px-3 py-2 text-sm font-bold text-cream disabled:opacity-40"><Send className="h-4 w-4 -scale-x-100" /> {questions.length ? 'ענה והמשך' : 'שלח'}</button>
             </div>
           )}
 
           {!busy && draft && (
             <div className="flex flex-wrap items-center gap-2">
-              <button type="button" onClick={() => { onApply(draft); setApplied(true); }} className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-700"><CheckCircle2 className="h-4 w-4" /> מלא את הטופס בטיוטה</button>
+              <button type="button" onClick={() => { onApply(draft); setApplied(true); }} className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-cream hover:bg-emerald-700"><CheckCircle2 className="h-4 w-4" /> מלא את הטופס בטיוטה</button>
               {applied ? <span className="text-xs font-semibold text-emerald-700">מולא. עברו על הסעיפים, הוסיפו וידאו ושמרו.</span> : null}
               <button type="button" onClick={() => { setSessionId(null); setLines([]); setDraft(null); setProgress(0); }} className="text-xs font-semibold text-slate-500 underline">סשן חדש</button>
             </div>

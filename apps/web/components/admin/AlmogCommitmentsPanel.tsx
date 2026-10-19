@@ -170,7 +170,7 @@ export function AlmogCommitmentsPanel({ userId }: { userId: string }) {
 
   return (
     <section className="rounded-2xl overflow-hidden" style={glassPanelStyle}>
-      <header className="flex items-start justify-between gap-3 px-4 py-3 border-b border-white/40">
+      <header className="flex items-start justify-between gap-3 px-4 py-3 border-b border-cream/40">
         <div className="flex items-center gap-2">
           <div
             className="flex h-9 w-9 items-center justify-center rounded-xl text-emerald-700"
@@ -186,7 +186,7 @@ export function AlmogCommitmentsPanel({ userId }: { userId: string }) {
           </div>
         </div>
         {!loading && total > 0 ? (
-          <span className="shrink-0 rounded-lg bg-background-card/40 px-2 py-1 text-[10px] font-bold text-emerald-900 border border-white/50">
+          <span className="shrink-0 rounded-lg bg-background-card/40 px-2 py-1 text-[10px] font-bold text-emerald-900 border border-cream/50">
             {total} פריטים
           </span>
         ) : null}

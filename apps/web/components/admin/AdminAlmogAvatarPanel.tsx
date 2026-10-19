@@ -131,7 +131,7 @@ export function AdminAlmogAvatarPanel() {
 
   return (
     <section
-      className="relative mb-6 overflow-hidden rounded-3xl border border-white/40 bg-background-card/45 p-4 shadow-[0_12px_40px_rgba(15,23,42,0.12)] backdrop-blur-2xl transition-all sm:p-6 md:p-8 sm:hover:border-emerald-400/30 sm:hover:shadow-[0_12px_44px_rgba(16,185,129,0.15)]"
+      className="relative mb-6 overflow-hidden rounded-3xl border border-cream/40 bg-background-card/45 p-4 shadow-[0_12px_40px_rgba(15,23,42,0.12)] backdrop-blur-2xl transition-all sm:p-6 md:p-8 sm:hover:border-emerald-400/30 sm:hover:shadow-[0_12px_44px_rgba(16,185,129,0.15)]"
       dir="rtl"
     >
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -168,7 +168,7 @@ export function AdminAlmogAvatarPanel() {
           ) : null}
         </div>
         <div className="flex shrink-0 justify-center sm:justify-end">
-          <div className="relative h-20 w-20 overflow-hidden rounded-2xl bg-emerald-50 shadow-md ring-2 ring-emerald-200/80 ring-offset-2 ring-offset-white">
+          <div className="relative h-20 w-20 overflow-hidden rounded-2xl bg-emerald-50 shadow-md ring-2 ring-emerald-200/80 ring-offset-2 ring-offset-cream">
             <img src={preview} alt="תצוגה מקדימה" className="h-full w-full object-cover" />
           </div>
         </div>
@@ -247,7 +247,7 @@ export function AdminAlmogAvatarPanel() {
           type="button"
           onClick={() => void onUpload()}
           disabled={!file || busy}
-          className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl bg-linear-to-l from-emerald-600 to-teal-500 px-6 py-3.5 text-base font-bold text-white shadow-lg shadow-emerald-500/30 transition-transform hover:brightness-110 active:scale-[0.98] disabled:opacity-45 disabled:shadow-none sm:w-auto sm:self-end sm:text-[15px]"
+          className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl bg-linear-to-l from-emerald-600 to-teal-500 px-6 py-3.5 text-base font-bold text-cream shadow-lg shadow-emerald-500/30 transition-transform hover:brightness-110 active:scale-[0.98] disabled:opacity-45 disabled:shadow-none sm:w-auto sm:self-end sm:text-[15px]"
         >
           {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <ImageUp className="h-5 w-5" />}
           {avatarMetaReady && hasCustom ? 'עדכן תמונת אלמוג' : 'שמור תמונת אלמוג'}
