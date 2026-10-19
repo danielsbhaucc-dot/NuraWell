@@ -4,7 +4,7 @@ import {
   __resetDeviceKey, createEmailChallenge, createTrustedDevice, decideRequest, deviceLabel, isTrustedDevice, makeCookieValue,
   newCode, parseCookieValue, redeemEmailCode, redeemEmailLink, revokeDevice, startLoginRequest, requestForPendingCookie, consumeApproved,
 } from '@/lib/ops/device-trust';
-import { claimHandoff, createHandoff } from '@/lib/ops/handoff';
+import { claimHandoff, clientFingerprint, clientIp, createHandoff, fingerprintMatches, networkPrefix } from '@/lib/ops/handoff';
 import { sessionIdFromJwt } from '@/lib/ops/device-gate';
 import { fakeDb } from './helpers/fake-db';
 
@@ -110,6 +110,34 @@ describe('handoff', () => {
     db.tables.profiles[0].role = 'user';
     expect(await claimHandoff(asDb(db), t4, hdr())).toEqual({ ok: false, reason: 'role' });
     expect((await claimHandoff(asDb(db), `${t4.split('.')[0]}.forged`, hdr())).ok).toBe(false);
+  });
+});
+
+describe('handoff fingerprint v2', () => {
+  const H = (o: Record<string, string>) => new Headers({ 'user-agent': 'UA/1', ...o });
+  it('tolerates same /24 and Cloudflare-proxied Ops host, rejects other network / UA / spoofed CF header', () => {
+    const main = clientFingerprint(H({ 'x-real-ip': '84.10.20.30', 'x-vercel-ip-country': 'IL' }));
+    expect(main.startsWith('v2|')).toBe(true);
+    expect(main).not.toContain('84.10');
+    expect(fingerprintMatches(main, H({ 'x-real-ip': '84.10.20.99', 'x-vercel-ip-country': 'IL' }))).toBe(true);
+    // Ops host behind Cloudflare: platform sees a CF edge IP, real client in CF-Connecting-IP
+    expect(fingerprintMatches(main, H({ 'x-real-ip': '172.68.1.2', 'cf-connecting-ip': '84.10.20.30', 'cf-ipcountry': 'IL', 'x-vercel-ip-country': 'US' }))).toBe(true);
+    // CF header from a non-CF client is ignored
+    expect(fingerprintMatches(main, H({ 'x-real-ip': '9.9.9.9', 'cf-connecting-ip': '84.10.20.30', 'x-vercel-ip-country': 'IL' }))).toBe(false);
+    expect(fingerprintMatches(main, H({ 'x-real-ip': '84.11.20.30', 'x-vercel-ip-country': 'IL' }))).toBe(false);
+    expect(fingerprintMatches(main, new Headers({ 'user-agent': 'UA/2', 'x-real-ip': '84.10.20.30', 'x-vercel-ip-country': 'IL' }))).toBe(false);
+  });
+  it('dual-stack: IPv6 on one host, IPv4 on the other → country must match', () => {
+    const main = clientFingerprint(H({ 'x-real-ip': '2a02:6680:1100:aa::1', 'x-vercel-ip-country': 'IL' }));
+    expect(fingerprintMatches(main, H({ 'x-real-ip': '2a02:6680:1100:bb::9', 'x-vercel-ip-country': 'IL' }))).toBe(true);
+    expect(fingerprintMatches(main, H({ 'x-real-ip': '2a02:6680:9999::1', 'x-vercel-ip-country': 'IL' }))).toBe(false);
+    expect(fingerprintMatches(main, H({ 'x-real-ip': '84.10.20.30', 'x-vercel-ip-country': 'IL' }))).toBe(true);
+    expect(fingerprintMatches(main, H({ 'x-real-ip': '84.10.20.30', 'x-vercel-ip-country': 'DE' }))).toBe(false);
+  });
+  it('networkPrefix / clientIp', () => {
+    expect(networkPrefix('1.2.3.4')).toBe(networkPrefix('1.2.3.200'));
+    expect(networkPrefix('junk')).toBe('');
+    expect(clientIp(new Headers({ 'x-real-ip': '2606:4700::1', 'cf-connecting-ip': '5.6.7.8' }))).toBe('5.6.7.8');
   });
 });
 
