@@ -11,6 +11,6 @@ export async function notifyDevForwardsDone(db: SupabaseClient): Promise<number>
   if (!chats.length) return 0;
   const ch = createTelegramChannel();
   return notifyDoneForwards(db, async (text) => {
-    for (const c of chats) await ch.send(c, text);
+    for (const c of chats) await ch.send(c, text, undefined, { kind: 'notice', topic: 'dev_forward' }); // gated (Shabbat / quiet hours)
   });
 }

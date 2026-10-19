@@ -8,6 +8,8 @@ import { CEO_CHAT_MODEL, CEO_CONTENT_MODEL, CEO_STRONG_MODEL, complete } from '.
 import { capabilityManifest, TOOL_BY_NAME, toolSpecs } from './tools';
 import { israelTimeContext } from './time-context';
 import { openOwnerTasks } from './owner-tasks';
+import { describePref, listPrefs } from './prefs';
+import { fmtIl, quietState, type OwnerPref } from './quiet';
 
 export const CEO_NAME = 'גדעון';
 type Msg = OpenAI.Chat.Completions.ChatCompletionMessageParam;
@@ -45,6 +47,7 @@ export const CEO_SYSTEM_PROMPT = `אתה ${CEO_NAME}, מנכ"ל ה-AI של NuraW
 - טיוטת שיעור: draft_lesson_content ואז create_draft_step.
 - מעקב משימות לדניאל (owner_task_*): המטרה היא SaaS שרץ לבד. כל מה שאפשר לעשות אוטומטית, עשה בעצמך או הצע לאישור. פתח משימה לדניאל רק לעבודה שדורשת אדם: צילום סרטון HeyGen, החלטה משפטית, חשבונאית או של תמחור, ופעולה בחשבון או מול ספק. ברוב הימים לא תהיה אף משימה. כשדניאל אומר שסיים, דחה או ביטל משימה, עדכן אותה מיד.
 - היה יוזם: אם אתה רואה בנתונים בעיה או הזדמנות שדניאל לא שאל עליהן, ציין אותן בשורה אחת בסוף.
+- הוראות קבועות (מתי ומה לשלוח לדניאל: "אל תשלח לי בשבת", "בלי הודעות היום", "לא לפני 8", "תפסיק עם העדכון היומי"): קודם קרא ל-owner_pref_set, ורק אחרי שהוא החזר ok אשר בקצרה. לעולם אל תגיד "סבבה"/"סגור"/"לא אשלח" בלי שמירה מוצלחת: מה שלא נשמר לא נאכף, ואתה לא זוכר אותו בשיחה הבאה. שבת קבועה → kind=shabbat. "היום/הלילה/עד מוצאי שבת" → quiet_until עם until מוכן (end_of_shabbat / end_of_today / tomorrow_morning). אם משהו לא ניתן לאכוף בקוד (kind=note), אמור את זה בכנות. אל תבטיח שום דבר שאין לך כלי לבצע.
 - לעולם אל תשלח בטלגרם כתובת של לוח הבקרה או קישור פנימי. אם צריך, כתוב "בלוח הבקרה". קישורי דמו לאורחים מותרים.
 - כשדניאל מבקש שינוי, קרא מיד לכלי המתאים (הוא רק יוצר בקשת אישור). אל תתאר שאתה "תיצור בקשה", פשוט צור אותה.
 - הבנת כוונה: דניאל כותב בעברית מדוברת, קצרה ולפעמים עם סלנג. פרש לפי הכוונה ולא לפי המילים. דוגמאות:
@@ -119,11 +122,11 @@ export async function runCeoTurn(db: SupabaseClient, chatKey: string, userText: 
     return { text, buttons: [], cards: [card] };
   }
 
-  const snapshot = await liveSnapshot(db);
+  const [snapshot, prefs] = await Promise.all([liveSnapshot(db), listPrefs(db).catch(() => [] as OwnerPref[])]);
 
   const messages: Msg[] = [
     { role: 'system', content: `${CEO_SYSTEM_PROMPT}\n\n## היכולות שלך (כל הכלים)\n${capabilityManifest()}\n• draft_lesson_content: כתיבת תוכן שיעור מלא (טקסט בלבד)` },
-    { role: 'system', content: `${israelTimeContext()}\n\nתמונת מצב חיה (24 שעות אחרונות, מ-SQL):\n${snapshot}${conv?.summary ? `\n\nסיכום שיחה קודמת: ${conv.summary}` : ''}` },
+    { role: 'system', content: `${israelTimeContext()}\n\nתמונת מצב חיה (24 שעות אחרונות, מ-SQL):\n${snapshot}\n\n${prefsContext(prefs)}${conv?.summary ? `\n\nסיכום שיחה קודמת: ${conv.summary}` : ''}` },
     ...turns,
     { role: 'user', content: userText },
   ];
@@ -132,13 +135,20 @@ export async function runCeoTurn(db: SupabaseClient, chatKey: string, userText: 
   const buttons: CeoButton[][] = [];
   const cards: { text: string; buttons: CeoButton[][] }[] = [];
   let text = '';
+  const prefSaves: { ok: boolean; description?: string }[] = [];
 
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < 7; i++) {
     const { message } = await llm({ messages, tools, model });
     messages.push(message as Msg);
     const calls = message.tool_calls ?? [];
     if (!calls.length) {
       text = message.content ?? '';
+      // Confirmed a standing instruction without saving it → one corrective round (see guardPromise).
+      if (i < 6 && needsPrefCorrection(userText, text, prefSaves) && !messages.some((m) => m.role === 'system' && String(m.content).startsWith(CORRECTION))) {
+        messages.push({ role: 'system', content: `${CORRECTION} אם דניאל ביקש כאן הוראה לגבי מתי או מה לשלוח לו, עוד לא שמרת אותה. קרא עכשיו ל-owner_pref_set ואז אשר. אם אי אפשר לאכוף את זה, אמור זאת בכנות. אם זו לא בקשה כזו, החזר את התשובה הקודמת כמות שהיא.` });
+        text = '';
+        continue;
+      }
       break;
     }
     for (const c of calls) {
@@ -156,8 +166,16 @@ export async function runCeoTurn(db: SupabaseClient, chatKey: string, userText: 
             cards.push(await approvalCardFor(db, a));
             out = { status: 'pending_approval', id: a.id };
           } else {
-            out = await t.run(db, t.schema.parse(args));
-            await audit(db, 'ceo', 'tool_read', {}, t.name);
+            try {
+              out = await t.run(db, t.schema.parse(args));
+            } catch (e) {
+              if (t.name === 'owner_pref_set') prefSaves.push({ ok: false });
+              throw e;
+            }
+            if (t.name === 'owner_pref_set') {
+              prefSaves.push({ ok: true, description: (out as { saved?: { description?: string } }).saved?.description });
+              await audit(db, 'ceo', 'owner_pref_saved', { kind: args.kind }, t.name);
+            } else await audit(db, 'ceo', 'tool_read', {}, t.name);
           }
         }
       } catch (e) {
@@ -167,9 +185,43 @@ export async function runCeoTurn(db: SupabaseClient, chatKey: string, userText: 
     }
   }
   if (!text) text = cards.length ? 'הכנתי לך טיוטה לאישור 👇' : 'לא הצלחתי להשלים, נסה לנסח שוב.';
+  text = guardPromise(userText, text, prefSaves);
 
   await saveMemory(db, chatKey, conv?.summary ?? '', [...turns, { role: 'user', content: userText }, { role: 'assistant', content: text }], llm);
   return { text, buttons, cards, model };
+}
+
+const CORRECTION = 'בדיקת מערכת:';
+/** Daniel asks for a rule about what/when Gideon messages him ("לא לשלוח לי היום", "אל תדווח בשבת", "שעות שקט"). */
+const ASKS_SEND_RULE = /(אל\s*ת|לא\s*ל|בלי\s|תפסיק|תשתיק|תעצור)[^.?!\n]{0,40}(שלח|שלוח|כתוב|עדכן|עדכונ|דווח|דוח|הודע|התרא|הפריע|ציק)|שעות\s+שקט|אל\s+תפריע|תשתיק/;
+/** The reply agrees / promises. */
+const CONFIRMS = /(סבבה|סגור|מובן|בסדר|אוקיי|אוקי|קיבלתי|רשמתי|שמרתי|אדאג|אין בעיה|בטח|לא אשלח|לא אכתוב|לא אעדכן|לא אדווח|לא אפריע|לא תקבל|לא יישלח|👍|✅)/;
+
+export function needsPrefCorrection(userText: string, reply: string, saves: { ok: boolean }[]): boolean {
+  return ASKS_SEND_RULE.test(userText) && !saves.some((x) => x.ok) && CONFIRMS.test(reply);
+}
+
+/**
+ * Hard rule: Gideon may confirm a standing instruction only after it was saved (and so enforced).
+ * Saved → append the enforced description as a receipt. Not saved → replace the promise with the truth.
+ */
+export function guardPromise(userText: string, reply: string, saves: { ok: boolean; description?: string }[]): string {
+  const ok = saves.filter((x) => x.ok);
+  if (ok.length) {
+    const receipts = ok.map((x) => x.description).filter((d): d is string => Boolean(d) && !reply.includes(d!));
+    return receipts.length ? `${reply.trim()}\n\n✅ נשמר ונאכף:\n${receipts.join('\n')}` : reply;
+  }
+  if (needsPrefCorrection(userText, reply, saves) || (saves.length && CONFIRMS.test(reply))) {
+    return '⚠️ לא הצלחתי לשמור את זה כהוראה קבועה, ולכן אני לא יכול להבטיח שזה יקרה. נסה לנסח לי שוב, או הגדר את זה בלוח הבקרה ← גדעון ← העדפות.';
+  }
+  return reply;
+}
+
+/** Active standing instructions + quiet state, for the dynamic (non-cached) context. */
+export function prefsContext(prefs: OwnerPref[], now = new Date()): string {
+  if (!prefs.length) return 'הוראות קבועות של דניאל: אין.';
+  const q = quietState(prefs, now);
+  return `הוראות קבועות של דניאל (שמורות ונאכפות בקוד בשכבת השליחה, כולל מחר ובשיחות הבאות):\n${prefs.map((p) => `• [${p.id}] ${describePref(p, now)}`).join('\n')}${q.quiet ? `\nעכשיו זמן שקט עד ${fmtIl(q.until)}: הודעות יזומות מוחזקות; תשובות ישירות לדניאל נשלחות.` : ''}`;
 }
 
 const KEEP = 8;

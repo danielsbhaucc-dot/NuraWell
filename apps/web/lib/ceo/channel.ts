@@ -1,8 +1,15 @@
+import type { OutKind } from './outbound';
 /** Channel-agnostic outbound interface (Telegram today; WhatsApp etc. later implement the same shape). */
 export type CeoButton = { text: string; data: string; url?: string; webApp?: string };
+export type SendOpts = { effect?: 'celebrate'; kind?: OutKind; topic?: string };
 export interface CeoChannel {
   readonly name: string;
-  send(chatId: string, text: string, buttons?: CeoButton[][], opts?: { effect?: 'celebrate' }): Promise<void>;
+  /**
+   * kind: 'reply' = direct answer to Daniel (always delivered). Anything else passes the outbound gate
+   * (Daniel's standing instructions: Shabbat/quiet hours → held and delivered later; muted topic → dropped).
+   * Omitted kind = 'notice' (gated) so a new code path can never bypass the gate by accident.
+   */
+  send(chatId: string, text: string, buttons?: CeoButton[][], opts?: SendOpts): Promise<void>;
   /** Acknowledge a button press and optionally replace the original message text (and keyboard). */
   ack(ref: { callbackId?: string; chatId: string; messageId?: number }, text?: string, buttons?: CeoButton[][]): Promise<void>;
   /** Optional niceties (best-effort, never throw). */

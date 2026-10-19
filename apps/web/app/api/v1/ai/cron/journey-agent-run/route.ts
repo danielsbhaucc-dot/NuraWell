@@ -25,6 +25,6 @@ export async function POST(request: Request) {
   const out = await withAiUsage({ feature: 'journey_agent' }, () => new JourneyAgent(db, s).run());
   const text = formatSessionForTelegram(out);
   const ch = createTelegramChannel();
-  for (const c of allowedChatIds()) await ch.send(c, text).catch(() => {});
+  for (const c of allowedChatIds()) await ch.send(c, text, undefined, { kind: 'report', topic: 'agent_report' }).catch(() => {});
   return NextResponse.json({ ok: true, status: out.status });
 }

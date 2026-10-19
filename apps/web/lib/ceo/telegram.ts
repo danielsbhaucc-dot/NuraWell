@@ -1,5 +1,6 @@
 import { stripOpsLinks, type CeoButton, type CeoChannel } from './channel';
 import { mdToPlain, mdToTelegramHtml } from './format';
+import { defaultGate, type OutboundGate } from './outbound';
 
 const tgButton = (b: CeoButton) =>
   b.webApp ? { text: b.text, web_app: { url: b.webApp } } : b.url ? { text: b.text, url: b.url } : { text: b.text, callback_data: b.data };
@@ -45,10 +46,15 @@ export function splitMessage(text: string, max = MAX): string[] {
   return out;
 }
 
-export function createTelegramChannel(fetchImpl: typeof fetch = fetch, getToken: () => Promise<string | null> = resolveBotToken): CeoChannel {
+export function createTelegramChannel(fetchImpl: typeof fetch = fetch, getToken: () => Promise<string | null> = resolveBotToken, gate: OutboundGate = defaultGate): CeoChannel {
   return {
     name: 'telegram',
     async send(chatId, text, buttons, opts) {
+      // The ONE enforcement point for Daniel's standing instructions (Shabbat, quiet hours, muted topics).
+      const kind = opts?.kind ?? 'notice';
+      if (kind !== 'reply' && kind !== 'outbox') {
+        if ((await gate({ chatId, text, buttons, kind, topic: opts?.topic })) !== 'send') return;
+      }
       // message effects work only in private chats (positive ids)
       const effect = opts?.effect === 'celebrate' && /^\d+$/.test(chatId) ? { message_effect_id: EFFECT_CELEBRATE } : {};
       const parts = splitMessage(stripOpsLinks(text));
