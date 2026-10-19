@@ -5,8 +5,7 @@ import { withAiUser } from '@/lib/ai/usage-meter';
 import { insertNotification } from '@/lib/notifications/deliver';
 import { evaluateNotifyGate, filterNotifyEligibleUserIds } from '@/lib/notifications/notify-recipients';
 import { NextResponse } from 'next/server';
-import { deepseek } from '@/lib/ai/client';
-import { getDeepseekAnalysisModel } from '@/lib/ai/deepseek-model';
+import { openrouter } from '@/lib/ai/client';
 import {
   buildCronOpsNotification,
   daysSinceIso,
@@ -30,6 +29,18 @@ import { authorizeCronRequest } from '@/lib/api/authorize-cron';
 import { maybeReturnCronIdleSkip } from '@/lib/api/cron-idle-guard';
 import { runMemoryConsolidationBatch } from '@/lib/ai/memory-consolidation/run-batch';
 import { createAdminClient } from '@/lib/supabase/admin';
+
+/** Strip emails/phones/UUIDs before any external LLM. Prefer OpenRouter over DeepSeek for user content. */
+function redactTranscriptForExternalAi(text: string): string {
+  return text
+    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '[email]')
+    .replace(/\+?\d[\d\s\-()]{7,}\d/g, '[phone]')
+    .replace(
+      /\b[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b/gi,
+      '[id]',
+    );
+}
+
 
 /** Batch ארוך + memory consolidation — Node לזמן הרצה ארוך יותר מבשרת Vercel Edge */
 
@@ -248,15 +259,21 @@ async function runMasterCron() {
           .map((r) => `[${r.role}${r.context_type ? `/${r.context_type}` : ''}] ${r.content}`)
           .join('\n');
 
-        const analysisModel = getDeepseekAnalysisModel();
-        const completion = await withAiUser(userId, () => deepseek.chat.completions.create({
-          model: analysisModel,
-          temperature: 0.2,
-          messages: [
-            { role: 'system', content: ANALYSIS_PROMPT },
-            { role: 'user', content: `תמליל אינטראקציות (24 שעות אחרונות):\n\n${transcript}` },
-          ],
-        }));
+        const safeTranscript = redactTranscriptForExternalAi(transcript);
+        // Do not send personal transcripts to DeepSeek (CN data residency). OpenRouter + redaction only.
+        const completion = await withAiUser(userId, () =>
+          openrouter.chat.completions.create({
+            model: process.env.OPENROUTER_ANALYSIS_MODEL?.trim() || 'openai/gpt-4o-mini',
+            temperature: 0.2,
+            messages: [
+              { role: 'system', content: ANALYSIS_PROMPT },
+              {
+                role: 'user',
+                content: `תמליל אינטראקציות (24 שעות אחרונות, מזהים הוסרו):\n\n${safeTranscript}`,
+              },
+            ],
+          }),
+        );
 
         const raw = completion.choices[0]?.message?.content?.trim();
         if (!raw) throw new Error('Empty analysis model output');
