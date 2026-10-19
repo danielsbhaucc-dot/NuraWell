@@ -11,15 +11,22 @@ import { audit } from './device-trust';
 export const HANDOFF_TTL_MS = 60_000;
 const sha = (s: string) => createHash('sha256').update(s).digest('hex');
 
+/**
+ * Bound to the browser (user-agent), NOT the IP: the main site (vercel.app) and Ops (Cloudflare-proxied
+ * ops.nurawell.ai) see different client IPs (proxy egress, IPv4 vs IPv6 on mobile), which made every
+ * legitimate handoff fail as "client mismatch". The token is still 256-bit, single-use, 60 s, delivered
+ * only by redirect to the same browser, and requires a live trusted parent device + admin role.
+ */
 export function clientFingerprint(h: Headers): string {
-  const ip = (h.get('x-real-ip') || h.get('x-forwarded-for')?.split(',')[0] || '').trim();
-  return sha(`${h.get('user-agent') ?? ''}|${ip}`);
+  return sha(`${h.get('user-agent') ?? ''}`);
 }
+const clientIp = (h: Headers) => (h.get('cf-connecting-ip') || h.get('x-real-ip') || h.get('x-forwarded-for')?.split(',')[0] || '').trim();
+const ipNet = (ip: string) => (ip.includes(':') ? ip.split(':').slice(0, 4).join(':') : ip.split('.').slice(0, 3).join('.'));
 
 export async function createHandoff(db: SupabaseClient, userId: string, deviceId: string, h: Headers): Promise<string> {
   const secret = randomBytes(32).toString('base64url');
   const { data, error } = await db.from('ops_handoff_tokens').insert({
-    user_id: userId, device_id: deviceId, token_hash: sha(secret), client_hash: clientFingerprint(h),
+    user_id: userId, device_id: deviceId, token_hash: sha(secret), client_hash: clientFingerprint(h), ip_net_hash: sha(ipNet(clientIp(h))),
     expires_at: new Date(Date.now() + HANDOFF_TTL_MS).toISOString(),
   }).select('id').single();
   if (error || !data) throw new Error(`handoff: ${error?.message}`);
@@ -33,8 +40,8 @@ export type HandoffClaim = { ok: true; userId: string; deviceId: string } | { ok
 export async function claimHandoff(db: SupabaseClient, token: string, h: Headers, now = Date.now()): Promise<HandoffClaim> {
   const [id, secret] = (token ?? '').split('.');
   if (!id || !secret || !/^[0-9a-f-]{36}$/.test(id) || secret.length > 64) return { ok: false, reason: 'malformed' };
-  const { data } = await db.from('ops_handoff_tokens').select('id, user_id, device_id, token_hash, client_hash, expires_at, used_at').eq('id', id).maybeSingle();
-  const r = data as { id: string; user_id: string; device_id: string; token_hash: string; client_hash: string; expires_at: string; used_at: string | null } | null;
+  const { data } = await db.from('ops_handoff_tokens').select('id, user_id, device_id, token_hash, client_hash, ip_net_hash, expires_at, used_at').eq('id', id).maybeSingle();
+  const r = data as { id: string; user_id: string; device_id: string; token_hash: string; client_hash: string; ip_net_hash: string | null; expires_at: string; used_at: string | null } | null;
   const eq = (a: string, b: string) => a.length === b.length && timingSafeEqual(Buffer.from(a), Buffer.from(b));
   if (!r || !eq(r.token_hash, sha(secret))) return { ok: false, reason: 'unknown' };
   if (r.used_at) { await audit(db, r.user_id, 'ops_handoff_replay', { id }); return { ok: false, reason: 'replay' }; }
@@ -47,6 +54,8 @@ export async function claimHandoff(db: SupabaseClient, token: string, h: Headers
   if (!d || d.revoked_at || d.user_id !== r.user_id) return { ok: false, reason: 'device' };
   const { data: prof } = await db.from('profiles').select('role').eq('id', r.user_id).maybeSingle();
   if ((prof as { role?: string } | null)?.role !== 'admin') return { ok: false, reason: 'role' };
-  await audit(db, r.user_id, 'ops_handoff_used', { id });
+  // network change is normal across the two hosts; record it (no IP stored) for the anomaly view
+  const netChanged = Boolean(r.ip_net_hash) && r.ip_net_hash !== sha(ipNet(clientIp(h)));
+  await audit(db, r.user_id, 'ops_handoff_used', { id, ...(netChanged ? { reason: 'network_changed' } : {}) });
   return { ok: true, userId: r.user_id, deviceId: r.device_id };
 }
