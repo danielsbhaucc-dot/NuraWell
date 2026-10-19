@@ -23,10 +23,10 @@ export async function POST(request: Request) {
   if (!v.ok) return NextResponse.json({ ok: false, error: v.error }, { status: 403, ...noStore });
   if (v.purpose === 'approve' && v.actionId) {
     const r = await decideAction(db, v.actionId, true, 'admin:faceid', { stepupVerified: true });
-    await alertOwner(r.text);
+    await alertOwner(r.text, 'reply'); // result of Daniel's own Face ID approval
     return NextResponse.json({ ok: r.ok, text: r.ok ? 'בוצע.' : 'לא הצלחתי לבצע.' }, noStore);
   }
   const text = { unlock: 'גדעון שוחרר ופעיל.', settings: 'ההגדרות נשמרו.', remove_key: 'המכשיר הוסר.' }[v.purpose as 'unlock'] ?? 'אומת.';
-  await alertOwner(`🔐 ${text}`);
+  await alertOwner(`🔐 ${text}`, 'reply');
   return NextResponse.json({ ok: true, text }, noStore);
 }

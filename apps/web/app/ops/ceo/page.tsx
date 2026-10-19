@@ -42,6 +42,7 @@ export default async function OpsCeoPage() {
         <h1 className="text-2xl font-black text-primary-900">{CEO_NAME} · מנכ&quot;ל AI</h1>
         <a href="/ops/ceo/settings" className="rounded-xl bg-primary-100/40 px-3 py-1.5 text-sm font-semibold text-primary-900 hover:bg-primary-100/70">הגדרות</a>
         <a href="/ops/ceo/security" className="rounded-xl bg-primary-100/40 px-3 py-1.5 text-sm font-semibold text-primary-900 hover:bg-primary-100/70">🔐 אבטחה</a>
+        <a href="/ops/ceo/prefs" className="rounded-xl bg-primary-100/40 px-3 py-1.5 text-sm font-semibold text-primary-900 hover:bg-primary-100/70">🕯️ הוראות ושקט</a>
         <a href="/ops/ceo/insights" className="rounded-xl bg-primary-100/40 px-3 py-1.5 text-sm font-semibold text-primary-900 hover:bg-primary-100/70">משימות ואיכות</a>
         <a href="/ops/ceo/dev-forwards" className="rounded-xl bg-primary-100/40 px-3 py-1.5 text-sm font-semibold text-primary-900 hover:bg-primary-100/70">🛠️ הועבר לאור</a>
       </div>

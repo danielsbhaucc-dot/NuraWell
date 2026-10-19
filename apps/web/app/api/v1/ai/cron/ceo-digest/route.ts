@@ -5,7 +5,8 @@ import { createTelegramChannel, resolveBotToken } from '@/lib/ceo/telegram';
 import { israelHourNow, nextDigestAt, periodsFor, sendDigest } from '@/lib/ceo/digest';
 import { readGideonSettings } from '@/lib/ceo/settings';
 import { runNightlyTaskMerge } from '@/lib/almog/nightly-task-merge';
-import { workflowPublicBaseUrl } from '@/lib/workflows/resolve-workflow-public-url';
+import { flushOutbox, loadPrefsSafe, publishDelayed } from '@/lib/ceo/outbound';
+import { quietState } from '@/lib/ceo/quiet';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -16,23 +17,8 @@ export const maxDuration = 120;
  * if it isn't 21, this run publishes one delayed QStash message to itself (?scheduled=1) for the
  * next configured hour — no schedule change needed. Deduplicated per target time.
  */
-async function scheduleDigestAt(notBefore: number): Promise<{ ok: boolean; reason?: string }> {
-  const token = process.env.QSTASH_TOKEN?.trim();
-  const base = workflowPublicBaseUrl();
-  if (!token || !base) return { ok: false, reason: 'qstash_or_base_missing' };
-  const api = (process.env.QSTASH_URL?.trim() || 'https://qstash.upstash.io').replace(/\/$/, '');
-  const dest = `${base.replace(/\/$/, '')}/api/v1/ai/cron/ceo-digest?scheduled=1`;
-  const r = await fetch(`${api}/v2/publish/${encodeURIComponent(dest)}`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Upstash-Method': 'POST',
-      'Upstash-Not-Before': String(notBefore),
-      'Upstash-Retries': '1',
-      'Upstash-Deduplication-Id': `ceo-digest-${notBefore}`,
-    },
-  }).catch(() => null);
-  return r?.ok ? { ok: true } : { ok: false, reason: `qstash_${r?.status ?? 'error'}` };
+function scheduleDigestAt(notBefore: number) {
+  return publishDelayed('/api/v1/ai/cron/ceo-digest?scheduled=1', notBefore, `ceo-digest-${notBefore}`);
 }
 
 async function handle(request: Request) {
@@ -58,7 +44,19 @@ async function handle(request: Request) {
 
   const ch = createTelegramChannel();
   const out: Record<string, unknown> = { almogChecks };
-  for (const p of periodsFor(new Date(), forced)) out[p] = await sendDigest(db, ch, p);
+  // anything held from an earlier quiet window goes out first (no-op while still quiet)
+  out.outbox = await flushOutbox(db, (c, t, b) => ch.send(c, t, b, { kind: 'outbox' })).catch((e) => ({ error: String(e).slice(0, 120) }));
+  // Shabbat / Yom Tov: the daily update is skipped (stale by tzeit; the next digest covers it).
+  // Weekly/monthly are generated and the send gate holds them until after tzeit.
+  const q = quietState(await loadPrefsSafe(db));
+  for (const p of periodsFor(new Date(), forced)) {
+    if (p === 'daily' && !forced && q.quiet && q.reasons.some((r) => r === 'shabbat' || r === 'yom_tov')) {
+      out[p] = { skipped: 'shabbat' };
+      await db.from('ceo_audit_log').insert({ actor: 'cron', event: 'digest_skipped_quiet', detail: { period: p, until: q.until.toISOString() } }).then(() => null, () => null);
+      continue;
+    }
+    out[p] = await sendDigest(db, ch, p);
+  }
   return NextResponse.json({ ok: true, ...out });
 }
 

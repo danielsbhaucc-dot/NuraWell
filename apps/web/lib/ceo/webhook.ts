@@ -33,7 +33,7 @@ async function handleTelegramUpdateInner(db: SupabaseClient, channel: CeoChannel
     if (once.ok) {
       await invalidateTrust(db, 'unknown chat').catch(() => {});
       for (const id of allowedChatIds()) {
-        await channel.send(id, `⚠️ צ'אט לא מוכר ניסה לדבר עם גדעון (מסתיים ב-${chatId.slice(-4)}). לא קיבל תשובה. אם זה לא אתה, אפשר לכבות את גדעון מ-Ops.`).catch(() => {});
+        await channel.send(id, `⚠️ צ'אט לא מוכר ניסה לדבר עם גדעון (מסתיים ב-${chatId.slice(-4)}). לא קיבל תשובה. אם זה לא אתה, אפשר לכבות את גדעון מ-Ops.`, undefined, { kind: 'security' }).catch(() => {});
       }
     }
     return { ignored: true };
@@ -43,25 +43,25 @@ async function handleTelegramUpdateInner(db: SupabaseClient, channel: CeoChannel
   const rawText = u.message?.text?.trim() ?? '';
   if (/^\/(lock|kill)$|^(כבה|תכבה) את עצמך$/.test(rawText)) {
     await killSwitch(db, `admin:${chatId}`, 'telegram command');
-    await channel.send(chatId, '⛔ גדעון כבוי. כל הפעולות הממתינות בוטלו. הפעלה מחדש: Ops ← גדעון ← אבטחה (דורש Face ID).');
+    await channel.send(chatId, '⛔ גדעון כבוי. כל הפעולות הממתינות בוטלו. הפעלה מחדש: Ops ← גדעון ← אבטחה (דורש Face ID).', undefined, { kind: 'reply' });
     return { killed: true };
   }
   if (detectDeviceChange(rawText)) {
     const replace = /(החלפתי|חדש|נגנב|איבדתי|אבד)/.test(rawText);
     const { existing } = await requestDevice(db, chatId, replace);
-    await channel.send(chatId, existing ? 'כבר יש בקשה פתוחה. אשר אותה בלוח הבקרה ונתקדם.' : 'שלחתי לך התראה בלוח הבקרה, תאשר אותה ונתקדם 👍');
+    await channel.send(chatId, existing ? 'כבר יש בקשה פתוחה. אשר אותה בלוח הבקרה ונתקדם.' : 'שלחתי לך התראה בלוח הבקרה, תאשר אותה ונתקדם 👍', undefined, { kind: 'reply' });
     return { deviceRequest: true };
   }
   if (sec.disabled) {
     if (u.callback_query) await channel.ack({ callbackId: u.callback_query.id, chatId });
-    else await channel.send(chatId, '⛔ גדעון כבוי כרגע. אפשר להפעיל מחדש מ-Ops ← גדעון ← אבטחה.');
+    else await channel.send(chatId, '⛔ גדעון כבוי כרגע. אפשר להפעיל מחדש מ-Ops ← גדעון ← אבטחה.', undefined, { kind: 'reply' });
     return { disabled: true };
   }
 
   const rl = await consumeRateLimit({ key: chatId, namespace: 'ceo-min', limit: 20, windowSeconds: 60 });
   const rlDay = await consumeRateLimit({ key: chatId, namespace: 'ceo-day', limit: 300, windowSeconds: 86_400 });
   if (!rl.ok || !rlDay.ok) {
-    await channel.send(chatId, 'יותר מדי בקשות, נסה שוב עוד רגע.');
+    await channel.send(chatId, 'יותר מדי בקשות, נסה שוב עוד רגע.', undefined, { kind: 'reply' });
     return { limited: true };
   }
 
@@ -79,12 +79,12 @@ async function handleTelegramUpdateInner(db: SupabaseClient, channel: CeoChannel
       await channel.typing?.(chatId);
       const { proposeForwardFromDraft, extractFinding } = await import('./dev-forward');
       const r = await proposeForwardFromDraft(db, id, { extract: extractFinding }).catch(() => null);
-      if (!r) await channel.send(chatId, 'לא מצאתי את הסיכום הזה. אפשר לכתוב לי מה להעביר לאור.');
-      else if ('already' in r) await channel.send(chatId, 'הממצאים מהסיכום הזה כבר הועברו לאור.');
-      else if ('none' in r) await channel.send(chatId, 'לא מצאתי בסיכום הזה ממצא טכני להעביר לאור.');
+      if (!r) await channel.send(chatId, 'לא מצאתי את הסיכום הזה. אפשר לכתוב לי מה להעביר לאור.', undefined, { kind: 'reply' });
+      else if ('already' in r) await channel.send(chatId, 'הממצאים מהסיכום הזה כבר הועברו לאור.', undefined, { kind: 'reply' });
+      else if ('none' in r) await channel.send(chatId, 'לא מצאתי בסיכום הזה ממצא טכני להעביר לאור.', undefined, { kind: 'reply' });
       else {
         const card = approvalCard(r.action);
-        await channel.send(chatId, card.text, card.buttons);
+        await channel.send(chatId, card.text, card.buttons, { kind: 'reply' });
       }
       return { forward: true };
     }
@@ -104,7 +104,7 @@ async function handleTelegramUpdateInner(db: SupabaseClient, channel: CeoChannel
     if (r.celebrate) {
       // the link gets its own message with a 🎉 effect; the card just flips to "approved"
       await channel.ack({ callbackId: cb.id, chatId, messageId: cb.message?.message_id }, '✅ אושר');
-      await channel.send(chatId, r.text, undefined, { effect: 'celebrate' });
+      await channel.send(chatId, r.text, undefined, { effect: 'celebrate', kind: 'reply' });
     } else {
       await channel.ack({ callbackId: cb.id, chatId, messageId: cb.message?.message_id }, r.text);
     }
@@ -114,14 +114,14 @@ async function handleTelegramUpdateInner(db: SupabaseClient, channel: CeoChannel
   const text = u.message?.text?.trim();
   if (!text) return { ignored: true };
   if (text === '/start') {
-    await channel.send(chatId, 'שלום דניאל, אני כאן. אפשר לשאול אותי כל דבר על המערכת.');
+    await channel.send(chatId, 'שלום דניאל, אני כאן. אפשר לשאול אותי כל דבר על המערכת.', undefined, { kind: 'reply' });
     return { ok: true };
   }
   const msgId = u.message?.message_id;
   if (msgId) await channel.react?.(chatId, msgId, '👀');
   await channel.typing?.(chatId);
   const r = await (deps.runTurn ?? runCeoTurn)(db, `${channel.name}:${chatId}`, text.slice(0, 4000));
-  await channel.send(chatId, r.text, r.buttons);
-  for (const c of r.cards ?? []) await channel.send(chatId, c.text, c.buttons);
+  await channel.send(chatId, r.text, r.buttons, { kind: 'reply' });
+  for (const c of r.cards ?? []) await channel.send(chatId, c.text, c.buttons, { kind: 'reply' });
   return { ok: true };
 }
