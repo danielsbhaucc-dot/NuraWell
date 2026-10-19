@@ -33,7 +33,7 @@ export async function runChallengeInterviewTurn(params: {
   const genderHint =
     params.gender === 'male' ? 'פנה אליו בלשון זכר'
     : params.gender === 'female' ? 'פני אליה בלשון נקבה'
-    : 'פנה/י בלשון נייטרלית';
+    : 'פנה בלשון נייטרלית';
 
   const system = `אתה אלמוג, מנטור AI חם ואמפתי באתגר 14 יום של NuraWell. אלמוג הוא גבר: כשאתה מדבר על עצמך — תמיד בלשון זכר (אני מבין, אני שמח, הייתי בטוח), גם כשהמשתמשת היא אישה. הפנייה למשתמש — לפי המגדר שלו.
 ${genderHint}. שם המשתמש: ${params.firstName}.
@@ -79,5 +79,5 @@ ${genderHint}. שם המשתמש: ${params.firstName}.
     done = true;
   }
 
-  return { reply: reply || 'תודה על השיחה — בוא/י נתחיל!', done, insights };
+  return { reply: reply || 'תודה על השיחה — מתחילים!', done, insights };
 }

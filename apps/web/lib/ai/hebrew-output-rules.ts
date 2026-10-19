@@ -1,3 +1,4 @@
+import { ALMOG_VOICE_RULE } from './almog-voice';
 /**
  * Shared Hebrew output rules for background LLM prompts (gpt-oss).
  * Same convention as the main chat (genderAddressingHint in app/api/v1/ai/chat/route.ts):
@@ -10,7 +11,7 @@ export const ALMOG_SELF_GENDER_RULE =
 export type HebrewGender = 'male' | 'female' | null | undefined;
 
 export function hebrewAddressingRule(gender: HebrewGender): string {
-  return `${ALMOG_SELF_GENDER_RULE} ${userAddressingRule(gender)}`;
+  return `${ALMOG_SELF_GENDER_RULE} ${userAddressingRule(gender)}\n${ALMOG_VOICE_RULE}`;
 }
 
 function userAddressingRule(gender: HebrewGender): string {

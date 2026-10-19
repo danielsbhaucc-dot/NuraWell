@@ -38,7 +38,7 @@ export async function buildChallengeCompletionSummary(  admin: SupabaseClient,
 
   const message = `${firstName}, סיימת את אתגר 14 הימים! ${
     daysActive >= 10
-      ? 'היית פעיל/ה ברוב הימים — זו הצלחה ענקית, גם בלי לדבר על משקל.'
+      ? 'רוב הימים היו פעילים — זו הצלחה ענקית, גם בלי לדבר על משקל.'
       : 'כל יום שבחרת להשתתף הוא ניצחון. אני גאה בך.'
   } ${successCount && successCount > 0 ? `זיהינו ${successCount} רגעי הצלחה בדרך.` : ''}`.trim();
 

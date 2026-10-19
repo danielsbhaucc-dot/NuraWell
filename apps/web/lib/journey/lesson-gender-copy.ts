@@ -65,21 +65,21 @@ export function lessonGenderCopy(
     };
   }
   return {
-    letsStartTogether: 'בוא/י נתחיל יחד',
-    videoIntro: 'אני מלווה אותך בסרטון — תרגיש/י בנוח, קח/י נשימה, ונמשיך בקצב שלך.',
-    watchedContinue: 'צפיתי, בוא/י נמשיך יחד!',
-    watchedToQuestions: 'מעולה — בוא/י לשאלות',
-    quizLetsCheck: 'שאלות הבנה — בוא/י נבדוק יחד',
-    quizContinueTogether: 'אני כאן איתך — בוא/י נמשיך יחד',
+    letsStartTogether: 'מתחילים יחד',
+    videoIntro: 'אני מלווה אותך בסרטון — בנוח, עם נשימה, ונמשיך בקצב שלך.',
+    watchedContinue: 'צפיתי, ממשיכים יחד!',
+    watchedToQuestions: 'מעולה — עוברים לשאלות',
+    quizLetsCheck: 'שאלות הבנה — נבדוק יחד',
+    quizContinueTogether: 'אני כאן איתך — ממשיכים יחד',
     quizAnsweredCorrect: (score, total) =>
       `ענית נכון על ${score} מתוך ${total} — אני גאה בך.`,
     quizMapSubtitle: 'ככה אני רואה את מה שענית בכל שאלה',
-    gameLetsCheck: 'נכון או לא? — בוא/י נבדוק את האינטואיציה',
+    gameLetsCheck: 'נכון או לא? — נבדוק את האינטואיציה',
     gameCompleteSubtitle: 'אהבתי את האינטואיציה שלך — נמשיך?',
     gameMapSubtitle: 'ככה אני רואה את מה שסימנת מול מה שבאמת נכון',
-    commitmentLetsTalk: 'בוא/י נדבר על ההתחייבות 💪',
-    summaryLetsSummarize: 'בוא/י נסכם יחד את מה שעברנו — אני איתך עד הסוף.',
-    summaryLearnSubtitle: 'אלה הנקודות שחשוב לי שתיקח/י מהשיעור',
+    commitmentLetsTalk: 'נדבר על ההתחייבות 💪',
+    summaryLetsSummarize: 'נסכם יחד את מה שעברנו — אני איתך עד הסוף.',
+    summaryLearnSubtitle: 'אלה הנקודות שחשוב לי לקחת מהשיעור',
     youAnswered: 'מה שענית',
     youMarked: 'מה שסימנת',
   };

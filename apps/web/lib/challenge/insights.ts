@@ -33,7 +33,7 @@ export function buildChallengePatternInsights(params: {
     insights.push({
       id: 'active_days',
       title: `${activeDays} ימים עם פעילות`,
-      description: 'עקביות חשובה יותר ממושלמות — ואת/ה בדרך הנכונה.',
+      description: 'עקביות חשובה יותר ממושלמות — והכיוון נכון.',
       tone: 'positive',
     });
   }
@@ -45,7 +45,7 @@ export function buildChallengePatternInsights(params: {
       title: languageShift.title,
       description:
         languageShift.description ??
-        'שמתי לב שאת/ה מדבר/ת אחרת — פחות "נכשלתי", יותר "ניסיתי".',
+        'שמתי לב שהניסוח שלך השתנה — פחות "נכשלתי", יותר "ניסיתי".',
       tone: 'positive',
     });
   }
@@ -99,7 +99,7 @@ export function buildChallengePatternInsights(params: {
     insights.push({
       id: 'start',
       title: 'התחלת לבנות מומנטום',
-      description: 'כל משימה שתסמן/י — אלמוג יזהה ויחגג איתך.',
+      description: 'כל משימה שתסומן — אלמוג יזהה ויחגג איתך.',
       tone: 'neutral',
     });
   }
