@@ -2,7 +2,7 @@ import type { OnboardingProfileForChat } from '@/lib/ai/onboarding-chat-context'
 import type { OnboardingGender } from '@/lib/onboarding/types';
 import { welcomeEmailCopy } from '@/lib/email/welcome-email-copy';
 import { publicAppOriginSync } from '@/lib/public-app-url';
-import { dolevSignature, EMAIL_SUPPORT_ADDRESS, emailParagraph, emailSummaryTable, escapeHtml, renderEmailLayout } from '@/lib/email/layout';
+import { dolevSignature, emailDivider, EMAIL_SUPPORT_ADDRESS, emailParagraph, emailSummaryTable, escapeHtml, renderEmailLayout } from '@/lib/email/layout';
 
 const GOAL_HE: Record<string, string> = {
   weight_loss: 'ירידה במשקל',
@@ -73,7 +73,8 @@ export function buildWelcomeDolevEmailHtml(
     eyebrow: 'דולב · NuraWell',
     heading: escapeHtml(copy.headline),
     subheading: copy.subheading,
-    bodyHtml: [emailParagraph(escapeHtml(copy.intro)), table, emailParagraph(escapeHtml(copy.closing))].join(''),
+    introHtml: emailParagraph(escapeHtml(copy.intro)),
+    bodyHtml: [table, emailDivider(), emailParagraph(escapeHtml(copy.closing))].join(''),
     cta: { label: copy.cta, url: `${origin}/home` },
     signatureHtml: dolevSignature(copy.signature),
   });
