@@ -93,7 +93,7 @@ export function emailDivider(): string {
 /** קוד חד-פעמי גדול וקריא */
 export function emailCode(code: string): string {
   return table(
-    `<tr><td dir="ltr" align="center" bgcolor="${C.goldSoft}" style="background:${C.goldSoft};border:1px solid ${C.gold};border-radius:22px;padding:22px 12px;box-shadow:0 1px 3px rgba(15,61,46,0.08);text-align:center"><span dir="ltr" style="font-family:'Courier New',Consolas,monospace;font-size:36px;line-height:1.2;font-weight:700;letter-spacing:10px;color:${C.brand}">${code}</span></td></tr>`,
+    `<tr><td dir="ltr" align="center" bgcolor="${C.goldSoft}" style="background:${C.goldSoft};border:1px solid ${C.gold};border-radius:22px;padding:18px 8px;box-shadow:0 1px 3px rgba(15,61,46,0.08);text-align:center"><span dir="ltr" style="font-family:'Courier New',Consolas,monospace;font-size:28px;line-height:1.25;font-weight:700;letter-spacing:3px;color:${C.brand};white-space:nowrap">${code}</span></td></tr>`,
     'margin:4px 0 20px'
   );
 }
@@ -107,7 +107,7 @@ function button(label: string, url: string): string {
 
 export function emailFallbackLink(url: string): string {
   return emailParagraph(
-    `הכפתור התעצל? אפשר להעתיק את הקישור הזה לדפדפן:<br><a href="${url}" dir="ltr" style="color:${C.brand700};word-break:break-all;text-decoration:underline">${url}</a>`,
+    `הכפתור התעצל? אפשר להעתיק את הקישור הזה לדפדפן:<br><a href="${url}" dir="ltr" style="color:${C.brand700};word-break:break-all;overflow-wrap:anywhere;word-wrap:break-word;text-decoration:underline;font-size:12px">${url}</a>`,
     { muted: true, small: true }
   );
 }
@@ -125,21 +125,21 @@ export function renderEmailLayout(i: EmailLayoutInput): string {
   const origin = i.assetOrigin.replace(/\/$/, '');
   const support = i.supportEmail ?? EMAIL_SUPPORT_ADDRESS;
   // שורת לוגו בצבע אחיד = רקע ה-PNG (#0f3d2e אפוי), כך שאין "קופסה" גם כשהגרדיאנט נתמך; הגרדיאנט מתחיל מאותו צבע בשורה הבאה.
-  const header = `<tr><td dir="rtl" align="center" bgcolor="${C.brand}" style="direction:rtl;text-align:center;background-color:${C.brand};border-radius:34px 34px 0 0;padding:30px 28px 0">
+  const header = `<tr><td dir="rtl" align="center" bgcolor="${C.brand}" style="direction:rtl;text-align:center;background-color:${C.brand};border-radius:34px 34px 0 0;padding:28px 18px 0">
 <a href="${origin}" target="_blank" style="text-decoration:none;color:${C.cream}"><img src="${origin}/brand/email-logo-header.png" width="224" height="51" alt="NuraWell" style="display:block;margin:0 auto;border:0;outline:none;width:224px;height:auto;max-width:224px;background-color:${C.brand};color:${C.cream};font-family:${EMAIL_FONT};font-size:26px;line-height:51px;font-weight:700;text-align:center"></a>
 </td></tr>
-<tr><td dir="rtl" align="center" bgcolor="${C.brand}" style="direction:rtl;text-align:center;background-color:${C.brand};background-image:linear-gradient(180deg,${C.brand} 0%,${C.brand700} 100%);padding:16px 28px ${i.introHtml ? '64px' : '34px'}">
+<tr><td dir="rtl" align="center" bgcolor="${C.brand}" style="direction:rtl;text-align:center;background-color:${C.brand};padding:16px 18px ${i.introHtml ? '36px' : '34px'}">
 ${i.eyebrow ? `<p dir="rtl" align="center" style="margin:0 0 10px;font-family:${EMAIL_FONT};direction:rtl;text-align:center"><span style="display:inline-block;background:${C.gold};color:${C.brand};font-size:12px;font-weight:800;padding:5px 14px;border-radius:999px">${i.eyebrow}</span></p>` : ''}
 <h1 dir="rtl" align="center" style="margin:0;color:${C.cream};font-family:${EMAIL_FONT};font-size:31px;line-height:1.3;font-weight:800;direction:rtl;text-align:center">${i.heading}</h1>
 ${i.subheading ? `<p dir="rtl" align="center" style="margin:10px 0 0;color:#d6ecdf;font-family:${EMAIL_FONT};font-size:17px;line-height:1.5;font-weight:500;direction:rtl;text-align:center">${i.subheading}</p>` : ''}
 </td></tr>`;
   // "חפיפה" בטוחה ל-Gmail: שורה שחצייה העליון בצבע ההדר והתחתון בצבע הגוף, והכרטיס יושב באמצע (בלי margin שלילי).
   const intro = i.introHtml
-    ? `<tr><td dir="rtl" align="center" bgcolor="${C.card}" style="direction:rtl;background-color:${C.card};background-image:linear-gradient(180deg,${C.brand700} 0%,${C.brand700} 58%,${C.card} 58%,${C.card} 100%);padding:0 18px">
-${table(`<tr>${td(`background:${C.cream};border:1px solid ${C.goldSoft};border-top:4px solid ${C.gold};border-radius:28px;padding:24px 22px 8px;box-shadow:0 2px 4px rgba(15,61,46,0.10),0 18px 40px rgba(15,61,46,0.28)`, i.introHtml, ` bgcolor="${C.cream}"`)}</tr>`, 'border-collapse:separate')}
+    ? `<tr><td dir="rtl" align="center" bgcolor="${C.card}" style="direction:rtl;background-color:${C.card};background-image:url('${origin}/brand/email-header-tab.png');background-repeat:repeat-x;background-position:top center;padding:0 12px" background="${origin}/brand/email-header-tab.png">
+${table(`<tr>${td(`background:${C.cream};border:1px solid ${C.goldSoft};border-top:4px solid ${C.gold};border-radius:28px;padding:20px 18px 6px;box-shadow:0 2px 4px rgba(15,61,46,0.10),0 18px 40px rgba(15,61,46,0.28)`, i.introHtml, ` bgcolor="${C.cream}"`)}</tr>`, 'border-collapse:separate')}
 </td></tr>`
     : `<tr><td height="4" bgcolor="${C.gold}" style="height:4px;line-height:4px;font-size:0;background:${C.gold}">&nbsp;</td></tr>`;
-  const body = `<tr>${td(`background:${C.card};border-radius:0 0 34px 34px;padding:${i.introHtml ? '28px' : '30px'} 28px 34px`, `${i.bodyHtml}${i.cta ? button(i.cta.label, i.cta.url) : ''}${i.afterCtaHtml ? emailDivider() + i.afterCtaHtml : ''}${i.signatureHtml ?? ''}`, ` bgcolor="${C.card}"`)}</tr>`;
+  const body = `<tr>${td(`background:${C.card};border-radius:0 0 34px 34px;padding:${i.introHtml ? '24px' : '28px'} 18px 30px`, `${i.bodyHtml}${i.cta ? button(i.cta.label, i.cta.url) : ''}${i.afterCtaHtml ? emailDivider() + i.afterCtaHtml : ''}${i.signatureHtml ?? ''}`, ` bgcolor="${C.card}"`)}</tr>`;
   const footer = `<tr><td dir="rtl" align="center" style="direction:rtl;text-align:center;padding:24px 18px 0">
 <div style="width:44px;height:4px;border-radius:2px;background:${C.gold};opacity:0.55;margin:0 auto 16px;font-size:0;line-height:0">&nbsp;</div>
 <p dir="rtl" align="center" style="margin:0 0 6px;color:${C.muted};font-family:${EMAIL_FONT};font-size:13px;line-height:1.65;direction:rtl;text-align:center">את התיבה הזאת אף אחד לא קורא (גם לא דולב 🙈), אז תשובות לכאן לא יגיעו.<br>יש שאלה? כתבו לנו ל-<a href="mailto:${support}" dir="ltr" style="color:${C.brand700};text-decoration:underline">${support}</a> ונחזור אליכם.</p>
@@ -157,13 +157,15 @@ ${table(`<tr>${td(`background:${C.cream};border:1px solid ${C.goldSoft};border-t
 </head>
 <body dir="rtl" bgcolor="${C.page}" style="margin:0;padding:0;background:${C.page};direction:rtl;text-align:right;-webkit-text-size-adjust:100%">
 <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:${C.page}">${i.preheader}&#8203;&nbsp;&#8203;&nbsp;&#8203;&nbsp;&#8203;&nbsp;&#8203;&nbsp;</div>
-<table role="presentation" dir="rtl" align="center" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${C.page}" style="direction:rtl;background:${C.page}"><tr><td dir="rtl" align="center" style="direction:rtl;padding:24px 10px">
-<table role="presentation" dir="rtl" align="center" width="100%" cellpadding="0" cellspacing="0" border="0" style="direction:rtl;max-width:580px;width:100%">
+<table role="presentation" dir="rtl" align="center" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${C.page}" style="direction:rtl;background:${C.page}"><tr><td dir="rtl" align="center" style="direction:rtl;padding:16px 4px">
+<!--[if mso]><table role="presentation" align="center" width="600" cellpadding="0" cellspacing="0" border="0"><tr><td><![endif]-->
+<table role="presentation" dir="rtl" align="center" width="100%" cellpadding="0" cellspacing="0" border="0" style="direction:rtl;max-width:600px;width:100%;margin:0 auto;table-layout:fixed">
 ${header}
 ${intro}
 ${body}
 ${footer}
 </table>
+<!--[if mso]></td></tr></table><![endif]-->
 </td></tr></table>
 </body>
 </html>`;
