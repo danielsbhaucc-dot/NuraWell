@@ -3,6 +3,10 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
+  /* Surfaces: warm cream instead of pure white (Ops + logs). AA verified vs slate-900/700 text. */
+  --color-cream: #f7f4ec;
+  --color-cream-tint: #f1f4ea;
+  --color-cream-deep: #e9e4d6;
   --color-primary-50: #ecfdf5;
   --color-primary-100: #d1fae5;
   --color-primary-200: #a7f3d0;

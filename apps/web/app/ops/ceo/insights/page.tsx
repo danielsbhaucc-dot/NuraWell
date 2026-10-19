@@ -32,7 +32,7 @@ export default async function Page() {
   return (
     <div dir="rtl" className="mx-auto max-w-3xl space-y-6 p-4">
       <h1 className="text-2xl font-bold">גדעון · משימות ובקרת איכות</h1>
-      <section className="rounded-3xl border bg-white p-5">
+      <section className="rounded-3xl border bg-cream p-5">
         <h2 className="text-lg font-bold">משימות פתוחות שלי</h2>
         {tasks.length ? (
           <ul className="mt-3 space-y-2">
@@ -41,7 +41,7 @@ export default async function Page() {
                 <span>{t.priority === 'high' ? '🔴 ' : ''}{t.title}{t.due_date ? ` · עד ${t.due_date}` : ''}</span>
                 <form action={taskAction} className="flex gap-1">
                   <input type="hidden" name="id" value={t.id} />
-                  <button name="kind" value="done" className="rounded-lg bg-emerald-700 px-2 py-1 text-xs text-white">✅ בוצע</button>
+                  <button name="kind" value="done" className="rounded-lg bg-emerald-700 px-2 py-1 text-xs text-cream">✅ בוצע</button>
                   <button name="kind" value="day" className="rounded-lg border px-2 py-1 text-xs">מחר</button>
                   <button name="kind" value="week" className="rounded-lg border px-2 py-1 text-xs">שבוע</button>
                 </form>
@@ -50,7 +50,7 @@ export default async function Page() {
           </ul>
         ) : <p className="mt-2 text-sm text-slate-500">אין משימות פתוחות.</p>}
       </section>
-      <section className="rounded-3xl border bg-white p-5">
+      <section className="rounded-3xl border bg-cream p-5">
         <h2 className="text-lg font-bold">דגימת הודעות של אלמוג (24 שעות)</h2>
         <ul className="mt-3 space-y-2 text-sm">
           {sample.chat.map((c) => <li key={`c${c.at}${c.text.slice(0, 24)}`} className="rounded-xl bg-slate-50 px-3 py-2">💬 {c.text}</li>)}

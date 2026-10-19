@@ -58,7 +58,7 @@ export default async function OpsCeoPage() {
             <p className="text-xs text-slate-500">{fmt.format(new Date(a.created_at))} · <span dir="ltr" className="font-mono">{a.tool}</span></p>
             <form action={decide} className="flex gap-2">
               <input type="hidden" name="id" value={a.id} />
-              <button name="approve" value="1" className="min-h-10 rounded-full bg-emerald-600 px-5 text-sm font-bold text-white">אשר</button>
+              <button name="approve" value="1" className="min-h-10 rounded-full bg-emerald-600 px-5 text-sm font-bold text-cream">אשר</button>
               <button name="approve" value="0" className="min-h-10 rounded-full bg-slate-100 px-5 text-sm font-bold text-slate-700">בטל</button>
             </form>
           </div>

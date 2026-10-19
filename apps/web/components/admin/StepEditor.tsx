@@ -960,14 +960,14 @@ export function StepEditor({ step }: StepEditorProps) {
         <button onClick={() => router.push(journeyListPath)}
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl shadow-xs transition-colors"
           style={{ background: 'linear-gradient(135deg, #0f766e, #10b981)', border: '1px solid rgba(248,251,246,0.55)' }}>
-          <ArrowRight className="w-5 h-5 text-white" />
+          <ArrowRight className="w-5 h-5 text-cream" />
         </button>
         <h1 className="min-w-0 flex-1 truncate text-lg font-black sm:text-xl" style={{ color: '#1A1730' }}>
           {isNew ? 'צעד חדש' : `עריכת: ${step!.title}`}
         </h1>
         </div>
         <button onClick={handleSave} disabled={saving}
-          className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-bold text-white shadow-lg transition-all active:scale-[0.99] disabled:opacity-50 sm:mr-auto sm:w-auto sm:min-h-10 sm:py-2.5"
+          className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-bold text-cream shadow-lg transition-all active:scale-[0.99] disabled:opacity-50 sm:mr-auto sm:w-auto sm:min-h-10 sm:py-2.5"
           style={{ background: 'linear-gradient(135deg, #047857, #10b981)' }}>
           <Save className="w-4 h-4" />
           {saving ? 'שומר...' : 'שמור'}
@@ -991,7 +991,7 @@ export function StepEditor({ step }: StepEditorProps) {
           >
             <span className="flex items-center gap-2">
               <span className="flex h-8 w-8 items-center justify-center rounded-xl" style={{ background: 'linear-gradient(135deg, #7c3aed, #2563eb)' }}>
-                <Wand2 className="h-4 w-4 text-white" />
+                <Wand2 className="h-4 w-4 text-cream" />
               </span>
               <span className="flex flex-col">
                 <span className="text-sm font-black" style={{ color: '#3730a3' }}>סוכן AI למילוי הצעד</span>
@@ -1302,7 +1302,7 @@ export function StepEditor({ step }: StepEditorProps) {
                           }}
                           className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[11px] font-bold ${
                             stop.correct_option_index === oi
-                              ? 'border-emerald-500 bg-emerald-500 text-white'
+                              ? 'border-emerald-500 bg-emerald-500 text-cream'
                               : 'border-gray-300 text-gray-400'
                           }`}
                         >
@@ -1460,7 +1460,7 @@ export function StepEditor({ step }: StepEditorProps) {
                     <div key={oi} className="flex items-center gap-2">
                       <button type="button" onClick={() => {
                         const arr = [...quizQuestions]; arr[qi] = { ...arr[qi], correct_index: oi }; setQuizQuestions(arr);
-                      }} className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0 ${q.correct_index === oi ? 'bg-emerald-500 text-white' : 'bg-gray-200 text-gray-500'}`}>
+                      }} className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0 ${q.correct_index === oi ? 'bg-emerald-500 text-cream' : 'bg-gray-200 text-gray-500'}`}>
                         {String.fromCharCode(1488 + oi)}
                       </button>
                       <input value={opt} onChange={e => {
@@ -1598,7 +1598,7 @@ export function StepEditor({ step }: StepEditorProps) {
               onClick={() => void syncResearchesToAlmog()}
               disabled={researchSyncing !== null || isNew}
               className="rounded-xl px-3 py-2 text-sm font-bold disabled:opacity-50"
-              style={{ background: 'linear-gradient(135deg, #7c3aed, #2563eb)', color: 'white' }}
+              style={{ background: 'linear-gradient(135deg, #7c3aed, #2563eb)', color: 'var(--color-cream)' }}
             >
               {researchSyncing === 'all' ? 'מסנכרן...' : 'סנכרן את כל המחקרים לאלמוג'}
             </button>
@@ -2286,7 +2286,7 @@ export function StepEditor({ step }: StepEditorProps) {
             type="button"
             onClick={goNextSection}
             disabled={!canGoNext}
-            className="px-4 py-2.5 rounded-xl font-bold text-sm text-white transition disabled:opacity-40"
+            className="px-4 py-2.5 rounded-xl font-bold text-sm text-cream transition disabled:opacity-40"
             style={{ background: 'linear-gradient(135deg, #047857, #10b981)' }}
           >
             שלב הבא
@@ -2299,7 +2299,7 @@ export function StepEditor({ step }: StepEditorProps) {
         className="fixed left-1/2 z-40 -translate-x-1/2 bottom-[calc(env(safe-area-inset-bottom,0px)+5.5rem)] sm:bottom-6"
       >
         <button onClick={handleSave} disabled={saving}
-          className="inline-flex items-center gap-2 px-8 py-3.5 rounded-2xl font-bold text-white shadow-2xl transition-all hover:scale-105 disabled:opacity-50"
+          className="inline-flex items-center gap-2 px-8 py-3.5 rounded-2xl font-bold text-cream shadow-2xl transition-all hover:scale-105 disabled:opacity-50"
           style={{ background: 'linear-gradient(135deg, #047857, #10b981)', boxShadow: '0 8px 30px rgba(16,185,129,0.4)' }}>
           <Save className="w-5 h-5" />
           {saving ? 'שומר...' : 'שמור צעד'}
@@ -2314,7 +2314,7 @@ export function StepEditor({ step }: StepEditorProps) {
             style={{ background: 'rgba(248,251,246,0.97)', border: '1px solid rgba(248,251,246,0.9)', boxShadow: '0 24px 60px rgba(15,23,42,0.35)' }}
           >
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl" style={{ background: 'linear-gradient(135deg, #047857, #10b981)' }}>
-              <Loader2 className="h-7 w-7 animate-spin text-white" />
+              <Loader2 className="h-7 w-7 animate-spin text-cream" />
             </div>
 
             <h3 className="text-lg font-black" style={{ color: '#1A1730' }}>
@@ -2377,7 +2377,7 @@ export function StepEditor({ step }: StepEditorProps) {
             style={{ background: 'rgba(248,251,246,0.97)', border: '1px solid rgba(248,251,246,0.9)', boxShadow: '0 24px 60px rgba(76,29,149,0.35)' }}
           >
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl" style={{ background: 'linear-gradient(135deg, #7c3aed, #2563eb)' }}>
-              <Loader2 className="h-7 w-7 animate-spin text-white" />
+              <Loader2 className="h-7 w-7 animate-spin text-cream" />
             </div>
 
             <h3 className="text-lg font-black" style={{ color: '#1A1730' }}>
@@ -2471,7 +2471,7 @@ function Section({
   return (
     <div className="rounded-2xl p-4 sm:p-5 space-y-4 backdrop-blur-md" style={{ background: 'rgba(248,251,246,0.74)', border: '1px solid rgba(248,251,246,0.95)', boxShadow: '0 12px 28px rgba(6,78,59,0.10)' }}>
       <div className="flex items-center gap-2">
-        <div className="w-7 h-7 rounded-full text-white text-xs font-black flex items-center justify-center" style={{ background: color }}>
+        <div className="w-7 h-7 rounded-full text-cream text-xs font-black flex items-center justify-center" style={{ background: color }}>
           {sectionNumber}
         </div>
         <Icon className="w-4 h-4" style={{ color }} />
@@ -2515,7 +2515,7 @@ function SectionTab({
       }}
     >
       <span
-        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-black text-white shadow-xs"
+        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-black text-cream shadow-xs"
         style={{ background: `linear-gradient(135deg, ${color}, ${color}cc)` }}
       >
         {number}

@@ -101,7 +101,7 @@ export function AdminChallengeEatingWindowEditor() {
           type="button"
           disabled={saving}
           onClick={save}
-          className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+          className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-cream disabled:opacity-60"
         >
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
           שמור שיעור

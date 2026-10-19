@@ -24,7 +24,7 @@ export function GuideRulesPanel() {
 
   if (!rules) {
     return (
-      <div className="flex items-center gap-2 rounded-2xl bg-white p-4 text-sm text-slate-600 ring-1 ring-slate-200">
+      <div className="flex items-center gap-2 rounded-2xl bg-cream p-4 text-sm text-slate-600 ring-1 ring-slate-200">
         <Loader2 className="h-4 w-4 animate-spin" /> טוען כללי פתיחת מדריכים…
       </div>
     );
@@ -55,7 +55,7 @@ export function GuideRulesPanel() {
   );
 
   return (
-    <section dir="rtl" className="rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+    <section dir="rtl" className="rounded-2xl bg-cream p-4 ring-1 ring-slate-200">
       <h2 className="mb-1 text-base font-bold text-slate-900">מתי אלמוג פותח מדריך</h2>
       <p className="mb-3 text-xs text-slate-500">חל על פתיחה מהצ&apos;אט ועל הסריקה הלילית. משתמש תמיד יכול לבקש מדריך במפורש אם האפשרות מופעלת.</p>
       <Toggle label="אלמוג רשאי לפתוח מדריכים" checked={rules.enabled} onChange={(v) => set({ enabled: v })} />
@@ -79,7 +79,7 @@ export function GuideRulesPanel() {
         <input className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1" value={phrases} onChange={(e) => { setPhrases(e.target.value); setState('idle'); }} />
       </label>
       <div className="mt-3 flex items-center gap-3">
-        <button type="button" onClick={save} disabled={state === 'saving'} className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-60">
+        <button type="button" onClick={save} disabled={state === 'saving'} className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-cream hover:bg-emerald-700 disabled:opacity-60">
           {state === 'saving' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} שמירה
         </button>
         {state === 'saved' ? <span className="text-sm text-emerald-700">נשמר</span> : null}
