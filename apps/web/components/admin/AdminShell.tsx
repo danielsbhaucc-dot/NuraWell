@@ -189,7 +189,7 @@ export function AdminShell({
               sidebarCollapsed && 'lg:mb-6 lg:flex-col lg:gap-3',
             )}
           >
-            <Link
+            <Link prefetch={false}
               href="/"
               className={cn(
                 'flex min-w-0 items-center gap-2.5 sm:gap-3',
@@ -233,7 +233,7 @@ export function AdminShell({
           </div>
 
           <nav className="min-h-0 flex-1 space-y-2 overflow-y-auto ps-0.5" aria-label="ניווט פאנל ניהול">
-            <Link
+            <Link prefetch={false}
               href={homeHref}
               onClick={() => setSidebarOpen(false)}
               className={navBtn(isHome, 'emerald')}
@@ -246,7 +246,7 @@ export function AdminShell({
               )}
             </Link>
 
-            <Link
+            <Link prefetch={false}
               href={opsHref('/users')}
               onClick={() => setSidebarOpen(false)}
               className={navBtn(isUsers, 'emerald')}
@@ -256,7 +256,7 @@ export function AdminShell({
               <span className={cn('truncate', !showNavLabels && 'lg:sr-only')}>משתמשים</span>
             </Link>
 
-            <Link
+            <Link prefetch={false}
               href={opsHref('/costs')}
               onClick={() => setSidebarOpen(false)}
               className={navBtn(isCosts, 'emerald')}
@@ -266,7 +266,7 @@ export function AdminShell({
               <span className={cn('truncate', !showNavLabels && 'lg:sr-only')}>עלויות</span>
             </Link>
 
-            <Link
+            <Link prefetch={false}
               href={opsHref('/business')}
               onClick={() => setSidebarOpen(false)}
               className={navBtn(np === '/ops/business', 'emerald')}
@@ -276,7 +276,7 @@ export function AdminShell({
               <span className={cn('truncate', !showNavLabels && 'lg:sr-only')}>מדדים עסקיים</span>
             </Link>
 
-            <Link
+            <Link prefetch={false}
               href={opsHref('/ceo')}
               onClick={() => setSidebarOpen(false)}
               className={navBtn(np === '/ops/ceo', 'emerald')}
@@ -286,7 +286,7 @@ export function AdminShell({
               <span className={cn('truncate', !showNavLabels && 'lg:sr-only')}>מנכ״ל AI</span>
             </Link>
 
-            <Link
+            <Link prefetch={false}
               href={opsHref('/errors')}
               onClick={() => setSidebarOpen(false)}
               className={navBtn(np === '/ops/errors', 'emerald')}
@@ -296,7 +296,7 @@ export function AdminShell({
               <span className={cn('truncate', !showNavLabels && 'lg:sr-only')}>שגיאות מערכת</span>
             </Link>
 
-            <Link
+            <Link prefetch={false}
               href={opsHref('/guides')}
               onClick={() => setSidebarOpen(false)}
               className={navBtn(isGuides, 'emerald')}
@@ -306,7 +306,7 @@ export function AdminShell({
               <span className={cn('truncate', !showNavLabels && 'lg:sr-only')}>מדריכים</span>
             </Link>
 
-            <Link
+            <Link prefetch={false}
               href={opsHref('/challenge')}
               onClick={() => setSidebarOpen(false)}
               className={navBtn(isChallenge, 'violet')}
@@ -316,7 +316,7 @@ export function AdminShell({
               <span className={cn('truncate', !showNavLabels && 'lg:sr-only')}>אתגר</span>
             </Link>
 
-            <Link
+            <Link prefetch={false}
               href={opsHref('/demo-access')}
               onClick={() => setSidebarOpen(false)}
               className={navBtn(isDemoAccess, 'amber')}
@@ -327,7 +327,7 @@ export function AdminShell({
             </Link>
 
             {sidebarCollapsed ? (
-              <Link
+              <Link prefetch={false}
                 href={opsHref('/mentors')}
                 onClick={() => setSidebarOpen(false)}
                 className={navBtn(isAlmogNavSection, 'violet')}
@@ -362,7 +362,7 @@ export function AdminShell({
                 {almogNavOpen && (
                   <ul className="ms-2 mt-1 space-y-1 border-s border-violet-400/35 ps-3 pb-2">
                     <li>
-                      <Link
+                      <Link prefetch={false}
                         href={opsHref('/mentors')}
                         onClick={() => setSidebarOpen(false)}
                         className={cn(
@@ -377,7 +377,7 @@ export function AdminShell({
                       </Link>
                     </li>
                                         <li>
-                      <Link
+                      <Link prefetch={false}
                         href={opsHref('/journey')}
                         onClick={() => setSidebarOpen(false)}
                         className={cn(
@@ -392,7 +392,7 @@ export function AdminShell({
                       </Link>
                     </li>
                     <li>
-                      <Link
+                      <Link prefetch={false}
                         href={opsHref('/audio')}
                         onClick={() => setSidebarOpen(false)}
                         className={cn(
@@ -419,7 +419,7 @@ export function AdminShell({
               iconSize={20}
               labelClassName={cn('truncate', !showNavLabels && 'lg:sr-only')}
             />
-            <Link
+            <Link prefetch={false}
               href={opsHref('/site-settings')}
               onClick={() => setSidebarOpen(false)}
               className={cn(
@@ -431,7 +431,7 @@ export function AdminShell({
               <Globe size={20} className={cn('shrink-0', isSiteSettings && 'text-sky-600')} />
               <span className={cn('truncate', !showNavLabels && 'lg:sr-only')}>הגדרות אתר</span>
             </Link>
-            <Link
+            <Link prefetch={false}
               href={opsHref('/accessibility')}
               onClick={() => setSidebarOpen(false)}
               className={cn(
@@ -443,7 +443,7 @@ export function AdminShell({
               <Accessibility size={20} className={cn('shrink-0', isAccessibility && 'text-emerald-600')} />
               <span className={cn('truncate', !showNavLabels && 'lg:sr-only')}>נגישות</span>
             </Link>
-            <Link
+            <Link prefetch={false}
               href={coursesHref}
               className={cn(
                 'flex min-h-11 items-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-500 transition-colors hover:bg-background-card/55 hover:text-slate-800 active:bg-background-card/70',
@@ -559,23 +559,23 @@ export function AdminShell({
         className="fixed bottom-0 inset-e-0 inset-s-0 z-30 flex border-t border-black/8 bg-white/90 px-1 py-1.5 backdrop-blur-xl safe-area-bottom lg:hidden"
         aria-label="ניווט מהיר"
       >
-        <Link href={homeHref} onClick={() => setSidebarOpen(false)} className={bottomNavClass(isHome)}>
+        <Link prefetch={false} href={homeHref} onClick={() => setSidebarOpen(false)} className={bottomNavClass(isHome)}>
           <LayoutDashboard className={cn('h-5 w-5', isHome ? 'text-emerald-600' : '')} />
           ראשי
         </Link>
-        <Link href={opsHref('/users')} onClick={() => setSidebarOpen(false)} className={bottomNavClass(isUsers)}>
+        <Link prefetch={false} href={opsHref('/users')} onClick={() => setSidebarOpen(false)} className={bottomNavClass(isUsers)}>
           <UserCircle className={cn('h-5 w-5', isUsers ? 'text-emerald-600' : '')} />
           משתמשים
         </Link>
-        <Link href={opsHref('/demo-access')} onClick={() => setSidebarOpen(false)} className={bottomNavClass(isDemoAccess)}>
+        <Link prefetch={false} href={opsHref('/demo-access')} onClick={() => setSidebarOpen(false)} className={bottomNavClass(isDemoAccess)}>
           <FlaskConical className={cn('h-5 w-5', isDemoAccess ? 'text-amber-600' : '')} />
           דמו
         </Link>
-        <Link href={opsHref('/mentors')} onClick={() => setSidebarOpen(false)} className={bottomNavClass(isAlmogSettings)}>
+        <Link prefetch={false} href={opsHref('/mentors')} onClick={() => setSidebarOpen(false)} className={bottomNavClass(isAlmogSettings)}>
           <Sparkles className={cn('h-5 w-5', isAlmogSettings ? 'text-violet-600' : '')} />
           אלמוג
         </Link>
-        <Link href={opsHref('/journey')} onClick={() => setSidebarOpen(false)} className={bottomNavClass(isJourneyManage)}>
+        <Link prefetch={false} href={opsHref('/journey')} onClick={() => setSidebarOpen(false)} className={bottomNavClass(isJourneyManage)}>
           <Map className={cn('h-5 w-5', isJourneyManage ? 'text-amber-600' : '')} />
           מסע
         </Link>

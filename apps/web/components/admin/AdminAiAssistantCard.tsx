@@ -85,7 +85,7 @@ export function AdminAiAssistantCard({ opsHref }: AdminAiAssistantCardProps) {
             <p className="mt-1 text-sm leading-relaxed text-slate-600">{copy.body}</p>
           </div>
         </div>
-        <Link
+        <Link prefetch={false}
           href={opsHref(copy.href)}
           className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-2xl border border-violet-300/45 bg-violet-500/15 px-4 py-2 text-sm font-black text-violet-950 transition hover:bg-violet-500/20"
         >
