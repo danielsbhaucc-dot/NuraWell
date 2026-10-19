@@ -136,7 +136,7 @@ ${i.subheading ? `<p dir="rtl" align="center" style="margin:10px 0 0;color:#d6ec
   // "חפיפה" בטוחה ל-Gmail: שורה שחצייה העליון בצבע ההדר והתחתון בצבע הגוף, והכרטיס יושב באמצע (בלי margin שלילי).
   const intro = i.introHtml
     ? `<tr><td dir="rtl" align="center" bgcolor="${C.card}" style="direction:rtl;background-color:${C.card};background-image:url('${origin}/brand/email-header-tab.png');background-repeat:repeat-x;background-position:top center;padding:0 12px" background="${origin}/brand/email-header-tab.png">
-${table(`<tr>${td(`background:${C.cream};border:1px solid ${C.goldSoft};border-top:4px solid ${C.gold};border-radius:28px;padding:20px 18px 6px;box-shadow:0 2px 4px rgba(15,61,46,0.10),0 18px 40px rgba(15,61,46,0.28)`, i.introHtml, ` bgcolor="${C.cream}"`)}</tr>`, 'border-collapse:separate')}
+${table(`<tr>${td(`background:${C.cream};border:1px solid #e6d9b8;border-top:4px solid ${C.gold};border-bottom:3px solid #d9cba4;border-radius:28px;padding:20px 18px 6px;box-shadow:0 2px 4px rgba(15,61,46,0.10),0 18px 40px rgba(15,61,46,0.28)`, i.introHtml, ` bgcolor="${C.cream}"`)}</tr>`, 'border-collapse:separate')}
 </td></tr>`
     : `<tr><td height="4" bgcolor="${C.gold}" style="height:4px;line-height:4px;font-size:0;background:${C.gold}">&nbsp;</td></tr>`;
   const body = `<tr>${td(`background:${C.card};border-radius:0 0 34px 34px;padding:${i.introHtml ? '24px' : '28px'} 18px 30px`, `${i.bodyHtml}${i.cta ? button(i.cta.label, i.cta.url) : ''}${i.afterCtaHtml ? emailDivider() + i.afterCtaHtml : ''}${i.signatureHtml ?? ''}`, ` bgcolor="${C.card}"`)}</tr>`;
