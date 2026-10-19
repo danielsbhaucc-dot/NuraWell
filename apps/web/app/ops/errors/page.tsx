@@ -29,8 +29,8 @@ export default async function OpsErrorsPage() {
   }
   const list = [...groups.values()].sort((a, b) => b.count - a.count);
   return (
-    <main className="flex flex-col gap-4 p-4">
-      <h1 className="text-2xl font-black text-primary-900">שגיאות מערכת</h1>
+    <div className="flex flex-col gap-4">
+      <h1 className="px-1 font-display text-[1.75rem] font-black leading-tight tracking-tight text-slate-900">שגיאות מערכת</h1>
       <p className="text-sm text-primary-800/80">7 הימים האחרונים · {rows.length} אירועים · {list.length} סוגים</p>
       {list.length === 0 ? <Card>אין שגיאות 🎉</Card> : null}
       {list.map(({ count, last }) => (
@@ -44,6 +44,6 @@ export default async function OpsErrorsPage() {
           <p dir="ltr" className="wrap-break-word text-start font-mono text-sm text-primary-950">{last.message}</p>
         </Card>
       ))}
-    </main>
+    </div>
   );
 }
