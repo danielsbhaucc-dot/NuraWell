@@ -146,6 +146,7 @@ export async function decideAction(
     const stored = t.secretResult && result ? { ...result, link: '[redacted]' } : result;
     await db.from('ceo_pending_actions').update({ status: 'done', result: stored }).eq('id', id);
     await audit(db, actor, 'action_done', { result: stored }, claimed.tool, id);
+    if (claimed.tool === 'forward_to_developer') return { ok: true, text: `העברתי לאור ✅\n${claimed.summary.replace(/^להעביר לאור:\s*/, '')}` };
     const link = typeof result?.link === 'string' ? result.link : '';
     const exp = typeof result?.expires_at === 'string' ? `\nבתוקף עד ${fmtIL(result.expires_at)}` : '';
     return { ok: true, text: `✅ בוצע: ${claimed.summary}${link ? `\n${link}` : ''}${exp}`, celebrate: claimed.tool === 'create_demo_link' };

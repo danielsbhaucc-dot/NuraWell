@@ -99,7 +99,7 @@ export function buildChallengePatternInsights(params: {
     insights.push({
       id: 'start',
       title: 'התחלת לבנות מומנטום',
-      description: 'כל משימה שתסומן — אלמוג יזהה ויחגג איתך.',
+      description: 'על כל משימה שמסמנים, אלמוג יזהה ויחגוג איתך.',
       tone: 'neutral',
     });
   }

@@ -1,18 +1,29 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createDevIssue, issueBody, scrubPii, DEV_FORWARD_LABEL } from '@/lib/ceo/dev-forward';
+import { forwardToDeveloper, issueBody, notifyDoneForwards, scrubPii, DEV_FORWARD_LABEL } from '@/lib/ceo/dev-forward';
 import { TOOL_BY_NAME } from '@/lib/ceo/tools';
 
-function fakeDb(names: string[] = []) {
-  const updates: unknown[] = [];
+function fakeDb(names: string[] = [], doneRows: { id: string; title: string; or_notes: string | null }[] = []) {
+  const writes: { op: string; p: unknown }[] = [];
+  const chain = (result: unknown) => {
+    const c: Record<string, unknown> = {};
+    for (const k of ['eq', 'is', 'not', 'select', 'limit']) c[k] = () => c;
+    c.single = async () => result;
+    c.maybeSingle = async () => result;
+    c.then = (r: (v: unknown) => unknown) => Promise.resolve(result).then(r);
+    return c;
+  };
   const db = {
-    updates,
-    from: (t: string) => ({
-      select: () => ({ not: () => ({ limit: async () => ({ data: names.map((full_name) => ({ full_name })) }) }) }),
-      update: (p: unknown) => ({ eq: async () => { updates.push({ t, p }); return {}; } }),
-      insert: async (p: unknown) => { updates.push({ t, p }); return {}; },
+    writes,
+    from: () => ({
+      select: () => {
+        const c = chain({ data: doneRows.length ? doneRows : names.map((full_name) => ({ full_name })) });
+        return c;
+      },
+      update: (p: unknown) => { writes.push({ op: 'update', p }); return chain({ data: { id: 'f1' }, error: null }); },
+      insert: (p: unknown) => { writes.push({ op: 'insert', p }); return chain({ data: { id: 'f1' }, error: null }); },
     }),
   };
-  return db as never as Parameters<typeof createDevIssue>[0] & { updates: unknown[] };
+  return db as never as Parameters<typeof forwardToDeveloper>[0] & { writes: typeof writes };
 }
 const args = { title: 'ניסוח לא טבעי אצל דנה כהן', problem_he: 'דנה כתבה ל dana@x.com', problem_en: 'phrasing', evidence: 'id 3f2b1c4d-1111-2222-3333-444455556666, 054-1234567', suggested_fix: 'fix prompt' };
 
@@ -27,24 +38,33 @@ describe('Gideon → Or forward', () => {
     expect(TOOL_BY_NAME.get('forward_to_developer')?.write).toBe(true);
   });
 
-  it('fails with a clear Hebrew message when no token, and records it', async () => {
+  it('succeeds without a GitHub token: row saved as new, anonymized', async () => {
     delete process.env.GIDEON_GITHUB_TOKEN;
-    const db = fakeDb();
-    await expect(createDevIssue(db, args)).rejects.toThrow(/GIDEON_GITHUB_TOKEN/);
-    expect(JSON.stringify(db.updates)).toContain('failed');
+    const db = fakeDb(['דנה כהן']);
+    const r = await forwardToDeveloper(db, args);
+    expect(r).toEqual({ forward_id: 'f1' });
+    const w = JSON.stringify(db.writes);
+    expect(w).toContain('"status":"new"');
+    expect(w).not.toMatch(/דנה|dana@/);
   });
 
-  it('creates a labeled, anonymized issue and returns its link', async () => {
+  it('also opens a labeled issue when a token exists; GitHub failure is non-fatal', async () => {
     process.env.GIDEON_GITHUB_TOKEN = 'test';
-    const f = vi.fn(async (_u: string, init: RequestInit) => {
-      const b = JSON.parse(String(init.body));
-      expect(b.labels).toEqual([DEV_FORWARD_LABEL]);
-      expect(b.body).not.toMatch(/דנה|dana@/);
+    const ok = vi.fn(async (_u: string, init: RequestInit) => {
+      expect(JSON.parse(String(init.body)).labels).toEqual([DEV_FORWARD_LABEL]);
       return new Response(JSON.stringify({ number: 7, html_url: 'https://github.com/o/r/issues/7' }), { status: 201 });
     });
-    const r = await createDevIssue(fakeDb(['דנה כהן']), args, { fetch: f as never });
-    expect(r).toEqual({ issue_number: 7, link: 'https://github.com/o/r/issues/7' });
+    expect(await forwardToDeveloper(fakeDb(), args, { fetch: ok as never })).toMatchObject({ forward_id: 'f1', issue_number: 7 });
+    const bad = vi.fn(async () => new Response('no', { status: 403 }));
+    expect(await forwardToDeveloper(fakeDb(), args, { fetch: bad as never })).toEqual({ forward_id: 'f1' });
     delete process.env.GIDEON_GITHUB_TOKEN;
+  });
+
+  it('notifies Daniel once per done item', async () => {
+    const sent: string[] = [];
+    const n = await notifyDoneForwards(fakeDb([], [{ id: 'f1', title: 'ניסוח', or_notes: 'תוקן ב-PR' }]), async (t) => { sent.push(t); });
+    expect(n).toBe(1);
+    expect(sent[0]).toContain('אור סיים');
   });
 
   it('issue body is bilingual', () => {
