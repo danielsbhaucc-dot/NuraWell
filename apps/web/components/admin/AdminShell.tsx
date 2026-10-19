@@ -290,10 +290,10 @@ export function AdminShell({
               href={opsHref('/errors')}
               onClick={() => setSidebarOpen(false)}
               className={navBtn(np === '/ops/errors', 'emerald')}
-              title="שגיאות מערכת"
+              title="יומנים"
             >
               <AlertTriangle size={20} className={cn('shrink-0', np === '/ops/errors' && 'text-emerald-600')} />
-              <span className={cn('truncate', !showNavLabels && 'lg:sr-only')}>שגיאות מערכת</span>
+              <span className={cn('truncate', !showNavLabels && 'lg:sr-only')}>יומנים ושגיאות</span>
             </Link>
 
             <Link prefetch={false}

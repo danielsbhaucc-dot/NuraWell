@@ -30,7 +30,7 @@ export function loginCardText(r: Req): string {
 
 export async function sendTelegramLoginCard(db: SupabaseClient, r: Req): Promise<boolean> {
   const chats = [...allowedChatIds()];
-  if (!chats.length) return false;
+  if (!chats.length) { await audit(db, r.user_id, 'ops_login_tg_failed', { id: r.id, error: 'no allowed chat configured' }); return false; }
   const ch = createTelegramChannel();
   const deny = { text: '🚫 זה לא אני', data: `ceo:ld:${r.id}` };
   let approve: { text: string; data: string; webApp?: string };
@@ -40,11 +40,21 @@ export async function sendTelegramLoginCard(db: SupabaseClient, r: Req): Promise
     approve = { text: '✅ אשר כניסה', data: `ceo:la:${r.id}` };
   } else {
     // no Face ID and bootstrap window over → only deny here; approve via email / Ops / recovery code
-    await ch.send(chats[0], `${loginCardText(r)}\n\nאישור: קוד מהמייל, מכשיר מאושר ב-Ops או קוד שחזור.`, [[deny]], { kind: 'reply' }).catch(() => {});
-    return true;
+    return deliver(db, r, 'deny_only', () => ch.send(chats[0], `${loginCardText(r)}\n\nאישור: קוד מהמייל, מכשיר מאושר ב-Ops או קוד שחזור.`, [[deny]], { kind: 'reply' }));
   }
-  await ch.send(chats[0], loginCardText(r), [[approve], [deny]], { kind: 'reply' }).catch(() => {});
-  return true;
+  return deliver(db, r, approve.webApp ? 'faceid' : 'one_tap', () => ch.send(chats[0], loginCardText(r), [[approve], [deny]], { kind: 'reply' }));
+}
+
+/** Never swallow silently: every Telegram login card outcome is audited (error text never contains the bot token). */
+async function deliver(db: SupabaseClient, r: Req, mode: string, send: () => Promise<unknown>): Promise<boolean> {
+  try {
+    await send();
+    await audit(db, r.user_id, 'ops_login_tg_sent', { id: r.id, mode });
+    return true;
+  } catch (e) {
+    await audit(db, r.user_id, 'ops_login_tg_failed', { id: r.id, mode, error: String(e).replace(/bot\d+:[\w-]+/g, 'bot***').slice(0, 160) });
+    return false;
+  }
 }
 
 export async function sendLoginEmail(db: SupabaseClient, r: Req): Promise<boolean> {
