@@ -2527,6 +2527,10 @@ async function handleChatPost(request: Request) {
     console.error('[ai/chat]', { debug_id: debugId, stage: 'empty_message' });
     return new Response(JSON.stringify({ error: 'Empty user message' }), { status: 400 });
   }
+  /** ALMOG_VOICE: one register per user, persisted & derived from their own messages (sticky) */
+  const almogRegisterPromise = import('../../../../../lib/ai/almog-register').then(({ resolveAlmogRegister }) =>
+    resolveAlmogRegister(createAdminClient(), user.id, lastUserText),
+  ).catch(() => 'casual' as const);
   /** crisis safety net: deterministic, independent of the model (card is shown client-side by the same detector) */
   const crisisSignal = detectCrisisSignals(lastUserText);
   if (crisisSignal.redFlag && !parsed.data.resume_assistant) {
@@ -3599,7 +3603,8 @@ async function handleChatPost(request: Request) {
     if (moodFromProfile && !(leanContext && workingMemoryBlock))
       contextSections.push(moodFromProfile);
 
-    const addressingFooter = [personalNameInstruction, genderAddressingHint(profileGender)]
+    const { almogRegisterHint } = await import('../../../../../lib/ai/almog-voice');
+    const addressingFooter = [personalNameInstruction, genderAddressingHint(profileGender), almogRegisterHint(await almogRegisterPromise)]
       .filter(Boolean)
       .join('\n');
 

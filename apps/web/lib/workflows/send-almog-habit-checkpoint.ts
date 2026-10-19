@@ -357,7 +357,7 @@ export async function sendAlmogHabitCheckpointNotification(
     return { body: '', inserted: null };
   }
 
-  const [{ firstName, genderInstruction }, scheduleHints, todayTouches, todayChat] =
+  const [{ firstName, genderInstruction, register }, scheduleHints, todayTouches, todayChat] =
     await Promise.all([
       fetchNotifyUserProfile(admin, payload.userId),
       fetchProfileScheduleHints(admin, payload.userId),
@@ -483,6 +483,7 @@ export async function sendAlmogHabitCheckpointNotification(
   const systemPrompt = buildHabitCheckpointSystemPrompt({
     firstName,
     genderInstruction,
+    register,
     payload,
     behavioralContext,
     weekdayName,

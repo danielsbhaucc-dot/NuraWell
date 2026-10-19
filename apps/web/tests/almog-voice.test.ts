@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { lintAlmogText, almogVoiceRule, ALMOG_VOICE_RULE } from '../lib/ai/almog-voice';
+import { lintAlmogText, almogVoiceRule, ALMOG_VOICE_RULE, deriveAlmogRegister, seriesRegisterConsistent } from '../lib/ai/almog-voice';
 import { hebrewAddressingRule } from '../lib/ai/hebrew-output-rules';
 import { lessonGenderCopy } from '../lib/journey/lesson-gender-copy';
 import * as pc from '../lib/profile/personalized-copy';
@@ -34,7 +34,7 @@ describe('ALMOG_VOICE — templates & prompt examples', () => {
   for (const file of SOURCES) {
     it(`${file}: no slang, elongation, unnatural phrasing in examples/templates`, () => {
       const bad = exampleLines(file)
-        .map((l) => ({ l: l.trim(), issues: lintAlmogText(l, { gender: 'male' }).filter((i) => i.kind !== 'gender') }))
+        .map((l) => ({ l: l.trim(), issues: lintAlmogText(l.replace(/\((?:זכר|לגבר|לאישה)[^)]*\)/gu, ''), { gender: 'male' }).filter((i) => i.kind !== 'gender') }))
         .filter((x) => x.issues.length);
       expect(bad).toEqual([]);
     });
@@ -43,17 +43,37 @@ describe('ALMOG_VOICE — templates & prompt examples', () => {
   it('voice rule is injected into every shared prompt path', () => {
     for (const g of ['male', 'female', null] as const) expect(hebrewAddressingRule(g)).toContain('ALMOG_VOICE');
     expect(NURAWELL_CHAT_SYSTEM_PROMPT_V2).toContain(ALMOG_VOICE_RULE);
-    expect(readFileSync(join(root, 'lib/ai/habit-checkpoint-llm.ts'), 'utf8')).toContain('${ALMOG_VOICE_RULE}');
+    expect(readFileSync(join(root, 'lib/ai/habit-checkpoint-llm.ts'), 'utf8')).toContain('almogVoiceRule(');
     expect(almogVoiceRule('female')).toContain('לשון נקבה');
   });
 
   it('lint catches the phrasing Gideon flagged', () => {
     expect(lintAlmogText('שתית את השתיים של המים').map((i) => i.kind)).toContain('unnatural');
-    expect(lintAlmogText('מה קורה אחי?').map((i) => i.kind)).toContain('slang');
-    expect(lintAlmogText('חברותא, יאללה').map((i) => i.kind)).toContain('slang');
-    expect(lintAlmogText('הנך מוזמן יקירי, וואלה').map((i) => i.kind)).toContain('register');
-    // mirroring the user's own slang is allowed
-    expect(lintAlmogText('אחי, כל הכבוד', { userText: 'אחי עשיתי' })).toEqual([]);
+    expect(lintAlmogText('חברותא, יאללה', { gender: 'male' }).map((i) => i.kind)).toContain('slang');
+    expect(lintAlmogText('הנך מוזמן יקירי, וואלה', { gender: 'male' }).map((i) => i.kind)).toContain('register');
+    expect(lintAlmogText('בוקררר!!', { gender: 'male' }).map((i) => i.kind)).toContain('elongation');
+  });
+
+  it('slang is gender-matched: אחי only for men', () => {
+    expect(lintAlmogText('וואלה אחי, כל הכבוד', { gender: 'male' })).toEqual([]);
+    expect(lintAlmogText('וואלה אחי, כל הכבוד', { gender: 'female' }).map((i) => i.detail)).toContain('אחי');
+    expect(lintAlmogText('מה קורה אחי?').map((i) => i.detail)).toContain('אחי');
+    expect(lintAlmogText('וואלה, את אלופה', { gender: 'female' })).toEqual([]);
+    expect(lintAlmogText('וואלה, את אלופה', { gender: 'male' }).map((i) => i.detail)).toContain('אלופה');
+    expect(lintAlmogText('וואלה, איזה יום')).toEqual([]);
+    // formal register: no slang
+    expect(lintAlmogText('וואלה, איזה יום', { register: 'formal' }).map((i) => i.kind)).toContain('slang');
+  });
+
+  it('register: derived from the user, sticky, consistent across a series', () => {
+    expect(deriveAlmogRegister('שלום רב, אשמח אם תוכל לעזור לי עם התוכנית', null)).toBe('formal');
+    expect(deriveAlmogRegister('כן', 'formal')).toBe('formal');
+    expect(deriveAlmogRegister('וואלה אחי עשיתי', 'formal')).toBe('casual');
+    expect(deriveAlmogRegister('', null)).toBe('casual');
+    expect(seriesRegisterConsistent(['וואלה, איך הולך?', 'סבבה, מחר ממשיכים'])).toBe(true);
+    expect(seriesRegisterConsistent(['וואלה, איך הולך?', 'הנך מוזמן להמשיך'])).toBe(false);
+    for (const g of ['male', 'female', null] as const) expect(almogVoiceRule(g, 'formal')).toContain('בלי סלנג');
+    expect(almogVoiceRule('female')).toContain('לעולם לא "אחי"');
   });
 });
 
