@@ -3,6 +3,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 export type NotifyUserProfile = {
   firstName: string;
   genderInstruction: string;
+  /** persisted per-user Almog register (ALMOG_VOICE) */
+  register?: 'casual' | 'formal';
 };
 
 /**
@@ -15,11 +17,11 @@ export async function fetchNotifyUserProfile(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data } = await admin
     .from('profiles')
-    .select('full_name, gender')
+    .select('full_name, gender, almog_register')
     .eq('id', userId)
     .maybeSingle();
 
-  const row = (data ?? null) as { full_name?: string | null; gender?: string | null } | null;
+  const row = (data ?? null) as { full_name?: string | null; gender?: string | null; almog_register?: string | null } | null;
   const full = (row?.full_name ?? '').trim();
   const firstName = full.split(/\s+/)[0]?.trim() || 'שם';
 
@@ -36,5 +38,6 @@ export async function fetchNotifyUserProfile(
       'מגדר לא מצוין או "אחר" — פנייה ניטרלית וחמה; העדף שם פרטי בלי לשון מוטה.';
   }
 
-  return { firstName, genderInstruction };
+  const register: 'casual' | 'formal' = row?.almog_register === 'formal' ? 'formal' : 'casual';
+  return { firstName, genderInstruction, register };
 }
