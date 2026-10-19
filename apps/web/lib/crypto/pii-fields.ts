@@ -28,9 +28,18 @@ function decNumber(v: unknown, userId: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+/** ערכי סמן טכניים (לא תוכן משתמש) שהקוד מסנן לפיהם ב-eq — נשארים גלויים. */
+export const PLAIN_SENTINELS: ReadonlySet<string> = new Set(['chat_card_confirm']);
+
+/** האם ערך טקסט צריך הצפנה (לא ריק, לא מוצפן, לא סמן טכני). */
+export function needsTextEncryption(v: unknown): v is string {
+  return typeof v === 'string' && v !== '' && !isEncrypted(v) && !PLAIN_SENTINELS.has(v);
+}
+
 function encText(v: unknown, userId: string): unknown {
   if (v === null || v === undefined) return v;
   if (isEncrypted(v)) return v;
+  if (typeof v === 'string' && PLAIN_SENTINELS.has(v)) return v;
   const s = String(v);
   return s === '' ? s : encryptString(s, userId);
 }
@@ -151,6 +160,12 @@ export const TABLE_ENC_TEXT = {
   user_memories: ['memory_text'],
   user_insights: ['insight_text'],
   chat_periodic_summaries: ['ai_insight'],
+  /** תור חילוץ התחייבויות — מכיל ציטוט גולמי מהשיחה */
+  pending_almog_commitment_jobs: ['user_message', 'assistant_message', 'rolling_summary'],
+  /** הערת ביצוע — לרוב ציטוט של הודעת המשתמש */
+  journey_task_executions: ['note'],
+  /** ציטוט מהשיחה שממנו נוצרה משימה */
+  almog_assignments: ['source_excerpt'],
 } as const;
 export type EncTextTable = keyof typeof TABLE_ENC_TEXT;
 

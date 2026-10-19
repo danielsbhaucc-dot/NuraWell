@@ -829,6 +829,12 @@ async function runMasterCron() {
       .from('error_events')
       .delete()
       .lt('created_at', new Date(Date.now() - 30 * 86_400_000).toISOString());
+    // מזעור נתונים: תור חילוץ ההתחייבויות שכבר עובד — 7 ימים
+    await admin
+      .from('pending_almog_commitment_jobs')
+      .delete()
+      .eq('processed', true)
+      .lt('created_at', new Date(Date.now() - 7 * 86_400_000).toISOString());
   } catch (e) {
     errors.push(`perf_retention: ${e instanceof Error ? e.message : String(e)}`);
   }

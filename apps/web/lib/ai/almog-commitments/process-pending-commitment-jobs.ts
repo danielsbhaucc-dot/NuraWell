@@ -8,6 +8,7 @@ import { extractAlmogCommitments } from './extract-commitments';
 import { persistCommitmentExtraction } from './persist';
 import { queueTaskProposals } from '../chat-ui/task-proposals';
 import { getPlan } from '../../tasks';
+import { decryptTableRow } from '@/lib/crypto/pii-fields';
 
 type JobRow = {
   id: string;
@@ -69,7 +70,7 @@ export async function processPendingAlmogCommitmentJobs(
     return { claimed: 0, processed: 0, failed: 0 };
   }
 
-  const jobs = (data ?? []) as JobRow[];
+  const jobs = ((data ?? []) as JobRow[]).map((j) => decryptTableRow('pending_almog_commitment_jobs', j));
   let processed = 0;
   let failed = 0;
 
@@ -129,6 +130,10 @@ export async function processPendingAlmogCommitmentJobs(
         .from('pending_almog_commitment_jobs')
         .update({
           processed: true,
+          // מזעור נתונים: אחרי עיבוד אין צורך בציטוט הגולמי מהשיחה
+          user_message: '',
+          assistant_message: '',
+          rolling_summary: null,
           processed_at: new Date().toISOString(),
           attempts: nextAttempts,
           last_error: null,

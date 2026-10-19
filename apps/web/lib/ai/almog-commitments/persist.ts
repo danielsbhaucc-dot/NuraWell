@@ -19,6 +19,7 @@ import {
   normalizeTitleKey,
   titlesAreSimilar,
 } from './title-similarity';
+import { encryptTableRow } from '@/lib/crypto/pii-fields';
 
 export { titlesAreSimilar } from './title-similarity';
 
@@ -215,7 +216,7 @@ export async function persistCommitmentExtraction(params: {
       related_habit_id: relatedHabitId,
       related_step_id: params.relatedStepId ?? null,
       source_session_id: sessionId,
-      source_excerpt: params.sourceExcerpt ?? null,
+      source_excerpt: params.sourceExcerpt ? encryptTableRow('almog_assignments', { source_excerpt: params.sourceExcerpt }, userId).source_excerpt : null,
       dedupe_key: key,
       created_by: 'almog',
       metadata: {

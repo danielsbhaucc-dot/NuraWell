@@ -232,6 +232,12 @@ export async function proxy(request: NextRequest) {
   if (effectiveOpsHost && (pathname === '/login' || isOpsDeviceCheck)) return stealthNotFound();
 
   /** דומיין Ops משרת רק את הפאנל (+ /login משלו); /guides וכו׳ → דף הבית של הפאנל */
+  /** Old Ops URLs → their merged pages, as one server redirect (no client double-load, no `/ops/...` leak). */
+  const OPS_ALIASES: Record<string, string> = { '/almog': '/mentors', '/journey-hub': '/journey' };
+  if (effectiveOpsHost && OPS_ALIASES[pathname]) {
+    return applySecurityHeaders(NextResponse.redirect(new URL(OPS_ALIASES[pathname], request.url), 308));
+  }
+
   if (effectiveOpsHost) {
     const skipPanelGate =
       pathname.startsWith('/api') || pathname.startsWith('/_next') ||
