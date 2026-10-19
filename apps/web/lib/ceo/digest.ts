@@ -84,15 +84,15 @@ export async function sendDigest(db: SupabaseClient, channel: CeoChannel, period
     const text = await buildDigest(db, period, deps);
     // weekly/monthly reviews carry technical/quality findings → one-tap "🛠️ העבר לאור"
     const draftId = period === 'daily' ? null : await saveDigestDraft(db, text).catch(() => null);
-    for (const c of chats) await channel.send(c, text, draftId ? [[forwardButton(draftId)]] : undefined);
+    for (const c of chats) await channel.send(c, text, draftId ? [[forwardButton(draftId)]] : undefined, { kind: 'digest', topic: period });
   }
   // systemic cost alert (separate message, only when the SQL check fires with the admin thresholds)
   const anomalies = settings.alert_topics.cost ? await costAnomalies(db, settings) : [];
-  if (anomalies.length) for (const c of chats) await channel.send(c, formatCostAlert(anomalies));
+  if (anomalies.length) for (const c of chats) await channel.send(c, formatCostAlert(anomalies), undefined, { kind: 'alert', topic: 'cost' });
   // follow-up: one message per due/overdue human task, with done/snooze buttons (max 3/day)
   const due = settings.alert_topics.owner_tasks ? dueForReminder(await openOwnerTasks(db)).slice(0, 3) : [];
   for (const t of due) {
-    for (const c of chats) await channel.send(c, `📌 תזכורת: ${formatTaskLine(t)}${t.detail ? `\n${t.detail}` : ''}`, taskButtons(t.id));
+    for (const c of chats) await channel.send(c, `📌 תזכורת: ${formatTaskLine(t)}${t.detail ? `\n${t.detail}` : ''}`, taskButtons(t.id), { kind: 'reminder', topic: 'owner_tasks' });
     await db.from('ceo_owner_tasks').update({ last_reminded_at: new Date().toISOString() }).eq('id', t.id);
   }
   await audit(db, 'cron', 'digest', { period, chats: chats.length });

@@ -219,7 +219,7 @@ describe('formatting + time context', () => {
     const f = vi.fn()
       .mockResolvedValueOnce(new Response('{"ok":false}', { status: 400 }))
       .mockResolvedValueOnce(new Response('{"ok":true}'));
-    await createTelegramChannel(f as never).send('42', '**x**');
+    await createTelegramChannel(f as never).send('42', '**x**', undefined, { kind: 'reply' });
     const bodies = f.mock.calls.map((c) => JSON.parse((c as [string, { body: string }])[1].body));
     expect(bodies[0].parse_mode).toBe('HTML');
     expect(bodies[1].parse_mode).toBeUndefined();
@@ -363,7 +363,8 @@ describe('stolen-phone protection', () => {
   it('unknown chat alerts the owner, gets no reply; /lock kills', async () => {
     const { db, t } = fakeDb();
     const f = tgFetch();
-    await handleTelegramUpdate(db, createTelegramChannel(f as never), { message: { chat: { id: 999 }, text: 'היי' } });
+    // gate stubbed open: quiet-time behavior is covered in gideon-quiet.test.ts (keeps this test day-independent)
+    await handleTelegramUpdate(db, createTelegramChannel(f as never, undefined, async () => 'send'), { message: { chat: { id: 999 }, text: 'היי' } });
     const sent = f.mock.calls.map((c) => JSON.parse(String(((c as unknown[])[1] as { body: string }).body)));
     expect(sent).toHaveLength(1);
     expect(sent[0].chat_id).toBe('42');

@@ -6,6 +6,7 @@ import { deleteUserCompletely } from '@/lib/admin/delete-user-completely';
 import { opsLink } from './channel';
 import { openOwnerTasks, setOwnerTask } from './owner-tasks';
 import { forwardToDeveloper, forwardSchema, type ForwardArgs } from './dev-forward';
+import { describePref, listPrefs, PrefInput, savePref, setPrefActive } from './prefs';
 import { createDemoAccessLink, resolveCeoActorUserId, readDemoDefaultTarget } from '@/lib/demo-access/create';
 
 /**
@@ -508,7 +509,45 @@ const DEV: CeoTool[] = [
   },
 ];
 
-CEO_TOOLS.push(...GENERIC, ...OWNER, ...JOURNEY, ...DEV);
+
+/**
+ * Daniel's standing instructions ("don't message me on Shabbat", quiet hours, stop a message type).
+ * Saved instantly (Daniel's own preference, no approval card) and ENFORCED in code at the send layer.
+ * Gideon may confirm only after owner_pref_set returned ok (agent.ts enforces this too).
+ */
+export const PREF_TOOLS: CeoTool[] = [
+  {
+    name: 'owner_pref_set',
+    description:
+      'Save a STANDING instruction from Daniel about when/what you message him. MUST be called before you agree to any such request ("אל תשלח לי בשבת", "בלי הודעות היום", "לא לפני 8 בבוקר", "תפסיק לשלוח עדכון יומי"). kind: shabbat (recurring, from candle lighting to tzeit, incl. Yom Tov) | quiet_hours (from/to HH:MM Israel, optional days) | quiet_until (one-off; until = end_of_shabbat | end_of_today | tomorrow_morning | ISO) | mute_topic (topics: daily, weekly, monthly, cost, owner_tasks, agent_report, dev_forward) | note (any other standing instruction about your behavior; remembered every turn but NOT code-enforced — say so). Held messages are delivered when quiet ends. Security alerts cannot be muted here.',
+    schema: PrefInput,
+    write: false,
+    run: async (db, a) => {
+      const p = await savePref(db, a as never, 'gideon');
+      return { ok: true, saved: { id: p.id, kind: p.kind, enforced_in_code: p.kind !== 'note', description: describePref(p) } };
+    },
+  },
+  {
+    name: 'owner_prefs_list',
+    description: "Daniel's active standing instructions (what is enforced and how).",
+    schema: z.object({}),
+    write: false,
+    run: async (db) => (await listPrefs(db)).map((p) => ({ id: p.id, kind: p.kind, label: p.label, description: describePref(p), source: p.source })),
+  },
+  {
+    name: 'owner_pref_remove',
+    description: 'Turn off one of Daniel\'s standing instructions when he asks (id from owner_prefs_list). Reversible (Ops can re-enable).',
+    schema: z.object({ id: uuid }),
+    write: false,
+    run: async (db, a) => {
+      const p = await setPrefActive(db, String(a.id), false);
+      if (!p) throw new Error('not found');
+      return { ok: true, removed: p.label };
+    },
+  },
+];
+
+CEO_TOOLS.push(...GENERIC, ...OWNER, ...JOURNEY, ...DEV, ...PREF_TOOLS);
 export const TOOL_BY_NAME = new Map(CEO_TOOLS.map((t) => [t.name, t]));
 
 /** OpenAI tool specs (JSON schema). The content-draft tool is handled in agent.ts. */
@@ -530,6 +569,7 @@ const CAP_HE: Record<string, string> = {
   owner_tasks_list: 'משימות פתוחות של דניאל', owner_task_create: 'פתיחת משימה לדניאל', owner_task_update: 'עדכון משימה של דניאל',
   journey_agent_start: 'הפעלת סוכן התוכן על חומר גלם', journey_agent_reply: 'תשובה לסוכן התוכן', journey_agent_sessions_list: 'סשנים של סוכן התוכן',
   recent_digest_findings: 'סיכומים אחרונים שאפשר להעביר לאור', forward_to_developer: 'העברת ממצא טכני לאור',
+  owner_pref_set: 'שמירת הוראה קבועה של דניאל (שבת, שעות שקט, השתקה) שנאכפת בקוד', owner_prefs_list: 'ההוראות הקבועות של דניאל', owner_pref_remove: 'ביטול הוראה קבועה',
 };
 export function capabilityManifest(): string {
   return CEO_TOOLS.map((t) => `• ${t.name}: ${CAP_HE[t.name] ?? t.description.slice(0, 80)}${t.destructive ? ' [בלתי הפיך]' : t.write ? ' [באישור]' : ''}`).join('\n');
