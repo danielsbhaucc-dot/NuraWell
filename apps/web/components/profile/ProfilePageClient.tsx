@@ -140,7 +140,7 @@ export function ProfilePageClient({
   const navItems = [
     // admins only (server-checked again on the page; non-admins get a 404)
     ...(profile?.role === 'admin' && !isDemoAccess
-      ? [{ label: 'פאנל ניהול', href: '/auth/bridge-to-ops', emoji: '🛠️' }]
+      ? [{ label: 'פאנל ניהול', href: '/ops', emoji: '🛠️' }]
       : []),
     { label: 'בית', href: '/home', emoji: '🏠' },
     { label: 'ההתקדמות שלי', href: '/progress', emoji: '📊' },
