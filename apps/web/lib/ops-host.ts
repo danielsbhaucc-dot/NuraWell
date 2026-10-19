@@ -164,3 +164,10 @@ export function isOpsPanelBrowserPath(pathname: string): boolean {
   ];
   return prefixes.some((prefix) => p === prefix || p.startsWith(`${prefix}/`));
 }
+
+/** Only same-origin relative paths after an Ops login (blocks open redirects like //evil.com). */
+export function safeOpsReturnPath(raw: string | null | undefined): string {
+  if (!raw || !raw.startsWith('/') || raw.startsWith('//') || raw.startsWith('/\\')) return '/';
+  if (raw === '/login' || raw.startsWith('/login?')) return '/';
+  return raw;
+}

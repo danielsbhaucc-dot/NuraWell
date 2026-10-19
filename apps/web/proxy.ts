@@ -9,8 +9,8 @@ import {
   isAppHostOpsFallback,
   opsCanonicalHostname,
   requestHostname,
+  safeOpsReturnPath,
 } from './lib/ops-host';
-import { resolvePublicAppOriginForOpsRedirect } from './lib/public-app-url';
 import {
   APP_HOME_PATH,
   MARKETING_PATHS_REDIRECT_WHEN_AUTHED,
@@ -212,9 +212,13 @@ export async function proxy(request: NextRequest) {
     return applySecurityHeaders(NextResponse.next({ request: { headers: requestHeaders } }));
   }
 
-  /** דומיין Ops משרת רק את הפאנל; /login, /guides וכו׳ → דף הבית של הפאנל */
+  /** Ops host has its own login page (same-origin auth cookies; never bounce to the public *.vercel.app host). */
+  const isOpsLoginPage = effectiveOpsHost && pathname === '/login';
+
+  /** דומיין Ops משרת רק את הפאנל (+ /login משלו); /guides וכו׳ → דף הבית של הפאנל */
   if (effectiveOpsHost) {
     const skipPanelGate =
+      isOpsLoginPage ||
       pathname.startsWith('/api') || pathname.startsWith('/_next') ||
       pathname === '/gideon' || pathname.startsWith('/gideon/'); // passkey step-up pages (rpId = Ops host)
     if (!skipPanelGate && !isOpsPanelBrowserPath(pathname)) {
@@ -292,6 +296,28 @@ export async function proxy(request: NextRequest) {
     }
   }
 
+  if (isOpsLoginPage) {
+    if (user) {
+      const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
+      const isAdmin = profile?.role === 'admin' && !(await hasActiveDemoAccessSession(user.id));
+      if (isAdmin) {
+        const target = safeOpsReturnPath(request.nextUrl.searchParams.get('redirect'));
+        const out = NextResponse.redirect(new URL(target, request.nextUrl.origin));
+        copyCookies(response, out);
+        return applySecurityHeaders(out);
+      }
+      // Signed in on the Ops host but not an admin → drop this host's session, show login with a notice.
+      await supabase.auth.signOut({ scope: 'local' });
+      if (request.nextUrl.searchParams.get('reason') !== 'no_access') {
+        const out = NextResponse.redirect(new URL('/login?reason=no_access', request.nextUrl.origin));
+        copyCookies(response, out);
+        return applySecurityHeaders(out);
+      }
+    }
+    response.headers.set('X-Robots-Tag', 'noindex, nofollow');
+    return applySecurityHeaders(response);
+  }
+
   /** גישה ישירה ל־/ops מהדומיין הציבורי — כאילו לא קיים */
   const appHostOpsPath =
     isAppHostOpsFallback(incomingHost) && (pathname === '/ops' || pathname.startsWith('/ops/'));
@@ -316,32 +342,35 @@ export async function proxy(request: NextRequest) {
   const isOpsSessionIngest = pathname === '/auth/ops-ingest';
 
   if (needsOpsGate && !pathname.startsWith('/api') && !isOpsSessionIngest) {
-    /** בפיתוח מקומי /ops — לוגין על אותו host; בדומיין Ops — כתובת מה־DB / env / Vercel */
-    const mainOrigin = devOpsPath
-      ? request.nextUrl.origin
-      : await resolvePublicAppOriginForOpsRedirect();
+    /** Login always stays on the requesting host (Ops host has its own /login) — never the public *.vercel.app. */
+    const loginOrigin = request.nextUrl.origin;
     if (!user) {
-      const loginUrl = new URL('/login', mainOrigin);
-      const opsReturnUrl = appHostOpsPath
+      const loginUrl = new URL('/login', loginOrigin);
+      const opsReturnPath = appHostOpsPath
         ? `${pathname}${request.nextUrl.search}`
         : isOpsPanelBrowserPath(pathname)
-        ? new URL(pathname, request.nextUrl.origin).href
-        : new URL('/', request.nextUrl.origin).href;
-      loginUrl.searchParams.set('redirect', opsReturnUrl);
+        ? `${pathname}${request.nextUrl.search}`
+        : '/';
+      loginUrl.searchParams.set('redirect', opsReturnPath);
       return applySecurityHeaders(NextResponse.redirect(loginUrl));
     }
 
     // Cookie is a fast path; DB session is authoritative (cookie may be missing on ops host).
     const demoPayload = await parseDemoAccessCookie(request.cookies.get(DEMO_ACCESS_COOKIE)?.value);
     const cookieSaysDemo = Boolean(demoPayload && demoPayload.userId === user.id);
-    if (cookieSaysDemo || (await hasActiveDemoAccessSession(user.id))) {
-      return applySecurityHeaders(NextResponse.redirect(new URL(APP_HOME_PATH, mainOrigin)));
-    }
+    const isDemo = cookieSaysDemo || (await hasActiveDemoAccessSession(user.id));
+    const { data: profile } = isDemo
+      ? { data: null }
+      : await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
 
-    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
-
-    if (!profile || profile.role !== 'admin') {
-      return applySecurityHeaders(NextResponse.redirect(new URL(APP_HOME_PATH, mainOrigin)));
+    if (isDemo || !profile || profile.role !== 'admin') {
+      if (devOpsPath) {
+        return applySecurityHeaders(NextResponse.redirect(new URL(APP_HOME_PATH, loginOrigin)));
+      }
+      // Ops host: don't reveal/bounce to the public app — the Ops login handles non-admins (signs out, shows notice).
+      const out = NextResponse.redirect(new URL('/login?reason=no_access', loginOrigin));
+      copyCookies(response, out);
+      return applySecurityHeaders(out);
     }
 
     /** Ops idle timeout: no Ops activity for OPS_IDLE_MINUTES (default 60) → sign out of this host's session. */
@@ -350,7 +379,7 @@ export async function proxy(request: NextRequest) {
     const nowMs = Date.now();
     if (seen && nowMs - seen > idleMs) {
       await supabase.auth.signOut({ scope: 'local' });
-      const loginUrl = new URL('/login', mainOrigin);
+      const loginUrl = new URL('/login', loginOrigin);
       loginUrl.searchParams.set('reason', 'ops_idle');
       const out = NextResponse.redirect(loginUrl);
       for (const c of response.cookies.getAll()) out.cookies.set(c);

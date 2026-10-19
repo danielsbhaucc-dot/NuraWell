@@ -3,21 +3,10 @@
 import { useEffect } from 'react';
 import { createClient } from '../../lib/supabase/client';
 
+/** Same-host login (Ops has its own /login) — never the public *.vercel.app host. */
 function loginUrlWithRedirect(): string {
-  const base =
-    (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '')) ||
-    '';
-  const here =
-    typeof window !== 'undefined'
-      ? `${window.location.pathname}${window.location.search}`
-      : '/';
-  const redirectParam = encodeURIComponent(
-    typeof window !== 'undefined' ? window.location.href : here
-  );
-  if (base) {
-    return `${base}/login?redirect=${redirectParam}`;
-  }
-  return `/login?redirect=${redirectParam}`;
+  const here = typeof window !== 'undefined' ? `${window.location.pathname}${window.location.search}` : '/';
+  return `/login?redirect=${encodeURIComponent(here)}`;
 }
 
 /** כשסופabase מודיע על ניתוק / סשן לא תקף — מפנה ללוגין באפליקציה הציבורית (כמו middleware). */

@@ -11,16 +11,11 @@ import {
 import { publicAppBaseNoSlashFromServer, publicAppBaseNoSlashSync } from '../public-app-url';
 import { hasActiveDemoAccessSession } from '../demo-access/active-session';
 
-function opsPublicBase(): string {
-  return (process.env.NEXT_PUBLIC_OPS_URL || '').replace(/\/$/, '');
-}
-
 /** שכבת הגנה ל־app/ops — תואמת middleware */
 export async function ensureOpsAdminServer(): Promise<void> {
   const h = await headers();
   const host = requestHostname(h.get('x-forwarded-host') || h.get('host'));
   const appSync = publicAppBaseNoSlashSync();
-  const opsPublic = opsPublicBase();
 
   const isLocalDev =
     process.env.NODE_ENV === 'development' && (host === 'localhost' || host === '127.0.0.1');
@@ -48,21 +43,12 @@ export async function ensureOpsAdminServer(): Promise<void> {
       const p = path.startsWith('/ops') ? path : '/ops';
       redirect(`/login?redirect=${encodeURIComponent(p)}`);
     }
-    if (app && opsPublic) {
-      const base = opsPublic.replace(/\/$/, '');
-      let afterLogin: string;
-      try {
-        afterLogin = new URL(opsReturnPath, `${base}/`).href;
-      } catch {
-        afterLogin = `${base}/`;
-      }
-      redirect(`${app}/login?redirect=${encodeURIComponent(afterLogin)}`);
-    }
-    redirect(app ? `${app}/login` : '/login');
+    // Ops host has its own /login (same-origin cookies) — never bounce to the public *.vercel.app host.
+    redirect(`/login?redirect=${encodeURIComponent(opsReturnPath)}`);
   }
 
   if (await hasActiveDemoAccessSession(user.id)) {
-    redirect(app ? `${app}/home` : '/home');
+    redirect(appHostOps ? (app ? `${app}/home` : '/home') : '/login?reason=no_access');
   }
 
   const { data: profile } = await supabase
@@ -72,7 +58,7 @@ export async function ensureOpsAdminServer(): Promise<void> {
     .single();
 
   if (!profile || profile.role !== 'admin') {
-    redirect(app ? `${app}/home` : '/home');
+    redirect(appHostOps ? (app ? `${app}/home` : '/home') : '/login?reason=no_access');
   }
 }
 

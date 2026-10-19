@@ -176,7 +176,7 @@ describe('digests', () => {
     const text = await buildDigest(db, 'daily', { complete: llm as never });
     expect(llm).toHaveBeenCalledTimes(1);
     expect((llm.mock.calls[0] as unknown[])[0]).toMatchObject({ sensitivity: 'technical' });
-    expect(text).toContain('nurawell.vercel.app/ops/errors');
+    expect(text).toContain('ops.nurawell.ai/errors');
   });
   it('weekly is sensitive; schedule picks period by Israel date', async () => {
     const { db } = fakeDb();
