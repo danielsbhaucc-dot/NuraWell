@@ -28,7 +28,8 @@ function sanitizeRedirectPath(raw: string | null | undefined): string {
   return raw;
 }
 
-const noopSubscribe = () => () => {};
+/** Hostname never changes during the page's life — nothing to subscribe to. */
+const noopSubscribe = () => () => undefined;
 function isOpsHostClient(): boolean {
   const opsHost = process.env.NEXT_PUBLIC_OPS_HOSTNAME?.trim().toLowerCase();
   return Boolean(opsHost) && window.location.hostname.toLowerCase() === opsHost;

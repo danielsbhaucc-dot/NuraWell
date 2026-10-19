@@ -2,19 +2,19 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { NextRequest } from 'next/server';
 
 const state: { user: { id: string; email_confirmed_at: string } | null; role: string | null } = { user: null, role: null };
-const signOut = vi.fn(async () => ({ error: null }));
+const signOut = vi.fn(() => Promise.resolve({ error: null }));
 
 vi.mock('@supabase/ssr', () => ({
   createServerClient: () => ({
-    auth: { getUser: async () => ({ data: { user: state.user } }), signOut },
+    auth: { getUser: () => Promise.resolve({ data: { user: state.user } }), signOut },
     from: () => ({
-      select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: state.role ? { role: state.role } : null }) }) }),
+      select: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({ data: state.role ? { role: state.role } : null }) }) }),
     }),
   }),
 }));
 vi.mock('../lib/demo-access/active-session', () => ({
-  hasActiveDemoAccessSession: async () => false,
-  killDeadDemoAuthSessions: async () => undefined,
+  hasActiveDemoAccessSession: () => Promise.resolve(false),
+  killDeadDemoAuthSessions: () => Promise.resolve(undefined),
 }));
 
 process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://x.supabase.co';
@@ -37,7 +37,7 @@ describe('Ops host login stays on ops.nurawell.ai', () => {
   it('unauthenticated panel page → same-host /login with relative redirect', async () => {
     const res = await proxy(req('/ceo?x=1'));
     expect(res.status).toBe(307);
-    const loc = new URL(res.headers.get('location')!);
+    const loc = new URL(res.headers.get('location') ?? 'about:blank');
     expect(loc.origin).toBe('https://ops.nurawell.ai');
     expect(loc.pathname).toBe('/login');
     expect(loc.searchParams.get('redirect')).toBe('/ceo?x=1');
@@ -68,7 +68,7 @@ describe('Ops host login stays on ops.nurawell.ai', () => {
     state.user = { id: 'u2', email_confirmed_at: 'now' };
     state.role = 'user';
     const res = await proxy(req('/'));
-    const loc = new URL(res.headers.get('location')!);
+    const loc = new URL(res.headers.get('location') ?? 'about:blank');
     expect(loc.origin).toBe('https://ops.nurawell.ai');
     expect(loc.pathname + loc.search).toBe('/login?reason=no_access');
   });
