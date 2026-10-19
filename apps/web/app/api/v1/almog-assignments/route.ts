@@ -10,6 +10,7 @@ import {
   type StepDifficultyRating,
 } from '../../../../lib/ai/almog-commitments/recovery-plan-engine';
 import { persistRecoveryInsight } from '../../../../lib/ai/almog-commitments/persist-recovery-insight';
+import { decTableResult } from '@/lib/crypto/pii-fields';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -85,7 +86,8 @@ export async function GET(request: Request) {
         .eq('user_id', user.id)
         .in('status', ['active', 'frozen'])
         .order('given_at', { ascending: false })
-        .limit(40),
+        .limit(40)
+        .then(decTableResult('almog_assignments', user.id)),
       // M2: משימות דומות שממתינות לאישור משתמש.
       supabase
         .from('almog_assignments')
@@ -95,7 +97,8 @@ export async function GET(request: Request) {
         .eq('user_id', user.id)
         .eq('status', 'proposed')
         .order('given_at', { ascending: false })
-        .limit(20),
+        .limit(20)
+        .then(decTableResult('almog_assignments', user.id)),
       supabase
         .from('almog_focus_periods')
         .select('id, status, reason, paused_scope, started_at, ends_at, user_confirmed, assignment_ids')
@@ -113,7 +116,8 @@ export async function GET(request: Request) {
         .eq('user_id', user.id)
         .eq('status', 'completed')
         .order('last_done_at', { ascending: false, nullsFirst: false })
-        .limit(8),
+        .limit(8)
+        .then(decTableResult('almog_assignments', user.id)),
       supabase
         .from('scheduled_reminders')
         .select('id, kind, title, body, status, fire_at, sent_at, assignment_id, blocker_id')

@@ -4,6 +4,7 @@
 
 import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { encryptTableRow } from '@/lib/crypto/pii-fields';
 
 export async function enqueueAlmogCommitmentJob(params: {
   admin: SupabaseClient;
@@ -25,9 +26,15 @@ export async function enqueueAlmogCommitmentJob(params: {
     .insert({
       user_id: params.userId,
       session_id: params.sessionId ?? null,
-      user_message: userMessage,
-      assistant_message: assistantMessage,
-      rolling_summary: params.rollingSummary?.slice(0, 4000) ?? null,
+      ...encryptTableRow(
+        'pending_almog_commitment_jobs',
+        {
+          user_message: userMessage,
+          assistant_message: assistantMessage,
+          rolling_summary: params.rollingSummary?.slice(0, 4000) ?? null,
+        },
+        params.userId
+      ),
       habit_titles: params.habitTitles.slice(0, 40),
       habit_title_to_id: params.habitTitleToId,
       related_step_id: params.relatedStepId ?? null,
