@@ -66,7 +66,7 @@ export function lessonGenderCopy(
   }
   return {
     letsStartTogether: 'מתחילים יחד',
-    videoIntro: 'אני מלווה אותך בסרטון — בנוח, עם נשימה, ונמשיך בקצב שלך.',
+    videoIntro: 'אני מלווה אותך בסרטון. אפשר לנשום רגע, ונמשיך בקצב שלך.',
     watchedContinue: 'צפיתי, ממשיכים יחד!',
     watchedToQuestions: 'מעולה — עוברים לשאלות',
     quizLetsCheck: 'שאלות הבנה — נבדוק יחד',
@@ -79,7 +79,7 @@ export function lessonGenderCopy(
     gameMapSubtitle: 'ככה אני רואה את מה שסימנת מול מה שבאמת נכון',
     commitmentLetsTalk: 'נדבר על ההתחייבות 💪',
     summaryLetsSummarize: 'נסכם יחד את מה שעברנו — אני איתך עד הסוף.',
-    summaryLearnSubtitle: 'אלה הנקודות שחשוב לי לקחת מהשיעור',
+    summaryLearnSubtitle: 'אלה הנקודות החשובות מהשיעור הזה',
     youAnswered: 'מה שענית',
     youMarked: 'מה שסימנת',
   };

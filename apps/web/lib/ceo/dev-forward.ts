@@ -2,8 +2,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 
 /**
- * Gideon → Or (developer bot) pipeline. A finding becomes a GitHub issue labeled `from-gideon`
- * in DEV_FORWARD_REPO, only after Daniel's one-tap approval (it's a write tool, see tools.ts).
+ * Gideon → Or (developer bot) pipeline. After Daniel's one-tap approval a finding is saved in
+ * ceo_dev_forwards (status new) for Or; optionally also a GitHub issue labeled `from-gideon`.
  * No PII leaves: names/emails/phones/ids are scrubbed before the issue is written.
  */
 export const DEV_FORWARD_REPO = (process.env.GIDEON_GITHUB_REPO || 'danielsbhaucc-dot/NuraWell').trim();
@@ -62,9 +62,11 @@ export function issueBody(a: ForwardArgs): string {
   ].join('\n');
 }
 
-/** Executes after approval. Throws a Hebrew message so Daniel sees exactly what's missing. */
-export async function createDevIssue(db: SupabaseClient, raw: ForwardArgs, deps: { fetch?: typeof fetch } = {}) {
-  const token = process.env.GIDEON_GITHUB_TOKEN?.trim();
+/**
+ * Executes after approval. Success = row saved with status 'new' (Or polls the table).
+ * A GitHub issue is opened additionally only when GIDEON_GITHUB_TOKEN exists; its failure is non-fatal.
+ */
+export async function forwardToDeveloper(db: SupabaseClient, raw: ForwardArgs, deps: { fetch?: typeof fetch } = {}) {
   const names = await knownNames(db);
   const a: ForwardArgs = {
     ...raw,
@@ -75,28 +77,46 @@ export async function createDevIssue(db: SupabaseClient, raw: ForwardArgs, deps:
     suggested_fix: scrubPii(raw.suggested_fix ?? '', names),
   };
   const body = issueBody(a);
-  const rowId = raw.forwardId;
-  const save = async (patch: Record<string, unknown>) => {
-    if (rowId) await db.from('ceo_dev_forwards').update(patch).eq('id', rowId);
-    else await db.from('ceo_dev_forwards').insert({ source: 'chat', ...patch });
-  };
-  if (!token) {
-    await save({ title: a.title, body, status: 'failed', error: 'GIDEON_GITHUB_TOKEN missing' });
-    throw new Error('חסר חיבור ל-GitHub (GIDEON_GITHUB_TOKEN), אז לא נפתחה משימה לאור. הממצא נשמר בלוח הבקרה.');
+  const patch = { title: a.title, body, status: 'new', updated_at: new Date().toISOString() };
+  const q = raw.forwardId
+    ? db.from('ceo_dev_forwards').update(patch).eq('id', raw.forwardId).select('id').single()
+    : db.from('ceo_dev_forwards').insert({ source: 'chat', ...patch }).select('id').single();
+  const { data, error } = await q;
+  if (error || !data) throw new Error('לא הצלחתי לשמור את הממצא לאור. כדאי לנסות שוב.');
+  const id = (data as { id: string }).id;
+
+  const token = process.env.GIDEON_GITHUB_TOKEN?.trim();
+  if (!token) return { forward_id: id };
+  try {
+    const res = await (deps.fetch ?? fetch)(`https://api.github.com/repos/${DEV_FORWARD_REPO}/issues`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: `[Gideon] ${a.title}`, body: `${body}
+
+_ceo_dev_forwards.id: ${id}_`, labels: [DEV_FORWARD_LABEL] }),
+    });
+    if (!res.ok) throw new Error(`github ${res.status}`);
+    const j = (await res.json()) as { number: number; html_url: string };
+    await db.from('ceo_dev_forwards').update({ issue_number: j.number, issue_url: j.html_url }).eq('id', id);
+    return { forward_id: id, issue_number: j.number, issue_url: j.html_url };
+  } catch (e) {
+    await db.from('ceo_dev_forwards').update({ error: String(e instanceof Error ? e.message : e).slice(0, 200) }).eq('id', id);
+    return { forward_id: id };
   }
-  const res = await (deps.fetch ?? fetch)(`https://api.github.com/repos/${DEV_FORWARD_REPO}/issues`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28', 'Content-Type': 'application/json' },
-    body: JSON.stringify({ title: `[Gideon] ${a.title}`, body, labels: [DEV_FORWARD_LABEL] }),
-  });
-  if (!res.ok) {
-    const err = `github ${res.status}`;
-    await save({ title: a.title, body, status: 'failed', error: err });
-    throw new Error(`GitHub סירב לפתוח את המשימה (${res.status}). הממצא נשמר בלוח הבקרה.`);
+}
+
+/** Items Or marked done → one Telegram message each to Daniel (via the normal send layer). */
+export async function notifyDoneForwards(db: SupabaseClient, send: (text: string) => Promise<void>): Promise<number> {
+  const { data } = await db.from('ceo_dev_forwards').select('id, title, or_notes').eq('status', 'done').is('done_notified_at', null).limit(10);
+  let n = 0;
+  for (const r of (data ?? []) as { id: string; title: string | null; or_notes: string | null }[]) {
+    // claim first so a parallel run never double-sends
+    const { data: claimed } = await db.from('ceo_dev_forwards').update({ done_notified_at: new Date().toISOString() }).eq('id', r.id).is('done_notified_at', null).select('id').maybeSingle();
+    if (!claimed) continue;
+    await send(`🛠️ אור סיים: ${r.title ?? 'ממצא שהעברת'} ✅${r.or_notes ? `\n${r.or_notes.slice(0, 500)}` : ''}`);
+    n++;
   }
-  const j = (await res.json()) as { number: number; html_url: string };
-  await save({ title: a.title, body, status: 'created', issue_number: j.number, issue_url: j.html_url, error: null });
-  return { issue_number: j.number, link: j.html_url };
+  return n;
 }
 
 /** Save a digest so its "🛠️ העבר לאור" button can reference it. Returns the draft id. */
@@ -117,7 +137,7 @@ export async function proposeForwardFromDraft(
   const { data } = await db.from('ceo_dev_forwards').select('id, source_text, status').eq('id', draftId).maybeSingle();
   const row = data as { id: string; source_text: string | null; status: string } | null;
   if (!row?.source_text) return null;
-  if (row.status === 'created') return { already: true as const };
+  if (['new', 'in_progress', 'done'].includes(row.status)) return { already: true as const };
   const names = await knownNames(db);
   const finding = await deps.extract(scrubPii(row.source_text, names));
   if (!finding) return { none: true as const };
