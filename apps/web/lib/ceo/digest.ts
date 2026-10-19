@@ -2,7 +2,7 @@ import { withAiUsage } from '@/lib/ai/usage-meter';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { CEO_NAME, CEO_SYSTEM_PROMPT } from './agent';
 import { audit } from './actions';
-import { forwardButton, saveDigestDraft } from './dev-forward';
+import { autoForward, extractFinding, forwardedLine, forwardedSince } from './dev-forward';
 import type { CeoChannel } from './channel';
 import { allowedChatIds, opsLink } from './channel';
 import { digestRecipients, readGideonSettings, type GideonSettings } from './settings';
@@ -77,14 +77,17 @@ async function buildDigestInner(db: SupabaseClient, period: DigestPeriod, deps: 
   return `${title} · ${CEO_NAME}\n\n${(message.content ?? '').trim()}${links}`;
 }
 
-export async function sendDigest(db: SupabaseClient, channel: CeoChannel, period: DigestPeriod, deps: { complete?: typeof complete } = {}) {
+export async function sendDigest(db: SupabaseClient, channel: CeoChannel, period: DigestPeriod, deps: { complete?: typeof complete; extract?: typeof extractFinding } = {}) {
   const settings = await readGideonSettings(db);
   const chats = digestRecipients(settings, allowedChatIds());
   if (settings.alert_topics[period]) {
-    const text = await buildDigest(db, period, deps);
-    // weekly/monthly reviews carry technical/quality findings → one-tap "🛠️ העבר לאור"
-    const draftId = period === 'daily' ? null : await saveDigestDraft(db, text).catch(() => null);
-    for (const c of chats) await channel.send(c, text, draftId ? [[forwardButton(draftId)]] : undefined, { kind: 'digest', topic: period });
+    let text = await buildDigest(db, period, deps);
+    // auto-consult: technical/quality findings go straight to Or (anonymized, deduped); business stays with Daniel
+    // every period: daily carries server errors / cron failures / log spikes; weekly+ also Almog quality & content gaps
+    const f = await (deps.extract ?? extractFinding)(text).catch(() => null);
+    if (f) await autoForward(db, f, { source: `digest_${period}` }).catch(() => null);
+    text += forwardedLine(await forwardedSince(db, new Date(Date.now() - DAYS[period] * 86_400_000).toISOString()).catch(() => []));
+    for (const c of chats) await channel.send(c, text, undefined, { kind: 'digest', topic: period });
   }
   // systemic cost alert (separate message, only when the SQL check fires with the admin thresholds)
   const anomalies = settings.alert_topics.cost ? await costAnomalies(db, settings) : [];

@@ -105,18 +105,27 @@ _ceo_dev_forwards.id: ${id}_`, labels: [DEV_FORWARD_LABEL] }),
   }
 }
 
-/** Items Or marked done → one Telegram message each to Daniel (via the normal send layer). */
+/** Items Or finished (done/rejected) → ONE combined morning message (caller decides when). */
 export async function notifyDoneForwards(db: SupabaseClient, send: (text: string) => Promise<void>): Promise<number> {
-  const { data } = await db.from('ceo_dev_forwards').select('id, title, or_notes').eq('status', 'done').is('done_notified_at', null).limit(10);
-  let n = 0;
-  for (const r of (data ?? []) as { id: string; title: string | null; or_notes: string | null }[]) {
-    // claim first so a parallel run never double-sends
-    const { data: claimed } = await db.from('ceo_dev_forwards').update({ done_notified_at: new Date().toISOString() }).eq('id', r.id).is('done_notified_at', null).select('id').maybeSingle();
-    if (!claimed) continue;
-    await send(`🛠️ אור סיים: ${r.title ?? 'ממצא שהעברת'} ✅${r.or_notes ? `\n${r.or_notes.slice(0, 500)}` : ''}`);
-    n++;
-  }
-  return n;
+  const { data } = await db.from('ceo_dev_forwards').select('id, title, kind, status, or_notes').in('status', ['done', 'rejected']).is('done_notified_at', null).limit(20);
+  const rows = (data ?? []) as { id: string; title: string | null; kind: string; status: string; or_notes: string | null }[];
+  if (!rows.length) return 0;
+  // claim first so a parallel run never double-sends
+  const { data: claimed } = await db.from('ceo_dev_forwards').update({ done_notified_at: new Date().toISOString() }).in('id', rows.map((r) => r.id)).is('done_notified_at', null).select('id');
+  const ids = new Set(((claimed ?? []) as { id: string }[]).map((r) => r.id));
+  const mine = rows.filter((r) => ids.has(r.id));
+  if (!mine.length) return 0;
+  const line = (r: (typeof mine)[number]) =>
+    `${r.status === 'done' ? '✅' : '↩️'} ${r.kind === 'capability_request' && r.status === 'done' ? 'יכולת חדשה: ' : ''}${r.title ?? 'ממצא'}${r.or_notes ? ` — ${r.or_notes.slice(0, 200)}` : ''}`;
+  await send(`☀️ עדכון בוקר מאור (${mine.length})\n${mine.map(line).join('\n')}`);
+  return mine.length;
+}
+
+/** Morning window for the batch (Israel time, ~07:30). */
+export function isMorningBatchTime(now = new Date()): boolean {
+  const [h, m] = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Jerusalem', hour: '2-digit', minute: '2-digit', hour12: false }).format(now).split(':').map(Number);
+  const mins = (h % 24) * 60 + m;
+  return mins >= 7 * 60 + 30 && mins < 11 * 60;
 }
 
 /** Save a digest so its "🛠️ העבר לאור" button can reference it. Returns the draft id. */
@@ -156,7 +165,7 @@ export async function extractFinding(text: string): Promise<Omit<ForwardArgs, 'f
       {
         role: 'system',
         content:
-          'You turn a CEO summary into ONE developer issue for the NuraWell codebase. Keep only technical/quality findings (bugs, AI coach phrasing/quality, content gaps the code must handle, errors). Ignore pure business commentary. Never include names, emails, phones or ids; refer to people as "משתמש A". Return strict JSON: {"title": short English+Hebrew title, "problem_he": Hebrew, "problem_en": English, "evidence": quoted anonymized examples, "suggested_fix": concrete fix}. If there is nothing technical, return {"none": true}.',
+          'You turn a CEO summary into ONE developer issue for the NuraWell codebase. Keep only technical/quality findings: ANY bug or technical problem (site/server errors, error or log spikes, cron failures, user-reported bugs, broken flows, AI coach phrasing/quality, content gaps the code must handle). Ignore pure business commentary. Never include names, emails, phones or ids; refer to people as "משתמש A". Return strict JSON: {"title": short English+Hebrew title, "problem_he": Hebrew, "problem_en": English, "evidence": quoted anonymized examples, "suggested_fix": concrete fix}. If there is nothing technical, return {"none": true}.',
       },
       { role: 'user', content: text.slice(0, 12000) },
     ],
@@ -170,4 +179,97 @@ export async function extractFinding(text: string): Promise<Omit<ForwardArgs, 'f
   } catch {
     return null;
   }
+}
+
+// ───────────────────────── auto-consult (no Daniel approval needed to forward) ─────────────────────────
+
+export type ForwardKind = 'finding' | 'capability_request';
+export type ForwardRisk = 'low' | 'sensitive';
+
+/** Dedupe key: normalized title words (order-insensitive), so "ניסוח לא טבעי" ≈ "לא טבעי ניסוח". */
+export function fingerprint(title: string): string {
+  return [...new Set(title.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, ' ').split(/\s+/).filter((w) => w.length > 2))].sort().join(' ').slice(0, 200);
+}
+
+/** Sends to users, writes data, money, security → sensitive (needs Daniel). Read-only / drafting → low. */
+export function classifyRisk(text: string): ForwardRisk {
+  return /(שלח|שליחה|הודע|התרא|למשתמש|משתמשים|מחק|מחיק|עדכן|שנה|שינוי|כתוב ל|תשלום|כסף|לקנות|רכיש|חיוב|מנוי|סיסמ|הרשא|אבטח|טוקן|מפתח|send|delete|write|update|pay|billing|secur|permission|token)/iu.test(text)
+    ? 'sensitive'
+    : 'low';
+}
+
+/**
+ * Forward automatically (harmless: it only queues work for Or). Anonymized, deduped against open items.
+ * Sensitive capability requests wait for Daniel's approval before Or implements them.
+ */
+export async function autoForward(
+  db: SupabaseClient,
+  raw: Omit<ForwardArgs, 'forwardId'>,
+  opts: { kind?: ForwardKind; risk?: ForwardRisk; source?: string } = {},
+): Promise<{ id: string; deduped: boolean; risk: ForwardRisk }> {
+  const kind = opts.kind ?? 'finding';
+  const risk = opts.risk ?? (kind === 'capability_request' ? classifyRisk(`${raw.title} ${raw.problem_he}`) : 'low');
+  const fp = fingerprint(raw.title);
+  const { data: open } = await db.from('ceo_dev_forwards').select('id').eq('fingerprint', fp).in('status', ['new', 'in_progress']).limit(1);
+  const dup = (open ?? [])[0] as { id: string } | undefined;
+  if (dup) return { id: dup.id, deduped: true, risk };
+  const names = await knownNames(db);
+  const a = {
+    title: scrubPii(raw.title, names),
+    problem_he: scrubPii(raw.problem_he, names),
+    problem_en: scrubPii(raw.problem_en, names),
+    evidence: scrubPii(raw.evidence ?? '', names),
+    suggested_fix: scrubPii(raw.suggested_fix ?? '', names),
+  };
+  const { data, error } = await db
+    .from('ceo_dev_forwards')
+    .insert({
+      source: opts.source ?? 'auto',
+      kind,
+      risk,
+      approval: kind === 'capability_request' && risk === 'sensitive' ? 'pending' : 'not_needed',
+      fingerprint: fp,
+      title: a.title,
+      body: issueBody(a),
+      status: 'new',
+    })
+    .select('id')
+    .single();
+  if (error || !data) throw new Error(error?.message ?? 'insert failed');
+  return { id: (data as { id: string }).id, deduped: false, risk };
+}
+
+/** Daniel's decision on a sensitive capability request (Telegram button or Ops). */
+export async function decideCapability(db: SupabaseClient, id: string, approve: boolean): Promise<string | null> {
+  const { data } = await db
+    .from('ceo_dev_forwards')
+    .update({ approval: approve ? 'approved' : 'rejected', ...(approve ? {} : { status: 'rejected', handled_at: new Date().toISOString() }), updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .eq('approval', 'pending')
+    .select('title')
+    .maybeSingle();
+  return (data as { title: string | null } | null)?.title ?? null;
+}
+
+export const capabilityButtons = (id: string) => [[
+  { text: '✅ אשר לאור לבנות', data: `ceo:ca:${id}` },
+  { text: '❌ לא צריך', data: `ceo:cr:${id}` },
+]];
+
+/** Forwards created since `sinceIso` — for the "what I forwarded to Or" line in summaries. */
+export async function forwardedSince(db: SupabaseClient, sinceIso: string): Promise<{ title: string; kind: string }[]> {
+  const { data } = await db.from('ceo_dev_forwards').select('title, kind').gte('created_at', sinceIso).neq('status', 'draft').neq('status', 'proposed').order('created_at').limit(10);
+  return ((data ?? []) as { title: string | null; kind: string }[]).map((r) => ({ title: r.title ?? '', kind: r.kind }));
+}
+
+export function forwardedLine(items: { title: string; kind: string }[]): string {
+  if (!items.length) return '';
+  const t = items.slice(0, 5).map((i) => `${i.kind === 'capability_request' ? '🧩' : '🛠️'} ${i.title}`).join('\n');
+  return `\n\nהעברתי לאור (${items.length}):\n${t}${items.length > 5 ? `\nועוד ${items.length - 5}` : ''}`;
+}
+
+/** Status snapshot for "על מה אור עובד?" — Gideon must answer only from this. */
+export async function orWorkStatus(db: SupabaseClient) {
+  const { data } = await db.from('ceo_dev_forwards').select('title, kind, status, approval, or_notes, handled_at, created_at').in('status', ['new', 'in_progress', 'done', 'rejected']).order('created_at', { ascending: false }).limit(20);
+  return data ?? [];
 }

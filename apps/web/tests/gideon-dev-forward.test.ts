@@ -4,12 +4,12 @@ import { TOOL_BY_NAME } from '@/lib/ceo/tools';
 
 function fakeDb(names: string[] = [], doneRows: { id: string; title: string; or_notes: string | null }[] = []) {
   const writes: { op: string; p: unknown }[] = [];
-  const chain = (result: unknown) => {
+  const chain = (result: unknown, awaited: unknown = result) => {
     const c: Record<string, unknown> = {};
-    for (const k of ['eq', 'is', 'not', 'select', 'limit']) c[k] = () => c;
+    for (const k of ['eq', 'is', 'not', 'select', 'limit', 'in']) c[k] = () => c;
     c.single = async () => result;
     c.maybeSingle = async () => result;
-    c.then = (r: (v: unknown) => unknown) => Promise.resolve(result).then(r);
+    c.then = (r: (v: unknown) => unknown) => Promise.resolve(awaited).then(r);
     return c;
   };
   const db = {
@@ -19,7 +19,7 @@ function fakeDb(names: string[] = [], doneRows: { id: string; title: string; or_
         const c = chain({ data: doneRows.length ? doneRows : names.map((full_name) => ({ full_name })) });
         return c;
       },
-      update: (p: unknown) => { writes.push({ op: 'update', p }); return chain({ data: { id: 'f1' }, error: null }); },
+      update: (p: unknown) => { writes.push({ op: 'update', p }); return chain({ data: { id: 'f1' }, error: null }, { data: [{ id: 'f1' }], error: null }); },
       insert: (p: unknown) => { writes.push({ op: 'insert', p }); return chain({ data: { id: 'f1' }, error: null }); },
     }),
   };
@@ -34,8 +34,8 @@ describe('Gideon → Or forward', () => {
     expect(s).toContain('משתמש A');
   });
 
-  it('is a write tool (requires Daniel approval)', () => {
-    expect(TOOL_BY_NAME.get('forward_to_developer')?.write).toBe(true);
+  it('is automatic (no Daniel approval)', () => {
+    expect(TOOL_BY_NAME.get('forward_to_developer')?.write).toBe(false);
   });
 
   it('succeeds without a GitHub token: row saved as new, anonymized', async () => {
@@ -60,11 +60,11 @@ describe('Gideon → Or forward', () => {
     delete process.env.GIDEON_GITHUB_TOKEN;
   });
 
-  it('notifies Daniel once per done item', async () => {
+  it('batches finished items into one morning message', async () => {
     const sent: string[] = [];
-    const n = await notifyDoneForwards(fakeDb([], [{ id: 'f1', title: 'ניסוח', or_notes: 'תוקן ב-PR' }]), async (t) => { sent.push(t); });
+    const n = await notifyDoneForwards(fakeDb([], [{ id: 'f1', title: 'ניסוח', or_notes: 'תוקן ב-PR', status: 'done', kind: 'finding' } as never]), async (t) => { sent.push(t); });
     expect(n).toBe(1);
-    expect(sent[0]).toContain('אור סיים');
+    expect(sent[0]).toContain('עדכון בוקר מאור');
   });
 
   it('issue body is bilingual', () => {

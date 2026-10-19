@@ -39,9 +39,18 @@ export const CEO_SYSTEM_PROMPT = `אתה ${CEO_NAME}, מנכ"ל ה-AI של NuraW
 3. תוכן ותוכניות: פערים בתחנות, שיעורים, משימות וסולמות. טיוטות כוללות תסריט HeyGen (דניאל מפיק את הסרטונים בעצמו).
 4. תפעול ועסק: שגיאות, עלויות, מדדים עסקיים.
 
+## אור — המהנדס הראשי (תכיר אותו טוב)
+- אור הוא המתכנת ומהנדס התוכנה הראשי של NuraWell: סוכן AI שעובד עם דניאל בצ'אט נפרד. הוא אחראי על הקוד, הארכיטקטורה, אבטחה, פרטיות, ביצועים, תשתית Supabase/Vercel ואיכות אלמוג.
+- אור הוא המתכנת: כל באג או בעיה טכנית עוברים אליו. שגיאות באתר או בשרת, קפיצות בשגיאות או בלוגים, cron שנכשל, באג שמשתמש דיווח, תהליך שבור, בעיית איכות או ניסוח של אלמוג: קרא מיד ל-forward_to_developer, אוטומטית ובלי לבקש אישור מדניאל (זה רק מכניס משימה לתור, כפילויות מסוננות). אחר כך ציין בשורה אחת "העברתי לאור".
+- החלטות עסקיות, מוצריות או אישיות לא הולכות לאור. הן הולכות לדניאל.
+- אור מטפל בתור בערך ב-02:00, 10:00 ו-16:00, בימים א'–ו' (לא בשבת). תוצאות חוזרות כסטטוס done או rejected עם הערות של אור, ואתה מרכז את מה שהסתיים בעדכון הבוקר.
+- "על מה אור עובד?" → or_work_status, וענה רק לפי הסטטוסים. לעולם אל תגיד שאור תיקן משהו אם הסטטוס שלו לא done.
+- יכולת שאין לך: אל תבטיח אותה. אמור "עוד אין לי את היכולת הזו, ביקשתי מאור להוסיף אותה" (המערכת פותחת לו בקשה אוטומטית). בקשה רגישה (שליחה למשתמשים, כתיבת נתונים, עלות כספית, אבטחה) מחכה לאישור של דניאל לפני שאור בונה אותה.
+
 ## איך אתה עובד
 - יש לך גישה לכל מה שלוח הבקרה עושה: כלים ייעודיים, ו-db_read/db_insert/db_update/db_delete על הטבלאות המותרות. כשלא ברור לך מבנה טבלה, קרא קודם שורה אחת (db_read limit 1).
 - מספרים ועובדות רק מתוך הכלים. לעולם אל תמציא. אם אתה לא בטוח, אמור את זה ואמור איך תבדוק.
+- הבטחות: אל תבטיח שום דבר בלי כלי שביצע אותו בהצלחה בתור הזה. המערכת בודקת את זה בקוד ותחליף הבטחה ריקה בתשובה כנה.
 - כל שינוי ([REQUIRES DANIEL APPROVAL]) לא מתבצע מיד, אלא נשלח לדניאל ככפתור אישור. אמור במפורש שזה ממתין לאישור. פעולות [DESTRUCTIVE] הן בלתי הפיכות: הזהר במפורש, הצע חלופה הפיכה (הסתרה או השבתה), והצע אותן רק כשדניאל ביקש.
 - לפני שינוי, ודא את המזהים בקריאה. שינוי אחד ממוקד עדיף על הרבה שינויים.
 - טיוטת שיעור: draft_lesson_content ואז create_draft_step.
@@ -136,6 +145,8 @@ export async function runCeoTurn(db: SupabaseClient, chatKey: string, userText: 
   const cards: { text: string; buttons: CeoButton[][] }[] = [];
   let text = '';
   const prefSaves: { ok: boolean; description?: string }[] = [];
+  /** tools that actually ran OK this turn (reads, saved prefs, approval proposals) → evidence for any promise */
+  const succeeded: string[] = [];
 
   for (let i = 0; i < 7; i++) {
     const { message } = await llm({ messages, tools, model });
@@ -181,14 +192,67 @@ export async function runCeoTurn(db: SupabaseClient, chatKey: string, userText: 
       } catch (e) {
         out = { error: e instanceof Error ? e.message : String(e) };
       }
+      if (!(out && typeof out === 'object' && 'error' in (out as object))) succeeded.push(c.function.name);
       messages.push({ role: 'tool', tool_call_id: c.id, content: JSON.stringify(out).slice(0, 12_000) });
     }
   }
   if (!text) text = cards.length ? 'הכנתי לך טיוטה לאישור 👇' : 'לא הצלחתי להשלים, נסה לנסח שוב.';
   text = guardPromise(userText, text, prefSaves);
+  if (!prefSaves.length) {
+    const g = await guardCapability(db, userText, text, succeeded);
+    text = g.text;
+    if (g.buttons) cards.push({ text: g.cardText!, buttons: g.buttons });
+  }
 
   await saveMemory(db, chatKey, conv?.summary ?? '', [...turns, { role: 'user', content: userText }, { role: 'assistant', content: text }], llm);
   return { text, buttons, cards, model };
+}
+
+/** Commitment / agreement phrasing ("I'll do it", "from now on", "won't send"). */
+export const COMMITS = /(^|[^א-ת])(סבבה|סגור|אעשה|אדאג|אטפל|אבצע|אסדר|מעכשיו|מהיום|מעתה|לא אשלח|אשלח לך|אזכיר לך|אעדכן אותך|אחזור אליך|אבדוק ואחזור|אין בעיה)([^א-ת]|$)/u;
+
+export const CANT_DO_TEXT = 'את זה אני לא יכול לעשות כרגע. עוד אין לי את היכולת הזו, ביקשתי מאור להוסיף אותה.';
+
+/**
+ * Post-generation guard (code, not prompt): a promise must map to a tool that succeeded this turn.
+ * Otherwise → honest reply + automatic capability request to Or (sensitive ones wait for Daniel).
+ */
+export async function guardCapability(
+  db: SupabaseClient,
+  userText: string,
+  reply: string,
+  succeeded: string[],
+  deps: { forward?: typeof import('./dev-forward').autoForward } = {},
+): Promise<{ text: string; buttons?: CeoButton[][]; cardText?: string; requested?: boolean }> {
+  if (!COMMITS.test(reply) || succeeded.length) return { text: reply };
+  const dev = await import('./dev-forward');
+  const forward = deps.forward ?? dev.autoForward;
+  const ask = userText.trim().slice(0, 300);
+  try {
+    const r = await forward(
+      db,
+      {
+        title: `Capability request: ${ask.slice(0, 80)}`,
+        problem_he: `דניאל ביקש מגדעון: "${ask}". לגדעון אין כלי שמבצע את זה, אז הוא לא הבטיח. צריך להוסיף יכולת (כלי ב-lib/ceo/tools.ts) או להסביר למה לא.`,
+        problem_en: `Daniel asked Gideon: "${ask}". No tool covers it, so the promise was blocked. Add a capability (tool in lib/ceo/tools.ts) or explain why not.`,
+        evidence: `Blocked reply: ${reply.slice(0, 400)}`,
+        suggested_fix: 'Add a CeoTool (read → immediate; write → approval card) and a CAP_HE entry; Gideon then confirms only after it succeeds.',
+      },
+      { kind: 'capability_request', source: 'capability_guard' },
+    );
+    await db.from('ceo_audit_log').insert({ actor: 'ceo', event: 'promise_blocked', detail: { forward: r.id, risk: r.risk } }).then(() => null, () => null);
+    if (r.risk === 'sensitive' && !r.deduped) {
+      return { text: CANT_DO_TEXT, requested: true, cardText: '🧩 זו יכולת רגישה. לאשר לאור לבנות אותה?', buttons: dev.capabilityButtons(r.id) };
+    }
+    return { text: CANT_DO_TEXT, requested: true };
+  } catch {
+    return { text: 'את זה אני לא יכול לעשות כרגע, ולא הצלחתי לפתוח בקשה לאור. נסה שוב עוד מעט.' };
+  }
+}
+
+/** Machine-readable registry of what Gideon can really do (single source: tools.ts). */
+export function capabilityRegistry(): { name: string; write: boolean; destructive: boolean }[] {
+  return [...TOOL_BY_NAME.values()].map((t) => ({ name: t.name, write: t.write, destructive: Boolean(t.destructive) })).concat([{ name: 'draft_lesson_content', write: false, destructive: false }]);
 }
 
 const CORRECTION = 'בדיקת מערכת:';
