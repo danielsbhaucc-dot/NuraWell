@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useSyncExternalStore, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -28,6 +28,12 @@ function sanitizeRedirectPath(raw: string | null | undefined): string {
   return raw;
 }
 
+const noopSubscribe = () => () => {};
+function isOpsHostClient(): boolean {
+  const opsHost = process.env.NEXT_PUBLIC_OPS_HOSTNAME?.trim().toLowerCase();
+  return Boolean(opsHost) && window.location.hostname.toLowerCase() === opsHost;
+}
+
 function LoginFormContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -41,6 +47,15 @@ function LoginFormContent() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  /** Ops host serves its own admin login (same-origin cookies); hide public-app links there. */
+  const isOpsHost = useSyncExternalStore(noopSubscribe, isOpsHostClient, () => false);
+  const reason = searchParams?.get('reason');
+
+  useEffect(() => {
+    if (reason === 'ops_idle') toast.info('נותקת אחרי זמן ללא פעילות', 'התחבר שוב כדי להמשיך');
+    else if (reason === 'no_access') toast.error('אין הרשאה', 'החשבון הזה לא מורשה לגשת לכאן');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reason]);
 
   const hasPhotoBg = bgMode === 'photo' && Boolean(bgUrl);
   const useDarkShell = bgMode === 'photo';
@@ -110,6 +125,11 @@ function LoginFormContent() {
         return;
       }
 
+      if (isOpsHost) {
+        // Full navigation so the proxy re-checks admin + rewrites to the panel on this host.
+        window.location.assign(redirect === APP_HOME_PATH ? '/' : redirect);
+        return;
+      }
       toast.success('התחברת בהצלחה!', 'מעבירים אותך לקורסים...');
       setTimeout(() => {
         router.push(redirect);
@@ -201,9 +221,11 @@ function LoginFormContent() {
             </div>
           </div>
 
-          <div className="mb-5">
-            <PublicAiPresence compact />
-          </div>
+          {!isOpsHost && (
+            <div className="mb-5">
+              <PublicAiPresence compact />
+            </div>
+          )}
 
           <div
             className={[
@@ -331,7 +353,7 @@ function LoginFormContent() {
               </div>
             </form>
 
-            <div className="mt-5 text-center">
+            {!isOpsHost && <div className="mt-5 text-center">
               <p className={['text-sm', isDarkUi ? 'text-emerald-100/80' : 'text-gray-500'].join(' ')}>
                 אין לכם חשבון?{' '}
                 <Link
@@ -344,10 +366,10 @@ function LoginFormContent() {
                   הרשמה חינם
                 </Link>
               </p>
-            </div>
+            </div>}
           </div>
 
-          <LegalLinksRow tone={isDarkUi ? 'dark' : 'light'} className="mt-6" />
+          {!isOpsHost && <LegalLinksRow tone={isDarkUi ? 'dark' : 'light'} className="mt-6" />}
         </motion.div>
       </main>
     </>

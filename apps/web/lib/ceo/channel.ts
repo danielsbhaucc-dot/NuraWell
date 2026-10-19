@@ -15,12 +15,9 @@ export function allowedChatIds(raw = process.env.CEO_TELEGRAM_ALLOWED_CHAT_IDS):
   return new Set((raw ?? '').split(/[\s,]+/).map((s) => s.trim()).filter(Boolean));
 }
 
-/**
- * Deep links into the admin panel. ops.nurawell.ai isn't connected yet, so the default is the
- * /ops path on the live app host (admin-gated). Set CEO_OPS_BASE_URL=https://ops.nurawell.ai once it is.
- */
+/** Deep links into the admin panel (Ops host). Telegram output still strips them via stripOpsLinks. */
 export function opsLink(path: string): string {
-  const base = (process.env.CEO_OPS_BASE_URL || 'https://nurawell.vercel.app/ops').trim().replace(/\/$/, '');
+  const base = (process.env.CEO_OPS_BASE_URL || process.env.NEXT_PUBLIC_OPS_URL || 'https://ops.nurawell.ai').trim().replace(/\/$/, '');
   const withProto = base.startsWith('http') ? base : `https://${base}`;
   return `${withProto}${path.startsWith('/') ? path : `/${path}`}`;
 }
