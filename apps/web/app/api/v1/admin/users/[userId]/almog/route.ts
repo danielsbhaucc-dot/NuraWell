@@ -35,7 +35,9 @@ export async function GET(request: Request, context: RouteContext) {
       )
       .eq('user_id', userId)
       .order('given_at', { ascending: false })
-      .limit(40),
+      .limit(40)
+      // ציטוט מהשיחה הוא תוכן שיחה: לא נחשף למנהל בלי בקשת גישה לתמליל
+      .then((r) => ({ ...r, data: (r.data ?? []).map((x) => ({ ...x, source_excerpt: null })) })),
     admin
       .from('scheduled_reminders')
       .select('id, kind, title, body, status, fire_at, sent_at, assignment_id, blocker_id')

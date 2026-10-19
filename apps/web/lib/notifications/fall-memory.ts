@@ -1,5 +1,5 @@
 import { decProfileResult } from '@/lib/crypto/pii-fields';
-import { decInteractionResult } from '@/lib/crypto/pii-fields';
+import { decInteractionResult, decTableResult } from '@/lib/crypto/pii-fields';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 export type FallEpisodeStatus = 'open' | 'recovered';
@@ -66,7 +66,7 @@ async function inferFallReason(
       .gte('completed_at', windowStart)
       .lte('completed_at', beforeIso)
       .order('completed_at', { ascending: false })
-      .limit(3),
+      .limit(3).then(decTableResult('journey_task_executions', userId)),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (admin as any)
       .from('profiles')

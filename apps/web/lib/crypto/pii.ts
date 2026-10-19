@@ -70,7 +70,7 @@ export function decryptStringArray(values: unknown, userId: string): string[] {
 }
 
 /** עמודות jsonb מוצפנות ב-user_memory_dossier */
-export const DOSSIER_ENCRYPTED_FIELDS = ['health_context', 'psychology', 'risk_signals'] as const;
+export const DOSSIER_ENCRYPTED_FIELDS = ['health_context', 'psychology', 'risk_signals', 'personal_context'] as const;
 
 export function decryptDossierRow<T extends Record<string, unknown> | null>(row: T, userId: string): T {
   if (!row) return row;

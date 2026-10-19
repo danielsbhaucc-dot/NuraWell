@@ -24,6 +24,7 @@ import {
   slotsForSchedule,
 } from '../journey/task-schedule';
 import type { TaskExecutionOutcomeFromCategory } from './response-classifier';
+import { encryptString } from '@/lib/crypto/pii';
 
 function expectedSlotCount(schedule: JourneyTaskSchedule, timesPerDay: number): number {
   return slotsForSchedule(schedule, timesPerDay).length;
@@ -295,7 +296,7 @@ async function markRecurringSlot(
       completed_at: nowIso,
       source: 'chat',
       outcome,
-      note: userMessage.slice(0, 500),
+      note: encryptString(userMessage.slice(0, 500), userId),
     },
     { onConflict: 'user_id,step_id,task_id,date_key,slot' }
   );
@@ -319,7 +320,7 @@ async function markRecurringSlot(
           slot,
           completed_at: nowIso,
           source: 'chat',
-          note: userMessage.slice(0, 500),
+          note: encryptString(userMessage.slice(0, 500), userId),
         },
         { onConflict: 'user_id,step_id,task_id,date_key,slot' }
       );
@@ -338,7 +339,7 @@ async function markRecurringSlot(
           completed_at: nowIso,
           source: 'chat',
           outcome: 'attempt_failed',
-          note: userMessage.slice(0, 500),
+          note: encryptString(userMessage.slice(0, 500), userId),
         },
         { onConflict: 'user_id,step_id,task_id,date_key,slot' }
       );

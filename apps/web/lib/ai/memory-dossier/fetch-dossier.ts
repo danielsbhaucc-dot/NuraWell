@@ -46,7 +46,7 @@ export async function upsertUserMemoryDossier(
       task_memory: dossier.task_memory,
       habit_memory: dossier.habit_memory,
       schedule_memory: dossier.schedule_memory,
-      personal_context: dossier.personal_context,
+      personal_context: encryptJson(dossier.personal_context, dossier.user_id),
       health_context: encryptJson(dossier.health_context, dossier.user_id),
       psychology: encryptJson(dossier.psychology, dossier.user_id),
       coaching_profile: dossier.coaching_profile,

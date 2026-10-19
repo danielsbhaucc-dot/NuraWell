@@ -28,6 +28,7 @@ import {
 } from './task-schedule';
 import { parseJourneyTasksFull } from './journey-report-parse';
 import type { JourneyTask, JourneyTaskSchedule } from '../types/journey';
+import { decTableResult } from '@/lib/crypto/pii-fields';
 
 export type TaskHistoryRange = 'day' | 'week' | 'month' | 'year' | 'custom' | 'all';
 
@@ -403,7 +404,8 @@ export async function buildTaskHistoryReport(
         .select('step_id, task_id, date_key, slot, completed_at, source, note')
         .eq('user_id', userId)
         .order('completed_at', { ascending: true })
-        .limit(5000),
+        .limit(5000)
+        .then(decTableResult('journey_task_executions', userId)),
       // אלמוג dropped = rejected ב-SSOT (כמו Action Hub / user-task-snapshot).
       supabase
         .from('almog_assignments')

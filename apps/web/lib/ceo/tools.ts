@@ -61,16 +61,17 @@ export const CEO_TOOLS: CeoTool[] = [
   },
   {
     name: 'list_users',
-    description: 'List real users. filter: inactive (no activity 7d+), not_onboarded, new (7d), all.',
-    schema: z.object({ filter: z.enum(['inactive', 'not_onboarded', 'new', 'all']).default('all'), limit: z.number().int().min(1).max(50).default(20) }),
+    description: 'List real users. filter: inactive (no activity 7d+), not_onboarded, new (7d), all. name: optional — find users by name (matched server-side). Only first names are returned, never full names.',
+    schema: z.object({ filter: z.enum(['inactive', 'not_onboarded', 'new', 'all']).default('all'), name: z.string().trim().min(1).max(60).optional(), limit: z.number().int().min(1).max(50).default(20) }),
     write: false,
     run: async (db, a) => {
       let q = db.from('profiles').select('id, full_name, gender, created_at, last_active_at, onboarding_completed, engagement_status, program_state, streak_days, notify_test_opt_in, is_active').eq('role', 'user');
       if (a.filter === 'inactive') q = q.lt('last_active_at', daysAgo(7));
       if (a.filter === 'not_onboarded') q = q.eq('onboarding_completed', false);
       if (a.filter === 'new') q = q.gte('created_at', daysAgo(7));
+      if (a.name) q = q.ilike('full_name', `%${String(a.name).replace(/[%_,()\\]/g, '')}%`);
       const r = await rows(q.order('last_active_at', { ascending: true, nullsFirst: true }).limit(Number(a.limit ?? 20)));
-      return r.map((u) => ({ ...u, link: opsLink(`/users?user=${u.id}`) }));
+      return r.map((u) => ({ ...firstNameOnly(u as Record<string, unknown>), link: opsLink(`/users?user=${u.id}`) }));
     },
   },
   {
@@ -87,7 +88,7 @@ export const CEO_TOOLS: CeoTool[] = [
         rows(db.from('guardian_sos_events').select('trigger, outcome, red_flag, created_at').eq('user_id', id).order('created_at', { ascending: false }).limit(5)),
         rows(db.from('notifications').select('type, title, body, is_read, created_at').eq('user_id', id).order('created_at', { ascending: false }).limit(5)),
       ]);
-      return { profile: p.data, activeTasks: tasks, recentEvents: ev, sos, notifications: notes.map((n) => ({ ...n, body: clip(n.body, 160) })), link: opsLink(`/users?user=${id}`) };
+      return { profile: p.data ? firstNameOnly(p.data as Record<string, unknown>) : null, activeTasks: tasks, recentEvents: ev, sos, notifications: notes.map((n) => ({ ...n, body: clip(n.body, 160) })), link: opsLink(`/users?user=${id}`) };
     },
   },
   {
@@ -243,6 +244,20 @@ const match = z.record(ident, z.union([z.string(), z.number(), z.boolean()])).re
 /** Tables holding tokens/secrets: never via generic writes — they have dedicated server flows (e.g. create_demo_link). */
 export const SECRET_TABLES = new Set(['demo_access_links', 'demo_access_sessions', 'gideon_settings']);
 const SECRET_COL = /(hash|token|secret|password|api_key)/i;
+/** תוכן שיחה / בריאות / פרטי קשר: לא נשלח לספק ה-AI של גדעון (PII מינימלי). */
+const PRIVATE_COL = /^(content|note|memory_text|insight_text|source_excerpt|raw_chat_text|user_message|assistant_message|rolling_summary|live_conversation_file|phone|email|avatar_url|health_conditions|dietary_preferences|main_obstacle_detail|current_weight_kg|goal_weight_kg|height_cm|weight_kg|bmi|ai_context|transcript|extracted_insights)$/i;
+/** הספק של ה-AI רואה שם פרטי בלבד — השם המלא נשאר בשרת. */
+export function firstNameOnly<T extends Record<string, unknown>>(row: T): Omit<T, 'full_name'> & { first_name?: string | null } {
+  if (!('full_name' in row)) return row;
+  const { full_name, ...rest } = row;
+  const first = typeof full_name === 'string' ? full_name.trim().split(/\s+/)[0] || null : null;
+  return { ...rest, first_name: first };
+}
+function redactCell(k: string, v: unknown): unknown {
+  if (PRIVATE_COL.test(k)) return v === null || v === undefined || v === '' ? v : '[פרטי]';
+  if (typeof v === 'string' && v.startsWith('enc:v1:')) return '[מוצפן]';
+  return typeof v === 'string' ? clip(v, 600) : v;
+}
 
 function guardWrite(table: string, row?: Record<string, unknown>) {
   if (SECRET_TABLES.has(table)) throw new Error(`table ${table} is managed by a dedicated tool (create_demo_link), not generic writes`);
@@ -325,7 +340,7 @@ const GENERIC: CeoTool[] = [
       q = applyFilters(q, (a.filters as never) ?? []);
       if (a.order) q = q.order(String(a.order), { ascending: Boolean(a.ascending) });
       const r = await rows(q.limit(Number(a.limit ?? 20)) as never);
-      return r.map((x) => Object.fromEntries(Object.entries(x as Record<string, unknown>).filter(([k]) => !SECRET_COL.test(k)).map(([k, v]) => [k, typeof v === 'string' ? clip(v, 600) : v])));
+      return r.map((x) => Object.fromEntries(Object.entries(firstNameOnly(x as Record<string, unknown>)).filter(([k]) => !SECRET_COL.test(k)).map(([k, v]) => [k, redactCell(k, v)])));
     },
   },
   {

@@ -5,7 +5,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { isEncrypted } from './pii';
 import { sealTableRow } from './pii-seal';
-import { encryptAiContext, encryptTableRow, TABLE_ENC_TEXT, type EncTextTable } from './pii-fields';
+import { encryptAiContext, needsTextEncryption, PLAIN_SENTINELS, TABLE_ENC_TEXT, type EncTextTable } from './pii-fields';
+import { encryptJson } from './pii';
 import { sealVectorMetadata, isUpstashVectorConfigured } from '@/lib/ai/upstash-vector-rest';
 import { UPSTASH_NAMESPACE_CONVERSATION_MEMORY, UPSTASH_NAMESPACE_USER_MEMORY } from '@/lib/ai/rag-config';
 
@@ -16,7 +17,8 @@ export async function backfillDerivedPii(admin: SupabaseClient, budgetMs = 60_00
   const out: Record<string, number> = {};
   for (const table of Object.keys(TABLE_ENC_TEXT) as EncTextTable[]) {
     const cols = TABLE_ENC_TEXT[table] as readonly string[];
-    const orFilter = cols.map((c) => `${c}.not.like.enc:v1:*`).join(',');
+    const sentinels = [...PLAIN_SENTINELS].map((v) => `"${v}"`).join(',');
+    const orFilter = cols.map((c) => `and(${c}.not.like.enc:v1:*,${c}.neq.,${c}.not.in.(${sentinels}))`).join(',');
     out[table] = 0;
     while (Date.now() < deadline) {
       const { data, error } = await admin.from(table).select(['id', 'user_id', ...cols].join(', ')).or(orFilter).limit(200);
@@ -26,7 +28,7 @@ export async function backfillDerivedPii(admin: SupabaseClient, budgetMs = 60_00
       const before = out[table];
       for (const r of rows) {
         const todo: Row = {};
-        for (const c of cols) if (typeof r[c] === 'string' && r[c] !== '' && !isEncrypted(r[c])) todo[c] = r[c];
+        for (const c of cols) if (needsTextEncryption(r[c])) todo[c] = r[c];
         if (!Object.keys(todo).length) continue;
         const { error: uErr } = await admin.from(table).update(await sealTableRow(table, todo, r.user_id as string)).eq('id', r.id as string);
         if (uErr) throw new Error(`${table} update: ${uErr.message}`);
@@ -46,6 +48,18 @@ export async function backfillDerivedPii(admin: SupabaseClient, budgetMs = 60_00
       if (JSON.stringify(next) === JSON.stringify(r.ai_context)) continue;
       await admin.from('profiles').update({ ai_context: next }).eq('id', r.id);
       out.ai_context += 1;
+    }
+  }
+  // user_memory_dossier: עמודות jsonb רגישות שנוספו להצפנה מאוחר יותר
+  out.dossier = 0;
+  for (let from = 0; Date.now() < deadline; from += 200) {
+    const { data, error } = await admin.from('user_memory_dossier').select('user_id, personal_context').order('user_id').range(from, from + 199);
+    if (error) throw new Error(`dossier: ${error.message}`);
+    if (!data?.length) break;
+    for (const r of data as Array<{ user_id: string; personal_context: unknown }>) {
+      if (r.personal_context === null || r.personal_context === undefined || isEncrypted(r.personal_context)) continue;
+      await admin.from('user_memory_dossier').update({ personal_context: encryptJson(r.personal_context, r.user_id) }).eq('user_id', r.user_id);
+      out.dossier += 1;
     }
   }
   // Upstash
