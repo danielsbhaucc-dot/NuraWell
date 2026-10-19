@@ -182,6 +182,7 @@ export const AI_CONTEXT_ENC_KEYS = [
   'weakness_pattern',
   'life_context',
   'pending_focus',
+  'active_pivot',
   'dashboard_brief',
 ] as const;
 

@@ -39,6 +39,18 @@ export interface AiUserContext {
    */
   pending_focus?: string[];
   /**
+   * הקטנה זמנית פעילה ("בוא ניקח את זה קטן יותר"): מה הוקטן, למה, ולאן חוזרים.
+   * נכתב ב-accept, מתנקה כשהמשימה המקורית חוזרת (graduation / ביטול הצעד הקטן).
+   */
+  active_pivot?: {
+    original_title: string | null;
+    micro_title: string;
+    reason: string;
+    since: string;
+    micro_assignment_id: string;
+    parent_assignment_id: string | null;
+  } | null;
+  /**
    * עד 3 חסמים שהמשתמש מתמודד איתם — קצר, בעברית.
    * דוגמה: ["מתקשה לזכור לשתות בבוקר", "לחוץ בעבודה השבוע"].
    * שונה מ-`main_blocker` (מחרוזת בודדת, מאות בזמן אמת מהצ'אט):
@@ -192,6 +204,11 @@ export function formatAiWorkingMemoryPromptBlock(
   const lines: string[] = ['[זיכרון עובד — מקור אמת אישי]'];
   if (ctx.current_goal) lines.push(`יעד נוכחי: ${ctx.current_goal}`);
   if (ctx.current_focus) lines.push(`פוקוס נוכחי: ${ctx.current_focus}`);
+  if (ctx.active_pivot?.micro_title) {
+    const ap = ctx.active_pivot;
+    const days = Math.max(0, Math.floor((Date.now() - Date.parse(ap.since)) / 86_400_000));
+    lines.push(`הקטנה זמנית פעילה (${days === 0 ? 'מהיום' : `כבר ${days} ימים`}): ${ap.original_title ? `"${ap.original_title}" הוקטנה ל-` : ''}"${ap.micro_title}" — ${ap.reason}. המשתמש בחר בזה בעצמו. התייחס לזה בטבעיות ובלי אשמה; אחרי 3 ימים טובים בצעד הקטן המשימה המקורית חוזרת בהדרגה.`);
+  }
   if (ctx.main_blocker) lines.push(`חסם שעלה בצ'אט: ${ctx.main_blocker}`);
   if (ctx.current_mood_signal && ctx.current_mood_signal !== 'unknown') {
     lines.push(`מצב רגשי אחרון: ${ctx.current_mood_signal}`);
@@ -297,6 +314,11 @@ export async function buildUserContext(
   if (ctx.main_blocker) parts.push(`חסם מרכזי (מהמשתמש): ${ctx.main_blocker}`);
   if (ctx.current_goal) parts.push(`יעד שהמשתמש הזכיר: ${ctx.current_goal}`);
   if (ctx.current_focus) parts.push(`פוקוס נוכחי: ${ctx.current_focus}`);
+  if (ctx.active_pivot?.micro_title) {
+    const ap = ctx.active_pivot;
+    const days = Math.max(0, Math.floor((Date.now() - Date.parse(ap.since)) / 86_400_000));
+    parts.push(`הקטנה זמנית פעילה (${days === 0 ? 'מהיום' : `כבר ${days} ימים`}): ${ap.original_title ? `"${ap.original_title}" הוקטנה ל-` : ''}"${ap.micro_title}" — ${ap.reason}. המשתמש בחר בזה בעצמו. התייחס לזה בטבעיות ובלי אשמה; אחרי 3 ימים טובים בצעד הקטן המשימה המקורית חוזרת בהדרגה.`);
+  }
   if (Array.isArray(ctx.pending_focus) && ctx.pending_focus.length > 0) {
     parts.push(`פעולות פתוחות בראש שלו: ${ctx.pending_focus.slice(0, 3).join(' · ')}`);
   }
@@ -399,6 +421,7 @@ export async function updateAiContext(
     'current_goal',
     'current_focus',
     'pending_focus',
+    'active_pivot',
     'struggles',
     'daily_availability',
     'guide_companion',

@@ -18,6 +18,8 @@ import { withAiUser } from '@/lib/ai/usage-meter';
  */
 
 import { insertNotification } from '@/lib/notifications/deliver';
+import { getTodayTasks } from '@/lib/tasks';
+import { isProposalExpired } from './pivot-lifecycle';
 import { evaluateNotifyGate, filterNotifyEligibleUserIds } from '@/lib/notifications/notify-recipients';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -66,6 +68,27 @@ type ProfileForOrchestration = {
   ai_context: AiUserContext | null;
   pending_ai_proposal: unknown;
 };
+
+/**
+ * The concrete task to shrink: today's open plan task that is still not done (main first), else the oldest
+ * active Almog task. Excludes tiny steps that are themselves pivots.
+ */
+async function resolvePivotTargetTask(admin: SupabaseClient, userId: string, now: Date): Promise<string | null> {
+  const today = await getTodayTasks(admin, userId, now);
+  const open = today.filter((t) => t.doneToday < t.targetToday);
+  if (open.length) return open[0]!.level.title;
+  const { data } = await admin
+    .from('almog_assignments')
+    .select('title, metadata')
+    .eq('user_id', userId)
+    .eq('status', 'active')
+    .order('given_at', { ascending: true })
+    .limit(10);
+  const row = ((data ?? []) as { title: string; metadata: Record<string, unknown> | null }[]).find(
+    (r) => r.metadata?.source !== 'orchestrator_pivot'
+  );
+  return row?.title ?? null;
+}
 
 /** האם כבר נשלחה הצעת אורקסטרטור היום (תקרת תדירות ≤1/יום). */
 async function orchestratorTouchedToday(
@@ -208,7 +231,13 @@ export async function orchestrateProgramForUser(
     return { ...base, skippedReason: 'avoid_push' };
   }
   if (getAlmogPushTier(aiCtx) === 'minimal') return { ...base, skippedReason: 'life_pause' };
-  if (profile.pending_ai_proposal) return { ...base, skippedReason: 'proposal_pending' };
+  if (profile.pending_ai_proposal && !isProposalExpired(profile.pending_ai_proposal as { created_at: string })) {
+    return { ...base, skippedReason: 'proposal_pending' };
+  }
+  // already in a "take it smaller" pivot → don't stack a second one; graduation brings the original back
+  if (decision.proposalKind === 'pivot' && aiCtx.active_pivot?.micro_title) {
+    return { ...base, skippedReason: 'pivot_active' };
+  }
 
   if (dryRun) return { ...base, skippedReason: 'dry_run' };
 
@@ -218,12 +247,19 @@ export async function orchestrateProgramForUser(
 
   // ── ניסוח ההצעה (LLM + fallback) ────────────────────────────────
   const firstName = firstNameFromFull(profile.full_name) || 'משתמש';
+  const targetTaskTitle =
+    decision.proposalKind === 'pivot' ? await resolvePivotTargetTask(admin, profile.id, now).catch(() => null) : null;
+  if (decision.proposalKind === 'pivot' && !targetTaskTitle) {
+    // nothing concrete to shrink (no open task today) → no pivot card
+    return { ...base, skippedReason: 'pivot_no_target' };
+  }
   const proposal = await withAiUser(profile.id, () => buildProgramProposal({
     decision,
     firstName,
     aiCtx,
     companion,
     consecutiveCompletedDays: signals.consecutiveCompletedDays,
+    targetTaskTitle,
   }));
 
   await writePendingProposal(admin, profile.id, proposal);

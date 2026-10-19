@@ -17,6 +17,8 @@ export const RECOMMENDED_SUCCESS_WEEK_DAYS = 7;
 
 export type StepDifficultyRating = 'easy' | 'ok' | 'hard';
 
+import { graduatePivot, PIVOT_SOURCE } from '../orchestrator/pivot-lifecycle';
+
 type Admin = SupabaseClient;
 
 type AssignmentRow = {
@@ -272,6 +274,16 @@ export async function evaluateRecoveryGraduation(params: {
   const microStreak = countConsecutiveDoneDays(history, params.nowIso);
   let reactivatedParent = false;
   let weekAtRecommended = false;
+
+  // "בוא ניקח את זה קטן יותר" tiny step mastered → close it and bring the parked original back (plan + Almog memory)
+  if (
+    params.assignment.relation === 'eases' &&
+    (params.assignment.metadata as Record<string, unknown> | null)?.source === PIVOT_SOURCE &&
+    microStreak >= MICRO_SUCCESS_DAYS_BEFORE_REACTIVATE
+  ) {
+    const done = await graduatePivot(params.admin, params.userId, params.assignment as never, params.nowIso, microStreak).catch(() => false);
+    return { microStreak, reactivatedParent: done, weekAtRecommended: false };
+  }
 
   if (
     params.assignment.relation === 'eases' &&

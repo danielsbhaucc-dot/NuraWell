@@ -30,6 +30,8 @@ export type AlmogAssignmentLike = {
   title: string;
   status: AlmogAssignmentStatus | string;
   schedule?: 'one_time' | 'daily' | 'weekly' | string | null;
+  /** set on an 'eases' row → its frozen parent is parked behind it (not a second open task). */
+  parent_assignment_id?: string | null;
 };
 
 /** מחליט סטטוס מאוחד ממשימת מסע. */
@@ -141,8 +143,14 @@ export function buildUserTaskSnapshot(input: BuildUserTaskSnapshotInput): UserTa
   );
   const journeyStatuses = countTaskStatusesByReport(input.steps);
 
-  const almogOpenRaw = (input.almogAssignments ?? []).filter((a) =>
-    isAlmogOpenStatus(a.status)
+  // a frozen original that a live smaller step stands in for is parked, not due today (no double task)
+  const parkedParentIds = new Set(
+    (input.almogAssignments ?? [])
+      .filter((a) => a.status === 'active' && a.parent_assignment_id)
+      .map((a) => a.parent_assignment_id as string)
+  );
+  const almogOpenRaw = (input.almogAssignments ?? []).filter(
+    (a) => isAlmogOpenStatus(a.status) && !(a.status === 'frozen' && parkedParentIds.has(a.id))
   );
   const almogCompletedList = input.almogCompleted ?? [];
   const almogCompleted =
