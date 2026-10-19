@@ -6,5 +6,11 @@
   "regions": [
     "fra1"
   ],
-  "ignoreCommand": "bash ../../scripts/vercel-ignore-build.sh"
+  "ignoreCommand": "bash ../../scripts/vercel-ignore-build.sh",
+  "git": {
+    "deploymentEnabled": {
+      "main": true,
+      "*": false
+    }
+  }
 }
