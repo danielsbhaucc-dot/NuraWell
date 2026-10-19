@@ -5,33 +5,13 @@ import { Loader2 } from 'lucide-react';
 import { PublicAiPresence } from '@/components/ai/PublicAiPresence';
 
 function BridgeInner() {
-  const [err, setErr] = useState<string | null>(null);
+  const [err] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch('/api/v1/auth/ops-session-ticket', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: '{}',
-          credentials: 'include',
-        });
-        const j = (await res.json()) as { ingestUrl?: string; error?: string; code?: string };
-        if (cancelled) return;
-        if (j.code === 'device_unverified') {
-          window.location.href = '/device-check';
-          return;
-        }
-        if (!res.ok || !j.ingestUrl) {
-          setErr(j.error || 'משהו השתבש. נסה להתנתק ולהתחבר מחדש.');
-          return;
-        }
-        window.location.href = j.ingestUrl;
-      } catch {
-        if (!cancelled) setErr('שגיאת רשת.');
-      }
-    })();
+    // Internal Ops on the main site (device + admin enforced server-side on /ops and its APIs).
+    // The cross-host handoff to ops.nurawell.ai is paused: its client fingerprint (UA|IP) mismatched across hosts.
+    if (!cancelled) window.location.replace('/ops');
     return () => {
       cancelled = true;
     };

@@ -385,17 +385,15 @@ export async function proxy(request: NextRequest) {
     }
 
     /** New-device approval: unknown device → /device-check until approved (Telegram Face ID / trusted Ops / email / recovery code). */
-    /**
-     * TEMP (owner decision 2026-10-19): Ops is served internally at nurawell.vercel.app/ops right after a
-     * normal admin login. The new-device gate stays in code and is enforced on the Ops host; on the app
-     * host it is skipped unless OPS_INTERNAL_DEVICE_GATE=1 (flip to re-enable). Role check above still applies.
-     */
-    const skipDeviceGate = appHostOpsPath && process.env.OPS_INTERNAL_DEVICE_GATE !== '1';
-    if (!skipDeviceGate) {
+    {
       const { createAdminClient } = await import('./lib/supabase/admin');
       const { data: sess } = await supabase.auth.getSession();
       const gate = await opsDeviceGate(createAdminClient(), user.id, request.cookies.get(DEVICE_COOKIE)?.value, sess.session?.access_token, request.headers.get('user-agent'), { allowBootstrap: true });
-      if (!gate.ok) return stealthNotFound();
+      // Internal Ops (app host): role already verified as admin → send to new-device approval; Ops host stays a plain 404.
+      if (!gate.ok) {
+        if (appHostOpsPath) return applySecurityHeaders(NextResponse.redirect(new URL('/device-check', request.url)));
+        return stealthNotFound();
+      }
       if (gate.setCookie) {
         // first trusted device (rollout bootstrap): reload so every downstream check sees the cookie
         const out = NextResponse.redirect(request.nextUrl.clone());
