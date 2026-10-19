@@ -93,7 +93,7 @@ export function emailDivider(): string {
 /** קוד חד-פעמי גדול וקריא */
 export function emailCode(code: string): string {
   return table(
-    `<tr><td dir="ltr" align="center" bgcolor="${C.goldSoft}" style="background:${C.goldSoft};border:1px solid ${C.gold};border-radius:22px;padding:18px 8px;box-shadow:0 1px 3px rgba(15,61,46,0.08);text-align:center"><span dir="ltr" style="font-family:'Courier New',Consolas,monospace;font-size:28px;line-height:1.25;font-weight:700;letter-spacing:3px;color:${C.brand};white-space:nowrap">${code}</span></td></tr>`,
+    `<tr><td dir="ltr" align="center" bgcolor="${C.goldSoft}" style="background:${C.goldSoft};border:1px solid ${C.gold};border-radius:22px;padding:18px 8px;box-shadow:0 1px 3px rgba(15,61,46,0.08);text-align:center"><span dir="ltr" style="font-family:'Courier New',Consolas,monospace;font-size:34px;line-height:1.2;font-weight:700;letter-spacing:5px;color:${C.brand};white-space:nowrap">${code}</span></td></tr>`,
     'margin:4px 0 20px'
   );
 }
@@ -128,7 +128,7 @@ export function renderEmailLayout(i: EmailLayoutInput): string {
   const header = `<tr><td dir="rtl" align="center" bgcolor="${C.brand}" style="direction:rtl;text-align:center;background-color:${C.brand};border-radius:34px 34px 0 0;padding:28px 18px 0">
 <a href="${origin}" target="_blank" style="text-decoration:none;color:${C.cream}"><img src="${origin}/brand/email-logo-header.png" width="224" height="51" alt="NuraWell" style="display:block;margin:0 auto;border:0;outline:none;width:224px;height:auto;max-width:224px;background-color:${C.brand};color:${C.cream};font-family:${EMAIL_FONT};font-size:26px;line-height:51px;font-weight:700;text-align:center"></a>
 </td></tr>
-<tr><td dir="rtl" align="center" bgcolor="${C.brand}" style="direction:rtl;text-align:center;background-color:${C.brand};padding:16px 18px ${i.introHtml ? '36px' : '34px'}">
+<tr><td dir="rtl" align="center" bgcolor="${C.brand700}" background="${origin}/brand/email-header-grad.png" style="direction:rtl;text-align:center;background-color:${C.brand700};background-image:url('${origin}/brand/email-header-grad.png');background-repeat:repeat-x;background-position:top center;padding:16px 18px ${i.introHtml ? '24px' : '34px'}">
 ${i.eyebrow ? `<p dir="rtl" align="center" style="margin:0 0 10px;font-family:${EMAIL_FONT};direction:rtl;text-align:center"><span style="display:inline-block;background:${C.gold};color:${C.brand};font-size:12px;font-weight:800;padding:5px 14px;border-radius:999px">${i.eyebrow}</span></p>` : ''}
 <h1 dir="rtl" align="center" style="margin:0;color:${C.cream};font-family:${EMAIL_FONT};font-size:31px;line-height:1.3;font-weight:800;direction:rtl;text-align:center">${i.heading}</h1>
 ${i.subheading ? `<p dir="rtl" align="center" style="margin:10px 0 0;color:#d6ecdf;font-family:${EMAIL_FONT};font-size:17px;line-height:1.5;font-weight:500;direction:rtl;text-align:center">${i.subheading}</p>` : ''}
