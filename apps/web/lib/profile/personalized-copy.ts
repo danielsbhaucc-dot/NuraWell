@@ -32,14 +32,14 @@ export function genderLabel(gender: ProfileGender): string {
 export function memberSinceLabel(gender: ProfileGender, since: string): string {
   if (gender === 'female') return `חברה מאז ${since}`;
   if (gender === 'male') return `חבר מאז ${since}`;
-  return `חבר/ה מאז ${since}`;
+  return `בקהילה מאז ${since}`;
 }
 
 /** "אל תכתוב" / "אל תכתבי" לפי מגדר הפרופיל */
 export function imperativeDontWrite(gender: ProfileGender): string {
   if (gender === 'female') return 'אל תכתבי';
   if (gender === 'male') return 'אל תכתוב';
-  return 'אל תכתוב/י';
+  return 'בלי לכתוב';
 }
 
 /** "תלחץ" / "תלחצי" לפי מגדר */
@@ -68,7 +68,7 @@ export function guidesPageGreeting(firstName: string): string {
 export function guidesPageSubtitle(gender: ProfileGender): string {
   if (gender === 'female') return 'אני כאן איתך — בואי נמשיך בקצב שנוח לך';
   if (gender === 'male') return 'אני כאן איתך — בוא נמשיך בקצב שנוח לך';
-  return 'אני כאן איתך — בוא/י נמשיך בקצב שנוח לך';
+  return 'אני כאן איתך — ממשיכים בקצב שנוח לך';
 }
 
 /** כותרת תיבת אלמוג בעמוד המדריכים — גוף ראשון */
@@ -94,7 +94,7 @@ export function guidesAlmogCoachBody(
   if (gender === 'male') {
     return `${firstName}, הסתכלתי על ההתקדמות שלך. אם לא בטוח במה להמשיך — אני כאן לבחור איתך את הפרק או המדריך שהכי מתאים לרגע הזה.`;
   }
-  return `${firstName}, הסתכלתי על ההתקדמות שלך. אם לא בטוח/ה במה להמשיך — אני כאן לבחור איתך את הפרק או המדריך שהכי מתאים לרגע הזה.`;
+  return `${firstName}, הסתכלתי על ההתקדמות שלך. אם יש התלבטות במה להמשיך — אני כאן לבחור איתך את הפרק או המדריך שהכי מתאים לרגע הזה.`;
 }
 
 /** טקסט אלמוג בעמוד מדריך בודד */
@@ -111,7 +111,7 @@ export function guideDetailAlmogBody(
   if (gender === 'male') {
     return `${firstName}, לפני שממשיכים ב"${courseTitle}" — בוא נעצור רגע: מה חשוב לקחת מכאן, איפה להתחיל, ואיך לחבר את זה להרגלים שלך.`;
   }
-  return `${firstName}, לפני שממשיכים ב"${courseTitle}" — בוא/י נעצור רגע: מה חשוב לקחת מכאן, איפה להתחיל, ואיך לחבר את זה להרגלים שלך.`;
+  return `${firstName}, לפני שממשיכים ב"${courseTitle}" — נעצור רגע: מה חשוב לקחת מכאן, איפה להתחיל, ואיך לחבר את זה להרגלים שלך.`;
 }
 
 /** CTA "התחל ללמוד" / "המשך ללמוד" */
@@ -119,11 +119,11 @@ export function guideLearnCta(gender: ProfileGender, isStart: boolean): string {
   if (isStart) {
     if (gender === 'female') return 'התחילי ללמוד';
     if (gender === 'male') return 'התחל ללמוד';
-    return 'התחל/י ללמוד';
+    return 'להתחיל ללמוד';
   }
   if (gender === 'female') return 'המשיכי ללמוד';
   if (gender === 'male') return 'המשך ללמוד';
-  return 'המשך/י ללמוד';
+  return 'להמשיך ללמוד';
 }
 
 /** באנר "בוא נמשיך ללמוד" */
@@ -134,7 +134,7 @@ export function guidesContinueBanner(gender: ProfileGender): { title: string; su
   if (gender === 'male') {
     return { title: '⚡ בוא נמשיך ללמוד!', subtitle: 'יש פרקים שמחכים לך' };
   }
-  return { title: '⚡ בוא/י נמשיך ללמוד!', subtitle: 'יש פרקים שמחכים לך' };
+  return { title: '⚡ ממשיכים ללמוד!', subtitle: 'יש פרקים שמחכים לך' };
 }
 
 /** כותרת תיבת אלמוג בפרק — גוף ראשון */
@@ -146,7 +146,7 @@ export function lessonAlmogCoachTitle(firstName: string): string {
 export function lessonAlmogCta(gender: ProfileGender): string {
   if (gender === 'female') return 'דברי איתי על הפרק';
   if (gender === 'male') return 'דבר איתי על הפרק';
-  return 'דבר/י איתי על הפרק';
+  return 'לדבר איתי על הפרק';
 }
 
 /** שם מצב הלמידה האימרסיבי במדריך — במקום "מסלול לימוד" */
@@ -244,8 +244,8 @@ export function progressPageAlmogHeroBody(
   const neutral = [
     `${firstName}, הסתכלתי על מה שעשית — ויש פה דברים ששווה לחגוג.`,
     `${firstName}, זה לא מבחן. זה סיכום קצר של הצעדים שלך, בלי רעש.`,
-    `${firstName}, כל נקודה כאן היא רמז — לא שיפוט. בוא/י נמשיך בקצב שנוח.`,
-    `${firstName}, אני גאה/ה בך על ההתמדה. בוא/י נראה יחד מה כבר עובד.`,
+    `${firstName}, כל נקודה כאן היא רמז — לא שיפוט. ממשיכים בקצב שנוח.`,
+    `${firstName}, אני גאה בך על ההתמדה. נראה יחד מה כבר עובד.`,
   ];
   const pool = gender === 'female' ? female : gender === 'male' ? male : neutral;
   return pool[Math.abs(seed) % pool.length]!;
@@ -282,8 +282,8 @@ export function historyPageAlmogHeroBody(
     `${firstName}, הסתכלתי על הנתונים שלך — יש כאן הרבה יותר ממה שנראה במבט ראשון.`,
   ];
   const neutral = [
-    `${firstName}, כל שורה כאן היא הוכחה שאת/ה בתנועה. זה לא על שלמות — זה על כיוון.`,
-    `${firstName}, הנתונים האלו מספרים סיפור. בוא/י נקרא אותו יחד ונבין מה עובד.`,
+    `${firstName}, כל שורה כאן היא הוכחה לתנועה. זה לא על שלמות — זה על כיוון.`,
+    `${firstName}, הנתונים האלו מספרים סיפור. נקרא אותו יחד ונבין מה עובד.`,
     `${firstName}, גם הימים ה"חלקיים" נמצאים כאן בכוונה — כי כל ניסיון הוא צעד קדימה.`,
     `${firstName}, הסתכלתי על הנתונים שלך — יש כאן הרבה יותר ממה שנראה במבט ראשון.`,
   ];
@@ -329,5 +329,5 @@ export function progressPartialDaysMessage(count: number): string {
   if (count <= 5) {
     return `${count} ימים עם ביצוע חלקי — כל צעד קטן מצטבר למשהו גדול יותר.`;
   }
-  return `${count} ימים עם התקדמות חלקית — את/ה לא מוותר/ת, וזה מה שבאמת משנה.`;
+  return `${count} ימים עם התקדמות חלקית — אין כאן ויתור, וזה מה שבאמת משנה.`;
 }

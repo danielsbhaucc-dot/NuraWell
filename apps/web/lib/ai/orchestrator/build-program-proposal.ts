@@ -64,7 +64,7 @@ const CTA_BY_KIND: Record<
   ProgramStateDecision['proposalKind'],
   { accept: string; decline: string }
 > = {
-  level_up: { accept: 'יאללה, מוכן/ה', decline: 'עוד לא עכשיו' },
+  level_up: { accept: 'כן, ממשיכים', decline: 'עוד לא עכשיו' },
   daily_kickoff: { accept: 'קדימה ליום', decline: 'תודה, הבנתי' },
   pivot: { accept: 'בוא ננסה ככה', decline: 'לא היום' },
 };
@@ -80,7 +80,7 @@ function fallbackProposalText(input: BuildProposalInput): {
   switch (input.decision.proposalKind) {
     case 'level_up':
       return {
-        headline: 'מוכן/ה לשלב הבא? 🚀',
+        headline: 'הגיע הזמן לשלב הבא? 🚀',
         body: `${name}, שמרת על ${focus} ${input.consecutiveCompletedDays} ימים ברצף — זה בדיוק הרגע להוסיף צעד קטן חדש. בא נבנה על המומנטום.`,
         nextStep: {
           title: 'נוסיף מיקרו-צעד אחד קטן מעל מה שכבר עובד',

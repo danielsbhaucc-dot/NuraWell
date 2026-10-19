@@ -86,7 +86,7 @@ export function detectLanguageShift(params: {
     return {
       detected: true,
       title: 'שינית את השפה שלך',
-      description: 'שמתי לב שאת/ה מדבר/ת אחרת — פחות "נכשלתי", יותר "ניסיתי". זו הצלחה אמיתית.',
+      description: 'שמתי לב שהניסוח שלך השתנה — פחות "נכשלתי", יותר "ניסיתי". זו הצלחה אמיתית.',
     };
   }
 
@@ -180,7 +180,7 @@ export async function scanAndPersistChallengeSuccesses(
       enrollment_id: enrollment.id,
       user_id: enrollment.user_id,
       event_type: 'multi_task_day',
-      title: `${todayDone} משימות היום — אלופ/ה!`,
+      title: `${todayDone} משימות היום — כל הכבוד!`,
       description: 'כל סימון קטן נספר. זה בדיוק איך שינוי אמיתי נראה.',
       detected_by: 'rule',
       evidence: { count: todayDone, day_index: opts?.dayIndex ?? null },
