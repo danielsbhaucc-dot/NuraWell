@@ -121,6 +121,22 @@ export function dolevSignature(line: string): string {
   );
 }
 
+/** כרטיס "צף": 9-slice של PNG עם צל רך + פינות מעוגלות (Gmail Android מתעלם מ-box-shadow). בלי תמונות: קופסת קרם פשוטה. */
+function floatingCard(origin: string, inner: string): string {
+  const b = (n: string) => `${origin}/brand/email-card-${n}.png`;
+  const cell = (n: string, w: string, h: string, rep: string) =>
+    `<td width="${w}" height="${h}" background="${b(n)}" style="width:${w}px;height:${h}px;font-size:0;line-height:0;background-image:url('${b(n)}');background-repeat:${rep};background-position:${n.includes('b') ? 'bottom' : 'top'} ${n.includes('r') ? 'right' : 'left'}">&nbsp;</td>`;
+  const edge = (n: string, h: string, rep: string) =>
+    `<td height="${h}" background="${b(n)}" style="height:${h}px;font-size:0;line-height:0;background-image:url('${b(n)}');background-repeat:${rep}">&nbsp;</td>`;
+  const side = (n: string, w: string) =>
+    `<td width="${w}" background="${b(n)}" style="width:${w}px;font-size:0;line-height:0;background-image:url('${b(n)}');background-repeat:repeat-y;background-position:top ${n === 'r' ? 'right' : 'left'}">&nbsp;</td>`;
+  return `<table role="presentation" dir="rtl" width="100%" cellpadding="0" cellspacing="0" border="0" style="direction:rtl;border-collapse:collapse;table-layout:fixed">
+<tr>${cell('tr', '36', '32', 'no-repeat')}${edge('t', '32', 'repeat-x')}${cell('tl', '36', '32', 'no-repeat')}</tr>
+<tr>${side('r', '36')}<td dir="rtl" align="right" bgcolor="${C.cream}" style="direction:rtl;text-align:right;background-color:${C.cream};padding:2px 2px 0">${inner}</td>${side('l', '36')}</tr>
+<tr>${cell('br', '36', '44', 'no-repeat')}${edge('b', '44', 'repeat-x')}${cell('bl', '36', '44', 'no-repeat')}</tr>
+</table>`;
+}
+
 export function renderEmailLayout(i: EmailLayoutInput): string {
   const origin = i.assetOrigin.replace(/\/$/, '');
   const support = i.supportEmail ?? EMAIL_SUPPORT_ADDRESS;
@@ -135,8 +151,8 @@ ${i.subheading ? `<p dir="rtl" align="center" style="margin:10px 0 0;color:#d6ec
 </td></tr>`;
   // "חפיפה" בטוחה ל-Gmail: שורה שחצייה העליון בצבע ההדר והתחתון בצבע הגוף, והכרטיס יושב באמצע (בלי margin שלילי).
   const intro = i.introHtml
-    ? `<tr><td dir="rtl" align="center" bgcolor="${C.card}" style="direction:rtl;background-color:${C.card};background-image:url('${origin}/brand/email-header-tab.png');background-repeat:repeat-x;background-position:top center;padding:0 12px" background="${origin}/brand/email-header-tab.png">
-${table(`<tr>${td(`background:${C.cream};border:1px solid ${C.goldSoft};border-top:4px solid ${C.gold};border-radius:28px;padding:20px 18px 6px;box-shadow:0 2px 4px rgba(15,61,46,0.10),0 18px 40px rgba(15,61,46,0.28)`, i.introHtml, ` bgcolor="${C.cream}"`)}</tr>`, 'border-collapse:separate')}
+    ? `<tr><td dir="rtl" align="center" bgcolor="${C.card}" style="direction:rtl;background-color:${C.card};background-image:url('${origin}/brand/email-header-tab.png');background-repeat:repeat-x;background-position:top center;padding:0 0" background="${origin}/brand/email-header-tab.png">
+${floatingCard(origin, i.introHtml)}
 </td></tr>`
     : `<tr><td height="4" bgcolor="${C.gold}" style="height:4px;line-height:4px;font-size:0;background:${C.gold}">&nbsp;</td></tr>`;
   const body = `<tr>${td(`background:${C.card};border-radius:0 0 34px 34px;padding:${i.introHtml ? '24px' : '28px'} 18px 30px`, `${i.bodyHtml}${i.cta ? button(i.cta.label, i.cta.url) : ''}${i.afterCtaHtml ? emailDivider() + i.afterCtaHtml : ''}${i.signatureHtml ?? ''}`, ` bgcolor="${C.card}"`)}</tr>`;
