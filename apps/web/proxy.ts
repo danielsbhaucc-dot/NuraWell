@@ -246,7 +246,7 @@ export async function proxy(request: NextRequest) {
   if (effectiveOpsHost) {
     const skipPanelGate =
       pathname.startsWith('/api') || pathname.startsWith('/_next') ||
-      pathname === '/gideon' || pathname.startsWith('/gideon/'); // passkey step-up pages (rpId = Ops host)
+      pathname === '/gideon' || pathname.startsWith('/gideon/'); // passkey step-up pages (Telegram Mini App biometrics; host-independent)
     if (!skipPanelGate && !isOpsPanelBrowserPath(pathname)) {
       return stealthNotFound();
     }
@@ -334,7 +334,7 @@ export async function proxy(request: NextRequest) {
   const devOpsPath =
     Boolean(isLocal && process.env.NODE_ENV === 'development' && pathname.startsWith('/ops')) || appHostOpsPath;
 
-  /** Gideon passkey pages live at the top level on every host (rpId = Ops host); not gated, not rewritten. */
+  /** Gideon passkey pages live at the top level on every host (Telegram Mini App biometrics; host-independent); not gated, not rewritten. */
   const isGideonStepup = pathname === '/gideon' || pathname.startsWith('/gideon/');
 
   const needsOpsGate =
