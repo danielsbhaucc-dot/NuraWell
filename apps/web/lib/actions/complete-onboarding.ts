@@ -275,7 +275,6 @@ export async function completeOnboarding(
       full_name: data.full_name,
       gender: data.gender,
       date_of_birth: data.date_of_birth,
-      birth_date: data.date_of_birth,
       main_goal: data.main_goal,
       current_weight_kg: currentWeight,
       goal_weight_kg: goalWeight,

@@ -7566,7 +7566,17 @@ body.overflow-hidden { overflow: hidden; }
   .legal-aurora-orb { animation: none !important; }
 }
 
+.legal-table-wrap { overflow-x: auto; margin: 1rem 0; border: 1px solid #2a4a3a; border-radius: 0.75rem; }
+.legal-table-wrap:focus-visible { outline: 2px solid #c9a227; outline-offset: 2px; }
+.legal-table { width: 100%; min-width: 640px; border-collapse: collapse; font-size: 0.88rem; color: #f4efe4; }
+.legal-table th { background: #0f3d2e; color: #f4efe4; font-weight: 700; text-align: start; padding: 0.6rem 0.7rem; }
+.legal-table td { padding: 0.55rem 0.7rem; border-top: 1px solid #2a4a3a; vertical-align: top; }
+.legal-table tbody tr:nth-child(even) td { background: rgba(255,255,255,0.03); }
+
 @media print {
+  .legal-table, .legal-table th, .legal-table td { color: #000 !important; background: #fff !important; border-color: #999 !important; }
+  .legal-table-wrap { overflow: visible; }
+  .legal-table { min-width: 0; }
   .legal-page {
     background: #fff !important; color: #111 !important;
   }

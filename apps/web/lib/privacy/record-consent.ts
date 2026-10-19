@@ -68,7 +68,7 @@ export async function recordRegistrationConsents(
     age: number;
   }
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const baseMeta = { birth_date: params.birthDate, age: params.age };
+  const baseMeta = { age: params.age };
 
   const steps: RecordConsentInput[] = [
     {
