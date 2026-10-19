@@ -168,7 +168,7 @@ export function SystemKnowledgeIngestForm() {
   return (
     <form
       onSubmit={onSubmit}
-      className="space-y-5 rounded-3xl border border-white/60 bg-background-card/55 p-5 shadow-lg backdrop-blur-md sm:p-7"
+      className="space-y-5 rounded-3xl border border-cream/60 bg-background-card/55 p-5 shadow-lg backdrop-blur-md sm:p-7"
     >
       <p className="text-[15px] leading-relaxed text-slate-700">
         הדביקו כאן טקסט לימודי או הנחיה למנטור. המערכת תפצל את זה לקטעים קצרים ותחבר לאלמוג — המשתמשים יקבלו את התוכן רק כשהם מתקדמים לתחנה ולשלב המתאימים (ולפי הרשאות קורס).
@@ -263,7 +263,7 @@ export function SystemKnowledgeIngestForm() {
               onClick={() => setCourseMode('preset')}
               className={`rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
                 courseMode === 'preset'
-                  ? 'bg-amber-500 text-white shadow-sm'
+                  ? 'bg-amber-500 text-cream shadow-sm'
                   : 'bg-background-card/80 text-amber-900 hover:bg-background-card'
               }`}
             >
@@ -274,7 +274,7 @@ export function SystemKnowledgeIngestForm() {
               onClick={() => setCourseMode('custom')}
               className={`rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
                 courseMode === 'custom'
-                  ? 'bg-amber-500 text-white shadow-sm'
+                  ? 'bg-amber-500 text-cream shadow-sm'
                   : 'bg-background-card/80 text-amber-900 hover:bg-background-card'
               }`}
             >
@@ -311,7 +311,7 @@ export function SystemKnowledgeIngestForm() {
       <button
         type="submit"
         disabled={status === 'loading' || (dataType === 'step' && (stepsLoading || !!stepsError || !journeySteps.length))}
-        className="w-full rounded-2xl bg-linear-to-l from-emerald-600 to-teal-600 px-5 py-3.5 text-base font-bold text-white shadow-lg shadow-emerald-600/30 transition hover:brightness-105 active:scale-[0.99] disabled:opacity-60"
+        className="w-full rounded-2xl bg-linear-to-l from-emerald-600 to-teal-600 px-5 py-3.5 text-base font-bold text-cream shadow-lg shadow-emerald-600/30 transition hover:brightness-105 active:scale-[0.99] disabled:opacity-60"
       >
         {status === 'loading' ? 'מעלה ומחבר לאלמוג…' : 'אמן את אלמוג'}
       </button>

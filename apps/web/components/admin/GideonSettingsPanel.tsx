@@ -68,7 +68,7 @@ export function GideonSettingsPanel() {
     setState({ kind: 'saved' });
   };
 
-  const card = 'rounded-2xl bg-white p-4 ring-1 ring-slate-200';
+  const card = 'rounded-2xl bg-cream p-4 ring-1 ring-slate-200';
   return (
     <div dir="rtl" className="flex flex-col gap-4">
       <section className={card}>
@@ -140,7 +140,7 @@ export function GideonSettingsPanel() {
       </section>
 
       <div className="flex items-center gap-3">
-        <button type="button" onClick={save} disabled={state.kind === 'saving'} className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-60">
+        <button type="button" onClick={save} disabled={state.kind === 'saving'} className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-cream hover:bg-emerald-700 disabled:opacity-60">
           {state.kind === 'saving' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} שמירה
         </button>
         {state.kind === 'saved' ? <span className="text-sm text-emerald-700">נשמר</span> : null}

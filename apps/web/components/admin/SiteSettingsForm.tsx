@@ -105,7 +105,7 @@ export function SiteSettingsForm() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl border border-white/35 bg-background-card/40 p-5 shadow-lg backdrop-blur-xl sm:p-6">
+      <div className="rounded-2xl border border-cream/35 bg-background-card/40 p-5 shadow-lg backdrop-blur-xl sm:p-6">
         <p className="flex items-center gap-2 text-sm font-bold text-slate-800">
           <Globe className="h-4 w-4 text-emerald-700" aria-hidden />
           כתובת האתר הציבורי
@@ -135,13 +135,13 @@ export function SiteSettingsForm() {
           type="button"
           disabled={busy}
           onClick={() => void previewProdPreset()}
-          className="mt-4 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-amber-600 px-6 py-3 font-bold text-white shadow-lg transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+          className="mt-4 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-amber-600 px-6 py-3 font-bold text-cream shadow-lg transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
         >
           {busy ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden /> : <Sparkles className="h-5 w-5" aria-hidden />}
           בדוק מה ישתנה
         </button>
         {preview && (
-          <div className="mt-4 rounded-2xl bg-white/80 p-4 text-sm text-slate-800 shadow-sm" role="status">
+          <div className="mt-4 rounded-2xl bg-cream/80 p-4 text-sm text-slate-800 shadow-sm" role="status">
             <p className="font-bold">תצוגה מקדימה, שום דבר עוד לא נשמר</p>
             <ul className="mt-2 list-disc space-y-1 pe-1 ps-5">
               <li>ישתנה: כתובת האתר במסד ({url || '—'} ← {PRESET_PROD}).</li>
@@ -155,7 +155,7 @@ export function SiteSettingsForm() {
                 type="button"
                 disabled={busy || !preview.live}
                 onClick={() => void applyProdPreset()}
-                className="min-h-11 rounded-xl bg-emerald-700 px-4 font-bold text-white disabled:opacity-40"
+                className="min-h-11 rounded-xl bg-emerald-700 px-4 font-bold text-cream disabled:opacity-40"
               >
                 אשר ושמור
               </button>

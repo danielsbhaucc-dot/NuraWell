@@ -856,7 +856,7 @@ export function AlmogChatMemoryPanel({
                 type="button"
                 disabled={accessReason.trim().length < 8}
                 onClick={confirmViewTranscript}
-                className="flex-1 rounded-xl bg-indigo-600 py-2 font-bold text-white disabled:opacity-50"
+                className="flex-1 rounded-xl bg-indigo-600 py-2 font-bold text-cream disabled:opacity-50"
               >
                 אשר וטען תמליל
               </button>

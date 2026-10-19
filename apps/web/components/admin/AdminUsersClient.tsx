@@ -166,7 +166,7 @@ function Avatar({ id, name, size = 'md' }: { id: string; name: string | null; si
   return (
     <div
       className={cn(
-        'flex shrink-0 items-center justify-center rounded-2xl bg-linear-to-br font-display font-black text-white shadow-md ring-1 ring-white/50',
+        'flex shrink-0 items-center justify-center rounded-2xl bg-linear-to-br font-display font-black text-cream shadow-md ring-1 ring-cream/50',
         gradientFor(id),
         dim,
       )}
@@ -441,7 +441,7 @@ export function AdminUsersClient() {
           onChange={(e) => setQ(e.target.value)}
           placeholder="חיפוש לפי שם, אימייל או מזהה..."
           dir="rtl"
-          className="w-full rounded-2xl border border-white/60 bg-background-card/55 py-3.5 ps-12 pe-4 text-sm font-medium text-slate-900 shadow-[0_8px_28px_rgba(16,185,129,0.08)] outline-hidden backdrop-blur-xl transition placeholder:text-slate-400 focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-400/40"
+          className="w-full rounded-2xl border border-cream/60 bg-background-card/55 py-3.5 ps-12 pe-4 text-sm font-medium text-slate-900 shadow-[0_8px_28px_rgba(16,185,129,0.08)] outline-hidden backdrop-blur-xl transition placeholder:text-slate-400 focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-400/40"
         />
       </div>
 
@@ -477,7 +477,7 @@ export function AdminUsersClient() {
             const label = u.full_name || u.email || u.id;
             return (
               <li key={u.id}>
-                <div className="group flex items-stretch rounded-2xl border border-white/60 bg-background-card/45 shadow-[0_8px_24px_rgba(99,102,241,0.07)] backdrop-blur-xl transition-all hover:border-emerald-300/70 hover:bg-background-card/70 hover:shadow-[0_12px_32px_rgba(16,185,129,0.16)]">
+                <div className="group flex items-stretch rounded-2xl border border-cream/60 bg-background-card/45 shadow-[0_8px_24px_rgba(99,102,241,0.07)] backdrop-blur-xl transition-all hover:border-emerald-300/70 hover:bg-background-card/70 hover:shadow-[0_12px_32px_rgba(16,185,129,0.16)]">
                   <button
                     type="button"
                     onClick={() => openUser(u.id)}
@@ -566,7 +566,7 @@ export function AdminUsersClient() {
                 <button
                   type="button"
                   onClick={closeUser}
-                  className="absolute inset-e-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/55 bg-background-card/45 text-slate-600 backdrop-blur-md hover:bg-background-card/70"
+                  className="absolute inset-e-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-cream/55 bg-background-card/45 text-slate-600 backdrop-blur-md hover:bg-background-card/70"
                   aria-label="סגור"
                 >
                   <X className="h-4 w-4" />
@@ -575,12 +575,12 @@ export function AdminUsersClient() {
             ) : (
               <>
                 {/* כותרת הפופאפ */}
-                <header className="relative shrink-0 border-b border-white/40 bg-linear-to-l from-emerald-100/50 via-background-card/30 to-cyan-100/40 px-4 pb-3 pt-4 sm:px-6">
+                <header className="relative shrink-0 border-b border-cream/40 bg-linear-to-l from-emerald-100/50 via-background-card/30 to-cyan-100/40 px-4 pb-3 pt-4 sm:px-6">
                   <button
                     type="button"
                     onClick={closeUser}
                     disabled={saving || deleting}
-                    className="absolute inset-e-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/55 bg-background-card/45 text-slate-600 backdrop-blur-md transition hover:bg-background-card/70 disabled:opacity-50 sm:inset-e-4 sm:top-4"
+                    className="absolute inset-e-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-cream/55 bg-background-card/45 text-slate-600 backdrop-blur-md transition hover:bg-background-card/70 disabled:opacity-50 sm:inset-e-4 sm:top-4"
                     aria-label="סגור"
                   >
                     <X className="h-4 w-4" />
@@ -601,7 +601,7 @@ export function AdminUsersClient() {
 
                   {/* טאבים */}
                   <div
-                    className="mt-4 flex gap-1.5 overflow-x-auto overscroll-x-contain rounded-2xl border border-white/50 bg-background-card/35 p-1 backdrop-blur-md [-ms-overflow-style:none] scrollbar-none [&::-webkit-scrollbar]:hidden"
+                    className="mt-4 flex gap-1.5 overflow-x-auto overscroll-x-contain rounded-2xl border border-cream/50 bg-background-card/35 p-1 backdrop-blur-md [-ms-overflow-style:none] scrollbar-none [&::-webkit-scrollbar]:hidden"
                     style={{ WebkitOverflowScrolling: 'touch' }}
                   >
                     {(
@@ -621,7 +621,7 @@ export function AdminUsersClient() {
                         className={cn(
                           'flex min-h-10 shrink-0 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold transition-all sm:text-sm',
                           tab === key
-                            ? 'bg-linear-to-br from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-600/25'
+                            ? 'bg-linear-to-br from-emerald-500 to-teal-600 text-cream shadow-md shadow-emerald-600/25'
                             : 'text-slate-600 hover:bg-background-card/55 hover:text-slate-900',
                         )}
                         aria-pressed={tab === key}
@@ -746,7 +746,7 @@ export function AdminUsersClient() {
                           <StatChip key={c.label} label={c.label} value={c.value} tone={c.tone} />
                         ))}
                       </div>
-                      <div className="rounded-2xl border border-white/45 bg-background-card/35 p-3 backdrop-blur-md">
+                      <div className="rounded-2xl border border-cream/45 bg-background-card/35 p-3 backdrop-blur-md">
                         <AdminUserJourneyDetail steps={detail.journeyReport.steps} />
                       </div>
                     </div>
@@ -763,7 +763,7 @@ export function AdminUsersClient() {
                             className={cn(
                               'flex-1 rounded-lg py-1.5 text-xs font-bold transition',
                               costDays === w.days
-                                ? 'bg-emerald-600 text-white shadow-xs'
+                                ? 'bg-emerald-600 text-cream shadow-xs'
                                 : 'text-slate-600 hover:bg-background-card/70',
                             )}
                           >
@@ -834,7 +834,7 @@ export function AdminUsersClient() {
                             </div>
                           </div>
                           {cost.byModel && cost.byModel.length > 0 ? (
-                            <div className="rounded-2xl border border-white/45 bg-background-card/40 p-3">
+                            <div className="rounded-2xl border border-cream/45 bg-background-card/40 p-3">
                               <p className="mb-2 text-xs font-bold text-slate-700">פירוק לפי מודל כותב</p>
                               <ul className="space-y-1.5">
                                 {cost.byModel.map((m) => (
@@ -870,13 +870,13 @@ export function AdminUsersClient() {
                 </div>
 
                 {/* פעולות */}
-                <footer className="shrink-0 border-t border-white/40 bg-background-card/25 px-4 py-3 backdrop-blur-md sm:px-6">
+                <footer className="shrink-0 border-t border-cream/40 bg-background-card/25 px-4 py-3 backdrop-blur-md sm:px-6">
                   <div className="flex flex-wrap items-center gap-2">
                     <button
                       type="button"
                       onClick={() => void save()}
                       disabled={saving || deleting}
-                      className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-linear-to-l from-emerald-600 to-teal-500 px-4 py-3 text-sm font-black text-white shadow-lg shadow-emerald-500/25 transition active:scale-[0.99] disabled:opacity-60"
+                      className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-linear-to-l from-emerald-600 to-teal-500 px-4 py-3 text-sm font-black text-cream shadow-lg shadow-emerald-500/25 transition active:scale-[0.99] disabled:opacity-60"
                     >
                       {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                       שמירה ועדכון אלמוג
@@ -919,7 +919,7 @@ export function AdminUsersClient() {
 }
 
 const inputClass =
-  'w-full rounded-xl border border-white/60 bg-background-card/60 px-3 py-2.5 text-sm font-medium text-slate-900 outline-hidden backdrop-blur-sm transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-400/40';
+  'w-full rounded-xl border border-cream/60 bg-background-card/60 px-3 py-2.5 text-sm font-medium text-slate-900 outline-hidden backdrop-blur-sm transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-400/40';
 
 function SelectInput({
   value,
@@ -968,11 +968,11 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <section className="rounded-2xl border border-white/45 bg-background-card/30 p-3.5 backdrop-blur-md sm:p-4">
+    <section className="rounded-2xl border border-cream/45 bg-background-card/30 p-3.5 backdrop-blur-md sm:p-4">
       <div className="mb-3 flex items-center gap-2">
         <span
           className={cn(
-            'flex h-8 w-8 items-center justify-center rounded-xl bg-linear-to-br text-white shadow-xs',
+            'flex h-8 w-8 items-center justify-center rounded-xl bg-linear-to-br text-cream shadow-xs',
             SECTION_TONES[tone].split(' ').slice(0, 2).join(' '),
           )}
         >

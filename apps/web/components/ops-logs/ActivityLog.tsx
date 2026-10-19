@@ -1,97 +1,91 @@
 'use client';
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ChevronDown, RefreshCw, Search, TrendingDown, TrendingUp } from 'lucide-react';
+import { ChevronLeft, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import type { Anomaly, Explained, Story, Summary } from '@/lib/logging/insights';
-import { ago, CatIcon, Chip, Empty, fmtIl, Glass, Pill, Skeleton, Stat, STATUS, type Status } from './glass';
+import { ActiveFilters, ago, CatIcon, Dot, Empty, fmtIl, Glass, Metrics, OptionGroup, Pill, SearchBar, Section, Segmented, Sheet, Skeleton, STATUS, useDisclosure, type Status } from './glass';
 
 type Feed = { events: Explained[]; stories: Story[]; anomalies: Anomaly[]; summary: Summary; nextBefore: string | null };
+type Range = '1h' | '24h' | '7d' | '30d';
 const CATS: [string, string][] = [['all', 'הכל'], ['login', 'כניסות'], ['security', 'אבטחה'], ['email', 'מייל'], ['telegram', 'טלגרם'], ['push', 'פוש'], ['device', 'מכשירים'], ['cron', 'משימות'], ['ai', 'AI']];
-const STATUSES: ('all' | Status)[] = ['all', 'failed', 'security', 'warning', 'pending', 'success', 'info'];
-const RANGES: [string, string][] = [['1h', 'שעה'], ['24h', '24 שעות'], ['7d', 'שבוע'], ['30d', 'חודש']];
+const STATUSES: ['all' | Status, string, Status?][] = [['all', 'הכל'], ['failed', 'נכשל', 'failed'], ['security', 'אבטחה', 'security'], ['warning', 'אזהרה', 'warning'], ['pending', 'ממתין', 'pending'], ['success', 'הצליח', 'success']];
+const RANGES: [Range, string][] = [['1h', 'שעה'], ['24h', 'יום'], ['7d', 'שבוע'], ['30d', 'חודש']];
 
 function EventRow({ e }: { e: Explained }) {
   const [open, setOpen] = useState(false);
-  const s = STATUS[e.status];
   return (
-    <Glass glow={e.severity >= 6 ? e.status : undefined} className="p-0">
-      <button type="button" onClick={() => setOpen(!open)} className="flex w-full items-start gap-3 p-3.5 text-start" aria-expanded={open}>
-        <span className={cn('mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-2xl text-white shadow-sm', s.dot)}><CatIcon cat={e.category} /></span>
-        <span className="flex min-w-0 flex-1 flex-col gap-1">
-          <span className="flex flex-wrap items-center gap-2">
-            <span className="font-bold text-slate-900 dark:text-white">{e.title}</span>
-            <Pill status={e.status} />
-            {e.severity >= 6 ? <span className="rounded-full bg-rose-500/15 px-2 text-[10px] font-bold text-rose-600">חומרה {e.severity}/10</span> : null}
-          </span>
-          <span className="text-[13px] leading-snug text-slate-600 dark:text-slate-300">{e.why}</span>
+    <li>
+      <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} className="flex w-full items-center gap-3 px-4 py-3.5 text-start transition hover:bg-black/[0.02]">
+        <CatIcon cat={e.category} className="shrink-0 text-slate-400" />
+        <span className="min-w-0 flex-1">
+          <span className="flex items-center gap-2"><Dot status={e.status} pulse={e.status === 'pending'} /><span className="truncate text-[14px] font-medium text-slate-900 dark:text-cream">{e.title}</span></span>
+          <span className="mt-0.5 block truncate ps-4 text-[12.5px] text-slate-500">{e.why}</span>
         </span>
-        <span className="flex shrink-0 flex-col items-end gap-1 text-[11px] text-slate-500"><span title={fmtIl(e.at)}>{ago(e.at)}</span><ChevronDown size={14} className={cn('transition', open && 'rotate-180')} /></span>
+        <span className="shrink-0 text-[12px] tabular-nums text-slate-400" title={fmtIl(e.at)}>{ago(e.at)}</span>
       </button>
       {open ? (
-        <div className="animate-in fade-in slide-in-from-top-1 border-t border-white/40 px-4 py-3 text-[13px] dark:border-white/10">
-          {e.todo ? <p className="mb-2 rounded-2xl bg-amber-400/10 px-3 py-2 text-amber-800 dark:text-amber-200">💡 מה לעשות: {e.todo}</p> : null}
-          <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-slate-600 dark:text-slate-300">
+        <div className="px-4 pb-4 ps-11 text-[13px]">
+          {e.todo ? <p className="mb-3 text-slate-700 dark:text-slate-200"><span className="font-medium">מה לעשות: </span>{e.todo}</p> : null}
+          <dl className="grid grid-cols-[6rem_1fr] gap-x-3 gap-y-1.5 text-slate-600 dark:text-slate-300">
+            <dt className="text-slate-400">סטטוס</dt><dd><Pill status={e.status} /> {e.severity >= 6 ? <span className="text-slate-400">· חומרה {e.severity}/10</span> : null}</dd>
             <dt className="text-slate-400">זמן</dt><dd>{fmtIl(e.at)}</dd>
-            <dt className="text-slate-400">אירוע</dt><dd dir="ltr" className="text-end font-mono text-xs">{e.event}</dd>
-            {e.actor ? <Fragment><dt className="text-slate-400">מבצע</dt><dd dir="ltr" className="text-end font-mono text-xs">{e.actor}</dd></Fragment> : null}
+            <dt className="text-slate-400">אירוע</dt><dd dir="ltr" className="text-end font-mono text-[12px]">{e.event}</dd>
+            {e.actor ? <Fragment><dt className="text-slate-400">מבצע</dt><dd dir="ltr" className="text-end font-mono text-[12px]">{e.actor}</dd></Fragment> : null}
             {Object.entries(e.detail).filter(([, v]) => v != null && v !== '').map(([k, v]) => <Fragment key={k}><dt className="text-slate-400">{k}</dt><dd className="break-words">{String(v)}</dd></Fragment>)}
           </dl>
-          <p className="mt-2 text-[11px] text-slate-400">🔒 פרטים מצונזרים: בלי קודים, טוקנים, מיילים או מזהים מלאים.</p>
+          <p className="mt-3 text-[11.5px] text-slate-400">פרטים מצונזרים — בלי קודים, טוקנים, מיילים או מזהים מלאים.</p>
         </div>
       ) : null}
-    </Glass>
+    </li>
   );
 }
 
-function StoryCard({ s }: { s: Story }) {
-  const [open, setOpen] = useState(s.severity >= 6);
+function StoryRow({ s }: { s: Story }) {
+  const [open, setOpen] = useState(false);
   return (
-    <Glass glow={s.outcome} className="p-0">
-      <button type="button" onClick={() => setOpen(!open)} className="flex w-full items-center gap-3 p-3.5 text-start">
-        <span className={cn('grid h-9 w-9 place-items-center rounded-2xl text-white', STATUS[s.outcome].dot)}><CatIcon cat="login" /></span>
-        <span className="min-w-0 flex-1"><span className="block font-bold text-slate-900 dark:text-white">{s.headline}</span><span className="text-[12px] text-slate-500">{s.events.length} שלבים · {fmtIl(s.start)}</span></span>
-        <Pill status={s.outcome} />
+    <li>
+      <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} className="flex w-full items-center gap-3 px-4 py-3.5 text-start hover:bg-black/[0.02]">
+        <CatIcon cat="login" className="shrink-0 text-slate-400" />
+        <span className="min-w-0 flex-1">
+          <span className="flex items-center gap-2"><Dot status={s.outcome} /><span className="truncate text-[14px] font-medium text-slate-900 dark:text-cream">{s.headline}</span></span>
+          <span className="mt-0.5 block ps-4 text-[12.5px] text-slate-500">{s.events.length} שלבים · {fmtIl(s.start)}</span>
+        </span>
+        <ChevronLeft size={16} className={cn('shrink-0 text-slate-300 transition', open && '-rotate-90')} />
       </button>
       {open ? (
-        <ol className="relative ms-8 border-s-2 border-dashed border-slate-300/60 pb-3 pe-4 ps-4 dark:border-white/15">
+        <ol className="mb-3 me-4 ms-[1.6rem] border-s border-black/10 ps-5 dark:border-cream/15">
           {s.events.map((e) => (
-            <li key={e.id} className="relative py-1.5 text-[13px]">
-              <span className={cn('absolute -start-[1.4rem] top-3 h-2.5 w-2.5 rounded-full ring-4 ring-white/70 dark:ring-slate-900/70', STATUS[e.status].dot)} />
-              <span className="font-semibold text-slate-800 dark:text-slate-100">{e.title}</span> <span className="text-slate-400">· {new Date(e.at).toLocaleTimeString('he-IL', { timeZone: 'Asia/Jerusalem', hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+            <li key={e.id} className="relative py-1.5 text-[13px] text-slate-700 dark:text-slate-200">
+              <span className={cn('absolute -start-[1.6rem] top-[0.7rem] h-1.5 w-1.5 rounded-full', STATUS[e.status].dot)} />
+              {e.title} <span className="text-slate-400">· {new Date(e.at).toLocaleTimeString('he-IL', { timeZone: 'Asia/Jerusalem', hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
             </li>
           ))}
         </ol>
       ) : null}
-    </Glass>
+    </li>
   );
 }
 
 export function ActivityLog() {
-  const [range, setRange] = useState('24h');
+  const [range, setRange] = useState<Range>('24h');
   const [cat, setCat] = useState('all');
   const [status, setStatus] = useState<'all' | Status>('all');
-  const [actor, setActor] = useState('all');
   const [q, setQ] = useState('');
   const [view, setView] = useState<'feed' | 'stories'>('feed');
   const [feed, setFeed] = useState<Feed | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [live, setLive] = useState(true);
+  const sheet = useDisclosure();
 
   const load = useCallback(async () => {
     try {
       const r = await fetch(`/api/v1/admin/logs?range=${range}`, { cache: 'no-store' });
       if (!r.ok) throw new Error(String(r.status));
-      setFeed(await r.json());
-      setErr(null);
-    } catch {
-      setErr('לא הצלחתי לטעון את היומן. ננסה שוב בעוד רגע.');
-    } finally {
-      setLoading(false);
-    }
+      setFeed(await r.json()); setErr(null);
+    } catch { setErr('לא הצלחתי לטעון את היומן. אנסה שוב בעוד רגע.'); } finally { setLoading(false); }
   }, [range]);
-
   useEffect(() => { setLoading(true); void load(); }, [load]);
   useEffect(() => {
     if (!live) return;
@@ -99,60 +93,64 @@ export function ActivityLog() {
     return () => clearInterval(t);
   }, [live, load]);
 
-  const actors = useMemo(() => [...new Set((feed?.events ?? []).map((e) => e.actor).filter(Boolean))] as string[], [feed]);
   const shown = useMemo(() => (feed?.events ?? []).filter((e) =>
-    (cat === 'all' || e.category === cat) && (status === 'all' || e.status === status) && (actor === 'all' || e.actor === actor) &&
-    (!q || `${e.title} ${e.why} ${e.event} ${Object.values(e.detail).join(' ')}`.toLowerCase().includes(q.toLowerCase()))), [feed, cat, status, actor, q]);
+    (cat === 'all' || e.category === cat) && (status === 'all' || e.status === status) &&
+    (!q || `${e.title} ${e.why} ${e.event} ${Object.values(e.detail).join(' ')}`.toLowerCase().includes(q.toLowerCase()))), [feed, cat, status, q]);
 
+  const parts = [cat !== 'all' ? CATS.find((c) => c[0] === cat)?.[1] : null, status !== 'all' ? STATUS[status].label : null].filter(Boolean) as string[];
   const sm = feed?.summary;
+  const top = feed?.anomalies[0];
+
   return (
-    <div className="flex flex-col gap-4">
-      {feed?.anomalies.length ? (
-        <div className="flex flex-col gap-2">
-          {feed.anomalies.slice(0, 5).map((a) => (
-            <Glass key={a.key} glow="failed" className="flex items-start gap-3 bg-gradient-to-l from-rose-500/10 to-violet-500/10">
-              <span className="text-xl">🚨</span>
-              <div className="min-w-0 flex-1">
-                <div className="font-bold text-rose-700 dark:text-rose-300">{a.title} <span className="text-xs font-semibold opacity-70">· חומרה {a.severity}/10</span></div>
-                <div className="text-[13px] text-slate-700 dark:text-slate-200">{a.why}</div>
-                <div className="mt-1 text-[12px] text-slate-500">מה לעשות: {a.todo}</div>
-              </div>
-              <Link prefetch={false} href="/ops/ceo/security" className="shrink-0 rounded-full bg-slate-900 px-3 py-1.5 text-xs font-bold text-white dark:bg-white dark:text-slate-900">מכשירים</Link>
-            </Glass>
-          ))}
-        </div>
+    <div className="flex flex-col gap-8">
+      {top ? (
+        <Glass className="flex items-start gap-3 px-4 py-3.5">
+          <Dot status="failed" pulse />
+          <div className="min-w-0 flex-1">
+            <div className="text-[14px] font-medium text-slate-900 dark:text-cream">{top.title}</div>
+            <div className="mt-0.5 text-[13px] text-slate-500">{top.why} {top.todo}</div>
+            {feed!.anomalies.length > 1 ? <div className="mt-1 text-[12px] text-slate-400">ועוד {feed!.anomalies.length - 1} חריגות</div> : null}
+          </div>
+          <Link prefetch={false} href="/ops/ceo/security" className="shrink-0 text-[13px] font-medium text-slate-800 underline underline-offset-4 dark:text-cream">מכשירים</Link>
+        </Glass>
       ) : null}
 
-      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-        <Stat label="אירועים" value={sm?.total ?? '—'} status="info" sub={RANGES.find((r) => r[0] === range)?.[1]} />
-        <Stat label="כישלונות" value={sm?.byStatus.failed ?? '—'} status="failed" sub={sm ? <span className="inline-flex items-center gap-1">{sm.trend === 'up' ? <TrendingUp size={12} className="text-rose-500" /> : sm.trend === 'down' ? <TrendingDown size={12} className="text-emerald-500" /> : null}{Math.round(sm.failRate * 100)}% מול {Math.round(sm.baselineFailRate * 100)}% רגיל</span> : null} />
-        <Stat label="אבטחה" value={sm?.byStatus.security ?? '—'} status="security" />
-        <Stat label="ממתינים" value={sm?.byStatus.pending ?? '—'} status="pending" />
-      </div>
+      <Metrics items={[
+        { label: 'אירועים', value: sm?.total ?? '—' },
+        { label: 'כישלונות', value: sm?.byStatus.failed ?? '—', status: 'failed', sub: sm ? `${Math.round(sm.failRate * 100)}% · רגיל ${Math.round(sm.baselineFailRate * 100)}%` : undefined },
+        { label: 'אבטחה', value: sm?.byStatus.security ?? '—', status: 'security' },
+        { label: 'ממתינים', value: sm?.byStatus.pending ?? '—', status: 'pending' },
+      ]} />
 
-      <Glass className="sticky top-2 z-10 flex flex-col gap-2.5 p-3">
-        <div className="flex items-center gap-2">
-          <label className="flex flex-1 items-center gap-2 rounded-2xl bg-white/70 px-3 py-2 dark:bg-white/10">
-            <Search size={16} className="text-slate-400" />
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="חיפוש ביומן…" className="w-full bg-transparent text-sm outline-none" />
-          </label>
-          <button type="button" onClick={() => setLive(!live)} className={cn('flex items-center gap-1.5 rounded-2xl px-3 py-2 text-xs font-bold', live ? 'bg-emerald-500/15 text-emerald-700' : 'bg-white/60 text-slate-500')}>
-            <span className={cn('h-2 w-2 rounded-full', live ? 'animate-pulse bg-emerald-500' : 'bg-slate-400')} />{live ? 'חי' : 'מושהה'}
-          </button>
-          <button type="button" onClick={() => void load()} aria-label="רענון" className="rounded-2xl bg-white/60 p-2 dark:bg-white/10"><RefreshCw size={16} /></button>
+      <Section title={view === 'feed' ? 'אירועים' : 'סיפורי כניסה'} aside={<Segmented value={view} options={[['feed', 'אירועים'], ['stories', 'סיפורים']]} onChange={setView} />}>
+        <div className="flex flex-col gap-3">
+          <SearchBar value={q} onChange={setQ} placeholder="חיפוש ביומן" onFilters={sheet.show} activeCount={parts.length}
+            trailing={<button type="button" onClick={() => setLive(!live)} aria-pressed={live} title={live ? 'עדכון חי פעיל' : 'עדכון חי מושהה'} className="flex h-10 items-center gap-1.5 rounded-xl px-2 text-[12px] text-slate-500"><Dot status={live ? 'success' : 'info'} pulse={live} />{live ? 'חי' : 'מושהה'}</button>} />
+          <div className="flex items-center justify-between gap-2">
+            <Segmented value={range} options={RANGES} onChange={setRange} />
+            <button type="button" onClick={() => void load()} aria-label="רענון" className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:text-slate-700"><RefreshCw size={15} /></button>
+          </div>
+          <ActiveFilters parts={parts} onClear={() => { setCat('all'); setStatus('all'); }} />
         </div>
-        <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-0.5">{RANGES.map(([k, l]) => <Chip key={k} active={range === k} onClick={() => setRange(k)}>{l}</Chip>)}<span className="mx-1 w-px bg-slate-300/50" /><Chip active={view === 'feed'} onClick={() => setView('feed')}>אירועים</Chip><Chip active={view === 'stories'} onClick={() => setView('stories')}>סיפורי כניסה</Chip></div>
-        <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-0.5">{CATS.map(([k, l]) => <Chip key={k} active={cat === k} onClick={() => setCat(k)}>{l}</Chip>)}</div>
-        <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-0.5">
-          {STATUSES.map((s) => <Chip key={s} active={status === s} onClick={() => setStatus(s)}>{s === 'all' ? 'כל הסטטוסים' : STATUS[s].label}</Chip>)}
-          {actors.length > 1 ? <select value={actor} onChange={(e) => setActor(e.target.value)} className="rounded-full bg-white/60 px-3 text-xs dark:bg-white/10"><option value="all">כל המשתמשים</option>{actors.map((a) => <option key={a} value={a}>{a}</option>)}</select> : null}
-        </div>
-      </Glass>
 
-      {loading && !feed ? <Skeleton /> : err && !feed ? <Glass glow="failed" className="text-center text-rose-700">{err}</Glass> : view === 'stories' ? (
-        feed?.stories.length ? <div className="flex flex-col gap-2.5">{feed.stories.map((s) => <StoryCard key={s.id} s={s} />)}</div> : <Empty title="אין עדיין סיפורי כניסה בטווח הזה" />
-      ) : shown.length ? <div className="flex flex-col gap-2.5">{shown.map((e) => <EventRow key={e.id} e={e} />)}</div> : <Empty title="שקט כאן" sub="אין אירועים שמתאימים לסינון." />}
-      {err && feed ? <p className="text-center text-xs text-rose-600">{err}</p> : null}
+        {loading && !feed ? <Skeleton /> : err && !feed ? <Glass><Empty title={err} /></Glass> : (
+          <Glass className="overflow-hidden">
+            {view === 'stories'
+              ? (feed?.stories.length ? <ul className="divide-y divide-black/[0.05] dark:divide-cream/10">{feed.stories.map((s) => <StoryRow key={s.id} s={s} />)}</ul> : <Empty title="אין סיפורי כניסה בטווח הזה" />)
+              : (shown.length ? <ul className="divide-y divide-black/[0.05] dark:divide-cream/10">{shown.map((e) => <EventRow key={e.id} e={e} />)}</ul> : <Empty title="שקט כאן" sub="אין אירועים שמתאימים לסינון." />)}
+          </Glass>
+        )}
+        {err && feed ? <p className="px-1 text-[12px] text-rose-700">{err}</p> : null}
+      </Section>
+
+      <Sheet open={sheet.open} onClose={sheet.hide} title="סינון">
+        <OptionGroup label="סטטוס" value={status} options={STATUSES} onChange={setStatus} />
+        <OptionGroup label="קטגוריה" value={cat} options={CATS as [string, string][]} onChange={setCat} />
+        <div className="flex gap-2 pt-1">
+          <button type="button" onClick={sheet.hide} className="flex-1 rounded-xl bg-slate-900 py-2.5 text-[14px] font-medium text-cream dark:bg-cream dark:text-slate-900">הצג {shown.length} תוצאות</button>
+          <button type="button" onClick={() => { setCat('all'); setStatus('all'); }} className="rounded-xl px-4 py-2.5 text-[14px] text-slate-600">נקה</button>
+        </div>
+      </Sheet>
     </div>
   );
 }

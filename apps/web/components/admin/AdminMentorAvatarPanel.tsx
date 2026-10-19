@@ -94,7 +94,7 @@ export function AdminMentorAvatarPanel({ mentorId }: AdminMentorAvatarPanelProps
 
   return (
     <section
-      className="relative mb-6 overflow-hidden rounded-3xl border border-white/40 bg-background-card/45 p-4 shadow-[0_12px_40px_rgba(15,23,42,0.12)] backdrop-blur-2xl sm:p-6"
+      className="relative mb-6 overflow-hidden rounded-3xl border border-cream/40 bg-background-card/45 p-4 shadow-[0_12px_40px_rgba(15,23,42,0.12)] backdrop-blur-2xl sm:p-6"
       dir="rtl"
     >
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -187,7 +187,7 @@ export function AdminMentorAvatarPanel({ mentorId }: AdminMentorAvatarPanelProps
         type="button"
         onClick={() => void onUpload()}
         disabled={!file || busy}
-        className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl bg-linear-to-l from-emerald-600 to-teal-500 px-6 py-3 font-bold text-white disabled:opacity-45 sm:w-auto sm:self-end"
+        className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl bg-linear-to-l from-emerald-600 to-teal-500 px-6 py-3 font-bold text-cream disabled:opacity-45 sm:w-auto sm:self-end"
       >
         {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <ImageUp className="h-5 w-5" />}
         שמור תמונת {mentor.name}
