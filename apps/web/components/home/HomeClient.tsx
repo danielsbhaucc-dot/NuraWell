@@ -288,7 +288,7 @@ export function HomeClient({
         }}
       >
         <motion.div variants={container} initial="hidden" animate="show" className="mx-auto max-w-lg space-y-3">
-          <ProgramOrchestratorGate />
+          <ProgramOrchestratorGate onAccepted={() => void refreshTasks()} />
 
           <HomeSectionDivider title="היום שלך" subtitle="משימות ומה שמחכה לך היום" />
 
