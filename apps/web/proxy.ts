@@ -341,6 +341,11 @@ export async function proxy(request: NextRequest) {
 
   /** קליטת סשן מגשר — בלי משתמש עדיין; לא לשכתב ל־/ops/auth/… */
   const isOpsSessionIngest = pathname === '/auth/ops-ingest';
+  // Missing/too-short handoff token → same stealth 404 as any other Ops path (never hit the route).
+  if (effectiveOpsHost && isOpsSessionIngest) {
+    const t = (request.nextUrl.searchParams.get('t') || '').trim();
+    if (t.length < 16) return stealthNotFound();
+  }
 
   if (needsOpsGate && !pathname.startsWith('/api') && !isOpsSessionIngest) {
     /** Login always stays on the requesting host (Ops host has its own /login) — never the public *.vercel.app. */
