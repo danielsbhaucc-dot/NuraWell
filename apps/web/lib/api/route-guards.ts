@@ -26,7 +26,7 @@ export async function requireApiSession(request: Request): Promise<SessionOk | G
   return { ok: true, supabase, user };
 }
 
-export async function requireApiAdmin(request: Request): Promise<SessionOk | GuardFail> {
+export async function requireApiAdmin(request: Request, opts: { skipDeviceGate?: boolean } = {}): Promise<SessionOk | GuardFail> {
   const session = await requireApiSession(request);
   if (!session.ok) return session;
 
@@ -52,5 +52,24 @@ export async function requireApiAdmin(request: Request): Promise<SessionOk | Gua
       response: NextResponse.json({ error: 'Forbidden' }, { status: 403 }),
     };
   }
+  if (!opts.skipDeviceGate) {
+    const { opsDeviceGate } = await import('@/lib/ops/device-gate');
+    const { DEVICE_COOKIE } = await import('@/lib/ops/device-trust');
+    const { createAdminClient } = await import('@/lib/supabase/admin');
+    const { data: sess } = await supabase.auth.getSession();
+    const gate = await opsDeviceGate(createAdminClient(), user.id, readCookie(request, DEVICE_COOKIE), sess.session?.access_token, request.headers.get('user-agent'));
+    if (!gate.ok) {
+      return { ok: false, response: NextResponse.json({ error: 'נדרש אישור מכשיר', code: 'device_unverified' }, { status: 403 }) };
+    }
+  }
   return { ok: true, supabase, user };
+}
+
+function readCookie(request: Request, name: string): string | null {
+  const raw = request.headers.get('cookie') ?? '';
+  for (const part of raw.split(';')) {
+    const i = part.indexOf('=');
+    if (i > 0 && part.slice(0, i).trim() === name) return decodeURIComponent(part.slice(i + 1).trim());
+  }
+  return null;
 }

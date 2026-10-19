@@ -512,6 +512,36 @@ const DEV: CeoTool[] = [
     },
   },
   {
+    name: 'send_ops_access_link',
+    description: 'Send Daniel (this verified owner chat only) a button that opens the Ops access flow on the main site. The button alone grants nothing: a session + trusted device are still required. Use when Daniel asks how to get into Ops / for a link.',
+    schema: z.object({}),
+    write: false,
+    run: async () => {
+      const { publicAppBaseNoSlashSync } = await import('@/lib/public-app-url');
+      const { createTelegramChannel } = await import('./telegram');
+      const { allowedChatIds } = await import('./channel');
+      const url = `${publicAppBaseNoSlashSync() || 'https://nurawell.vercel.app'}/auth/bridge-to-ops`;
+      const ch = createTelegramChannel();
+      for (const id of allowedChatIds()) await ch.send(id, '🔐 כניסה ל-Ops (דורש סשן ומכשיר מאושר):', [[{ text: 'פתח', data: '', url }]], { kind: 'reply' }).catch(() => {});
+      return { ok: true, note: 'הכפתור נשלח בצ׳אט. אל תכתוב את הכתובת בטקסט.' };
+    },
+  },
+  {
+    name: 'report_ops_lockout',
+    description: 'LAST RESORT, only when Daniel himself (this chat) says he is locked out of Ops and every approval method failed. Files a sensitive lockout item for Or. Never on behalf of anyone else. Afterwards tell Daniel Or will handle it and point him to the self-service emergency guide.',
+    schema: z.object({ what_failed_he: z.string().min(3).max(600) }),
+    write: false,
+    run: async (db, a) => {
+      const r = await autoForward(db, {
+        title: 'Ops lockout — Daniel cannot get in',
+        problem_he: `דניאל נעול מחוץ ל-Ops. מה נוסה: ${String(a.what_failed_he)}`,
+        problem_en: 'Owner reports being locked out of Ops after all approval methods failed. Verify identity out-of-band before any reset (ops_break_glass_reset).',
+        evidence: '', suggested_fix: 'Out-of-band identity check, then select * from public.ops_break_glass_reset(); and help Daniel save the new recovery codes.',
+      }, { kind: 'lockout', risk: 'sensitive', source: 'chat' });
+      return { ok: true, deduped: r.deduped };
+    },
+  },
+  {
     name: 'or_work_status',
     description: 'What Or (the developer) is working on: forwarded items with status new/in_progress/done/rejected and Or\'s notes. Use for "על מה אור עובד?". Never say Or fixed something unless its status is done.',
     schema: z.object({}),
@@ -579,7 +609,7 @@ const CAP_HE: Record<string, string> = {
   db_delete: 'מחיקה (בלתי הפיך)', send_user_notification: 'התראה למשתמש בקול של אלמוג', delete_user: 'מחיקת חשבון (בלתי הפיך)',
   owner_tasks_list: 'משימות פתוחות של דניאל', owner_task_create: 'פתיחת משימה לדניאל', owner_task_update: 'עדכון משימה של דניאל',
   journey_agent_start: 'הפעלת סוכן התוכן על חומר גלם', journey_agent_reply: 'תשובה לסוכן התוכן', journey_agent_sessions_list: 'סשנים של סוכן התוכן',
-  recent_digest_findings: 'סיכומים אחרונים שאפשר להעביר לאור', forward_to_developer: 'העברת ממצא טכני לאור (אוטומטי, בלי אישור)', or_work_status: 'על מה אור עובד (סטטוסים)',
+  recent_digest_findings: 'סיכומים אחרונים שאפשר להעביר לאור', forward_to_developer: 'העברת ממצא טכני לאור (אוטומטי, בלי אישור)', send_ops_access_link: 'כפתור כניסה ל-Ops (לצ׳אט המאומת)', report_ops_lockout: 'דיווח נעילה מחוץ ל-Ops לאור (מוצא אחרון)', or_work_status: 'על מה אור עובד (סטטוסים)',
   owner_pref_set: 'שמירת הוראה קבועה של דניאל (שבת, שעות שקט, השתקה) שנאכפת בקוד', owner_prefs_list: 'ההוראות הקבועות של דניאל', owner_pref_remove: 'ביטול הוראה קבועה',
 };
 export function capabilityManifest(): string {

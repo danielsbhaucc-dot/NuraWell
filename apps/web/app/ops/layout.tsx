@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
 import { ensureOpsAdminServer } from '@/lib/auth/ensure-ops-admin-server';
 import { AdminShell } from '@/components/admin/AdminShell';
+import { OpsPendingLoginAlert } from '@/components/ops-access/OpsDevicesPanel';
 import { publicAppBaseNoSlashFromServer } from '@/lib/public-app-url';
 
 export const metadata: Metadata = {
@@ -47,6 +48,7 @@ export default async function OpsLayout({ children }: { children: React.ReactNod
       mainAppBase={mainAppBase}
     >
       {children}
+      <OpsPendingLoginAlert />
     </AdminShell>
   );
 }

@@ -183,7 +183,7 @@ export async function extractFinding(text: string): Promise<Omit<ForwardArgs, 'f
 
 // ───────────────────────── auto-consult (no Daniel approval needed to forward) ─────────────────────────
 
-export type ForwardKind = 'finding' | 'capability_request';
+export type ForwardKind = 'finding' | 'capability_request' | 'lockout';
 export type ForwardRisk = 'low' | 'sensitive';
 
 /** Dedupe key: normalized title words (order-insensitive), so "ניסוח לא טבעי" ≈ "לא טבעי ניסוח". */
