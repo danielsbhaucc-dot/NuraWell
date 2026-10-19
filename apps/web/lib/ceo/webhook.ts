@@ -74,6 +74,12 @@ async function handleTelegramUpdateInner(db: SupabaseClient, channel: CeoChannel
       await channel.ack({ callbackId: cb.id, chatId, messageId: cb.message?.message_id }, msg);
       return { task: kind };
     }
+    if (kind === 'ca' || kind === 'cr') {
+      const { decideCapability } = await import('./dev-forward');
+      const title = await decideCapability(db, id, kind === 'ca');
+      await channel.ack({ callbackId: cb.id, chatId, messageId: cb.message?.message_id }, !title ? 'הבקשה כבר טופלה.' : kind === 'ca' ? `✅ אישרת. אור יבנה: ${title}` : `❌ בוטל: ${title}`);
+      return { capability: kind };
+    }
     if (kind === 'fd') {
       await channel.ack({ callbackId: cb.id, chatId });
       await channel.typing?.(chatId);

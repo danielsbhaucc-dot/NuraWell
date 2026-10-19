@@ -5,7 +5,7 @@ import { buildBusinessMetrics } from '@/lib/admin/business-metrics';
 import { deleteUserCompletely } from '@/lib/admin/delete-user-completely';
 import { opsLink } from './channel';
 import { openOwnerTasks, setOwnerTask } from './owner-tasks';
-import { forwardToDeveloper, forwardSchema, type ForwardArgs } from './dev-forward';
+import { autoForward, forwardSchema, orWorkStatus, type ForwardArgs } from './dev-forward';
 import { describePref, listPrefs, PrefInput, savePref, setPrefActive } from './prefs';
 import { createDemoAccessLink, resolveCeoActorUserId, readDemoDefaultTarget } from '@/lib/demo-access/create';
 
@@ -501,11 +501,22 @@ const DEV: CeoTool[] = [
   {
     name: 'forward_to_developer',
     description:
-      'Forward a technical/quality finding to Or (the developer bot): saved for Or in the dev queue. Use when Daniel asks to pass something to Or / the developer, or offers it from a summary. Write title + problem in Hebrew AND English, anonymized evidence (NO names, emails, phones, ids — say "משתמש A"), and a concrete suggested fix. Pass forwardId when it comes from recent_digest_findings. Confirm to Daniel only after the approval result says it was created.',
+      'Forward a technical/code/bug/security/privacy/performance/Almog-quality finding to Or (lead engineer) — AUTOMATIC, no approval needed (it only queues work). NOT for business/product/personal decisions (those go to Daniel). Title + problem in Hebrew AND English, anonymized evidence (NO names, emails, phones, ids — "משתמש A"), concrete suggested fix. Deduped against open items. Tell Daniel "העברתי לאור" only after this returns ok.',
     schema: forwardSchema,
-    write: true,
-    run: (db, a) => forwardToDeveloper(db, a as ForwardArgs),
-    summarize: (a) => `להעביר לאור: ${String(a.title ?? '')}`,
+    write: false,
+    run: async (db, a) => {
+      const { forwardId: _f, ...rest } = a as ForwardArgs;
+      void _f;
+      const r = await autoForward(db, rest, { source: 'chat' });
+      return { ok: true, deduped: r.deduped };
+    },
+  },
+  {
+    name: 'or_work_status',
+    description: 'What Or (the developer) is working on: forwarded items with status new/in_progress/done/rejected and Or\'s notes. Use for "על מה אור עובד?". Never say Or fixed something unless its status is done.',
+    schema: z.object({}),
+    write: false,
+    run: (db) => orWorkStatus(db),
   },
 ];
 
@@ -568,7 +579,7 @@ const CAP_HE: Record<string, string> = {
   db_delete: 'מחיקה (בלתי הפיך)', send_user_notification: 'התראה למשתמש בקול של אלמוג', delete_user: 'מחיקת חשבון (בלתי הפיך)',
   owner_tasks_list: 'משימות פתוחות של דניאל', owner_task_create: 'פתיחת משימה לדניאל', owner_task_update: 'עדכון משימה של דניאל',
   journey_agent_start: 'הפעלת סוכן התוכן על חומר גלם', journey_agent_reply: 'תשובה לסוכן התוכן', journey_agent_sessions_list: 'סשנים של סוכן התוכן',
-  recent_digest_findings: 'סיכומים אחרונים שאפשר להעביר לאור', forward_to_developer: 'העברת ממצא טכני לאור',
+  recent_digest_findings: 'סיכומים אחרונים שאפשר להעביר לאור', forward_to_developer: 'העברת ממצא טכני לאור (אוטומטי, בלי אישור)', or_work_status: 'על מה אור עובד (סטטוסים)',
   owner_pref_set: 'שמירת הוראה קבועה של דניאל (שבת, שעות שקט, השתקה) שנאכפת בקוד', owner_prefs_list: 'ההוראות הקבועות של דניאל', owner_pref_remove: 'ביטול הוראה קבועה',
 };
 export function capabilityManifest(): string {
