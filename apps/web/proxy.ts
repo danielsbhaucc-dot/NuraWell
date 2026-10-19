@@ -213,9 +213,11 @@ export async function proxy(request: NextRequest) {
   /** Ops stealth: anyone without admin session + trusted device sees the app's generic 404 (same as any missing page). */
   async function stealthNotFound(): Promise<NextResponse> {
     const ip = (request.headers.get('x-real-ip') || request.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown').trim();
-    const rl = await consumeRateLimit({ key: ip, namespace: 'ops-probe', limit: 120, windowSeconds: 600 }).catch(() => ({ ok: true }));
-    if (!rl.ok) return applySecurityHeaders(new NextResponse('Too Many Requests', { status: 429, headers: { 'Retry-After': '600' } }));
-    return applySecurityHeaders(NextResponse.rewrite(new URL('/__nf', request.url), { request: { headers: requestHeaders } }));
+    const rl = await consumeRateLimit({ key: ip, namespace: 'ops-probe', limit: 120, windowSeconds: 600 }).catch(() => ({ ok: true as const }));
+    if (!rl.ok) return applySecurityHeaders(new NextResponse('Too Many Requests', { status: 429, headers: { 'Retry-After': '600', 'X-Robots-Tag': 'noindex, nofollow' } }));
+    const res = applySecurityHeaders(NextResponse.rewrite(new URL('/__nf', request.url), { request: { headers: requestHeaders } }));
+    res.headers.set('X-Robots-Tag', 'noindex, nofollow');
+    return res;
   }
 
   if (!supabaseUrl || !supabaseKey) {

@@ -1,3 +1,4 @@
+import { LEGAL_SUPPORT_EMAIL } from '@/lib/legal/contact';
 /**
  * שלד מייל משותף (כיוון B: חם וצבעוני, בפלטת המותג).
  * RTL עמיד ל-Gmail: dir=rtl + align=right על כל table/td, text-align inline, בלי <style>,
@@ -45,7 +46,7 @@ export type EmailLayoutInput = {
   assetOrigin: string;
 };
 
-export const EMAIL_SUPPORT_ADDRESS = 'support@nurawell.ai';
+export const EMAIL_SUPPORT_ADDRESS = LEGAL_SUPPORT_EMAIL;
 
 export function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
