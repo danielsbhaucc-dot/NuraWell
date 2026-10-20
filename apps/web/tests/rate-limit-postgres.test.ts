@@ -27,8 +27,8 @@ describe('rate-limit postgres backend', () => {
     vi.stubEnv('SUPABASE_SERVICE_ROLE_KEY', 'k');
     vi.stubGlobal('fetch', vi.fn(() => Promise.resolve(new Response('no', { status: 500 }))));
     const { consumeRateLimit } = await import('@/lib/api/rate-limit');
-    const r = await consumeRateLimit({ key: 'a', namespace: 'm', limit: 1, windowSeconds: 60 });
-    expect(r.ok).toBe(true);
+    const first = await consumeRateLimit({ key: 'a', namespace: 'm', limit: 1, windowSeconds: 60 });
+    expect(first.ok).toBe(true);
     expect((await consumeRateLimit({ key: 'a', namespace: 'm', limit: 1, windowSeconds: 60 })).ok).toBe(false);
   });
 });
