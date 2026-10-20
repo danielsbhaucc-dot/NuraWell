@@ -25,32 +25,40 @@ export function isRedactedContent(text: unknown): boolean {
 }
 
 /**
- * Almog's reply — never echoes the content. Warm, short (2–3 sentences), gender-matched, no slash forms.
- * No consent nudging at all: it acknowledges, explains briefly (privacy) and warmly redirects to the
- * user's habits and NuraWell plan. `variant` rotates wording within a session so it never repeats.
+ * Almog's reply — never echoes the content. Warm, short, gender-matched, no slash forms.
+ * `variant` = number of redaction notices already stored in this session (server-side count).
+ * - variant 0 (first notice in the session): calmly says the message was deleted because there is
+ *   no explicit consent ("ללא הסכמה מפורשת"), one line on why (privacy) and how (settings / ask Almog).
+ * - variant ≥ 1: no consent mention at all — short, warm, rotating, encourages habits/tasks/plan.
  */
 export function almogRedactionReply(gender: string | null | undefined, opts: { variant?: number } = {}): string {
   const f = gender === 'female';
   const m = gender === 'male';
   const g = (fem: string, mas: string, neu: string) => (f ? fem : m ? mas : neu);
-  const variants = [
+  const n = Math.max(0, Math.floor(opts.variant ?? 0));
+  if (n === 0) {
+    return [
+      'אני שומע אותך, ואני כאן איתך 💛',
+      'את ההודעה מחקתי, כי מידע בריאותי אני לא שומר ללא הסכמה מפורשת ממך.',
+      `זה נועד להגן על הפרטיות שלך, ואם ${g('תרצי', 'תרצה', 'זה מתאים')}, אפשר לאשר בהגדרות או פשוט לבקש ממני.`,
+      `בינתיים, ${g('ספרי לי', 'ספר לי', 'אשמח לשמוע')} מה הולך טוב השבוע בתוכנית שלך?`,
+    ].join(' ');
+  }
+  const followUps = [
     [
-      'אני שומע שזה מעסיק אותך, ואני כאן איתך 💛',
-      'כדי לשמור על הפרטיות שלך, את הפרטים האלה אני לא שומר, ולכן ההודעה נמחקה.',
-      `${g('ספרי', 'ספר', 'אשמח לשמוע')} ${f || m ? 'לי' : ''} מה הולך טוב השבוע בתוכנית שלך, או שנבחר יחד הרגל אחד קטן למחר?`,
+      'גם את זה מחקתי, כדי לשמור על הפרטיות שלך 💛',
+      `${g('בואי נמשיך', 'בוא נמשיך', 'אפשר להמשיך')} עם התוכנית: איזו משימה מהיום הכי קל לסמן עכשיו?`,
     ],
     [
-      `תודה ${g('ששיתפת', 'ששיתפת', 'על השיתוף')}, אני מבין שזה חשוב לך.`,
-      'כדי לשמור על הפרטיות שלך ההודעה הזאת נמחקה ולא נשמרה.',
-      `${g('בואי', 'בוא', 'אפשר')} ${f || m ? 'נסתכל' : 'להסתכל'} רגע על המשימות שלך להיום, איזו מהן הכי ${g('מתחשק לך', 'מתחשק לך', 'מתאימה')} להתחיל?`,
+      'ההודעה הזאת נמחקה, ואני כאן איתך.',
+      `${g('ספרי לי', 'ספר לי', 'אשמח לשמוע')} על ההרגלים שלך: מה עבד הכי טוב בשגרה השבוע?`,
     ],
     [
-      'אני איתך, וזה בסדר גמור להרגיש ככה.',
-      'כדי לשמור על הפרטיות שלך, גם ההודעה הזאת נמחקה.',
-      `מה ${g('היית רוצה', 'היית רוצה', 'מתאים')} לחזק עכשיו בשגרה שלך, בוקר, ערב או אחד ההרגלים מהתוכנית?`,
+      'שמרתי על הפרטיות שלך, וההודעה נמחקה.',
+      `מה ההרגל הקטן הבא ש${g('היית רוצה', 'היית רוצה', 'כדאי')} להוסיף לתוכנית? אני ${g('איתך', 'איתך', 'כאן')} בזה 🌱`,
     ],
   ];
-  return variants[Math.abs(opts.variant ?? 0) % variants.length].join(' ').replace(/\s{2,}/g, ' ');
+  return followUps[(n - 1) % followUps.length].join(' ');
 }
 
 /** System-prompt block for users without consent. */
@@ -58,7 +66,7 @@ export const HEALTH_CONSENT_OFF_PROMPT = `\n[הסכמה למידע בריאות�
 - אל תדון, תשאל, תסיק, תזכור או תתעד מידע בריאותי: משקל, מדדים, תזונה ודיאטות, דפוסי אכילה (כולל אכילה רגשית), דימוי גוף, מצב רפואי או נפשי, תרופות.
 - אל תשתמש בשום מידע בריאותי מהעבר.
 - כשהשיחה נוגעת בזה: תגובה חמה ואנושית, 2–3 משפטים. הכר ברגש באמפתיה בלי להיכנס לתוכן, ובחום הזמן אותו לדבר על ההרגלים והתוכנית שלו ב-NuraWell (המשימות, השגרה, המטרות, מה הולך טוב השבוע), תוך שימוש בהקשר של השיחה.
-- אל תציע הסכמה ואל תזכיר אותה ביוזמתך — אפס לחץ.
+- אל תציע הסכמה ואל תזכיר אותה ביוזמתך — אפס לחץ (ההודעה האוטומטית הראשונה בשיחה כבר הסבירה זאת פעם אחת).
 - שאלות על ההסכמה עצמה ("הסכמה של מה?", "למה?", "מי קבע?", "זה מעיק") הן לא מידע בריאותי — רק כשהוא שואל, ענה באמת, בחום ובניסוח משתנה: זה כדי להגן עליו, מידע בריאותי רגיש במיוחד לפי חוק הגנת הפרטיות, ההחלטה רק שלו, ואם ירצה אפשר להפעיל אותה בהגדרות או לבקש ממך. אחר כך חזור בטבעיות להרגלים ולתוכנית.
 - אסור להשתמש ב"אסור לי", "כללי השירות קובעים", "אני לא יכול לגעת בנושא" או בכל ניסוח ביורוקרטי; אל תאשים חוקים. אל תחזור על אותו משפט או אותה הצעה פעמיים בשיחה — גוון והתייחס להקשר.
 - פנה למשתמש לפי המגדר שלו, בלי לוכסנים.`;
