@@ -50,7 +50,7 @@ export async function sendWelcomeAlmogEmail(userId: string): Promise<SendWelcome
   }
 
   const gender = (profile.gender as OnboardingGender | null) ?? null;
-  const firstName = (profile.full_name as string)?.trim().split(/\s+/)[0] || 'חבר/ה';
+  const firstName = (profile.full_name as string)?.trim().split(/\s+/)[0] || 'שלום';
 
   const html = buildWelcomeAlmogEmailHtml(
     firstName,

@@ -398,7 +398,7 @@ export function AdminCostsClient() {
             <div className="space-y-4">
               <p className="flex items-center justify-center gap-2 py-6 text-sm text-slate-500">
                 <UserCircle className="h-5 w-5" />
-                בחר/י משתמש כדי לראות פירוק עלות
+                יש לבחור משתמש כדי לראות פירוק עלות
               </p>
               {agg && agg.topUsers.length > 0 ? (
                 <div>

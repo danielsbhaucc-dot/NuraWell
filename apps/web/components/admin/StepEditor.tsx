@@ -878,7 +878,7 @@ export function StepEditor({ step }: StepEditorProps) {
         scan_status: 'ready',
         scan_error: undefined,
       });
-      setResearchMessage(`המחקר נסרק בהצלחה (${data.provider ?? 'AI'}). שמור/י את הצעד כדי לסנכרן אוטומטית לאלמוג.`);
+      setResearchMessage(`המחקר נסרק בהצלחה (${data.provider ?? 'AI'}). יש לשמור את הצעד כדי לסנכרן אוטומטית לאלמוג.`);
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'שגיאת סריקה';
       patchResearch(index, { scan_status: 'error', scan_error: msg });
@@ -2362,7 +2362,7 @@ export function StepEditor({ step }: StepEditorProps) {
 
             <p className="mt-4 text-xs text-slate-500 leading-relaxed">
               {saveHasTts
-                ? 'יצירת אודיו ב-ElevenLabs עשויה לקחת מספר שניות לכל שאלה. אל תסגור/י את החלון.'
+                ? 'יצירת אודיו ב-ElevenLabs עשויה לקחת מספר שניות לכל שאלה. לא לסגור את החלון.'
                 : 'רק רגע, שומר את הצעד…'}
             </p>
           </div>

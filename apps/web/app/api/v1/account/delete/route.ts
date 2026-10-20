@@ -41,7 +41,7 @@ export async function POST(request: Request) {
   const email = authUser.user?.email?.trim().toLowerCase();
   if (!email || email !== parsed.data.confirm_email.trim().toLowerCase()) {
     return NextResponse.json(
-      { error: 'כתובת האימייל לא תואמת לחשבון. הזן/י את האימייל המדויק.' },
+      { error: 'כתובת האימייל לא תואמת לחשבון. יש להזין את האימייל המדויק.' },
       { status: 400 }
     );
   }
@@ -54,7 +54,7 @@ export async function POST(request: Request) {
 
   if (profile?.role === 'admin') {
     return NextResponse.json(
-      { error: 'מחיקת חשבון מנהל אינה זמינה דרך האפליקציה. פנה/י לתמיכה.' },
+      { error: 'מחיקת חשבון מנהל אינה זמינה דרך האפליקציה. אפשר לפנות לתמיכה.' },
       { status: 403 }
     );
   }

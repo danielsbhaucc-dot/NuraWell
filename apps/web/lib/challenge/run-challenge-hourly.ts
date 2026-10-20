@@ -71,7 +71,7 @@ export async function runChallengeHourlyReminders(
         .maybeSingle();
 
       const firstName =
-        (profile?.full_name as string | null)?.trim().split(/\s+/)[0] ?? 'חבר/ה';
+        (profile?.full_name as string | null)?.trim().split(/\s+/)[0] ?? 'שלום';
 
       const scheduleProfile: UserScheduleProfile = {
         wake_up_time: profile?.wake_up_time as string | null,

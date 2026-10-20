@@ -49,7 +49,7 @@ export async function sendWelcomeDolevEmail(userId: string): Promise<SendWelcome
   }
 
   const gender = (profile.gender as OnboardingGender | null) ?? null;
-  const firstName = (profile.full_name as string)?.trim().split(/\s+/)[0] || 'חבר/ה';
+  const firstName = (profile.full_name as string)?.trim().split(/\s+/)[0] || 'שלום';
   const appOrigin = publicAppOriginSync();
 
   const html = buildWelcomeDolevEmailHtml(firstName, profile as unknown as OnboardingProfileForChat, appOrigin);

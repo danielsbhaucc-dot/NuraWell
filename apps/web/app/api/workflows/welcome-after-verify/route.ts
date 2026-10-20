@@ -49,7 +49,7 @@ const { POST: workflowPost } = serve<Body>(async (context) => {
     return {
       ok: true as const,
       email,
-      firstName: (profile.full_name as string)?.trim().split(/\s+/)[0] || 'חבר/ה',
+      firstName: (profile.full_name as string)?.trim().split(/\s+/)[0] || 'שלום',
       profile: profile as unknown as OnboardingProfileForChat,
     };
   });

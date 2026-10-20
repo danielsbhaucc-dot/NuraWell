@@ -3,7 +3,7 @@
  * same content into the evidence snapshot (authoritative); the client renders it in the sheet.
  * Any wording change MUST bump CONSENT_TEXT_VERSION.
  */
-export const CONSENT_TEXT_VERSION = 'hc-2026-10-20.2';
+export const CONSENT_TEXT_VERSION = 'hc-2026-10-20.3';
 
 export type ConsentAction = 'grant' | 'withdraw';
 export type ConsentGender = 'female' | 'male' | null;
@@ -30,8 +30,8 @@ export function normalizeGender(v: unknown): ConsentGender {
 }
 
 export function expectedConsentWord(action: ConsentAction, gender: ConsentGender): string {
-  if (action === 'grant') return g(gender, 'מסכימה', 'מסכים', 'מסכים/ה');
-  return g(gender, 'מבטלת', 'מבטל', 'מבטל/ת');
+  if (action === 'grant') return g(gender, 'מסכימה', 'מסכים', 'מאשרים');
+  return g(gender, 'מבטלת', 'מבטל', 'מבטלים');
 }
 
 export const CONSENT_TRANSPARENCY = 'לתיעוד ההסכמה נשמרים צילום של החלון, השעה ופרטי המכשיר.';
@@ -66,7 +66,7 @@ export function consentText(action: ConsentAction, gender: ConsentGender): Conse
       ],
       transparency: CONSENT_TRANSPARENCY,
       why: CONSENT_WHY,
-      checkboxLabel: g(gender, 'קראתי והבנתי, ואני נותנת הסכמה מפורשת לשמירת מידע בריאותי', 'קראתי והבנתי, ואני נותן הסכמה מפורשת לשמירת מידע בריאותי', 'קראתי והבנתי, ואני נותן/ת הסכמה מפורשת לשמירת מידע בריאותי'),
+      checkboxLabel: g(gender, 'קראתי והבנתי, ואני נותנת הסכמה מפורשת לשמירת מידע בריאותי', 'קראתי והבנתי, ואני נותן הסכמה מפורשת לשמירת מידע בריאותי', 'קראתי, הבנתי והסכמתי במפורש לשמירת מידע בריאותי'),
       typePrompt: `כדי לאשר, ${g(gender, 'כתבי', 'כתוב', 'יש לכתוב')} את המילה "${word}"`,
       expectedWord: word,
       submitLabel: 'אישור הסכמה',
@@ -100,7 +100,7 @@ export function consentText(action: ConsentAction, gender: ConsentGender): Conse
     ),
     transparency: CONSENT_TRANSPARENCY,
     why: CONSENT_WHY,
-    checkboxLabel: g(gender, 'קראתי והבנתי מה יימחק, ואני מבטלת את ההסכמה', 'קראתי והבנתי מה יימחק, ואני מבטל את ההסכמה', 'קראתי והבנתי מה יימחק, ואני מבטל/ת את ההסכמה'),
+    checkboxLabel: g(gender, 'קראתי והבנתי מה יימחק, ואני מבטלת את ההסכמה', 'קראתי והבנתי מה יימחק, ואני מבטל את ההסכמה', 'קראתי והבנתי מה יימחק, והחלטתי לבטל את ההסכמה'),
     typePrompt: `כדי לאשר, ${g(gender, 'כתבי', 'כתוב', 'יש לכתוב')} את המילה "${word}"`,
     expectedWord: word,
     submitLabel: 'ביטול ההסכמה ומחיקה',
@@ -117,8 +117,8 @@ export function normalizeTyped(s: string): string {
     .trim();
 }
 
-const GRANT_OK = new Set(['מסכים', 'מסכימה', 'מסכימ', 'מסכיםה', 'מסכימים', 'מסכימות', 'מאשר', 'מאשרת', 'מסכיםמסכימה']);
-const WITHDRAW_OK = new Set(['מבטל', 'מבטלת', 'מבטלמבטלת', 'מבטלים', 'מאשר', 'מאשרת', 'מסכים', 'מסכימה']);
+const GRANT_OK = new Set(['מסכים', 'מסכימה', 'מסכימ', 'מסכיםה', 'מסכימים', 'מסכימות', 'מאשר', 'מאשרת', 'מסכיםמסכימה', 'מאשרים', 'אישור', 'מאשרות']);
+const WITHDRAW_OK = new Set(['מבטל', 'מבטלת', 'מבטלמבטלת', 'מבטלים', 'מבטלות', 'ביטול', 'מאשרים', 'מאשר', 'מאשרת', 'מסכים', 'מסכימה']);
 
 /** Accepts gender variants and light typos of form (spaces, nikud, "אני ..."), not unrelated words. */
 export function isAcceptedConsentWord(action: ConsentAction, typed: string): boolean {

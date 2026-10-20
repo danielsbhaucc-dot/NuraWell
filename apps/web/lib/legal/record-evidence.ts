@@ -244,7 +244,7 @@ async function sendReceipt(
 <tr><td style="padding:4px 0 4px 16px;color:#5b6b61">מזהה רשומה</td><td dir="ltr" style="text-align:right;font-family:monospace;font-size:12px">${recordId}</td></tr>
 <tr><td style="padding:4px 0 4px 16px;color:#5b6b61;vertical-align:top">טביעת אצבע (SHA-256)</td><td dir="ltr" style="text-align:right;font-family:monospace;font-size:11px;word-break:break-all">${recordHashHex}</td></tr></table>
 <p style="color:#5b6b61;font-size:13px">המייל הזה נשלח דרך ספק דואר חיצוני ונשמר גם אצלך. הוא מאפשר להוכיח, בלי לסמוך עלינו, מה נרשם ומתי.</p>
-<p style="color:#5b6b61">אפשר לשנות את זה בכל רגע בהגדרות הפרטיות או בבקשה מאלמוג. אם לא את/ה אישרת, פשוט השיבו למייל הזה.</p></div>`.replace('אם לא את/ה אישרת', 'אם זה לא היה אישור שלך');
+<p style="color:#5b6b61">אפשר לשנות את זה בכל רגע בהגדרות הפרטיות או בבקשה מאלמוג. אם זה לא היה אישור שלך, פשוט השיבו למייל הזה.</p></div>`;
     const { sendResendEmail } = await import('@/lib/email/resend');
     const r = await sendResendEmail({ to, subject: `אישור: ${what} · ${reference}`, html, sender: 'default', purpose: 'consent_receipt' });
     // The receipt references the record hash, so it cannot be inside that same signed record; instead the

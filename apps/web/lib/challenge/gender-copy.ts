@@ -8,8 +8,8 @@ export function genderFromProfile(gender: string | null | undefined): GenderCopy
 
 export function firstNameFromFullName(fullName: string | null | undefined): string {
   const t = fullName?.trim();
-  if (!t) return 'חבר/ה';
-  return t.split(/\s+/)[0] ?? 'חבר/ה';
+  if (!t) return 'שלום';
+  return t.split(/\s+/)[0] ?? 'שלום';
 }
 
 /** פנייה מותאמת מין */

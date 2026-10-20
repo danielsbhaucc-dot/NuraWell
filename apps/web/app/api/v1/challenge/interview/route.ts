@@ -76,7 +76,7 @@ export async function POST(request: Request) {
     .eq('id', auth.user.id)
     .single();
 
-  const firstName = (profile?.full_name as string | null)?.trim().split(/\s+/)[0] ?? 'חבר/ה';
+  const firstName = (profile?.full_name as string | null)?.trim().split(/\s+/)[0] ?? 'שלום';
   const gender = (profile?.gender as 'male' | 'female' | null) ?? null;
 
   enterAiUsage({ userId: auth.user.id });
