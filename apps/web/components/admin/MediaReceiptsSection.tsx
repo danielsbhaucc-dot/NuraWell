@@ -67,6 +67,17 @@ export function ReceiptsSection({ onChanged }: { onChanged: () => void }) {
       setFile(null); setMsg('הקבלה נשמרה, נחתמה וקיבלה חותמת זמן'); load(); onChanged();
     } catch { setMsg('ההעלאה נכשלה'); } finally { setBusy(false); }
   };
+  const [imp, setImp] = useState<string | null>(null);
+  const importZip = async (f: File | undefined) => {
+    if (!f) return;
+    setImp('מייבא ומחתים...');
+    try {
+      const r = await fetch('/api/v1/ops/legal/media/import', { method: 'POST', headers: { 'content-type': 'application/zip' }, body: f });
+      const j = await r.json();
+      if (!j.ok) throw new Error(j.error);
+      setImp(`יובאו ${j.receipts_new} קבלות, ${j.attachments} מסמכים ו־${j.provenance} עדכוני מקור (${j.files.length} קבצים, כולם נחתמו)`); load(); onChanged();
+    } catch (e) { setImp(`הייבוא נכשל${e instanceof Error && e.message ? `: ${e.message}` : ''}`); }
+  };
   const pending = (data?.receipts ?? []).filter((r) => r.trust === 'review').length;
   return (
     <section className={cn(opsGlassCardClass, 'p-4')}>
@@ -86,6 +97,12 @@ export function ReceiptsSection({ onChanged }: { onChanged: () => void }) {
             </label>
             <button type="button" onClick={upload} disabled={!file || busy} className={opsGlassBtnPrimaryClass}>{busy ? <Loader2 size={14} className="animate-spin" /> : null}העלאה</button>
             {msg ? <span role="status" className="text-xs font-bold text-slate-700">{msg}</span> : null}
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <label className={cn(opsGlassBtnClass, 'cursor-pointer')}><Paperclip size={14} />ייבוא תיק ראיות (ZIP)
+              <input type="file" accept=".zip,application/zip" className="sr-only" onChange={(e) => void importZip(e.target.files?.[0])} />
+            </label>
+            {imp ? <span role="status" className="text-xs font-bold text-slate-700">{imp}</span> : null}
           </div>
           {data.receipts.length ? <ul className="space-y-2">{data.receipts.map((r) => <Row key={r.id} r={r} onSaved={() => { load(); onChanged(); }} />)}</ul> : <p className="text-center text-xs text-slate-500">עוד אין קבלות.</p>}
         </div>

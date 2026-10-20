@@ -17,6 +17,7 @@ export const provenanceInputSchema = z.object({
   generator: z.union([z.enum(Object.keys(GENERATORS) as [keyof typeof GENERATORS, ...Array<keyof typeof GENERATORS>]), z.null()]).optional(),
   model: str(120), prompt: str(8000), created_on: z.union([z.string().regex(/^\d{4}-\d{2}-\d{2}$/), z.literal(''), z.null()]).optional(),
   account: str(200), plan: str(120), track_id: str(200), track_url: url, tos_url: url, notes: str(2000),
+  license_status: z.union([z.enum(['pending', 'confirmed']), z.null()]).optional(),
 }).strict();
 
 export async function loadAsset(admin: SupabaseClient, key: string) {
@@ -40,16 +41,17 @@ export async function updateProvenance(admin: SupabaseClient, key: string, input
 }
 
 export const MAX_ATTACHMENT = 8_000_000;
-export async function addAttachment(admin: SupabaseClient, key: string, file: { bytes: Buffer; name: string; mime: string; label: string }, actor: { id: string }) {
+export async function addAttachment(admin: SupabaseClient, key: string, file: { bytes: Buffer; name: string; mime: string; label: string; resolvesLicense?: boolean }, actor: { id: string }) {
   const a = await loadAsset(admin, key);
   if (!a) return { ok: false as const, error: 'not_found' };
   if (file.bytes.length > MAX_ATTACHMENT) return { ok: false as const, error: 'too_large' };
   const blob = await storeMediaBlob(admin, file.bytes, file.mime);
   if (!blob) return { ok: false as const, error: 'store_failed' };
   const att = { sha256: blob.sha256, name: file.name.slice(0, 200), mime: file.mime, label: file.label.slice(0, 120) };
-  const rec = await appendMediaEvidence(admin, key, 'attachment', { ...att, bytes: file.bytes.length, file_sha256: a.sha256, actor_id: actor.id });
+  const resolves = !!file.resolvesLicense;
+  const rec = await appendMediaEvidence(admin, key, 'attachment', { ...att, bytes: file.bytes.length, file_sha256: a.sha256, actor_id: actor.id, resolves_license: resolves, license_status_after: resolves ? 'confirmed' : (a.provenance?.license_status ?? null) });
   if (!rec.ok) return { ok: false as const, error: rec.error };
-  const prov: Provenance = { ...(a.provenance ?? {}), attachments: [...(a.provenance?.attachments ?? []).filter((x) => x.sha256 !== att.sha256), att] };
+  const prov: Provenance = { ...(a.provenance ?? {}), attachments: [...(a.provenance?.attachments ?? []).filter((x) => x.sha256 !== att.sha256), att], ...(resolves ? { license_status: 'confirmed' as const } : {}) };
   const hasGit = !!a.first_commit;
   await admin.from('media_provenance_assets').update({ provenance: prov, status: statusFor(prov, hasGit), missing: missingFields(prov, hasGit), latest_record_hash: rec.recordHash, records: a.records + 1, updated_at: new Date().toISOString() }).eq('asset_key', key);
   return { ok: true as const, attachment: att };

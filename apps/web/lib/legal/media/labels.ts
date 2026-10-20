@@ -62,6 +62,8 @@ export type Provenance = {
   notes?: string | null;
   attachments?: Array<{ sha256: string; name: string; mime: string; label: string }>;
   confirmed_by_owner?: boolean;
+  /** 'pending' keeps the asset open until the decisive proof (e.g. purchase receipt + download) is attached. */
+  license_status?: 'pending' | 'confirmed' | null;
 };
 
 export const REQUIRED: Record<SourceType, Array<keyof Provenance>> = {
@@ -90,5 +92,6 @@ export const FIELD_LABEL_HE: Partial<Record<keyof Provenance, string>> = {
   track_url: 'קישור לשיר במחולל',
   attachments: 'קבלה או חשבונית',
   notes: 'מאיפה הקובץ',
+  license_status: 'קבלת רכישה והוכחת הורדה (הרישיון ממתין)',
 };
 

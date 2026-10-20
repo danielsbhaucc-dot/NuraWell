@@ -1,3 +1,4 @@
+import { pendingLicenseLine } from '@/lib/legal/media/pending';
 import { withAiUsage } from '@/lib/ai/usage-meter';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { CEO_NAME, CEO_SYSTEM_PROMPT } from './agent';
@@ -79,7 +80,8 @@ async function buildDigestInner(db: SupabaseClient, period: DigestPeriod, deps: 
   // daily: mention compliance items that auto-reopened in the last 24h (once per item, no extra message)
   const privacy = period === 'monthly' ? await privacyDigestLine(db, opsLink('/privacy')).catch(() => null)
     : period === 'daily' ? await privacyReopenedLine(db, opsLink('/privacy')).catch(() => null) : null;
-  return `${title} · ${CEO_NAME}\n\n${(message.content ?? '').trim()}${privacy ? `\n\n${privacy}` : ''}${links}`;
+  const license = period === 'daily' ? await pendingLicenseLine(db, opsLink('/legal?tab=media')).catch(() => null) : null;
+  return `${title} · ${CEO_NAME}\n\n${(message.content ?? '').trim()}${privacy ? `\n\n${privacy}` : ''}${license ? `\n\n${license}` : ''}${links}`;
 }
 
 export async function sendDigest(db: SupabaseClient, channel: CeoChannel, period: DigestPeriod, deps: { complete?: typeof complete; extract?: typeof extractFinding } = {}) {

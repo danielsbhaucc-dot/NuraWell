@@ -3,6 +3,7 @@ import { requireApiAdmin } from '@/lib/api/route-guards';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { toListItem, type IndexRow } from '@/lib/legal/media/ingest';
 import { repoSyncNeeded, syncRepoManifest } from '@/lib/legal/media/repo-sync';
+import { pendingLicenseItems } from '@/lib/legal/media/pending';
 import { coverageFor, type ReceiptPeriod } from '@/lib/legal/media/receipts-core';
 
 export const runtime = 'nodejs';
@@ -28,5 +29,6 @@ export async function GET(request: Request) {
     return { ...toListItem(r), coverage: c ? { vendor: c.vendor, plan: c.plan, period_start: c.period_start, period_end: c.period_end, trust: c.trust } : null };
   });
   const costs = (cost ?? []).map((r) => Number((r as { cost_usd?: number }).cost_usd ?? 0));
-  return NextResponse.json({ items, syncing, ai: { calls: costs.length, total_usd: costs.reduce((a, b) => a + b, 0) } }, { headers: { 'Cache-Control': 'no-store' } });
+  const pending = await pendingLicenseItems(admin).catch(() => []);
+  return NextResponse.json({ items, pending, syncing, ai: { calls: costs.length, total_usd: costs.reduce((a, b) => a + b, 0) } }, { headers: { 'Cache-Control': 'no-store' } });
 }
