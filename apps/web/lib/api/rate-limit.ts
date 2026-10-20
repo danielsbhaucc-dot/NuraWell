@@ -226,6 +226,7 @@ async function consumeRaw(input: RateLimitInput, now: number): Promise<RateLimit
   return checkMemory(input, now);
 }
 
+// skipcq: JS-0067 -- ES module export
 export async function consumeRateLimit(input: RateLimitInput): Promise<RateLimitResult> {
   const now = Date.now();
   const result = await consumeRaw(input, now);
