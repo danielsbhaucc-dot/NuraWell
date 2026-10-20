@@ -64,3 +64,19 @@ export async function importEvidenceBundle(admin: SupabaseClient, zip: Buffer, a
   }
   return out;
 }
+
+/** Drain queued bundles (oldest first). Bytes are dropped after import; the result + SHA stay. */
+export async function processImportQueue(admin: SupabaseClient, max = 2) {
+  const { data } = await admin.from('media_import_queue').select('id, zip_sha, zip_b64, actor_id').is('processed_at', null).order('created_at').limit(max);
+  const done: Array<{ sha: string; ok: boolean }> = [];
+  for (const q of (data ?? []) as Array<{ id: string; zip_sha: string; zip_b64: string; actor_id: string }>) {
+    const zip = Buffer.from(q.zip_b64, 'base64');
+    let result: Record<string, unknown>;
+    if (sha256Hex(zip) !== q.zip_sha) result = { ok: false, error: 'sha_mismatch' };
+    else try { const r = await importEvidenceBundle(admin, zip, q.actor_id); result = { ok: true, receipts_new: r.receipts_new, receipts_skipped: r.receipts_skipped, attachments: r.attachments, provenance: r.provenance, files: r.files }; }
+    catch (e) { result = { ok: false, error: e instanceof Error ? e.message.slice(0, 200) : 'import_failed' }; }
+    await admin.from('media_import_queue').update({ processed_at: new Date().toISOString(), result, zip_b64: result.ok ? '' : q.zip_b64 }).eq('id', q.id);
+    done.push({ sha: q.zip_sha, ok: !!result.ok });
+  }
+  return done;
+}

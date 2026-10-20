@@ -2,6 +2,7 @@ import { NextResponse, after } from 'next/server';
 import { requireApiAdmin } from '@/lib/api/route-guards';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { toListItem, type IndexRow } from '@/lib/legal/media/ingest';
+import { processImportQueue } from '@/lib/legal/media/import';
 import { repoSyncNeeded, syncRepoManifest } from '@/lib/legal/media/repo-sync';
 import { pendingLicenseItems } from '@/lib/legal/media/pending';
 import { coverageFor, type ReceiptPeriod } from '@/lib/legal/media/receipts-core';
@@ -15,6 +16,7 @@ export async function GET(request: Request) {
   const auth = await requireApiAdmin(request);
   if (!auth.ok) return auth.response;
   const admin = createAdminClient();
+  await processImportQueue(admin).catch(() => []);
   const syncing = await repoSyncNeeded(admin).catch(() => false);
   if (syncing) { after(() => syncRepoManifest(admin).then(() => undefined, () => undefined)); }
   const [{ data, error }, { data: rc }, { data: cost }] = await Promise.all([
