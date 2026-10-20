@@ -25,7 +25,7 @@ export function LegalShell({
 }) {
   return (
     <LdChrome
-      eyebrow={title}
+      eyebrow="מרכז המידע של NuraWell"
       title={title}
       titleAccent={titleAccent}
       lead={subtitle}
