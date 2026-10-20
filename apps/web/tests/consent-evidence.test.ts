@@ -147,3 +147,22 @@ describe('append-only migration', () => {
     expect(sql).not.toMatch(/grant (update|delete)/i);
   });
 });
+
+describe('consent wording has no slash-gender forms (hc-2026-10-20.3)', () => {
+  it('neutral, male and female texts contain no slash forms; neutral words are accepted', async () => {
+    const { consentText, isAcceptedConsentWord, CONSENT_TEXT_VERSION } = await import('@/lib/legal/consent-text');
+    expect(CONSENT_TEXT_VERSION).toBe('hc-2026-10-20.3');
+    for (const a of ['grant', 'withdraw'] as const)
+      for (const g of [null, 'male', 'female'] as const) {
+        const t = consentText(a, g);
+        const all = JSON.stringify(t);
+        expect(all).not.toMatch(/[א-ת]\/[א-ת]/);
+        expect(isAcceptedConsentWord(a, t.expectedWord)).toBe(true);
+      }
+    expect(consentText('grant', null).expectedWord).toBe('מאשרים');
+    expect(consentText('withdraw', null).expectedWord).toBe('מבטלים');
+    for (const w of ['מאשרים', 'אישור', 'אני מאשרים']) expect(isAcceptedConsentWord('grant', w)).toBe(true);
+    for (const w of ['מבטלים', 'ביטול']) expect(isAcceptedConsentWord('withdraw', w)).toBe(true);
+    expect(isAcceptedConsentWord('grant', 'ביטול')).toBe(false);
+  });
+});

@@ -66,7 +66,7 @@ export async function runChallengeDailyCron(
         .eq('id', row.user_id)
         .maybeSingle();
 
-      const firstName = (profile?.full_name as string | null)?.trim().split(/\s+/)[0] ?? 'חבר/ה';
+      const firstName = (profile?.full_name as string | null)?.trim().split(/\s+/)[0] ?? 'שלום';
 
       const enrollment: ChallengeEnrollment = {
         id: row.id,
