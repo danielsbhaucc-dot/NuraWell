@@ -96,7 +96,7 @@ export function AdminLegalPasswords({ refreshKey = 0 }: { refreshKey?: number })
           <div className="w-full max-w-lg rounded-t-[28px] border border-amber-200/40 bg-[linear-gradient(160deg,rgba(236,247,240,0.94),rgba(250,240,214,0.92))] p-5 shadow-2xl backdrop-blur-xl sm:rounded-[28px]">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="font-bold text-slate-900">טיוטה לשליחה</h3>
-              <button type="button" onClick={() => setDraft(null)} aria-label="סגירה" className="rounded-full p-1.5 text-slate-600 hover:bg-white/40"><X size={18} /></button>
+              <button type="button" onClick={() => setDraft(null)} aria-label="סגירה" className="rounded-full p-1.5 text-slate-600 hover:bg-glass/40"><X size={18} /></button>
             </div>
             <p className="mb-2 text-[12px] text-slate-600">שום דבר לא נשלח אוטומטית. אפשר לערוך, ואז לפתוח את הטיוטה באפליקציית המייל שלך ולשלוח משם.</p>
             <label className="mb-2 block text-sm text-slate-700">למי
