@@ -77,8 +77,8 @@ function ProvenanceForm({ item, onSaved }: { item: Item; onSaved: () => void }) 
     for (const k of FIELDS_BY_TYPE[t]) body[k] = (p[k] as string | null | undefined) ?? null;
     try {
       const r = await fetch('/api/v1/ops/legal/media/item/provenance', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ key: item.key, provenance: body }) });
-      const j = await r.json();
-      if (!r.ok || !j.ok) throw new Error();
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok || !j.ok) throw new Error(String(r.status));
       setMsg({ ok: true, text: j.missing?.length ? `נשמר ונחתם. עוד חסר: ${j.missing.map((m: keyof Provenance) => label(m)).join(', ')}` : 'נשמר, נחתם וקיבל חותמת זמן' });
       onSaved();
     } catch { setMsg({ ok: false, text: 'השמירה נכשלה. כדאי לבדוק שהקישורים מלאים (https://...)' }); } finally { setBusy(false); }
@@ -123,7 +123,7 @@ function ProvenanceForm({ item, onSaved }: { item: Item; onSaved: () => void }) 
         })}
       </div>
       <div className="flex flex-wrap items-center gap-2">
-        <button type="button" onClick={save} disabled={busy} className={opsGlassBtnPrimaryClass}>{busy ? <Loader2 size={14} className="animate-spin" /> : <ShieldCheck size={14} />}שמירה וחתימה</button>
+        <button type="button" onClick={save} disabled={busy} className={opsGlassBtnPrimaryClass}>{busy ? <Loader2 size={14} className="animate-spin" /> : <ShieldCheck size={14} />}שמירה ותיעוד</button>
         {msg ? <span role="status" className={cn('text-xs font-bold', msg.ok ? 'text-teal-800' : 'text-rose-700')}>{msg.text}</span> : null}
       </div>
     </div>
