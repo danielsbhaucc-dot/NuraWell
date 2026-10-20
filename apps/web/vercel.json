@@ -12,5 +12,15 @@
       "main": true,
       "*": false
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/v1/legal/anchor",
+      "schedule": "17 2 * * *"
+    },
+    {
+      "path": "/api/v1/legal/ots-upgrade",
+      "schedule": "47 4 * * *"
+    }
+  ]
 }

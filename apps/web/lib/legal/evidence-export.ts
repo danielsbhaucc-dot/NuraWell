@@ -4,7 +4,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { publicKeyPem, sha256Hex } from './evidence-crypto';
 import { buildOtsFile, type OtsProof } from './ots';
 import { buildEvidencePdf, type PdfEvent } from './evidence-pdf';
-import { decryptIp, verifyUserEvidence, type EvidenceRow } from './evidence-verify';
+import { decryptIp, loadLegalAccessLog, verifyUserEvidence, type EvidenceRow } from './evidence-verify';
 import { loadEvidenceImage } from './evidence-storage';
 
 export function referenceFor(r: { created_at: string; record_hash: string }) {
@@ -55,13 +55,7 @@ export async function buildEvidencePackage(admin: SupabaseClient, userId: string
   const v = await verifyUserEvidence(admin, userId, { checkImages: true });
   const { data: au } = await admin.auth.admin.getUserById(userId);
   const { data: prof } = await admin.from('profiles').select('full_name').eq('id', userId).maybeSingle();
-  const { data: logs } = await admin
-    .from('admin_audit_log')
-    .select('created_at, actor_id, path')
-    .eq('method', 'LEGAL')
-    .contains('detail', { user_id: userId })
-    .order('created_at', { ascending: false })
-    .limit(60);
+  const logs = await loadLegalAccessLog(admin, userId, 60);
   const { data: anchors } = await admin.from('consent_evidence_attestations').select('created_at, digest, payload').eq('kind', 'chain_anchor').order('created_at', { ascending: false }).limit(30);
 
   const files: Record<string, Uint8Array> = {};
@@ -144,7 +138,7 @@ export async function buildEvidencePackage(admin: SupabaseClient, userId: string
     events,
     overallOk: v.ok,
     publicKeyPem: publicKeyPem(),
-    accessLog: ((logs ?? []) as Array<{ created_at: string; actor_id: string; path: string }>).reverse().map((l) => ({ at: l.created_at, actor: l.actor_id === actor.id ? actor.label : l.actor_id.slice(0, 8), action: l.path.replace('legal_', '').replace(/_/g, ' ') })),
+    accessLog: ((logs ?? []) as Array<{ created_at: string; actor_id: string | null; path: string }>).reverse().map((l) => ({ at: l.created_at, actor: l.actor_id === actor.id ? actor.label : (l.actor_id ?? 'system').slice(0, 8), action: l.path.replace('legal_', '').replace(/_/g, ' ') })),
     chainAnchors: ((anchors ?? []) as Array<{ created_at: string; digest: string; payload: Record<string, unknown> }>).reverse().map((a) => ({ at: a.created_at, head: a.digest, count: Number(a.payload.count ?? 0), tsa: !!(a.payload.tsa as { token_b64?: string } | undefined)?.token_b64, ots: Array.isArray(a.payload.ots) ? (a.payload.ots as unknown[]).length : 0 })),
   });
   files['evidence-report.pdf'] = new Uint8Array(pdf);

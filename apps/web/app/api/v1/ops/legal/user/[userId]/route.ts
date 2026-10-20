@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireApiAdmin } from '@/lib/api/route-guards';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { auditLegalAccess, decryptIp, loadUserEvidence } from '@/lib/legal/evidence-verify';
+import { auditLegalAccess, decryptIp, loadLegalAccessLog, loadUserEvidence } from '@/lib/legal/evidence-verify';
 import { htmlToLines, referenceFor } from '@/lib/legal/evidence-export';
 
 export const runtime = 'nodejs';
@@ -17,7 +17,7 @@ export async function GET(request: Request, ctx: { params: Promise<{ userId: str
   const { records, attestations } = await loadUserEvidence(admin, userId);
   const { data: prof } = await admin.from('profiles').select('full_name, gender').eq('id', userId).maybeSingle();
   const { data: au } = await admin.auth.admin.getUserById(userId);
-  const { data: logs } = await admin.from('admin_audit_log').select('created_at, actor_id, path').eq('method', 'LEGAL').contains('detail', { user_id: userId }).order('created_at', { ascending: false }).limit(30);
+  const logs = await loadLegalAccessLog(admin, userId, 30);
   await auditLegalAccess(admin, auth.user.id, 'legal_view_timeline', { user_id: userId });
   return NextResponse.json(
     {
