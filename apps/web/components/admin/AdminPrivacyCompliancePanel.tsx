@@ -1,5 +1,6 @@
 'use client';
 
+import { useLiveRefresh } from '@/lib/hooks/useLiveRefresh';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { CheckCircle2, ChevronDown, Circle, Clock, Download, ExternalLink, FileText, Loader2, Lock, AlertTriangle, Users, Search, X, SearchX } from 'lucide-react';
 import { OpsDivider, opsGlassBtnClass, opsGlassCardClass } from '@/components/admin/OpsPanel';
@@ -140,6 +141,7 @@ export function AdminPrivacyCompliancePanel() {
     } catch (e) { setError(e instanceof Error ? e.message : 'שגיאה'); }
   }, []);
   useEffect(() => { void load(); }, [load]);
+  useLiveRefresh(load, 60_000);
 
   const rows = useMemo(() => new Map((data?.rows ?? []).map((r) => [r.item_key, r])), [data]);
 
