@@ -139,7 +139,7 @@ describe('RFC 3161', () => {
 });
 
 describe('append-only migration', () => {
-  const sql = readFileSync(path.join(__dirname, '../../../supabase/migrations/000148_consent_evidence.sql'), 'utf8');
+  const sql = readFileSync(path.join(__dirname, '../../../supabase/migrations/000149_consent_evidence.sql'), 'utf8');
   it('blocks update/delete/truncate and revokes client roles', () => {
     expect(sql).toMatch(/before update or delete/);
     expect(sql).toMatch(/before truncate/);
