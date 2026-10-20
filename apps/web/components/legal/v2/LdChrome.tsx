@@ -13,6 +13,7 @@ export function LdChrome({
   title,
   titleAccent,
   lead,
+  leadExtra,
   chips,
   stat,
   currentPath,
@@ -22,6 +23,7 @@ export function LdChrome({
   title: string;
   titleAccent?: string;
   lead: string;
+  leadExtra?: ReactNode;
   chips?: string[];
   stat?: LdStat;
   currentPath: string;
@@ -54,6 +56,7 @@ export function LdChrome({
               {titleAccent ? (<><br /><span className="ld-shine">{titleAccent}</span></>) : null}
             </h1>
             <p className="ld-lead">{lead}</p>
+            {leadExtra}
             {chips?.length ? (
               <ul className="ld-chips">{chips.map((c) => <li key={c}>{c}</li>)}</ul>
             ) : null}
