@@ -23,7 +23,7 @@ export function StepUpSettings() {
     if (!r.ok) { setErr('לא הצלחנו להתחיל. נסו שוב.'); return; }
     const j = await r.json(); setQr({ svg: j.qr_svg, secret: j.secret }); setStep('scan');
   };
-  const confirm = async () => {
+  const confirmTotp = async () => {
     setBusy(true); setErr(null);
     const r = await fetch('/api/v1/ops/stepup/totp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ op: 'confirm', code }) });
     setBusy(false);
@@ -48,7 +48,7 @@ export function StepUpSettings() {
             <p className="text-sm text-slate-700">1. פותחים אפליקציית קודים (למשל Google Authenticator) וסורקים.<br />2. מקלידים את 6 הספרות שמופיעות.</p>
             <p className="mt-1 text-[11px] text-slate-500">אין מצלמה? מקלידים ידנית: <span dir="ltr" className="select-all font-mono">{qr.secret}</span></p>
             <div className="mt-2 flex gap-2"><input value={code} onChange={(e) => setCode(e.target.value)} inputMode="numeric" maxLength={6} dir="ltr" className={cn(opsInputClass, 'font-mono tracking-widest')} placeholder="123456" />
-              <button type="button" onClick={() => void confirm()} disabled={busy || code.length !== 6} className={opsGlassBtnPrimaryClass}>{busy ? <Loader2 size={16} className="animate-spin" /> : 'אישור'}</button></div>
+              <button type="button" onClick={() => void confirmTotp()} disabled={busy || code.length !== 6} className={opsGlassBtnPrimaryClass}>{busy ? <Loader2 size={16} className="animate-spin" /> : 'אישור'}</button></div>
           </div>
         </div>
       ) : null}
