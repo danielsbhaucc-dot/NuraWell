@@ -9,6 +9,7 @@ import { allowedChatIds } from './channel';
 import { setOwnerTask } from './owner-tasks';
 import { invalidateTrust, killSwitch, requestDevice, securityState } from './security';
 import { detectDeviceChange } from './intents';
+import { endSim, getSim, isSimExit, isSimStart, recordSimAttempt, SIM_MINUTES, SIM_REASON, simExpired, simKind, simSummary, startSim, type Sim } from './stranger-sim';
 
 type TgChat = { id: number; type?: string };
 type TgUser = { id: number; is_bot?: boolean };
@@ -46,9 +47,41 @@ export async function handleTelegramUpdate(...a: Parameters<typeof handleTelegra
 async function handleTelegramUpdateInner(db: SupabaseClient, channel: CeoChannel, u: Update, deps: { runTurn?: typeof runCeoTurn } = {}) {
   const chatId = String(u.message?.chat.id ?? u.callback_query?.message?.chat.id ?? '');
   if (!chatId) return { ignored: true };
-  if (!authorizedSender(u)) {
+  const authed = authorizedSender(u);
+  let sim: Sim | null = null;
+  if (authed) {
+    const t = u.message?.text?.trim() ?? '';
+    sim = await getSim(db, authed).catch(() => null);
+    if (sim && simExpired(sim)) {
+      await endSim(db, authed).catch(() => {});
+      await channel.send(authed, simSummary(sim, 'timeout'), undefined, { kind: 'reply' });
+      sim = null; // timed out: this update continues as normal authorized Daniel
+    }
+    if (!sim && u.message && isSimStart(t)) {
+      await startSim(db, authed);
+      await db.from('ceo_audit_log').insert({ actor: 'telegram', event: 'stranger_sim_started', detail: { chat_tail: authed.slice(-4), minutes: SIM_MINUTES } }).then(() => null, () => null);
+      await channel.send(authed, `🎭 סימולציית זר הופעלה ל-${SIM_MINUTES} דקות.\nמעכשיו אני מתייחס אליך כמו לזר: כל הודעה, פקודה או לחיצה תיחסם עוד לפני ה-AI, בלי מידע ובלי פעולות. נסה לשכנע, להתחזות, ללחוץ על כפתורים — מה שבא לך.\nזר אמיתי לא מקבל שום תשובה; לך אסמן רק שההודעה נחסמה.\nליציאה: "אני מוותר" או "סיום סימולציה".`, undefined, { kind: 'reply' });
+      return { simulation: 'started' };
+    }
+    if (sim && u.message && isSimExit(t)) {
+      await endSim(db, authed);
+      await db.from('ceo_audit_log').insert({ actor: 'telegram', event: 'stranger_sim_ended', detail: { chat_tail: authed.slice(-4), attempts: sim.attempts?.length ?? 0 } }).then(() => null, () => null);
+      await channel.send(authed, simSummary(sim, 'exit'), undefined, { kind: 'reply' });
+      return { simulation: 'ended' }; // the exit message itself never reaches the AI
+    }
+  }
+  if (!authed || sim) {
+    const kind = simKind(u);
     // silent for strangers, but tell Daniel (once a day per chat) and drop the passkey trust window
-    await db.from('ceo_audit_log').insert({ actor: 'telegram', event: 'stranger_blocked', detail: { chat_tail: chatId.slice(-4), from_tail: String(u.message?.from?.id ?? u.callback_query?.from?.id ?? '').slice(-4), kind: u.callback_query ? 'callback' : 'message' } }).then(() => null, () => null);
+    await db.from('ceo_audit_log').insert({ actor: 'telegram', event: 'stranger_blocked', detail: { chat_tail: chatId.slice(-4), from_tail: String(u.message?.from?.id ?? u.callback_query?.from?.id ?? '').slice(-4), kind: u.callback_query ? 'callback' : 'message', ...(sim ? { simulation: true, sim_kind: kind } : {}) } }).then(() => null, () => null);
+    if (sim) {
+      // same drop as a stranger (no AI, no data, no actions, callbacks rejected) + a visible notice for Daniel only
+      await recordSimAttempt(db, sim, kind);
+      await invalidateTrust(db, 'stranger simulation').catch(() => {});
+      if (u.callback_query) await channel.ack({ callbackId: u.callback_query.id, chatId }).catch(() => {});
+      await channel.send(chatId, `🔒 [סימולציה] ההודעה נחסמה\nסיבה: ${SIM_REASON[kind]}`, undefined, { kind: 'reply' }).catch(() => {});
+      return { ignored: true, simulation: true };
+    }
     const once = await consumeRateLimit({ key: chatId, namespace: 'ceo-stranger', limit: 1, windowSeconds: 86_400 });
     if (once.ok) {
       await invalidateTrust(db, 'unknown chat').catch(() => {});
