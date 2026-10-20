@@ -20,6 +20,7 @@ import {
   verifyAuthentication,
   verifyRegistration,
   newBackupCode,
+  backupCodesAllowed,
 } from '@/lib/auth/passkeys';
 
 type Q = { table: string; op: string; payload?: unknown; filters: [string, string, unknown][]; rpc?: string; args?: unknown };
@@ -213,5 +214,27 @@ describe('Ops device approval stays enforced', () => {
     expect(s).toMatch(/if \(c\.isAdmin && !c\.opsDeviceId\) return/);
     // no bootstrap path from settings
     expect(s).not.toMatch(/opsDeviceGate|allowBootstrap|createTrustedDevice/);
+  });
+});
+
+describe('backup codes are admin-only', () => {
+  const src = (f: string) => readFileSync(path.join(__dirname, '..', f), 'utf8');
+  it('backupCodesAllowed: only role=admin', async () => {
+    for (const [role, ok] of [['admin', true], ['user', false], ['test', false], [undefined, false]] as const) {
+      const { db } = fakeDb((q) => (q.table === 'profiles' ? { data: role ? { role } : null } : {}));
+      expect(await backupCodesAllowed(db, 'u1')).toBe(ok);
+    }
+  });
+  it('login endpoint: non-admins get the same generic failure before any code check', () => {
+    const s = src('app/api/v1/auth/backup-code/route.ts');
+    expect(s).toMatch(/typeof uid !== 'string' \|\| !\(await backupCodesAllowed\(db, uid\)\)\) \{[\s\S]*?result = json\(\{ error: FAIL \}, 401\)/);
+  });
+  it('settings endpoint: non-admins cannot generate codes or see a count', () => {
+    const s = src('app/api/v1/account/security/route.ts');
+    expect(s).toContain("action === 'regenerate-codes' && c.isAdmin");
+    expect(s).toContain('c.isAdmin ? await backupCodesLeft');
+  });
+  it('login page: backup-code entry only on the Ops host', () => {
+    expect(src('app/(auth)/login/page.tsx')).toMatch(/\{isOpsHost \? \(\s*<button[\s\S]*?setBackupOpen\(true\)/);
   });
 });

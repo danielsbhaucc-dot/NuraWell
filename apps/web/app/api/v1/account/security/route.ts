@@ -43,7 +43,8 @@ export async function GET(req: Request): Promise<Response> {
   if (!c.ok) return c.fail;
   return json({
     passkeys: await listPasskeys(c.db, c.auth.user.id),
-    backup_codes_left: await backupCodesLeft(c.db, c.auth.user.id),
+    backup_codes_enabled: c.isAdmin,
+    backup_codes_left: c.isAdmin ? await backupCodesLeft(c.db, c.auth.user.id) : 0,
     fresh: c.fresh,
     device_ok: !c.isAdmin || Boolean(c.opsDeviceId),
   });
@@ -91,7 +92,7 @@ export async function POST(req: Request): Promise<Response> {
     res.cookies.set(CHALLENGE_COOKIE, '', { ...challengeCookieOpts(PATH), maxAge: 0 });
     return res;
   }
-  if (action === 'regenerate-codes') {
+  if (action === 'regenerate-codes' && c.isAdmin) {
     const codes = await regenerateBackupCodes(c.db, uid);
     return json({ codes });
   }
