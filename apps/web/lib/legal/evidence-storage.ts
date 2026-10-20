@@ -9,11 +9,11 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { encryptString, decryptString } from '@/lib/crypto/pii';
 import { sha256Hex } from './evidence-crypto';
 
-function legalBucket() {
+export function legalBucket() {
   return process.env.R2_LEGAL_BUCKET_NAME?.trim() || null;
 }
 
-async function r2Client() {
+export async function legalR2Client() {
   const { S3Client } = await import('@aws-sdk/client-s3');
   const { getR2Credentials } = await import('@/lib/storage/r2-almog');
   const { accountId, accessKeyId, secretAccessKey } = getR2Credentials();
@@ -31,7 +31,7 @@ export async function storeEvidenceImage(admin: SupabaseClient, userId: string, 
     try {
       const { PutObjectCommand } = await import('@aws-sdk/client-s3');
       const key = `consent/${sha256Hex(userId).slice(0, 16)}/${randomBytes(16).toString('hex')}.webp`;
-      const c = await r2Client();
+      const c = await legalR2Client();
       await c.send(new PutObjectCommand({ Bucket: bucket, Key: key, Body: bytes, ContentType: 'image/webp', Metadata: { sha256: sha } }));
       return { storage: `r2:${bucket}`, key };
     } catch (e) {
@@ -52,7 +52,7 @@ export async function loadEvidenceImage(admin: SupabaseClient, userId: string, s
   }
   if (storage.startsWith('r2:')) {
     const { GetObjectCommand } = await import('@aws-sdk/client-s3');
-    const c = await r2Client();
+    const c = await legalR2Client();
     const r = await c.send(new GetObjectCommand({ Bucket: storage.slice(3), Key: key }));
     const arr = await r.Body?.transformToByteArray();
     return arr ? Buffer.from(arr) : null;

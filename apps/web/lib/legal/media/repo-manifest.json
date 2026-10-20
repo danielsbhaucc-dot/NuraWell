@@ -1,0 +1,1295 @@
+[
+ {
+  "asset_key": "font:google/Assistant",
+  "origin": "font",
+  "kind": "font",
+  "path": "apps/web/app/fonts.ts",
+  "title": "Assistant (Google Fonts)",
+  "mime": "font/woff2",
+  "sha256": null,
+  "content_b64": null,
+  "usages": [
+   "כל האתר"
+  ],
+  "first_commit": {
+   "sha": "56385a6f2fb773d695d6d20ad9369ec756e94816",
+   "date": "2026-06-20T23:44:55+03:00",
+   "author": "Daniel Rahman",
+   "subject": "chore: clear remaining ESLint warnings and migrate fonts to next/font."
+  },
+  "last_commit": {
+   "sha": "ad7e12ace784b7cb0744fdb3e9f6da907dfb656b",
+   "date": "2026-10-20T14:17:56+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "Public pages: C3 glass design system + legal copy compliance (#212)"
+  },
+  "commits": 4,
+  "font_family": "Assistant"
+ },
+ {
+  "asset_key": "font:google/Cormorant Garamond",
+  "origin": "font",
+  "kind": "font",
+  "path": "apps/web/app/fonts.ts",
+  "title": "Cormorant Garamond (Google Fonts)",
+  "mime": "font/woff2",
+  "sha256": null,
+  "content_b64": null,
+  "usages": [
+   "כל האתר"
+  ],
+  "first_commit": {
+   "sha": "56385a6f2fb773d695d6d20ad9369ec756e94816",
+   "date": "2026-06-20T23:44:55+03:00",
+   "author": "Daniel Rahman",
+   "subject": "chore: clear remaining ESLint warnings and migrate fonts to next/font."
+  },
+  "last_commit": {
+   "sha": "ad7e12ace784b7cb0744fdb3e9f6da907dfb656b",
+   "date": "2026-10-20T14:17:56+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "Public pages: C3 glass design system + legal copy compliance (#212)"
+  },
+  "commits": 4,
+  "font_family": "Cormorant Garamond"
+ },
+ {
+  "asset_key": "font:google/DM Sans",
+  "origin": "font",
+  "kind": "font",
+  "path": "apps/web/app/fonts.ts",
+  "title": "DM Sans (Google Fonts)",
+  "mime": "font/woff2",
+  "sha256": null,
+  "content_b64": null,
+  "usages": [
+   "כל האתר"
+  ],
+  "first_commit": {
+   "sha": "56385a6f2fb773d695d6d20ad9369ec756e94816",
+   "date": "2026-06-20T23:44:55+03:00",
+   "author": "Daniel Rahman",
+   "subject": "chore: clear remaining ESLint warnings and migrate fonts to next/font."
+  },
+  "last_commit": {
+   "sha": "ad7e12ace784b7cb0744fdb3e9f6da907dfb656b",
+   "date": "2026-10-20T14:17:56+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "Public pages: C3 glass design system + legal copy compliance (#212)"
+  },
+  "commits": 4,
+  "font_family": "DM Sans"
+ },
+ {
+  "asset_key": "font:google/Heebo",
+  "origin": "font",
+  "kind": "font",
+  "path": "apps/web/app/fonts.ts",
+  "title": "Heebo (Google Fonts)",
+  "mime": "font/woff2",
+  "sha256": null,
+  "content_b64": null,
+  "usages": [
+   "כל האתר"
+  ],
+  "first_commit": {
+   "sha": "56385a6f2fb773d695d6d20ad9369ec756e94816",
+   "date": "2026-06-20T23:44:55+03:00",
+   "author": "Daniel Rahman",
+   "subject": "chore: clear remaining ESLint warnings and migrate fonts to next/font."
+  },
+  "last_commit": {
+   "sha": "ad7e12ace784b7cb0744fdb3e9f6da907dfb656b",
+   "date": "2026-10-20T14:17:56+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "Public pages: C3 glass design system + legal copy compliance (#212)"
+  },
+  "commits": 4,
+  "font_family": "Heebo"
+ },
+ {
+  "asset_key": "font:google/Rubik",
+  "origin": "font",
+  "kind": "font",
+  "path": "apps/web/app/fonts.ts",
+  "title": "Rubik (Google Fonts)",
+  "mime": "font/woff2",
+  "sha256": null,
+  "content_b64": null,
+  "usages": [
+   "כל האתר"
+  ],
+  "first_commit": {
+   "sha": "56385a6f2fb773d695d6d20ad9369ec756e94816",
+   "date": "2026-06-20T23:44:55+03:00",
+   "author": "Daniel Rahman",
+   "subject": "chore: clear remaining ESLint warnings and migrate fonts to next/font."
+  },
+  "last_commit": {
+   "sha": "ad7e12ace784b7cb0744fdb3e9f6da907dfb656b",
+   "date": "2026-10-20T14:17:56+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "Public pages: C3 glass design system + legal copy compliance (#212)"
+  },
+  "commits": 4,
+  "font_family": "Rubik"
+ },
+ {
+  "asset_key": "inline:apps/web/components/ai/AIChatWidget.tsx#0",
+  "origin": "inline",
+  "kind": "icon",
+  "path": "apps/web/components/ai/AIChatWidget.tsx",
+  "title": "AIChatWidget · SVG 1",
+  "mime": "image/svg+xml",
+  "sha256": "65e01e1b8d450ff0cf8392ef4e0dc01286fe849d6cac4009f60fc18364b7b9e3",
+  "content_b64": "PHN2ZyB3aWR0aD0iMTgiIGhlaWdodD0iMTEiIHZpZXdCb3g9IjAgMCAxOCAxMSIgZmlsbD0ibm9uZSIgYXJpYS1oaWRkZW4+CiAgICAgICAge3N0YXRlID09PSAnc2VudCcgPyAoCiAgICAgICAgICA8cGF0aAogICAgICAgICAgICBkPSJNMiA2LjEgNC4zNSA4LjYgMTAuMiAxLjYiCiAgICAgICAgICAgIHN0cm9rZT17Y29sb3J9CiAgICAgICAgICAgIHN0cm9rZVdpZHRoPSIxLjY1IgogICAgICAgICAgICBzdHJva2VMaW5lY2FwPSJyb3VuZCIKICAgICAgICAgICAgc3Ryb2tlTGluZWpvaW49InJvdW5kIgogICAgICAgICAgLz4KICAgICAgICApIDogKAogICAgICAgICAgPD4KICAgICAgICAgICAgPHBhdGgKICAgICAgICAgICAgICBkPSJNMS4xNSA2LjA1IDMuNCA4LjU1IDguNyAxLjciCiAgICAgICAgICAgICAgc3Ryb2tlPXtjb2xvcn0KICAgICAgICAgICAgICBzdHJva2VXaWR0aD0iMS42NSIKICAgICAgICAgICAgICBzdHJva2VMaW5lY2FwPSJyb3VuZCIKICAgICAgICAgICAgICBzdHJva2VMaW5lam9pbj0icm91bmQiCiAgICAgICAgICAgIC8+CiAgICAgICAgICAgIDxwYXRoCiAgICAgICAgICAgICAgZD0iTTYuNCA2LjA1IDguNyA4LjU1IDE2LjM1IDEuNDUiCiAgICAgICAgICAgICAgc3Ryb2tlPXtjb2xvcn0KICAgICAgICAgICAgICBzdHJva2VXaWR0aD0iMS42NSIKICAgICAgICAgICAgICBzdHJva2VMaW5lY2FwPSJyb3VuZCIKICAgICAgICAgICAgICBzdHJva2VMaW5lam9pbj0icm91bmQiCiAgICAgICAgICAgIC8+CiAgICAgICAgICA8Lz4KICAgICAgICApfQogICAgICA8L3N2Zz4=",
+  "usages": [
+   "components/ai/AIChatWidget.tsx",
+   "components/ai/AIOverlaysClient.tsx"
+  ],
+  "first_commit": {
+   "sha": "49652d006140b4924375396e26642443dddadca8",
+   "date": "2026-05-07T22:41:52+03:00",
+   "author": "Daniel Rahman",
+   "subject": "feat(ai): Almog mentor, lesson feedback, streaming chat, and docs"
+  },
+  "last_commit": {
+   "sha": "76940adc619203d24119723cc6c0dc3472685d82",
+   "date": "2026-10-20T18:30:24+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "Legal: daily anchor + OTS upgrade crons, append-only legal access log; accessible 'נערכה' badge (#243)"
+  },
+  "commits": 118
+ },
+ {
+  "asset_key": "inline:apps/web/components/ai/DeletedMessageBubble.tsx#0",
+  "origin": "inline",
+  "kind": "icon",
+  "path": "apps/web/components/ai/DeletedMessageBubble.tsx",
+  "title": "DeletedMessageBubble · SVG 1",
+  "mime": "image/svg+xml",
+  "sha256": "74d4991d6f5872c96e31d2ac1ec0849defb1db02149aebb20f65fb4f20dff00e",
+  "content_b64": "PHN2ZyBhcmlhLWhpZGRlbiB3aWR0aD0iMTQiIGhlaWdodD0iMTQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZVdpZHRoPSIyIj4KICAgICAgICAgIDxjaXJjbGUgY3g9IjEyIiBjeT0iMTIiIHI9IjkiIC8+CiAgICAgICAgICA8cGF0aCBkPSJNNS42IDUuNmwxMi44IDEyLjgiIC8+CiAgICAgICAgPC9zdmc+",
+  "usages": [
+   "components/ai/DeletedMessageBubble.tsx",
+   "components/ai/AIChatWidget.tsx"
+  ],
+  "first_commit": {
+   "sha": "c7e4f0a5e0328d01a4ada9461127f88b1d889762",
+   "date": "2026-10-20T14:18:24+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "Health consent: live chat redaction, Almog refusal prompt, DB-layer guard (#213)"
+  },
+  "last_commit": {
+   "sha": "c7e4f0a5e0328d01a4ada9461127f88b1d889762",
+   "date": "2026-10-20T14:18:24+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "Health consent: live chat redaction, Almog refusal prompt, DB-layer guard (#213)"
+  },
+  "commits": 1
+ },
+ {
+  "asset_key": "inline:apps/web/components/ai/SecureVaultBox.tsx#0",
+  "origin": "inline",
+  "kind": "icon",
+  "path": "apps/web/components/ai/SecureVaultBox.tsx",
+  "title": "SecureVaultBox · SVG 1",
+  "mime": "image/svg+xml",
+  "sha256": "3f67f132b166da59f51c59945cc6ab5c84921cbe7593e8418904780e40661157",
+  "content_b64": "PHN2ZyB3aWR0aD0iMjYiIGhlaWdodD0iMjYiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZWNmZGY1IiBzdHJva2VXaWR0aD0iMi4yIiBzdHJva2VMaW5lY2FwPSJyb3VuZCI+CiAgICAgICAgICAgIDxwYXRoIGNsYXNzTmFtZT0ibnctdmF1bHRfX3NoYWNrbGUiIGQ9Ik03IDExVjhhNSA1IDAgMCAxIDEwIDB2MyIgLz4KICAgICAgICAgICAgPHJlY3QgeD0iNC41IiB5PSIxMSIgd2lkdGg9IjE1IiBoZWlnaHQ9IjEwIiByeD0iMyIgZmlsbD0iI2VjZmRmNTIyIiAvPgogICAgICAgICAgICA8Y2lyY2xlIGN4PSIxMiIgY3k9IjE2IiByPSIxLjQiIGZpbGw9IiNlY2ZkZjUiIC8+CiAgICAgICAgICA8L3N2Zz4=",
+  "usages": [
+   "components/ai/SecureVaultBox.tsx",
+   "components/ai/AIChatWidget.tsx",
+   "components/profile/OnboardingChat.tsx"
+  ],
+  "first_commit": {
+   "sha": "4e3ad4bdb274d8c86489552a3dd738806668a715",
+   "date": "2026-10-13T14:03:24+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "Secure vault: AES-256-GCM (SECURE_VAULT_KEY, owner-bound AAD), owner-only RLS (000126), /api/v1/secure-vault returns [[VAULT:x]] + type-only chat notice; approved vault UI in Almog chat (lock button) and unified with onboarding secure channel"
+  },
+  "last_commit": {
+   "sha": "e7d0a078bae2b3da6db818173914d17e4943168a",
+   "date": "2026-10-13T14:21:54+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "Almog: natural first-name use (allow [[...]] tokens, ~1 in 2-3 replies); vault action marker (vault:type) auto-opens SecureVaultBox preselected; client detection of sensitive identifiers in chat input → move to vault"
+  },
+  "commits": 2
+ },
+ {
+  "asset_key": "inline:apps/web/components/ai/SecureVaultBox.tsx#1",
+  "origin": "inline",
+  "kind": "icon",
+  "path": "apps/web/components/ai/SecureVaultBox.tsx",
+  "title": "SecureVaultBox · SVG 2",
+  "mime": "image/svg+xml",
+  "sha256": "f61a2e82daaab04097568b65bdf205923468cd8d000c66d7519a51ee32bc4b0d",
+  "content_b64": "PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmIiBzdHJva2VXaWR0aD0iMyIgc3Ryb2tlTGluZWNhcD0icm91bmQiPjxwYXRoIGQ9Ik01IDEyLjVsNC41IDQuNUwxOSA3LjUiIC8+PC9zdmc+",
+  "usages": [
+   "components/ai/SecureVaultBox.tsx",
+   "components/ai/AIChatWidget.tsx",
+   "components/profile/OnboardingChat.tsx"
+  ],
+  "first_commit": {
+   "sha": "4e3ad4bdb274d8c86489552a3dd738806668a715",
+   "date": "2026-10-13T14:03:24+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "Secure vault: AES-256-GCM (SECURE_VAULT_KEY, owner-bound AAD), owner-only RLS (000126), /api/v1/secure-vault returns [[VAULT:x]] + type-only chat notice; approved vault UI in Almog chat (lock button) and unified with onboarding secure channel"
+  },
+  "last_commit": {
+   "sha": "e7d0a078bae2b3da6db818173914d17e4943168a",
+   "date": "2026-10-13T14:21:54+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "Almog: natural first-name use (allow [[...]] tokens, ~1 in 2-3 replies); vault action marker (vault:type) auto-opens SecureVaultBox preselected; client detection of sensitive identifiers in chat input → move to vault"
+  },
+  "commits": 2
+ },
+ {
+  "asset_key": "inline:apps/web/components/journey/JourneyPage.tsx#0",
+  "origin": "inline",
+  "kind": "icon",
+  "path": "apps/web/components/journey/JourneyPage.tsx",
+  "title": "JourneyPage · SVG 1",
+  "mime": "image/svg+xml",
+  "sha256": "bebc721121f73649d753a8c77dd7c5f747d2be9bab1b0663bd36aee72bb215b7",
+  "content_b64": "PHN2ZyB3aWR0aD17c2l6ZX0gaGVpZ2h0PXtzaXplfSBjbGFzc05hbWU9Ii1yb3RhdGUtOTAiPgogICAgICAgIDxkZWZzPgogICAgICAgICAgPGxpbmVhckdyYWRpZW50IGlkPSJyaW5nR3JhZCIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMTAwJSI+CiAgICAgICAgICAgIDxzdG9wIG9mZnNldD0iMCUiIHN0b3BDb2xvcj17dG9rZW5zLnByaW1hcnlbMjAwXX0gLz4KICAgICAgICAgICAgPHN0b3Agb2Zmc2V0PSI2MCUiIHN0b3BDb2xvcj17dG9rZW5zLnByaW1hcnlbNDAwXX0gLz4KICAgICAgICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wQ29sb3I9e3Rva2Vucy5hY2NlbnRbNDAwXX0gLz4KICAgICAgICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgICAgICAgPC9kZWZzPgogICAgICAgIDxjaXJjbGUKICAgICAgICAgIGN4PXtzaXplIC8gMn0KICAgICAgICAgIGN5PXtzaXplIC8gMn0KICAgICAgICAgIHI9e3JhZGl1c30KICAgICAgICAgIGZpbGw9Im5vbmUiCiAgICAgICAgICBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC4xOCkiCiAgICAgICAgICBzdHJva2VXaWR0aD17c3Ryb2tlfQogICAgICAgIC8+CiAgICAgICAgPG1vdGlvbi5jaXJjbGUKICAgICAgICAgIGN4PXtzaXplIC8gMn0KICAgICAgICAgIGN5PXtzaXplIC8gMn0KICAgICAgICAgIHI9e3JhZGl1c30KICAgICAgICAgIGZpbGw9Im5vbmUiCiAgICAgICAgICBzdHJva2U9InVybCgjcmluZ0dyYWQpIgogICAgICAgICAgc3Ryb2tlV2lkdGg9e3N0cm9rZX0KICAgICAgICAgIHN0cm9rZUxpbmVjYXA9InJvdW5kIgogICAgICAgICAgaW5pdGlhbD17cmVkdWNlZCA/IGZhbHNlIDogeyBzdHJva2VEYXNob2Zmc2V0OiBjaXJjdW1mZXJlbmNlIH19CiAgICAgICAgICBhbmltYXRlPXt7IHN0cm9rZURhc2hvZmZzZXQ6IG9mZnNldCB9fQogICAgICAgICAgdHJhbnNpdGlvbj17eyBkdXJhdGlvbjogMS4xLCBlYXNlOiBbMC4yMiwgMSwgMC4zNiwgMV0gYXMgY29uc3QgfX0KICAgICAgICAgIHN0eWxlPXt7CiAgICAgICAgICAgIHN0cm9rZURhc2hhcnJheTogY2lyY3VtZmVyZW5jZSwKICAgICAgICAgICAgZmlsdGVyOiAnZHJvcC1zaGFkb3coMCAwIDZweCByZ2JhKDE2NywyNDMsMjA4LDAuNikpJywKICAgICAgICAgIH19CiAgICAgICAgLz4KICAgICAgPC9zdmc+",
+  "usages": [
+   "components/journey/JourneyPage.tsx",
+   "/journey"
+  ],
+  "first_commit": {
+   "sha": "99a2bb25d332b7737c6ede5c300212cfc700b967",
+   "date": "2026-05-07T20:26:43+03:00",
+   "author": "Daniel Rahman",
+   "subject": "Force sync local code to GitHub"
+  },
+  "last_commit": {
+   "sha": "adb0171f6124428f9de920c62bcea87601aff139",
+   "date": "2026-10-13T10:17:30+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "Journey cleanup (drop duplicate stat chips, foundation banner only when truly incomplete), plan Almog blocks restyled as PlanCard, PageBackButton in journey/SOS/onboarding, onboarding chat: tolerant JSON + count this turn's captures (no repeated question)"
+  },
+  "commits": 37
+ },
+ {
+  "asset_key": "inline:apps/web/components/journey/SummarySection.tsx#0",
+  "origin": "inline",
+  "kind": "icon",
+  "path": "apps/web/components/journey/SummarySection.tsx",
+  "title": "SummarySection · SVG 1",
+  "mime": "image/svg+xml",
+  "sha256": "44d997b260aed8dc2be1ac453b08730c7a0ef4e6b0c0b36622fdb6b9f403c227",
+  "content_b64": "PHN2ZyB3aWR0aD17OTB9IGhlaWdodD17OTB9IHZpZXdCb3g9IjAgMCAxMDAgMTAwIiBjbGFzc05hbWU9Ii1yb3RhdGUtOTAgc2hyaW5rLTAiIGFyaWEtaGlkZGVuPgogICAgICAgICAgPGRlZnM+CiAgICAgICAgICAgIDxsaW5lYXJHcmFkaWVudCBpZD17Z3JhZElkfSB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIwJSI+CiAgICAgICAgICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcENvbG9yPSIjNmVlN2I3IiAvPgogICAgICAgICAgICAgIDxzdG9wIG9mZnNldD0iNTUlIiBzdG9wQ29sb3I9IiMzNGQzOTkiIC8+CiAgICAgICAgICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wQ29sb3I9IiMxMGI5ODEiIC8+CiAgICAgICAgICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgICAgICAgICAgIDxsaW5lYXJHcmFkaWVudCBpZD17dHJhY2tJZH0geDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMCUiPgogICAgICAgICAgICAgIDxzdG9wIG9mZnNldD0iMCUiIHN0b3BDb2xvcj0icmdiYSgyNTUsMjU1LDI1NSwwLjEyKSIgLz4KICAgICAgICAgICAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3BDb2xvcj0icmdiYSgyNTUsMjU1LDI1NSwwLjIyKSIgLz4KICAgICAgICAgICAgPC9saW5lYXJHcmFkaWVudD4KICAgICAgICAgIDwvZGVmcz4KICAgICAgICAgIDxjaXJjbGUgY3g9IjUwIiBjeT0iNTAiIHI9e3J9IGZpbGw9Im5vbmUiIHN0cm9rZT17YHVybCgjJHt0cmFja0lkfSlgfSBzdHJva2VXaWR0aD0iOCIgLz4KICAgICAgICAgIDxjaXJjbGUKICAgICAgICAgICAgY3g9IjUwIgogICAgICAgICAgICBjeT0iNTAiCiAgICAgICAgICAgIHI9e3J9CiAgICAgICAgICAgIGZpbGw9Im5vbmUiCiAgICAgICAgICAgIHN0cm9rZT17YHVybCgjJHtncmFkSWR9KWB9CiAgICAgICAgICAgIHN0cm9rZVdpZHRoPSI4IgogICAgICAgICAgICBzdHJva2VMaW5lY2FwPSJyb3VuZCIKICAgICAgICAgICAgc3Ryb2tlRGFzaGFycmF5PXtjfQogICAgICAgICAgICBzdHJva2VEYXNob2Zmc2V0PXtkYXNoT2Zmc2V0fQogICAgICAgICAgICBjbGFzc05hbWU9InRyYW5zaXRpb24tW3N0cm9rZS1kYXNob2Zmc2V0XSBkdXJhdGlvbi03MDAgZWFzZS1vdXQiCiAgICAgICAgICAvPgogICAgICAgIDwvc3ZnPg==",
+  "usages": [
+   "components/journey/SummarySection.tsx",
+   "components/journey/StepLesson.tsx"
+  ],
+  "first_commit": {
+   "sha": "99a2bb25d332b7737c6ede5c300212cfc700b967",
+   "date": "2026-05-07T20:26:43+03:00",
+   "author": "Daniel Rahman",
+   "subject": "Force sync local code to GitHub"
+  },
+  "last_commit": {
+   "sha": "838f07a581b1e489bce5b0e2fbaab398e55b7270",
+   "date": "2026-10-11T21:01:17+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "deps: Tailwind 4 + tailwind-merge 3 (official codemod; component classes kept in @layer components to preserve cascade order) (#101)"
+  },
+  "commits": 27
+ },
+ {
+  "asset_key": "inline:apps/web/components/legal/cookies/CookieNotice.tsx#0",
+  "origin": "inline",
+  "kind": "icon",
+  "path": "apps/web/components/legal/cookies/CookieNotice.tsx",
+  "title": "CookieNotice · SVG 1",
+  "mime": "image/svg+xml",
+  "sha256": "9b8dd23d3a2e1cce01ba4e9c392249d959650dce11b93aec4a5b0aae8d1c5219",
+  "content_b64": "PHN2ZyBjbGFzc05hbWU9ImNuLWxrIiB2aWV3Qm94PSIwIDAgMTYgMTYiIGFyaWEtaGlkZGVuPSJ0cnVlIj4KICAgICAgICAgIDxyZWN0IHg9IjMiIHk9IjciIHdpZHRoPSIxMCIgaGVpZ2h0PSI3IiByeD0iMiIgZmlsbD0iY3VycmVudENvbG9yIiAvPgogICAgICAgICAgPHBhdGggZD0iTTUuNSA3VjVhMi41IDIuNSAwIDAxNSAwdjIiIGZpbGw9Im5vbmUiIHN0cm9rZT0iY3VycmVudENvbG9yIiBzdHJva2VXaWR0aD0iMS42IiAvPgogICAgICAgIDwvc3ZnPg==",
+  "usages": [
+   "components/legal/cookies/CookieNotice.tsx",
+   "/cookies",
+   "app/layout.tsx"
+  ],
+  "first_commit": {
+   "sha": "82783bda8aab797aabedec426a462f51882abe93",
+   "date": "2026-10-20T17:33:53+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "feat(legal): cookie notice (jar art + forest-guard wink), designed panel, /cookies page (#219)"
+  },
+  "last_commit": {
+   "sha": "87128b55cf4ec3373e2c1e469e11fc22c77465fc",
+   "date": "2026-10-20T18:44:25+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "feat(cookies): dark-forest theme (opt3) + rotating 🍪 headlines (#238)"
+  },
+  "commits": 4
+ },
+ {
+  "asset_key": "inline:apps/web/components/legal/v2/HeroArt.tsx#0",
+  "origin": "inline",
+  "kind": "illustration",
+  "path": "apps/web/components/legal/v2/HeroArt.tsx",
+  "title": "HeroArt · SVG 1",
+  "mime": "image/svg+xml",
+  "sha256": "56ba37e5216666691c9009fa58d54c9cd60e55a1404a572f860996b1aa7a190e",
+  "content_b64": "PHN2ZyB2aWV3Qm94PSIwIDAgNDYwIDQ2MCIgY2xhc3NOYW1lPXtjbGFzc05hbWV9IGFyaWEtaGlkZGVuIGZvY3VzYWJsZT0iZmFsc2UiPgogICAgICA8ZGVmcz4KICAgICAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImxkZy1nb2xkIiB4MT0iMCIgeTE9IjAiIHgyPSIxIiB5Mj0iMSI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wQ29sb3I9IiNmNmUyYTgiIC8+PHN0b3Agb2Zmc2V0PSIuNDUiIHN0b3BDb2xvcj0iI2M5YTQ1YyIgLz48c3RvcCBvZmZzZXQ9Ii43IiBzdG9wQ29sb3I9IiNmYmU3YjAiIC8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wQ29sb3I9IiM5YzdhMzUiIC8+PC9saW5lYXJHcmFkaWVudD4KICAgICAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImxkZy1lbSIgeDE9IjAiIHkxPSIwIiB4Mj0iMSIgeTI9IjEiPjxzdG9wIG9mZnNldD0iMCIgc3RvcENvbG9yPSIjNmVlN2I3IiAvPjxzdG9wIG9mZnNldD0iLjUiIHN0b3BDb2xvcj0iIzEwYjk4MSIgLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3BDb2xvcj0iIzBkOTQ4OCIgLz48L2xpbmVhckdyYWRpZW50PgogICAgICAgIDxsaW5lYXJHcmFkaWVudCBpZD0ibGRnLWdsYXNzIiB4MT0iMCIgeTE9IjAiIHgyPSIuMyIgeTI9IjEiPjxzdG9wIG9mZnNldD0iMCIgc3RvcENvbG9yPSIjZjVmYWYyIiBzdG9wT3BhY2l0eT0iLjg1IiAvPjxzdG9wIG9mZnNldD0iLjUiIHN0b3BDb2xvcj0iI2E3ZjNkMCIgc3RvcE9wYWNpdHk9Ii4zNSIgLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3BDb2xvcj0iIzVlZWFkNCIgc3RvcE9wYWNpdHk9Ii4yNSIgLz48L2xpbmVhckdyYWRpZW50PgogICAgICAgIDxyYWRpYWxHcmFkaWVudCBpZD0ibGRnLW9lIiBjeD0iLjM1IiBjeT0iLjMiPjxzdG9wIG9mZnNldD0iMCIgc3RvcENvbG9yPSIjZWNmZGY1IiAvPjxzdG9wIG9mZnNldD0iLjQiIHN0b3BDb2xvcj0iIzM0ZDM5OSIgLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3BDb2xvcj0iIzA2NWY0NiIgLz48L3JhZGlhbEdyYWRpZW50PgogICAgICAgIDxyYWRpYWxHcmFkaWVudCBpZD0ibGRnLW9hIiBjeD0iLjM1IiBjeT0iLjMiPjxzdG9wIG9mZnNldD0iMCIgc3RvcENvbG9yPSIjZmZmYmViIiAvPjxzdG9wIG9mZnNldD0iLjQiIHN0b3BDb2xvcj0iI2ZiYmYyNCIgLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3BDb2xvcj0iI2MyNDEwYyIgLz48L3JhZGlhbEdyYWRpZW50PgogICAgICAgIDxyYWRpYWxHcmFkaWVudCBpZD0ibGRnLW90IiBjeD0iLjM1IiBjeT0iLjMiPjxzdG9wIG9mZnNldD0iMCIgc3RvcENvbG9yPSIjZjBmZGZhIiAvPjxzdG9wIG9mZnNldD0iLjQ1IiBzdG9wQ29sb3I9IiMyZGQ0YmYiIC8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wQ29sb3I9IiMxMTVlNTkiIC8+PC9yYWRpYWxHcmFkaWVudD4KICAgICAgICA8ZmlsdGVyIGlkPSJsZGctYmx1ciI+PGZlR2F1c3NpYW5CbHVyIHN0ZERldmlhdGlvbj0iMTQiIC8+PC9maWx0ZXI+CiAgICAgICAgPGZpbHRlciBpZD0ibGRnLXNoIj48ZmVEcm9wU2hhZG93IGR4PSIwIiBkeT0iMTgiIHN0ZERldmlhdGlvbj0iMTYiIGZsb29kQ29sb3I9IiMwMjJjMjIiIGZsb29kT3BhY2l0eT0iLjQ1IiAvPjwvZmlsdGVyPgogICAgICA8L2RlZnM+CiAgICAgIDxjaXJjbGUgY3g9IjIzMCIgY3k9IjI0MCIgcj0iMTcwIiBmaWxsPSJ1cmwoI2xkZy1lbSkiIG9wYWNpdHk9Ii4zNSIgZmlsdGVyPSJ1cmwoI2xkZy1ibHVyKSIgLz4KICAgICAgPGVsbGlwc2UgY3g9IjIzMCIgY3k9IjI1MCIgcng9IjIwMCIgcnk9IjcwIiBmaWxsPSJub25lIiBzdHJva2U9InVybCgjbGRnLWdvbGQpIiBzdHJva2VXaWR0aD0iMi41IiB0cmFuc2Zvcm09InJvdGF0ZSgtMTggMjMwIDI1MCkiIG9wYWNpdHk9Ii45IiAvPgogICAgICA8Y2lyY2xlIGN4PSIyMzAiIGN5PSIyNTAiIHI9IjE3NSIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ1cmwoI2xkZy1nb2xkKSIgc3Ryb2tlV2lkdGg9IjEiIHN0cm9rZURhc2hhcnJheT0iMiAxMCIgb3BhY2l0eT0iLjciIC8+CiAgICAgIDxnIGZpbHRlcj0idXJsKCNsZGctc2gpIj4KICAgICAgICA8cGF0aCBkPSJNMjMwIDcwIEwzNDAgMTEyIFYyMTAgQzM0MCAzMDAgMjkwIDM1MiAyMzAgMzgyIEMxNzAgMzUyIDEyMCAzMDAgMTIwIDIxMCBWMTEyIFoiIGZpbGw9InVybCgjbGRnLWdsYXNzKSIgc3Ryb2tlPSJ1cmwoI2xkZy1nb2xkKSIgc3Ryb2tlV2lkdGg9IjYiIHN0cm9rZUxpbmVqb2luPSJyb3VuZCIgLz4KICAgICAgICA8cGF0aCBkPSJNMjMwIDk2IEwzMTggMTMwIFYyMTAgQzMxOCAyODQgMjc4IDMyOCAyMzAgMzU0IEMxODIgMzI4IDE0MiAyODQgMTQyIDIxMCBWMTMwIFoiIGZpbGw9InVybCgjbGRnLWVtKSIgb3BhY2l0eT0iLjU1IiAvPgogICAgICAgIDxwYXRoIGQ9Ik0xNTAgMTM1IEwyMzAgMTA0IEwyMzAgMzQwIEMxOTAgMzE2IDE1MCAyODAgMTUwIDIxMFoiIGZpbGw9IiNmNWZhZjIiIG9wYWNpdHk9Ii4yOCIgLz4KICAgICAgICA8cGF0aCBkPSJNMjA4IDIwMiB2LTE4IGEyMiAyMiAwIDAgMSA0NCAwIHYxOCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ1cmwoI2xkZy1nb2xkKSIgc3Ryb2tlV2lkdGg9IjEwIiAvPgogICAgICAgIDxyZWN0IHg9IjE5NiIgeT0iMjAwIiB3aWR0aD0iNjgiIGhlaWdodD0iNTgiIHJ4PSIxNCIgZmlsbD0idXJsKCNsZGctZ29sZCkiIC8+CiAgICAgICAgPGNpcmNsZSBjeD0iMjMwIiBjeT0iMjI0IiByPSI3IiBmaWxsPSIjMDY0ZTNiIiAvPjxyZWN0IHg9IjIyNyIgeT0iMjI2IiB3aWR0aD0iNiIgaGVpZ2h0PSIxOCIgcng9IjMiIGZpbGw9IiMwNjRlM2IiIC8+CiAgICAgIDwvZz4KICAgICAgPGVsbGlwc2UgY3g9IjE5MCIgY3k9IjE0MCIgcng9IjMwIiByeT0iOSIgZmlsbD0iI2Y1ZmFmMiIgb3BhY2l0eT0iLjciIHRyYW5zZm9ybT0icm90YXRlKC0zMCAxOTAgMTQwKSIgLz4KICAgICAgPGNpcmNsZSBjbGFzc05hbWU9ImxkLW9yYiIgY3g9Ijg4IiBjeT0iMTQwIiByPSIzMCIgZmlsbD0idXJsKCNsZGctb2EpIiAvPgogICAgICA8Y2lyY2xlIGNsYXNzTmFtZT0ibGQtb3JiIGxkLW9yYi0yIiBjeD0iMzc4IiBjeT0iMzIwIiByPSIzOCIgZmlsbD0idXJsKCNsZGctb3QpIiAvPgogICAgICA8Y2lyY2xlIGNsYXNzTmFtZT0ibGQtb3JiIiBjeD0iMzcyIiBjeT0iOTgiIHI9IjE4IiBmaWxsPSJ1cmwoI2xkZy1vZSkiIC8+CiAgICAgIDxjaXJjbGUgY3g9Ijk2IiBjeT0iMzUwIiByPSIxNCIgZmlsbD0idXJsKCNsZGctZ29sZCkiIC8+CiAgICAgIDxwYXRoIGQ9Ik02MCAyNTAgbDYgLTE0IGw2IDE0IGwxNCA2IGwtMTQgNiBsLTYgMTQgbC02IC0xNCBsLTE0IC02eiIgZmlsbD0idXJsKCNsZGctZ29sZCkiIC8+CiAgICAgIDxwYXRoIGQ9Ik00MDAgMjAwIGw0IC0xMCBsNCAxMCBsMTAgNCBsLTEwIDQgbC00IDEwIGwtNCAtMTAgbC0xMCAtNHoiIGZpbGw9InVybCgjbGRnLWdvbGQpIiAvPgogICAgPC9zdmc+",
+  "usages": [
+   "components/legal/v2/HeroArt.tsx",
+   "components/legal/v2/LdChrome.tsx"
+  ],
+  "first_commit": {
+   "sha": "ad7e12ace784b7cb0744fdb3e9f6da907dfb656b",
+   "date": "2026-10-20T14:17:56+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "Public pages: C3 glass design system + legal copy compliance (#212)"
+  },
+  "last_commit": {
+   "sha": "ad7e12ace784b7cb0744fdb3e9f6da907dfb656b",
+   "date": "2026-10-20T14:17:56+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "Public pages: C3 glass design system + legal copy compliance (#212)"
+  },
+  "commits": 1
+ },
+ {
+  "asset_key": "inline:apps/web/components/legal/v2/LegalDoc.tsx#0",
+  "origin": "inline",
+  "kind": "icon",
+  "path": "apps/web/components/legal/v2/LegalDoc.tsx",
+  "title": "LegalDoc · SVG 1",
+  "mime": "image/svg+xml",
+  "sha256": "0e21dfe05503f7c652dcff3230b422a507d07630ff9937d360318baaf990edc3",
+  "content_b64": "PHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAxNiAxNiI+PHBhdGggZD0iTTMgNmw1IDUgNS01IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlV2lkdGg9IjIiIHN0cm9rZUxpbmVjYXA9InJvdW5kIiAvPjwvc3ZnPg==",
+  "usages": [
+   "components/legal/v2/LegalDoc.tsx",
+   "/cookies",
+   "/privacy",
+   "/terms"
+  ],
+  "first_commit": {
+   "sha": "ad7e12ace784b7cb0744fdb3e9f6da907dfb656b",
+   "date": "2026-10-20T14:17:56+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "Public pages: C3 glass design system + legal copy compliance (#212)"
+  },
+  "last_commit": {
+   "sha": "82783bda8aab797aabedec426a462f51882abe93",
+   "date": "2026-10-20T17:33:53+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "feat(legal): cookie notice (jar art + forest-guard wink), designed panel, /cookies page (#219)"
+  },
+  "commits": 2
+ },
+ {
+  "asset_key": "inline:apps/web/components/plans/PlanAccordion.tsx#0",
+  "origin": "inline",
+  "kind": "icon",
+  "path": "apps/web/components/plans/PlanAccordion.tsx",
+  "title": "PlanAccordion · SVG 1",
+  "mime": "image/svg+xml",
+  "sha256": "952a43875e26bf32143cb36755e0b1d5583902130f7d2e6c94ba20ca12062e73",
+  "content_b64": "PHN2ZyBhcmlhLWhpZGRlbiB2aWV3Qm94PSIwIDAgMjAgMjAiIGNsYXNzTmFtZT0ic2l6ZS01IHNocmluay0wIHRleHQtcHJpbWFyeS03MDAgdHJhbnNpdGlvbi10cmFuc2Zvcm0gZ3JvdXAtb3Blbjpyb3RhdGUtMTgwIj4KICAgICAgICAgIDxwYXRoIGQ9Ik01IDhsNSA1IDUtNSIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZVdpZHRoPSIyIiBzdHJva2VMaW5lY2FwPSJyb3VuZCIgc3Ryb2tlTGluZWpvaW49InJvdW5kIiAvPgogICAgICAgIDwvc3ZnPg==",
+  "usages": [
+   "components/plans/PlanAccordion.tsx",
+   "/plans",
+   "components/plans/AlmogPlanSections.tsx"
+  ],
+  "first_commit": {
+   "sha": "aa504e022dedb21e6e0986e887769a1279e75d0f",
+   "date": "2026-10-12T13:31:48+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "התוכנית שלך: עיצוב מחדש (v3) — hero, פוקוס יומי, אקורדיונים (#116)"
+  },
+  "last_commit": {
+   "sha": "aa504e022dedb21e6e0986e887769a1279e75d0f",
+   "date": "2026-10-12T13:31:48+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "התוכנית שלך: עיצוב מחדש (v3) — hero, פוקוס יומי, אקורדיונים (#116)"
+  },
+  "commits": 1
+ },
+ {
+  "asset_key": "inline:apps/web/components/plans/PlanHabitCard.tsx#0",
+  "origin": "inline",
+  "kind": "icon",
+  "path": "apps/web/components/plans/PlanHabitCard.tsx",
+  "title": "PlanHabitCard · SVG 1",
+  "mime": "image/svg+xml",
+  "sha256": "6de76a7ca39406eb4aed808c6245aaa9732091cbdc8aeb9f0722a12594cd9786",
+  "content_b64": "PHN2ZyBhcmlhLWhpZGRlbiB2aWV3Qm94PSIwIDAgMjAgMjAiIGNsYXNzTmFtZT0ic2l6ZS00IHRyYW5zaXRpb24tdHJhbnNmb3JtIGdyb3VwLW9wZW46cm90YXRlLTE4MCI+CiAgICAgICAgICAgIDxwYXRoIGQ9Ik01IDhsNSA1IDUtNSIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZVdpZHRoPSIyIiBzdHJva2VMaW5lY2FwPSJyb3VuZCIgLz4KICAgICAgICAgIDwvc3ZnPg==",
+  "usages": [
+   "components/plans/PlanHabitCard.tsx",
+   "/plans"
+  ],
+  "first_commit": {
+   "sha": "e572d77217fde28d4012cdd4a3f0ff0cc5bcce1b",
+   "date": "2026-10-12T10:56:13+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "התוכנית שלי כתוכנית כתובה וחיה של אלמוג (#104)"
+  },
+  "last_commit": {
+   "sha": "10877c7eb004437c814032b6465ae306b806bd53",
+   "date": "2026-10-13T09:49:24+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "UI feedback round: glass header + right hamburger, notifications load-more/divider/deep-link labels, SOS header/note/dedupe/name placeholders, FAB auto-hide, uniform bg, task expand animation, lesson static feedback + nav, plan habit cards, history from SSOT incl. Almog tasks"
+  },
+  "commits": 4
+ },
+ {
+  "asset_key": "inline:apps/web/components/plans/PlanMap.tsx#0",
+  "origin": "inline",
+  "kind": "icon",
+  "path": "apps/web/components/plans/PlanMap.tsx",
+  "title": "PlanMap · SVG 1",
+  "mime": "image/svg+xml",
+  "sha256": "410ec55d3d87b2a71efccfacb764f3b5ac851cad68a9c80ca6340cfe0e8dc356",
+  "content_b64": "PHN2ZyB2aWV3Qm94PXtgMCAwICR7V30gJHtofWB9IGNsYXNzTmFtZT0iYWJzb2x1dGUgaW5zZXQtMCBoLWZ1bGwgdy1mdWxsIiBhcmlhLWhpZGRlbj4KICAgICAgICB7c3RhdGlvbnMuc2xpY2UoMSkubWFwKChzLCBrKSA9PiB7CiAgICAgICAgICBjb25zdCBpID0gayArIDE7CiAgICAgICAgICBjb25zdCByZWFjaGVkID0gcy5zdGF0ZSAhPT0gJ2xvY2tlZCc7CiAgICAgICAgICByZXR1cm4gKAogICAgICAgICAgICA8cGF0aAogICAgICAgICAgICAgIGtleT17cy5pZH0KICAgICAgICAgICAgICBkPXtzZWcoaSl9CiAgICAgICAgICAgICAgZmlsbD0ibm9uZSIKICAgICAgICAgICAgICBzdHJva2VMaW5lY2FwPSJyb3VuZCIKICAgICAgICAgICAgICBzdHJva2VXaWR0aD17cmVhY2hlZCA/IDMgOiAyLjV9CiAgICAgICAgICAgICAgY2xhc3NOYW1lPXtyZWFjaGVkID8gJ3N0cm9rZS1icmFuZC03MDAnIDogJ3N0cm9rZS1wcmltYXJ5LTIwMCd9CiAgICAgICAgICAgIC8+CiAgICAgICAgICApOwogICAgICAgIH0pfQogICAgICA8L3N2Zz4=",
+  "usages": [
+   "components/plans/PlanMap.tsx",
+   "/plans",
+   "lib/journey/map-stations.ts"
+  ],
+  "first_commit": {
+   "sha": "3ba9f15c7a3ced857c694806a7bac40061c1cbed",
+   "date": "2026-10-11T13:43:43+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "Plans map + lesson→task choice wiring + flow tests (#76)"
+  },
+  "last_commit": {
+   "sha": "66cdedb44e690923fb6f08af7eb272471cf96dbf",
+   "date": "2026-10-12T10:10:57+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "בית + התוכנית: כרטיסים מהירים, סידור נקי, מניעת משימות כפולות ב-DB, מעקבי SOS, גלילת מפה (#102)"
+  },
+  "commits": 5
+ },
+ {
+  "asset_key": "inline:apps/web/components/plans/PlanProgressRing.tsx#0",
+  "origin": "inline",
+  "kind": "icon",
+  "path": "apps/web/components/plans/PlanProgressRing.tsx",
+  "title": "PlanProgressRing · SVG 1",
+  "mime": "image/svg+xml",
+  "sha256": "af9546a8003deec5c5420504e70f9d3d7d1ac5de1d850dcf271a3e3d68658753",
+  "content_b64": "PHN2ZyB2aWV3Qm94PSIwIDAgMTAwIDEwMCIgY2xhc3NOYW1lPSJzaXplLWZ1bGwgLXJvdGF0ZS05MCI+CiAgICAgICAgPGNpcmNsZSBjeD0iNTAiIGN5PSI1MCIgcj17cn0gZmlsbD0ibm9uZSIgc3Ryb2tlPSJyZ2JhKDE2NywyNDMsMjA4LDAuMjIpIiBzdHJva2VXaWR0aD0iOSIgLz4KICAgICAgICA8Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPXtyfSBmaWxsPSJub25lIiBzdHJva2U9IiM2ZWU3YjciIHN0cm9rZVdpZHRoPSI5IiBzdHJva2VMaW5lY2FwPSJyb3VuZCIgc3Ryb2tlRGFzaGFycmF5PXtjfSBzdHJva2VEYXNob2Zmc2V0PXtjIC0gKGMgKiB2KSAvIDEwMH0gLz4KICAgICAgPC9zdmc+",
+  "usages": [
+   "components/plans/PlanProgressRing.tsx",
+   "/plans"
+  ],
+  "first_commit": {
+   "sha": "aa504e022dedb21e6e0986e887769a1279e75d0f",
+   "date": "2026-10-12T13:31:48+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "התוכנית שלך: עיצוב מחדש (v3) — hero, פוקוס יומי, אקורדיונים (#116)"
+  },
+  "last_commit": {
+   "sha": "aa504e022dedb21e6e0986e887769a1279e75d0f",
+   "date": "2026-10-12T13:31:48+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "התוכנית שלך: עיצוב מחדש (v3) — hero, פוקוס יומי, אקורדיונים (#116)"
+  },
+  "commits": 1
+ },
+ {
+  "asset_key": "inline:apps/web/components/settings/PasskeyNudge.tsx#0",
+  "origin": "inline",
+  "kind": "illustration",
+  "path": "apps/web/components/settings/PasskeyNudge.tsx",
+  "title": "PasskeyNudge · SVG 1",
+  "mime": "image/svg+xml",
+  "sha256": "26aa025b285315ae085f209548d0abddcf5b9a75271f17c6e740352b4a72858b",
+  "content_b64": "PHN2ZyB2aWV3Qm94PSIwIDAgMTQ4IDE0OCIgY2xhc3NOYW1lPSJyZWxhdGl2ZSBoLWZ1bGwgdy1mdWxsIj4KICAgICAgICA8ZGVmcz4KICAgICAgICAgIDxsaW5lYXJHcmFkaWVudCBpZD0icGtGYWNlIiB4MT0iMCIgeTE9IjAiIHgyPSIxIiB5Mj0iMSI+CiAgICAgICAgICAgIDxzdG9wIG9mZnNldD0iMCIgc3RvcENvbG9yPSIjNUVFQUQ0IiAvPgogICAgICAgICAgICA8c3RvcCBvZmZzZXQ9IjEiIHN0b3BDb2xvcj0iIzEwQjk4MSIgLz4KICAgICAgICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgICAgICAgICA8bGluZWFyR3JhZGllbnQgaWQ9InBrR29sZCIgeDE9IjAiIHkxPSIwIiB4Mj0iMSIgeTI9IjEiPgogICAgICAgICAgICA8c3RvcCBvZmZzZXQ9IjAiIHN0b3BDb2xvcj0iI0Y2RDU4RSIgLz4KICAgICAgICAgICAgPHN0b3Agb2Zmc2V0PSIxIiBzdG9wQ29sb3I9IiNDODk3M0EiIC8+CiAgICAgICAgICA8L2xpbmVhckdyYWRpZW50PgogICAgICAgICAgPGNsaXBQYXRoIGlkPSJwa0NsaXAiPjxyZWN0IHg9IjMwIiB5PSIyNiIgd2lkdGg9Ijg4IiBoZWlnaHQ9Ijg4IiByeD0iMjYiIC8+PC9jbGlwUGF0aD4KICAgICAgICA8L2RlZnM+CiAgICAgICAgey8qIHNjYW4gZnJhbWUgY29ybmVycyAqL30KICAgICAgICA8ZyBjbGFzc05hbWU9InBrLWNvcm5lcnMiIGZpbGw9Im5vbmUiIHN0cm9rZT0idXJsKCNwa0dvbGQpIiBzdHJva2VXaWR0aD0iNCIgc3Ryb2tlTGluZWNhcD0icm91bmQiPgogICAgICAgICAgPHBhdGggZD0iTTMwIDQ4IFY0MCBhMTQgMTQgMCAwIDEgMTQgLTE0IEg1MiIgLz4KICAgICAgICAgIDxwYXRoIGQ9Ik05NiAyNiBIMTA0IGExNCAxNCAwIDAgMSAxNCAxNCBWNDgiIC8+CiAgICAgICAgICA8cGF0aCBkPSJNMTE4IDkyIFYxMDAgYTE0IDE0IDAgMCAxIC0xNCAxNCBIOTYiIC8+CiAgICAgICAgICA8cGF0aCBkPSJNNTIgMTE0IEg0NCBhMTQgMTQgMCAwIDEgLTE0IC0xNCBWOTIiIC8+CiAgICAgICAgPC9nPgogICAgICAgIHsvKiBmYWNlID0ga2V5IGJvdyAqL30KICAgICAgICA8ZyBjbGFzc05hbWU9InBrLWZhY2UiPgogICAgICAgICAgPGNpcmNsZSBjeD0iNzQiIGN5PSI3MCIgcj0iMjciIGZpbGw9InJnYmEoMTYsMTg1LDEyOSwwLjEyKSIgc3Ryb2tlPSJ1cmwoI3BrRmFjZSkiIHN0cm9rZVdpZHRoPSIzLjUiIC8+CiAgICAgICAgICA8Y2lyY2xlIGN4PSI2NC41IiBjeT0iNjUiIHI9IjMuMiIgZmlsbD0iI0E3RjNEMCIgLz4KICAgICAgICAgIDxjaXJjbGUgY3g9IjgzLjUiIGN5PSI2NSIgcj0iMy4yIiBmaWxsPSIjQTdGM0QwIiAvPgogICAgICAgICAgPHBhdGggZD0iTTYzIDc3IHExMSAxMCAyMiAwIiBmaWxsPSJub25lIiBzdHJva2U9IiNBN0YzRDAiIHN0cm9rZVdpZHRoPSIzLjIiIHN0cm9rZUxpbmVjYXA9InJvdW5kIiAvPgogICAgICAgIDwvZz4KICAgICAgICB7Lyoga2V5IHNoYWZ0ICsgdGVldGggKGdvbGQpLCBoYW5naW5nIGZyb20gdGhlIGZhY2UgKi99CiAgICAgICAgPGcgY2xhc3NOYW1lPSJway1rZXkiIHN0cm9rZT0iI0Q5QUU1NyIgc3Ryb2tlV2lkdGg9IjQiIHN0cm9rZUxpbmVjYXA9InJvdW5kIiBmaWxsPSJub25lIj4KICAgICAgICAgIDxwYXRoIGQ9Ik03NCA5NyBWMTMyIiAvPgogICAgICAgICAgPHBhdGggZD0iTTc0IDExOCBIODQiIC8+CiAgICAgICAgICA8cGF0aCBkPSJNNzQgMTI3IEg4MSIgLz4KICAgICAgICA8L2c+CiAgICAgICAgPGcgY2xpcFBhdGg9InVybCgjcGtDbGlwKSI+CiAgICAgICAgICA8cmVjdCBjbGFzc05hbWU9InBrLXNjYW4iIHg9IjMwIiB5PSIyNiIgd2lkdGg9Ijg4IiBoZWlnaHQ9IjMiIHJ4PSIxLjUiIGZpbGw9IiM1RUVBRDQiIG9wYWNpdHk9IjAuODUiIC8+CiAgICAgICAgPC9nPgogICAgICAgIDxjaXJjbGUgY2xhc3NOYW1lPSJway1zcGFyayIgY3g9IjEyMCIgY3k9IjIyIiByPSIzIiBmaWxsPSIjRjZENThFIiAvPgogICAgICAgIDxjaXJjbGUgY2xhc3NOYW1lPSJway1zcGFyayBway1zcGFyazIiIGN4PSIyNCIgY3k9IjEyMCIgcj0iMi4yIiBmaWxsPSIjRjZENThFIiAvPgogICAgICA8L3N2Zz4=",
+  "usages": [
+   "components/settings/PasskeyNudge.tsx",
+   "/ (layout)"
+  ],
+  "first_commit": {
+   "sha": "d7093232d716d5bb2fcb643eb31379baa493981c",
+   "date": "2026-10-20T18:39:46+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "Post-login Face ID offer sheet + privacy biometric line (#242)"
+  },
+  "last_commit": {
+   "sha": "d7093232d716d5bb2fcb643eb31379baa493981c",
+   "date": "2026-10-20T18:39:46+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "Post-login Face ID offer sheet + privacy biometric line (#242)"
+  },
+  "commits": 1
+ },
+ {
+  "asset_key": "inline:apps/web/components/shared/NuraWellLogo.tsx#0",
+  "origin": "inline",
+  "kind": "illustration",
+  "path": "apps/web/components/shared/NuraWellLogo.tsx",
+  "title": "NuraWellLogo · SVG 1",
+  "mime": "image/svg+xml",
+  "sha256": "c218371da4f8668557110df809b44de4b97c97dc8a9d04341944d70cf9e71bea",
+  "content_b64": "PHN2ZwogICAgICAgICAgd2lkdGg9e2ljb25TaXplfQogICAgICAgICAgaGVpZ2h0PXtNYXRoLnJvdW5kKGljb25TaXplICogMC44NSl9CiAgICAgICAgICB2aWV3Qm94PSIwIDAgNzIgNjAiCiAgICAgICAgICBmaWxsPSJub25lIgogICAgICAgICAgYXJpYS1oaWRkZW49InRydWUiCiAgICAgICAgPgogICAgICAgICAgey8qIEhlYXJ0IGZpbGwgKi99CiAgICAgICAgICA8cGF0aAogICAgICAgICAgICBkPSJNMzYgNTJDMzYgNTIgOCAzNCA4IDE4QzggMTAgMTQgNCAyMiA0QzI3IDQgMzEuNSA2LjUgMzYgMTFDNDAuNSA2LjUgNDUgNCA1MCA0QzU4IDQgNjQgMTAgNjQgMThDNjQgMzQgMzYgNTIgMzYgNTJaIgogICAgICAgICAgICBmaWxsPSJ1cmwoI2hmTG9nbykiCiAgICAgICAgICAgIG9wYWNpdHk9IjAuMTgiCiAgICAgICAgICAvPgogICAgICAgICAgey8qIEhlYXJ0IG91dGxpbmUgKi99CiAgICAgICAgICA8cGF0aAogICAgICAgICAgICBkPSJNMzYgNTJDMzYgNTIgOCAzNCA4IDE4QzggMTAgMTQgNCAyMiA0QzI3IDQgMzEuNSA2LjUgMzYgMTFDNDAuNSA2LjUgNDUgNCA1MCA0QzU4IDQgNjQgMTAgNjQgMThDNjQgMzQgMzYgNTIgMzYgNTJaIgogICAgICAgICAgICBzdHJva2U9InVybCgjaHNMb2dvKSIKICAgICAgICAgICAgc3Ryb2tlV2lkdGg9IjEuNSIKICAgICAgICAgICAgZmlsbD0ibm9uZSIKICAgICAgICAgIC8+CiAgICAgICAgICB7LyogSGVhcnRiZWF0IGxpbmUgKi99CiAgICAgICAgICA8cG9seWxpbmUKICAgICAgICAgICAgcG9pbnRzPSIyLDMwIDEyLDMwIDE3LDE2IDIyLDQ0IDI4LDI0IDM0LDMwIDM4LDMwIDQ0LDEwIDUwLDM4IDU2LDMwIDcwLDMwIgogICAgICAgICAgICBzdHJva2U9IiMxNEZGRUMiCiAgICAgICAgICAgIHN0cm9rZVdpZHRoPSIyLjIiCiAgICAgICAgICAgIGZpbGw9Im5vbmUiCiAgICAgICAgICAgIHN0cm9rZUxpbmVjYXA9InJvdW5kIgogICAgICAgICAgICBzdHJva2VMaW5lam9pbj0icm91bmQiCiAgICAgICAgICAgIHN0eWxlPXthbmltYXRlID8geyBhbmltYXRpb246ICdiZWF0IDEuNnMgZWFzZS1pbi1vdXQgaW5maW5pdGUnIH0gOiB7fX0KICAgICAgICAgIC8+CiAgICAgICAgICA8ZGVmcz4KICAgICAgICAgICAgPGxpbmVhckdyYWRpZW50IGlkPSJoZkxvZ28iIHgxPSIzNiIgeTE9IjQiIHgyPSIzNiIgeTI9IjUyIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+CiAgICAgICAgICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcENvbG9yPSIjMTRGRkVDIiAvPgogICAgICAgICAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcENvbG9yPSIjMEQ3Mzc3IiAvPgogICAgICAgICAgICA8L2xpbmVhckdyYWRpZW50PgogICAgICAgICAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImhzTG9nbyIgeDE9IjM2IiB5MT0iNCIgeDI9IjM2IiB5Mj0iNTIiIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIj4KICAgICAgICAgICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdG9wQ29sb3I9IiMxNEZGRUMiIC8+CiAgICAgICAgICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wQ29sb3I9InJnYmEoMTMsMTE1LDExOSwwLjUpIiAvPgogICAgICAgICAgICA8L2xpbmVhckdyYWRpZW50PgogICAgICAgICAgPC9kZWZzPgogICAgICAgIDwvc3ZnPg==",
+  "usages": [
+   "components/shared/NuraWellLogo.tsx",
+   "/login",
+   "components/landing/LandingPageClient.tsx",
+   "components/onboarding/RegisterLandingClient.tsx"
+  ],
+  "first_commit": {
+   "sha": "99a2bb25d332b7737c6ede5c300212cfc700b967",
+   "date": "2026-05-07T20:26:43+03:00",
+   "author": "Daniel Rahman",
+   "subject": "Force sync local code to GitHub"
+  },
+  "last_commit": {
+   "sha": "2bacf4c526960c8b236090e962db6ab1975b81e2",
+   "date": "2026-06-21T00:11:11+03:00",
+   "author": "Daniel Rahman",
+   "subject": "feat: privacy compliance (Amendment 13), accessibility tooling, and AI data notices."
+  },
+  "commits": 3
+ },
+ {
+  "asset_key": "library:lucide-react",
+  "origin": "library",
+  "kind": "icon",
+  "path": "apps/web/package.json",
+  "title": "lucide-react (אייקונים)",
+  "mime": null,
+  "sha256": null,
+  "content_b64": null,
+  "usages": [
+   "/login",
+   "/settings/privacy",
+   "/about",
+   "/accessibility",
+   "/contact",
+   "/cookies",
+   "/ops/accessibility",
+   "/ops/audio",
+   "/ops/ceo",
+   "/ops/demo-access",
+   "/ops/guides/[id]",
+   "/ops/legal"
+  ],
+  "library": {
+   "name": "lucide-react",
+   "version": "^1.34.0",
+   "license": "ISC"
+  }
+ },
+ {
+  "asset_key": "repo:apps/web/lib/legal/fonts/Assistant-Bold.ttf",
+  "origin": "font",
+  "kind": "font",
+  "path": "apps/web/lib/legal/fonts/Assistant-Bold.ttf",
+  "public_url": null,
+  "title": "Assistant-Bold.ttf",
+  "mime": "font/ttf",
+  "sha256": "93ecab56b243eea4f4f2a890bc340341042898f484f46b9919c365017942d153",
+  "content_b64": null,
+  "usages": [
+   "lib/legal/evidence-pdf.ts"
+  ],
+  "first_commit": {
+   "sha": "4dbdd23b427b62b527e9caab5388f945739b2119",
+   "date": "2026-10-20T17:55:38+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "feat(legal): signed + timestamped consent evidence, chat-triggered consent sheet, Ops משפטי (#227)"
+  },
+  "last_commit": {
+   "sha": "4dbdd23b427b62b527e9caab5388f945739b2119",
+   "date": "2026-10-20T17:55:38+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "feat(legal): signed + timestamped consent evidence, chat-triggered consent sheet, Ops משפטי (#227)"
+  },
+  "commits": 1,
+  "font_family": "Assistant"
+ },
+ {
+  "asset_key": "repo:apps/web/lib/legal/fonts/Assistant-Regular.ttf",
+  "origin": "font",
+  "kind": "font",
+  "path": "apps/web/lib/legal/fonts/Assistant-Regular.ttf",
+  "public_url": null,
+  "title": "Assistant-Regular.ttf",
+  "mime": "font/ttf",
+  "sha256": "7db29a71f35e1b3cd9168e69ecba50d2f9f1fddee3e4e9dd727166234c15d3cb",
+  "content_b64": null,
+  "usages": [
+   "lib/legal/evidence-pdf.ts"
+  ],
+  "first_commit": {
+   "sha": "4dbdd23b427b62b527e9caab5388f945739b2119",
+   "date": "2026-10-20T17:55:38+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "feat(legal): signed + timestamped consent evidence, chat-triggered consent sheet, Ops משפטי (#227)"
+  },
+  "last_commit": {
+   "sha": "4dbdd23b427b62b527e9caab5388f945739b2119",
+   "date": "2026-10-20T17:55:38+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "feat(legal): signed + timestamped consent evidence, chat-triggered consent sheet, Ops משפטי (#227)"
+  },
+  "commits": 1,
+  "font_family": "Assistant"
+ },
+ {
+  "asset_key": "repo:apps/web/lib/legal/fonts/Rubik-Bold.ttf",
+  "origin": "font",
+  "kind": "font",
+  "path": "apps/web/lib/legal/fonts/Rubik-Bold.ttf",
+  "public_url": null,
+  "title": "Rubik-Bold.ttf",
+  "mime": "font/ttf",
+  "sha256": "2d6393d64232ea3e0eeff79165d80df61c0859213abdd638b0ec1e81d21098dc",
+  "content_b64": null,
+  "usages": [
+   "lib/legal/evidence-pdf.ts"
+  ],
+  "first_commit": {
+   "sha": "4dbdd23b427b62b527e9caab5388f945739b2119",
+   "date": "2026-10-20T17:55:38+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "feat(legal): signed + timestamped consent evidence, chat-triggered consent sheet, Ops משפטי (#227)"
+  },
+  "last_commit": {
+   "sha": "4dbdd23b427b62b527e9caab5388f945739b2119",
+   "date": "2026-10-20T17:55:38+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "feat(legal): signed + timestamped consent evidence, chat-triggered consent sheet, Ops משפטי (#227)"
+  },
+  "commits": 1,
+  "font_family": "Rubik"
+ },
+ {
+  "asset_key": "repo:apps/web/lib/legal/fonts/Rubik-Medium.ttf",
+  "origin": "font",
+  "kind": "font",
+  "path": "apps/web/lib/legal/fonts/Rubik-Medium.ttf",
+  "public_url": null,
+  "title": "Rubik-Medium.ttf",
+  "mime": "font/ttf",
+  "sha256": "d73c60557ccc500ea9828bcc34437e7ea7a0d05f1c60c87be85790ebe8e62dbc",
+  "content_b64": null,
+  "usages": [
+   "lib/legal/evidence-pdf.ts"
+  ],
+  "first_commit": {
+   "sha": "4dbdd23b427b62b527e9caab5388f945739b2119",
+   "date": "2026-10-20T17:55:38+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "feat(legal): signed + timestamped consent evidence, chat-triggered consent sheet, Ops משפטי (#227)"
+  },
+  "last_commit": {
+   "sha": "4dbdd23b427b62b527e9caab5388f945739b2119",
+   "date": "2026-10-20T17:55:38+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "feat(legal): signed + timestamped consent evidence, chat-triggered consent sheet, Ops משפטי (#227)"
+  },
+  "commits": 1,
+  "font_family": "Rubik"
+ },
+ {
+  "asset_key": "repo:apps/web/public/apple-touch-icon.png",
+  "origin": "repo",
+  "kind": "icon",
+  "path": "apps/web/public/apple-touch-icon.png",
+  "public_url": "/apple-touch-icon.png",
+  "title": "apple-touch-icon.png",
+  "mime": "image/png",
+  "sha256": "3945b9e0e480d63aa339d7d68a2f79a4e45f66cdfbc76275e519e104ea01a74e",
+  "content_b64": null,
+  "usages": [
+   "app/layout.tsx"
+  ],
+  "first_commit": {
+   "sha": "84e9f6026ff71cbdc84e80e0c61f1c3cabbe103b",
+   "date": "2026-10-11T20:15:45+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "Station progress = task practice; real 404 for unknown content URLs (#99)"
+  },
+  "last_commit": {
+   "sha": "6b503bedb1e8975b625d28c74186aa32e2c15990",
+   "date": "2026-10-12T20:05:31+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "New NuraWell logo (Outfit) (#122)"
+  },
+  "commits": 2,
+  "font_family": null
+ },
+ {
+  "asset_key": "repo:apps/web/public/brand/email-card-shadow.png",
+  "origin": "repo",
+  "kind": "image",
+  "path": "apps/web/public/brand/email-card-shadow.png",
+  "public_url": "/brand/email-card-shadow.png",
+  "title": "email-card-shadow.png",
+  "mime": "image/png",
+  "sha256": "824b3faf4472c10186e322928ed752f4f7d5a587a0fd8a67f4e245f33ff6334c",
+  "content_b64": null,
+  "usages": [
+   "lib/email/layout.ts"
+  ],
+  "first_commit": {
+   "sha": "f7e21535f46f82db487c5aa79cf1161c501bf85b",
+   "date": "2026-10-19T22:28:03+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "email: floating card via plain <img> soft shadow under card + 1px soft border (layout unchanged) (#188)"
+  },
+  "last_commit": {
+   "sha": "f7e21535f46f82db487c5aa79cf1161c501bf85b",
+   "date": "2026-10-19T22:28:03+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "email: floating card via plain <img> soft shadow under card + 1px soft border (layout unchanged) (#188)"
+  },
+  "commits": 1,
+  "font_family": null
+ },
+ {
+  "asset_key": "repo:apps/web/public/brand/email-header-grad.png",
+  "origin": "repo",
+  "kind": "image",
+  "path": "apps/web/public/brand/email-header-grad.png",
+  "public_url": "/brand/email-header-grad.png",
+  "title": "email-header-grad.png",
+  "mime": "image/png",
+  "sha256": "c5f36826d24a79253be9e9b2099532845c43356fd8670f370c3dc4a4278b7f65",
+  "content_b64": null,
+  "usages": [
+   "lib/email/layout.ts"
+  ],
+  "first_commit": {
+   "sha": "26d8fc02a40f521ec1c4f46989b324f0380e410e",
+   "date": "2026-10-19T21:57:56+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "email: match v5 in Gmail Android (gradient via bg image, bigger centered 8-digit code, deeper card overlap) (#181)"
+  },
+  "last_commit": {
+   "sha": "26d8fc02a40f521ec1c4f46989b324f0380e410e",
+   "date": "2026-10-19T21:57:56+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "email: match v5 in Gmail Android (gradient via bg image, bigger centered 8-digit code, deeper card overlap) (#181)"
+  },
+  "commits": 1,
+  "font_family": null
+ },
+ {
+  "asset_key": "repo:apps/web/public/brand/email-header-tab.png",
+  "origin": "repo",
+  "kind": "image",
+  "path": "apps/web/public/brand/email-header-tab.png",
+  "public_url": "/brand/email-header-tab.png",
+  "title": "email-header-tab.png",
+  "mime": "image/png",
+  "sha256": "198f3f52b3ad61eef6948876de7b7be6daaca2d30a37046c41778c62d7f5597c",
+  "content_b64": null,
+  "usages": [
+   "lib/email/layout.ts"
+  ],
+  "first_commit": {
+   "sha": "f53a1e6fcfd47632debebdc8bc3bc2103280bd9e",
+   "date": "2026-10-19T21:44:33+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "email: Gmail-app bulletproof layout (no gradients for overlap → bg image tab, smaller code, mso 600 wrapper, fixed table layout, wrap-safe fallback link, tighter mobile padding) (#178)"
+  },
+  "last_commit": {
+   "sha": "26d8fc02a40f521ec1c4f46989b324f0380e410e",
+   "date": "2026-10-19T21:57:56+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "email: match v5 in Gmail Android (gradient via bg image, bigger centered 8-digit code, deeper card overlap) (#181)"
+  },
+  "commits": 2,
+  "font_family": null
+ },
+ {
+  "asset_key": "repo:apps/web/public/brand/email-lockup-on-dark.png",
+  "origin": "repo",
+  "kind": "image",
+  "path": "apps/web/public/brand/email-lockup-on-dark.png",
+  "public_url": "/brand/email-lockup-on-dark.png",
+  "title": "email-lockup-on-dark.png",
+  "mime": "image/png",
+  "sha256": "16b4807ab0ca33b18f84b4bbc3ac27891b53591923b7f155c6eb87b3b05560b9",
+  "content_b64": null,
+  "usages": [],
+  "first_commit": {
+   "sha": "fdca5636814f82bf73481c3357b7d1bc608f9865",
+   "date": "2026-10-15T12:39:33+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "email: direction B design (brand green/cream/gold, lockup header), Dolev voice copy, OTP code block, Hebrew sender names (#154)"
+  },
+  "last_commit": {
+   "sha": "fdca5636814f82bf73481c3357b7d1bc608f9865",
+   "date": "2026-10-15T12:39:33+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "email: direction B design (brand green/cream/gold, lockup header), Dolev voice copy, OTP code block, Hebrew sender names (#154)"
+  },
+  "commits": 1,
+  "font_family": null
+ },
+ {
+  "asset_key": "repo:apps/web/public/brand/email-lockup.png",
+  "origin": "repo",
+  "kind": "image",
+  "path": "apps/web/public/brand/email-lockup.png",
+  "public_url": "/brand/email-lockup.png",
+  "title": "email-lockup.png",
+  "mime": "image/png",
+  "sha256": "55bef1afe51c457020c8d94eb6ec5e8f7d11e45843201ef957b90af9b8ab23c3",
+  "content_b64": null,
+  "usages": [],
+  "first_commit": {
+   "sha": "fdca5636814f82bf73481c3357b7d1bc608f9865",
+   "date": "2026-10-15T12:39:33+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "email: direction B design (brand green/cream/gold, lockup header), Dolev voice copy, OTP code block, Hebrew sender names (#154)"
+  },
+  "last_commit": {
+   "sha": "fdca5636814f82bf73481c3357b7d1bc608f9865",
+   "date": "2026-10-15T12:39:33+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "email: direction B design (brand green/cream/gold, lockup header), Dolev voice copy, OTP code block, Hebrew sender names (#154)"
+  },
+  "commits": 1,
+  "font_family": null
+ },
+ {
+  "asset_key": "repo:apps/web/public/brand/email-logo-header.png",
+  "origin": "repo",
+  "kind": "image",
+  "path": "apps/web/public/brand/email-logo-header.png",
+  "public_url": "/brand/email-logo-header.png",
+  "title": "email-logo-header.png",
+  "mime": "image/png",
+  "sha256": "0b82426a8c18bf836dd36c0f8074f3ba3e62ac00155d3a8012dc00a8fafd91bc",
+  "content_b64": null,
+  "usages": [
+   "lib/email/layout.ts"
+  ],
+  "first_commit": {
+   "sha": "048e06a40aa3b657e95bda3b36d9a5bf13a31747",
+   "date": "2026-10-19T16:59:15+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "Email design v5 (Direction B, iOS touches, overlapping card, logo header) (#171)"
+  },
+  "last_commit": {
+   "sha": "048e06a40aa3b657e95bda3b36d9a5bf13a31747",
+   "date": "2026-10-19T16:59:15+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "Email design v5 (Direction B, iOS touches, overlapping card, logo header) (#171)"
+  },
+  "commits": 1,
+  "font_family": null
+ },
+ {
+  "asset_key": "repo:apps/web/public/brand/nurawell-lockup-on-dark.svg",
+  "origin": "repo",
+  "kind": "illustration",
+  "path": "apps/web/public/brand/nurawell-lockup-on-dark.svg",
+  "public_url": "/brand/nurawell-lockup-on-dark.svg",
+  "title": "nurawell-lockup-on-dark.svg",
+  "mime": "image/svg+xml",
+  "sha256": "9ce05d06f608fa16cc2b3d3661dde18509e21f3df9197608facf99462dfea903",
+  "content_b64": null,
+  "usages": [],
+  "first_commit": {
+   "sha": "6b503bedb1e8975b625d28c74186aa32e2c15990",
+   "date": "2026-10-12T20:05:31+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "New NuraWell logo (Outfit) (#122)"
+  },
+  "last_commit": {
+   "sha": "6b503bedb1e8975b625d28c74186aa32e2c15990",
+   "date": "2026-10-12T20:05:31+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "New NuraWell logo (Outfit) (#122)"
+  },
+  "commits": 1,
+  "font_family": null
+ },
+ {
+  "asset_key": "repo:apps/web/public/brand/nurawell-lockup.svg",
+  "origin": "repo",
+  "kind": "illustration",
+  "path": "apps/web/public/brand/nurawell-lockup.svg",
+  "public_url": "/brand/nurawell-lockup.svg",
+  "title": "nurawell-lockup.svg",
+  "mime": "image/svg+xml",
+  "sha256": "4c5d73556c26077f9160daf3548f38d523c7d3bd49a7ea64736b2754f5c4c8aa",
+  "content_b64": null,
+  "usages": [],
+  "first_commit": {
+   "sha": "6b503bedb1e8975b625d28c74186aa32e2c15990",
+   "date": "2026-10-12T20:05:31+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "New NuraWell logo (Outfit) (#122)"
+  },
+  "last_commit": {
+   "sha": "6b503bedb1e8975b625d28c74186aa32e2c15990",
+   "date": "2026-10-12T20:05:31+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "New NuraWell logo (Outfit) (#122)"
+  },
+  "commits": 1,
+  "font_family": null
+ },
+ {
+  "asset_key": "repo:apps/web/public/brand/nurawell-special-on-dark.svg",
+  "origin": "repo",
+  "kind": "illustration",
+  "path": "apps/web/public/brand/nurawell-special-on-dark.svg",
+  "public_url": "/brand/nurawell-special-on-dark.svg",
+  "title": "nurawell-special-on-dark.svg",
+  "mime": "image/svg+xml",
+  "sha256": "e73e43adef96e5a530b9be7004d4decf1f7e2e47e0e2bc5ea53bf56d9d0cf8ef",
+  "content_b64": null,
+  "usages": [
+   "components/shared/MobileHeader.tsx"
+  ],
+  "first_commit": {
+   "sha": "6b503bedb1e8975b625d28c74186aa32e2c15990",
+   "date": "2026-10-12T20:05:31+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "New NuraWell logo (Outfit) (#122)"
+  },
+  "last_commit": {
+   "sha": "6b503bedb1e8975b625d28c74186aa32e2c15990",
+   "date": "2026-10-12T20:05:31+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "New NuraWell logo (Outfit) (#122)"
+  },
+  "commits": 1,
+  "font_family": null
+ },
+ {
+  "asset_key": "repo:apps/web/public/brand/nurawell-special.svg",
+  "origin": "repo",
+  "kind": "illustration",
+  "path": "apps/web/public/brand/nurawell-special.svg",
+  "public_url": "/brand/nurawell-special.svg",
+  "title": "nurawell-special.svg",
+  "mime": "image/svg+xml",
+  "sha256": "71e0673b30c15df0147b8ff2db8297281c7327b545230927b000230a81b8e634",
+  "content_b64": null,
+  "usages": [],
+  "first_commit": {
+   "sha": "6b503bedb1e8975b625d28c74186aa32e2c15990",
+   "date": "2026-10-12T20:05:31+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "New NuraWell logo (Outfit) (#122)"
+  },
+  "last_commit": {
+   "sha": "10877c7eb004437c814032b6465ae306b806bd53",
+   "date": "2026-10-13T09:49:24+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "UI feedback round: glass header + right hamburger, notifications load-more/divider/deep-link labels, SOS header/note/dedupe/name placeholders, FAB auto-hide, uniform bg, task expand animation, lesson static feedback + nav, plan habit cards, history from SSOT incl. Almog tasks"
+  },
+  "commits": 2,
+  "font_family": null
+ },
+ {
+  "asset_key": "repo:apps/web/public/brand/nurawell-symbol.svg",
+  "origin": "repo",
+  "kind": "illustration",
+  "path": "apps/web/public/brand/nurawell-symbol.svg",
+  "public_url": "/brand/nurawell-symbol.svg",
+  "title": "nurawell-symbol.svg",
+  "mime": "image/svg+xml",
+  "sha256": "9cb1660d7da0e68be8f603b2165c6a2acb8ae1e95c2650c50132323d512c60c7",
+  "content_b64": null,
+  "usages": [],
+  "first_commit": {
+   "sha": "6b503bedb1e8975b625d28c74186aa32e2c15990",
+   "date": "2026-10-12T20:05:31+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "New NuraWell logo (Outfit) (#122)"
+  },
+  "last_commit": {
+   "sha": "6b503bedb1e8975b625d28c74186aa32e2c15990",
+   "date": "2026-10-12T20:05:31+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "New NuraWell logo (Outfit) (#122)"
+  },
+  "commits": 1,
+  "font_family": null
+ },
+ {
+  "asset_key": "repo:apps/web/public/brand/nurawell-tagline-on-dark.svg",
+  "origin": "repo",
+  "kind": "illustration",
+  "path": "apps/web/public/brand/nurawell-tagline-on-dark.svg",
+  "public_url": "/brand/nurawell-tagline-on-dark.svg",
+  "title": "nurawell-tagline-on-dark.svg",
+  "mime": "image/svg+xml",
+  "sha256": "433fd165d758459333c85a7de766d6e2251a616c229542e29652906403e96081",
+  "content_b64": null,
+  "usages": [],
+  "first_commit": {
+   "sha": "6b503bedb1e8975b625d28c74186aa32e2c15990",
+   "date": "2026-10-12T20:05:31+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "New NuraWell logo (Outfit) (#122)"
+  },
+  "last_commit": {
+   "sha": "6b503bedb1e8975b625d28c74186aa32e2c15990",
+   "date": "2026-10-12T20:05:31+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "New NuraWell logo (Outfit) (#122)"
+  },
+  "commits": 1,
+  "font_family": null
+ },
+ {
+  "asset_key": "repo:apps/web/public/brand/nurawell-tagline.svg",
+  "origin": "repo",
+  "kind": "illustration",
+  "path": "apps/web/public/brand/nurawell-tagline.svg",
+  "public_url": "/brand/nurawell-tagline.svg",
+  "title": "nurawell-tagline.svg",
+  "mime": "image/svg+xml",
+  "sha256": "6bba036e4a8e35ae38225d4cc3b2e8554e33f77caa6899dbc594ceeed74bb6c8",
+  "content_b64": null,
+  "usages": [],
+  "first_commit": {
+   "sha": "6b503bedb1e8975b625d28c74186aa32e2c15990",
+   "date": "2026-10-12T20:05:31+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "New NuraWell logo (Outfit) (#122)"
+  },
+  "last_commit": {
+   "sha": "6b503bedb1e8975b625d28c74186aa32e2c15990",
+   "date": "2026-10-12T20:05:31+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "New NuraWell logo (Outfit) (#122)"
+  },
+  "commits": 1,
+  "font_family": null
+ },
+ {
+  "asset_key": "repo:apps/web/public/cookie-jar.svg",
+  "origin": "repo",
+  "kind": "illustration",
+  "path": "apps/web/public/cookie-jar.svg",
+  "public_url": "/cookie-jar.svg",
+  "title": "cookie-jar.svg",
+  "mime": "image/svg+xml",
+  "sha256": "a2b1ba14061537d3c4a2cf5582a2f6a26b5d3f10d75e7b8094de5a5343824f96",
+  "content_b64": null,
+  "usages": [
+   "components/legal/cookies/CookieNotice.tsx",
+   "components/legal/cookies/cookie-notice.css"
+  ],
+  "first_commit": {
+   "sha": "82783bda8aab797aabedec426a462f51882abe93",
+   "date": "2026-10-20T17:33:53+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "feat(legal): cookie notice (jar art + forest-guard wink), designed panel, /cookies page (#219)"
+  },
+  "last_commit": {
+   "sha": "82783bda8aab797aabedec426a462f51882abe93",
+   "date": "2026-10-20T17:33:53+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "feat(legal): cookie notice (jar art + forest-guard wink), designed panel, /cookies page (#219)"
+  },
+  "commits": 1,
+  "font_family": null
+ },
+ {
+  "asset_key": "repo:apps/web/public/favicon.ico",
+  "origin": "repo",
+  "kind": "icon",
+  "path": "apps/web/public/favicon.ico",
+  "public_url": "/favicon.ico",
+  "title": "favicon.ico",
+  "mime": "image/x-icon",
+  "sha256": "4e2a34076f4c7728b068df8be62ab65a88967215b724f4d8baff7a89d2c851fd",
+  "content_b64": null,
+  "usages": [
+   "app/layout.tsx",
+   "proxy.ts"
+  ],
+  "first_commit": {
+   "sha": "84e9f6026ff71cbdc84e80e0c61f1c3cabbe103b",
+   "date": "2026-10-11T20:15:45+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "Station progress = task practice; real 404 for unknown content URLs (#99)"
+  },
+  "last_commit": {
+   "sha": "6b503bedb1e8975b625d28c74186aa32e2c15990",
+   "date": "2026-10-12T20:05:31+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "New NuraWell logo (Outfit) (#122)"
+  },
+  "commits": 2,
+  "font_family": null
+ },
+ {
+  "asset_key": "repo:apps/web/public/icon-192.png",
+  "origin": "repo",
+  "kind": "icon",
+  "path": "apps/web/public/icon-192.png",
+  "public_url": "/icon-192.png",
+  "title": "icon-192.png",
+  "mime": "image/png",
+  "sha256": "1e644ee085aec4d735c30c9858c1ecf38cbf52802dd520f50a91b57342fc99ed",
+  "content_b64": null,
+  "usages": [
+   "app/manifest.ts"
+  ],
+  "first_commit": {
+   "sha": "6b503bedb1e8975b625d28c74186aa32e2c15990",
+   "date": "2026-10-12T20:05:31+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "New NuraWell logo (Outfit) (#122)"
+  },
+  "last_commit": {
+   "sha": "6b503bedb1e8975b625d28c74186aa32e2c15990",
+   "date": "2026-10-12T20:05:31+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "New NuraWell logo (Outfit) (#122)"
+  },
+  "commits": 1,
+  "font_family": null
+ },
+ {
+  "asset_key": "repo:apps/web/public/icon-512.png",
+  "origin": "repo",
+  "kind": "icon",
+  "path": "apps/web/public/icon-512.png",
+  "public_url": "/icon-512.png",
+  "title": "icon-512.png",
+  "mime": "image/png",
+  "sha256": "ff85a73fe0e56771051b183e2bbbaf99dc92f9d5be2b13e93e78529fc79c12c1",
+  "content_b64": null,
+  "usages": [
+   "app/manifest.ts"
+  ],
+  "first_commit": {
+   "sha": "6b503bedb1e8975b625d28c74186aa32e2c15990",
+   "date": "2026-10-12T20:05:31+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "New NuraWell logo (Outfit) (#122)"
+  },
+  "last_commit": {
+   "sha": "6b503bedb1e8975b625d28c74186aa32e2c15990",
+   "date": "2026-10-12T20:05:31+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "New NuraWell logo (Outfit) (#122)"
+  },
+  "commits": 1,
+  "font_family": null
+ },
+ {
+  "asset_key": "repo:apps/web/public/icon-maskable-192.png",
+  "origin": "repo",
+  "kind": "icon",
+  "path": "apps/web/public/icon-maskable-192.png",
+  "public_url": "/icon-maskable-192.png",
+  "title": "icon-maskable-192.png",
+  "mime": "image/png",
+  "sha256": "cb043ffe61bcf9543fac98ddc3f23a102bdc67c5b25596e05a6c41b789898b30",
+  "content_b64": null,
+  "usages": [
+   "app/manifest.ts"
+  ],
+  "first_commit": {
+   "sha": "6b503bedb1e8975b625d28c74186aa32e2c15990",
+   "date": "2026-10-12T20:05:31+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "New NuraWell logo (Outfit) (#122)"
+  },
+  "last_commit": {
+   "sha": "6b503bedb1e8975b625d28c74186aa32e2c15990",
+   "date": "2026-10-12T20:05:31+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "New NuraWell logo (Outfit) (#122)"
+  },
+  "commits": 1,
+  "font_family": null
+ },
+ {
+  "asset_key": "repo:apps/web/public/icon-maskable-512.png",
+  "origin": "repo",
+  "kind": "icon",
+  "path": "apps/web/public/icon-maskable-512.png",
+  "public_url": "/icon-maskable-512.png",
+  "title": "icon-maskable-512.png",
+  "mime": "image/png",
+  "sha256": "6d76ce3f1bdb6ce07be980c9c0b144225afdf844369cdd642e61d136bc1e5492",
+  "content_b64": null,
+  "usages": [
+   "app/manifest.ts"
+  ],
+  "first_commit": {
+   "sha": "6b503bedb1e8975b625d28c74186aa32e2c15990",
+   "date": "2026-10-12T20:05:31+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "New NuraWell logo (Outfit) (#122)"
+  },
+  "last_commit": {
+   "sha": "6b503bedb1e8975b625d28c74186aa32e2c15990",
+   "date": "2026-10-12T20:05:31+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "New NuraWell logo (Outfit) (#122)"
+  },
+  "commits": 1,
+  "font_family": null
+ },
+ {
+  "asset_key": "repo:apps/web/public/icon.svg",
+  "origin": "repo",
+  "kind": "icon",
+  "path": "apps/web/public/icon.svg",
+  "public_url": "/icon.svg",
+  "title": "icon.svg",
+  "mime": "image/svg+xml",
+  "sha256": "98eb87257c574bea247661b4c40dc11fc6f4b1f3c89af30c13d8db5cb259089c",
+  "content_b64": null,
+  "usages": [
+   "app/layout.tsx",
+   "app/manifest.ts"
+  ],
+  "first_commit": {
+   "sha": "6b503bedb1e8975b625d28c74186aa32e2c15990",
+   "date": "2026-10-12T20:05:31+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "New NuraWell logo (Outfit) (#122)"
+  },
+  "last_commit": {
+   "sha": "6b503bedb1e8975b625d28c74186aa32e2c15990",
+   "date": "2026-10-12T20:05:31+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "New NuraWell logo (Outfit) (#122)"
+  },
+  "commits": 1,
+  "font_family": null
+ },
+ {
+  "asset_key": "repo:apps/web/public/og-image.png",
+  "origin": "repo",
+  "kind": "image",
+  "path": "apps/web/public/og-image.png",
+  "public_url": "/og-image.png",
+  "title": "og-image.png",
+  "mime": "image/png",
+  "sha256": "88a4cfa32507c072ac3663c0bebdd6ff66c90475dc58a1ba507ee6bc4a15c482",
+  "content_b64": null,
+  "usages": [
+   "app/layout.tsx"
+  ],
+  "first_commit": {
+   "sha": "6b503bedb1e8975b625d28c74186aa32e2c15990",
+   "date": "2026-10-12T20:05:31+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "New NuraWell logo (Outfit) (#122)"
+  },
+  "last_commit": {
+   "sha": "6b503bedb1e8975b625d28c74186aa32e2c15990",
+   "date": "2026-10-12T20:05:31+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "New NuraWell logo (Outfit) (#122)"
+  },
+  "commits": 1,
+  "font_family": null
+ }
+]
