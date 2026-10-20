@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { preload } from 'react-dom';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -97,6 +98,8 @@ export function CookiePanelBody() {
 }
 
 export function CookieNotice() {
+  // Jar art must be ready before the panel/banner paints (no empty frame).
+  preload('/cookie-jar.svg', { as: 'image', fetchPriority: 'high' });
   const pathname = usePathname() || '/';
   const [banner, setBanner] = useState(false);
   const [panel, setPanel] = useState(false);
