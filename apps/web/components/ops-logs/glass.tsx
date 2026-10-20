@@ -1,19 +1,27 @@
 'use client';
-/** Shared, restrained primitives for Ops logs (activity + errors). Status color = small dot/pill only. */
+/** Shared iOS-style frosted-glass primitives for Ops logs (activity + errors).
+ *  Perf: only top-level surfaces (Glass, Sheet) use backdrop-blur; rows inside never do. */
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Bell, Clock, Cpu, LogIn, Mail, MonitorSmartphone, Search, Send, ShieldAlert, SlidersHorizontal, Sparkles, X } from 'lucide-react';
 import { cn } from '@/lib/cn';
 
 export type Status = 'success' | 'failed' | 'warning' | 'pending' | 'security' | 'info';
 
-export const STATUS: Record<Status, { label: string; dot: string; text: string }> = {
-  success: { label: 'הצליח', dot: 'bg-emerald-500', text: 'text-emerald-700' },
-  failed: { label: 'נכשל', dot: 'bg-rose-500', text: 'text-rose-700' },
-  warning: { label: 'אזהרה', dot: 'bg-amber-500', text: 'text-amber-700' },
-  pending: { label: 'ממתין', dot: 'bg-sky-500', text: 'text-sky-700' },
-  security: { label: 'אבטחה', dot: 'bg-violet-500', text: 'text-violet-700' },
-  info: { label: 'מידע', dot: 'bg-slate-400', text: 'text-slate-600' },
+export const STATUS: Record<Status, { label: string; dot: string; text: string; stripe: string; glow: string }> = {
+  success: { label: 'הצליח', dot: 'bg-emerald-500', text: 'text-emerald-700', stripe: 'bg-emerald-500/70', glow: '' },
+  failed: { label: 'נכשל', dot: 'bg-rose-500', text: 'text-rose-700', stripe: 'bg-gradient-to-b from-rose-500 to-rose-600', glow: 'shadow-[0_10px_40px_-16px_rgba(225,29,72,0.45)] ring-1 ring-rose-400/30' },
+  warning: { label: 'אזהרה', dot: 'bg-amber-500', text: 'text-amber-700', stripe: 'bg-gradient-to-b from-amber-400 to-amber-500', glow: 'ring-1 ring-amber-400/30' },
+  pending: { label: 'ממתין', dot: 'bg-sky-500', text: 'text-sky-700', stripe: 'bg-sky-400/80', glow: '' },
+  security: { label: 'אבטחה', dot: 'bg-violet-500', text: 'text-violet-700', stripe: 'bg-gradient-to-b from-violet-500 to-fuchsia-500', glow: 'ring-1 ring-violet-400/30' },
+  info: { label: 'מידע', dot: 'bg-slate-400', text: 'text-slate-600', stripe: '', glow: '' },
 };
+
+/** Status accent stripe on the inline-start edge. Only rendered for statuses that need attention (or when forced). */
+export function Stripe({ status, all }: { status: Status; all?: boolean }) {
+  const show = all ? STATUS[status].stripe : (status === 'failed' || status === 'warning' || status === 'security') && STATUS[status].stripe;
+  if (!show) return null;
+  return <span aria-hidden className={cn('pointer-events-none absolute inset-y-2 start-0 w-[3px] rounded-e-full', STATUS[status].stripe)} />;
+}
 
 const ICONS: Record<string, typeof LogIn> = { login: LogIn, email: Mail, telegram: Send, push: Bell, security: ShieldAlert, device: MonitorSmartphone, cron: Clock, ai: Sparkles, other: Cpu };
 export function CatIcon({ cat, className }: { cat: string; className?: string }) {
@@ -21,9 +29,10 @@ export function CatIcon({ cat, className }: { cat: string; className?: string })
   return <I size={16} strokeWidth={1.75} className={className} aria-hidden />;
 }
 
-/** Calm surface: cream, hairline border, soft blur. */
-export function Glass({ children, className }: { children: ReactNode; className?: string; glow?: Status }) {
-  return <div className={cn('rounded-2xl border border-black/[0.06] bg-cream/80 backdrop-blur-xl dark:border-cream/10 dark:bg-slate-900/50', className)}>{children}</div>;
+/** Frosted cream glass: translucent, backdrop blur, inner highlight, soft depth. Optional status glow. */
+export const GLASS = 'relative rounded-3xl border border-cream/70 bg-cream/55 shadow-[0_1px_0_0_rgba(255,255,255,0.6)_inset,0_12px_36px_-18px_rgba(30,41,30,0.28)] backdrop-blur-xl backdrop-saturate-150 supports-[not(backdrop-filter:blur(1px))]:bg-cream/95 dark:border-cream/10 dark:bg-slate-900/55';
+export function Glass({ children, className, glow }: { children: ReactNode; className?: string; glow?: Status }) {
+  return <div className={cn(GLASS, glow && STATUS[glow].glow, className)}>{children}</div>;
 }
 
 export function Dot({ status, pulse }: { status: Status; pulse?: boolean }) {
@@ -42,7 +51,7 @@ export function Section({ title, aside, children }: { title: string; aside?: Rea
   return (
     <section className="flex flex-col gap-3">
       <div className="flex items-baseline justify-between px-1">
-        <h2 className="text-[13px] font-semibold text-slate-500 dark:text-slate-400">{title}</h2>
+        <h2 className="text-[13px] font-semibold text-slate-500 dark:text-slate-500">{title}</h2>
         {aside}
       </div>
       {children}
@@ -55,9 +64,9 @@ export function Metrics({ items }: { items: { label: string; value: ReactNode; s
     <Glass className="grid grid-cols-2 divide-black/[0.06] sm:grid-cols-4 sm:divide-x sm:divide-x-reverse dark:divide-cream/10">
       {items.slice(0, 4).map((m, i) => (
         <div key={m.label} className={cn('flex flex-col gap-1 px-4 py-4', i < 2 && 'border-b border-black/[0.06] sm:border-b-0 dark:border-cream/10', i % 2 === 0 && 'border-e border-black/[0.06] sm:border-e-0 dark:border-cream/10')}>
-          <span className="flex items-center gap-1.5 text-[12px] text-slate-500 dark:text-slate-400">{m.status ? <Dot status={m.status} /> : null}{m.label}</span>
+          <span className="flex items-center gap-1.5 text-[12px] text-slate-500 dark:text-slate-500">{m.status ? <Dot status={m.status} /> : null}{m.label}</span>
           <span className="font-display text-[1.6rem] font-semibold tabular-nums leading-none text-slate-900 dark:text-cream">{m.value}</span>
-          {m.sub ? <span className="text-[11px] text-slate-400">{m.sub}</span> : null}
+          {m.sub ? <span className="text-[11px] text-slate-500">{m.sub}</span> : null}
         </div>
       ))}
     </Glass>
@@ -66,10 +75,10 @@ export function Metrics({ items }: { items: { label: string; value: ReactNode; s
 
 export function Segmented<T extends string>({ value, options, onChange }: { value: T; options: [T, string][]; onChange: (v: T) => void }) {
   return (
-    <div role="radiogroup" className="inline-flex rounded-xl bg-black/[0.05] p-0.5 dark:bg-cream/10">
+    <div role="radiogroup" className="inline-flex rounded-2xl bg-cream-deep/60 p-0.5 shadow-[0_1px_2px_rgba(0,0,0,0.04)_inset] dark:bg-cream/10">
       {options.map(([k, l]) => (
         <button key={k} type="button" role="radio" aria-checked={value === k} onClick={() => onChange(k)}
-          className={cn('rounded-[10px] px-3 py-1.5 text-[13px] font-medium transition', value === k ? 'bg-cream text-slate-900 shadow-sm dark:bg-slate-700 dark:text-cream' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400')}>{l}</button>
+          className={cn('rounded-[14px] px-3 py-1.5 text-[13px] font-medium transition', value === k ? 'bg-cream text-slate-900 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.15)] dark:bg-slate-700 dark:text-cream' : 'text-slate-500 hover:text-slate-800 dark:text-slate-500')}>{l}</button>
       ))}
     </div>
   );
@@ -78,13 +87,13 @@ export function Segmented<T extends string>({ value, options, onChange }: { valu
 export function SearchBar({ value, onChange, placeholder, onFilters, activeCount, trailing }: { value: string; onChange: (v: string) => void; placeholder: string; onFilters?: () => void; activeCount?: number; trailing?: ReactNode }) {
   return (
     <div className="flex items-center gap-2">
-      <label className="flex h-10 flex-1 items-center gap-2 rounded-xl border border-black/[0.06] bg-cream px-3 focus-within:border-emerald-700/40 dark:border-cream/10 dark:bg-slate-900/60">
-        <Search size={16} className="text-slate-400" aria-hidden />
-        <input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="w-full bg-transparent text-[14px] text-slate-800 outline-none placeholder:text-slate-400 dark:text-cream" />
-        {value ? <button type="button" onClick={() => onChange('')} aria-label="נקה חיפוש" className="text-slate-400"><X size={14} /></button> : null}
+      <label className="flex h-10 flex-1 items-center gap-2 rounded-2xl border border-cream/70 bg-cream/70 px-3 shadow-[0_1px_0_0_rgba(255,255,255,0.6)_inset] focus-within:border-emerald-700/40 dark:border-cream/10 dark:bg-slate-900/60">
+        <Search size={16} className="text-slate-500" aria-hidden />
+        <input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="w-full bg-transparent text-[14px] text-slate-800 outline-none placeholder:text-slate-500 dark:text-cream" />
+        {value ? <button type="button" onClick={() => onChange('')} aria-label="נקה חיפוש" className="text-slate-500"><X size={14} /></button> : null}
       </label>
       {onFilters ? (
-        <button type="button" onClick={onFilters} className="relative flex h-10 items-center gap-1.5 rounded-xl border border-black/[0.06] bg-cream px-3 text-[13px] font-medium text-slate-700 dark:border-cream/10 dark:bg-slate-900/60 dark:text-slate-200">
+        <button type="button" onClick={onFilters} className="relative flex h-10 items-center gap-1.5 rounded-2xl border border-cream/70 bg-cream/70 px-3 shadow-[0_1px_0_0_rgba(255,255,255,0.6)_inset] text-[13px] font-medium text-slate-700 dark:border-cream/10 dark:bg-slate-900/60 dark:text-slate-200">
           <SlidersHorizontal size={15} />סינון
           {activeCount ? <span className="grid h-4 min-w-4 place-items-center rounded-full bg-slate-900 px-1 text-[10px] text-cream dark:bg-cream dark:text-slate-900">{activeCount}</span> : null}
         </button>
@@ -101,10 +110,10 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-start sm:pt-28" role="dialog" aria-modal="true" aria-label={title}>
-      <button type="button" aria-label="סגור" className="absolute inset-0 bg-slate-900/20 backdrop-blur-[2px]" onClick={onClose} />
-      <div ref={ref} tabIndex={-1} className="relative w-full max-w-md rounded-t-3xl border border-black/[0.06] bg-cream p-5 shadow-2xl outline-none sm:rounded-2xl dark:border-cream/10 dark:bg-slate-900">
+      <button type="button" aria-label="סגור" className="absolute inset-0 bg-slate-900/25" onClick={onClose} />
+      <div ref={ref} tabIndex={-1} className="relative w-full max-w-md rounded-t-[28px] border border-cream/70 bg-cream/75 p-5 shadow-[0_1px_0_0_rgba(255,255,255,0.7)_inset,0_24px_60px_-20px_rgba(30,41,30,0.4)] outline-none backdrop-blur-2xl backdrop-saturate-150 supports-[not(backdrop-filter:blur(1px))]:bg-cream sm:rounded-3xl dark:border-cream/10 dark:bg-slate-900/80">
         <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-black/10 sm:hidden" />
-        <div className="mb-4 flex items-center justify-between"><h3 className="text-[15px] font-semibold text-slate-900 dark:text-cream">{title}</h3><button type="button" onClick={onClose} aria-label="סגור" className="text-slate-400"><X size={18} /></button></div>
+        <div className="mb-4 flex items-center justify-between"><h3 className="text-[15px] font-semibold text-slate-900 dark:text-cream">{title}</h3><button type="button" onClick={onClose} aria-label="סגור" className="text-slate-500"><X size={18} /></button></div>
         <div className="flex flex-col gap-5">{children}</div>
       </div>
     </div>
@@ -118,7 +127,7 @@ export function OptionGroup<T extends string>({ label, value, options, onChange 
       <div className="flex flex-wrap gap-1.5">
         {options.map(([k, l, s]) => (
           <button key={k} type="button" onClick={() => onChange(k)} aria-pressed={value === k}
-            className={cn('inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[13px] transition', value === k ? 'border-slate-900 bg-slate-900 text-cream dark:border-cream dark:bg-cream dark:text-slate-900' : 'border-black/[0.08] text-slate-600 hover:border-black/20 dark:border-cream/15 dark:text-slate-300')}>
+            className={cn('inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[13px] transition', value === k ? 'border-slate-900 bg-slate-900 text-cream dark:border-cream dark:bg-cream dark:text-slate-900' : 'border-cream/80 bg-cream/60 text-slate-700 hover:border-black/15 dark:border-cream/15 dark:text-slate-300')}>
             {s ? <Dot status={s} /> : null}{l}
           </button>
         ))}
@@ -148,7 +157,7 @@ export function Spark({ data, status = 'info' }: { data: number[]; status?: Stat
 }
 
 export function Empty({ title, sub }: { title: string; sub?: string }) {
-  return <div className="px-4 py-14 text-center"><div className="text-[15px] font-medium text-slate-700 dark:text-slate-200">{title}</div>{sub ? <div className="mt-1 text-[13px] text-slate-400">{sub}</div> : null}</div>;
+  return <div className="px-4 py-14 text-center"><div className="text-[15px] font-medium text-slate-700 dark:text-slate-200">{title}</div>{sub ? <div className="mt-1 text-[13px] text-slate-500">{sub}</div> : null}</div>;
 }
 
 export function Skeleton() {
