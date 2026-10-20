@@ -1,5 +1,6 @@
 import { sealProfilePatch } from '@/lib/crypto/pii-seal';
 import { encryptMeasurementPatch } from '@/lib/crypto/pii-fields';
+import { isHealthProcessingBlocked } from '@/lib/privacy/health-consent';
 /**
  * זיהוי משקל מהודעת צ'אט — עדכון user_measurements בלי טופס.
  */
@@ -40,6 +41,7 @@ export async function applyWeightFromUserMessage(
 ): Promise<{ logged: boolean; weightKg?: number }> {
   const weightKg = parseWeightKgFromMessage(userMessage);
   if (weightKg == null) return { logged: false };
+  if (await isHealthProcessingBlocked(userId)) return { logged: false };
 
   const measuredAt = new Date().toISOString().slice(0, 10);
 
