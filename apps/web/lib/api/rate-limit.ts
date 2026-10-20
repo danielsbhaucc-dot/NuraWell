@@ -145,23 +145,93 @@ function checkMemory(input: RateLimitInput, now: number): RateLimitResult {
   };
 }
 
-let warnedMissingUpstashInProd = false;
+// skipcq: JS-0067, JS-R1005 -- module-scoped (ES module)
+function supabaseRest(): { url: string; key: string } | null {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim().replace(/\/+$/, '');
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  if (!url || !key || process.env.RATE_LIMIT_BACKEND === 'memory') return null;
+  return { url, key };
+}
 
-export async function consumeRateLimit(input: RateLimitInput): Promise<RateLimitResult> {
-  const now = Date.now();
-  if (isUpstashRedisConfigured()) {
-    return checkUpstashRedis(input, now);
+/**
+ * Postgres-backed distributed limiter (atomic upsert in `rate_limit_consume`).
+ * Keys are hashed in the DB — no raw IP/user ids stored. Falls back to memory on error.
+ */
+// skipcq: JS-0067, JS-R1005 -- module-scoped (ES module)
+async function checkPostgres(
+  input: RateLimitInput,
+  now: number,
+  cfg: { url: string; key: string }
+): Promise<RateLimitResult | null> {
+  try {
+    const res = await fetch(`${cfg.url}/rest/v1/rpc/rate_limit_consume`, {
+      method: 'POST',
+      headers: { apikey: cfg.key, Authorization: `Bearer ${cfg.key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p_key: `${input.namespace}:${input.key}`, p_window_seconds: input.windowSeconds }),
+      cache: 'no-store',
+    });
+    if (!res.ok) return null;
+    const rows = (await res.json()) as Array<{ hits: number; reset_at: string }> | null;
+    const row = rows?.[0];
+    if (!row || typeof row.hits !== 'number') return null;
+    return {
+      ok: row.hits <= input.limit,
+      limit: input.limit,
+      remaining: Math.max(0, input.limit - row.hits),
+      resetAt: Date.parse(row.reset_at) || now + input.windowSeconds * 1000,
+    };
+  } catch {
+    return null;
   }
-  // בפרודקשן ה-fallback לזיכרון הוא per-instance ולכן ניתן לעקיפה בין instances.
-  // לא חוסמים (כדי לא לשבור פריסות ללא Redis), אבל מתריעים פעם אחת בלוג כדי
-  // לחשוף את הצורך להגדיר UPSTASH_REDIS_REST_URL/TOKEN לאכיפה מבוזרת.
-  if (process.env.NODE_ENV === 'production' && !warnedMissingUpstashInProd) {
-    warnedMissingUpstashInProd = true;
-    console.warn(
-      '[rate-limit] Upstash Redis not configured in production — falling back to per-instance in-memory limiting, which is bypassable across serverless instances. Set UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN.'
-    );
+}
+
+const loggedHits = new Map<string, number>();
+
+/** Best-effort audit entry (admin_audit_log, method SECURITY) — once per namespace+key per window. */
+// skipcq: JS-0067, JS-R1005 -- module-scoped (ES module)
+async function logLimitHit(input: RateLimitInput, result: RateLimitResult): Promise<void> {
+  const cfg = supabaseRest();
+  if (!cfg) return;
+  const k = `${input.namespace}:${input.key}`;
+  if ((loggedHits.get(k) ?? 0) >= result.resetAt) return;
+  loggedHits.set(k, result.resetAt);
+  if (loggedHits.size > 5000) loggedHits.clear();
+  try {
+    const data = new TextEncoder().encode(`rl:${k}`);
+    const digest = await crypto.subtle.digest('SHA-256', data);
+    const keyTag = Array.from(new Uint8Array(digest)).slice(0, 6).map((b) => b.toString(16).padStart(2, '0')).join('');
+    await fetch(`${cfg.url}/rest/v1/admin_audit_log`, {
+      method: 'POST',
+      headers: { apikey: cfg.key, Authorization: `Bearer ${cfg.key}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify({
+        method: 'SECURITY',
+        path: 'rate_limited',
+        detail: { namespace: input.namespace, limit: input.limit, window_s: input.windowSeconds, key_tag: keyTag },
+      }),
+      cache: 'no-store',
+    });
+  } catch {
+    /* never throw from logging */
+  }
+}
+
+// skipcq: JS-0067, JS-R1005 -- module-scoped (ES module)
+async function consumeRaw(input: RateLimitInput, now: number): Promise<RateLimitResult> {
+  if (isUpstashRedisConfigured()) return checkUpstashRedis(input, now);
+  const cfg = supabaseRest();
+  if (cfg) {
+    const pgResult = await checkPostgres(input, now, cfg);
+    if (pgResult) return pgResult;
   }
   return checkMemory(input, now);
+}
+
+// skipcq: JS-0067 -- ES module export
+export async function consumeRateLimit(input: RateLimitInput): Promise<RateLimitResult> {
+  const now = Date.now();
+  const result = await consumeRaw(input, now);
+  if (!result.ok) await logLimitHit(input, result);
+  return result;
 }
 
 /**
