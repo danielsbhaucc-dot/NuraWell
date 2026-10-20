@@ -12,7 +12,7 @@ const TRUST = { verified: { l: 'מאומת (DKIM של הספק)', c: 'border-tea
 
 function Row({ r, onSaved }: { r: Receipt; onSaved: () => void }) {
   const [p, setP] = useState({ vendor: r.vendor, plan: r.plan ?? '', period_start: r.period_start ?? '', period_end: r.period_end ?? '' });
-  const [busy, setBusy] = useState<null | 'save' | Receipt['trust']>(null);
+  const [busy, setBusy] = useState<null | 'save' | 'confirm' | Receipt['trust']>(null);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const dirty = p.vendor !== r.vendor || p.plan !== (r.plan ?? '') || p.period_start !== (r.period_start ?? '') || p.period_end !== (r.period_end ?? '');
   const save = async (trust?: Receipt['trust']) => {
@@ -43,7 +43,7 @@ function Row({ r, onSaved }: { r: Receipt; onSaved: () => void }) {
         {!r.confirmation_code && !safeLink ? <p className="mt-1 text-xs">אפשר לאשר מתוך הגדרות ההעברה ב־Gmail.</p> : null}
         <div className="mt-2 flex flex-wrap gap-2">
           {safeLink ? <a href={safeLink} target="_blank" rel="noopener noreferrer" className="inline-flex rounded-full border border-amber-300 bg-amber-100/80 px-3 py-1 text-xs font-bold text-amber-950 underline-offset-2 hover:underline">לאישור בלחיצה אחת ב־Gmail</a> : null}
-          <button type="button" disabled={busy} onClick={async () => { setBusy(true); await fetch('/api/v1/ops/legal/receipts/item', { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: r.id, confirmed: true }) }).catch(() => undefined); setBusy(false); onSaved(); }} className="inline-flex rounded-full border border-emerald-300/70 bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-900">כבר אישרתי</button>
+          <button type="button" disabled={!!busy} onClick={async () => { setBusy('confirm'); await fetch('/api/v1/ops/legal/receipts/item', { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: r.id, confirmed: true }) }).catch(() => undefined); setBusy(null); onSaved(); }} className="inline-flex rounded-full border border-emerald-300/70 bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-900">כבר אישרתי</button>
         </div>
         <p className="mt-2 text-[11px] text-amber-900/80">ברגע שתגיע לכאן קבלה ראשונה דרך ההעברה, ההודעה תסומן כמאושרת לבד.</p>
       </li>
