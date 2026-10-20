@@ -1,11 +1,12 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { browserSupportsWebAuthn, startRegistration } from '@simplewebauthn/browser';
 import { Check, Copy, Download, Fingerprint, KeyRound, Loader2, RefreshCw, ShieldCheck, Smartphone, Trash2, TriangleAlert } from 'lucide-react';
 import { AnimatedDialog } from '@/components/shared/AnimatedDialog';
 import { ToastContainer, useToast } from '@/components/shared/Toast';
 import { createClient } from '@/lib/supabase/client';
+import { StepUpDialog } from '@/components/admin/StepUpDialog';
 
 type Passkey = { id: string; label: string; device_type: string; backed_up: boolean; created_at: string; last_used_at: string | null };
 type State = { passkeys: Passkey[]; backup_codes_left: number; backup_codes_enabled?: boolean; fresh: boolean; device_ok: boolean };
@@ -30,6 +31,8 @@ export function SecuritySettingsClient() {
   const [supported, setSupported] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [blocked, setBlocked] = useState<'reauth' | 'device' | null>(null);
+  const [stepUp, setStepUp] = useState(false);
+  const pending = useRef<(() => Promise<void>) | null>(null);
   const [removeId, setRemoveId] = useState<string | null>(null);
   const [regenOpen, setRegenOpen] = useState(false);
   const [codes, setCodes] = useState<string[] | null>(null);
@@ -61,6 +64,7 @@ export function SecuritySettingsClient() {
   };
 
   const addPasskey = async () => {
+    pending.current = addPasskey;
     setBusy('add');
     try {
       const { res, data } = await post({ action: 'register-options' });
@@ -102,6 +106,7 @@ export function SecuritySettingsClient() {
   };
 
   const regenerate = async () => {
+    pending.current = regenerate;
     setBusy('codes');
     try {
       const { res, data } = await post({ action: 'regenerate-codes' });
@@ -174,11 +179,18 @@ export function SecuritySettingsClient() {
               ? 'כדי להוסיף דרך כניסה חדשה, החיבור צריך להיות מהרבע שעה האחרונה. זה מגן על החשבון אם מישהו אחר משתמש במכשיר.'
               : 'לחשבון ניהול אפשר להוסיף דרכי כניסה רק ממכשיר שכבר אושר. המכשיר הזה עוד לא אושר.'}
           </p>
+          {blocked === 'reauth' && (state?.passkeys.length ?? 0) > 0 ? (
+            <button type="button" onClick={() => setStepUp(true)} data-testid="security-stepup" className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-linear-to-l from-emerald-600 to-teal-500 font-bold text-white">
+              <Smartphone className="h-4 w-4" aria-hidden />לאשר עם Face ID או עם הטלפון
+            </button>
+          ) : null}
           {blocked === 'reauth' ? (
-            <button type="button" onClick={() => void reauth()} className="min-h-[44px] w-full rounded-xl bg-linear-to-l from-emerald-600 to-teal-500 font-bold text-white">
+            <button type="button" onClick={() => void reauth()} className={(state?.passkeys.length ?? 0) > 0 ? 'min-h-[44px] w-full rounded-xl font-bold text-emerald-800 ring-1 ring-emerald-300/70' : 'min-h-[44px] w-full rounded-xl bg-linear-to-l from-emerald-600 to-teal-500 font-bold text-white'}>
               להתחבר מחדש
             </button>
           ) : null}
+          <StepUpDialog open={stepUp} variant="user" purpose="account.security" reason="אישור שינוי בהגדרות האבטחה" onClose={() => setStepUp(false)}
+            onVerified={() => { setStepUp(false); setBlocked(null); const next = pending.current; if (next) void next(); }} />
         </section>
       ) : null}
 

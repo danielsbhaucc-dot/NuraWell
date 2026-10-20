@@ -6,8 +6,9 @@ import { consumeRateLimit, rateLimitResponse } from '@/lib/api/rate-limit';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { authenticationOptions, backupCodesLeft, CHALLENGE_COOKIE, challengeCookieOpts, consumeChallenge, redeemBackupCode, resolveRp, verifyAuthentication } from '@/lib/auth/passkeys';
 import { readCookie } from '@/lib/auth/http';
-import { DEVICE_COOKIE, deviceLabel, trustedDeviceId } from '@/lib/ops/device-trust';
-import { cookieOpts, createRequest, GRANT_TTL_MS, issueGrant, pollRequest, REQUEST_TTL_MS, STEPUP_COOKIE, STEPUP_REQ_COOKIE, totpCheck, totpStatus, validPurpose, type StepUpMethod } from '@/lib/auth/stepup';
+import { DEVICE_COOKIE, trustedDeviceId } from '@/lib/ops/device-trust';
+import { pollCrossDevice, startCrossDevice } from '@/lib/auth/stepup-http';
+import { cookieOpts, GRANT_TTL_MS, issueGrant, STEPUP_COOKIE, totpCheck, totpStatus, validPurpose, type StepUpMethod } from '@/lib/auth/stepup';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -53,20 +54,10 @@ export async function POST(request: Request) {
     }
     case 'start': {
       const devId = await trustedDeviceId(db, uid, readCookie(request, DEVICE_COOKIE));
-      const r = await createRequest(db, { userId: uid, purpose: b.purpose, deviceId: devId, label: deviceLabel(request.headers.get('user-agent')) });
-      const origin = new URL(request.url).origin;
-      const res = NextResponse.json({ id: r.id, expires_at: r.expiresAt, url: `${origin}/ops/approve/${r.id}#t=${r.approveToken}` }, { headers: NO_STORE });
-      res.cookies.set(STEPUP_REQ_COOKIE, r.binding, cookieOpts(Math.floor(REQUEST_TTL_MS / 1000) + 30));
-      return res;
+      return startCrossDevice(request, db, { kind: 'ops', userId: uid, purpose: b.purpose, deviceId: devId, supabase: auth.supabase, approvePath: '/ops/approve' });
     }
-    case 'poll': {
-      const r = await pollRequest(db, uid, b.id, readCookie(request, STEPUP_REQ_COOKIE));
-      if (r.status !== 'approved') return NextResponse.json({ status: r.status }, { headers: NO_STORE });
-      const res = NextResponse.json({ status: 'approved', ok: true }, { headers: NO_STORE });
-      res.cookies.set(STEPUP_COOKIE, r.grant, cookieOpts(Math.floor(GRANT_TTL_MS / 1000)));
-      res.cookies.set(STEPUP_REQ_COOKIE, '', cookieOpts(0));
-      return res;
-    }
+    case 'poll':
+      return pollCrossDevice(request, db, uid, b.id, auth.supabase);
     case 'passkey_challenge': {
       const rp = resolveRp(request);
       if (!rp) return NextResponse.json({ error: 'forbidden' }, { status: 403 });

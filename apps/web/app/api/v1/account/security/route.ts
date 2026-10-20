@@ -19,6 +19,7 @@ import {
   verifyRegistration,
 } from '@/lib/auth/passkeys';
 import { json, readBody, readCookie } from '@/lib/auth/http';
+import { consumeGrant, peekGrant, STEPUP_COOKIE } from '@/lib/auth/stepup';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -32,10 +33,12 @@ async function context(req: Request) {
   const { data: prof } = await db.from('profiles').select('role').eq('id', auth.user.id).maybeSingle();
   const isAdmin = (prof as { role?: string } | null)?.role === 'admin';
   const { data: sess } = await auth.supabase.auth.getSession();
-  const fresh = isFreshSession(sess.session?.access_token);
+  // fresh sign-in, OR a single-use 'account.security' step-up grant (Face ID here / QR → own phone)
+  const grantCookie = readCookie(req, STEPUP_COOKIE);
+  const fresh = isFreshSession(sess.session?.access_token) || (await peekGrant(db, auth.user.id, 'account.security', grantCookie));
   // Admins: sensitive changes only from an approved Ops device (never bootstrap from here).
   const opsDeviceId = isAdmin ? await trustedDeviceId(db, auth.user.id, readCookie(req, DEVICE_COOKIE)) : null;
-  return { ok: true as const, auth, db, isAdmin, fresh, opsDeviceId };
+  return { ok: true as const, auth, db, isAdmin, fresh, opsDeviceId, grantCookie };
 }
 
 export async function GET(req: Request): Promise<Response> {
@@ -88,11 +91,13 @@ export async function POST(req: Request): Promise<Response> {
       label: passkeyLabel(req.headers.get('user-agent')),
       opsDeviceId: c.opsDeviceId,
     });
+    if (v.ok) await consumeGrant(c.db, uid, 'account.security', c.grantCookie); // single use
     const res = v.ok ? json({ ok: true }) : json({ error: v.error === 'expired' ? 'הזמן להוספה עבר. אפשר לנסות שוב.' : 'לא הצלחנו להוסיף את מפתח הגישה.' }, 400);
     res.cookies.set(CHALLENGE_COOKIE, '', { ...challengeCookieOpts(PATH), maxAge: 0 });
     return res;
   }
   if (action === 'regenerate-codes' && c.isAdmin) {
+    await consumeGrant(c.db, uid, 'account.security', c.grantCookie);
     const codes = await regenerateBackupCodes(c.db, uid);
     return json({ codes });
   }

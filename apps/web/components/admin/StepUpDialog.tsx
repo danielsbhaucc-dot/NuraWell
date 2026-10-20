@@ -13,13 +13,15 @@ import { cn } from '@/lib/cn';
  * Usage: <StepUpDialog open purpose="ops.sensitive" reason="יצירת גיבוי מפתחות" onClose={..} onVerified={..} />
  */
 type Methods = { totp: boolean; backup_left: number; passkeys: number };
-const API = '/api/v1/ops/stepup';
-const post = (b: unknown, url = API) => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(b) });
+export type StepUpVariant = 'ops' | 'user' | 'login';
+const APIS: Record<StepUpVariant, string> = { ops: '/api/v1/ops/stepup', user: '/api/v1/account/stepup', login: '/api/v1/auth/qr' };
 
-export function StepUpDialog({ open, purpose, reason, onClose, onVerified }: { open: boolean; purpose: string; reason: string; onClose: () => void; onVerified: () => void }) {
+export function StepUpDialog({ open, purpose, reason, onClose, onVerified, variant = 'ops', eyebrow }: { open: boolean; purpose: string; reason: string; onClose: () => void; onVerified: () => void; variant?: StepUpVariant; eyebrow?: string }) {
+  const API = APIS[variant];
+  const post = useCallback((b: unknown) => fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(b) }), [API]);
   const [m, setM] = useState<Methods | null>(null);
   const [mode, setMode] = useState<'qr' | 'totp' | 'backup'>('qr');
-  const [qr, setQr] = useState<{ id: string; svg: string; expires: number } | null>(null);
+  const [qr, setQr] = useState<{ id: string; svg: string; expires: number; match: string } | null>(null);
   const [left, setLeft] = useState(0);
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
@@ -31,26 +33,28 @@ export function StepUpDialog({ open, purpose, reason, onClose, onVerified }: { o
 
   const startQr = useCallback(async () => {
     setErr(null); setQr(null);
-    const r = await post({ op: 'start', purpose });
+    const r = await post(variant === 'login' ? { op: 'start' } : { op: 'start', purpose });
+    if (r.status === 409) { setErr('כדי לאשר מהטלפון צריך קודם להוסיף בו מפתח גישה (Face ID) בהגדרות האבטחה.'); return; }
     if (!r.ok) { setErr('לא הצלחנו ליצור קוד. נסו שוב.'); return; }
-    const d = (await r.json()) as { id: string; url: string; expires_at: string };
+    const d = (await r.json()) as { id: string; url: string; expires_at: string; match_code: string };
     const QR = await import('qrcode');
     const svg = await QR.toString(d.url, { type: 'svg', margin: 1, errorCorrectionLevel: 'M', color: { dark: '#0b2a25', light: '#00000000' } });
-    setQr({ id: d.id, svg, expires: Date.parse(d.expires_at) });
+    setQr({ id: d.id, svg, expires: Date.parse(d.expires_at), match: d.match_code });
     if (poll.current) clearInterval(poll.current);
     poll.current = setInterval(async () => {
       const p = await post({ op: 'poll', id: d.id }).then((x) => x.json()).catch(() => null) as { status?: string } | null;
       if (p?.status === 'approved') finish();
-      else if (p?.status === 'denied') { if (poll.current) clearInterval(poll.current); setErr('הבקשה נדחתה בטלפון.'); }
-    }, 2000);
-  }, [purpose, finish]);
+      else if (p?.status === 'denied') { if (poll.current) clearInterval(poll.current); setErr('הבקשה בוטלה בטלפון.'); }
+      else if (p?.status === 'expired') { if (poll.current) clearInterval(poll.current); }
+    }, 1500);
+  }, [purpose, finish, post, variant]);
 
   useEffect(() => {
     if (!open) { if (poll.current) clearInterval(poll.current); setDone(false); setCode(''); setErr(null); return; }
-    post({ op: 'methods' }).then((r) => r.json()).then(setM).catch(() => undefined);
+    if (variant !== 'login') post({ op: 'methods' }).then((r) => r.json()).then(setM).catch(() => undefined);
     void startQr();
     return () => { if (poll.current) clearInterval(poll.current); };
-  }, [open, startQr]);
+  }, [open, startQr, post, variant]);
   useEffect(() => {
     if (!qr) return;
     const t = setInterval(() => setLeft(Math.max(0, Math.round((qr.expires - Date.now()) / 1000))), 500);
@@ -86,7 +90,7 @@ export function StepUpDialog({ open, purpose, reason, onClose, onVerified }: { o
       <div className="max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-[30px] border border-amber-200/40 bg-[linear-gradient(160deg,rgba(220,240,233,0.95),rgba(233,226,205,0.93))] p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-2xl backdrop-blur-xl sm:rounded-[30px]">
         <div className="mb-3 flex items-start justify-between gap-3">
           <div>
-            <p className="text-[11px] font-bold tracking-wide text-amber-700">אימות לפני פעולה רגישה</p>
+            <p className="text-[11px] font-bold tracking-wide text-amber-700">{eyebrow ?? (variant === 'login' ? 'כניסה עם הטלפון' : 'אימות לפני פעולה רגישה')}</p>
             <h3 className="font-[Rubik] text-lg font-bold text-slate-900">{reason}</h3>
           </div>
           <button type="button" onClick={onClose} aria-label="סגירה" className="rounded-full p-1.5 text-slate-600 hover:bg-glass/50"><X size={18} /></button>
@@ -95,21 +99,29 @@ export function StepUpDialog({ open, purpose, reason, onClose, onVerified }: { o
           <div className="grid place-items-center gap-2 py-10 text-emerald-800"><CheckCircle2 size={44} /><p className="font-bold">אומת. ממשיכים…</p></div>
         ) : (
           <>
-            <div className="mb-4 flex gap-1 rounded-3xl border border-gc/50 bg-glass/30 p-1">
-              {tab('qr', 'עם הטלפון')}{tab('totp', 'אפליקציית קודים', !!m?.totp)}{tab('backup', 'קוד גיבוי', (m?.backup_left ?? 0) > 0)}
-            </div>
+            {variant === 'ops' && (m?.totp || (m?.backup_left ?? 0) > 0) ? (
+              <div className="mb-4 flex gap-1 rounded-3xl border border-gc/50 bg-glass/30 p-1">
+              {tab('qr', 'עם הטלפון')}{tab('totp', 'אפליקציית קודים', variant === 'ops' && !!m?.totp)}{tab('backup', 'קוד גיבוי', variant === 'ops' && (m?.backup_left ?? 0) > 0)}
+              </div>
+            ) : null}
             {mode === 'qr' ? (
               <div className="text-center">
-                <p className="mb-3 text-sm text-slate-700">סורקים במצלמה של הטלפון המחובר ומאשרים שם עם Face ID. המחשב ימשיך לבד.</p>
+                <p className="mb-3 text-sm text-slate-700">{variant === 'login' ? 'סורקים במצלמה של טלפון שכבר מחובר לחשבון, ומאשרים שם עם Face ID. המסך הזה ייכנס לבד.' : 'סורקים במצלמה של הטלפון שלך ומאשרים שם עם Face ID. המסך הזה ימשיך לבד.'}</p>
                 <div className="mx-auto grid h-52 w-52 place-items-center rounded-[26px] border border-amber-300/50 bg-amber-50/40 p-3 shadow-inner" data-testid="stepup-qr">
                   {qr ? <div className="h-full w-full [&_svg]:h-full [&_svg]:w-full" dangerouslySetInnerHTML={{ __html: qr.svg }} /> : <Loader2 className="animate-spin text-slate-400" />}
                 </div>
+                {qr?.match ? (
+                  <div className="mx-auto mt-3 flex w-fit items-center gap-3 rounded-2xl border border-emerald-700/25 bg-emerald-900/[0.06] px-4 py-2" data-testid="stepup-match">
+                    <span className="text-[13px] font-bold text-slate-700">בטלפון בוחרים את המספר</span>
+                    <span className="font-[Rubik] text-3xl font-bold tabular-nums tracking-wider text-emerald-900" dir="ltr">{qr.match}</span>
+                  </div>
+                ) : null}
                 <div className="mt-3 flex flex-wrap justify-center gap-2 text-[11.5px] font-bold">
                   {qr && left > 0 ? <span className="rounded-full border border-emerald-300/60 bg-emerald-500/10 px-2.5 py-1 text-emerald-800">בתוקף עוד {Math.floor(left / 60)}:{String(left % 60).padStart(2, '0')}</span>
                     : qr ? <button type="button" onClick={() => void startQr()} className="rounded-full border border-amber-300/60 bg-amber-500/10 px-2.5 py-1 text-amber-800">הקוד פג. ליצור חדש</button> : null}
-                  <span className="rounded-full border border-emerald-300/60 bg-emerald-500/10 px-2.5 py-1 text-emerald-800"><ShieldCheck size={12} className="inline" /> קשור למחשב הזה בלבד</span>
+                  <span className="rounded-full border border-emerald-300/60 bg-emerald-500/10 px-2.5 py-1 text-emerald-800"><ShieldCheck size={12} className="inline" /> קשור למסך הזה בלבד · חד-פעמי</span>
                 </div>
-                {browserSupportsWebAuthn() ? (
+                {variant !== 'login' && browserSupportsWebAuthn() ? (
                   <button type="button" onClick={() => void passkeyHere()} disabled={busy} className={cn(opsGlassBtnClass, 'mt-4 w-full justify-center gap-2')}>
                     {busy ? <Loader2 size={16} className="animate-spin" /> : <Fingerprint size={16} />}Face ID או טביעת אצבע במכשיר הזה
                   </button>
