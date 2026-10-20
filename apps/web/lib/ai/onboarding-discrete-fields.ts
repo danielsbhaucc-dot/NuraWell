@@ -69,7 +69,7 @@ export function discreteFieldPrivacyIntro(
 ): string {
   const label = DISCRETE_FIELD_LABELS[key];
   const dontWrite = imperativeDontWrite(gender);
-  const sendPrompt = key === 'full_name' ? 'רוצה לשלוח את השם?' : 'מוכן/ה לשלוח?';
+  const sendPrompt = key === 'full_name' ? 'רוצה לשלוח את השם?' : 'אפשר לשלוח?';
   return `רגע — ${label} זה פרט רגיש. ${dontWrite} את זה כאן בצ'אט הפתוח, כי זה עובר דרך מודל שפה בינלאומי. יש ערוץ מוצפן נפרד: רק השרת שלנו רואה, לא נשמר בטקסט השיחה, ולא נחשף בהיסטוריה. ${sendPrompt}`;
 }
 

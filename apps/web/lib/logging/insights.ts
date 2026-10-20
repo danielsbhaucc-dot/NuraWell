@@ -58,7 +58,7 @@ export function explain(e: LogEvent): Explained {
     const category: Category = ch === 'email' ? 'email' : ch === 'telegram' ? 'telegram' : ch === 'push' ? 'push' : 'other';
     const name = category === 'email' ? 'מייל' : category === 'telegram' ? 'הודעת טלגרם' : category === 'push' ? 'התראת פוש' : 'הודעה';
     return e.ok
-      ? { ...e, status: 'success', category, severity: 0, title: `${name} נשלח/ה`, why: `נשלח בהצלחה (${purpose || 'כללי'}).`, todo: null }
+      ? { ...e, status: 'success', category, severity: 0, title: `${name} נשלח`, why: `נשלח בהצלחה (${purpose || 'כללי'}).`, todo: null }
       : { ...e, status: 'failed', category, severity: 5, title: `${name} לא נשלח/ה`, why: `הספק החזיר שגיאה (${purpose || 'כללי'}).`, todo: 'אם זה חוזר — בדוק הגדרות ספק ומפתחות.' };
   }
   const r = RULES[e.event];

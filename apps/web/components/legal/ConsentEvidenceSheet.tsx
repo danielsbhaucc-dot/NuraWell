@@ -240,7 +240,7 @@ export function ConsentEvidenceSheet({ open, action, gender, onClose, mode = 'su
               data-testid="consent-typed"
               aria-invalid={typed.length > 2 && !wordOk}
               className={`mt-2 w-full rounded-[14px] border bg-glass px-4 py-3 text-[17px] font-semibold text-emerald-950 outline-none transition placeholder:font-normal placeholder:text-slate-400 focus:ring-4 motion-reduce:transition-none contrast-more:border-slate-800 ${typed && wordOk ? 'border-emerald-500 focus:ring-emerald-300/50' : 'border-emerald-900/15 focus:border-amber-400 focus:ring-amber-300/40'}`}
-              placeholder={t.expectedWord.replace('/', ' / ')}
+              placeholder={t.expectedWord}
             />
           </label>
         </div>
