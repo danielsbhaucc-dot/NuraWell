@@ -1,9 +1,11 @@
 import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
 
 import { VAULT_KIND_LABEL, type VaultKind } from './crypto-labels';
+import { ensureKmsKeysSync } from '@/lib/security/kms-envelope';
 export { VAULT_KINDS, VAULT_KIND_LABEL, type VaultKind } from './crypto-labels';
 
 function key(): Buffer {
+  ensureKmsKeysSync();
   const raw = process.env.SECURE_VAULT_KEY?.trim();
   if (!raw) throw new Error('SECURE_VAULT_KEY missing');
   const k = Buffer.from(raw, raw.length === 64 && /^[0-9a-f]+$/i.test(raw) ? 'hex' : 'base64');

@@ -12,6 +12,7 @@
  */
 import { createHash, createHmac, hkdfSync, randomBytes, randomInt, timingSafeEqual } from 'node:crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { ensureKmsKeysSync } from '@/lib/security/kms-envelope';
 
 export const DEVICE_COOKIE = 'nw_ops_dev';
 export const PENDING_COOKIE = 'nw_ops_pend';
@@ -29,6 +30,7 @@ const b64u = (b: Buffer) => b.toString('base64url');
 let cachedKey: Buffer | null = null;
 function cookieKey(): Buffer {
   if (cachedKey) return cachedKey;
+  ensureKmsKeysSync();
   const own = process.env.OPS_DEVICE_COOKIE_KEY?.trim();
   const base = own || process.env.PII_ENCRYPTION_KEY?.trim();
   if (!base) throw new Error('OPS_DEVICE_COOKIE_KEY / PII_ENCRYPTION_KEY missing');
