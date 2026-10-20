@@ -110,6 +110,8 @@ import {
   persistUserEmojiReaction,
 } from '../../../../../lib/ai/emoji-reaction/persist-user-reaction';
 import type { MentorEmojiReaction } from '../../../../../lib/ai/emoji-reaction/types';
+import { buildReplyQuotePromptBlock, extractReplyQuoteIndex, isReplyQuoteAllowed, stripReplyQuoteMarker } from '../../../../../lib/ai/reply-quote';
+import { resolveReplyQuoteMessageId } from '../../../../../lib/ai/reply-quote/resolve-server';
 import {
   enqueuePendingChatLog,
   formatChatTurnForPendingLog,
@@ -3171,7 +3173,7 @@ async function handleChatPost(request: Request) {
   // V2: short full window + session live file (rolling summary) carries older turns
   // UI/reaction markers are display protocol — never show them to the writer (Claude started imitating them).
   const cleanHistory = mergedMessages.map((m) =>
-    m.role === 'assistant' ? { ...m, content: stripRawChatUi(stripEmojiReactionMarker(m.content)).replace(/⟦NW_UIR?:[^⟧]*⟧/g, '') } : m
+    m.role === 'assistant' ? { ...m, content: stripReplyQuoteMarker(stripRawChatUi(stripEmojiReactionMarker(m.content)).replace(/⟦NW_UIR?:[^⟧]*⟧/g, '')) } : m
   );
   const recentMessages = almogPromptV2Enabled() ? budgetHistoryV2(cleanHistory) : cleanHistory;
 
@@ -3710,6 +3712,7 @@ async function handleChatPost(request: Request) {
       contextSections.splice(0, contextSections.length, ...b.sections);
     }
     const previousReactionBlock = buildPreviousReactionPromptBlock(dbTurns ?? [], lastUserText);
+    const replyQuoteBlock = buildReplyQuotePromptBlock(recentMessages);
     const dynamicSystemPrompt = [
       ...(healthConsentOff ? [HEALTH_CONSENT_OFF_PROMPT] : []),
       '— מה שידוע לך על השיחה הזו —',
@@ -3721,6 +3724,7 @@ async function handleChatPost(request: Request) {
       addressingFooter,
       turnStance,
       previousReactionBlock,
+      replyQuoteBlock,
       '',
       mcfg.finalGuardrails,
       buildAlmogVoiceSticky(mcfg.writer),
@@ -3819,7 +3823,9 @@ async function handleChatPost(request: Request) {
           }
         }
 
-        const assistantText = preferSanitizedWriterOutput(stripRawChatUi(stripEmojiReactionMarker(t)));
+        const assistantText = preferSanitizedWriterOutput(stripReplyQuoteMarker(stripRawChatUi(stripEmojiReactionMarker(t))));
+        const replyQuoteN = extractReplyQuoteIndex(t);
+        const replyQuoteOk = isReplyQuoteAllowed(recentMessages, replyQuoteN);
         const reactionFix = extractEmojiReactionFix(t);
         if (reactionFix) {
           after(async () => {
@@ -3932,11 +3938,16 @@ async function handleChatPost(request: Request) {
          */
         after(async () => {
           try {
+            const replyToMessageId =
+              replyQuoteOk && replyQuoteN != null
+                ? await resolveReplyQuoteMessageId(supabase, { userId: user.id, sessionId, n: replyQuoteN }).catch(() => null)
+                : null;
             await insertAiInteraction(supabase, {
               user_id: user.id,
               session_id: sessionId,
               role: 'assistant',
               content: assistantText,
+              ...(replyToMessageId ? { reply_to_message_id: replyToMessageId } : {}),
               model_name: assistantModelName,
               tokens_used: totalTokens,
               metadata: {

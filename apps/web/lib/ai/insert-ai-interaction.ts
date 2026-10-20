@@ -11,6 +11,8 @@ export type AiInteractionInsert = {
   model_name?: string;
   tokens_used?: number;
   metadata?: Record<string, unknown>;
+  /** WhatsApp-style quote: id of an earlier USER message in the same session (server-validated). */
+  reply_to_message_id?: string;
 };
 
 export { restorePiiPlaceholders } from '@/lib/crypto/pii-placeholders';

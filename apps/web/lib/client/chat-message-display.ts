@@ -12,6 +12,7 @@ import {
 } from '../ai/emoji-reaction/marker';
 import type { MentorEmojiReaction } from '../ai/emoji-reaction/types';
 import { preferSanitizedWriterOutput } from '../ai/sanitize-writer-output';
+import { extractReplyQuoteIndex, stripReplyQuoteMarker } from '../ai/reply-quote';
 
 /** חלקי הודעה מינימליים לחילוץ — תואם UIMessage.parts בלי לייבא כל ה-union. */
 export type ChatMessageTextPart = {
@@ -127,7 +128,7 @@ export function setChatDisplayFirstName(name: string | null | undefined): void {
 
 function finalizeDisplayText(raw: string): string {
   return preferSanitizedWriterOutput(
-    stripAllChatUiMarkers(stripEmojiReactionMarker(stripStreamProtocolArtifacts(raw))),
+    stripReplyQuoteMarker(stripAllChatUiMarkers(stripEmojiReactionMarker(stripStreamProtocolArtifacts(raw)))),
     { firstName: displayFirstName }
   );
 }
@@ -237,4 +238,12 @@ export function messageIsToolOnlyAssistant(message: ChatDisplayMessage): boolean
   const hasText = parts.some((p) => isTextPart(p) && typeof p.text === 'string' && p.text.trim());
   const hasTool = parts.some((p) => isToolOrNonDisplayPart(p));
   return hasTool && !hasText;
+}
+
+/** Local reply-quote index (⟦NW_RQ:n⟧) streamed at the start of an assistant reply, if any. */
+export function extractReplyQuoteIndexFromChatMessage(message: ChatDisplayMessage): number | null {
+  const parts = Array.isArray(message.parts) ? message.parts : [];
+  const fromParts = textFromParts(parts);
+  if (fromParts) return extractReplyQuoteIndex(fromParts);
+  return typeof message.content === 'string' ? extractReplyQuoteIndex(message.content) : null;
 }

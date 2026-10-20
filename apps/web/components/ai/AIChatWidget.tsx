@@ -7,6 +7,8 @@ import { detectCrisisSignals } from '@/lib/safety/crisis-detector';
 import { ConsentChatButton } from '@/components/legal/ConsentChatButton';
 import { REDACTED_CONTENT, isRedactedContent } from '@/lib/privacy/health-chat-redaction';
 import { DeletedMessageBubble } from './DeletedMessageBubble';
+import { ReplyQuoteBubble } from './ReplyQuoteBubble';
+import { resolveReplyQuote } from '../../lib/client/reply-quote-resolve';
 
 import { Fragment, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
@@ -20,6 +22,7 @@ import {
   extractDisplayTextFromChatMessage,
   extractEmojiReactionFixFromChatMessage,
   extractEmojiReactionFromChatMessage,
+  extractReplyQuoteIndexFromChatMessage,
   extractChatUiFromChatMessage,
   normalizeDisplayText,
   type ChatDisplayMessage,
@@ -561,6 +564,15 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
   const [answerReadyToast, setAnswerReadyToast] = useState(false);
   const [hasBackgroundAnswer, setHasBackgroundAnswer] = useState(false);
   const [notificationContext, setNotificationContext] = useState<OpenAlmogChatDetail | null>(null);
+  const [quoteFlashKey, setQuoteFlashKey] = useState<string | null>(null);
+  const jumpToQuoted = useCallback((key: string) => {
+    const el = typeof document !== 'undefined' ? document.getElementById(`nw-msg-${key}`) : null;
+    if (!el) return;
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
+    setQuoteFlashKey(key);
+    window.setTimeout(() => setQuoteFlashKey((k) => (k === key ? null : k)), 1600);
+  }, []);
   const [quotedReply, setQuotedReply] = useState<{ mentorMessage: string; userReply: string } | null>(
     null
   );
@@ -1787,10 +1799,19 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
                       ? emojiReactionsByUserMsgId[msg.id] ?? null
                       : metaReaction ?? null
                     : null;
+                const msgKey = msg.id ?? `${i}-${text.slice(0, 16)}`;
+                const replyQuote = isUser
+                  ? null
+                  : resolveReplyQuote(messages as Parameters<typeof resolveReplyQuote>[0], i, extractReplyQuoteIndexFromChatMessage(displayMsg));
+                const quoteTarget = replyQuote?.targetIndex != null ? messages[replyQuote.targetIndex] : null;
+                const quoteTargetText = quoteTarget ? getMessageText(quoteTarget as ChatDisplayMessage) : null;
+                const quoteDeleted = Boolean(replyQuote?.deleted || (quoteTargetText != null && isRedactedContent(quoteTargetText)));
+                const quoteTargetKey = quoteTarget ? quoteTarget.id ?? `${replyQuote!.targetIndex}-${(quoteTargetText ?? '').slice(0, 16)}` : null;
                 return (
                   <div
-                    key={msg.id ?? `${i}-${text.slice(0, 16)}`}
-                    className={`flex ${isUser ? 'justify-start nw-chat-send' : 'justify-end items-end gap-2 nw-chat-receive'}`}
+                    key={msgKey}
+                    id={`nw-msg-${msgKey}`}
+                    className={`flex rounded-[22px] transition-[background-color,box-shadow] duration-700 motion-reduce:transition-none ${quoteFlashKey === msgKey ? 'bg-amber-300/15 shadow-[0_0_0_6px_rgba(252,211,77,0.15)]' : ''} ${isUser ? 'justify-start nw-chat-send' : 'justify-end items-end gap-2 nw-chat-receive'}`}
                   >
                     {isUser && isRedactedContent(text) ? (
                       <DeletedMessageBubble text={text} time={formatHebrewTime(getMessageCreatedAt(msg))} />
@@ -1840,6 +1861,13 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
                             boxShadow: '0 8px 22px rgba(16,185,129,0.28)',
                           }}
                         >
+                          {replyQuote ? (
+                            <ReplyQuoteBubble
+                              text={quoteDeleted ? null : quoteTargetText}
+                              deleted={quoteDeleted}
+                              onJump={quoteTargetKey ? () => jumpToQuoted(quoteTargetKey) : undefined}
+                            />
+                          ) : null}
                           {renderAlmogMessage(text)}
                           <div className="mt-1.5 flex items-center text-[10px] text-emerald-50/75">
                             {(msg as { metadata?: { edited?: boolean } }).metadata?.edited ? <EditedBadge /> : null}
