@@ -11,6 +11,7 @@
  * Returns a cleaned string or a rejection reason, so callers can retry / fall back.
  */
 import { truncateAtWordBoundary } from '../text/truncate-graphemes';
+import { lintNotifyHebrew, type NotifyGender } from './notify-hebrew-lint';
 
 export type NotifyValidation =
   | { ok: true; text: string }
@@ -21,6 +22,10 @@ export type NotifyValidateOptions = {
   /** final max length (graphemes) — cut at a sentence/word boundary, never mid-word */
   maxChars?: number;
   minChars?: number;
+  /** enables the wrong-name check */
+  firstName?: string | null;
+  /** enables gendered-slang checks */
+  gender?: NotifyGender;
 };
 
 const HEBREW = /[\u0590-\u05FF]/g;
@@ -87,6 +92,8 @@ export function validateNotifyText(raw: string, opts: NotifyValidateOptions = {}
     return { ok: false, reason: 'unresolved placeholder' };
   }
 
-  text = truncateNotifyText(text, maxChars);
+  const lint = lintNotifyHebrew(text, { firstName: opts.firstName, gender: opts.gender });
+  if (lint.issues.length) return { ok: false, reason: `phrasing: ${lint.issues.join('; ')}` };
+  text = truncateNotifyText(lint.text, maxChars);
   return { ok: true, text };
 }
