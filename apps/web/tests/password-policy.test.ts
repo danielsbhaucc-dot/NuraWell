@@ -6,7 +6,7 @@ vi.mock('@/lib/monitoring/report-error', () => ({ reportEvent: vi.fn(() => Promi
 import { reportEvent } from '@/lib/monitoring/report-error';
 import { checkPasswordPolicy, isPwnedPassword, PASSWORD_ERRORS } from '@/lib/auth/password-policy';
 
-const PW = 'password123';
+const PW = 'password1234';
 const SHA = createHash('sha1').update(PW).digest('hex').toUpperCase();
 const PREFIX = SHA.slice(0, 5);
 const SUFFIX = SHA.slice(5);
@@ -51,6 +51,13 @@ describe('isPwnedPassword', () => {
 });
 
 describe('checkPasswordPolicy', () => {
+  it('rejects passwords without a digit or without a letter', async () => {
+    const f = vi.fn();
+    expect((await checkPasswordPolicy('onlylettersxx', { source: 't', fetchImpl: f as unknown as typeof fetch })).ok).toBe(false);
+    expect((await checkPasswordPolicy('1234567890', { source: 't', fetchImpl: f as unknown as typeof fetch })).ok).toBe(false);
+    expect(f).not.toHaveBeenCalled();
+  });
+
   it('rejects < 8 chars without calling the API', async () => {
     const f = mockFetch('');
     const r = await checkPasswordPolicy('short7!', { source: 't', fetchImpl: f });
