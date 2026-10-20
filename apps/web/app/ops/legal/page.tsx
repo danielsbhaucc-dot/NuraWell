@@ -12,7 +12,7 @@ export default async function OpsLegalPage({ searchParams }: { searchParams: Pro
     <div className="space-y-5 sm:space-y-6">
       <OpsPageHeader icon={Scale} eyebrow="משפטי" title="הסכמות, מקורות מדיה וראיות" tone="emerald"
         description="כל אישור וביטול של הסכמה, ומקור וזכויות של כל קובץ באתר. הכול חתום ועם חותמת זמן, ואפשר להפיק תיק ראיות מוכן לבית משפט." />
-      <LegalTabs initialTab={tab === 'media' ? 'media' : 'consent'} />
+      <LegalTabs initialTab={tab === 'media' ? 'media' : tab === 'keys' ? 'keys' : 'consent'} />
     </div>
   );
 }

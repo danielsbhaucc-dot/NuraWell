@@ -54,15 +54,22 @@ export const DEFAULT_GIDEON_SETTINGS: GideonSettings = {
   updated_at: null,
 };
 
-function key(): Buffer {
+function explicitKey(): Buffer | null {
   const explicit = process.env.GIDEON_SETTINGS_KEY?.trim();
-  if (explicit) {
-    const k = Buffer.from(explicit, 'base64');
-    if (k.length === 32) return k;
-  }
+  if (!explicit) return null;
+  const k = Buffer.from(explicit, 'base64');
+  return k.length === 32 ? k : null;
+}
+
+function legacyKey(): Buffer | null {
   const base = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
-  if (!base) throw new Error('no encryption key (GIDEON_SETTINGS_KEY / SUPABASE_SERVICE_ROLE_KEY)');
-  return Buffer.from(hkdfSync('sha256', base, 'nurawell-gideon-settings', 'v1', 32));
+  return base ? Buffer.from(hkdfSync('sha256', base, 'nurawell-gideon-settings', 'v1', 32)) : null;
+}
+
+function key(): Buffer {
+  const k = explicitKey() ?? legacyKey();
+  if (!k) throw new Error('no encryption key (GIDEON_SETTINGS_KEY / SUPABASE_SERVICE_ROLE_KEY)');
+  return k;
 }
 
 export function encryptSecret(plain: string, k: Buffer = key()): string {
@@ -72,12 +79,60 @@ export function encryptSecret(plain: string, k: Buffer = key()): string {
   return `v1:${iv.toString('base64')}:${c.getAuthTag().toString('base64')}:${enc.toString('base64')}`;
 }
 
-export function decryptSecret(blob: string, k: Buffer = key()): string {
+function decryptWith(blob: string, k: Buffer): string {
   const [v, iv, tag, data] = blob.split(':');
   if (v !== 'v1' || !iv || !tag || !data) throw new Error('bad secret blob');
   const d = createDecipheriv('aes-256-gcm', k, Buffer.from(iv, 'base64'));
   d.setAuthTag(Buffer.from(tag, 'base64'));
   return Buffer.concat([d.update(Buffer.from(data, 'base64')), d.final()]).toString('utf8');
+}
+
+/** Explicit key first, then the legacy service-role derivation (so a migration never strands secrets). */
+export function decryptSecret(blob: string, k?: Buffer): string {
+  if (k) return decryptWith(blob, k);
+  const keys = [explicitKey(), legacyKey()].filter((x): x is Buffer => !!x);
+  let last: unknown = new Error('no encryption key');
+  for (const kk of keys) {
+    try {
+      return decryptWith(blob, kk);
+    } catch (e) {
+      last = e;
+    }
+  }
+  throw last;
+}
+
+/**
+ * Re-encrypts stored Gideon secrets under the dedicated GIDEON_SETTINGS_KEY (no-op when unset or
+ * already migrated). After this, rotating the service-role key no longer affects Gideon secrets.
+ */
+export async function migrateGideonSecrets(db: SupabaseClient): Promise<{ migrated: number; skipped: boolean }> {
+  const ek = explicitKey();
+  if (!ek) return { migrated: 0, skipped: true };
+  const r = await readRow(db);
+  if (!r) return { migrated: 0, skipped: false };
+  const patch: Record<string, unknown> = {};
+  for (const col of ['telegram_bot_token_enc', 'telegram_webhook_secret_enc'] as const) {
+    const blob = r[col];
+    if (typeof blob !== 'string' || !blob) continue;
+    try {
+      decryptWith(blob, ek);
+      continue; // already on the dedicated key
+    } catch {
+      /* needs migration */
+    }
+    try {
+      patch[col] = encryptSecret(decryptSecret(blob), ek);
+    } catch {
+      /* undecryptable: leave untouched */
+    }
+  }
+  const n = Object.keys(patch).length;
+  if (n) {
+    await db.from('gideon_settings').update(patch).eq('id', 1);
+    invalidateSecretCache();
+  }
+  return { migrated: n, skipped: false };
 }
 
 export function maskSecret(plain: string | null): string | null {
