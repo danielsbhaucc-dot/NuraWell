@@ -84,23 +84,36 @@ describe('session titles are gated without consent', () => {
 import { almogRedactionReply, HEALTH_CONSENT_OFF_PROMPT } from '@/lib/privacy/health-chat-redaction';
 
 describe('Almog notice tone', () => {
-  const sentences = (r: string) => r.split(/(?<=[.!?💛])\s+/).filter(Boolean).length;
-  it('first notice is exact, warm, short, redirects to the plan', () => {
+  const bad = /\/|אסור|כללי השירות|לא יכול לגעת/;
+  it('first notice in session: exact, explicit no-consent reason + how to consent', () => {
     expect(almogRedactionReply('male')).toBe(
-      'אני שומע שזה מעסיק אותך, ואני כאן איתך 💛 כדי לשמור על הפרטיות שלך, את הפרטים האלה אני לא שומר, ולכן ההודעה נמחקה. ספר לי מה הולך טוב השבוע בתוכנית שלך, או שנבחר יחד הרגל אחד קטן למחר?'
+      'אני שומע אותך, ואני כאן איתך 💛 את ההודעה מחקתי, כי מידע בריאותי אני לא שומר ללא הסכמה מפורשת ממך. זה נועד להגן על הפרטיות שלך, ואם תרצה, אפשר לאשר בהגדרות או פשוט לבקש ממני. בינתיים, ספר לי מה הולך טוב השבוע בתוכנית שלך?'
     );
-    expect(almogRedactionReply('female')).toContain('ספרי לי');
+    const fem = almogRedactionReply('female', { variant: 0 });
+    expect(fem).toContain('ללא הסכמה מפורשת');
+    expect(fem).toContain('תרצי');
+    expect(fem).toContain('ספרי לי');
+    const neu = almogRedactionReply(null);
+    expect(neu).toContain('ללא הסכמה מפורשת');
+    expect(neu).not.toMatch(/תרצה|תרצי|ספר לי|ספרי/);
+    for (const r of [fem, neu]) expect(r).not.toMatch(bad);
   });
-  it('all variants: ≤3 sentences, privacy reason, deleted, no consent nudge, no slash/bureaucracy, all distinct', () => {
-    const all = [0, 1, 2].flatMap((v) => ['male', 'female', null].map((gd) => almogRedactionReply(gd, { variant: v })));
-    for (const r of all) {
-      expect(sentences(r)).toBeLessThanOrEqual(3);
-      expect(r).toContain('הפרטיות');
-      expect(r).toContain('נמחקה');
-      expect(r).not.toMatch(/הסכמה|הגדרות|\/|אסור|כללי השירות|לא יכול לגעת/);
+  it('subsequent notices: no consent mention, warm, short, plan/habits, distinct, gendered', () => {
+    for (const gd of ['male', 'female', null]) {
+      const subs = [1, 2, 3].map((v) => almogRedactionReply(gd, { variant: v }));
+      expect(new Set(subs).size).toBe(3);
+      for (const r of subs) {
+        expect(r).toMatch(/נמחק|מחקתי/);
+        expect(r).not.toMatch(/הסכמה|הגדרות|לאשר/);
+        expect(r).not.toMatch(bad);
+        expect(r).toMatch(/תוכנית|הרגל|משימה/);
+        expect(r.length).toBeLessThan(130);
+      }
+      expect(almogRedactionReply(gd, { variant: 4 })).toBe(subs[0]);
     }
-    expect(new Set([0, 1, 2].map((v) => almogRedactionReply('male', { variant: v }))).size).toBe(3);
     expect(almogRedactionReply('female', { variant: 1 })).toContain('בואי');
+    expect(almogRedactionReply('male', { variant: 1 })).toContain('בוא נמשיך');
+    expect(almogRedactionReply('female', { variant: 2 })).toContain('ספרי לי');
   });
   it('prompt block: no unprompted consent, answers meta-questions, redirects to plan', () => {
     expect(HEALTH_CONSENT_OFF_PROMPT).toContain('מי קבע');
