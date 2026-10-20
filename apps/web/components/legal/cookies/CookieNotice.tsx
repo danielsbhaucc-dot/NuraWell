@@ -101,12 +101,32 @@ export function CookieNotice() {
   const [banner, setBanner] = useState(false);
   const [panel, setPanel] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
+  const bannerRef = useRef<HTMLDivElement>(null);
   const lastFocus = useRef<HTMLElement | null>(null);
   const hidden = HIDDEN_PREFIXES.some((p) => pathname.startsWith(p));
 
   useEffect(() => {
     if (!hidden && !readSeen()) setBanner(true);
   }, [hidden]);
+
+  // Lift floating buttons (accessibility FAB) above the banner while it is visible.
+  useEffect(() => {
+    const root = document.documentElement;
+    const el = bannerRef.current;
+    if (!banner || panel || !el) {
+      delete root.dataset.cookieBanner;
+      return;
+    }
+    const sync = () => root.style.setProperty('--cn-banner-h', `${Math.ceil(el.getBoundingClientRect().height)}px`);
+    sync();
+    root.dataset.cookieBanner = 'on';
+    const ro = new ResizeObserver(sync);
+    ro.observe(el);
+    return () => {
+      ro.disconnect();
+      delete root.dataset.cookieBanner;
+    };
+  }, [banner, panel]);
 
   const openPanel = useCallback(() => {
     lastFocus.current = document.activeElement as HTMLElement | null;
@@ -169,7 +189,7 @@ export function CookieNotice() {
   return (
     <>
       {banner && !panel ? (
-        <div className="cn-root cn-banner" role="region" aria-label="הודעה על עוגיות" dir="rtl">
+        <div ref={bannerRef} className="cn-root cn-banner" role="region" aria-label="הודעה על עוגיות" dir="rtl">
           <div className="cn-art" role="img" aria-label="צנצנת עוגיות נעולה במנעול על אדן חלון שטוף שמש" />
           <div className="cn-bwrap">
             <h2 className="cn-h">

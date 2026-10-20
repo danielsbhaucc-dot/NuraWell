@@ -54,3 +54,5 @@
 @keyframes cn-up{from{transform:translateY(24px);opacity:0}}
 @keyframes cn-fade{from{opacity:0}}
 @media(prefers-reduced-motion:reduce){.cn-banner,.cn-pn,.cn-ov{animation:none}}
+html[data-cookie-banner=on] .a11y-widget-root{bottom:calc(var(--cn-banner-h,0px) + 24px + env(safe-area-inset-bottom,0px))!important;transition:bottom .3s}
+@media(min-width:760px){html[data-cookie-banner=on] .a11y-widget-root{bottom:calc(var(--cn-banner-h,0px) + 36px + env(safe-area-inset-bottom,0px))!important}}
