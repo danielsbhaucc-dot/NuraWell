@@ -17,10 +17,10 @@ function EventRow({ e }: { e: Explained }) {
   return (
     <li className="relative">
       <Stripe status={e.status} />
-      <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} className="flex w-full items-center gap-3 px-4 py-3.5 text-start transition hover:bg-cream/50">
+      <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} className="flex w-full items-center gap-3 px-4 py-3.5 text-start transition hover:bg-gc/50">
         <CatIcon cat={e.category} className="shrink-0 text-slate-500" />
         <span className="min-w-0 flex-1">
-          <span className="flex items-center gap-2"><Dot status={e.status} pulse={e.status === 'pending'} /><span className="truncate text-[14px] font-medium text-slate-900 dark:text-cream">{e.title}</span></span>
+          <span className="flex items-center gap-2"><Dot status={e.status} pulse={e.status === 'pending'} /><span className="truncate text-[14px] font-medium text-slate-900 dark:text-gc">{e.title}</span></span>
           <span className="mt-0.5 block truncate ps-4 text-[12.5px] text-slate-500">{e.why}</span>
         </span>
         <span className="shrink-0 text-[12px] tabular-nums text-slate-500" title={fmtIl(e.at)}>{ago(e.at)}</span>
@@ -47,16 +47,16 @@ function StoryRow({ s }: { s: Story }) {
   return (
     <li className="relative">
       <Stripe status={s.outcome} />
-      <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} className="flex w-full items-center gap-3 px-4 py-3.5 text-start hover:bg-cream/50">
+      <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} className="flex w-full items-center gap-3 px-4 py-3.5 text-start hover:bg-gc/50">
         <CatIcon cat="login" className="shrink-0 text-slate-500" />
         <span className="min-w-0 flex-1">
-          <span className="flex items-center gap-2"><Dot status={s.outcome} /><span className="truncate text-[14px] font-medium text-slate-900 dark:text-cream">{s.headline}</span></span>
+          <span className="flex items-center gap-2"><Dot status={s.outcome} /><span className="truncate text-[14px] font-medium text-slate-900 dark:text-gc">{s.headline}</span></span>
           <span className="mt-0.5 block ps-4 text-[12.5px] text-slate-500">{s.events.length} שלבים · {fmtIl(s.start)}</span>
         </span>
         <ChevronLeft size={16} className={cn('shrink-0 text-slate-300 transition', open && '-rotate-90')} />
       </button>
       {open ? (
-        <ol className="mb-3 me-4 ms-[1.6rem] border-s border-black/10 ps-5 dark:border-cream/15">
+        <ol className="mb-3 me-4 ms-[1.6rem] border-s border-black/10 ps-5 dark:border-gc/15">
           {s.events.map((e) => (
             <li key={e.id} className="relative py-1.5 text-[13px] text-slate-700 dark:text-slate-200">
               <span className={cn('absolute -start-[1.6rem] top-[0.7rem] h-1.5 w-1.5 rounded-full', STATUS[e.status].dot)} />
@@ -110,11 +110,11 @@ export function ActivityLog() {
           <Stripe status="failed" />
           <Dot status="failed" pulse />
           <div className="min-w-0 flex-1">
-            <div className="text-[14px] font-medium text-slate-900 dark:text-cream">{top.title}</div>
+            <div className="text-[14px] font-medium text-slate-900 dark:text-gc">{top.title}</div>
             <div className="mt-0.5 text-[13px] text-slate-500">{top.why} {top.todo}</div>
             {feed!.anomalies.length > 1 ? <div className="mt-1 text-[12px] text-slate-500">ועוד {feed!.anomalies.length - 1} חריגות</div> : null}
           </div>
-          <Link prefetch={false} href="/ops/ceo/security" className="shrink-0 text-[13px] font-medium text-slate-800 underline underline-offset-4 dark:text-cream">מכשירים</Link>
+          <Link prefetch={false} href="/ops/ceo/security" className="shrink-0 text-[13px] font-medium text-slate-800 underline underline-offset-4 dark:text-gc">מכשירים</Link>
         </Glass>
       ) : null}
 
@@ -139,8 +139,8 @@ export function ActivityLog() {
         {loading && !feed ? <Skeleton /> : err && !feed ? <Glass><Empty title={err} /></Glass> : (
           <Glass className="overflow-hidden">
             {view === 'stories'
-              ? (feed?.stories.length ? <ul className="divide-y divide-black/[0.05] dark:divide-cream/10">{feed.stories.map((s) => <StoryRow key={s.id} s={s} />)}</ul> : <Empty title="אין סיפורי כניסה בטווח הזה" />)
-              : (shown.length ? <ul className="divide-y divide-black/[0.05] dark:divide-cream/10">{shown.map((e) => <EventRow key={e.id} e={e} />)}</ul> : <Empty title="שקט כאן" sub="אין אירועים שמתאימים לסינון." />)}
+              ? (feed?.stories.length ? <ul className="divide-y divide-black/[0.05] dark:divide-gc/10">{feed.stories.map((s) => <StoryRow key={s.id} s={s} />)}</ul> : <Empty title="אין סיפורי כניסה בטווח הזה" />)
+              : (shown.length ? <ul className="divide-y divide-black/[0.05] dark:divide-gc/10">{shown.map((e) => <EventRow key={e.id} e={e} />)}</ul> : <Empty title="שקט כאן" sub="אין אירועים שמתאימים לסינון." />)}
           </Glass>
         )}
         {err && feed ? <p className="px-1 text-[12px] text-rose-700">{err}</p> : null}
@@ -150,7 +150,7 @@ export function ActivityLog() {
         <OptionGroup label="סטטוס" value={status} options={STATUSES} onChange={setStatus} />
         <OptionGroup label="קטגוריה" value={cat} options={CATS as [string, string][]} onChange={setCat} />
         <div className="flex gap-2 pt-1">
-          <button type="button" onClick={sheet.hide} className="flex-1 rounded-xl bg-slate-900 py-2.5 text-[14px] font-medium text-cream dark:bg-cream dark:text-slate-900">הצג {shown.length} תוצאות</button>
+          <button type="button" onClick={sheet.hide} className="flex-1 rounded-xl bg-slate-900 py-2.5 text-[14px] font-medium text-gc dark:bg-gc dark:text-slate-900">הצג {shown.length} תוצאות</button>
           <button type="button" onClick={() => { setCat('all'); setStatus('all'); }} className="rounded-xl px-4 py-2.5 text-[14px] text-slate-600">נקה</button>
         </div>
       </Sheet>

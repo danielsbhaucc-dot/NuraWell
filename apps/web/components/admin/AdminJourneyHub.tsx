@@ -309,8 +309,8 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
       />
 
       {/* חיפוש + טאבי תצוגה */}
-      <section className="overflow-hidden rounded-2xl border border-cream/50 bg-background-card/30 shadow-[0_8px_28px_rgba(15,23,42,0.06)] backdrop-blur-xl">
-        <div className="border-b border-cream/40 p-3">
+      <section className="overflow-hidden rounded-2xl border border-gc/50 bg-background-card/30 shadow-[0_8px_28px_rgba(15,23,42,0.06)] backdrop-blur-xl">
+        <div className="border-b border-gc/40 p-3">
           <div className="relative">
             <Search className="absolute inset-s-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden />
             <input
@@ -338,7 +338,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
                 'flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-xl px-2 py-2 text-xs font-bold transition-all sm:text-sm',
                 viewTab === key
                   ? 'border border-amber-300/50 bg-amber-500/15 text-amber-900 shadow-xs backdrop-blur-md'
-                  : 'border border-transparent text-slate-600 hover:border-cream/50 hover:bg-background-card/35',
+                  : 'border border-transparent text-slate-600 hover:border-gc/50 hover:bg-background-card/35',
               )}
             >
               <Icon className="h-4 w-4" aria-hidden />
@@ -364,9 +364,9 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
                   <button
                     type="button"
                     onClick={() => openStation(st.id)}
-                    className="flex w-full items-center gap-3 rounded-2xl border border-cream/50 bg-background-card/28 px-3 py-3 text-start shadow-xs backdrop-blur-xl transition hover:border-amber-300/45 hover:bg-background-card/40 active:scale-[0.995] sm:px-4"
+                    className="flex w-full items-center gap-3 rounded-2xl border border-gc/50 bg-background-card/28 px-3 py-3 text-start shadow-xs backdrop-blur-xl transition hover:border-amber-300/45 hover:bg-background-card/40 active:scale-[0.995] sm:px-4"
                   >
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-amber-300/40 bg-linear-to-br from-amber-500/70 to-orange-500/70 text-sm font-black text-cream shadow-xs backdrop-blur-sm">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-amber-300/40 bg-linear-to-br from-amber-500/70 to-orange-500/70 text-sm font-black text-gc shadow-xs backdrop-blur-sm">
                       {st.sort_order}
                     </span>
                     <span className="min-w-0 flex-1">
@@ -401,7 +401,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
           {filteredOrphans.map((s) => (
             <li
               key={s.id}
-              className="flex items-center justify-between gap-3 rounded-2xl border border-cream/50 bg-background-card/28 px-3 py-2.5 backdrop-blur-xl sm:px-4"
+              className="flex items-center justify-between gap-3 rounded-2xl border border-gc/50 bg-background-card/28 px-3 py-2.5 backdrop-blur-xl sm:px-4"
             >
               <span className="flex min-w-0 items-center gap-2">
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-emerald-300/35 bg-emerald-500/10 text-xs font-black text-emerald-800 backdrop-blur-sm">
@@ -434,25 +434,25 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
             className="absolute inset-0 bg-amber-950/30 backdrop-blur-[5px]"
           />
           <div
-            className="relative flex max-h-[94dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-[1.75rem] shadow-[0_28px_80px_-16px_rgba(180,83,9,0.4)] ring-1 ring-cream/50 sm:rounded-[1.75rem]"
+            className="relative flex max-h-[94dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-[1.75rem] shadow-[0_28px_80px_-16px_rgba(180,83,9,0.4)] ring-1 ring-gc/50 sm:rounded-[1.75rem]"
             style={glassPanelStyle}
           >
             <div className="pointer-events-none absolute -inset-e-12 -top-16 h-44 w-44 rounded-full bg-amber-400/25 blur-3xl" aria-hidden />
             <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-linear-to-r from-transparent via-background-card/90 to-transparent" />
 
-            <header className="relative shrink-0 border-b border-cream/40 bg-linear-to-bl from-amber-100/55 via-background-card/25 to-orange-100/40 px-4 pb-3 pt-4 sm:px-6">
+            <header className="relative shrink-0 border-b border-gc/40 bg-linear-to-bl from-amber-100/55 via-background-card/25 to-orange-100/40 px-4 pb-3 pt-4 sm:px-6">
               <button
                 type="button"
                 onClick={() => !busy && closeStation()}
                 disabled={!!busy}
-                className="absolute inset-e-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-cream/55 bg-background-card/30 text-slate-600 backdrop-blur-md transition hover:bg-background-card/50 disabled:opacity-50 sm:inset-e-4 sm:top-4"
+                className="absolute inset-e-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-gc/55 bg-background-card/30 text-slate-600 backdrop-blur-md transition hover:bg-background-card/50 disabled:opacity-50 sm:inset-e-4 sm:top-4"
                 aria-label="סגור"
               >
                 <X className="h-4 w-4" />
               </button>
 
               <div className="flex items-center gap-3 pe-10">
-                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-amber-300/40 bg-linear-to-br from-amber-500 to-orange-600 text-lg font-black text-cream shadow-md ring-1 ring-cream/50">
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-amber-300/40 bg-linear-to-br from-amber-500 to-orange-600 text-lg font-black text-gc shadow-md ring-1 ring-gc/50">
                   {selected.sort_order}
                 </span>
                 <div className="min-w-0">
@@ -489,7 +489,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
                     value={selected.habit_key ?? ''}
                     disabled={busy === `meta-${selected.id}`}
                     onChange={(e) => void patchStationMeta(selected.id, { habit_key: e.target.value || null })}
-                    className="rounded-xl border border-emerald-200 bg-cream px-2 py-1.5"
+                    className="rounded-xl border border-emerald-200 bg-gc px-2 py-1.5"
                   >
                     <option value="">אוטומטי (לפי שם התחנה)</option>
                     {Object.keys(HABIT_ICONS).map((k) => (
@@ -509,13 +509,13 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
                       const v = e.target.value.trim() || 'main';
                       if (v !== (selected.track ?? 'main')) void patchStationMeta(selected.id, { track: v });
                     }}
-                    className="rounded-xl border border-emerald-200 bg-cream px-2 py-1.5"
+                    className="rounded-xl border border-emerald-200 bg-gc px-2 py-1.5"
                     dir="ltr"
                   />
                 </label>
               </div>
 
-              <div className="mt-4 flex gap-1.5 rounded-2xl border border-cream/50 bg-background-card/30 p-1 backdrop-blur-md">
+              <div className="mt-4 flex gap-1.5 rounded-2xl border border-gc/50 bg-background-card/30 p-1 backdrop-blur-md">
                 {(
                   [
                     { key: 'steps' as const, label: 'צעדים', icon: Footprints },
@@ -544,14 +544,14 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
               {popupTab === 'steps' ? (
                 <ul className="space-y-2">
                   {stepsByStation(selected.id).length === 0 ? (
-                    <li className="rounded-2xl border border-dashed border-cream/55 bg-background-card/20 py-10 text-center text-sm text-slate-500 backdrop-blur-md">
+                    <li className="rounded-2xl border border-dashed border-gc/55 bg-background-card/20 py-10 text-center text-sm text-slate-500 backdrop-blur-md">
                       אין צעדים בתחנה זו
                     </li>
                   ) : (
                     stepsByStation(selected.id).map((s) => (
                       <li
                         key={s.id}
-                        className="flex items-center justify-between gap-3 rounded-xl border border-cream/45 bg-background-card/25 px-3 py-2.5 backdrop-blur-md"
+                        className="flex items-center justify-between gap-3 rounded-xl border border-gc/45 bg-background-card/25 px-3 py-2.5 backdrop-blur-md"
                       >
                         <span className="flex min-w-0 items-center gap-2">
                           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-emerald-300/35 bg-emerald-500/10 text-xs font-black text-emerald-800">
@@ -595,7 +595,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
               )}
             </div>
 
-            <footer className="shrink-0 border-t border-cream/40 bg-background-card/20 px-4 py-3 backdrop-blur-md sm:px-6">
+            <footer className="shrink-0 border-t border-gc/40 bg-background-card/20 px-4 py-3 backdrop-blur-md sm:px-6">
               <button
                 type="button"
                 onClick={() => void deleteStation(selected.id)}
@@ -626,13 +626,13 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
             className="absolute inset-0 bg-slate-900/35 backdrop-blur-[4px]"
           />
           <div
-            className="relative w-full max-w-md overflow-hidden rounded-t-3xl p-5 shadow-[0_24px_60px_-12px_rgba(15,23,42,0.35)] ring-1 ring-cream/50 sm:rounded-3xl"
+            className="relative w-full max-w-md overflow-hidden rounded-t-3xl p-5 shadow-[0_24px_60px_-12px_rgba(15,23,42,0.35)] ring-1 ring-gc/50 sm:rounded-3xl"
             style={glassPanelStyle}
           >
             <button
               type="button"
               onClick={() => !busy && setShowAddPopup(false)}
-              className="absolute inset-e-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-lg border border-cream/55 bg-background-card/30 text-slate-600 backdrop-blur-md hover:bg-background-card/50"
+              className="absolute inset-e-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gc/55 bg-background-card/30 text-slate-600 backdrop-blur-md hover:bg-background-card/50"
               aria-label="סגור"
             >
               <X className="h-4 w-4" />
@@ -684,13 +684,13 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
             className="absolute inset-0 bg-indigo-950/35 backdrop-blur-[5px]"
           />
           <div
-            className="relative w-full max-w-lg overflow-hidden rounded-t-3xl p-5 shadow-[0_24px_60px_-12px_rgba(79,70,229,0.4)] ring-1 ring-cream/50 sm:rounded-3xl"
+            className="relative w-full max-w-lg overflow-hidden rounded-t-3xl p-5 shadow-[0_24px_60px_-12px_rgba(79,70,229,0.4)] ring-1 ring-gc/50 sm:rounded-3xl"
             style={glassPanelStyle}
           >
             <button
               type="button"
               onClick={() => !aiBusy && setShowAiPopup(false)}
-              className="absolute inset-e-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-lg border border-cream/55 bg-background-card/30 text-slate-600 backdrop-blur-md hover:bg-background-card/50"
+              className="absolute inset-e-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gc/55 bg-background-card/30 text-slate-600 backdrop-blur-md hover:bg-background-card/50"
               aria-label="סגור"
             >
               <X className="h-4 w-4" />

@@ -146,7 +146,7 @@ export function AdminNotificationsBell({ opsHref }: AdminNotificationsBellProps)
         <div className="inline-flex items-center gap-1.5">
           {unreadCount > 0 ? (
             <span
-              className="min-w-[1.35rem] rounded-full bg-rose-500 px-1.5 py-0.5 text-center text-[10px] font-black leading-none text-cream shadow-xs ring-2 ring-[#FFFBF5]"
+              className="min-w-[1.35rem] rounded-full bg-rose-500 px-1.5 py-0.5 text-center text-[10px] font-black leading-none text-gc shadow-xs ring-2 ring-[#FFFBF5]"
               aria-hidden
             >
               {formatUnreadBadgeCount(unreadCount)}
@@ -155,7 +155,7 @@ export function AdminNotificationsBell({ opsHref }: AdminNotificationsBellProps)
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
-            className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-2xl border border-cream/55 bg-background-card/45 text-emerald-900 shadow-xs backdrop-blur-md transition-colors hover:bg-background-card/70"
+            className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-2xl border border-gc/55 bg-background-card/45 text-emerald-900 shadow-xs backdrop-blur-md transition-colors hover:bg-background-card/70"
             aria-label={formatUnreadBellAriaLabel(unreadCount)}
             aria-expanded={open}
           >
@@ -165,7 +165,7 @@ export function AdminNotificationsBell({ opsHref }: AdminNotificationsBellProps)
 
         {open ? (
           <div
-            className="absolute inset-s-0 top-[calc(100%+0.5rem)] z-50 w-[min(20rem,calc(100vw-1.25rem))] max-w-[calc(100vw-1.25rem)] overflow-hidden rounded-2xl border border-cream/60 bg-[#FFFBF5]/95 shadow-2xl backdrop-blur-xl sm:w-88"
+            className="absolute inset-s-0 top-[calc(100%+0.5rem)] z-50 w-[min(20rem,calc(100vw-1.25rem))] max-w-[calc(100vw-1.25rem)] overflow-hidden rounded-2xl border border-gc/60 bg-[#FFFBF5]/95 shadow-2xl backdrop-blur-xl sm:w-88"
             dir="rtl"
           >
             <div className="flex items-center justify-between border-b border-stone-200/80 bg-[#FFF5E6]/80 px-3 py-2.5">

@@ -104,7 +104,7 @@ function CostCard({
           <p className="mt-1 font-display text-2xl font-black tabular-nums text-slate-900">{value}</p>
           {sub ? <p className="mt-1 text-[11px] text-slate-600">{sub}</p> : null}
         </div>
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-cream/60 bg-background-card/55 shadow-xs">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-gc/60 bg-background-card/55 shadow-xs">
           {icon}
         </div>
       </div>
@@ -214,7 +214,7 @@ export function AdminCostsClient() {
         tone="emerald"
         description="עלות AI (צ׳אט + התראות) וצפיות וידאו (Bunny) פר-משתמש, לפי הנתונים שנרשמו ב-Supabase."
         actions={
-          <div className="flex gap-1 rounded-2xl border border-cream/60 bg-background-card/55 p-1 backdrop-blur-md">
+          <div className="flex gap-1 rounded-2xl border border-gc/60 bg-background-card/55 p-1 backdrop-blur-md">
             {WINDOWS.map((w) => (
               <button
                 key={w.days}
@@ -223,7 +223,7 @@ export function AdminCostsClient() {
                 className={[
                   'rounded-xl px-3 py-2 text-xs font-bold transition-colors',
                   days === w.days
-                    ? 'bg-linear-to-br from-emerald-500 to-teal-600 text-cream shadow-md shadow-emerald-600/25'
+                    ? 'bg-linear-to-br from-emerald-500 to-teal-600 text-gc shadow-md shadow-emerald-600/25'
                     : 'text-slate-600 hover:bg-background-card/70',
                 ].join(' ')}
               >
@@ -277,7 +277,7 @@ export function AdminCostsClient() {
             />
           </div>
 
-          <div className="rounded-2xl border border-cream/80 bg-background-card/60 p-4 backdrop-blur-xl">
+          <div className="rounded-2xl border border-gc/80 bg-background-card/60 p-4 backdrop-blur-xl">
             <p className="mb-3 text-sm font-bold text-slate-700">פירוק סך העלות לפי מקור</p>
             <BreakdownBars b={agg.totals} />
             <p className="mt-2 text-xs text-slate-500">
@@ -288,7 +288,7 @@ export function AdminCostsClient() {
           </div>
 
           {agg.trend?.length ? (
-            <div className="rounded-2xl border border-cream/80 bg-background-card/60 p-4 backdrop-blur-xl">
+            <div className="rounded-2xl border border-gc/80 bg-background-card/60 p-4 backdrop-blur-xl">
               <p className="mb-3 text-sm font-bold text-slate-700">מגמה יומית (AI)</p>
               <div className="flex h-24 items-end gap-1" dir="ltr">
                 {agg.trend.map((d) => {
@@ -300,7 +300,7 @@ export function AdminCostsClient() {
           ) : null}
 
           {agg.byFeature?.length ? (
-            <div className="rounded-2xl border border-cream/80 bg-background-card/60 p-4 backdrop-blur-xl">
+            <div className="rounded-2xl border border-gc/80 bg-background-card/60 p-4 backdrop-blur-xl">
               <p className="mb-2 text-sm font-bold text-slate-700">AI לפי פיצ׳ר ומודל (נמדד)</p>
               <table className="w-full text-xs">
                 <tbody>
@@ -318,7 +318,7 @@ export function AdminCostsClient() {
           ) : null}
 
           {agg.fixedMonthly?.length ? (
-            <div className="rounded-2xl border border-cream/80 bg-background-card/60 p-4 backdrop-blur-xl">
+            <div className="rounded-2xl border border-gc/80 bg-background-card/60 p-4 backdrop-blur-xl">
               <p className="mb-2 text-sm font-bold text-slate-700">עלויות קבועות לחודש (לא לפי משתמש)</p>
               <div className="grid grid-cols-2 gap-2 text-xs lg:grid-cols-5">
                 {agg.fixedMonthly.map((f) => (
@@ -335,7 +335,7 @@ export function AdminCostsClient() {
 
       {/* בחירת משתמש + פירוק */}
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,320px)_1fr]">
-        <section className="flex max-h-[60vh] flex-col overflow-hidden rounded-2xl border border-cream/80 bg-background-card/60 backdrop-blur-xl">
+        <section className="flex max-h-[60vh] flex-col overflow-hidden rounded-2xl border border-gc/80 bg-background-card/60 backdrop-blur-xl">
           <div className="border-b border-slate-100 p-3">
             <div className="relative">
               <Search className="absolute inset-s-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -393,7 +393,7 @@ export function AdminCostsClient() {
           )}
         </section>
 
-        <section className="min-h-[280px] rounded-2xl border border-cream/80 bg-background-card/60 p-4 backdrop-blur-xl sm:p-5">
+        <section className="min-h-[280px] rounded-2xl border border-gc/80 bg-background-card/60 p-4 backdrop-blur-xl sm:p-5">
           {!selectedId ? (
             <div className="space-y-4">
               <p className="flex items-center justify-center gap-2 py-6 text-sm text-slate-500">

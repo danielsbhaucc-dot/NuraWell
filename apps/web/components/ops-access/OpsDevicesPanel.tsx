@@ -43,14 +43,14 @@ export function OpsDevicesPanel() {
       {codes && (
         <div className="rounded-3xl border border-[#c9a227] bg-[#fbf6e6] p-4">
           <p className="mb-2 text-sm font-semibold text-[#0f3d2e]">הקודים מוצגים פעם אחת בלבד. שמור אותם במקום בטוח (מנהל סיסמאות / דף מודפס).</p>
-          <ol dir="ltr" className="grid grid-cols-2 gap-2 font-mono text-base">{codes.map((c) => <li key={c} className="rounded-xl bg-cream px-3 py-2 text-center shadow-sm">{c}</li>)}</ol>
+          <ol dir="ltr" className="grid grid-cols-2 gap-2 font-mono text-base">{codes.map((c) => <li key={c} className="rounded-xl bg-gc px-3 py-2 text-center shadow-sm">{c}</li>)}</ol>
           <div className="mt-3 flex gap-2">
-            <button type="button" onClick={() => navigator.clipboard?.writeText(codes.join('\n'))} className="rounded-2xl border border-slate-200 bg-cream px-4 py-2 text-sm">העתק</button>
+            <button type="button" onClick={() => navigator.clipboard?.writeText(codes.join('\n'))} className="rounded-2xl border border-slate-200 bg-gc px-4 py-2 text-sm">העתק</button>
             <button type="button" onClick={() => setCodes(null)} className="rounded-2xl bg-[#0f3d2e] px-4 py-2 text-sm font-semibold text-[#f6f1e7]">שמרתי</button>
           </div>
         </div>
       )}
-      <div className="overflow-hidden rounded-3xl border border-black/5 bg-cream shadow-[0_4px_20px_rgba(15,61,46,0.06)]">
+      <div className="overflow-hidden rounded-3xl border border-black/5 bg-gc shadow-[0_4px_20px_rgba(15,61,46,0.06)]">
         <div className="flex items-center justify-between px-4 py-3">
           <h2 className="font-bold text-[#0f3d2e]">מכשירים מאושרים</h2>
           <span className="text-xs text-slate-500">קודי שחזור זמינים: {unused}</span>
@@ -91,7 +91,7 @@ export function OpsPendingLoginAlert() {
     setReqs((x) => x.slice(1));
   };
   return (
-    <div dir="rtl" role="alertdialog" className="fixed inset-x-3 bottom-4 z-[60] mx-auto max-w-md rounded-3xl border border-black/5 bg-cream p-4 shadow-[0_12px_40px_rgba(15,61,46,0.18)]">
+    <div dir="rtl" role="alertdialog" className="fixed inset-x-3 bottom-4 z-[60] mx-auto max-w-md rounded-3xl border border-black/5 bg-gc p-4 shadow-[0_12px_40px_rgba(15,61,46,0.18)]">
       <p className="font-bold text-[#0f3d2e]">🔐 ניסיון כניסה ממכשיר חדש</p>
       <p className="mt-1 text-sm text-slate-600">{r.label} · {r.location} · {fmt(r.created_at)}</p>
       <div className="mt-3 flex gap-2">

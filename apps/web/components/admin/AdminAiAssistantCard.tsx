@@ -71,13 +71,13 @@ export function AdminAiAssistantCard({ opsHref }: AdminAiAssistantCardProps) {
   return (
     <section
       dir="rtl"
-      className="relative overflow-hidden rounded-3xl border border-cream/55 bg-background-card/35 px-4 py-3.5 shadow-[0_14px_40px_rgba(99,102,241,0.10)] backdrop-blur-2xl"
+      className="relative overflow-hidden rounded-3xl border border-gc/55 bg-background-card/35 px-4 py-3.5 shadow-[0_14px_40px_rgba(99,102,241,0.10)] backdrop-blur-2xl"
     >
       <div className="pointer-events-none absolute -inset-e-10 -top-12 h-32 w-32 rounded-full bg-violet-400/20 blur-3xl" />
       <div className="pointer-events-none absolute -inset-s-8 -bottom-12 h-32 w-32 rounded-full bg-emerald-400/20 blur-3xl" />
       <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-start gap-3 text-start">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-violet-600 to-emerald-500 text-cream shadow-lg">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-violet-600 to-emerald-500 text-gc shadow-lg">
             <Icon className="h-5 w-5" />
           </span>
           <div className="min-w-0">

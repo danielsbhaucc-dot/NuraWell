@@ -73,7 +73,7 @@ export function OpsHomeDashboard({ publishedCount, totalSteps }: OpsHomeDashboar
       />
 
       {/* סטטיסטיקות — כרטיס מקובץ אחד עם קווים דקים, כמו בהגדרות של iPhone */}
-      <div className="grid grid-cols-2 overflow-hidden rounded-[1.25rem] bg-cream shadow-[0_1px_2px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.04)] lg:grid-cols-4 [&>*]:border-black/6 [&>*:nth-child(odd)]:border-e [&>*:nth-child(-n+2)]:border-b lg:[&>*]:border-b-0 lg:[&>*:not(:last-child)]:border-e">
+      <div className="grid grid-cols-2 overflow-hidden rounded-[1.25rem] bg-gc shadow-[0_1px_2px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.04)] lg:grid-cols-4 [&>*]:border-black/6 [&>*:nth-child(odd)]:border-e [&>*:nth-child(-n+2)]:border-b lg:[&>*]:border-b-0 lg:[&>*:not(:last-child)]:border-e">
         <Stat label="צעדים שפורסמו" value={String(publishedCount)} sub={`מתוך ${totalSteps}`} />
         <Stat label="טיוטות" value={String(Math.max(0, totalSteps - publishedCount))} sub="עוד לא פורסמו" />
         <Stat label="עלות ממוצעת" value={avgCost ? usd(avgCost.active) : '—'} sub="למשתמש פעיל · 30 יום" />
