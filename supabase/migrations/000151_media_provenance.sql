@@ -40,7 +40,7 @@ create index if not exists media_prov_status_idx on public.media_provenance_asse
 create table if not exists public.media_evidence (
   id uuid primary key default gen_random_uuid(),
   asset_key text not null,
-  event text not null check (event in ('scan','provenance','license_snapshot','attachment','ai_describe')),
+  event text not null check (event in ('scan','provenance','license_snapshot','attachment','ai_describe','receipt','receipt_update')),
   payload_json text not null,
   prev_hash text not null,
   record_hash text not null unique,
@@ -93,3 +93,39 @@ revoke all on public.media_provenance_assets from public, anon, authenticated;
 grant select, insert on public.media_evidence, public.media_evidence_attestations, public.media_evidence_blobs to service_role;
 grant select, insert, update on public.media_provenance_assets to service_role;
 grant usage on sequence public.media_evidence_attestations_id_seq to service_role;
+
+-- Subscription receipts (inbound receipts@ mail or manual upload). Index is mutable (period edits are
+-- also appended as signed 'receipt_update' evidence under asset_key 'receipt:<id>'); originals are blobs.
+create table if not exists public.media_receipts (
+  id uuid primary key default gen_random_uuid(),
+  source text not null check (source in ('email','upload','gmail_confirmation')),
+  vendor text not null default 'unknown',
+  plan text,
+  amount numeric,
+  currency text,
+  receipt_date date,
+  period_start date,
+  period_end date,
+  subject text,
+  original_from text,
+  forwarder_ok boolean not null default false,
+  dkim jsonb not null default '{}'::jsonb,
+  spf text,
+  trust text not null default 'review' check (trust in ('verified','review','rejected')),
+  eml_sha text,
+  attachments jsonb not null default '[]'::jsonb,
+  confirmation_code text,
+  record_hash text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists media_receipts_vendor_idx on public.media_receipts (vendor, period_start);
+alter table public.media_receipts enable row level security;
+revoke all on public.media_receipts from public, anon, authenticated;
+grant select, insert, update on public.media_receipts to service_role;
+
+-- Tiny sync marker (which repo manifest hash was ingested) — lets the app ingest once per deploy, no cron.
+create table if not exists public.media_scan_state (key text primary key, value text not null, updated_at timestamptz not null default now());
+alter table public.media_scan_state enable row level security;
+revoke all on public.media_scan_state from public, anon, authenticated;
+grant select, insert, update on public.media_scan_state to service_role;

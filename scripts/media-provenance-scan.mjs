@@ -3,8 +3,10 @@
  * Media provenance scanner (CI, full git history). Inventories every media asset in the repo:
  * apps/web/public/**, inline <svg> in components/app, bundled fonts, Google fonts (next/font),
  * icon libraries. For each: SHA-256, first/last commit, usage sites, file bytes (≤3 MB) → POSTs
- * the manifest to /api/v1/legal/media/ingest (CRON_SECRET), which signs + timestamps changes.
- *   node scripts/media-provenance-scan.mjs --dry   # writes media-manifest.json only
+ * apps/web/lib/legal/media/repo-manifest.json. The app ingests it once per deploy (first Ops view,
+ * no cron); a vitest guard (--check) fails CI when media changed without regenerating.
+ *   node scripts/media-provenance-scan.mjs          # regenerate
+ *   node scripts/media-provenance-scan.mjs --check  # CI guard
  */
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -13,7 +15,6 @@ import path from 'node:path';
 
 const ROOT = process.cwd();
 const WEB = 'apps/web';
-const DRY = process.argv.includes('--dry');
 const MAX_INLINE = 3_000_000;
 const MIME = { svg: 'image/svg+xml', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp', avif: 'image/avif', gif: 'image/gif', ico: 'image/x-icon', mp3: 'audio/mpeg', m4a: 'audio/mp4', wav: 'audio/wav', ogg: 'audio/ogg', mp4: 'video/mp4', webm: 'video/webm', ttf: 'font/ttf', otf: 'font/otf', woff: 'font/woff', woff2: 'font/woff2' };
 const sha = (b) => createHash('sha256').update(b).digest('hex');
@@ -33,7 +34,7 @@ function commits(rel) {
   const rows = log.split('\n').filter(Boolean).map((l) => { const [s, date, author, subject] = l.split('\x1f'); return { sha: s, date, author, subject: (subject ?? '').slice(0, 300) }; });
   return { first: rows.at(-1) ?? null, last: rows[0] ?? null, count: rows.length };
 }
-const sources = walk(path.join(ROOT, WEB)).filter((p) => /\.(tsx?|css|json|webmanifest|html)$/.test(p) && !/\/(tests|\.next|node_modules)\//.test(p)).map((p) => [path.relative(ROOT, p), readFileSync(p, 'utf8')]);
+const sources = walk(path.join(ROOT, WEB)).filter((p) => /\.(tsx?|css|json|webmanifest|html)$/.test(p) && !/\/(tests|\.next|node_modules)\//.test(p) && !p.endsWith('repo-manifest.json')).map((p) => [path.relative(ROOT, p), readFileSync(p, 'utf8')]);
 function routeOf(rel) {
   const m = /^apps\/web\/app\/(.*)\/(page|layout)\.tsx$/.exec(rel);
   if (!m) return rel.replace(/^apps\/web\//, '');
@@ -95,31 +96,15 @@ for (const [name, lic] of Object.entries(LIBS)) {
 }
 
 const counts = entries.reduce((m, e) => ((m[`${e.origin}/${e.kind}`] = (m[`${e.origin}/${e.kind}`] ?? 0) + 1), m), {});
-console.log(`media entries: ${entries.length}`, counts);
-writeFileSync('media-manifest.json', JSON.stringify(entries.map(({ content_b64, ...r }) => ({ ...r, has_bytes: !!content_b64 })), null, 2));
-if (DRY) process.exit(0);
-
-const base = (process.env.VERCEL_APP_URL || '').replace(/\/$/, '');
-const secret = process.env.CRON_SECRET;
-if (!base || !secret) { console.error('VERCEL_APP_URL / CRON_SECRET missing'); process.exit(1); }
-const batches = [];
-let cur = [], size = 0;
-for (const e of entries) {
-  const s = (e.content_b64?.length ?? 0) + 2000;
-  if (cur.length && (size + s > 3_000_000 || cur.length >= 25)) { batches.push(cur); cur = []; size = 0; }
-  cur.push(e); size += s;
+const OUT = path.join(ROOT, WEB, 'lib/legal/media/repo-manifest.json');
+// public/ files are re-read from the site itself and bundled fonts from disk at ingest → keep only small inline SVG bytes here
+const manifest = entries.map((e) => ({ ...e, content_b64: e.origin === 'inline' ? e.content_b64 : null })).sort((a, b) => a.asset_key.localeCompare(b.asset_key));
+if (process.argv.includes('--check')) {
+  const cur = JSON.parse(readFileSync(OUT, 'utf8'));
+  const sig = (l) => l.map((e) => `${e.asset_key}=${e.sha256}`).sort().join('\n');
+  if (sig(cur) !== sig(manifest)) { console.error('repo-manifest.json is stale: run `node scripts/media-provenance-scan.mjs`'); process.exit(1); }
+  console.log('repo media manifest up to date', counts);
+  process.exit(0);
 }
-if (cur.length) batches.push(cur);
-const total = { new: 0, changed: 0, unchanged: 0, error: 0, cost: 0, absent: 0 };
-for (const [i, b] of batches.entries()) {
-  const last = i === batches.length - 1;
-  const res = await fetch(`${base}/api/v1/legal/media/ingest`, { method: 'POST', headers: { Authorization: `Bearer ${secret}`, 'content-type': 'application/json' },
-    body: JSON.stringify({ entries: b, ...(last ? { complete: true, seen: entries.map((e) => e.asset_key) } : {}) }) });
-  const j = await res.json().catch(() => ({}));
-  if (!res.ok) { console.error(`batch ${i + 1} failed`, res.status, j); process.exit(1); }
-  for (const k of Object.keys(total)) total[k] += j[k] ?? 0;
-  if (j.errors?.length) console.warn(j.errors);
-}
-console.log('ingest', total);
-const st = await fetch(`${base}/api/v1/legal/media/scan-storage`, { method: 'POST', headers: { Authorization: `Bearer ${secret}` } });
-console.log('storage', st.status, await st.text().catch(() => ''));
+writeFileSync(OUT, JSON.stringify(manifest, null, 1) + '\n');
+console.log(`media entries: ${entries.length}`, counts, '→', path.relative(ROOT, OUT));

@@ -4,6 +4,7 @@ import { requireApiAdmin } from '@/lib/api/route-guards';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { auditLegalAccess } from '@/lib/legal/evidence-verify';
 import { buildEvidencePackage } from '@/lib/legal/evidence-export';
+import { storeAndLogExport } from '@/lib/legal/export-store';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -19,12 +20,15 @@ export async function GET(request: Request, ctx: { params: Promise<{ userId: str
   await auditLegalAccess(admin, auth.user.id, 'legal_export_package', { user_id: userId });
   const pkg = await buildEvidencePackage(admin, userId, { id: auth.user.id, label: 'דניאל רחמן (מנהל המערכת)' });
   const pdfOnly = new URL(request.url).searchParams.get('format') === 'pdf';
-  const body = new Uint8Array(pdfOnly ? pkg.pdf : pkg.zip);
+  const out = pdfOnly ? pkg.pdf : pkg.zip;
+  const logged = await storeAndLogExport(admin, { actorId: auth.user.id, kind: 'consent', subject: userId, caseRef: pkg.caseRef, format: pdfOnly ? 'pdf' : 'zip', bytes: out, recordHashes: pkg.recordHashes, generatedAt: pkg.generatedAt });
+  const body = new Uint8Array(out);
   return new NextResponse(body, {
     headers: {
       'Content-Type': pdfOnly ? 'application/pdf' : 'application/zip',
       'Content-Disposition': `attachment; filename="${pkg.caseRef}.${pdfOnly ? 'pdf' : 'zip'}"`,
       'Cache-Control': 'no-store',
+      'X-Export-SHA256': logged.sha,
       'X-Content-Type-Options': 'nosniff',
     },
   });

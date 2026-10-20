@@ -196,7 +196,7 @@ export function hammingHex(a: string, b: string): number {
 export type MediaEvidencePayload = {
   v: 1;
   asset_key: string;
-  event: 'scan' | 'provenance' | 'license_snapshot' | 'attachment' | 'ai_describe';
+  event: 'scan' | 'provenance' | 'license_snapshot' | 'attachment' | 'ai_describe' | 'receipt' | 'receipt_update';
   data: Record<string, unknown>;
   created_at: string;
   prev_hash: string;

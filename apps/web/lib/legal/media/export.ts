@@ -101,5 +101,5 @@ export async function buildMediaEvidencePackage(admin: SupabaseClient, key: stri
   files['VERIFY.txt'] = strToU8(VERIFY_GUIDE);
   files['evidence.json'] = strToU8(JSON.stringify({ case_ref: caseRef, generated_at: generatedAt, asset: { ...a, metadata: undefined }, integrity_ok: v.ok, file_ok: v.file_ok, checks: v.checks, attestations: v.attestations, chain_anchors: anchors ?? [] }, null, 2));
   files['SHA256SUMS.txt'] = strToU8(Object.keys(files).sort().map((k) => `${sha256Hex(files[k]!)}  ${k}`).join('\n') + '\n');
-  return { zip: Buffer.from(zipSync(files, { level: 6 })), pdf, caseRef, ok: v.ok };
+  return { zip: Buffer.from(zipSync(files, { level: 6 })), pdf, caseRef, ok: v.ok, generatedAt, recordHashes: v.records.map((r) => r.record_hash) };
 }

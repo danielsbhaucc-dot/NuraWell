@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { CheckCircle2, ChevronDown, Download, FileText, Film, Image as ImageIcon, Loader2, Music, Paperclip, RefreshCw, Search, ShieldAlert, ShieldCheck, Type as FontIcon, Shapes, X } from 'lucide-react';
 import { OpsDivider, opsGlassBtnClass, opsGlassBtnPrimaryClass, opsGlassCardClass, opsInputClass } from '@/components/admin/OpsPanel';
 import { cn } from '@/lib/cn';
+import { ReceiptsSection } from './MediaReceiptsSection';
 import { FIELD_LABEL_HE, GENERATORS, SOURCE_LABEL_HE, SOURCE_TYPES, type Provenance, type SourceType } from '@/lib/legal/media/labels';
 
 type Commit = { sha: string; author: string; date: string; subject: string } | null;
@@ -13,6 +14,7 @@ type Item = {
   first_commit: Commit; last_commit: Commit; ai_description: string | null; ai_tags: string[]; records: number; present: boolean; public_url: string | null; has_file: boolean; updated_at: string;
   metadata: { c2pa: boolean; c2pa_claim_generator: string | null; software: string | null; ai_likely_source: string | null; digital_source_type: string | null; id3: Record<string, string> | null };
   search: string;
+  coverage?: { vendor: string; plan: string | null; period_start: string | null; period_end: string | null; trust: string } | null;
 };
 type Rec = { id: string; event: string; created_at: string; record_hash: string; tsa: boolean; ots: boolean; summary: Record<string, unknown> };
 type Verify = { ok: boolean; chain_ok: boolean; file_ok: boolean | null; checks: Array<{ id: string; problems: string[]; tsa_ok: boolean }>; checked_at: string };
@@ -60,6 +62,7 @@ async function download(url: string, fallback: string) {
   const name = /filename="([^"]+)"/.exec(r.headers.get('content-disposition') ?? '')?.[1] ?? fallback;
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  return { name, sha: r.headers.get('x-export-sha256') };
 }
 
 function ProvenanceForm({ item, onSaved }: { item: Item; onSaved: () => void }) {
@@ -157,6 +160,8 @@ function ItemCard({ item, open, onToggle, onChanged }: { item: Item; open: boole
   const [busy, setBusy] = useState<'zip' | 'pdf' | 'verify' | null>(null);
   const [verify, setVerify] = useState<Verify | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [stage, setStage] = useState<string | null>(null);
+  const [made, setMade] = useState<{ name: string; sha: string | null } | null>(null);
   const K = KIND[item.kind] ?? KIND.file!;
   const src = thumbSrc(item);
   const loadRecs = useCallback(() => {
@@ -168,7 +173,12 @@ function ItemCard({ item, open, onToggle, onChanged }: { item: Item; open: boole
     setBusy(kind); setErr(null);
     try {
       if (kind === 'verify') { const r = await fetch(`/api/v1/ops/legal/media/item/verify?key=${q}`, { method: 'POST' }); setVerify(await r.json()); }
-      else await download(`/api/v1/ops/legal/media/item/export?key=${q}${kind === 'pdf' ? '&format=pdf' : ''}`, `media-evidence.${kind}`);
+      else {
+        const steps = ['אוסף את הקובץ והרשומות...', 'מאמת חתימות וחותמות זמן...', 'מעצב את המסמך המשפטי...'];
+        let n = 0; setStage(steps[0]!);
+        const t = setInterval(() => { n = Math.min(n + 1, steps.length - 1); setStage(steps[n]!); }, 1400);
+        try { setMade(await download(`/api/v1/ops/legal/media/item/export?key=${q}${kind === 'pdf' ? '&format=pdf' : ''}`, `media-evidence.${kind}`)); } finally { clearInterval(t); setStage(null); }
+      }
     } catch { setErr(kind === 'verify' ? 'הבדיקה נכשלה' : 'הפקת התיק נכשלה'); } finally { setBusy(null); }
   };
   const changed = () => { setRecs(null); onChanged(); };
@@ -186,6 +196,9 @@ function ItemCard({ item, open, onToggle, onChanged }: { item: Item; open: boole
             <Chip className={STATUS[item.status].cls}>{STATUS[item.status].label}</Chip>
             <Chip className="border-gc/60 text-slate-700">{SOURCE_LABEL_HE[item.source_type]}</Chip>
             <Chip className="border-gc/60 text-slate-600">{K.label}</Chip>
+            {['ai_image', 'ai_music', 'ai_voice'].includes(item.source_type) ? (item.coverage
+              ? <Chip className="border-teal-300/70 bg-teal-500/10 text-teal-800">✓ נוצר במנוי בתשלום{item.coverage.plan ? ` · ${item.coverage.plan}` : ''}</Chip>
+              : <Chip className="border-orange-300/70 text-orange-800">אין קבלה לתקופה</Chip>) : null}
             {item.metadata.c2pa ? <Chip className="border-teal-300/70 text-teal-800">C2PA</Chip> : null}
             {!item.present ? <Chip className="border-gc/60 text-slate-500">הוסר מהאתר</Chip> : null}
           </span>
@@ -202,6 +215,14 @@ function ItemCard({ item, open, onToggle, onChanged }: { item: Item; open: boole
             <button type="button" onClick={() => run('pdf')} disabled={!!busy} className={opsGlassBtnClass}>{busy === 'pdf' ? <Loader2 size={14} className="animate-spin" /> : <FileText size={14} />}PDF בלבד</button>
             <button type="button" onClick={() => run('verify')} disabled={!!busy} className={opsGlassBtnClass}>{busy === 'verify' ? <Loader2 size={14} className="animate-spin" /> : <ShieldCheck size={14} />}בדיקת שלמות</button>
           </div>
+          {stage ? <p role="status" className="flex items-center gap-2 rounded-xl border border-amber-200/70 bg-amber-50/70 px-3 py-2 text-xs font-bold text-amber-900"><Loader2 size={14} className="animate-spin" />{stage}</p> : null}
+          {made ? (
+            <div role="status" className="rounded-2xl border border-teal-200/70 bg-teal-50/70 px-3 py-2.5 text-xs text-teal-900">
+              <p className="flex items-center gap-1.5 font-bold"><CheckCircle2 size={14} />התיק הופק והורד: {made.name}</p>
+              {made.sha ? <p className="mt-1 break-all font-mono text-[10px] text-teal-800/80" dir="ltr">SHA-256 {made.sha}</p> : null}
+              <p className="mt-1 text-[11px] text-teal-800/80">ההפקה נרשמה ביומן הגישה. עותק נשמר 7 ימים ואז נמחק, והראיות המקוריות נשמרות לצמיתות, כך שאפשר להפיק שוב בכל רגע.</p>
+            </div>
+          ) : null}
           {err ? <p role="alert" className="rounded-xl bg-rose-50 px-3 py-2 text-xs font-bold text-rose-700">{err}</p> : null}
           {verify ? (
             <p className={cn('flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-bold', verify.ok ? 'border-teal-300/70 bg-teal-50/80 text-teal-800' : 'border-rose-300/70 bg-rose-50 text-rose-800')}>
@@ -328,6 +349,7 @@ export function AdminMediaEvidencePanel() {
         </div>
       </div>
 
+      <ReceiptsSection onChanged={load} />
       {err ? <p role="alert" className="rounded-xl bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700">{err}</p> : null}
       {!items ? <div className={cn(opsGlassCardClass, 'grid place-items-center p-10')}><Loader2 className="animate-spin text-slate-400" /></div> : (
         <>

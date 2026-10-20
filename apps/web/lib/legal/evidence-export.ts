@@ -172,5 +172,5 @@ export async function buildEvidencePackage(admin: SupabaseClient, userId: string
       .map((k) => `${sha256Hex(files[k]!)}  ${k}`)
       .join('\n') + '\n'
   );
-  return { zip: Buffer.from(zipSync(files, { level: 6 })), caseRef, pdf, ok: v.ok };
+  return { zip: Buffer.from(zipSync(files, { level: 6 })), caseRef, pdf, ok: v.ok, generatedAt, recordHashes: (v.records as EvidenceRow[]).map((r) => r.record_hash) };
 }
