@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { consumeRateLimit, rateLimitResponse } from '@/lib/api/rate-limit';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { redeemBackupCode, resolveRp } from '@/lib/auth/passkeys';
+import { isAdminUser, redeemBackupCode, resolveRp } from '@/lib/auth/passkeys';
 import { issueSessionForUser } from '@/lib/auth/issue-session';
 import { clientIp, json, readBody, sleepUntil } from '@/lib/auth/http';
 
@@ -30,7 +30,9 @@ export async function POST(req: Request): Promise<Response> {
   if (typeof uid !== 'string') {
     result = json({ error: FAIL }, 401);
   } else {
-    const r = await redeemBackupCode(db, uid, code);
+    // Backup codes are an admin-only factor. Non-admins get the exact same generic failure (no role leak).
+    const admin = await isAdminUser(db, uid);
+    const r = admin ? await redeemBackupCode(db, uid, code) : ({ ok: false as const, locked: false });
     if (!r.ok) {
       result = json({ error: r.locked ? 'יותר מדי ניסיונות. אפשר לנסות שוב בעוד 30 דקות.' : FAIL }, r.locked ? 429 : 401);
     } else {

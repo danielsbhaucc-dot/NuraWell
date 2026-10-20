@@ -43,7 +43,8 @@ export async function GET(req: Request): Promise<Response> {
   if (!c.ok) return c.fail;
   return json({
     passkeys: await listPasskeys(c.db, c.auth.user.id),
-    backup_codes_left: await backupCodesLeft(c.db, c.auth.user.id),
+    backup_codes_left: c.isAdmin ? await backupCodesLeft(c.db, c.auth.user.id) : 0,
+    backup_codes_enabled: c.isAdmin,
     fresh: c.fresh,
     device_ok: !c.isAdmin || Boolean(c.opsDeviceId),
   });
@@ -92,6 +93,7 @@ export async function POST(req: Request): Promise<Response> {
     return res;
   }
   if (action === 'regenerate-codes') {
+    if (!c.isAdmin) return json({ error: 'bad_request' }, 400);
     const codes = await regenerateBackupCodes(c.db, uid);
     return json({ codes });
   }

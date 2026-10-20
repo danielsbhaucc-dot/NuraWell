@@ -358,3 +358,9 @@ export async function audit(db: SupabaseClient, userId: string, event: string, d
     .insert({ actor_id: userId, method: 'SECURITY', path: event, detail })
     .then(() => undefined, () => undefined);
 }
+
+/** Backup codes are admin-only. Server-side source of truth. */
+export async function isAdminUser(db: SupabaseClient, userId: string): Promise<boolean> {
+  const { data } = await db.from('profiles').select('role').eq('id', userId).maybeSingle();
+  return (data as { role?: string } | null)?.role === 'admin';
+}
