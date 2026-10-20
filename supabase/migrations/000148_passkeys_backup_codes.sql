@@ -20,19 +20,7 @@ create table if not exists public.webauthn_credentials (
 );
 create index if not exists webauthn_credentials_user_idx on public.webauthn_credentials (user_id) where revoked_at is null;
 
-create table if not exists public.webauthn_challenges (
-  id uuid primary key default gen_random_uuid(),
-  binding_hash text not null unique,           -- sha256 of the httpOnly cookie secret
-  user_id uuid null references auth.users(id) on delete cascade,
-  purpose text not null check (purpose in ('register', 'login')),
-  challenge text not null,
-  rp_id text not null,
-  origin text not null,
-  expires_at timestamptz not null,
-  consumed_at timestamptz null,
-  created_at timestamptz not null default now()
-);
-create index if not exists webauthn_challenges_expires_idx on public.webauthn_challenges (expires_at);
+-- (challenges live in public.passkey_challenges, see 000149; public.webauthn_challenges belongs to Gideon step-up)
 
 create table if not exists public.user_backup_codes (
   id uuid primary key default gen_random_uuid(),
@@ -51,10 +39,9 @@ create table if not exists public.user_auth_factor_state (
 );
 
 alter table public.webauthn_credentials enable row level security;
-alter table public.webauthn_challenges enable row level security;
 alter table public.user_backup_codes enable row level security;
 alter table public.user_auth_factor_state enable row level security;
-revoke all on public.webauthn_credentials, public.webauthn_challenges, public.user_backup_codes, public.user_auth_factor_state from anon, authenticated;
+revoke all on public.webauthn_credentials, public.user_backup_codes, public.user_auth_factor_state from anon, authenticated;
 
 -- Replace all backup codes (plaintext never stored).
 create or replace function public.user_set_backup_codes(p_user uuid, p_codes text[])
@@ -88,11 +75,6 @@ revoke all on function public.user_use_backup_code(uuid, text) from public, anon
 grant execute on function public.user_set_backup_codes(uuid, text[]) to service_role;
 grant execute on function public.user_use_backup_code(uuid, text) to service_role;
 
-do $$ begin
-  if exists (select 1 from pg_extension where extname = 'pg_cron') then
-    perform cron.schedule('webauthn-challenge-cleanup', '23 * * * *', $c$delete from public.webauthn_challenges where expires_at < now() - interval '1 hour'$c$);
-  end if;
-end $$;
 
 -- Backup-code sign-in needs the account id for an email (service role only, never exposed).
 create or replace function public.auth_user_id_by_email(p_email text)

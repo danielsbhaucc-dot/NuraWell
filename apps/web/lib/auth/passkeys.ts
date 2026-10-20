@@ -15,7 +15,7 @@ import { normalizeToOrigin, PUBLIC_APP_URL_DEFAULT } from '@/lib/public-app-url'
  * Passkeys (Face ID / Touch ID / Windows Hello) + one-time backup codes.
  *
  * Security design:
- * - Challenges live ONLY server-side (webauthn_challenges, 3 min, single use). The browser holds an
+ * - Challenges live ONLY server-side (passkey_challenges, 3 min, single use). The browser holds an
  *   httpOnly cookie with a random secret; the DB keeps sha256(secret). Consumption is atomic.
  * - Origin + RP ID come from a fixed allowlist (never trusted from the request blindly) and are bound
  *   to the challenge at creation.
@@ -73,7 +73,7 @@ export async function storeChallenge(
   p: { userId: string | null; purpose: 'register' | 'login'; challenge: string; rpID: string; origin: string },
 ): Promise<string> {
   const secret = b64u(randomBytes(32));
-  const { error } = await db.from('webauthn_challenges').insert({
+  const { error } = await db.from('passkey_challenges').insert({
     binding_hash: sha(secret),
     user_id: p.userId,
     purpose: p.purpose,
@@ -83,6 +83,10 @@ export async function storeChallenge(
     expires_at: new Date(Date.now() + CHALLENGE_TTL_MS).toISOString(),
   });
   if (error) throw new Error(`challenge: ${error.message}`);
+  // opportunistic cleanup (no pg_cron on this project)
+  if (Math.random() < 0.05) {
+    await db.from('passkey_challenges').delete().lt('expires_at', new Date(Date.now() - 3600_000).toISOString()).then(() => undefined, () => undefined);
+  }
   return secret;
 }
 
@@ -91,7 +95,7 @@ export async function consumeChallenge(db: SupabaseClient, cookie: string | null
   if (!cookie || cookie.length < 20 || cookie.length > 100) return null;
   const now = new Date().toISOString();
   const { data } = await db
-    .from('webauthn_challenges')
+    .from('passkey_challenges')
     .update({ consumed_at: now })
     .eq('binding_hash', sha(cookie))
     .eq('purpose', purpose)
