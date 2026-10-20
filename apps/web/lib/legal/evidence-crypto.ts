@@ -3,6 +3,7 @@
  * Key: CONSENT_SIGNING_PRIVATE_KEY = base64 PKCS#8 DER Ed25519 (server-only env, never logged).
  */
 import { createHash, createPrivateKey, createPublicKey, sign, verify, type KeyObject } from 'node:crypto';
+import { RETIRED_SIGNING_KEYS } from './signing-keys-retired';
 
 export const GENESIS = 'GENESIS';
 
@@ -80,13 +81,44 @@ export function signHash(hashHex: string): { signature: string; keyId: string } 
   return { signature: sign(null, Buffer.from(hashHex, 'utf8'), k.priv).toString('base64'), keyId: k.keyId };
 }
 
+/**
+ * Verifies with an explicit key, or (default) the current key and then every retired public key,
+ * so signatures made before a key rotation stay valid.
+ */
 export function verifySignature(hashHex: string, signatureB64: string, pubPem?: string): boolean {
+  const tryKey = (k: KeyObject | string) => {
+    try {
+      return verify(null, Buffer.from(hashHex, 'utf8'), typeof k === 'string' ? createPublicKey(k) : k, Buffer.from(signatureB64, 'base64'));
+    } catch {
+      return false;
+    }
+  };
+  if (pubPem) return tryKey(pubPem);
+  let current: KeyObject | null = null;
   try {
-    const pub = pubPem ? createPublicKey(pubPem) : signingKey().pub;
-    return verify(null, Buffer.from(hashHex, 'utf8'), pub, Buffer.from(signatureB64, 'base64'));
+    current = signingKey().pub;
   } catch {
-    return false;
+    current = null;
   }
+  if (current && tryKey(current)) return true;
+  return RETIRED_SIGNING_KEYS.some((r) => tryKey(r.pem));
+}
+
+export type PublishedSigningKey = { key_id: string; fingerprint_sha256: string; status: 'current' | 'retired'; valid_from: string | null; retired_at: string | null; pem: string };
+
+/** Current + all retired public keys, for /.well-known publication. */
+export function publishedSigningKeys(): PublishedSigningKey[] {
+  const out: PublishedSigningKey[] = [];
+  try {
+    const pem = publicKeyPem();
+    out.push({ key_id: signingKey().keyId, fingerprint_sha256: publicKeyFingerprint(pem), status: 'current', valid_from: null, retired_at: null, pem });
+  } catch {
+    /* current key unavailable: still publish retired keys */
+  }
+  for (const r of RETIRED_SIGNING_KEYS) {
+    out.push({ key_id: r.keyId, fingerprint_sha256: publicKeyFingerprint(r.pem), status: 'retired', valid_from: r.validFrom, retired_at: r.retiredAt, pem: r.pem });
+  }
+  return out;
 }
 
 export type StoredRecord = {
