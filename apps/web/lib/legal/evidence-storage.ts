@@ -59,3 +59,23 @@ export async function loadEvidenceImage(admin: SupabaseClient, userId: string, s
   }
   return null;
 }
+
+/** Generic private object in the EU legal bucket (no fallback). Used for offloaded legal blobs. */
+export async function putLegalObject(key: string, bytes: Buffer, contentType: string, sha: string): Promise<string | null> {
+  const bucket = legalBucket();
+  if (!bucket) return null;
+  const { PutObjectCommand } = await import('@aws-sdk/client-s3');
+  const c = await legalR2Client();
+  await c.send(new PutObjectCommand({ Bucket: bucket, Key: key, Body: bytes, ContentType: contentType, Metadata: { sha256: sha } }));
+  return key;
+}
+
+export async function loadLegalObject(key: string): Promise<Buffer | null> {
+  const bucket = legalBucket();
+  if (!bucket) return null;
+  const { GetObjectCommand } = await import('@aws-sdk/client-s3');
+  const c = await legalR2Client();
+  const r = await c.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
+  const arr = await r.Body?.transformToByteArray();
+  return arr ? Buffer.from(arr) : null;
+}
