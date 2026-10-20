@@ -20,7 +20,7 @@ export async function fetchChatSessionTranscript(
 
   const base = supabase
     .from('ai_interactions')
-    .select('role, content, created_at, metadata')
+    .select('id, role, content, created_at, metadata, reply_to_message_id')
     .eq('session_id', params.sessionId)
     .eq('user_id', params.userId)
     .in('role', ['user', 'assistant']);
@@ -38,6 +38,8 @@ export async function fetchChatSessionTranscript(
         role === 'user' ? reactionFromMetadata(row.metadata) : null;
       return {
         role,
+        ...(typeof row.id === 'string' ? { id: row.id } : {}),
+        ...((role === 'assistant' || role === 'user') && typeof row.reply_to_message_id === 'string' ? { reply_to_id: row.reply_to_message_id } : {}),
         content: String(row.content ?? '').trim(),
         created_at: row.created_at as string,
         ...(reaction ? { emoji_reaction: reaction } : {}),

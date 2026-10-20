@@ -41,6 +41,10 @@ export type ChatTranscriptEmojiReaction = {
 
 export type ChatTranscriptTurn = {
   role: 'user' | 'assistant' | 'system';
+  /** ai_interactions.id (for reply quoting / scroll-to) */
+  id?: string;
+  /** id of the quoted message: assistant → earlier user msg; user → Almog msg (snippet rendered client-side) */
+  reply_to_id?: string;
   content: string;
   created_at: string;
   /** תגובת אימוג'י של המנטור על הודעת משתמש (אם יש) */
