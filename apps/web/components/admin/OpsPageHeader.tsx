@@ -83,7 +83,7 @@ export function OpsPageHeader({
         <div className="flex min-w-0 items-center gap-3">
           <span
             className={cn(
-              'flex h-10 w-10 shrink-0 items-center justify-center rounded-[0.85rem] bg-linear-to-br text-cream shadow-sm',
+              'flex h-10 w-10 shrink-0 items-center justify-center rounded-[0.85rem] bg-linear-to-br text-gc shadow-sm',
               t.icon,
             )}
           >

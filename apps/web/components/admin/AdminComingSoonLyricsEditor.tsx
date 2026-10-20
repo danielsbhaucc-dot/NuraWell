@@ -272,12 +272,12 @@ export function AdminComingSoonLyricsEditor({ songUrl }: { songUrl: string }) {
   const prevTime = tapPos > 0 ? times[tapPos - 1] : undefined;
 
   return (
-    <div className="mt-5 rounded-2xl border border-emerald-300/30 bg-slate-900/95 p-4 text-cream" dir="rtl">
+    <div className="mt-5 rounded-2xl border border-emerald-300/30 bg-slate-900/95 p-4 text-gc" dir="rtl">
       <audio ref={audioRef} src={songUrl} preload="metadata" />
 
       <div className="flex items-center gap-2">
         <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-linear-to-br from-emerald-500 to-teal-600">
-          <Play className="h-4 w-4 fill-cream" />
+          <Play className="h-4 w-4 fill-gc" />
         </span>
         <div>
           <h3 className="text-sm font-black">סנכרון בתיפוף — מילה אחרי מילה</h3>
@@ -309,7 +309,7 @@ export function AdminComingSoonLyricsEditor({ songUrl }: { songUrl: string }) {
         <button
           type="button"
           onClick={restartSong}
-          className="h-10 rounded-xl border border-cream/15 bg-background-card/5 px-3 text-sm font-semibold text-cream/80 transition hover:bg-background-card/10"
+          className="h-10 rounded-xl border border-gc/15 bg-background-card/5 px-3 text-sm font-semibold text-gc/80 transition hover:bg-background-card/10"
         >
           להתחלת השיר
         </button>
@@ -332,9 +332,9 @@ export function AdminComingSoonLyricsEditor({ songUrl }: { songUrl: string }) {
       </div>
 
       {/* big tap stage */}
-      <div className="mt-4 rounded-2xl border border-cream/10 bg-black/40 p-5 text-center">
+      <div className="mt-4 rounded-2xl border border-gc/10 bg-black/40 p-5 text-center">
         {prevWord && (
-          <p className="text-sm text-cream/40">
+          <p className="text-sm text-gc/40">
             קודם: «{prevWord.text}»{' '}
             {typeof prevTime === 'number' && <span className="font-mono text-emerald-300/70">@{fmt(prevTime)}s</span>}
           </p>
@@ -343,8 +343,8 @@ export function AdminComingSoonLyricsEditor({ songUrl }: { songUrl: string }) {
         {currentWord ? (
           <>
             <p className="mt-1 text-xs font-bold tracking-widest text-emerald-100/50">המילה הבאה</p>
-            <p className="mt-1 text-4xl font-black text-cream sm:text-5xl">{currentWord.text}</p>
-            {nextWord && <p className="mt-2 text-base text-cream/35">אחר כך: {nextWord.text}</p>}
+            <p className="mt-1 text-4xl font-black text-gc sm:text-5xl">{currentWord.text}</p>
+            {nextWord && <p className="mt-2 text-base text-gc/35">אחר כך: {nextWord.text}</p>}
           </>
         ) : (
           <p className="py-4 text-2xl font-black text-lime-300">סיימת לסמן את כל המילים! 🎉</p>
@@ -367,7 +367,7 @@ export function AdminComingSoonLyricsEditor({ songUrl }: { songUrl: string }) {
           type="button"
           onClick={undoTap}
           disabled={tapPos === 0}
-          className="flex h-9 items-center gap-1.5 rounded-xl border border-cream/15 bg-background-card/5 px-3 text-xs font-semibold text-cream/80 transition hover:bg-background-card/10 disabled:opacity-40"
+          className="flex h-9 items-center gap-1.5 rounded-xl border border-gc/15 bg-background-card/5 px-3 text-xs font-semibold text-gc/80 transition hover:bg-background-card/10 disabled:opacity-40"
         >
           <Undo2 className="h-4 w-4" />
           אחורה (Backspace)
@@ -375,7 +375,7 @@ export function AdminComingSoonLyricsEditor({ songUrl }: { songUrl: string }) {
         <button
           type="button"
           onClick={resetTaps}
-          className="h-9 rounded-xl border border-cream/15 bg-background-card/5 px-3 text-xs font-semibold text-cream/80 transition hover:bg-background-card/10"
+          className="h-9 rounded-xl border border-gc/15 bg-background-card/5 px-3 text-xs font-semibold text-gc/80 transition hover:bg-background-card/10"
         >
           אפס סימונים
         </button>
@@ -383,7 +383,7 @@ export function AdminComingSoonLyricsEditor({ songUrl }: { songUrl: string }) {
           type="button"
           disabled={busy || !loaded}
           onClick={() => void save()}
-          className="ms-auto flex h-10 items-center gap-2 rounded-xl bg-linear-to-l from-emerald-600 to-teal-600 px-5 text-sm font-bold text-cream shadow-lg transition hover:from-emerald-700 hover:to-teal-700 disabled:opacity-50"
+          className="ms-auto flex h-10 items-center gap-2 rounded-xl bg-linear-to-l from-emerald-600 to-teal-600 px-5 text-sm font-bold text-gc shadow-lg transition hover:from-emerald-700 hover:to-teal-700 disabled:opacity-50"
         >
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
           שמור תזמונים
@@ -401,13 +401,13 @@ export function AdminComingSoonLyricsEditor({ songUrl }: { songUrl: string }) {
       </button>
 
       {showText && (
-        <div className="mt-3 space-y-3 rounded-xl border border-cream/10 bg-black/30 p-3">
+        <div className="mt-3 space-y-3 rounded-xl border border-gc/10 bg-black/30 p-3">
           <p className="text-[11px] text-emerald-100/60">שורה אחת לכל משפט. שינוי טקסט מאפס את הסימונים.</p>
           <textarea
             value={lyricsText}
             onChange={(e) => setLyricsText(e.target.value)}
             rows={Math.max(4, lines.length)}
-            className="w-full rounded-lg border border-cream/10 bg-black/40 p-2.5 text-sm leading-relaxed text-cream outline-hidden focus:border-emerald-400/60"
+            className="w-full rounded-lg border border-gc/10 bg-black/40 p-2.5 text-sm leading-relaxed text-gc outline-hidden focus:border-emerald-400/60"
             dir="rtl"
           />
           <div className="flex flex-wrap gap-2">
@@ -421,7 +421,7 @@ export function AdminComingSoonLyricsEditor({ songUrl }: { songUrl: string }) {
             <button
               type="button"
               onClick={loadDefaults}
-              className="flex h-9 items-center gap-1.5 rounded-xl border border-cream/15 bg-background-card/5 px-3 text-xs font-semibold text-cream/80 transition hover:bg-background-card/10"
+              className="flex h-9 items-center gap-1.5 rounded-xl border border-gc/15 bg-background-card/5 px-3 text-xs font-semibold text-gc/80 transition hover:bg-background-card/10"
             >
               <RotateCcw className="h-3.5 w-3.5" />
               ברירת מחדל
@@ -432,7 +432,7 @@ export function AdminComingSoonLyricsEditor({ songUrl }: { songUrl: string }) {
           <div className="space-y-1.5">
             {lines.map((line, i) => (
               <div key={i} className="flex items-center gap-2 text-xs">
-                <span className="min-w-0 flex-1 truncate text-cream/70">{line.text}</span>
+                <span className="min-w-0 flex-1 truncate text-gc/70">{line.text}</span>
                 <select
                   value={line.kind ?? 'normal'}
                   onChange={(e) =>
@@ -442,7 +442,7 @@ export function AdminComingSoonLyricsEditor({ songUrl }: { songUrl: string }) {
                       ),
                     )
                   }
-                  className="h-8 rounded-lg border border-cream/10 bg-black/40 px-1.5 text-cream outline-hidden"
+                  className="h-8 rounded-lg border border-gc/10 bg-black/40 px-1.5 text-gc outline-hidden"
                 >
                   <option value="normal">רגיל</option>
                   <option value="drop">דרופ</option>
@@ -455,7 +455,7 @@ export function AdminComingSoonLyricsEditor({ songUrl }: { songUrl: string }) {
                       setLines((prev) => prev.map((l, j) => (j === i ? { ...l, tag: e.target.value } : l)))
                     }
                     placeholder="תווית"
-                    className="h-8 w-20 rounded-lg border border-cream/10 bg-black/40 px-2 text-cream outline-hidden"
+                    className="h-8 w-20 rounded-lg border border-gc/10 bg-black/40 px-2 text-gc outline-hidden"
                   />
                 )}
               </div>

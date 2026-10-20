@@ -742,7 +742,7 @@ export function AlmogKnowledgeManager() {
               <button
                 type="button"
                 onClick={startNew}
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-linear-to-l from-emerald-600 to-teal-600 px-4 py-2 text-sm font-bold text-cream shadow-md hover:brightness-105"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-linear-to-l from-emerald-600 to-teal-600 px-4 py-2 text-sm font-bold text-gc shadow-md hover:brightness-105"
               >
                 <Plus className="w-4 h-4" />
                 הוספת ידע
@@ -765,8 +765,8 @@ export function AlmogKnowledgeManager() {
       ) : null}
 
       <div>
-        <section className="rounded-3xl border border-cream/60 bg-background-card/55 backdrop-blur-md shadow-lg overflow-hidden flex flex-col">
-          <div className="p-3 border-b border-cream/50 space-y-3">
+        <section className="rounded-3xl border border-gc/60 bg-background-card/55 backdrop-blur-md shadow-lg overflow-hidden flex flex-col">
+          <div className="p-3 border-b border-gc/50 space-y-3">
             <div className="relative">
               <Search className="absolute inset-s-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
@@ -778,7 +778,7 @@ export function AlmogKnowledgeManager() {
                 dir="rtl"
               />
             </div>
-            <div className="flex gap-1.5 rounded-2xl border border-cream/60 bg-background-card/40 p-1 backdrop-blur-md">
+            <div className="flex gap-1.5 rounded-2xl border border-gc/60 bg-background-card/40 p-1 backdrop-blur-md">
               {(
                 [
                   { key: 'organized', label: 'תצוגה מסודרת', icon: Layers },
@@ -794,7 +794,7 @@ export function AlmogKnowledgeManager() {
                   className={cn(
                     'flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-xl px-2 py-1.5 text-xs font-bold transition-all sm:text-sm',
                     viewMode === key
-                      ? 'bg-linear-to-l from-sky-500 to-cyan-600 text-cream shadow-md shadow-sky-500/25'
+                      ? 'bg-linear-to-l from-sky-500 to-cyan-600 text-gc shadow-md shadow-sky-500/25'
                       : 'text-slate-600 hover:bg-background-card/55',
                   )}
                 >
@@ -823,9 +823,9 @@ export function AlmogKnowledgeManager() {
                 organizedStations.map((station) => (
                   <div
                     key={station.stationKey}
-                    className="rounded-2xl border border-cream/70 bg-background-card/55 backdrop-blur-md overflow-hidden"
+                    className="rounded-2xl border border-gc/70 bg-background-card/55 backdrop-blur-md overflow-hidden"
                   >
-                    <div className="flex items-center gap-2 px-3 py-2 bg-linear-to-l from-sky-100/70 to-emerald-100/50 border-b border-cream/60">
+                    <div className="flex items-center gap-2 px-3 py-2 bg-linear-to-l from-sky-100/70 to-emerald-100/50 border-b border-gc/60">
                       <MapPin className="h-4 w-4 text-sky-700" aria-hidden />
                       <h3 className="text-sm font-black text-slate-800">{station.stationTitle}</h3>
                       <span className="ms-auto text-[10px] font-bold text-slate-500">
@@ -836,7 +836,7 @@ export function AlmogKnowledgeManager() {
                       {station.steps.map((step) => (
                         <div key={step.stepId ?? `n-${step.stepNumber}`} className="px-3 py-2">
                           <div className="flex items-center gap-1.5 mb-1.5">
-                            <span className="flex h-5 min-w-5 items-center justify-center rounded-md bg-emerald-600/90 px-1.5 text-[10px] font-black text-cream">
+                            <span className="flex h-5 min-w-5 items-center justify-center rounded-md bg-emerald-600/90 px-1.5 text-[10px] font-black text-gc">
                               {step.stepNumber ?? '?'}
                             </span>
                             <p className="text-xs font-bold text-slate-700 truncate">
@@ -932,9 +932,9 @@ export function AlmogKnowledgeManager() {
                 researchByStation.map((station) => (
                   <div
                     key={station.stationKey}
-                    className="rounded-2xl border border-cream/70 bg-background-card/55 backdrop-blur-md overflow-hidden"
+                    className="rounded-2xl border border-gc/70 bg-background-card/55 backdrop-blur-md overflow-hidden"
                   >
-                    <div className="flex items-center gap-2 px-3 py-2 bg-linear-to-l from-violet-100/70 to-sky-100/50 border-b border-cream/60">
+                    <div className="flex items-center gap-2 px-3 py-2 bg-linear-to-l from-violet-100/70 to-sky-100/50 border-b border-gc/60">
                       <MapPin className="h-4 w-4 text-violet-700" aria-hidden />
                       <h3 className="text-sm font-black text-slate-800">{station.stationTitle}</h3>
                       <span className="ms-auto text-[10px] font-bold text-slate-500">
@@ -945,7 +945,7 @@ export function AlmogKnowledgeManager() {
                       {station.steps.map((step) => (
                         <div key={step.stepKey} className="px-3 py-2">
                           <div className="flex items-center gap-1.5 mb-1.5">
-                            <span className="flex h-5 min-w-5 items-center justify-center rounded-md bg-violet-600/90 px-1.5 text-[10px] font-black text-cream">
+                            <span className="flex h-5 min-w-5 items-center justify-center rounded-md bg-violet-600/90 px-1.5 text-[10px] font-black text-gc">
                               {step.stepNumber ?? '?'}
                             </span>
                             <p className="text-xs font-bold text-slate-700 truncate">
@@ -1212,7 +1212,7 @@ export function AlmogKnowledgeManager() {
             className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
           />
           <div
-            className="relative flex max-h-[94dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-[1.75rem] shadow-[0_28px_80px_-16px_rgba(14,116,144,0.45)] ring-1 ring-cream/50 sm:rounded-[1.75rem]"
+            className="relative flex max-h-[94dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-[1.75rem] shadow-[0_28px_80px_-16px_rgba(14,116,144,0.45)] ring-1 ring-gc/50 sm:rounded-[1.75rem]"
             style={glassPanelStyle}
           >
             <div className="pointer-events-none absolute -inset-e-16 -top-20 h-48 w-48 rounded-full bg-sky-400/25 blur-3xl" aria-hidden />
@@ -1220,19 +1220,19 @@ export function AlmogKnowledgeManager() {
             <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-linear-to-r from-transparent via-background-card/90 to-transparent" />
 
             {/* כותרת + טאבים */}
-            <header className="relative shrink-0 border-b border-cream/40 bg-linear-to-bl from-sky-100/55 via-background-card/25 to-emerald-100/45 px-4 pb-3 pt-4 sm:px-6">
+            <header className="relative shrink-0 border-b border-gc/40 bg-linear-to-bl from-sky-100/55 via-background-card/25 to-emerald-100/45 px-4 pb-3 pt-4 sm:px-6">
               <button
                 type="button"
                 onClick={() => !saving && !deleting && closeEditor()}
                 disabled={saving || deleting}
-                className="absolute inset-e-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-cream/55 bg-background-card/35 text-slate-600 backdrop-blur-md transition hover:bg-background-card/55 disabled:opacity-50 sm:inset-e-4 sm:top-4"
+                className="absolute inset-e-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-gc/55 bg-background-card/35 text-slate-600 backdrop-blur-md transition hover:bg-background-card/55 disabled:opacity-50 sm:inset-e-4 sm:top-4"
                 aria-label="סגור"
               >
                 <X className="h-4 w-4" />
               </button>
 
               <div className="flex items-center gap-3 pe-10">
-                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-sky-500 to-cyan-600 text-cream shadow-lg shadow-sky-500/30 ring-1 ring-cream/55">
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-sky-500 to-cyan-600 text-gc shadow-lg shadow-sky-500/30 ring-1 ring-gc/55">
                   <FileText className="h-5 w-5" aria-hidden />
                 </span>
                 <div className="min-w-0">
@@ -1246,7 +1246,7 @@ export function AlmogKnowledgeManager() {
                 </div>
               </div>
 
-              <div className="mt-4 flex gap-1.5 rounded-2xl border border-cream/50 bg-background-card/30 p-1 backdrop-blur-md">
+              <div className="mt-4 flex gap-1.5 rounded-2xl border border-gc/50 bg-background-card/30 p-1 backdrop-blur-md">
                 {(
                   [
                     { key: 'content', label: 'תוכן', icon: FileText },
@@ -1260,7 +1260,7 @@ export function AlmogKnowledgeManager() {
                     className={cn(
                       'flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-xl px-2 py-2 text-xs font-bold transition-all sm:text-sm',
                       editorTab === key
-                        ? 'bg-linear-to-l from-sky-500 to-cyan-600 text-cream shadow-md shadow-sky-500/25'
+                        ? 'bg-linear-to-l from-sky-500 to-cyan-600 text-gc shadow-md shadow-sky-500/25'
                         : 'text-slate-600 hover:bg-background-card/50',
                     )}
                   >
@@ -1440,13 +1440,13 @@ export function AlmogKnowledgeManager() {
             </div>
 
             {/* פעולות */}
-            <footer className="shrink-0 border-t border-cream/40 bg-background-card/25 px-4 py-3 backdrop-blur-md sm:px-6">
+            <footer className="shrink-0 border-t border-gc/40 bg-background-card/25 px-4 py-3 backdrop-blur-md sm:px-6">
               <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
                   onClick={() => void save()}
                   disabled={saving || deleting}
-                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-linear-to-l from-sky-600 to-cyan-600 px-4 py-3 text-sm font-black text-cream shadow-lg shadow-sky-500/25 transition active:scale-[0.99] disabled:opacity-60"
+                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-linear-to-l from-sky-600 to-cyan-600 px-4 py-3 text-sm font-black text-gc shadow-lg shadow-sky-500/25 transition active:scale-[0.99] disabled:opacity-60"
                 >
                   {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                   {saving ? 'שומר ומטמיע…' : 'שמירה והטמעה'}

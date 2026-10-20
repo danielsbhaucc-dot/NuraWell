@@ -73,7 +73,7 @@ function StepCard({ step }: { step: AdminUserJourneyStepRow }) {
             </span>
           ) : null}
           {step.is_completed ? (
-            <span className="text-[10px] rounded-md bg-emerald-600 text-cream px-1.5 py-0.5 font-bold">
+            <span className="text-[10px] rounded-md bg-emerald-600 text-gc px-1.5 py-0.5 font-bold">
               הושלם
             </span>
           ) : step.started ? (
@@ -149,7 +149,7 @@ function StepCard({ step }: { step: AdminUserJourneyStepRow }) {
                       className={[
                         'rounded-md px-1.5 py-0.5 font-bold',
                         h.achieved
-                          ? 'bg-emerald-600 text-cream'
+                          ? 'bg-emerald-600 text-gc'
                           : 'bg-violet-100 text-violet-900',
                       ].join(' ')}
                     >
@@ -255,7 +255,7 @@ function TaskRow({ task }: { task: AdminUserJourneyTaskRow }) {
               <span
                 className={[
                   'rounded px-1.5 py-0.5 font-bold',
-                  task.execution_done ? 'bg-emerald-600 text-cream' : 'bg-slate-100 text-slate-600',
+                  task.execution_done ? 'bg-emerald-600 text-gc' : 'bg-slate-100 text-slate-600',
                 ].join(' ')}
               >
                 {task.execution_done ? 'בוצע פעם' : 'לא סומן'}

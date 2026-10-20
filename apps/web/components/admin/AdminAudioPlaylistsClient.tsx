@@ -182,7 +182,7 @@ export function AdminAudioPlaylistsClient() {
             <button
               type="button"
               onClick={() => setShowCreateForm((v) => !v)}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-linear-to-l from-emerald-600 to-teal-500 px-4 py-2.5 text-sm font-bold text-cream shadow-md shadow-emerald-500/20 transition hover:brightness-105"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-linear-to-l from-emerald-600 to-teal-500 px-4 py-2.5 text-sm font-bold text-gc shadow-md shadow-emerald-500/20 transition hover:brightness-105"
             >
               <Plus className="h-4 w-4" />
               פלייליסט חדש
@@ -214,7 +214,7 @@ export function AdminAudioPlaylistsClient() {
               type="button"
               onClick={() => void createPlaylist()}
               disabled={!newTitle.trim() || creating}
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-linear-to-l from-emerald-600 to-teal-500 px-5 py-3 font-bold text-cream shadow-lg shadow-emerald-500/20 transition active:scale-[0.99] disabled:opacity-45"
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-linear-to-l from-emerald-600 to-teal-500 px-5 py-3 font-bold text-gc shadow-lg shadow-emerald-500/20 transition active:scale-[0.99] disabled:opacity-45"
             >
               {creating ? <Loader2 className="h-5 w-5 animate-spin" /> : <Plus className="h-5 w-5" />}
               צור
@@ -243,7 +243,7 @@ export function AdminAudioPlaylistsClient() {
                       'flex flex-col gap-3 rounded-2xl border px-3 py-3 transition-colors sm:flex-row sm:items-center',
                       active
                         ? 'border-emerald-400/70 bg-emerald-50/80 shadow-[0_10px_28px_rgba(16,185,129,0.12)]'
-                        : 'border-cream/60 bg-background-card/55 hover:bg-background-card/75',
+                        : 'border-gc/60 bg-background-card/55 hover:bg-background-card/75',
                     ].join(' ')}
                   >
                     <button
@@ -304,15 +304,15 @@ export function AdminAudioPlaylistsClient() {
                   </div>
 
                   {active && (
-                    <div className="mt-2 rounded-2xl border border-cream/60 bg-background-card/40 p-3 backdrop-blur-md sm:p-4">
-                      <div className="mb-3 flex gap-1.5 rounded-xl border border-cream/50 bg-background-card/35 p-1">
+                    <div className="mt-2 rounded-2xl border border-gc/60 bg-background-card/40 p-3 backdrop-blur-md sm:p-4">
+                      <div className="mb-3 flex gap-1.5 rounded-xl border border-gc/50 bg-background-card/35 p-1">
                         <button
                           type="button"
                           onClick={() => setPlaylistTab('tracks')}
                           className={[
                             'flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-bold transition-all',
                             playlistTab === 'tracks'
-                              ? 'bg-linear-to-l from-violet-500 to-fuchsia-600 text-cream shadow-xs'
+                              ? 'bg-linear-to-l from-violet-500 to-fuchsia-600 text-gc shadow-xs'
                               : 'text-slate-600 hover:bg-background-card/55',
                           ].join(' ')}
                         >
@@ -325,7 +325,7 @@ export function AdminAudioPlaylistsClient() {
                           className={[
                             'flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-bold transition-all',
                             playlistTab === 'assign'
-                              ? 'bg-linear-to-l from-sky-500 to-cyan-600 text-cream shadow-xs'
+                              ? 'bg-linear-to-l from-sky-500 to-cyan-600 text-gc shadow-xs'
                               : 'text-slate-600 hover:bg-background-card/55',
                           ].join(' ')}
                         >
@@ -441,7 +441,7 @@ function PlaylistTrackManager({
         <button
           type="button"
           onClick={() => setShowUploader((v) => !v)}
-          className="inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-cream/55 bg-background-card/30 px-3 py-1.5 text-xs font-bold text-slate-800 backdrop-blur-md transition hover:bg-background-card/50"
+          className="inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-gc/55 bg-background-card/30 px-3 py-1.5 text-xs font-bold text-slate-800 backdrop-blur-md transition hover:bg-background-card/50"
         >
           <Upload className="h-3.5 w-3.5" />
           {showUploader ? 'סגור העלאה' : 'הוסף רצועה'}
@@ -471,7 +471,7 @@ function PlaylistTrackManager({
             {tracks.map((track) => (
               <li
                 key={track.id}
-                className="rounded-xl border border-cream/60 bg-background-card/65 p-3"
+                className="rounded-xl border border-gc/60 bg-background-card/65 p-3"
               >
                 {editingId === track.id ? (
                   <TrackEditor
@@ -643,7 +643,7 @@ function PlaylistStepAssigner({ playlistId }: { playlistId: string }) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="חיפוש צעד לפי שם…"
-            className="mb-2 w-full rounded-lg border border-cream/70 bg-background-card/80 px-3 py-2 text-sm outline-hidden focus:border-sky-400"
+            className="mb-2 w-full rounded-lg border border-gc/70 bg-background-card/80 px-3 py-2 text-sm outline-hidden focus:border-sky-400"
           />
           <ul className="max-h-64 space-y-1.5 overflow-y-auto pe-1">
             {filtered.map((step) => {
@@ -659,13 +659,13 @@ function PlaylistStepAssigner({ playlistId }: { playlistId: string }) {
                       'flex w-full items-center gap-3 rounded-xl border px-3 py-2 text-right transition-colors',
                       assignedHere
                         ? 'border-sky-400/70 bg-sky-100/70'
-                        : 'border-cream/70 bg-background-card/55 hover:bg-background-card/80',
+                        : 'border-gc/70 bg-background-card/55 hover:bg-background-card/80',
                     ].join(' ')}
                   >
                     <span
                       className={[
                         'flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors',
-                        assignedHere ? 'border-sky-500 bg-sky-500 text-cream' : 'border-slate-300 bg-background-card/70',
+                        assignedHere ? 'border-sky-500 bg-sky-500 text-gc' : 'border-slate-300 bg-background-card/70',
                       ].join(' ')}
                     >
                       {savingId === step.id ? (
@@ -744,7 +744,7 @@ function applySourcePreset(credit: AudioCredit, type: CreditSourceType): AudioCr
 }
 
 const inputCls =
-  'w-full rounded-lg border border-cream/60 bg-background-card/80 px-3 py-2 text-sm outline-hidden focus:border-emerald-400';
+  'w-full rounded-lg border border-gc/60 bg-background-card/80 px-3 py-2 text-sm outline-hidden focus:border-emerald-400';
 
 /** טופס קרדיט משותף להעלאה ולעריכה — כולל בורר מקור (Pixabay / Suno / אחר). */
 function CreditFields({
@@ -781,7 +781,7 @@ function CreditFields({
                     ? s.id === 'suno'
                       ? 'border-violet-400/70 bg-violet-100/80 text-violet-800'
                       : 'border-emerald-400/70 bg-emerald-100/80 text-emerald-800'
-                    : 'border-cream/70 bg-background-card/60 text-slate-600 hover:bg-background-card/90',
+                    : 'border-gc/70 bg-background-card/60 text-slate-600 hover:bg-background-card/90',
                 ].join(' ')}
               >
                 {s.id === 'suno' && <Sparkles className="h-3.5 w-3.5" />}
@@ -930,7 +930,7 @@ function TrackEditor({
           type="button"
           onClick={() => void save()}
           disabled={saving}
-          className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-linear-to-l from-emerald-600 to-teal-500 px-4 py-2 text-sm font-bold text-cream disabled:opacity-50"
+          className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-linear-to-l from-emerald-600 to-teal-500 px-4 py-2 text-sm font-bold text-gc disabled:opacity-50"
         >
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
           שמור
@@ -939,7 +939,7 @@ function TrackEditor({
           type="button"
           onClick={onCancel}
           disabled={saving}
-          className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-cream/70 bg-background-card/60 px-4 py-2 text-sm font-bold text-slate-600 hover:bg-background-card/90 disabled:opacity-50"
+          className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-gc/70 bg-background-card/60 px-4 py-2 text-sm font-bold text-slate-600 hover:bg-background-card/90 disabled:opacity-50"
         >
           <X className="h-4 w-4" />
           ביטול
@@ -1238,7 +1238,7 @@ function TrackUploader({ playlistId, onUploaded }: TrackUploaderProps) {
   };
 
   return (
-    <div className="rounded-2xl border border-cream/60 bg-background-card/55 p-3 sm:p-4" dir="rtl">
+    <div className="rounded-2xl border border-gc/60 bg-background-card/55 p-3 sm:p-4" dir="rtl">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <h4 className="flex items-center gap-2 text-sm font-black text-slate-700">
           <Upload className="h-4 w-4 text-emerald-600" />
@@ -1328,7 +1328,7 @@ function TrackUploader({ playlistId, onUploaded }: TrackUploaderProps) {
         type="button"
         onClick={() => void upload()}
         disabled={!file || busy}
-        className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-linear-to-l from-emerald-600 to-teal-500 px-5 py-2.5 font-bold text-cream disabled:opacity-45"
+        className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-linear-to-l from-emerald-600 to-teal-500 px-5 py-2.5 font-bold text-gc disabled:opacity-45"
       >
         {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <Upload className="h-5 w-5" />}
         {phase === 'transcoding'
@@ -1340,7 +1340,7 @@ function TrackUploader({ playlistId, onUploaded }: TrackUploaderProps) {
 
       {busy && (
         <div className="mt-2.5" aria-live="polite">
-          <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-slate-200/70 ring-1 ring-cream/60">
+          <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-slate-200/70 ring-1 ring-gc/60">
             <div
               className="nura-flow-bar absolute inset-y-0 right-0 rounded-full transition-[width] duration-200 ease-out"
               style={{ width: phase === 'transcoding' ? `${progress}%` : '100%' }}

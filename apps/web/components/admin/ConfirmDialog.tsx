@@ -73,7 +73,7 @@ export function ConfirmDialog({
       zIndex={320}
       aria-label={title}
       backdropClassName="absolute inset-0 cursor-default bg-slate-900/30 backdrop-blur-sm"
-      panelClassName="max-w-sm overflow-hidden rounded-3xl border border-cream/40 bg-background-card/20 p-5 shadow-[0_20px_60px_-12px_rgba(15,23,42,0.5)] ring-1 ring-inset ring-cream/30 backdrop-blur-2xl backdrop-saturate-150"
+      panelClassName="max-w-sm overflow-hidden rounded-3xl border border-gc/40 bg-background-card/20 p-5 shadow-[0_20px_60px_-12px_rgba(15,23,42,0.5)] ring-1 ring-inset ring-gc/30 backdrop-blur-2xl backdrop-saturate-150"
     >
       <div className="pointer-events-none absolute inset-x-4 top-0 h-px bg-linear-to-r from-transparent via-background-card/80 to-transparent" />
 
@@ -81,7 +81,7 @@ export function ConfirmDialog({
         type="button"
         onClick={() => !busy && onCancel()}
         aria-label="סגור"
-        className="absolute inset-e-3 top-3 inline-flex h-7 w-7 items-center justify-center rounded-lg border border-cream/50 bg-background-card/40 text-slate-600 hover:bg-background-card/70"
+        className="absolute inset-e-3 top-3 inline-flex h-7 w-7 items-center justify-center rounded-lg border border-gc/50 bg-background-card/40 text-slate-600 hover:bg-background-card/70"
       >
         <X className="h-4 w-4" />
       </button>
@@ -107,7 +107,7 @@ export function ConfirmDialog({
           onClick={onConfirm}
           disabled={busy}
           className={[
-            'inline-flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-black text-cream shadow-lg disabled:opacity-60',
+            'inline-flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-black text-gc shadow-lg disabled:opacity-60',
             style.btn,
           ].join(' ')}
         >
@@ -119,7 +119,7 @@ export function ConfirmDialog({
             type="button"
             onClick={onCancel}
             disabled={busy}
-            className="inline-flex items-center justify-center rounded-xl border border-cream/60 bg-background-card/40 px-4 py-2.5 text-sm font-bold text-slate-700 backdrop-blur-md hover:bg-background-card/70 disabled:opacity-60"
+            className="inline-flex items-center justify-center rounded-xl border border-gc/60 bg-background-card/40 px-4 py-2.5 text-sm font-bold text-slate-700 backdrop-blur-md hover:bg-background-card/70 disabled:opacity-60"
           >
             {cancelLabel}
           </button>

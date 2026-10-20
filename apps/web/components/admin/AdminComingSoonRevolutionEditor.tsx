@@ -182,7 +182,7 @@ export function AdminComingSoonRevolutionEditor() {
               className={cn(
                 'h-7 min-w-7 rounded-lg px-2 text-xs font-bold transition',
                 previewIdx === i
-                  ? 'bg-violet-600 text-cream'
+                  ? 'bg-violet-600 text-gc'
                   : 'bg-background-card/70 text-slate-600 hover:bg-background-card',
               )}
             >
@@ -196,7 +196,7 @@ export function AdminComingSoonRevolutionEditor() {
         {lines.map((line, idx) => (
           <li
             key={idx}
-            className="rounded-2xl border border-cream/60 bg-background-card/50 p-3 backdrop-blur-sm"
+            className="rounded-2xl border border-gc/60 bg-background-card/50 p-3 backdrop-blur-sm"
           >
             <div className="mb-2 flex items-center justify-between gap-2">
               <span className="text-xs font-black text-slate-500">משפט {idx + 1}</span>
@@ -256,7 +256,7 @@ export function AdminComingSoonRevolutionEditor() {
           type="button"
           disabled={busy}
           onClick={() => void save()}
-          className="inline-flex min-h-10 items-center gap-1.5 rounded-xl bg-linear-to-l from-violet-600 to-fuchsia-600 px-4 py-2 text-sm font-bold text-cream shadow-md shadow-violet-600/25 transition hover:from-violet-700 hover:to-fuchsia-700 disabled:opacity-50"
+          className="inline-flex min-h-10 items-center gap-1.5 rounded-xl bg-linear-to-l from-violet-600 to-fuchsia-600 px-4 py-2 text-sm font-bold text-gc shadow-md shadow-violet-600/25 transition hover:from-violet-700 hover:to-fuchsia-700 disabled:opacity-50"
         >
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
           שמור משפטים

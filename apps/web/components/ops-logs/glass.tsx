@@ -30,7 +30,7 @@ export function CatIcon({ cat, className }: { cat: string; className?: string })
 }
 
 /** Frosted cream glass: translucent, backdrop blur, inner highlight, soft depth. Optional status glow. */
-export const GLASS = 'relative rounded-3xl border border-cream/70 bg-cream/55 shadow-[0_1px_0_0_rgba(255,255,255,0.6)_inset,0_12px_36px_-18px_rgba(30,41,30,0.28)] backdrop-blur-xl backdrop-saturate-150 supports-[not(backdrop-filter:blur(1px))]:bg-cream/95 dark:border-cream/10 dark:bg-slate-900/55';
+export const GLASS = 'relative rounded-3xl border border-gc/70 bg-gc/70 shadow-[0_1px_0_0_rgba(241,244,234,0.6)_inset,0_12px_36px_-18px_rgba(30,41,30,0.28)] backdrop-blur-xl backdrop-saturate-150 supports-[not(backdrop-filter:blur(1px))]:bg-gc/95 dark:border-gc/10 dark:bg-slate-900/55';
 export function Glass({ children, className, glow }: { children: ReactNode; className?: string; glow?: Status }) {
   return <div className={cn(GLASS, glow && STATUS[glow].glow, className)}>{children}</div>;
 }
@@ -61,11 +61,11 @@ export function Section({ title, aside, children }: { title: string; aside?: Rea
 
 export function Metrics({ items }: { items: { label: string; value: ReactNode; status?: Status; sub?: ReactNode }[] }) {
   return (
-    <Glass className="grid grid-cols-2 divide-black/[0.06] sm:grid-cols-4 sm:divide-x sm:divide-x-reverse dark:divide-cream/10">
+    <Glass className="grid grid-cols-2 divide-black/[0.06] sm:grid-cols-4 sm:divide-x sm:divide-x-reverse dark:divide-gc/10">
       {items.slice(0, 4).map((m, i) => (
-        <div key={m.label} className={cn('flex flex-col gap-1 px-4 py-4', i < 2 && 'border-b border-black/[0.06] sm:border-b-0 dark:border-cream/10', i % 2 === 0 && 'border-e border-black/[0.06] sm:border-e-0 dark:border-cream/10')}>
+        <div key={m.label} className={cn('flex flex-col gap-1 px-4 py-4', i < 2 && 'border-b border-black/[0.06] sm:border-b-0 dark:border-gc/10', i % 2 === 0 && 'border-e border-black/[0.06] sm:border-e-0 dark:border-gc/10')}>
           <span className="flex items-center gap-1.5 text-[12px] text-slate-500 dark:text-slate-500">{m.status ? <Dot status={m.status} /> : null}{m.label}</span>
-          <span className="font-display text-[1.6rem] font-semibold tabular-nums leading-none text-slate-900 dark:text-cream">{m.value}</span>
+          <span className="font-display text-[1.6rem] font-semibold tabular-nums leading-none text-slate-900 dark:text-gc">{m.value}</span>
           {m.sub ? <span className="text-[11px] text-slate-500">{m.sub}</span> : null}
         </div>
       ))}
@@ -75,10 +75,10 @@ export function Metrics({ items }: { items: { label: string; value: ReactNode; s
 
 export function Segmented<T extends string>({ value, options, onChange }: { value: T; options: [T, string][]; onChange: (v: T) => void }) {
   return (
-    <div role="radiogroup" className="inline-flex rounded-2xl bg-cream-deep/60 p-0.5 shadow-[0_1px_2px_rgba(0,0,0,0.04)_inset] dark:bg-cream/10">
+    <div role="radiogroup" className="inline-flex rounded-2xl bg-cream-deep/60 p-0.5 shadow-[0_1px_2px_rgba(0,0,0,0.04)_inset] dark:bg-gc/10">
       {options.map(([k, l]) => (
         <button key={k} type="button" role="radio" aria-checked={value === k} onClick={() => onChange(k)}
-          className={cn('rounded-[14px] px-3 py-1.5 text-[13px] font-medium transition', value === k ? 'bg-cream text-slate-900 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.15)] dark:bg-slate-700 dark:text-cream' : 'text-slate-500 hover:text-slate-800 dark:text-slate-500')}>{l}</button>
+          className={cn('rounded-[14px] px-3 py-1.5 text-[13px] font-medium transition', value === k ? 'bg-gc text-slate-900 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.15)] dark:bg-slate-700 dark:text-gc' : 'text-slate-500 hover:text-slate-800 dark:text-slate-500')}>{l}</button>
       ))}
     </div>
   );
@@ -87,15 +87,15 @@ export function Segmented<T extends string>({ value, options, onChange }: { valu
 export function SearchBar({ value, onChange, placeholder, onFilters, activeCount, trailing }: { value: string; onChange: (v: string) => void; placeholder: string; onFilters?: () => void; activeCount?: number; trailing?: ReactNode }) {
   return (
     <div className="flex items-center gap-2">
-      <label className="flex h-10 flex-1 items-center gap-2 rounded-2xl border border-cream/70 bg-cream/70 px-3 shadow-[0_1px_0_0_rgba(255,255,255,0.6)_inset] focus-within:border-emerald-700/40 dark:border-cream/10 dark:bg-slate-900/60">
+      <label className="flex h-10 flex-1 items-center gap-2 rounded-2xl border border-gc/70 bg-gc/70 px-3 shadow-[0_1px_0_0_rgba(241,244,234,0.6)_inset] focus-within:border-emerald-700/40 dark:border-gc/10 dark:bg-slate-900/60">
         <Search size={16} className="text-slate-500" aria-hidden />
-        <input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="w-full bg-transparent text-[14px] text-slate-800 outline-none placeholder:text-slate-500 dark:text-cream" />
+        <input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="w-full bg-transparent text-[14px] text-slate-800 outline-none placeholder:text-slate-500 dark:text-gc" />
         {value ? <button type="button" onClick={() => onChange('')} aria-label="נקה חיפוש" className="text-slate-500"><X size={14} /></button> : null}
       </label>
       {onFilters ? (
-        <button type="button" onClick={onFilters} className="relative flex h-10 items-center gap-1.5 rounded-2xl border border-cream/70 bg-cream/70 px-3 shadow-[0_1px_0_0_rgba(255,255,255,0.6)_inset] text-[13px] font-medium text-slate-700 dark:border-cream/10 dark:bg-slate-900/60 dark:text-slate-200">
+        <button type="button" onClick={onFilters} className="relative flex h-10 items-center gap-1.5 rounded-2xl border border-gc/70 bg-gc/70 px-3 shadow-[0_1px_0_0_rgba(241,244,234,0.6)_inset] text-[13px] font-medium text-slate-700 dark:border-gc/10 dark:bg-slate-900/60 dark:text-slate-200">
           <SlidersHorizontal size={15} />סינון
-          {activeCount ? <span className="grid h-4 min-w-4 place-items-center rounded-full bg-slate-900 px-1 text-[10px] text-cream dark:bg-cream dark:text-slate-900">{activeCount}</span> : null}
+          {activeCount ? <span className="grid h-4 min-w-4 place-items-center rounded-full bg-slate-900 px-1 text-[10px] text-gc dark:bg-gc dark:text-slate-900">{activeCount}</span> : null}
         </button>
       ) : null}
       {trailing}
@@ -111,9 +111,9 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-start sm:pt-28" role="dialog" aria-modal="true" aria-label={title}>
       <button type="button" aria-label="סגור" className="absolute inset-0 bg-slate-900/25" onClick={onClose} />
-      <div ref={ref} tabIndex={-1} className="relative w-full max-w-md rounded-t-[28px] border border-cream/70 bg-cream/75 p-5 shadow-[0_1px_0_0_rgba(255,255,255,0.7)_inset,0_24px_60px_-20px_rgba(30,41,30,0.4)] outline-none backdrop-blur-2xl backdrop-saturate-150 supports-[not(backdrop-filter:blur(1px))]:bg-cream sm:rounded-3xl dark:border-cream/10 dark:bg-slate-900/80">
+      <div ref={ref} tabIndex={-1} className="relative w-full max-w-md rounded-t-[28px] border border-gc/70 bg-gc/75 p-5 shadow-[0_1px_0_0_rgba(241,244,234,0.7)_inset,0_24px_60px_-20px_rgba(30,41,30,0.4)] outline-none backdrop-blur-2xl backdrop-saturate-150 supports-[not(backdrop-filter:blur(1px))]:bg-gc sm:rounded-3xl dark:border-gc/10 dark:bg-slate-900/80">
         <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-black/10 sm:hidden" />
-        <div className="mb-4 flex items-center justify-between"><h3 className="text-[15px] font-semibold text-slate-900 dark:text-cream">{title}</h3><button type="button" onClick={onClose} aria-label="סגור" className="text-slate-500"><X size={18} /></button></div>
+        <div className="mb-4 flex items-center justify-between"><h3 className="text-[15px] font-semibold text-slate-900 dark:text-gc">{title}</h3><button type="button" onClick={onClose} aria-label="סגור" className="text-slate-500"><X size={18} /></button></div>
         <div className="flex flex-col gap-5">{children}</div>
       </div>
     </div>
@@ -127,7 +127,7 @@ export function OptionGroup<T extends string>({ label, value, options, onChange 
       <div className="flex flex-wrap gap-1.5">
         {options.map(([k, l, s]) => (
           <button key={k} type="button" onClick={() => onChange(k)} aria-pressed={value === k}
-            className={cn('inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[13px] transition', value === k ? 'border-slate-900 bg-slate-900 text-cream dark:border-cream dark:bg-cream dark:text-slate-900' : 'border-cream/80 bg-cream/60 text-slate-700 hover:border-black/15 dark:border-cream/15 dark:text-slate-300')}>
+            className={cn('inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[13px] transition', value === k ? 'border-slate-900 bg-slate-900 text-gc dark:border-gc dark:bg-gc dark:text-slate-900' : 'border-gc/80 bg-gc/60 text-slate-700 hover:border-black/15 dark:border-gc/15 dark:text-slate-300')}>
             {s ? <Dot status={s} /> : null}{l}
           </button>
         ))}
@@ -142,7 +142,7 @@ export function ActiveFilters({ parts, onClear }: { parts: string[]; onClear: ()
   return (
     <div className="flex items-center gap-2 px-1 text-[12px] text-slate-500">
       <span className="truncate">מסונן: {parts.join(' · ')}</span>
-      <button type="button" onClick={onClear} className="shrink-0 font-medium text-slate-800 underline underline-offset-4 dark:text-cream">נקה</button>
+      <button type="button" onClick={onClear} className="shrink-0 font-medium text-slate-800 underline underline-offset-4 dark:text-gc">נקה</button>
     </div>
   );
 }
@@ -151,7 +151,7 @@ export function Spark({ data, status = 'info' }: { data: number[]; status?: Stat
   const max = Math.max(1, ...data);
   return (
     <div className="flex h-5 items-end gap-[2px]" aria-label="מגמה, 7 ימים" dir="ltr">
-      {data.map((v, i) => <span key={i} className={cn('w-1 rounded-[1px]', v ? STATUS[status].dot : 'bg-black/10 dark:bg-cream/15')} style={{ height: `${Math.max(15, (v / max) * 100)}%`, opacity: v ? 0.75 : 1 }} />)}
+      {data.map((v, i) => <span key={i} className={cn('w-1 rounded-[1px]', v ? STATUS[status].dot : 'bg-black/10 dark:bg-gc/15')} style={{ height: `${Math.max(15, (v / max) * 100)}%`, opacity: v ? 0.75 : 1 }} />)}
     </div>
   );
 }

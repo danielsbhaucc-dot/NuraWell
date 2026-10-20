@@ -70,9 +70,9 @@ export function AdminRegisterBackgroundPanel() {
   };
 
   return (
-    <section className="rounded-3xl border border-cream/50 bg-background-card/45 p-4 backdrop-blur-xl sm:p-5" dir="rtl">
+    <section className="rounded-3xl border border-gc/50 bg-background-card/45 p-4 backdrop-blur-xl sm:p-5" dir="rtl">
       <div className="flex items-center gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-sky-500 to-cyan-600 text-cream shadow-md shadow-sky-600/25">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-sky-500 to-cyan-600 text-gc shadow-md shadow-sky-600/25">
           <ImageIcon className="h-5 w-5" aria-hidden />
         </span>
         <div>
@@ -82,7 +82,7 @@ export function AdminRegisterBackgroundPanel() {
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-3">
-        <div className="h-20 w-32 overflow-hidden rounded-xl border border-cream/60 bg-background-card/25">
+        <div className="h-20 w-32 overflow-hidden rounded-xl border border-gc/60 bg-background-card/25">
           {coverUrl ? (
             <img src={coverUrl} alt="" aria-hidden className="h-full w-full object-cover" />
           ) : (
@@ -102,7 +102,7 @@ export function AdminRegisterBackgroundPanel() {
               onSelect: (a) => void applyAsset(a),
             })
           }
-          className="rounded-xl bg-emerald-800/85 px-4 py-2 text-sm font-bold text-cream disabled:opacity-50"
+          className="rounded-xl bg-emerald-800/85 px-4 py-2 text-sm font-bold text-gc disabled:opacity-50"
         >
           {applyBusy ? <Loader2 className="inline h-4 w-4 animate-spin" /> : null} העלאת תמונה
         </button>

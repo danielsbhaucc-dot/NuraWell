@@ -214,11 +214,11 @@ export function GuidesManager() {
   return (
     <div className="space-y-6" dir="rtl">
       <div className="crystal-header rounded-2xl px-5 py-4">
-        <h1 className="text-2xl font-black text-cream flex items-center gap-2">
+        <h1 className="text-2xl font-black text-gc flex items-center gap-2">
           <BookOpen className="w-7 h-7" />
           מדריכים
         </h1>
-        <p className="text-sm text-cream/80 mt-1">יצירה, עריכה ומחולל AI למדריכים</p>
+        <p className="text-sm text-gc/80 mt-1">יצירה, עריכה ומחולל AI למדריכים</p>
       </div>
 
       {/* AI Generator */}
@@ -253,7 +253,7 @@ export function GuidesManager() {
             <button
               type="button"
               onClick={() => void runAiGenerate(true)}
-              className="px-4 py-2 rounded-xl bg-violet-600 text-cream text-sm font-bold"
+              className="px-4 py-2 rounded-xl bg-violet-600 text-gc text-sm font-bold"
             >
               המשך יצירה
             </button>
@@ -289,7 +289,7 @@ export function GuidesManager() {
             <button
               type="button"
               onClick={() => void publishPreview(aiPhase.guide)}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 text-cream text-sm font-bold"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 text-gc text-sm font-bold"
             >
               <Check className="w-4 h-4" />
               שמור כטיוטה לעריכה
@@ -302,7 +302,7 @@ export function GuidesManager() {
             type="button"
             disabled={sourceText.length < 40 || aiPhase.phase === 'working'}
             onClick={() => void runAiGenerate(false)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-violet-600 text-cream text-sm font-bold disabled:opacity-50"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-violet-600 text-gc text-sm font-bold disabled:opacity-50"
           >
             {aiPhase.phase === 'working' ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -336,7 +336,7 @@ export function GuidesManager() {
         <button
           type="button"
           onClick={() => void createEmpty()}
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 text-cream text-sm font-bold"
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 text-gc text-sm font-bold"
         >
           <Plus className="w-4 h-4" />
           מדריך ריק
@@ -345,7 +345,7 @@ export function GuidesManager() {
           type="button"
           disabled={syncingRag}
           onClick={() => void syncAllRag()}
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-teal-700 text-cream text-sm font-bold disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-teal-700 text-gc text-sm font-bold disabled:opacity-50"
         >
           {syncingRag ? <Loader2 className="w-4 h-4 animate-spin" /> : <Database className="w-4 h-4" />}
           סנכרן הכל ל-RAG

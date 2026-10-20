@@ -24,24 +24,24 @@ function IssueRow({ i, onChange }: { i: Issue; onChange: () => void }) {
   return (
     <li className={cn('relative', i.status === 'resolved' && 'opacity-55')}>
       {i.status !== 'resolved' ? <Stripe status={i.severity >= 8 ? 'failed' : i.severity >= 5 ? 'warning' : 'info'} /> : null}
-      <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} className="flex w-full items-center gap-3 px-4 py-3.5 text-start hover:bg-cream/50">
+      <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} className="flex w-full items-center gap-3 px-4 py-3.5 text-start hover:bg-gc/50">
         <span className={cn('w-7 shrink-0 text-center text-[13px] font-semibold tabular-nums', i.severity >= 8 ? 'text-rose-700' : i.severity >= 5 ? 'text-amber-700' : 'text-slate-500')} title="חומרה מתוך 10">{i.severity}</span>
         <span className="min-w-0 flex-1">
-          <span className="flex items-center gap-2"><Dot status={ST[i.status].status} /><span className="truncate text-[14px] font-medium text-slate-900 dark:text-cream">{i.cause}</span></span>
+          <span className="flex items-center gap-2"><Dot status={ST[i.status].status} /><span className="truncate text-[14px] font-medium text-slate-900 dark:text-gc">{i.cause}</span></span>
           <span className="mt-0.5 flex gap-2 ps-4 text-[12.5px] text-slate-500"><span dir="ltr" className="truncate font-mono text-[12px]">{i.source}</span><span>· {i.count}× · {ago(i.lastSeen)}</span></span>
         </span>
         <Spark data={i.spark} status={sevStatus(i.severity)} />
       </button>
       {open ? (
         <div className="px-4 pb-4 ps-14 text-[13px] text-slate-600 dark:text-slate-300">
-          <p className="mb-2"><span className="font-medium text-slate-800 dark:text-cream">השפעה: </span>{i.impact}</p>
+          <p className="mb-2"><span className="font-medium text-slate-800 dark:text-gc">השפעה: </span>{i.impact}</p>
           <p dir="ltr" className="mb-3 break-words rounded-lg bg-black/[0.03] px-3 py-2 text-start font-mono text-[12px] text-slate-500">{i.sample}</p>
           <div className="mb-4 flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-slate-500">
             <span className="inline-flex items-center gap-1"><Users size={12} />{i.users} משתמשים</span><span>ראשון {fmtIl(i.firstSeen)}</span><span>אחרון {fmtIl(i.lastSeen)}</span>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <Segmented value={i.status} options={[['new', 'חדש'], ['in_progress', 'בטיפול'], ['resolved', 'נפתר']]} onChange={(s) => void act({ action: 'error_status', fp: i.fingerprint, status: s })} />
-            <button type="button" disabled={busy} onClick={() => void act({ action: 'forward', fp: i.fingerprint })} className="inline-flex items-center gap-1 text-[13px] font-medium text-slate-800 underline underline-offset-4 disabled:opacity-50 dark:text-cream"><ArrowUpLeft size={14} />העבר לאורי</button>
+            <button type="button" disabled={busy} onClick={() => void act({ action: 'forward', fp: i.fingerprint })} className="inline-flex items-center gap-1 text-[13px] font-medium text-slate-800 underline underline-offset-4 disabled:opacity-50 dark:text-gc"><ArrowUpLeft size={14} />העבר לאורי</button>
             {msg ? <span className="text-[12px] text-slate-500">{msg}</span> : null}
           </div>
         </div>
@@ -79,7 +79,7 @@ export function ErrorLog() {
         <SearchBar value={q} onChange={setQ} placeholder="חיפוש שגיאה או מקור" />
         <div><Segmented value={filter} options={[['open', 'פתוחות'], ['new', 'חדשות'], ['in_progress', 'בטיפול'], ['resolved', 'נפתרו'], ['all', 'הכל']]} onChange={setFilter} /></div>
         <Glass className="overflow-hidden">
-          {list.length ? <ul className="divide-y divide-black/[0.05] dark:divide-cream/10">{list.map((i) => <IssueRow key={i.fingerprint} i={i} onChange={load} />)}</ul> : <Empty title="אין שגיאות פתוחות" sub="הכל שקט." />}
+          {list.length ? <ul className="divide-y divide-black/[0.05] dark:divide-gc/10">{list.map((i) => <IssueRow key={i.fingerprint} i={i} onChange={load} />)}</ul> : <Empty title="אין שגיאות פתוחות" sub="הכל שקט." />}
         </Glass>
       </Section>
     </div>

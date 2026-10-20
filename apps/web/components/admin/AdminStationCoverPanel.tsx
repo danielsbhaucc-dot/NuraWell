@@ -128,7 +128,7 @@ export function AdminStationCoverPanel({
       />
 
       {hasCover ? (
-        <div className={embedded ? 'mt-3' : 'border-t border-cream/40 bg-background-card/20 px-4 py-3 sm:px-5'}>
+        <div className={embedded ? 'mt-3' : 'border-t border-gc/40 bg-background-card/20 px-4 py-3 sm:px-5'}>
           <CoverPreview cover={cover} onRemove={() => setConfirmRemove(true)} removeBusy={removeBusy} />
         </div>
       ) : null}
@@ -177,13 +177,13 @@ function CoverSummaryRow({
     <div
       className={
         embedded
-          ? 'rounded-2xl border border-cream/45 bg-background-card/25 p-4 backdrop-blur-md'
-          : 'border-t border-cream/40 bg-background-card/20 px-4 py-3 sm:px-5'
+          ? 'rounded-2xl border border-gc/45 bg-background-card/25 p-4 backdrop-blur-md'
+          : 'border-t border-gc/40 bg-background-card/20 px-4 py-3 sm:px-5'
       }
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-center gap-3">
-          <div className="flex h-14 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-cream/50 bg-background-card/25 shadow-xs backdrop-blur-md">
+          <div className="flex h-14 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-gc/50 bg-background-card/25 shadow-xs backdrop-blur-md">
             {hasCover && coverUrl ? (
               <img src={coverUrl} alt="" aria-hidden className="h-full w-full object-cover" />
             ) : (
@@ -221,7 +221,7 @@ function CoverPreview({
   removeBusy: boolean;
 }) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-cream/45 bg-background-card/15 backdrop-blur-md">
+    <div className="overflow-hidden rounded-2xl border border-gc/45 bg-background-card/15 backdrop-blur-md">
       <div className="relative min-h-[120px]">
         {cover.coverImageUrl ? (
           <img src={cover.coverImageUrl} alt="" aria-hidden className="absolute inset-0 h-full w-full object-cover" />
@@ -237,7 +237,7 @@ function CoverPreview({
             type="button"
             onClick={onRemove}
             disabled={removeBusy}
-            className={`${opsGlassBtnDangerClass} text-cream border-cream/30 bg-black/20 hover:bg-black/30`}
+            className={`${opsGlassBtnDangerClass} text-gc border-gc/30 bg-black/20 hover:bg-black/30`}
           >
             {removeBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
             הסר תמונה

@@ -163,7 +163,7 @@ export function AlmogMemoryPanel({ userId }: Props) {
       style={glassPanelStyle}
       aria-labelledby="almog-memory-heading"
     >
-      <header className="flex items-start justify-between gap-3 px-4 py-3 border-b border-cream/40">
+      <header className="flex items-start justify-between gap-3 px-4 py-3 border-b border-gc/40">
         <div className="flex items-center gap-2">
           <div
             className="flex h-9 w-9 items-center justify-center rounded-xl text-violet-700"
@@ -181,7 +181,7 @@ export function AlmogMemoryPanel({ userId }: Props) {
           </div>
         </div>
         {!loading && items.length > 0 ? (
-          <span className="shrink-0 rounded-lg bg-background-card/40 px-2 py-1 text-[10px] font-bold text-violet-900 border border-cream/50">
+          <span className="shrink-0 rounded-lg bg-background-card/40 px-2 py-1 text-[10px] font-bold text-violet-900 border border-gc/50">
             {items.length} פריטים
           </span>
         ) : null}

@@ -110,7 +110,7 @@ export function AdminChallengeTasksEditor() {
         <button
           type="button"
           onClick={addTask}
-          className="inline-flex items-center gap-1 rounded-xl bg-violet-600 px-3 py-2 text-sm font-semibold text-cream"
+          className="inline-flex items-center gap-1 rounded-xl bg-violet-600 px-3 py-2 text-sm font-semibold text-gc"
         >
           <Plus className="h-4 w-4" />
           הוסף
@@ -156,7 +156,7 @@ export function AdminChallengeTasksEditor() {
                   type="button"
                   disabled={saving === task.id}
                   onClick={() => saveTask(task)}
-                  className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-cream"
+                  className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-gc"
                 >
                   {saving === task.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
                   שמור
