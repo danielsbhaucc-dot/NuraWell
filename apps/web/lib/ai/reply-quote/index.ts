@@ -11,9 +11,17 @@
 export const REPLY_QUOTE_MAX_BACK = 6;
 const MARKER_RE = /⟦NW_RQ:(\d{1,2})⟧/;
 const MARKER_ALL_RE = /⟦NW_RQ:\d{0,2}⟧/g;
-/** Bubble split marker: Almog may send 2–4 short bubbles in one model call. */
+/** Bubble split marker: Almog may send 2–3 short bubbles in one model call. */
 export const BUBBLE_MARKER = '⟦NW_B⟧';
-export const MAX_BUBBLES = 4;
+export const MAX_BUBBLES = 3;
+/** Replies shorter than this (all bubbles together) are always one bubble. */
+export const MIN_SPLIT_CHARS = 90;
+const GREETING_RE = /^(?:היי+|הי|שלום|אהלן|הלו|יו|בוקר טוב|ערב טוב|צהריים טובים|לילה טוב|מה נשמע|מה שלומך|מה קורה|מה המצב|hi|hello|hey)[\s!?.,׳'"🙂😊👋]*(?:(?:מה נשמע|מה שלומך|מה קורה|אלמוג)[\s!?.,]*)*$/i;
+
+export function isSimpleGreeting(text: string | null | undefined): boolean {
+  const t = String(text ?? '').trim();
+  return t.length > 0 && t.length <= 30 && GREETING_RE.test(t);
+}
 const BUBBLE_RE = /⟦NW_B⟧/g;
 /** A marker cut mid-stream ("⟦NW_R", "⟦NW_RQ:2", "⟦NW_B") at the very end of the text so far. */
 const PARTIAL_TAIL_RE = /⟦(?:N(?:W(?:_(?:R(?:Q(?::\d{0,2})?)?|B)?)?)?)?$/;
@@ -121,6 +129,13 @@ export function splitAssistantBubbles(text: string | null | undefined, turns?: Q
     const firstN = extractReplyQuoteIndex(segs[MAX_BUBBLES - 1]);
     segs.splice(0, segs.length, ...head, firstN ? `⟦NW_RQ:${firstN}⟧${tail}` : tail);
   }
+  const totalLen = segs.reduce((n, x) => n + stripReplyQuoteMarker(x).trim().length, 0);
+  const lastUser = turns ? [...turns].reverse().find((x) => x.role === 'user') : undefined;
+  if (segs.length > 1 && (totalLen < MIN_SPLIT_CHARS || isSimpleGreeting(lastUser?.content))) {
+    const firstN = extractReplyQuoteIndex(segs[0]);
+    const body = segs.map((x) => stripReplyQuoteMarker(x).trim()).join('\n\n');
+    segs.splice(0, segs.length, firstN ? `⟦NW_RQ:${firstN}⟧${body}` : body);
+  }
   const used = new Set<number>();
   return segs.map((seg) => {
     let n = extractReplyQuoteIndex(seg);
@@ -141,7 +156,7 @@ export function hasPendingBubble(text: string | null | undefined): boolean {
 export function buildBubblePromptBlock(): string {
   return [
     '— כמה בועות (כמו בוואטסאפ) —',
-    'כשיש לך כמה נקודות נפרדות באמת (למשל המשתמש שלח כמה הודעות או שאל כמה דברים), אפשר לפצל את התשובה ל-2 עד 4 בועות קצרות, כמו בן אדם שמקליד.',
+    'כשיש לך כמה נקודות נפרדות באמת (למשל המשתמש שלח כמה הודעות או שאל כמה דברים), אפשר לפצל את התשובה ל-2 עד 3 בועות קצרות, כמו בן אדם שמקליד.',
     'ברוב התשובות בועה אחת מספיקה. לא מפצלים תשובה אחת רציפה, ולא מפצלים סתם.',
     `איך: בין בועה לבועה כותבים ${BUBBLE_MARKER}. כל בועה יכולה להתחיל בציטוט משלה ⟦NW_RQ:n⟧ של ההודעה שהיא עונה עליה, לפי אותם כללי ציטוט.`,
     `דוגמה: ⟦NW_RQ:2⟧על הפיצה, זה בסדר גמור, לא צריך לפצות.${BUBBLE_MARKER}⟦NW_RQ:1⟧ולגבי המים, בערך 8 כוסות ביום.`,
