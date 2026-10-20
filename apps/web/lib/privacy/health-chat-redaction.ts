@@ -24,23 +24,44 @@ export function isRedactedContent(text: unknown): boolean {
   return typeof text === 'string' && text.startsWith(REDACTED_PLACEHOLDER);
 }
 
-/** Almog's reply — never echoes the content. */
-export function almogRedactionReply(gender: string | null | undefined): string {
+/**
+ * Almog's reply — never echoes the content. Warm, short (2–3 sentences), gender-matched, no slash forms.
+ * No consent nudging at all: it acknowledges, explains briefly (privacy) and warmly redirects to the
+ * user's habits and NuraWell plan. `variant` rotates wording within a session so it never repeats.
+ */
+export function almogRedactionReply(gender: string | null | undefined, opts: { variant?: number } = {}): string {
   const f = gender === 'female';
   const m = gender === 'male';
   const g = (fem: string, mas: string, neu: string) => (f ? fem : m ? mas : neu);
-  return [
-    `מחקתי את ההודעה הזאת מיד 🙏 ${g('לא נתת', 'לא נתת', 'אין לי')} ${f || m ? 'לי ' : ''}הסכמה לשמירת מידע בריאותי, אז את הנושא הזה אני לא יכול לגעת בו.`,
-    'היא באמת נמחקה — לא נשמרה אצלנו בשום מקום ולא עברה הלאה.',
-    `אם אי פעם ${g('תרצי', 'תרצה', 'יתאים לך')}, אפשר להפעיל את ההסכמה בהגדרות הפרטיות. בינתיים — ${g('ספרי', 'ספר', 'אפשר לספר')} לי על כל דבר אחר, אני כאן.`,
-  ].join('\n');
+  const variants = [
+    [
+      'אני שומע שזה מעסיק אותך, ואני כאן איתך 💛',
+      'כדי לשמור על הפרטיות שלך, את הפרטים האלה אני לא שומר, ולכן ההודעה נמחקה.',
+      `${g('ספרי', 'ספר', 'אשמח לשמוע')} ${f || m ? 'לי' : ''} מה הולך טוב השבוע בתוכנית שלך, או שנבחר יחד הרגל אחד קטן למחר?`,
+    ],
+    [
+      `תודה ${g('ששיתפת', 'ששיתפת', 'על השיתוף')}, אני מבין שזה חשוב לך.`,
+      'כדי לשמור על הפרטיות שלך ההודעה הזאת נמחקה ולא נשמרה.',
+      `${g('בואי', 'בוא', 'אפשר')} ${f || m ? 'נסתכל' : 'להסתכל'} רגע על המשימות שלך להיום, איזו מהן הכי ${g('מתחשק לך', 'מתחשק לך', 'מתאימה')} להתחיל?`,
+    ],
+    [
+      'אני איתך, וזה בסדר גמור להרגיש ככה.',
+      'כדי לשמור על הפרטיות שלך, גם ההודעה הזאת נמחקה.',
+      `מה ${g('היית רוצה', 'היית רוצה', 'מתאים')} לחזק עכשיו בשגרה שלך, בוקר, ערב או אחד ההרגלים מהתוכנית?`,
+    ],
+  ];
+  return variants[Math.abs(opts.variant ?? 0) % variants.length].join(' ').replace(/\s{2,}/g, ' ');
 }
 
 /** System-prompt block for users without consent. */
 export const HEALTH_CONSENT_OFF_PROMPT = `\n[הסכמה למידע בריאותי: לא פעילה]
-- אסור לך לדון, לשאול, להסיק, לזכור או לתעד שום דבר על משקל, מדדים, תזונה/מעקב אכילה, מצב רפואי, תרופות או בריאות גופנית.
-- אם המשתמש פונה לנושא כזה: סרב בעדינות ובתוקף — "בלי הסכמה אני לא יכול לגעת בנושא הזה" — בלי ללחוץ עליו לתת הסכמה ובלי לחזור על מה שכתב.
-- אל תשתמש בשום מידע בריאותי מהעבר.`;
+- אל תדון, תשאל, תסיק, תזכור או תתעד מידע בריאותי: משקל, מדדים, תזונה ודיאטות, דפוסי אכילה (כולל אכילה רגשית), דימוי גוף, מצב רפואי או נפשי, תרופות.
+- אל תשתמש בשום מידע בריאותי מהעבר.
+- כשהשיחה נוגעת בזה: תגובה חמה ואנושית, 2–3 משפטים. הכר ברגש באמפתיה בלי להיכנס לתוכן, ובחום הזמן אותו לדבר על ההרגלים והתוכנית שלו ב-NuraWell (המשימות, השגרה, המטרות, מה הולך טוב השבוע), תוך שימוש בהקשר של השיחה.
+- אל תציע הסכמה ואל תזכיר אותה ביוזמתך — אפס לחץ.
+- שאלות על ההסכמה עצמה ("הסכמה של מה?", "למה?", "מי קבע?", "זה מעיק") הן לא מידע בריאותי — רק כשהוא שואל, ענה באמת, בחום ובניסוח משתנה: זה כדי להגן עליו, מידע בריאותי רגיש במיוחד לפי חוק הגנת הפרטיות, ההחלטה רק שלו, ואם ירצה אפשר להפעיל אותה בהגדרות או לבקש ממך. אחר כך חזור בטבעיות להרגלים ולתוכנית.
+- אסור להשתמש ב"אסור לי", "כללי השירות קובעים", "אני לא יכול לגעת בנושא" או בכל ניסוח ביורוקרטי; אל תאשים חוקים. אל תחזור על אותו משפט או אותה הצעה פעמיים בשיחה — גוון והתייחס להקשר.
+- פנה למשתמש לפי המגדר שלו, בלי לוכסנים.`;
 
 type Msg = { role?: string; parts?: Array<{ type?: string; text?: string }>; content?: unknown };
 
@@ -85,7 +106,19 @@ export async function respondWithHealthRedaction(p: {
   } catch {
     /* neutral wording */
   }
-  const reply = almogRedactionReply(gender);
+  let priorNotices = 0;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { count } = await (p.admin.from('ai_interactions') as any)
+      .select('id', { count: 'exact', head: true })
+      .eq('session_id', p.sessionId)
+      .eq('user_id', p.userId)
+      .contains('metadata', { redaction_notice: true });
+    priorNotices = Number(count ?? 0);
+  } catch {
+    /* treat as first notice */
+  }
+  const reply = almogRedactionReply(gender, { variant: priorNotices });
   try {
     await p.ensureSession(p.supabase, { sessionId: p.sessionId, userId: p.userId });
     await p.insert(p.supabase, {

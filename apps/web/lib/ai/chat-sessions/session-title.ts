@@ -1,5 +1,6 @@
 import { sealTableRow } from '@/lib/crypto/pii-seal';
 import { meteredFetch } from '@/lib/ai/usage-meter';
+import { isHealthText } from '@/lib/privacy/health-text';
 /**
  * שם ענייני לשיחה — מודל זול ללא reasoning (Llama 4 Maverick) ברקע, לא בנתיב ה-UI.
  */
@@ -138,9 +139,18 @@ export async function maybeAssignChatSessionTitle(
     summary?: string | null;
     /** מספר ההודעות בשיחה אחרי התור הנוכחי */
     messageCount?: number;
+    /** No active health-data consent: titles must never carry health content (and no model call on it). */
+    healthConsentOff?: boolean;
   }
 ): Promise<string | null> {
-  const existing = sanitizeChatSessionTitle(params.existingTitle);
+  const existingRaw = sanitizeChatSessionTitle(params.existingTitle);
+  const existing = params.healthConsentOff && isHealthText(existingRaw) ? null : existingRaw;
+  if (params.healthConsentOff && (isHealthText(params.userMessage) || isHealthText(params.assistantMessage))) {
+    // never send health text to the title model; clear a health title that slipped in earlier
+    if (existingRaw && !existing) await clearHealthTitle(supabase, params.sessionId, params.userId);
+    return existing;
+  }
+  if (existingRaw && !existing) await clearHealthTitle(supabase, params.sessionId, params.userId);
   if (!shouldRetitleAt(params.messageCount ?? 0, Boolean(existing))) return existing;
 
   const meta = await generateChatSessionMeta({
@@ -149,7 +159,8 @@ export async function maybeAssignChatSessionTitle(
     liveFile: params.liveFile,
     currentTitle: existing,
   });
-  const title = meta.title ?? existing ?? titleFromSummaryFallback(params.summary);
+  let title = meta.title ?? existing ?? titleFromSummaryFallback(params.summary);
+  if (params.healthConsentOff && isHealthText(title)) title = existing;
   if (!title) return null;
 
   const patch: Record<string, unknown> = { title, updated_at: new Date().toISOString() };
@@ -170,4 +181,19 @@ export async function maybeAssignChatSessionTitle(
     return null;
   }
   return title;
+}
+
+/** Health-consent gate for titles — no-consent users never keep a health title. */
+export function gateTitleForConsent(title: string | null | undefined, healthConsentOff: boolean): string | null {
+  const t = title ?? null;
+  return healthConsentOff && isHealthText(t) ? null : t;
+}
+
+async function clearHealthTitle(supabase: SupabaseClient, sessionId: string, userId: string): Promise<void> {
+  const { error } = await supabase
+    .from('chat_sessions')
+    .update({ title: null, updated_at: new Date().toISOString() })
+    .eq('id', sessionId)
+    .eq('user_id', userId);
+  if (error) console.warn('[maybeAssignChatSessionTitle]', 'clear_health_title_failed');
 }
