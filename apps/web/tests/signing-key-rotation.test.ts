@@ -1,8 +1,12 @@
 import { generateKeyPairSync, sign } from 'node:crypto';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const old = generateKeyPairSync('ed25519');
-const oldPem = old.publicKey.export({ format: 'pem', type: 'spki' }).toString();
+const { old, oldPem } = vi.hoisted(() => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { generateKeyPairSync: gen } = require('node:crypto') as typeof import('node:crypto');
+  const kp = gen('ed25519');
+  return { old: kp, oldPem: kp.publicKey.export({ format: 'pem', type: 'spki' }).toString() };
+});
 vi.mock('@/lib/legal/signing-keys-retired', () => ({
   RETIRED_SIGNING_KEYS: [{ keyId: 'old', pem: oldPem, validFrom: '2026-01-01', retiredAt: '2026-10-20', reason: 'test' }],
 }));
