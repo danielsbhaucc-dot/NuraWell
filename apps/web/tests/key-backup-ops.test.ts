@@ -51,7 +51,8 @@ describe('ops key backup', () => {
     const names = Object.keys(files);
     expect(names.some((n) => n.endsWith('keys.sealed.json'))).toBe(true);
     const all = Object.values(files).map((u) => strFromU8(u)).join('\n');
-    for (const s of b.shares) expect(all).not.toContain(s.split('-').pop()!);
+    // share payload is base64url, which itself may contain '-': strip the fixed header instead of splitting on '-'
+    for (const s of b.shares) expect(all).not.toContain(decodeShare(s).data.toString('base64url'));
     expect(renderGuide(b)).toContain(b.inventory[0].fingerprint);
     expect(renderShareCard(b.shares[0], 1, b.createdAt)).toContain('NWKS1');
   });
