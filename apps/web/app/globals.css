@@ -3,8 +3,11 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
-  /* Surfaces: warm cream instead of pure white (Ops + logs). AA verified vs slate-900/700 text. */
-  --color-cream: #f7f4ec;
+  /* Ops surfaces: soft green-cream instead of pure white (Ops shell + logs). AA verified vs slate-500..900 text.
+     Note: --color-cream is a shared main-site token (#f5faf2, near-white) defined below; Ops uses gc-* instead. */
+  --color-gc: #f3f5ec;
+  --color-gc-hi: #f1f4ea;
+  --color-gc-canvas: #ebeee2;
   --color-cream-tint: #f1f4ea;
   --color-cream-deep: #e9e4d6;
   --color-primary-50: #ecfdf5;

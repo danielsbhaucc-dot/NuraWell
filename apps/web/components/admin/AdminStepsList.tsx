@@ -91,7 +91,7 @@ export function AdminStepsList({ steps: initialSteps, showIntro = true }: AdminS
         ) : null}
         <Link
           href={`${opsBase}/steps/new`}
-          className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-linear-to-l from-emerald-600 to-teal-500 px-5 py-3 text-sm font-bold text-cream shadow-lg shadow-emerald-500/25 transition-all hover:brightness-110 active:scale-[0.98] sm:w-auto sm:min-w-0 sm:self-end sm:py-2.5"
+          className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-linear-to-l from-emerald-600 to-teal-500 px-5 py-3 text-sm font-bold text-gc shadow-lg shadow-emerald-500/25 transition-all hover:brightness-110 active:scale-[0.98] sm:w-auto sm:min-w-0 sm:self-end sm:py-2.5"
         >
           <Plus className="h-4 w-4" />
           <span>צעד חדש</span>
@@ -106,7 +106,7 @@ export function AdminStepsList({ steps: initialSteps, showIntro = true }: AdminS
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.05 }}
-            className="flex flex-col gap-3 rounded-2xl border border-cream/40 bg-background-card/45 p-4 shadow-[0_8px_28px_rgba(15,23,42,0.08)] backdrop-blur-xl transition-all sm:flex-row sm:items-center sm:gap-4 sm:hover:border-emerald-400/35 hover:bg-background-card/55 sm:hover:shadow-[0_10px_36px_rgba(16,185,129,0.12)]"
+            className="flex flex-col gap-3 rounded-2xl border border-gc/40 bg-background-card/45 p-4 shadow-[0_8px_28px_rgba(15,23,42,0.08)] backdrop-blur-xl transition-all sm:flex-row sm:items-center sm:gap-4 sm:hover:border-emerald-400/35 hover:bg-background-card/55 sm:hover:shadow-[0_10px_36px_rgba(16,185,129,0.12)]"
             style={{
               opacity: isDeleting === step.id ? 0.5 : 1,
             }}
@@ -222,7 +222,7 @@ export function AdminStepsList({ steps: initialSteps, showIntro = true }: AdminS
           <p className="text-sm text-gray-500 mb-6">צרו את הצעד הראשון במסע</p>
           <Link
             href={`${opsBase}/steps/new`}
-            className="inline-flex min-h-11 w-full max-w-xs items-center justify-center gap-2 rounded-xl bg-linear-to-l from-emerald-600 to-teal-500 px-6 py-3 font-bold text-cream shadow-lg shadow-emerald-500/25 active:scale-[0.98] sm:w-auto"
+            className="inline-flex min-h-11 w-full max-w-xs items-center justify-center gap-2 rounded-xl bg-linear-to-l from-emerald-600 to-teal-500 px-6 py-3 font-bold text-gc shadow-lg shadow-emerald-500/25 active:scale-[0.98] sm:w-auto"
           >
             <Plus className="h-4 w-4" /> צעד חדש
           </Link>
