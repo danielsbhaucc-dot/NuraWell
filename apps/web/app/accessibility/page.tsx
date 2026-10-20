@@ -30,6 +30,8 @@ export default function AccessibilityPage() {
     <LegalShell
       icon={<Accessibility className="w-8 h-8" />}
       title="נגישות וזכויות יוצרים"
+      titleAccent="לכולם, בלי מחסומים."
+      currentPath="/accessibility"
       subtitle="אנו מחויבים לחוויה נגישה ושוויונית לכולם, ולשמירה מלאה על זכויות היוצרים והקניין הרוחני."
       updatedAt={UPDATED_AT}
     >
@@ -56,7 +58,7 @@ export default function AccessibilityPage() {
           </ul>
         </LegalSection>
 
-        <LegalSection num="2א" title="סטטוס תאימות (חשוב)">
+        <LegalSection num="2.1" title="סטטוס תאימות (חשוב)">
           <LegalCallout tone="warn" icon={<Sparkles className="w-5 h-5" />}>
             <strong>השירות לא הוכרז כנגיש במלואו לפי WCAG 2.2 AA.</strong> ביצענו תשתית נגישות
             (תפריט התאמות, skip link, zoom, כלי alt בניהול) וממשיכים בתיקונים שיטתיים. הצהרה זו
@@ -94,7 +96,7 @@ export default function AccessibilityPage() {
             <li><strong>תמיכה מלאה ב-RTL</strong> וממשק בעברית, המותאם לקריאה מימין לשמאל.</li>
             <li><Keyboard className="inline w-4 h-4 align-middle text-emerald-600" aria-hidden /> <strong>ניווט מקלדת</strong> וקישור &quot;דילוג לתוכן הראשי&quot; בתחילת כל עמוד.</li>
             <li><MousePointerClick className="inline w-4 h-4 align-middle text-emerald-600" aria-hidden /> <strong>סימון פוקוס ברור</strong> (focus-visible) לכל הרכיבים האינטראקטיביים.</li>
-            <li><Eye className="inline w-4 h-4 align-middle text-emerald-600" aria-hidden /> <strong>ניגודיות צבעים</strong> וטיפוגרפיה קריאה (גופני Heebo ו-Rubik).</li>
+            <li><Eye className="inline w-4 h-4 align-middle text-emerald-600" aria-hidden /> <strong>ניגודיות צבעים</strong> וטיפוגרפיה קריאה (גופני Rubik ו-Assistant).</li>
             <li><strong>מבנה סמנטי</strong> — כותרות, אזורים (landmarks), תוויות ARIA ו-<code>aria-current</code> בניווט.</li>
             <li><strong>כיבוד העדפת תנועה מופחתת</strong> (prefers-reduced-motion) — אנימציות מתעדנות אוטומטית, ובנוסף אפשרות ידנית בתפריט הנגישות.</li>
             <li><strong>הגדלת תצוגה</strong> — תמיכה ב-zoom עד 500% (WCAG 1.4.4).</li>
@@ -189,7 +191,7 @@ export default function AccessibilityPage() {
         <LegalSection num="14" title="ייחוס לצד שלישי">
           <p>
             השירות עושה שימוש ברכיבי קוד פתוח, ספריות, גופנים ונכסים של צדדים שלישיים, בכפוף לרישיונות
-            שלהם — בהם גופני Google Fonts (Heebo, Rubik), אייקוני Lucide, וספריות תוכנה בקוד פתוח. כל
+            שלהם — בהם גופנים בקוד פתוח (Heebo, Rubik, Assistant), אייקוני Lucide, וספריות תוכנה בקוד פתוח. כל
             הזכויות ברכיבים אלה שמורות לבעליהן בהתאם לרישיון הרלוונטי.
           </p>
         </LegalSection>

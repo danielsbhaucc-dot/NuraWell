@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-/** כותרת סעיף ממוספרת בעיצוב זכוכית. */
+/** Numbered section with gold numbering and a separator above it (C3). */
 export function LegalSection({
   id,
   num,
@@ -13,24 +13,25 @@ export function LegalSection({
   children: ReactNode;
 }) {
   return (
-    <section id={id} className="legal-section">
-      <div className="legal-section-head">
-        <span className="legal-section-num" aria-hidden>
-          {num}
-        </span>
-        <h2 className="legal-section-title">{title}</h2>
-      </div>
-      <div className="legal-prose">{children}</div>
-    </section>
+    <>
+      <div className="ld-sep" aria-hidden />
+      <section id={id} className="ld-sec" data-num={String(num)}>
+        <h2 className="ld-h2">
+          <span className="ld-num">{num}.</span>
+          {title}
+        </h2>
+        <div className="ld-panel ld-glass ld-prose">{children}</div>
+      </section>
+    </>
   );
 }
 
-/** כרטיס זכוכית עוטף (ניתן לקבץ כמה סעיפים יחד). */
+/** Group wrapper (kept for API compatibility; layout handled by sections). */
 export function LegalCard({ children }: { children: ReactNode }) {
-  return <div className="legal-card">{children}</div>;
+  return <div className="ld-group">{children}</div>;
 }
 
-/** קולאאוט מודגש — ניטרלי / אזהרה / קריטי. */
+/** Highlighted callout — info / warn / danger. */
 export function LegalCallout({
   tone = 'info',
   icon,
@@ -40,22 +41,16 @@ export function LegalCallout({
   icon?: ReactNode;
   children: ReactNode;
 }) {
-  const toneClass = tone === 'warn' ? 'warn' : tone === 'danger' ? 'danger' : '';
   return (
-    <div className={`legal-callout ${toneClass}`}>
-      {icon ? (
-        <span className="legal-callout-icon" aria-hidden>
-          {icon}
-        </span>
-      ) : null}
-      <div className="legal-callout-body">{children}</div>
+    <div className={`ld-callout ld-callout--${tone}`} role={tone === 'danger' ? 'note' : undefined}>
+      {icon ? <span className="ld-ib" aria-hidden>{icon}</span> : null}
+      <div className="ld-callout-body">{children}</div>
     </div>
   );
 }
 
-/** רשת פריטי נתונים (למדיניות פרטיות — מה נאסף + למה). */
 export function LegalDataGrid({ children }: { children: ReactNode }) {
-  return <div className="legal-data-grid">{children}</div>;
+  return <div className="ld-cards ld-cards--grid">{children}</div>;
 }
 
 export function LegalDataItem({
@@ -70,16 +65,12 @@ export function LegalDataItem({
   why: ReactNode;
 }) {
   return (
-    <div className="legal-data-item">
-      {/* כותרת כטקסט מודגש (לא heading) — מונע דילוג heading-order ב-axe */}
-      <p className="legal-data-item-title">
-        {icon ? <span aria-hidden>{icon}</span> : null}
+    <div className="ld-card t-em">
+      {icon ? <span className="ld-ib" aria-hidden>{icon}</span> : null}
+      <span>
         <strong>{title}</strong>
-      </p>
-      <p>{what}</p>
-      <span className="legal-data-why">
-        <strong>למה זה נאסף: </strong>
-        {why}
+        <span className="ld-card-txt">{what}</span>
+        <span className="ld-card-txt"><strong>למה זה נאסף: </strong>{why}</span>
       </span>
     </div>
   );
