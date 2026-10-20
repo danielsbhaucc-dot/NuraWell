@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { CheckCircle2, ChevronDown, Download, FileText, Image as ImageIcon, Loader2, Search, ShieldAlert, ShieldCheck, Scale, Mail } from 'lucide-react';
-import { opsGlassBtnClass, opsGlassCardClass } from '@/components/admin/OpsPanel';
+import { OpsDivider, opsGlassBtnClass, opsGlassCardClass } from '@/components/admin/OpsPanel';
 import { cn } from '@/lib/cn';
 
 type UserRow = { user_id: string; name: string | null; email: string | null; events: number; last_action: string; last_at: string };
@@ -79,7 +79,7 @@ export function AdminLegalPanel() {
           <Search size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden />
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="חיפוש לפי שם או מייל" className="w-full rounded-xl border border-gc/60 bg-white/70 py-2.5 pr-9 pl-3 text-sm outline-none focus:ring-2 focus:ring-emerald-300" />
         </label>
-        <div className="my-3 h-px bg-gradient-to-l from-transparent via-amber-300/70 to-transparent" />
+        <OpsDivider className="my-3 px-0 sm:px-0" />
         {!users ? <Loader2 className="mx-auto my-6 animate-spin text-slate-400" /> : filtered.length === 0 ? <p className="py-6 text-center text-sm text-slate-500">אין עדיין תיעוד</p> : (
           <ul className="max-h-[60vh] space-y-1.5 overflow-y-auto">
             {filtered.map((u) => (
