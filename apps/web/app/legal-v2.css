@@ -57,7 +57,7 @@
 .ld-stat strong { display: block; font-family: var(--f-display); font-size: 20px; } .ld-stat small { font-size: 15px; }
 
 /* TOC */
-.ld-toc { position: sticky; top: 80px; z-index: 20; margin-top: 40px !important; border-radius: 999px; padding: 6px; width: max-content; max-width: 100% !important; overflow-x: auto; scrollbar-width: none; }
+.ld-toc { position: sticky; top: 80px; z-index: 20; margin-top: 40px !important; border-radius: 999px; padding: 6px; width: max-content; max-width: min(1120px, 100%) !important; overflow-x: auto; scrollbar-width: none; }
 .ld-toc ol { list-style: none; display: flex; gap: 2px; margin: 0; padding: 0; }
 .ld-toc a { display: flex; align-items: center; gap: 7px; white-space: nowrap; text-decoration: none; color: var(--mut); font-weight: 600; font-size: 14px; padding: 8px 15px; border-radius: 999px; transition: background .25s, color .25s; }
 .ld-toc-n { font-size: 11px; font-weight: 800; color: var(--gold-ink); font-variant-numeric: tabular-nums; }
@@ -112,8 +112,8 @@
 .ld-prose strong { color: #10291c; }
 .ld-group > .ld-callout:first-child { margin-top: var(--gap); }
 .ld-callout, .ld .ld-callout { display: flex; gap: 16px; align-items: flex-start; border-radius: var(--r-m); padding: 20px 22px; margin: 0 0 18px; background: linear-gradient(165deg, rgba(236,253,245,.9), rgba(204,251,241,.55)); border: 1px solid var(--bd); border-inline-start: 4px solid #10b981; }
-.ld-callout--warn { background: linear-gradient(165deg, rgba(255,251,235,.95), rgba(254,243,199,.7)); border-inline-start-color: #d97706; }
-.ld-callout--danger { background: linear-gradient(165deg, rgba(255,241,236,.95), rgba(254,226,214,.7)); border-inline-start-color: #c2410c; }
+.ld .ld-callout--warn { background: linear-gradient(165deg, rgba(255,251,235,.95), rgba(254,243,199,.7)); border-inline-start-color: #d97706; }
+.ld .ld-callout--danger { background: linear-gradient(165deg, rgba(255,241,236,.95), rgba(254,226,214,.7)); border-inline-start-color: #c2410c; }
 .ld-callout--danger .ld-ib { color: #c2410c; } .ld-callout--warn .ld-ib { color: #b45309; }
 .ld-callout-body { flex: 1; min-width: 0; }
 
@@ -159,6 +159,8 @@
   .ld-acc-body { padding: 20px 18px 22px; } .ld-panel { padding: 22px 18px; border-radius: 24px; }
   .ld-quote { padding: 28px 22px; border-radius: 26px; display: block; }
   .ld .legal-emergency-grid { grid-template-columns: 1fr 1fr; }
+  .ld .ld-callout { flex-direction: column; gap: 12px; padding: 18px; }
+  .ld-ib { width: 46px; height: 46px; border-radius: 15px; }
   /* Table -> labelled cards */
   .ld-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
   .ld-table, .ld-table tbody, .ld-table tr, .ld-table th, .ld-table td { display: block; width: 100%; }
