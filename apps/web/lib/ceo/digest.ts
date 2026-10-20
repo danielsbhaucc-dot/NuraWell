@@ -8,7 +8,7 @@ import { allowedChatIds, opsLink } from './channel';
 import { digestRecipients, readGideonSettings, type GideonSettings } from './settings';
 import { CEO_CONTENT_MODEL, complete } from './llm';
 import { TOOL_BY_NAME } from './tools';
-import { privacyDigestLine } from '../privacy/compliance-server';
+import { privacyDigestLine, privacyReopenedLine } from '../privacy/compliance-server';
 import { dueForReminder, formatTaskLine, openOwnerTasks, taskButtons } from './owner-tasks';
 
 export type CostAnomaly = { component: string; culprit: string; yesterday_usd: number; baseline_usd: number; ratio: number | null };
@@ -76,7 +76,9 @@ async function buildDigestInner(db: SupabaseClient, period: DigestPeriod, deps: 
   const title = { daily: '☀️ עדכון יומי', weekly: '📊 סיכום שבועי', monthly: '🧭 דוח חודשי' }[period];
   const links = `\n\n🔗 ${opsLink('/business')}\n🔗 ${opsLink('/errors')}\n🔗 ${opsLink('/ceo')}`;
   // monthly only: one deterministic line about open privacy-compliance items (no extra model call)
-  const privacy = period === 'monthly' ? await privacyDigestLine(db, opsLink('/privacy')).catch(() => null) : null;
+  // daily: mention compliance items that auto-reopened in the last 24h (once per item, no extra message)
+  const privacy = period === 'monthly' ? await privacyDigestLine(db, opsLink('/privacy')).catch(() => null)
+    : period === 'daily' ? await privacyReopenedLine(db, opsLink('/privacy')).catch(() => null) : null;
   return `${title} · ${CEO_NAME}\n\n${(message.content ?? '').trim()}${privacy ? `\n\n${privacy}` : ''}${links}`;
 }
 

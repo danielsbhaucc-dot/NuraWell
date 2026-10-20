@@ -17,6 +17,8 @@ export type ComplianceItem = {
   yearly?: boolean;
   /** Re-do interval in months (external tests). */
   everyMonths?: number;
+  /** Periodic re-review interval in months for items that are not yearly/everyMonths (reopens automatically). */
+  reviewMonths?: number;
   auto?: ComplianceAuto;
   ack?: string;
 };
@@ -42,7 +44,7 @@ export const MFA_VENDORS: ComplianceSub[] = [
 ];
 
 export const COMPLIANCE_ITEMS: ComplianceItem[] = [
-  { key: 'business_details', group: 'owner', title: 'מילוי פרטי העסק במסמכים',
+  { key: 'business_details', group: 'owner', reviewMonths: 12, title: 'מילוי פרטי העסק במסמכים',
     why: 'החוק דורש לדעת מי בעל המאגר ומי אחראי עליו. בלי שם, מספר עוסק וכתובת, המסמכים לא שווים כלום מול הרשות.',
     how: ['פותחים כל מסמך (01–09) בגרסת Word.', 'ממלאים את כל מה שמסומן בצהוב: שם משפטי, ח.פ. או ע.מ., כתובת ופרטי קשר.', 'שומרים עותק חתום אצלך.'],
     links: [doc('01-database-definitions.docx', 'מסמך 01 (Word)')] },
@@ -50,18 +52,18 @@ export const COMPLIANCE_ITEMS: ComplianceItem[] = [
     why: 'החתימה היא ההוכחה שבעל המאגר קרא ואישר. התקנות מחייבות לעדכן ולאשר מחדש פעם בשנה, ולכן הסעיף נפתח מחדש כל ינואר.',
     how: ['קוראים את מסמך 01 ואת נוהל האבטחה (02).', 'מתקנים מה שלא נכון, חותמים ושומרים.', 'מסמנים כאן. עד 31 בדצמבר של כל שנה צריך לעבור שוב ולאשר.'],
     links: [doc('01-database-definitions.pdf', 'מסמך 01'), doc('02-security-procedure.pdf', 'מסמך 02')] },
-  { key: 'dpa', group: 'owner', title: 'הסכמי עיבוד מידע עם ספקים מחוץ לאיחוד האירופי',
+  { key: 'dpa', group: 'owner', reviewMonths: 12, title: 'הסכמי עיבוד מידע עם ספקים מחוץ לאיחוד האירופי',
     why: 'כשמידע עובר לספק בחו"ל, צריך התחייבות כתובה שהוא שומר עליו, לפי תקנות ההעברה ותקנה 15. בלי הסכם, ההעברה עצמה עלולה להיות הפרה.',
     how: ['לכל ספק: נכנסים לקישור, מורידים או מאשרים את הסכם ה־DPA (בדרך כלל בלחיצה בהגדרות החשבון).', 'שומרים את הקובץ בתיקייה אחת.', 'מסמנים את הספק כאן.'],
     subs: DPA_VENDORS, links: [doc('06-subprocessors.pdf', 'מסמך 06 (חסוי)')] },
-  { key: 'mfa', group: 'owner', title: 'אימות דו־שלבי בכל חשבונות הספקים',
+  { key: 'mfa', group: 'owner', reviewMonths: 6, title: 'אימות דו־שלבי בכל חשבונות הספקים',
     why: 'רוב הפריצות מתחילות בסיסמה שדלפה. אימות דו־שלבי חוסם את זה, והוא חלק מבקרת הגישה שהתקנות דורשות.',
     how: ['נכנסים להגדרות האבטחה בכל חשבון.', 'מפעילים אפליקציית אימות או מפתח אבטחה (לא SMS אם אפשר).', 'שומרים את קודי הגיבוי במנהל סיסמאות ומסמנים כאן.'],
     subs: MFA_VENDORS },
-  { key: 'lawyer_review', group: 'owner', title: 'בדיקת עורך דין לפרטיות',
+  { key: 'lawyer_review', group: 'owner', reviewMonths: 24, title: 'בדיקת עורך דין לפרטיות',
     why: 'המסמכים הם טיוטה טכנית. רק עורך דין יכול לאשר שהם מספיקים מבחינה משפטית, וזה מה שמגן עליך אם תהיה תלונה.',
     how: ['שולחים לעורך דין שמתמחה בהגנת הפרטיות את המסמכים 01–09 ואת מדיניות הפרטיות ותנאי השימוש.', 'מתקנים לפי ההערות ושומרים את חוות הדעת.'] },
-  { key: 'dpo_decision', group: 'owner', title: 'החלטה על ממונה פרטיות',
+  { key: 'dpo_decision', group: 'owner', reviewMonths: 12, title: 'החלטה על ממונה פרטיות',
     why: 'כרגע לא חובה, אבל מינוי מוקדם מקטין קנסות. ההחלטה עצמה צריכה להיות מתועדת.',
     how: ['קוראים את מסמך 07.', 'מחליטים: למנות עכשיו (שירות חיצוני) או לבדוק שוב ב־1,000 משתמשים.', 'רושמים את ההחלטה ומסמנים.'],
     links: [doc('07-dpo-recommendation.pdf', 'מסמך 07')] },
@@ -117,16 +119,51 @@ export function allItemKeys(): string[] {
 
 const ilYear = (d: Date) => Number(new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jerusalem', year: 'numeric' }).format(d));
 
-/** Status of one toggle row, applying yearly / every-N-months expiry. */
-export function rowDone(item: ComplianceItem, row: ComplianceRow | undefined, now = new Date()): boolean {
-  if (!row?.done || !row.done_at) return false;
+const DAY = 86_400_000;
+/** Reopen this many days before a month-based due date, so there is time to act. */
+export const REOPEN_LEAD_DAYS = 30;
+
+const addMonths = (d: Date, m: number) => { const x = new Date(d); x.setUTCMonth(x.getUTCMonth() + m); return x; };
+/** 31 Dec 23:59:59 Asia/Jerusalem (UTC+2 in winter). */
+const ilYearEnd = (y: number) => new Date(Date.UTC(y, 11, 31, 21, 59, 59));
+const ilYearStart = (y: number) => new Date(Date.UTC(y - 1, 11, 31, 22, 0, 0));
+
+export type RowSchedule = { nextDue: Date; reopenAt: Date } | null;
+
+/**
+ * When a completed row must be redone. null = one-off (never expires).
+ * yearly: valid for the calendar year it was done in, reopens 1 Jan, due 31 Dec of the next year.
+ * everyMonths / reviewMonths: due done_at + N months, reopens REOPEN_LEAD_DAYS before.
+ */
+export function rowSchedule(item: ComplianceItem, doneAt: Date): RowSchedule {
+  if (item.yearly) { const y = ilYear(doneAt) + 1; return { nextDue: ilYearEnd(y), reopenAt: ilYearStart(y) }; }
+  const months = item.everyMonths ?? item.reviewMonths;
+  if (!months) return null;
+  const nextDue = addMonths(doneAt, months);
+  return { nextDue, reopenAt: new Date(nextDue.getTime() - REOPEN_LEAD_DAYS * DAY) };
+}
+
+const validAt = (row: ComplianceRow | undefined) => {
+  if (!row?.done || !row.done_at) return null;
   const at = new Date(row.done_at);
-  if (item.yearly && ilYear(at) < ilYear(now)) return false;
-  if (item.everyMonths) {
-    const exp = new Date(at); exp.setMonth(exp.getMonth() + item.everyMonths);
-    if (exp <= now) return false;
-  }
-  return true;
+  return Number.isFinite(at.getTime()) ? at : null; // fail-safe: unparsable date = not done
+};
+
+/** Status of one toggle row: done until its reopen moment, then needs work again. */
+export function rowDone(item: ComplianceItem, row: ComplianceRow | undefined, now = new Date()): boolean {
+  const at = validAt(row);
+  if (!at || at.getTime() > now.getTime() + DAY) return false; // future-dated = suspicious → open
+  const sch = rowSchedule(item, at);
+  return !sch || now < sch.reopenAt;
+}
+
+/** 'done' | 'open' (reopened, still before due) | 'overdue' (past due) for a single row. */
+export function rowState(item: ComplianceItem, row: ComplianceRow | undefined, now = new Date()): 'done' | 'open' | 'overdue' {
+  if (rowDone(item, row, now)) return 'done';
+  const at = validAt(row);
+  if (!at) return 'open';
+  const sch = rowSchedule(item, at);
+  return sch && now >= sch.nextDue ? 'overdue' : 'open';
 }
 
 export type AutoFacts = { userCount: number; auditEvents30d: number; drill?: { ok: boolean; at: string } | null };
@@ -136,17 +173,58 @@ export function itemState(item: ComplianceItem, rows: Map<string, ComplianceRow>
   if (item.auto === 'thresholds') return facts.userCount >= THRESHOLDS.dpo ? 'overdue' : 'done';
   if (item.auto === 'backup_drill') {
     const d = facts.drill;
-    if (!d) return 'open';
+    const t = d ? Date.parse(d.at) : NaN;
+    if (!d || !Number.isFinite(t)) return 'open';
     if (!d.ok) return 'overdue';
-    return now.getTime() - Date.parse(d.at) > DRILL_MAX_AGE_DAYS * 86_400_000 ? 'overdue' : 'done';
+    return now.getTime() - t > DRILL_MAX_AGE_DAYS * DAY ? 'overdue' : 'done';
   }
   if (item.subs) {
-    const n = item.subs.filter((s) => rowDone(item, rows.get(`${item.key}:${s.key}`), now)).length;
-    return n === item.subs.length ? 'done' : n ? 'partial' : 'open';
+    const st = item.subs.map((s) => rowState(item, rows.get(`${item.key}:${s.key}`), now));
+    const n = st.filter((x) => x === 'done').length;
+    if (n === st.length) return 'done';
+    if (st.includes('overdue')) return 'overdue';
+    return n ? 'partial' : 'open';
   }
-  const row = rows.get(item.key);
-  if (rowDone(item, row, now)) return 'done';
-  return row?.done ? 'overdue' : 'open'; // was done, expired → overdue
+  return rowState(item, rows.get(item.key), now);
+}
+
+/** Earliest next-due date of an item (null when unknown/one-off/not yet done). */
+export function itemNextDue(item: ComplianceItem, rows: Map<string, ComplianceRow>, facts: AutoFacts): Date | null {
+  if (item.auto === 'backup_drill') {
+    const t = facts.drill ? Date.parse(facts.drill.at) : NaN;
+    return Number.isFinite(t) ? new Date(t + DRILL_MAX_AGE_DAYS * DAY) : null;
+  }
+  if (item.auto) return null;
+  const keyRows = item.subs ? item.subs.map((s) => rows.get(`${item.key}:${s.key}`)) : [rows.get(item.key)];
+  let best: Date | null = null;
+  for (const r of keyRows) {
+    const at = validAt(r);
+    const sch = at ? rowSchedule(item, at) : null;
+    if (sch && (!best || sch.nextDue < best)) best = sch.nextDue;
+  }
+  return best;
+}
+
+/** Items that were done but automatically reopened in (since, now] — for a one-time digest mention. */
+export function reopenedItems(rows: Map<string, ComplianceRow>, facts: AutoFacts, since: Date, now = new Date()): ComplianceItem[] {
+  return COMPLIANCE_ITEMS.filter((item) => {
+    if (item.auto === 'backup_drill') {
+      const t = facts.drill?.ok ? Date.parse(facts.drill.at) : NaN;
+      const r = t + DRILL_MAX_AGE_DAYS * DAY;
+      return Number.isFinite(r) && r > since.getTime() && r <= now.getTime();
+    }
+    if (item.auto) return false;
+    const keyRows = item.subs ? item.subs.map((s) => rows.get(`${item.key}:${s.key}`)) : [rows.get(item.key)];
+    return keyRows.some((r) => { const at = validAt(r); const sch = at ? rowSchedule(item, at) : null; return !!sch && sch.reopenAt > since && sch.reopenAt <= now; });
+  });
+}
+
+/** Human interval label. */
+export function intervalLabel(item: ComplianceItem): string | null {
+  if (item.yearly) return 'כל שנה';
+  const m = item.everyMonths ?? item.reviewMonths;
+  if (item.auto === 'backup_drill') return 'כל חודש';
+  return m ? (m === 12 ? 'כל שנה' : m === 24 ? 'כל שנתיים' : `כל ${m} חודשים`) : null;
 }
 
 /** Due date label for yearly items: 31 Dec of the current IL year. */
