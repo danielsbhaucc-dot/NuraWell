@@ -96,7 +96,9 @@ describe('platform logs', () => {
   it('not_configured without tokens and no fetch', async () => {
     delete process.env.LEGAL_LOGS_SUPABASE_TOKEN; delete process.env.LEGAL_LOGS_VERCEL_TOKEN;
     const f = (() => { throw new Error('no fetch'); }) as any;
-    expect((await fetchSupabaseLogs('u', '2026-10-01T10:00:00Z', f)).status).toBe('not_configured');
+    expect((await fetchSupabaseLogs('00000000-0000-0000-0000-000000000001', '2026-10-01T10:00:00Z', null)).status).toBe('not_configured');
+    const rpc = { rpc: async () => ({ data: [{ source: 'auth.audit_log_entries', action: 'login' }], error: null }) };
+    expect((await fetchSupabaseLogs('00000000-0000-0000-0000-000000000001', '2026-10-01T10:00:00Z', rpc)).status).toBe('ok');
     expect((await fetchVercelContext('2026-10-01T10:00:00Z', null, f)).status).toBe('not_configured');
   });
 });

@@ -1,10 +1,10 @@
 import 'server-only';
 /**
  * On-demand only: pulls the provider-side request logs around ONE consent event (no continuous
- * copying). Database provider: Supabase Management API `analytics/endpoints/logs` (ClickHouse SQL).
+ * copying). Database: own audit tables via service role (no account-wide token).
  * Hosting provider: Vercel API (deployment that served the request; Vercel keeps runtime logs only
  * briefly and has no historical query API without a log drain, which we deliberately do not run).
- * Tokens are optional, read-only scoped: LEGAL_LOGS_SUPABASE_TOKEN, LEGAL_LOGS_VERCEL_TOKEN.
+ * Hosting token: LEGAL_LOGS_VERCEL_TOKEN (team-scoped).
  */
 export type ProviderLogs = { provider: string; source: string; status: 'ok' | 'not_configured' | 'error' | 'empty'; note?: string; rows: Array<Record<string, unknown>> };
 
@@ -15,25 +15,22 @@ export function logWindow(createdAt: string, padSec = 60) {
   return { start: new Date(t - padSec * 1000).toISOString(), end: new Date(t + padSec * 1000).toISOString() };
 }
 
-export function supabaseLogSql(userId: string): string {
-  if (!/^[0-9a-f-]{36}$/i.test(userId)) throw new Error('bad_user');
-  // Only requests touching this user's consent/evidence rows; bounded result.
-  return `SELECT timestamp, event_message, log_attributes['request.path'] AS path, log_attributes['response.status_code'] AS status FROM logs WHERE (position(event_message, 'consent_evidence') > 0 OR position(event_message, 'user_consents') > 0 OR position(event_message, 'admin_audit_log') > 0 OR position(event_message, '${userId}') > 0) ORDER BY timestamp LIMIT 200`;
-}
+type RpcClient = { rpc: (fn: string, args: Record<string, unknown>) => PromiseLike<{ data: unknown; error: { message?: string } | null }> };
 
-export async function fetchSupabaseLogs(userId: string, createdAt: string, f: typeof fetch = fetch): Promise<ProviderLogs> {
-  const token = process.env.LEGAL_LOGS_SUPABASE_TOKEN?.trim();
-  const ref = sbRef();
-  const source = `Supabase Management API · project ${ref ?? '?'} · analytics/endpoints/logs`;
-  if (!token || !ref) return { provider: 'supabase', source, status: 'not_configured', note: 'LEGAL_LOGS_SUPABASE_TOKEN missing', rows: [] };
-  const w = logWindow(createdAt);
-  const q = new URLSearchParams({ sql: supabaseLogSql(userId), iso_timestamp_start: w.start, iso_timestamp_end: w.end });
+/**
+ * Database side without any account-wide token: a service-role-only SECURITY DEFINER function reads
+ * auth.audit_log_entries + admin_audit_log for this user in a ±10 min window (migration 000158).
+ */
+export async function fetchSupabaseLogs(userId: string, createdAt: string, admin: RpcClient | null): Promise<ProviderLogs> {
+  const source = `Database audit tables (auth.audit_log_entries, admin_audit_log) · project ${sbRef() ?? '?'}`;
+  if (!/^[0-9a-f-]{36}$/i.test(userId)) return { provider: 'supabase', source, status: 'error', note: 'bad_user', rows: [] };
+  if (!admin) return { provider: 'supabase', source, status: 'not_configured', note: 'no admin client', rows: [] };
+  const w = logWindow(createdAt, 600);
   try {
-    const r = await f(`https://api.supabase.com/v1/projects/${ref}/analytics/endpoints/logs?${q}`, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(20_000) });
-    const j = (await r.json().catch(() => ({}))) as { result?: Array<Record<string, unknown>>; error?: unknown };
-    if (!r.ok || j.error) return { provider: 'supabase', source, status: 'error', note: `http ${r.status}`, rows: [] };
-    const rows = j.result ?? [];
-    return { provider: 'supabase', source: `${source} · ${w.start} → ${w.end}`, status: rows.length ? 'ok' : 'empty', note: rows.length ? undefined : 'retention may have expired', rows };
+    const { data, error } = await admin.rpc('legal_db_audit_window', { p_user: userId, p_start: w.start, p_end: w.end });
+    if (error) return { provider: 'supabase', source, status: 'error', note: error.message?.slice(0, 120) ?? 'rpc_error', rows: [] };
+    const rows = (data as Array<Record<string, unknown>> | null) ?? [];
+    return { provider: 'supabase', source: `${source} · ${w.start} → ${w.end}`, status: rows.length ? 'ok' : 'empty', note: rows.length ? undefined : 'no audit rows in window', rows };
   } catch (e) {
     return { provider: 'supabase', source, status: 'error', note: e instanceof Error ? e.name : 'error', rows: [] };
   }

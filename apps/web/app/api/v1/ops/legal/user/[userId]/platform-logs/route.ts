@@ -33,7 +33,7 @@ export async function GET(request: Request, ctx: { params: Promise<{ userId: str
   const requestId = (() => { try { const p = JSON.parse(rec.payload_json) as { request_id?: unknown }; return typeof p.request_id === 'string' ? p.request_id : null; } catch { return null; } })();
   await auditLegalAccess(admin, auth.user.id, 'legal_platform_logs_requested', { user_id: userId, evidence_id: rec.id });
 
-  const [sb, vc] = await Promise.all([fetchSupabaseLogs(userId, rec.created_at), fetchVercelContext(rec.created_at, requestId)]);
+  const [sb, vc] = await Promise.all([fetchSupabaseLogs(userId, rec.created_at, admin), fetchVercelContext(rec.created_at, requestId)]);
   const generatedAt = new Date().toISOString();
   const caseRef = `NW-LOGS-${generatedAt.slice(0, 10).replace(/-/g, '')}-${rec.record_hash.slice(0, 6).toUpperCase()}`;
   const files: Record<string, Uint8Array> = {};
