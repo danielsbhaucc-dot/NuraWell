@@ -1,3 +1,4 @@
+import { limitIp } from '@/lib/ceo/stepup-http';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { readJsonBody } from '@/lib/api/json-request';
@@ -28,6 +29,8 @@ const schema = z.discriminatedUnion('kind', [
  * Level changes reuse /api/v1/tasks/level (ladder rules + task_events).
  */
 export async function POST(request: Request) {
+  const limited = await limitIp(request, 'ai-chat-agreements', 60);
+  if (limited) return limited;
   const auth = await requireApiSession(request);
   if (!auth.ok) return auth.response;
   const raw = await readJsonBody(request);
