@@ -118,7 +118,7 @@ export async function recordConsentEvidence(
   const segments: Array<{ i: number; sha256: string; bytes: number; storage: string; key: string }> = [];
   if (shot && shotSha && stored) {
     segments.push({ i: 1, sha256: shotSha, bytes: shot.length, ...stored });
-    for (const [j, url] of (sub.extraScreenshots ?? []).slice(0, 3).entries()) {
+    for (const [j, url] of (sub.extraScreenshots ?? []).slice(0, 5).entries()) {
       const b = await normalizeScreenshot(url).catch(() => null);
       if (!b) continue;
       const h = sha256Hex(b);
@@ -218,7 +218,7 @@ async function attest(admin: SupabaseClient, recordId: string, hash: string) {
   await admin.from('consent_evidence_attestations').insert(rows);
 }
 
-async function sendReceipt(
+export async function sendReceipt(
   admin: SupabaseClient,
   userId: string,
   recordId: string,

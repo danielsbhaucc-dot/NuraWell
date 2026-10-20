@@ -20,7 +20,7 @@ const bodySchema = z
     typed_word: z.string().max(40),
     checkbox: z.literal(true),
     screenshot: z.string().max(820_000).nullable().optional(),
-    screenshots: z.array(z.string().max(820_000)).max(4).optional(),
+    screenshots: z.array(z.string().max(820_000)).max(6).optional(),
     source: z.enum(['settings_privacy', 'chat', 'prompt']).optional(),
     client: z.record(z.string(), z.union([z.string().max(64), z.number(), z.null()])).optional(),
   })

@@ -5,7 +5,7 @@ import { publicKeyFingerprint, publicKeyPem, sha256Hex } from './evidence-crypto
 import { buildProvenance, chainNeighbors, corroboration, otsStatus, tsaName } from './evidence-provenance';
 import { publicAppOriginSync } from '@/lib/public-app-url';
 import { buildOtsFile, type OtsProof } from './ots';
-import { buildEvidencePdf, type PdfEvent } from './evidence-pdf';
+import { buildEvidencePdf, type PdfEvent, type PdfInput } from './evidence-pdf';
 import { decryptIp, loadLegalAccessLog, verifyUserEvidence, type EvidenceRow } from './evidence-verify';
 import { loadEvidenceImage } from './evidence-storage';
 import { readFile } from 'node:fs/promises';
@@ -71,7 +71,7 @@ export const verifyGuide = (fp: string, url: string, tsa: string) => `מדריך
     ו-records/NN/chain.txt (גיבובי הרשומה הקודמת והבאה).
 `;
 
-export async function buildEvidencePackage(admin: SupabaseClient, userId: string, actor: { id: string; label: string }) {
+export async function buildEvidencePackage(admin: SupabaseClient, userId: string, actor: { id: string; label: string }, opts: { override?: PdfInput['override'] } = {}) {
   const v = await verifyUserEvidence(admin, userId, { checkImages: true });
   const { data: au } = await admin.auth.admin.getUserById(userId);
   const { data: prof } = await admin.from('profiles').select('full_name').eq('id', userId).maybeSingle();
@@ -185,6 +185,7 @@ export async function buildEvidencePackage(admin: SupabaseClient, userId: string
     user: { name: (prof as { full_name?: string } | null)?.full_name || '—', email: au.user?.email ?? '—', id: userId, createdAt: au.user?.created_at ?? null },
     events,
     overallOk: v.ok,
+    override: opts.override,
     publicKeyPem: pubPem,
     publicKeyFingerprint: fingerprint,
     publicKeyUrl: keyUrl,
