@@ -5,9 +5,10 @@ import 'server-only';
  */
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { PDFDocument, rgb, StandardFonts, type PDFFont, type PDFPage, type PDFImage } from 'pdf-lib';
+import { PDFDocument, rgb, StandardFonts, PDFString, type PDFFont, type PDFPage, type PDFImage } from 'pdf-lib';
 import fontkit from '@pdf-lib/fontkit';
 import bidiFactory from 'bidi-js';
+import { verifyCode } from './verify-code';
 import { asciiJson, SOURCE_HE, type CorroborationRow, type OtsStatusRow, type ProvenanceRow } from './evidence-provenance';
 
 const bidi = bidiFactory();
@@ -121,6 +122,8 @@ export type PdfEvent = {
   checks: { label: string; ok: boolean | null }[];
   /** v2 report extras (all optional so older callers keep working). */
   screenshotShaComputed?: string | null;
+  /** Segments 2..n of a full-sheet scroll capture, in signed order. */
+  screenshotSegments?: Array<{ i: number; sha256: string; computed: string | null; png: Buffer | null }>;
   provenance?: ProvenanceRow[];
   corroboration?: CorroborationRow[];
   canonicalJson?: string;
@@ -142,7 +145,48 @@ export type PdfInput = {
   publicKeyFingerprint?: string;
   publicKeyUrl?: string;
   tsaName?: string;
+  /** Provider log pulls attached to this case, if any (on-demand). Anything not 'ok' is flagged. */
+  providerLogs?: Array<{ provider: string; status: string; note?: string }>;
 };
+
+export type Issue = { level: 'fail' | 'warn'; key: string; title: string; meaning: string; events: number[] };
+
+/**
+ * Every failed or incomplete check, grouped by kind, with the event numbers it affects. The PDF
+ * puts these on page 1 in red. Nothing here is ever filtered out.
+ */
+export function findIssues(input: Pick<PdfInput, 'events' | 'providerLogs'>): Issue[] {
+  const map = new Map<string, Issue>();
+  const add = (key: string, level: Issue['level'], title: string, meaning: string, n?: number) => {
+    const it = map.get(key) ?? { level, key, title, meaning, events: [] };
+    if (n !== undefined && !it.events.includes(n)) it.events.push(n);
+    map.set(key, it);
+  };
+  input.events.forEach((e, i) => {
+    const n = i + 1;
+    const ck = (label: string) => e.checks.find((c) => c.label === label)?.ok;
+    if (ck('חתימה') === false) add('signature', 'fail', 'החתימה הדיגיטלית לא תואמת לרשומה', 'תוכן הרשומה שונה אחרי שנחתם, או שנחתם במפתח אחר. אי אפשר להסתמך על התוכן הזה כפי שהוא, וצריך לבדוק מה שונה ומתי.', n);
+    if (ck('שרשרת') === false) add('chain', 'fail', 'שרשרת הרשומות שבורה או שגיבוב הרשומה לא תואם', 'רשומה נמחקה, הוחלפה או שונתה באמצע הרצף. ייתכן שאירועים אחרים של המשתמש חסרים.', n);
+    if (ck('נוסח') === false) add('snapshot', 'fail', 'הנוסח השמור לא תואם לגיבוב שנחתם', 'אי אפשר להראות בוודאות איזה נוסח הוצג למשתמש באירוע הזה.', n);
+    if (!e.tsa.ok) add('tsa', 'fail', 'חותמת זמן חיצונית חסרה או לא תקינה', 'אין אישור של צד שלישי לשעה. זמן האירוע נשען רק על שעון השרת שלנו.', n);
+    if (!e.screenshotSha) add('shot_missing', 'warn', 'אין צילום חלון לאירוע', 'מה שהמשתמש ראה מוכח רק מהנוסח השמור, בלי תמונה.', n);
+    else if (e.screenshotShaComputed !== undefined && e.screenshotShaComputed === null) add('shot_gone', 'fail', 'קובץ הצילום חסר באחסון', 'הגיבוב נחתם, אבל הקובץ עצמו לא נמצא. אי אפשר להציג את התמונה.', n);
+    else if (e.screenshotShaComputed && e.screenshotShaComputed !== e.screenshotSha) add('shot_mismatch', 'fail', 'הצילום השמור לא תואם לגיבוב שנחתם', 'קובץ הצילום הוחלף או השתנה אחרי האירוע. התמונה שמוצגת אינה בהכרח מה שהמשתמש ראה.', n);
+    for (const sg of e.screenshotSegments ?? []) {
+      if (sg.computed === null) add('seg_gone', 'fail', 'חלק מצילום הגלילה חסר באחסון', 'רק חלק מהחלון מוצג. הגיבוב של החלק החסר נחתם, אבל הקובץ לא נמצא.', n);
+      else if (sg.computed !== sg.sha256) add('seg_mismatch', 'fail', 'חלק מצילום הגלילה לא תואם לגיבוב שנחתם', 'אחד מחלקי הצילום הוחלף או השתנה אחרי האירוע.', n);
+    }
+    const ots = e.otsStatus ?? [];
+    if (!e.otsCalendars.length) add('ots_none', 'warn', 'אין עיגון ציבורי (OpenTimestamps)', 'חסרה שכבת הגנה אחת. החתימה וחותמת הזמן עדיין קיימות.', n);
+    else if (ots.length && ots.every((o) => o.status !== 'bitcoin')) add('ots_pending', 'warn', 'העיגון בביטקוין עדיין ממתין לאישור', 'זה תקין באירועים מהימים האחרונים. אם זה נשאר כך יותר משבוע, צריך לבדוק.', n);
+    if (e.emailReceipt && !e.emailReceipt.ok) add('email', 'warn', 'קבלת הדואר למשתמש לא נשלחה', 'אין עותק אצל צד שלישי (תיבת הדואר של המשתמש). הראיות האחרות לא נפגעות.', n);
+    if (!e.emailReceipt) add('email_none', 'warn', 'אין תיעוד של קבלה בדואר', 'לא נשמר אישור שליחה מספק הדואר לאירוע הזה.', n);
+  });
+  for (const pl of input.providerLogs ?? []) {
+    if (pl.status !== 'ok') add(`logs_${pl.provider}`, 'warn', `יומני ${pl.provider} לא זמינים`, pl.status === 'empty' ? 'הספק כבר לא שומר יומנים מהזמן הזה (תקופת השמירה הסתיימה).' : pl.status === 'not_configured' ? 'השליפה לא הוגדרה בשרת, ולכן לא נבדקו יומני הספק.' : `השליפה נכשלה${pl.note ? `: ${pl.note}` : ''}.`);
+  }
+  return [...map.values()].sort((a, b) => (a.level === b.level ? 0 : a.level === 'fail' ? -1 : 1));
+}
 
 export const fmt = (iso: string | null | undefined) =>
   iso ? new Intl.DateTimeFormat('he-IL', { dateStyle: 'medium', timeStyle: 'medium', timeZone: 'Asia/Jerusalem' }).format(new Date(iso)) + ' (שעון ישראל)' : '—';
@@ -170,6 +214,12 @@ export class Writer {
     this.text('מסמך זה הופק אוטומטית ממערכת התיעוד. סודי — לשימוש משפטי בלבד.', { size: 7.5, color: C.muted, y: 20 });
     this.y = H - 52;
     if (title) this.h1(title);
+  }
+
+  /** Starts a chapter on the current page when at least ~40% of it is free; avoids near-empty pages. */
+  section(title: string) {
+    if (this.y < H * 0.4) this.newPage(title);
+    else { this.y -= 14; this.h1(title); }
   }
 
   ensure(h: number) {
@@ -235,6 +285,49 @@ export class Writer {
         else this.text(l, { size: 10, y: yy, xRight: W - M - labelW - 10 });
         yy -= mode === 'mono' ? 11 : 14;
       }
+      this.y -= h + 3;
+    }
+    this.y -= 4;
+  }
+
+  /** Page-1 red-flag box: every failed or incomplete check, what it is and what it means. */
+  redFlags(issues: Issue[], failed: boolean) {
+    const red = C.rose;
+    const top = this.y + 12;
+    const startPage = this.page;
+    this.page.drawRectangle({ x: M, y: this.y - 4, width: W - 2 * M, height: 22, color: failed ? red : rgb(0.72, 0.5, 0.1) });
+    this.text(failed ? 'אזהרה: נמצאו כשלים. אין להציג את התיק בלי לקרוא את הסעיף הזה' : 'הערות: חלק מהבדיקות חסרות או ממתינות', { size: 11, font: this.f.bold, color: C.white, y: this.y + 2 });
+    this.y -= 30;
+    for (const it of issues) {
+      const tag = it.level === 'fail' ? 'כשל' : 'הערה';
+      const evs = it.events.length ? ` (אירוע ${it.events.join(', ')})` : '';
+      this.para(`${tag}: ${it.title}${evs}`, { size: 10, font: this.f.bold, color: it.level === 'fail' ? red : rgb(0.6, 0.4, 0.05), gap: 0, width: W - 2 * M - 20, xRight: W - M - 10 });
+      this.para(`מה זה אומר: ${it.meaning}`, { size: 9, color: C.ink, gap: 5, width: W - 2 * M - 20, xRight: W - M - 10 });
+    }
+    const bottom = this.y + 4;
+    if (this.page === startPage) this.page.drawRectangle({ x: M - 2, y: bottom, width: W - 2 * M + 4, height: Math.max(0, top - bottom), borderColor: failed ? red : rgb(0.72, 0.5, 0.1), borderWidth: 1.4, opacity: 0 });
+    this.y -= 8;
+  }
+
+  /** Clickable URL rows: the URL is drawn left-to-right and gets a real PDF link annotation. */
+  links(rows: Array<[string, string]>) {
+    for (const [k, url] of rows) {
+      const h = 22;
+      this.ensure(h + 4);
+      this.page.drawRectangle({ x: M, y: this.y - h + 14, width: W - 2 * M, height: h, color: C.card, borderColor: C.line, borderWidth: 0.4 });
+      this.text(k, { size: 9.5, font: this.f.bold, color: C.muted, y: this.y, xRight: W - M - 8 });
+      const size = 9;
+      const tw = this.f.mono.widthOfTextAtSize(url, size);
+      const fit = Math.min(size, (W - 2 * M - 190) / (tw / size));
+      const w2 = this.f.mono.widthOfTextAtSize(url, fit);
+      const x = M + 8;
+      this.page.drawText(url, { x, y: this.y, size: fit, font: this.f.mono, color: C.teal });
+      this.page.drawLine({ start: { x, y: this.y - 1.5 }, end: { x: x + w2, y: this.y - 1.5 }, thickness: 0.4, color: C.teal });
+      const annot = this.doc.context.obj({
+        Type: 'Annot', Subtype: 'Link', Rect: [x - 1, this.y - 4, x + w2 + 1, this.y + fit + 1], Border: [0, 0, 0],
+        A: { Type: 'Action', S: 'URI', URI: PDFString.of(url) },
+      });
+      this.page.node.addAnnot(this.doc.context.register(annot));
       this.y -= h + 3;
     }
     this.y -= 4;
@@ -312,6 +405,43 @@ export class Writer {
     this.y -= 4;
   }
 
+  /** Up to 3 screenshot segments per row, each with index, verification code, short hash, match badge. */
+  async segmentGrid(doc: PDFDocument, segs: Array<{ i: number; sha256: string; computed: string | null | undefined; png: Buffer | null }>) {
+    const gap = 10;
+    const cols = 3;
+    const cw = (W - 2 * M - gap * (cols - 1)) / cols;
+    const total = segs.length;
+    for (let r = 0; r < segs.length; r += cols) {
+      const row = segs.slice(r, r + cols);
+      const imgs = await Promise.all(row.map(async (sg) => (sg.png ? doc.embedPng(sg.png) : null)));
+      const hs = imgs.map((im) => (im ? Math.min(250, (im.height * cw) / im.width) : 40));
+      const rowH = Math.max(...hs) + 52;
+      this.ensure(rowH);
+      row.forEach((sg, k) => {
+        const xr = W - M - k * (cw + gap);
+        const x = xr - cw;
+        const im = imgs[k];
+        const h = hs[k]!;
+        this.page.drawRectangle({ x, y: this.y - rowH + 6, width: cw, height: rowH, color: C.card, borderColor: C.line, borderWidth: 0.4 });
+        if (im) {
+          const iw = Math.min(cw - 10, (im.width * h) / im.height);
+          this.page.drawImage(im, { x: x + (cw - iw) / 2, y: this.y - h, width: iw, height: h - 4 });
+          this.page.drawRectangle({ x: x + (cw - iw) / 2, y: this.y - h, width: iw, height: h - 4, borderColor: C.gold, borderWidth: 0.6 });
+        } else this.text('הקובץ לא נטען', { size: 8.5, color: C.rose, y: this.y - 20, xRight: xr - 6 });
+        const ok = !!sg.computed && sg.computed === sg.sha256;
+        const yy = this.y - Math.max(...hs) - 8;
+        this.text(`חלק ${sg.i} מתוך ${total}`, { size: 8.5, font: this.f.bold, color: C.ink, y: yy, xRight: xr - 6 });
+        const code = verifyCode(sg.computed ?? sg.sha256);
+        this.page.drawText(code, { x: x + 6, y: yy, size: 7.6, font: this.f.mono, color: C.emerald });
+        const short = `${(sg.computed ?? sg.sha256).slice(0, 16)}...${(sg.computed ?? sg.sha256).slice(-8)}`;
+        this.page.drawText(short, { x: x + 6, y: yy - 12, size: 6.6, font: this.f.mono, color: C.muted });
+        this.badge(sg.computed === undefined ? null : ok, ok ? 'זהה לחתום' : 'לא זהה', xr - 6, yy - 30);
+      });
+      this.y -= rowH + 6;
+    }
+    this.para('קוד האימות (NW-...) הוא 12 התווים הראשונים של גיבוב SHA-256 של הקובץ. הגיבוב המלא נעול ברשומה החתומה (payload.json, השדות screenshot_sha256 ו־screenshot_segments).', { size: 8, color: C.muted, gap: 4 });
+  }
+
   image(img: PDFImage, maxW: number, maxH: number) {
     const room = this.y - 50 - 16;
     if (room >= 200) maxH = Math.min(maxH, room);
@@ -354,12 +484,15 @@ export async function buildEvidencePdf(input: PdfInput): Promise<Buffer> {
     `מסמך זה מרכז את כל אירועי ההסכמה והביטול של בעל החשבון לעיבוד מידע בריאותי, כפי שנרשמו בזמן אמת: הנוסח המדויק שהוצג, צילום החלון, המילה שהוקלדה, פרטי המכשיר, וטביעות אצבע קריפטוגרפיות החתומות בידי השרת ומאומתות בידי גורמי חותמת זמן חיצוניים ובלתי תלויים.`
   );
   w.y -= 4;
-  w.badge(input.overallOk, input.overallOk ? 'בדיקת שלמות מלאה עברה בהצלחה' : 'נמצאו חריגות בבדיקת השלמות (פירוט בסעיף 4)', W - M, w.y);
+  const issues = findIssues(input);
+  const failed = !input.overallOk || issues.some((i) => i.level === 'fail');
+  w.badge(!failed, !failed ? (issues.length ? 'בדיקת השלמות עברה, עם הערות (ראו למטה)' : 'בדיקת שלמות מלאה עברה בהצלחה') : 'נמצאו כשלים בבדיקת השלמות (ראו למטה)', W - M, w.y);
   w.y -= 30;
+  if (issues.length) w.redFlags(issues, failed);
   w.kv([
     ['מספר תיק', input.caseRef, 'ltr'],
     ['הופק על ידי', input.generatedBy],
-    ['תוכן', '1. זיהוי · 2. ציר זמן · 3. פירוט אירועים · 4. בדיקת שלמות ואימות עצמאי · 5. שרשרת משמורת · 6. מתודולוגיה ואימות · 7. תעודת רשומה מוסדית'],
+    ['תוכן', '1. זיהוי · 2. ציר זמן · 3. פירוט אירועים · 4. בדיקת שלמות ואימות עצמאי · 5. שרשרת משמורת · 6. מתודולוגיה ואימות · 7. מוכנות לבית המשפט · 8. תעודת רשומה מוסדית'],
   ]);
 
   // ── 1 identification
@@ -405,15 +538,9 @@ export async function buildEvidencePdf(input: PdfInput): Promise<Buffer> {
     for (const l of e.displayedText) w.para(l, { size: 9.5, color: C.ink, gap: 1 });
     w.divider();
     if (e.screenshotPng) {
-      w.h2('צילום החלון כפי שנלכד במכשיר');
-      const img = await doc.embedPng(e.screenshotPng);
-      w.image(img, W - 2 * M - 40, 330);
-      w.para('SHA-256 של קובץ הצילום המקורי (screenshot.webp בתיק):', { size: 8.5, color: C.muted, gap: 0 });
-      w.mono(e.screenshotShaComputed ?? e.screenshotSha ?? '—', 8);
-      const same = !!e.screenshotSha && e.screenshotShaComputed === e.screenshotSha;
-      w.ensure(24);
-      w.badge(e.screenshotShaComputed === undefined ? null : same, same ? 'זהה לגיבוב שננעל ברשומה החתומה ברגע הצילום' : 'לא זהה לגיבוב החתום', W - M, w.y);
-      w.y -= 26;
+      const segs = [{ i: 1, sha256: e.screenshotSha ?? '', computed: e.screenshotShaComputed ?? null, png: e.screenshotPng }, ...(e.screenshotSegments ?? [])];
+      w.h2(segs.length > 1 ? `צילום החלון המלא (${segs.length} חלקים, לפי הסדר)` : 'צילום החלון כפי שנלכד במכשיר');
+      await w.segmentGrid(doc, segs);
     } else if (e.screenshotSha) {
       w.para('לרשומה זו נשמר צילום, אך הוא לא נטען בעת ההפקה.', { size: 9, color: C.rose });
     } else {
@@ -428,7 +555,7 @@ export async function buildEvidencePdf(input: PdfInput): Promise<Buffer> {
     if (e.corroboration) {
       w.h2('אישור עצמאי בצד השרת');
       w.para('השרת רשם את ההחלטה גם בטבלאות נפרדות, בקוד נפרד, באותה בקשה. כך המילה, הסימון והנוסח לא נשענים רק על הצילום: המילה ומצב התיבה נקלטו מגוף הבקשה ונבדקו בשרת, והנוסח נבנה מחדש מהתבנית של השרת וגובב (ראו "גיבוב הנוסח שהוצג").', { size: 9, gap: 6 });
-      if (e.corroboration.length) for (const c of e.corroboration) { w.para(`${c.source} · ${fmt(c.at)}`, { size: 8.5, font: f.bold, color: C.muted, gap: 0 }); w.mono(asciiJson(c.line)); }
+      if (e.corroboration.length) for (const c of e.corroboration) { w.para(`${c.source} · ${fmt(c.at)} · ${c.link === 'evidence_id' ? 'מקושר ישירות למזהה הרשומה' : 'הותאם לפי זמן (רשומה ישנה)'}`, { size: 8.5, font: f.bold, color: C.muted, gap: 0 }); w.mono(asciiJson(c.line)); }
       else w.para('לא נמצאה שורת יומן תואמת בחלון של שתי דקות.', { size: 9, color: C.muted });
     }
     if (!e.provenance?.length) w.h2('מכשיר ורשת');
@@ -447,7 +574,7 @@ export async function buildEvidencePdf(input: PdfInput): Promise<Buffer> {
       ['גיבוב הצילום', e.screenshotSha ?? '—', 'mono'],
       ['חתימת השרת', e.signature, 'mono'],
       ['מזהה מפתח', e.keyId, 'mono'],
-      ['חותמת זמן מוסמכת', e.tsa.ok ? `${fmt(e.tsa.genTime)} · ${e.tsa.url ?? ''}` : 'לא זמינה'],
+      ['חותמת זמן מוסמכת', e.tsa.ok ? `${fmt(e.tsa.genTime)} · ${input.tsaName ?? 'RFC 3161'}` : 'לא זמינה'],
       ['גיבוב אסימון חותמת הזמן', e.tsa.tokenSha ?? '—', 'mono'],
       ['עיגון ציבורי', e.otsCalendars.length ? `${e.otsCalendars.length} שרתי עיגון: ${e.otsCalendars.join(', ')}` : 'לא זמין'],
       ['קבלה לדוא"ל בעל החשבון', e.emailReceipt?.ok ? `נשלחה ${fmt(e.emailReceipt.sentAt)}` : 'לא נשלחה'],
@@ -485,9 +612,9 @@ export async function buildEvidencePdf(input: PdfInput): Promise<Buffer> {
   }
 
   // ── 4b independent verification
-  w.newPage('4.1 אימות עצמאי: למה אנחנו לא יכולים לזייף');
+  w.section('4.1 אימות עצמאי: למה אנחנו לא יכולים לזייף');
   const pts: string[] = [
-    `חתימה דיגיטלית: כל רשומה נחתמה ב־Ed25519. כל אחד יכול לאמת אותה במפתח הציבורי שמפורסם בכתובת קבועה${input.publicKeyUrl ? ` (${input.publicKeyUrl})` : ''}. שינוי של תו אחד ברשומה מבטל את החתימה.`,
+    `חתימה דיגיטלית: כל רשומה נחתמה ב־Ed25519. כל אחד יכול לאמת אותה במפתח הציבורי שמפורסם בכתובת קבועה (קישור לחיץ בטבלה למטה). שינוי של תו אחד ברשומה מבטל את החתימה.`,
     `חותמת זמן חיצונית: גיבוב כל רשומה נשלח ברגע האירוע ל־${input.tsaName ?? 'רשות חותמת זמן'} לפי תקן RFC 3161. הרשות חתמה על הגיבוב ועל השעה במפתח שלה, שאין לנו גישה אליו. לכן אי אפשר ליצור היום רשומה "מתוארכת לאחור".`,
     'עיגון בביטקוין: אותו גיבוב נשלח גם ל־OpenTimestamps, שמעגן אותו בבלוקצ׳יין ביטקוין הציבורי. אחרי האישור בבלוק, אף אחד, כולל אנחנו, לא יכול לשנות את הרשומה בלי שזה יתגלה. מצב האישור מופיע בכל אירוע.',
     'הוספה בלבד: במסד הנתונים מוגדר מנגנון שחוסם עדכון, מחיקה וריקון של טבלאות הראיות, גם למפתח המנהל של השרת. בנוסף, כל רשומה מכילה את הגיבוב של הקודמת, כך שמחיקה או החלפה באמצע שוברות את השרשרת.',
@@ -498,8 +625,15 @@ export async function buildEvidencePdf(input: PdfInput): Promise<Buffer> {
   w.kv([
     ['אלגוריתם חתימה', 'Ed25519', 'ltr'],
     ['טביעת המפתח (SHA-256)', input.publicKeyFingerprint ?? '—', 'mono'],
-    ['כתובת המפתח הציבורי', input.publicKeyUrl ?? 'public-key.pem בתיק', 'ltr'],
     ['רשות חותמת זמן', input.tsaName ?? '—'],
+  ]);
+  w.h2('קישורים לאימות (לחיצים)');
+  w.links([
+    ...(input.publicKeyUrl ? ([['המפתח הציבורי לאימות החתימות', input.publicKeyUrl]] as Array<[string, string]>) : []),
+    ...((input.tsaName ?? '').includes('FreeTSA')
+      ? ([['תעודת הרשות של FreeTSA', 'https://freetsa.org/files/cacert.pem'], ['תעודת החותם של FreeTSA', 'https://freetsa.org/files/tsa.crt']] as Array<[string, string]>)
+      : []),
+    ['OpenTimestamps (כלי האימות)', 'https://opentimestamps.org/'],
   ]);
   w.h2('פקודות האימות (מלא ב־VERIFY.txt)');
   w.mono('sha256sum records/01/payload.json   # = record.sha256', 7.4);
@@ -509,12 +643,12 @@ export async function buildEvidencePdf(input: PdfInput): Promise<Buffer> {
   w.mono('sha256sum records/01/screenshot.webp   # = screenshot_sha256 in payload.json', 7.4);
 
   // ── 5 custody
-  w.newPage('5. שרשרת משמורת ויומן גישה');
+  w.section('5. שרשרת משמורת ויומן גישה');
   w.para('הרשומות נשמרות בטבלאות שהוספה בלבד מותרת בהן: מנגנון במסד הנתונים חוסם כל עדכון או מחיקה, גם בהרשאות מנהל. הצילומים נשמרים באחסון פרטי באירופה, עם נעילת שמירה. כל צפייה, אימות או הפקה של תיק זה נרשמים ביומן הגישה:');
   w.table(['תאריך ושעה', 'פעולה', 'מבצע'], [200, 200, 107], input.accessLog.slice(-30).map((a) => [fmt(a.at), a.action, a.actor]));
 
   // ── 6 methodology
-  w.newPage('6. מתודולוגיה ומדריך אימות למומחה');
+  w.section('6. מתודולוגיה ומדריך אימות למומחה');
   const steps: string[] = [
     'כל אירוע נשמר כרשומה קנונית (JSON ממוין) הכוללת את גיבוב הנוסח שהוצג, את גיבוב הצילום, את המילה שהוקלדה, את מצב תיבת האישור, את פרטי המכשיר ואת גיבוב הרשומה הקודמת של אותו משתמש. כך נוצרת שרשרת: שינוי של רשומה כלשהי שובר את כל הרשומות שאחריה.',
     'גיבוב הרשומה (SHA-256) נחתם בחתימה דיגיטלית Ed25519 של השרת. המפתח הציבורי מצורף לתיק (public-key.pem).',
@@ -532,9 +666,28 @@ export async function buildEvidencePdf(input: PdfInput): Promise<Buffer> {
     w.y -= 11;
   }
 
-  // ── 7 declaration
-  w.newPage('7. תעודת עורך רשומה מוסדית');
-  w.para('(במתכונת סעיפים 35–36 לפקודת הראיות [נוסח חדש], התשל"א-1971, ובצירוף תצהיר לפי סעיף 15 לפקודה. טיוטה לעיון ועריכה של עורך דין לפני חתימה.)', { size: 9.5, color: C.muted, gap: 10 });
+  // ── 7 court readiness
+  w.newPage('7. מוכנות לבית המשפט');
+  w.para('פרק זה מסביר בשפה פשוטה איך התיק עונה על התנאים לקבלת "רשומה מוסדית" כראיה. זה הסבר טכני ולא חוות דעת משפטית; עורך דין צריך לבחון אותו לפני שימוש.', { size: 9.5, color: C.muted, gap: 8 });
+  w.h2('הבסיס בחוק');
+  w.para('פקודת הראיות [נוסח חדש], התשל"א-1971, סימן ה׳ (סעיפים 35-36). סעיף 35 מגדיר "רשומה מוסדית" כמסמך, לרבות פלט, שנערך על ידי מוסד במהלך פעילותו הרגילה; "מוסד" כולל עסק. לפי סעיף 36(א) רשומה כזו קבילה להוכחת אמיתות תוכנה אם: (1) המוסד נוהג לרשום את האירוע בסמוך להתרחשותו; (2) דרך איסוף הנתונים ועריכת הרשומה מעידה על אמיתות תוכנה; (3) ברשומה שהיא פלט, גם דרך ההפקה מעידה על אמינותה, והמוסד נוקט באורח סדיר אמצעי הגנה סבירים מפני חדירה ושיבוש. לפי סעיף 41ב פלט שהוא רשומה מוסדית נחשב "מקור" ולא העתק. לפי סעיף 36(ג) הצד שכנגד רשאי לחקור עדים בחקירה נגדית. (המקור נבדק מול נוסח הפקודה בוויקיטקסט, אוקטובר 2026.)', { size: 9.5, gap: 8 });
+  const req: Array<[string, string]> = [
+    ['רישום שגרתי וסמוך לאירוע (36(א)(1))', 'כל הסכמה וביטול נרשמים אוטומטית, באותה בקשה שבה המשתמש אישר, באותו קוד לכל המשתמשים. זמן השרת וזמן חותמת הזמן החיצונית מופיעים בכל אירוע, וההפרש ביניהם שניות ספורות.'],
+    ['אמינות האיסוף והעריכה (36(א)(2))', 'המילה שהוקלדה ומצב התיבה נקלטו מגוף הבקשה ונבדקו בשרת לפני השמירה. הנוסח נבנה מחדש מהתבנית של השרת. הצילום מכסה את כל החלון, כולל אזור האישור, והגיבוב שלו ננעל ברגע הקבלה.'],
+    ['אמינות ההפקה ואבטחה (36(א)(3))', 'התיק מופק אוטומטית מהרשומות השמורות, עם בדיקת שלמות מחדש בכל הפקה. הטבלאות חוסמות עדכון ומחיקה. הגישה מוגבלת למנהל עם אישור מכשיר, וכל צפייה והפקה נרשמות ביומן שאי אפשר למחוק.'],
+    ['שרשרת משמורת', 'רשומה, ואז חתימה, חותמת זמן חיצונית, עיגון בביטקוין ויומן גישה. כל קובץ בתיק מופיע ב־SHA256SUMS.txt, ולכל קובץ יש קוד אימות קצר שנגזר מהגיבוב שלו.'],
+    ['למה אי אפשר לשנות בדיעבד', 'שינוי ערך כלשהו, גם כתובת IP, משנה את גיבוב הרשומה. הגיבוב המקורי כבר חתום, נשלח לרשות חותמת זמן חיצונית, עוגן בביטקוין, וכלול בקבלה שנשלחה לתיבת הדואר של המשתמש. שלושת אלה נמצאים מחוץ לשליטתנו.'],
+    ['אימותים של צד שלישי', 'רשות חותמת זמן (RFC 3161), OpenTimestamps ובלוקצ׳יין ביטקוין, ספק הדואר ששלח את הקבלה (מזהה ההודעה אצלו נשמר בהצהרה חתומה), ומזהה הבקשה של ספק האירוח (x-vercel-id), שמאפשר לספק לאשר באופן עצמאי את כתובת ה־IP והזמן.'],
+  ];
+  for (const [k, v] of req) { w.para(k, { size: 10, font: f.bold, color: C.emerald, gap: 0 }); w.para(v, { size: 9.5, gap: 6 }); }
+  w.divider();
+  w.h2('יומני ספקים: מה אפשר לקבל ומה לא');
+  w.para('יומני הבקשות אצל ספק האירוח ואצל ספק מסד הנתונים נשמרים אצלם זמן מוגבל בלבד, בדרך כלל ימים ספורים. אפשר לשלוף אותם לפי דרישה, לאירוע מסוים, מתוך Ops. באירועים ישנים מתקופת השמירה, היומנים כבר לא קיימים אצל הספק, והתיק אומר זאת במפורש במקום להציג אותם. במקרה כזה הראיות הן הרשומה החתומה, חותמת הזמן החיצונית, העיגון בביטקוין וקבלת הדואר. לרשומות שנוצרו מאוקטובר 2026 נשמר גם מזהה הבקשה של ספק האירוח, ובית משפט יכול לבקש מהספק את הנתונים לפיו.', { size: 9.5, gap: 6 });
+  w.para('מסמך נלווה: תבנית "תצהיר ערוך מערכת" (קובץ נפרד), לעריכה ולחתימה בפני עורך דין.', { size: 9, color: C.muted });
+
+  // ── 8 declaration
+  w.newPage('8. תעודת עורך רשומה מוסדית');
+  w.para('(במתכונת סעיפים 35-36 לפקודת הראיות [נוסח חדש], התשל"א-1971, ובצירוף תצהיר לפי סעיף 15 לפקודה. טיוטה לעיון ועריכה של עורך דין לפני חתימה.)', { size: 9.5, color: C.muted, gap: 10 });
   const decl = [
     `אני, החתום מטה, דניאל רחמן, בעל השליטה והאחראי על מערכות המידע של NuraWell, לאחר שהוזהרתי כי עליי לומר את האמת וכי אהיה צפוי לעונשים הקבועים בחוק אם לא אעשה כן, מצהיר בזאת:`,
     `1. הרשומות המפורטות במסמך זה (תיק ${input.caseRef}) הן רשומות מוסדיות של NuraWell, שנערכו במהלך הפעילות הרגילה של העסק, בסמוך להתרחשות האירועים המתועדים בהן.`,
@@ -560,5 +713,45 @@ export async function buildEvidencePdf(input: PdfInput): Promise<Buffer> {
   sig('חתימה וחותמת עורך הדין', W - M);
   sig('מספר רישיון', M + 200);
 
+  return Buffer.from(await doc.save());
+}
+
+export type LogsPdfInput = {
+  caseRef: string;
+  generatedAt: string;
+  event: { reference: string; createdAt: string; recordHash: string; requestId: string | null };
+  providers: Array<{ provider: string; source: string; status: string; note?: string; rows: Array<Record<string, unknown>>; fileName: string; sha256: string; code: string }>;
+};
+
+/** Rendered page for on-demand provider log attachments (raw JSON travels alongside in the ZIP). */
+export async function buildLogsPdf(input: LogsPdfInput): Promise<Buffer> {
+  const doc = await PDFDocument.create();
+  doc.setTitle(`יומני ספק — ${input.caseRef}`);
+  const f = await loadFonts(doc);
+  const w = new Writer(doc, f, input.caseRef);
+  w.newPage('יומני ספק לאירוע הסכמה');
+  w.para('היומנים נשלפו לפי דרישה, ישירות מהספקים (לא מהמערכת שלנו), עבור חלון זמן של דקה לפני ואחרי האירוע. הקבצים הגולמיים מצורפים בתיק כ־JSON. ספקים שומרים יומנים לזמן מוגבל בלבד: כשהיומן כבר לא קיים אצל הספק, הדבר מצוין כאן במפורש.', { size: 9.5, gap: 8 });
+  w.kv([
+    ['אסמכתת האירוע', input.event.reference, 'ltr'],
+    ['זמן האירוע', fmt(input.event.createdAt)],
+    ['גיבוב הרשומה', input.event.recordHash, 'mono'],
+    ['מזהה בקשה (ספק האירוח)', input.event.requestId ?? 'לא נשמר ברשומה זו (רשומה ישנה)', input.event.requestId ? 'mono' : undefined],
+    ['הופק', fmt(input.generatedAt)],
+  ]);
+  const statusHe: Record<string, string> = { ok: 'נמצאו רשומות', empty: 'לא נמצאו רשומות: תקופת השמירה של הספק כנראה הסתיימה', not_configured: 'השליפה לא הוגדרה (חסר מפתח קריאה לספק)', error: 'השליפה נכשלה' };
+  for (const p of input.providers) {
+    w.divider();
+    w.h2(p.provider === 'supabase' ? 'ספק מסד הנתונים (Supabase)' : 'ספק האירוח (Vercel)');
+    w.kv([
+      ['מקור', p.source, 'ltr'],
+      ['מצב', statusHe[p.status] ?? p.status],
+      ['קובץ', p.fileName, 'ltr'],
+      ['קוד אימות', p.code, 'ltr'],
+      ['SHA-256', p.sha256, 'mono'],
+    ]);
+    if (p.note) w.para(p.note, { size: 8.5, color: C.muted });
+    for (const r of p.rows.slice(0, 40)) w.mono(asciiJson(JSON.stringify(r)), 6.6);
+    if (p.rows.length > 40) w.para(`ועוד ${p.rows.length - 40} שורות בקובץ הגולמי.`, { size: 8.5, color: C.muted });
+  }
   return Buffer.from(await doc.save());
 }

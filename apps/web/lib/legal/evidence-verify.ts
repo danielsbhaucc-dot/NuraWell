@@ -21,6 +21,7 @@ export type EvidenceRow = StoredRecord & {
   screenshot_storage: string | null;
   screenshot_key: string | null;
   screenshot_bytes: number | null;
+  screenshot_segments?: Array<{ i: number; sha256: string; bytes: number; storage: string; key: string }> | null;
   signing_key_id: string;
 };
 export type AttestationRow = { id: number; record_id: string | null; kind: string; digest: string; payload: Record<string, unknown>; created_at: string };
@@ -77,7 +78,12 @@ export async function verifyUserEvidence(admin: SupabaseClient, userId: string, 
     if (opts.checkImages && r.screenshot_sha256) {
       try {
         const img = await loadEvidenceImage(admin, userId, r.screenshot_storage, r.screenshot_key);
-        shot = { present: true, ok: !!img && sha256Hex(img) === r.screenshot_sha256 };
+        let ok = !!img && sha256Hex(img) === r.screenshot_sha256;
+        for (const sg of (r.screenshot_segments ?? []).filter((x) => x.i > 1)) {
+          const b = await loadEvidenceImage(admin, userId, sg.storage, sg.key).catch(() => null);
+          ok = ok && !!b && sha256Hex(b) === sg.sha256;
+        }
+        shot = { present: true, ok };
       } catch {
         shot = { present: true, ok: false };
       }

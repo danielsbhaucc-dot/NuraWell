@@ -259,6 +259,8 @@ export function OnboardingFormClient() {
       fd.set('health_consent_typed', consentEvidence.typed_word);
       fd.set('health_consent_checkbox', 'true');
       if (consentEvidence.screenshot) fd.set('health_consent_screenshot', consentEvidence.screenshot);
+      (consentEvidence.screenshots ?? []).slice(1, 4).forEach((u, i) => fd.set(`health_consent_screenshot_${i + 2}`, u));
+      if (consentEvidence.client) fd.set('health_consent_client', JSON.stringify(consentEvidence.client));
     }
     fd.set('legal_consent', 'true');
     if (ageInfo?.ok && ageInfo.requiresParentalConsent) {

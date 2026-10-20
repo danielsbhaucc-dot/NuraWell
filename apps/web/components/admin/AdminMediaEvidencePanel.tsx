@@ -59,7 +59,7 @@ async function download(url: string, fallback: string) {
   const r = await fetch(url);
   if (!r.ok) throw new Error();
   const blob = await r.blob();
-  const name = /filename="([^"]+)"/.exec(r.headers.get('content-disposition') ?? '')?.[1] ?? fallback;
+  const name = decodeURIComponent(r.headers.get('x-export-file') ?? '') || /filename="([^"]+)"/.exec(r.headers.get('content-disposition') ?? '')?.[1] || fallback;
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 4000);
   return { name, sha: r.headers.get('x-export-sha256') };
