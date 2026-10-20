@@ -303,7 +303,6 @@ export async function sendTaskCompletionCelebration(
           }
         : {}),
       model: AI_MODELS.empathy,
-      recipient_first_name: firstName,
       mentor: 'almog',
     },
   });

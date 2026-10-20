@@ -122,7 +122,6 @@ ${cooldownBlock ?? ''}
       task_id: taskId,
       habit_ids: habitIds,
       model: AI_MODELS.empathy,
-      recipient_first_name: firstName,
     },
   });
 
