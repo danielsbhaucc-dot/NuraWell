@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { authorizeCronRequest } from '@/lib/api/authorize-cron';
+import { authorizeDbBackupRequest } from '@/lib/api/authorize-db-backup';
 import { legalBucket, legalR2Client } from '@/lib/legal/evidence-storage';
 import { createR2PutPresignedUrl } from '@/lib/storage/r2-presign';
 
@@ -28,7 +28,7 @@ function stampToMs(s: string): number {
  * EU legal bucket, then verifies size + SHA-256 server-side and prunes copies older than 30 days.
  */
 export async function POST(request: Request) {
-  const denied = await authorizeCronRequest(request);
+  const denied = await authorizeDbBackupRequest(request);
   if (denied) return denied;
   const bucket = legalBucket();
   if (!bucket) return NextResponse.json({ error: 'no_bucket' }, { status: 500 });
