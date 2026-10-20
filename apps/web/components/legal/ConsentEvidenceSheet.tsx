@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { MotionConfig } from 'framer-motion';
 import { Check, HeartPulse, Loader2, ShieldCheck, Trash2 } from 'lucide-react';
 import { AnimatedDialog } from '@/components/shared/AnimatedDialog';
 import { consentText, isAcceptedConsentWord, type ConsentAction, type ConsentGender } from '@/lib/legal/consent-text';
@@ -56,7 +57,7 @@ async function captureSheet(node: HTMLElement): Promise<string[]> {
     const canvas = await toCanvas(node, {
       pixelRatio: ratio,
       cacheBust: true,
-      backgroundColor: '#fbfaf4',
+      backgroundColor: '#eef3e4',
       height: fullH,
       style: { maxHeight: 'none', height: `${fullH}px`, overflow: 'visible' },
     });
@@ -101,6 +102,13 @@ export function ConsentEvidenceSheet({ open, action, gender, onClose, mode = 'su
     }
   }, [open]);
 
+  // iOS sheets open at the top: the dialog's initial focus can scroll the inner panel to the checkbox.
+  useEffect(() => {
+    if (!open) return;
+    const id = window.setTimeout(() => panel.current?.scrollTo({ top: 0 }), 80);
+    return () => window.clearTimeout(id);
+  }, [open]);
+
   const wordOk = isAcceptedConsentWord(action, typed);
   const ready = checked && wordOk && !busy;
 
@@ -143,9 +151,11 @@ export function ConsentEvidenceSheet({ open, action, gender, onClose, mode = 'su
     }
   };
 
-  const accent = withdraw ? 'from-rose-500/90 to-amber-500/90' : 'from-emerald-500 to-teal-500';
+  const accent = withdraw ? 'from-rose-500 to-amber-500' : 'from-emerald-600 to-teal-500';
+  const hair = 'border-emerald-900/10 contrast-more:border-slate-700';
 
   return (
+    <MotionConfig reducedMotion="user">
     <AnimatedDialog
       open={open}
       onClose={() => !busy && onClose()}
@@ -153,107 +163,106 @@ export function ConsentEvidenceSheet({ open, action, gender, onClose, mode = 'su
       zIndex={520}
       aria-labelledby="consent-ev-title"
       dismissOnBackdrop={!busy}
-      panelClassName="w-full max-w-xl mx-auto rounded-t-[28px] sm:rounded-[28px] sm:mb-6 overflow-hidden shadow-2xl"
+      backdropClassName="absolute inset-0 bg-emerald-950/45 backdrop-blur-[6px]"
+      panelClassName="w-full max-w-xl mx-auto rounded-t-[28px] sm:rounded-[28px] sm:mb-6 overflow-hidden ring-1 ring-emerald-900/10 shadow-[0_-1px_0_rgba(255,255,255,0.35)_inset,0_2px_6px_rgba(6,40,30,0.08),0_18px_40px_-12px_rgba(6,40,30,0.30),0_40px_90px_-30px_rgba(6,40,30,0.45)]"
     >
       <div
         ref={panel}
         dir="rtl"
         data-testid="consent-evidence-sheet"
-        className="relative max-h-[86dvh] overflow-y-auto bg-[linear-gradient(160deg,rgba(255,253,246,0.97),rgba(240,250,245,0.96)_55%,rgba(255,246,228,0.97))] px-5 pb-6 pt-5 text-right text-slate-800 backdrop-blur-xl sm:px-7"
+        className="relative max-h-[86dvh] overflow-y-auto overscroll-contain bg-[linear-gradient(180deg,rgba(238,243,228,0.96),rgba(231,238,220,0.95)_60%,rgba(243,236,220,0.96))] px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-2.5 text-right font-[family-name:var(--font-assistant,inherit)] text-slate-800 backdrop-blur-2xl backdrop-saturate-150 contrast-more:bg-glass-hi sm:px-6 sm:pt-5"
       >
-        <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-slate-300/70 sm:hidden" aria-hidden />
-        <div className="flex items-start gap-3">
-          <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br ${accent} text-white shadow-lg shadow-emerald-900/10`}>
-            {withdraw ? <Trash2 className="h-5 w-5" aria-hidden /> : <HeartPulse className="h-5 w-5" aria-hidden />}
+        <div className="mx-auto mb-4 h-[5px] w-9 rounded-full bg-emerald-950/20 contrast-more:bg-slate-700 sm:hidden" aria-hidden />
+        <div className="flex flex-col items-center px-2 text-center">
+          <span className={`grid h-14 w-14 place-items-center rounded-[18px] bg-gradient-to-br ${accent} text-white shadow-[0_8px_20px_-6px_rgba(4,120,87,0.45),inset_0_1px_0_rgba(255,255,255,0.35)] ring-1 ring-amber-300/50`}>
+            {withdraw ? <Trash2 className="h-6 w-6" aria-hidden /> : <HeartPulse className="h-6 w-6" aria-hidden />}
           </span>
-          <div className="min-w-0">
-            <h2 id="consent-ev-title" className="font-[family-name:var(--font-rubik,inherit)] text-xl font-bold leading-tight text-slate-900">
-              {t.title}
-            </h2>
-            <p className="mt-1 text-[15px] leading-relaxed text-slate-600">{t.intro}</p>
-          </div>
+          <h2 id="consent-ev-title" className="mt-3 font-[family-name:var(--font-rubik,inherit)] text-[22px] font-bold leading-tight tracking-[-0.01em] text-emerald-950 contrast-more:text-black">
+            {t.title}
+          </h2>
+          <p className="mt-1.5 max-w-md text-[15px] leading-relaxed text-slate-600 contrast-more:text-slate-900">{t.intro}</p>
         </div>
 
-        <div className="mt-4 space-y-2.5">
+        <div className={`mt-5 overflow-hidden rounded-[20px] border ${hair} bg-glass-hi/80 shadow-[0_1px_2px_rgba(6,40,30,0.06)]`}>
           {t.sections.map((s, i) => (
-            <section key={s.heading} className="rounded-2xl border border-white/70 bg-glass/60 p-3.5 shadow-sm backdrop-blur">
-              <h3 className="mb-1.5 flex items-center gap-2 text-sm font-bold text-slate-900">
-                <span className="grid h-5 w-5 place-items-center rounded-full bg-amber-100 text-[11px] font-bold text-amber-700">{i + 1}</span>
+            <section key={s.heading} className={`relative px-4 py-3.5 ${i > 0 ? 'before:absolute before:left-0 before:right-12 before:top-0 before:h-px before:bg-emerald-900/10 contrast-more:before:bg-slate-700' : ''}`}>
+              <h3 className="mb-1 flex items-center gap-2.5 font-[family-name:var(--font-rubik,inherit)] text-[15px] font-semibold text-emerald-950 contrast-more:text-black">
+                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-gradient-to-br from-amber-200 to-amber-400 text-[12px] font-bold text-amber-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]">{i + 1}</span>
                 {s.heading}
               </h3>
-              <ul className="space-y-1 pr-7 text-[14px] leading-relaxed text-slate-700">
+              <ul className="space-y-1 pr-[2.6rem] text-[14px] leading-relaxed text-slate-700 contrast-more:text-slate-900">
                 {s.items.map((it) => (
-                  <li key={it} className="list-disc marker:text-amber-500">{it}</li>
+                  <li key={it} className="list-disc marker:text-amber-600">{it}</li>
                 ))}
               </ul>
             </section>
           ))}
         </div>
 
-        <div className="my-4 h-px bg-gradient-to-l from-transparent via-amber-300/80 to-transparent" aria-hidden />
-
-        <p className="flex items-start gap-2 text-[13px] leading-relaxed text-slate-500">
+        <p className="mt-3 flex items-start gap-2 px-3 text-[13px] leading-relaxed text-slate-500 contrast-more:text-slate-900">
           <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" aria-hidden />
           <span>
             {t.transparency} {t.why}
           </span>
         </p>
 
-        <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-2xl border border-emerald-200/70 bg-glass/70 backdrop-blur-md p-3.5">
-          <input
-            type="checkbox"
-            checked={checked}
-            onChange={(e) => setChecked(e.target.checked)}
-            className="peer sr-only"
-            data-testid="consent-checkbox"
-          />
-          <span
-            aria-hidden
-            className={`mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-lg border-2 transition ${checked ? 'border-emerald-600 bg-emerald-600 text-white' : 'border-slate-300 bg-glass/85 backdrop-blur-md'} peer-focus-visible:ring-2 peer-focus-visible:ring-emerald-400`}
-          >
-            {checked ? <Check className="h-4 w-4" /> : null}
-          </span>
-          <span className="text-[14px] font-semibold leading-relaxed text-slate-800">{t.checkboxLabel}</span>
-        </label>
+        <div className={`mt-4 overflow-hidden rounded-[20px] border ${hair} bg-glass-hi/80 shadow-[0_1px_2px_rgba(6,40,30,0.06)]`}>
+          <label className="flex min-h-[52px] cursor-pointer items-start gap-3 px-4 py-3.5 active:bg-emerald-900/[0.04]">
+            <input
+              type="checkbox"
+              checked={checked}
+              onChange={(e) => setChecked(e.target.checked)}
+              className="peer sr-only"
+              data-testid="consent-checkbox"
+            />
+            <span
+              aria-hidden
+              className={`mt-0.5 grid h-[26px] w-[26px] shrink-0 place-items-center rounded-full border-[1.5px] transition-all duration-200 motion-reduce:transition-none ${checked ? 'scale-100 border-emerald-600 bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-[0_3px_8px_-2px_rgba(4,120,87,0.5)]' : 'border-emerald-900/30 bg-glass contrast-more:border-slate-800'} peer-focus-visible:ring-2 peer-focus-visible:ring-emerald-400 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-glass-hi`}
+            >
+              {checked ? <Check className="h-4 w-4" strokeWidth={3} /> : null}
+            </span>
+            <span className="text-[15px] font-semibold leading-relaxed text-emerald-950 contrast-more:text-black">{t.checkboxLabel}</span>
+          </label>
+          <label className="relative block px-4 pb-4 pt-3.5 before:absolute before:left-0 before:right-4 before:top-0 before:h-px before:bg-emerald-900/10 contrast-more:before:bg-slate-700">
+            <span className="text-[14px] text-slate-600 contrast-more:text-slate-900">{t.typePrompt}</span>
+            <input
+              type="text"
+              value={typed}
+              onChange={(e) => {
+                const now = performance.now();
+                if (typingStart.current == null) typingStart.current = now;
+                typingEnd.current = now;
+                setTyped(e.target.value);
+              }}
+              maxLength={30}
+              autoComplete="off"
+              inputMode="text"
+              data-testid="consent-typed"
+              aria-invalid={typed.length > 2 && !wordOk}
+              className={`mt-2 w-full rounded-[14px] border bg-glass px-4 py-3 text-[17px] font-semibold text-emerald-950 outline-none transition placeholder:font-normal placeholder:text-slate-400 focus:ring-4 motion-reduce:transition-none contrast-more:border-slate-800 ${typed && wordOk ? 'border-emerald-500 focus:ring-emerald-300/50' : 'border-emerald-900/15 focus:border-amber-400 focus:ring-amber-300/40'}`}
+              placeholder={t.expectedWord.replace('/', ' / ')}
+            />
+          </label>
+        </div>
 
-        <label className="mt-3 block">
-          <span className="text-[14px] text-slate-700">{t.typePrompt}</span>
-          <input
-            type="text"
-            value={typed}
-            onChange={(e) => {
-              const now = performance.now();
-              if (typingStart.current == null) typingStart.current = now;
-              typingEnd.current = now;
-              setTyped(e.target.value);
-            }}
-            maxLength={30}
-            autoComplete="off"
-            inputMode="text"
-            data-testid="consent-typed"
-            aria-invalid={typed.length > 2 && !wordOk}
-            className={`mt-1.5 w-full rounded-2xl border bg-glass/80 backdrop-blur-md px-4 py-3 text-lg font-semibold outline-none transition focus:ring-2 ${typed && wordOk ? 'border-emerald-400 focus:ring-emerald-300' : 'border-slate-200 focus:ring-amber-300'}`}
-            placeholder={t.expectedWord.replace('/', ' / ')}
-          />
-        </label>
+        {error ? <p role="alert" className="mt-3 rounded-[14px] border border-rose-200 bg-glass-rose px-3.5 py-2.5 text-sm font-semibold text-rose-700">{error}</p> : null}
 
-        {error ? <p role="alert" className="mt-3 rounded-xl bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700">{error}</p> : null}
-
-        <div className="mt-5 flex flex-col gap-2.5 sm:flex-row-reverse">
+        <div className="mt-5 flex flex-col gap-2 sm:flex-row-reverse">
           <button
             type="button"
             onClick={submit}
             disabled={!ready}
             data-testid="consent-submit"
-            className={`flex min-h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-to-l ${accent} px-5 font-bold text-white shadow-lg transition disabled:cursor-not-allowed disabled:opacity-45`}
+            className={`flex min-h-[52px] flex-1 items-center justify-center gap-2 rounded-full bg-gradient-to-l ${accent} px-6 font-[family-name:var(--font-rubik,inherit)] text-[17px] font-semibold text-white shadow-[0_10px_24px_-10px_rgba(4,120,87,0.65),inset_0_1px_0_rgba(255,255,255,0.3)] ring-1 ring-amber-300/40 transition active:scale-[0.98] motion-reduce:transition-none motion-reduce:active:scale-100 disabled:cursor-not-allowed disabled:opacity-45 disabled:shadow-none`}
           >
             {busy ? <Loader2 className="h-5 w-5 animate-spin" aria-label="שומר" /> : t.submitLabel}
           </button>
-          <button type="button" onClick={onClose} disabled={busy} className="min-h-12 flex-1 rounded-2xl border border-slate-200 bg-glass/70 backdrop-blur-md px-5 font-semibold text-slate-700">
+          <button type="button" onClick={onClose} disabled={busy} className="min-h-[48px] flex-1 rounded-full px-5 text-[16px] font-semibold text-emerald-800 transition hover:bg-emerald-900/[0.05] active:bg-emerald-900/[0.08] motion-reduce:transition-none contrast-more:underline">
             {dismissLabel ?? 'לא עכשיו'}
           </button>
         </div>
       </div>
     </AnimatedDialog>
+    </MotionConfig>
   );
 }
