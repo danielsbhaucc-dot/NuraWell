@@ -185,4 +185,4 @@
   .ld-acc > summary { display: none; }
   .ld a[href^='http']::after, .ld a[href^='mailto']::after { content: ' (' attr(href) ')'; font-size: 9pt; }
 }
-.ld .ld-wink{max-width:560px;margin-top:12px;font-size:15px}
+.ld .ld-wink{max-width:560px;margin-top:12px;font-size:15px;color:#fdf3d6;background:rgba(255,255,255,.08);border:1px dashed rgba(232,181,74,.65)}
