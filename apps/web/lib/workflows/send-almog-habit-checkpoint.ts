@@ -546,7 +546,6 @@ export async function sendAlmogHabitCheckpointNotification(
 
   const habitIds = payload.habits.map((h) => h.id);
   const habitTitles = payload.habits.map((h) => h.title.trim()).filter(Boolean);
-  const pendingTaskIds = payload.pendingTasks.map((t) => t.id);
 
   /**
    * 🔄 churn / re-engagement — מטא למהלך התוכן. ביום 10 (breakup) מצרפים את
@@ -581,7 +580,6 @@ export async function sendAlmogHabitCheckpointNotification(
         checkpoint_date: payload.checkpointDate,
         habit_ids: habitIds,
         habit_titles: habitTitles,
-        pending_task_ids: pendingTaskIds,
         from_plans_page: checkpointShouldOpenPlansPage(payload),
         model: AI_MODELS.empathy,
         template: false,
@@ -593,7 +591,6 @@ export async function sendAlmogHabitCheckpointNotification(
         nudge_level: payload.nudgeLevel,
         days_since_last_active: payload.daysSinceLastActive,
         completion_status: payload.completionStatus,
-        recipient_first_name: firstName,
         reengagement_move: move,
         ...(payload.engagementStatus ? { engagement_status: payload.engagementStatus } : {}),
         ...(surveyMeta ? { survey: surveyMeta } : {}),

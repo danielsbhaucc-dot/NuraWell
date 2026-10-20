@@ -246,7 +246,6 @@ export async function sendPassivePresenceNotification(
         model: AI_MODELS.empathy,
         mentor: 'almog',
         days_since_last_active: promptInput.daysSinceLastActive,
-        recipient_first_name: firstName,
         llm_decision: 'passive_presence_llm',
       },
     }, { select: 'id, user_id, type, title, archived_at, is_read, is_sent, created_at', single: 'single' });

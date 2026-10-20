@@ -428,7 +428,6 @@ ${dailyBlock ? `${dailyBlock}\n` : ''}${cooldownBlock ? `${cooldownBlock}\n` : '
         journey_kickoff: isKickoffNeeded,
         journey_phase: phaseForKickoff ?? null,
         habit_ids: journeyCtx?.habits.map((h) => h.id) ?? [],
-        pending_task_ids: journeyCtx?.pendingTasks.map((t) => t.id) ?? [],
       },
     }, { select: 'id, user_id, type, title, archived_at, is_read, is_sent, created_at', single: 'single' });
 
