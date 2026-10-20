@@ -10,6 +10,7 @@ export type ChatHistoryUiMessage = {
   createdAt: string;
   metadata?: {
     emojiReaction?: MentorEmojiReaction;
+    edited?: boolean;
   };
 };
 
@@ -29,7 +30,7 @@ export function transcriptTurnsToUiMessages(turns: ChatTranscriptTurn[]): ChatHi
       role,
       parts: [{ type: 'text', text: turn.content }],
       createdAt: turn.created_at,
-      ...(emojiReaction ? { metadata: { emojiReaction } } : {}),
+      ...(emojiReaction ? { metadata: { emojiReaction } } : turn.edited ? { metadata: { edited: true } } : {}),
     };
   });
 }

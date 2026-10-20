@@ -3973,6 +3973,29 @@ async function handleChatPost(request: Request) {
           } catch {
             /* non-blocking */
           }
+
+          // Post-send quality check (cheap model, fail-silent, flag + daily cap). Runs only after
+          // the reply was delivered and stored, so it never adds latency. Redacted turns never get here.
+          try {
+            const { runAlmogReplyQualityCheck } = await import('../../../../../lib/ai/reply-quality/run');
+            const qc = await runAlmogReplyQualityCheck(createAdminClient(), {
+              userId: user.id,
+              sessionId,
+              lastUserText,
+              previousReplies: recentMessages
+                .filter((m) => m.role === 'assistant')
+                .map((m) => m.content)
+                .slice(-2),
+              gender: profileGender,
+              healthConsentOff,
+              crisis: crisisSignal.redFlag,
+            });
+            if (qc.status !== 'disabled') {
+              console.info('[ai/chat]', { debug_id: debugId, stage: 'reply_qc', status: qc.status, ...('reason' in qc ? { reason: qc.reason } : {}) });
+            }
+          } catch {
+            /* fail-silent */
+          }
         });
 
         after(async () => {
