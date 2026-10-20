@@ -37,6 +37,20 @@ export async function upsertUserMemoryDossier(
   supabase: any,
   dossier: UserMemoryDossier
 ): Promise<void> {
+  // After an explicit health-consent withdrawal, never write health facts back into the dossier.
+  const { healthConsentStatus } = await import('@/lib/privacy/health-consent');
+  if ((await healthConsentStatus(dossier.user_id)) === 'withdrawn') {
+    const { scrubHealthJson } = await import('@/lib/privacy/health-memory');
+    dossier = {
+      ...dossier,
+      health_context: {} as UserMemoryDossier['health_context'],
+      essentials: (scrubHealthJson(dossier.essentials) ?? {}) as UserMemoryDossier['essentials'],
+      goals: (scrubHealthJson(dossier.goals) ?? {}) as UserMemoryDossier['goals'],
+      personal_context: (scrubHealthJson(dossier.personal_context) ?? {}) as UserMemoryDossier['personal_context'],
+      inferred_insights: (scrubHealthJson(dossier.inferred_insights) ?? []) as UserMemoryDossier['inferred_insights'],
+      tags: (scrubHealthJson(dossier.tags) ?? []) as UserMemoryDossier['tags'],
+    };
+  }
   const { error } = await supabase.from('user_memory_dossier').upsert(
     {
       user_id: dossier.user_id,
