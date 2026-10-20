@@ -1,4 +1,5 @@
 'use client';
+import { EditedBadge } from './EditedBadge';
 import { useHideOnScrollDown } from '@/lib/hooks/use-hide-on-scroll-down';
 import { RetypingTitle } from './RetypingTitle';
 import { CrisisResourcesCard } from '@/components/safety/CrisisResourcesCard';
@@ -1840,10 +1841,8 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
                           }}
                         >
                           {renderAlmogMessage(text)}
-                          <div className="mt-1.5 text-[10px] text-emerald-50/75">
-                            {(msg as { metadata?: { edited?: boolean } }).metadata?.edited ? (
-                              <span className="me-1.5 italic" title="אלמוג תיקן ניסוח קטן אחרי השליחה">נערכה ·</span>
-                            ) : null}
+                          <div className="mt-1.5 flex items-center text-[10px] text-emerald-50/75">
+                            {(msg as { metadata?: { edited?: boolean } }).metadata?.edited ? <EditedBadge /> : null}
                             {formatHebrewTime(getMessageCreatedAt(msg))}
                           </div>
                         </div>
