@@ -5,12 +5,14 @@
  * קריאה תואמת לאחור: ערך שאינו מוצפן מוחזר כמו שהוא (שורות ישנות לפני המיגרציה).
  */
 import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
+import { ensureKmsKeysSync } from '@/lib/security/kms-envelope';
 
 const PREFIX = 'enc:v1:';
 
 let cachedKey: Buffer | null = null;
 function key(): Buffer {
   if (cachedKey) return cachedKey;
+  ensureKmsKeysSync();
   const raw = process.env.PII_ENCRYPTION_KEY?.trim();
   if (!raw) throw new Error('PII_ENCRYPTION_KEY missing');
   const k = Buffer.from(raw, raw.length === 64 && /^[0-9a-f]+$/i.test(raw) ? 'hex' : 'base64');

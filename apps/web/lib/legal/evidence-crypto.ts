@@ -4,6 +4,7 @@
  */
 import { createHash, createPrivateKey, createPublicKey, sign, verify, type KeyObject } from 'node:crypto';
 import { RETIRED_SIGNING_KEYS } from './signing-keys-retired';
+import { ensureKmsKeysSync } from '@/lib/security/kms-envelope';
 
 export const GENESIS = 'GENESIS';
 
@@ -57,6 +58,7 @@ export function __resetSigningKeyCache() { cached = null; }
 
 export function signingKey(): { priv: KeyObject; pub: KeyObject; keyId: string } {
   if (cached) return cached;
+  ensureKmsKeysSync();
   const raw = process.env.CONSENT_SIGNING_PRIVATE_KEY?.trim();
   if (!raw) throw new Error('CONSENT_SIGNING_PRIVATE_KEY missing');
   const priv = createPrivateKey({ key: Buffer.from(raw, 'base64'), format: 'der', type: 'pkcs8' });
