@@ -201,25 +201,42 @@ export async function completeOnboarding(
     : publicAppOriginSync();
   const emailRedirectTo = `${appOrigin}/auth/callback?next=/register/verified`;
 
-  const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+  // Users are created ONLY here, server-side with the service role (public
+  // signups are disabled in Supabase Auth). The confirmation email/OTP is then
+  // sent by Supabase via `resend` (works with disable_signup=true).
+  const admin = createAdminClient();
+  const { data: created, error: createError } = await admin.auth.admin.createUser({
     email: data.email,
     password: data.password,
-    options: {
-      emailRedirectTo,
-      data: {
-        full_name: data.full_name,
-        username: data.email.split('@')[0],
-      },
+    email_confirm: false,
+    user_metadata: {
+      full_name: data.full_name,
+      username: data.email.split('@')[0],
     },
   });
 
-  if (signUpError) {
-    const msg =
-      signUpError.message === 'User already registered'
-        ? 'כתובת האימייל כבר רשומה — נסו להתחבר'
-        : signUpError.message;
-    return { ok: false, error: msg };
+  if (createError || !created?.user) {
+    const code = (createError as { code?: string } | null)?.code;
+    const exists =
+      code === 'email_exists' ||
+      code === 'user_already_exists' ||
+      /already (been )?registered/i.test(createError?.message ?? '');
+    return {
+      ok: false,
+      error: exists ? 'כתובת האימייל כבר רשומה — נסו להתחבר' : 'לא הצלחנו ליצור משתמש. נסו שוב.',
+    };
   }
+
+  const { error: resendError } = await supabase.auth.resend({
+    type: 'signup',
+    email: data.email,
+    options: { emailRedirectTo },
+  });
+  if (resendError) {
+    // eslint-disable-next-line no-console
+    console.warn('[onboarding] confirmation email send failed', resendError.status ?? '');
+  }
+  const signUpData = { user: created.user };
 
   const userId = signUpData.user?.id;
   if (!userId) {
@@ -286,7 +303,6 @@ export async function completeOnboarding(
   });
 
 
-  const admin = createAdminClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error: profileError } = await (admin.from('profiles') as any)
     .update(await sealProfilePatch({
