@@ -298,7 +298,7 @@ function PlanCard({
   return (
     <div
       data-task-id={taskId}
-      className={`relative flex scroll-mt-24 flex-col gap-2 overflow-hidden rounded-[24px] bg-white p-4 pt-5 shadow-[0_10px_28px_rgba(6,78,59,0.08)] ring-1 ring-emerald-900/6 before:absolute before:inset-x-0 before:top-0 before:h-1 before:bg-linear-to-l ${t.bar} data-[highlight=true]:ring-4 data-[highlight=true]:ring-primary-300/70`}
+      className={`relative flex scroll-mt-24 flex-col gap-2 overflow-hidden rounded-[24px] bg-glass/85 backdrop-blur-md p-4 pt-5 shadow-[0_10px_28px_rgba(6,78,59,0.08)] ring-1 ring-emerald-900/6 before:absolute before:inset-x-0 before:top-0 before:h-1 before:bg-linear-to-l ${t.bar} data-[highlight=true]:ring-4 data-[highlight=true]:ring-primary-300/70`}
     >
       {kicker ? <span className={`w-fit rounded-full px-2 py-0.5 text-[10px] font-bold ring-1 ${t.pill}`}>{kicker}</span> : null}
       {children}

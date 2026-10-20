@@ -39,7 +39,7 @@ const INSIGHT_STYLES: Record<TranscriptAccessInsight['tone'], string> = {
   success: 'border-emerald-200 bg-emerald-50/90 text-emerald-900',
   info: 'border-sky-200 bg-sky-50/90 text-sky-900',
   warning: 'border-amber-200 bg-amber-50/90 text-amber-900',
-  neutral: 'border-stone-200 bg-[#FFFBF5] text-stone-700',
+  neutral: 'border-stone-200 bg-glass/80 text-stone-700',
 };
 
 type TranscriptAccessStatusPanelProps = {
@@ -79,8 +79,8 @@ export function TranscriptAccessStatusPanel({
       ) : null}
 
       {timeline.length > 0 ? (
-        <div className="overflow-hidden rounded-xl border border-[#E8D5B5] bg-[#FFFBF5]">
-          <div className="border-b border-[#E8D5B5] bg-[#FFF5E6]/80 px-3 py-1.5 text-xs font-bold text-stone-700">
+        <div className="overflow-hidden rounded-xl border border-[#E8D5B5] bg-glass/80">
+          <div className="border-b border-[#E8D5B5] bg-glass-hi/80 px-3 py-1.5 text-xs font-bold text-stone-700">
             מעקב סטטוס בקשה
           </div>
           <table className="w-full text-xs">
