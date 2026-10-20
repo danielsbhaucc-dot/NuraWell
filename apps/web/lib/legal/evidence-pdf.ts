@@ -32,15 +32,25 @@ export function visual(text: string): string {
   const t = text.replace(/\s+/g, ' ');
   const levels = bidi.getEmbeddingLevels(t, 'rtl');
   const chars = t.split('');
-  const mirrored = bidi.getMirroredCharactersMap(t, levels as never);
-  mirrored.forEach((ch: string, i: number) => {
-    chars[i] = ch;
-  });
   for (const [start, end] of bidi.getReorderSegments(t, levels)) {
     const seg = chars.slice(start, end + 1).reverse();
     chars.splice(start, seg.length, ...seg);
   }
-  return chars.join('');
+  const out = chars.join('');
+  // reordering leaves bracket glyphs facing the wrong way inside RTL lines: flip them
+  return /[\u0590-\u05FF]/.test(t) ? out.replace(/[()\[\]]/g, (c) => ({ '(': ')', ')': '(', '[': ']', ']': '[' })[c]!) : out;
+}
+
+const HEB = /[\u0590-\u05FF]/;
+/** Draws an already-visual-order string run by run: fontkit reverses Hebrew-script runs itself. */
+function drawVisual(page: PDFPage, v: string, x: number, y: number, size: number, font: PDFFont, color: ReturnType<typeof rgb>) {
+  const runs = v.match(/[\u0590-\u05FF\s'"״׳,.:\-]*[\u0590-\u05FF][\u0590-\u05FF\s'"״׳,.:\-]*|[^\u0590-\u05FF]+/g) ?? [];
+  let cx = x;
+  for (const r of runs) {
+    const draw = HEB.test(r) ? r.split('').reverse().join('') : r;
+    page.drawText(draw, { x: cx, y, size, font, color });
+    cx += font.widthOfTextAtSize(r, size);
+  }
 }
 
 type Fonts = { head: PDFFont; headBold: PDFFont; body: PDFFont; bold: PDFFont; mono: PDFFont };
@@ -159,7 +169,7 @@ class Writer {
     const font = o.font ?? this.f.body;
     const v = visual(s);
     const w = font.widthOfTextAtSize(v, size);
-    this.page.drawText(v, { x: (o.xRight ?? W - M) - w, y: o.y ?? this.y, size, font, color: o.color ?? C.ink });
+    drawVisual(this.page, v, (o.xRight ?? W - M) - w, o.y ?? this.y, size, font, o.color ?? C.ink);
   }
 
   para(s: string, o: { size?: number; font?: PDFFont; color?: ReturnType<typeof rgb>; width?: number; xRight?: number; gap?: number } = {}) {
@@ -223,7 +233,7 @@ class Writer {
     const t = visual(`${ok === null ? '•' : ok ? '✓' : '✗'} ${label}`.replace('✓', 'V').replace('✗', 'X'));
     const w = this.f.bold.widthOfTextAtSize(t, 9) + 14;
     this.page.drawRectangle({ x: xRight - w, y: y - 4, width: w, height: 16, color: ok === null ? C.card : ok ? C.mint : rgb(1, 0.94, 0.94), borderColor: col, borderWidth: 0.6 });
-    this.page.drawText(t, { x: xRight - w + 7, y, size: 9, font: this.f.bold, color: col });
+    drawVisual(this.page, t, xRight - w + 7, y, 9, this.f.bold, col);
     return w;
   }
 
@@ -329,7 +339,7 @@ export async function buildEvidencePdf(input: PdfInput): Promise<Buffer> {
     if (e.screenshotPng) {
       w.h2('צילום החלון כפי שנלכד במכשיר');
       const img = await doc.embedPng(e.screenshotPng);
-      w.image(img, W - 2 * M - 40, 360);
+      w.image(img, W - 2 * M - 40, 300);
     }
     w.h2('מכשיר ורשת');
     w.kv([
