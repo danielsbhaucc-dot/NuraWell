@@ -123,3 +123,23 @@ describe('per-user scope (withAiUser) inside a cron context', () => {
     expect(seen[0]).toBe('נועה ✓');
   });
 });
+
+describe('seed lookup failure falls back to the name directory', () => {
+  it('masks the first name in a notification prompt even when the profile lookup returns nothing', async () => {
+    _setPiiSeedLoader(async () => null);
+    _setPiiDirectoryLoader(async () => ['דניאל רחמן', 'דניאל']);
+    const { sent, base } = capture((b) =>
+      new Response(JSON.stringify({ choices: [{ message: { content: `בוקר טוב ${String(b.messages[0].content).match(/\[\[[A-Z_0-9]+\]\]/)![0]} ☀️` } }] }), {
+        headers: { 'content-type': 'application/json' },
+      })
+    );
+    const f = meteredFetch(base, { userId: '22222222-2222-4333-8444-555555555555', feature: 'test' });
+    const res = await f(URL_, {
+      method: 'POST',
+      body: JSON.stringify({ model: 'm', messages: [{ role: 'user', content: 'שם המשתמש: דניאל. כתוב בוקר טוב.' }] }),
+    });
+    expect(sent[0]).not.toContain('דניאל');
+    const j = await res.json();
+    expect(j.choices[0].message.content).toBe('בוקר טוב דניאל ☀️');
+  });
+});
