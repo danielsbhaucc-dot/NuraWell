@@ -165,10 +165,10 @@ export function AdminNotificationsBell({ opsHref }: AdminNotificationsBellProps)
 
         {open ? (
           <div
-            className="absolute inset-s-0 top-[calc(100%+0.5rem)] z-50 w-[min(20rem,calc(100vw-1.25rem))] max-w-[calc(100vw-1.25rem)] overflow-hidden rounded-2xl border border-gc/60 bg-[#FFFBF5]/95 shadow-2xl backdrop-blur-xl sm:w-88"
+            className="absolute inset-s-0 top-[calc(100%+0.5rem)] z-50 w-[min(20rem,calc(100vw-1.25rem))] max-w-[calc(100vw-1.25rem)] overflow-hidden rounded-2xl border border-gc/60 bg-glass/95 shadow-2xl backdrop-blur-xl sm:w-88"
             dir="rtl"
           >
-            <div className="flex items-center justify-between border-b border-stone-200/80 bg-[#FFF5E6]/80 px-3 py-2.5">
+            <div className="flex items-center justify-between border-b border-stone-200/80 bg-glass-hi/80 px-3 py-2.5">
               <h3 className="text-sm font-bold text-stone-800">התראות</h3>
               <div className="flex items-center gap-1">
                 {unreadCount > 0 ? (
@@ -238,8 +238,8 @@ export function AdminNotificationsBell({ opsHref }: AdminNotificationsBellProps)
                             href={href}
                             onClick={() => handleClick(n)}
                             className={cn(
-                              'block px-3 py-2.5 transition-colors hover:bg-[#FFF0D4]/60',
-                              !n.is_read && 'bg-[#FFF8ED]/90',
+                              'block px-3 py-2.5 transition-colors hover:bg-glass-hi/60',
+                              !n.is_read && 'bg-glass-hi/90',
                             )}
                           >
                             {inner}
@@ -251,8 +251,8 @@ export function AdminNotificationsBell({ opsHref }: AdminNotificationsBellProps)
                               if (!n.is_read) void markRead([n.id]);
                             }}
                             className={cn(
-                              'block w-full px-3 py-2.5 text-start transition-colors hover:bg-[#FFF0D4]/60',
-                              !n.is_read && 'bg-[#FFF8ED]/90',
+                              'block w-full px-3 py-2.5 text-start transition-colors hover:bg-glass-hi/60',
+                              !n.is_read && 'bg-glass-hi/90',
                             )}
                           >
                             {inner}

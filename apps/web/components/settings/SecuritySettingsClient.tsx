@@ -215,7 +215,7 @@ export function SecuritySettingsClient() {
             ) : (
               <ul className="space-y-2">
                 {state.passkeys.map((p) => (
-                  <li key={p.id} className="flex items-center gap-3 rounded-xl border border-[#E8D5B5] bg-white/70 p-3">
+                  <li key={p.id} className="flex items-center gap-3 rounded-xl border border-[#E8D5B5] bg-glass/70 backdrop-blur-md p-3">
                     <Smartphone className="h-5 w-5 shrink-0 text-teal-600" aria-hidden />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-bold text-slate-900">{p.label}</p>
@@ -266,7 +266,7 @@ export function SecuritySettingsClient() {
               </div>
             </div>
             <Divider />
-            <div className="flex items-center justify-between rounded-xl border border-[#E8D5B5] bg-[#FFF8ED] p-3">
+            <div className="flex items-center justify-between rounded-xl border border-[#E8D5B5] bg-glass-hi/80 p-3">
               <span className="text-sm font-bold text-slate-800">קודים שנשארו</span>
               <span className={`text-lg font-black ${state.backup_codes_left <= 2 ? 'text-rose-600' : 'text-emerald-700'}`}>
                 {state.backup_codes_left} / 10
@@ -276,7 +276,7 @@ export function SecuritySettingsClient() {
               type="button"
               onClick={() => (state.backup_codes_left > 0 ? setRegenOpen(true) : void regenerate())}
               disabled={busy !== null}
-              className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl border border-amber-400/70 bg-white/80 font-bold text-amber-800 disabled:opacity-60"
+              className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl border border-amber-400/70 bg-glass/80 backdrop-blur-md font-bold text-amber-800 disabled:opacity-60"
             >
               {busy === 'codes' ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden /> : <RefreshCw className="h-4 w-4" aria-hidden />}
               {state.backup_codes_left > 0 ? 'יצירת קודים חדשים' : 'יצירת קודי גיבוי'}
@@ -325,17 +325,17 @@ export function SecuritySettingsClient() {
         <div className="my-4 h-px bg-linear-to-l from-transparent via-amber-300/80 to-transparent" aria-hidden />
         <ol dir="ltr" className="grid grid-cols-2 gap-2">
           {(codes ?? []).map((c) => (
-            <li key={c} className="rounded-xl border border-[#E8D5B5] bg-white/85 py-2 text-center font-mono text-[15px] font-bold tracking-wider text-slate-800">
+            <li key={c} className="rounded-xl border border-[#E8D5B5] bg-glass/85 backdrop-blur-md py-2 text-center font-mono text-[15px] font-bold tracking-wider text-slate-800">
               {c}
             </li>
           ))}
         </ol>
         <div className="mt-4 grid grid-cols-2 gap-2">
-          <button type="button" onClick={() => void copyCodes()} className="flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-emerald-300 bg-white/80 font-bold text-emerald-800">
+          <button type="button" onClick={() => void copyCodes()} className="flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-emerald-300 bg-glass/80 backdrop-blur-md font-bold text-emerald-800">
             {copied ? <Check className="h-4 w-4" aria-hidden /> : <Copy className="h-4 w-4" aria-hidden />}
             {copied ? 'הועתק' : 'העתקה'}
           </button>
-          <button type="button" onClick={downloadCodes} className="flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-emerald-300 bg-white/80 font-bold text-emerald-800">
+          <button type="button" onClick={downloadCodes} className="flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-emerald-300 bg-glass/80 backdrop-blur-md font-bold text-emerald-800">
             <Download className="h-4 w-4" aria-hidden />
             הורדה
           </button>

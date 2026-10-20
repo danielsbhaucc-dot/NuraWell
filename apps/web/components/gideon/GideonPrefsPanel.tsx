@@ -12,7 +12,7 @@ const CITIES: [string, string][] = [['Jerusalem', 'ירושלים'], ['Tel Aviv'
 const TOPICS: [string, string][] = [['daily', 'עדכון יומי'], ['weekly', 'סיכום שבועי'], ['monthly', 'דוח חודשי'], ['cost', 'התראות עלות'], ['owner_tasks', 'תזכורות משימות'], ['agent_report', 'דיווחי סוכן התוכן'], ['dev_forward', 'עדכונים מאורי']];
 const DAYS = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳'];
 const fmt = (s: string) => new Date(s).toLocaleString('he-IL', { timeZone: 'Asia/Jerusalem', weekday: 'short', day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' });
-const card = 'rounded-3xl border border-slate-200 bg-white p-5';
+const card = 'rounded-3xl border border-slate-200 bg-glass/85 backdrop-blur-md p-5';
 const btn = 'rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50';
 
 export function GideonPrefsPanel() {

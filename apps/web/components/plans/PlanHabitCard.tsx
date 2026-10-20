@@ -17,7 +17,7 @@ export function PlanHabitCard({ habit, canStepDown, canStepUp, highlighted }: { 
       id={`task-${habit.id}`}
       data-task-id={habit.id}
       data-highlight={highlighted ? 'true' : undefined}
-      className="relative scroll-mt-24 overflow-hidden rounded-[24px] bg-white p-4 pt-5 shadow-[0_10px_28px_rgba(6,78,59,0.08)] ring-1 ring-emerald-900/6 transition-shadow before:absolute before:inset-x-0 before:top-0 before:h-1 before:bg-linear-to-l before:from-emerald-500 before:via-teal-400 before:to-amber-300 data-[highlight=true]:ring-4 data-[highlight=true]:ring-primary-300/70"
+      className="relative scroll-mt-24 overflow-hidden rounded-[24px] bg-glass/85 backdrop-blur-md p-4 pt-5 shadow-[0_10px_28px_rgba(6,78,59,0.08)] ring-1 ring-emerald-900/6 transition-shadow before:absolute before:inset-x-0 before:top-0 before:h-1 before:bg-linear-to-l before:from-emerald-500 before:via-teal-400 before:to-amber-300 data-[highlight=true]:ring-4 data-[highlight=true]:ring-primary-300/70"
     >
       <div className="flex items-start gap-3">
         <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-primary-50 to-primary-100 text-2xl" aria-hidden>
@@ -56,11 +56,11 @@ export function PlanHabitCard({ habit, canStepDown, canStepUp, highlighted }: { 
         </summary>
         <div className="flex flex-col gap-2.5 px-3 pb-3">
           <dl className="grid grid-cols-2 gap-2">
-            <div className="rounded-xl bg-white px-3 py-2 ring-1 ring-emerald-100">
+            <div className="rounded-xl bg-glass/85 backdrop-blur-md px-3 py-2 ring-1 ring-emerald-100">
               <dt className="text-[11px] font-bold text-emerald-700">הצעד הבא</dt>
               <dd className="mt-0.5 text-[13px] font-semibold leading-snug text-primary-900">{habit.nextStep ?? 'שומרים על מה שבנינו'}</dd>
             </div>
-            <div className="rounded-xl bg-white px-3 py-2 ring-1 ring-amber-100">
+            <div className="rounded-xl bg-glass/85 backdrop-blur-md px-3 py-2 ring-1 ring-amber-100">
               <dt className="text-[11px] font-bold text-amber-700">ביום קשה</dt>
               <dd className="mt-0.5 text-[13px] font-semibold leading-snug text-primary-900">{habit.fallbackStep ?? 'גם חצי צעד נחשב'}</dd>
             </div>

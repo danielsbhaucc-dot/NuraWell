@@ -98,7 +98,7 @@ export function SosMemoryCard({ initial }: { initial?: SosContextPayload | null 
             <p className="mb-2 text-[11px] font-bold text-emerald-800/90">פעמים אחרונות</p>
             <div className="relative space-y-2 ps-3 before:absolute before:inset-y-1 before:start-[3px] before:w-px before:bg-linear-to-b before:from-violet-300 before:to-emerald-200">
               {events.slice(0, expanded ? 4 : 2).map((ev, i) => (
-                <div key={ev.id} className="relative flex items-start gap-2 rounded-xl bg-white/85 px-3 py-2 text-[11px] leading-5 text-slate-700 shadow-[0_1px_3px_rgba(4,47,36,0.06)] ring-1 ring-violet-100">
+                <div key={ev.id} className="relative flex items-start gap-2 rounded-xl bg-glass/85 backdrop-blur-md px-3 py-2 text-[11px] leading-5 text-slate-700 shadow-[0_1px_3px_rgba(4,47,36,0.06)] ring-1 ring-violet-100">
                   <span className="absolute -start-[13px] top-3 h-2 w-2 shrink-0 rounded-full bg-violet-500 ring-2 ring-white" aria-hidden />
                   <span>
                     <span className="font-bold">{formatHebrewRelative(ev.created_at)}</span>

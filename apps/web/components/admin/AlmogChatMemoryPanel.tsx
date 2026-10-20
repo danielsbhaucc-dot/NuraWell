@@ -663,7 +663,7 @@ export function AlmogChatMemoryPanel({
                     ) : null}
 
                     {!hasAccess ? (
-                      <div className="flex items-start gap-3 rounded-xl border border-[#E8D5B5] bg-[#FFF8ED] p-3">
+                      <div className="flex items-start gap-3 rounded-xl border border-[#E8D5B5] bg-glass-hi/80 p-3">
                         <div className="min-w-0 flex-1">
                         <div className="mb-2 flex items-center gap-2 font-medium text-amber-900">
                           {access === 'pending' ? (
@@ -684,7 +684,7 @@ export function AlmogChatMemoryPanel({
                               value={requestReason}
                               onChange={(e) => setRequestReason(e.target.value)}
                               rows={2}
-                              className="mb-2 w-full rounded-lg border border-[#E8D5B5] bg-[#FFFBF5] px-2 py-1 text-slate-800"
+                              className="mb-2 w-full rounded-lg border border-[#E8D5B5] bg-glass/80 px-2 py-1 text-slate-800"
                               placeholder="למשל: בקשת תמיכה #1234 — בדיקת תקלה בשיחה"
                             />
                             <button
@@ -707,7 +707,7 @@ export function AlmogChatMemoryPanel({
                             type="button"
                             disabled={busy}
                             onClick={() => void cancelAccessRequest(s.id)}
-                            className="mb-2 inline-flex items-center gap-1 rounded-lg border border-rose-300 bg-[#FFFBF5] px-3 py-1.5 text-xs font-bold text-rose-700 disabled:opacity-50"
+                            className="mb-2 inline-flex items-center gap-1 rounded-lg border border-rose-300 bg-glass/80 px-3 py-1.5 text-xs font-bold text-rose-700 disabled:opacity-50"
                           >
                             <Ban className="h-3.5 w-3.5" />
                             בטל בקשה (מחק התראה מהמשתמש)

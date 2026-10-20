@@ -59,7 +59,7 @@ export function GideonSecurityPanel() {
         </section>
       ) : null}
 
-      <section className="rounded-3xl border border-slate-200 bg-white p-5">
+      <section className="rounded-3xl border border-slate-200 bg-glass/85 backdrop-blur-md p-5">
         <h2 className="text-lg font-bold">מצב</h2>
         <p className="mt-2 text-sm">
           {st?.disabled ? '⛔ גדעון כבוי' : locked ? `🔒 נעול עד ${fmt(st!.locked_until)}` : '✅ פעיל'} · חלון אמון עד: {fmt(st?.trusted_until ?? null)} · אימות אחרון: {fmt(st?.last_verified_at ?? null)}
@@ -76,7 +76,7 @@ export function GideonSecurityPanel() {
         </div>
       </section>
 
-      <section className="rounded-3xl border border-slate-200 bg-white p-5">
+      <section className="rounded-3xl border border-slate-200 bg-glass/85 backdrop-blur-md p-5">
         <h2 className="text-lg font-bold">מכשירים עם Face ID</h2>
         <ul className="mt-2 space-y-1 text-sm">
           {devices.length ? devices.map((k) => (
@@ -91,7 +91,7 @@ export function GideonSecurityPanel() {
         </button>
       </section>
 
-      <section className="rounded-3xl border border-slate-200 bg-white p-5">
+      <section className="rounded-3xl border border-slate-200 bg-glass/85 backdrop-blur-md p-5">
         <h2 className="text-lg font-bold">זמנים</h2>
         <label className="mt-3 block text-sm">חלון אמון אחרי Face ID (דקות)
           <input type="number" min={0} max={1440} value={trust} onChange={(e) => setTrust(Number(e.target.value))} className="mt-1 w-full rounded-xl border px-3 py-2" />

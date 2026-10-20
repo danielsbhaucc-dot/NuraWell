@@ -26,7 +26,7 @@ export async function PatternInsightsCard({ userId, max = 2, compact = false }: 
   if (rows.length === 0) return null;
 
   return (
-    <section dir="rtl" aria-label="דברים שאלמוג שם לב אליהם" className="rounded-2xl bg-white/80 p-4 shadow-sm ring-1 ring-emerald-900/10">
+    <section dir="rtl" aria-label="דברים שאלמוג שם לב אליהם" className="rounded-2xl bg-glass/80 backdrop-blur-md p-4 shadow-sm ring-1 ring-emerald-900/10">
       <h2 className="mb-2 flex items-center gap-2 text-sm font-bold text-emerald-950">
         <span aria-hidden>🌱</span> אלמוג שם לב
       </h2>

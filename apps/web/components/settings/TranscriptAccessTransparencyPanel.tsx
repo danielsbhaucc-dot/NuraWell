@@ -41,10 +41,10 @@ export function TranscriptAccessTransparencyPanel({
         שקיפות מלאה — כל גישה נרשמת. טבלה זו מתעדכנת אחרי כל אישור או ביטול.
       </p>
 
-      <div className="overflow-hidden rounded-xl border border-[#E8D5B5] bg-[#FFFBF5]">
+      <div className="overflow-hidden rounded-xl border border-[#E8D5B5] bg-glass/80">
         <table className="w-full text-xs">
           <thead>
-            <tr className="border-b border-[#E8D5B5] bg-[#FFF5E6]/80 text-stone-600">
+            <tr className="border-b border-[#E8D5B5] bg-glass-hi/80 text-stone-600">
               <th className="px-3 py-2 text-start font-bold">מה חשוף</th>
               <th className="px-3 py-2 text-start font-bold whitespace-nowrap">אושר</th>
               <th className="px-3 py-2 text-start font-bold">תוקף</th>

@@ -54,9 +54,9 @@ export function OpsAdminNotificationDialog({
       zIndex={340}
       aria-labelledby="ops-notif-popup-title"
       backdropClassName="absolute inset-0 bg-slate-900/35 backdrop-blur-sm"
-      panelClassName="max-w-sm overflow-hidden rounded-3xl border border-gc/50 bg-[#FFFBF5]/95 p-0 shadow-2xl backdrop-blur-xl"
+      panelClassName="max-w-sm overflow-hidden rounded-3xl border border-gc/50 bg-glass/95 p-0 shadow-2xl backdrop-blur-xl"
     >
-      <div className="flex items-center justify-between border-b border-[#E8D5B5] bg-[#FFF5E6]/90 px-4 py-3">
+      <div className="flex items-center justify-between border-b border-[#E8D5B5] bg-glass-hi/90 px-4 py-3">
         <div className="flex items-center gap-2">
           <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-100 text-lg">
             {notification.icon_emoji || '🔔'}

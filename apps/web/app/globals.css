@@ -3,6 +3,10 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
+  /* Brand glass surface (green-cream). Use translucent + backdrop-blur instead of any white surface. AA: emerald-800/900 & slate-600+ text pass. */
+  --color-glass: #e7eedc;
+  --color-glass-hi: #eef3e4;
+  --color-glass-rose: #f3e2dc;
   /* Ops surfaces: soft green-cream instead of pure white (Ops shell + logs). AA verified vs slate-500..900 text.
      Note: --color-cream is a shared main-site token (#f5faf2, near-white) defined below; Ops uses gc-* instead. */
   --color-gc: #f3f5ec;

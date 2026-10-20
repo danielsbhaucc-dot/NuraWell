@@ -470,7 +470,7 @@ export function TodayTasksPopup({
                         <button
                           type="button"
                           onClick={() => openChatForAlmog(task)}
-                          className="flex items-center justify-center gap-1.5 rounded-xl bg-white py-2.5 text-[11px] font-black text-emerald-800 shadow-[0_1px_3px_rgba(4,47,36,0.08)] ring-1 ring-emerald-200 transition hover:bg-emerald-50 active:scale-[0.98]"
+                          className="flex items-center justify-center gap-1.5 rounded-xl bg-glass/85 backdrop-blur-md py-2.5 text-[11px] font-black text-emerald-800 shadow-[0_1px_3px_rgba(4,47,36,0.08)] ring-1 ring-emerald-200 transition hover:bg-emerald-50 active:scale-[0.98]"
                         >
                           <span className="flex h-5 w-5 items-center justify-center rounded-full bg-linear-to-br from-teal-500 to-emerald-500 text-white">
                             <MessageCircle className="h-3 w-3" aria-hidden />
@@ -597,7 +597,7 @@ export function TodayTasksPopup({
                         <button
                           type="button"
                           onClick={() => openChatForJourney(task)}
-                          className="flex items-center justify-center gap-1.5 rounded-xl bg-white py-2.5 text-[11px] font-black text-emerald-800 shadow-[0_1px_3px_rgba(4,47,36,0.08)] ring-1 ring-emerald-200 transition hover:bg-emerald-50 active:scale-[0.98]"
+                          className="flex items-center justify-center gap-1.5 rounded-xl bg-glass/85 backdrop-blur-md py-2.5 text-[11px] font-black text-emerald-800 shadow-[0_1px_3px_rgba(4,47,36,0.08)] ring-1 ring-emerald-200 transition hover:bg-emerald-50 active:scale-[0.98]"
                         >
                           <span className="flex h-5 w-5 items-center justify-center rounded-full bg-linear-to-br from-teal-500 to-emerald-500 text-white">
                             <MessageCircle className="h-3 w-3" aria-hidden />

@@ -256,7 +256,7 @@ function AccordionSection({
           style={{ background: tone, boxShadow: `0 4px 12px ${glassTint(tone, 0.4)}` }}
           aria-hidden
         >
-          {emoji ?? <span className="h-2.5 w-2.5 rounded-full bg-white/90" />}
+          {emoji ?? <span className="h-2.5 w-2.5 rounded-full bg-glass/90 backdrop-blur-md" />}
         </span>
         <span className="flex-1 text-[14px] font-black text-white">{label}</span>
         <span

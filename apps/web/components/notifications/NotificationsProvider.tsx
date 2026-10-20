@@ -1011,7 +1011,7 @@ export function NotificationsProvider({
                       role="separator"
                     >
                       <span className="h-px flex-1 bg-linear-to-l from-transparent via-emerald-300/70 to-emerald-300/70" />
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-white/80 px-3 py-1 text-[11px] font-bold text-emerald-800 ring-1 ring-emerald-200/70 backdrop-blur-sm">
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-glass/80 px-3 py-1 text-[11px] font-bold text-emerald-800 ring-1 ring-emerald-200/70 backdrop-blur-sm">
                         <History className="h-3.5 w-3.5" aria-hidden />
                         התראות קודמות
                       </span>
@@ -1077,7 +1077,7 @@ export function NotificationsProvider({
                     type="button"
                     disabled={loadingMore}
                     onClick={() => void loadMore()}
-                    className="group inline-flex min-h-11 items-center gap-2.5 rounded-full border border-white/70 bg-white/75 py-2 ps-2 pe-5 text-sm font-bold text-emerald-900 shadow-[0_6px_20px_rgba(4,120,87,0.12)] ring-1 ring-emerald-200/60 backdrop-blur-md transition hover:bg-white hover:shadow-[0_8px_24px_rgba(4,120,87,0.18)] active:scale-[0.98] disabled:opacity-60"
+                    className="group inline-flex min-h-11 items-center gap-2.5 rounded-full border border-white/70 bg-glass/75 backdrop-blur-md py-2 ps-2 pe-5 text-sm font-bold text-emerald-900 shadow-[0_6px_20px_rgba(4,120,87,0.12)] ring-1 ring-emerald-200/60 backdrop-blur-md transition hover:bg-glass hover:shadow-[0_8px_24px_rgba(4,120,87,0.18)] active:scale-[0.98] disabled:opacity-60"
                   >
                     <span className="flex h-7 w-7 items-center justify-center rounded-full bg-linear-to-br from-emerald-500 to-teal-500 text-white shadow-sm">
                       {loadingMore ? (

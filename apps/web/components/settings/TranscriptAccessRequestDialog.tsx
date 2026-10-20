@@ -94,7 +94,7 @@ export function TranscriptAccessRequestDialog({
       </div>
 
       <div className="space-y-4 px-5 py-4" dir="rtl">
-        <div className="rounded-xl border border-[#E8D5B5] bg-[#FFFBF5] p-3 text-sm">
+        <div className="rounded-xl border border-[#E8D5B5] bg-glass/80 p-3 text-sm">
           <p className="mb-1 text-xs font-bold text-stone-500">סיבת הבקשה</p>
           <p className="leading-relaxed text-stone-800">{request.reason}</p>
         </div>
@@ -139,7 +139,7 @@ export function TranscriptAccessRequestDialog({
               onChange={(e) => setDenyReason(e.target.value)}
               rows={2}
               disabled={busy}
-              className="w-full rounded-xl border border-[#E8D5B5] bg-[#FFFBF5] px-3 py-2 text-sm text-stone-800"
+              className="w-full rounded-xl border border-[#E8D5B5] bg-glass/80 px-3 py-2 text-sm text-stone-800"
               placeholder="למשל: עדיף לי לא לשתף את השיחה הזו"
             />
             <div className="flex gap-2">
@@ -180,7 +180,7 @@ export function TranscriptAccessRequestDialog({
               type="button"
               disabled={busy}
               onClick={() => onDeny(request.id)}
-              className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-rose-300 bg-[#FFF5F0] px-4 py-3 text-sm font-bold text-rose-800 disabled:opacity-50"
+              className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-rose-300 bg-glass-rose/80 px-4 py-3 text-sm font-bold text-rose-800 disabled:opacity-50"
             >
               <XCircle className="h-4 w-4" />
               דחה

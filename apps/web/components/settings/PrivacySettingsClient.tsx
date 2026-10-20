@@ -288,7 +288,7 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
           </div>
         ) : (
           <>
-            <label className="flex items-start gap-3 rounded-xl border border-[#E8D5B5] bg-[#FFF8ED] p-3 cursor-pointer">
+            <label className="flex items-start gap-3 rounded-xl border border-[#E8D5B5] bg-glass-hi/80 p-3 cursor-pointer">
               <input
                 type="checkbox"
                 checked={transcriptConsent === true}
@@ -310,7 +310,7 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
                 type="button"
                 disabled={transcriptSaving}
                 onClick={() => setRevokeConfirmOpen(true)}
-                className="w-full min-h-[44px] rounded-xl border border-rose-200 bg-[#FFF5F0] px-4 py-2 text-sm font-bold text-rose-800 disabled:opacity-50"
+                className="w-full min-h-[44px] rounded-xl border border-rose-200 bg-glass-rose/80 px-4 py-2 text-sm font-bold text-rose-800 disabled:opacity-50"
               >
                 ביטול האישור לגישת צוות
               </button>
@@ -329,7 +329,7 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
                     className={`flex items-start gap-3 rounded-xl border p-3 ${
                       highlightedRequest === req.id
                         ? 'border-indigo-300 bg-[#F5F0FF]'
-                        : 'border-[#E8D5B5] bg-[#FFF8ED]'
+                        : 'border-[#E8D5B5] bg-glass-hi/80'
                     }`}
                   >
                     <div className="min-w-0 flex-1">
@@ -346,7 +346,7 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
                             value={denyReason}
                             onChange={(e) => setDenyReason(e.target.value)}
                             rows={2}
-                            className="w-full rounded-lg border border-[#E8D5B5] bg-[#FFFBF5] px-2 py-1.5 text-sm text-stone-800"
+                            className="w-full rounded-lg border border-[#E8D5B5] bg-glass/80 px-2 py-1.5 text-sm text-stone-800"
                             placeholder="למשל: עדיף לי לא לשתף את השיחה הזו"
                           />
                           <div className="flex flex-wrap gap-2">
@@ -396,7 +396,7 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
                             type="button"
                             disabled={resolvingId === req.id}
                             onClick={() => void resolveRequest(req.id, false)}
-                            className="inline-flex items-center gap-1 rounded-lg border border-rose-300 bg-[#FFFBF5] px-3 py-1.5 text-xs font-bold text-rose-700 disabled:opacity-50"
+                            className="inline-flex items-center gap-1 rounded-lg border border-rose-300 bg-glass/80 px-3 py-1.5 text-xs font-bold text-rose-700 disabled:opacity-50"
                           >
                             <XCircle className="w-3.5 h-3.5" />
                             דחה
@@ -408,7 +408,7 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
                               setDenyDetailId(req.id);
                               setDenyReason('');
                             }}
-                            className="inline-flex items-center gap-1 rounded-lg border border-stone-300 bg-[#FFFBF5] px-3 py-1.5 text-xs font-bold text-stone-700 disabled:opacity-50"
+                            className="inline-flex items-center gap-1 rounded-lg border border-stone-300 bg-glass/80 px-3 py-1.5 text-xs font-bold text-stone-700 disabled:opacity-50"
                           >
                             דחה עם הסבר
                           </button>
