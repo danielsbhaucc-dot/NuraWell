@@ -41,3 +41,16 @@ Records store `signing_key_id`, and verification tries the current key and then 
 
 ## Data-key rotation (PII / vault)
 Not supported yet: ciphertexts carry no key id (`enc:v1:`). Rotation needs a keyring (`enc:v2:<kid>:`) + background re-encryption. Until then: back the keys up, don't rotate.
+
+## One-click backup in Ops (preferred)
+Ops → משפטי → **גיבוי מפתחות** (`/ops/legal?tab=keys`, `components/admin/AdminKeyBackup.tsx`, API `POST /api/v1/admin/key-backup`).
+- Admin only, approved Ops device (via `requireOpsApiAdmin`), step-up via `lib/ops/sensitive-stepup.ts` (fresh session today; the desktop step-up registers its verifier there), rate-limited 3/day, audit events `key_backup_created` / `key_backup_regenerated` (names + fingerprints only). Re-generation requires an explicit checkbox + step-up.
+- The passphrase is typed in the browser (strength meter; server enforces ≥16 chars, score ≥3), sent once over TLS, used for scrypt in memory, never stored or logged.
+- Response = `keys.sealed.json`, `keys.recovery.json`, 3 shares, fingerprints. Nothing is persisted server-side.
+- Download zip (safe for a cloud folder): Hebrew guide, `offline-restore.html` (standalone WebCrypto + pure-JS scrypt, works offline, CSP blocks all network), disaster-recovery one-pager, both sealed files. The 3 shares are never zipped: each is printed / copied separately.
+- Templates: `docs/security/restore/*.html` → run `node scripts/keys/build-backup-docs.mjs` to regenerate `apps/web/lib/security/backup-docs.generated.ts`.
+
+## GIDEON_SETTINGS_KEY plan
+- Decrypt now tries `GIDEON_SETTINGS_KEY` first, then the legacy service-role HKDF, so nothing strands.
+- When unset, the backup contains the *derived* key under the name `GIDEON_SETTINGS_KEY`. Setting that restored value in Vercel decouples Gideon from the service-role key without re-encryption.
+- Or set a brand-new 32-byte base64 `GIDEON_SETTINGS_KEY`: the next backup run calls `migrateGideonSecrets()`, which re-encrypts the stored Telegram secrets under it. Then make a fresh backup.

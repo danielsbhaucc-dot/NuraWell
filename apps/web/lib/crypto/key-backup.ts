@@ -2,7 +2,7 @@
  * Offline key-backup primitives (no network, no env access).
  *  - Shamir secret sharing over GF(256) (AES polynomial 0x11b), k-of-n.
  *  - Passphrase-sealed backup file: scrypt (N=2^17, r=8, p=1) → AES-256-GCM.
- * Used by scripts/keys/keybackup.ts; never imported by app routes.
+ * Used by scripts/keys/keybackup.ts and the admin-only /api/v1/admin/key-backup route (server only).
  */
 import { createCipheriv, createDecipheriv, createHash, randomBytes, scryptSync } from 'node:crypto';
 

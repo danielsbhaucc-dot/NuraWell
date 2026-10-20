@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; form-action 'none'">
+<title>NuraWell · שחזור מפתחות (לא מקוון)</title>
+<style>
+:root{--ink:#e8eefc;--muted:#9fb0d0;--card:rgba(20,30,58,.72);--line:rgba(140,170,255,.18);--acc:#5eead4;--acc2:#818cf8;--bad:#fda4af;--ok:#86efac}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Segoe UI","Heebo","Assistant",Arial,sans-serif;color:var(--ink);min-height:100vh;
+background:radial-gradient(1200px 600px at 85% -10%,rgba(129,140,248,.35),transparent 60%),radial-gradient(900px 500px at -10% 110%,rgba(94,234,212,.22),transparent 60%),linear-gradient(160deg,#0b1226,#111a35 55%,#0d1830)}
+main{max-width:860px;margin:0 auto;padding:36px 20px 60px}
+h1{font-size:30px;margin:0 0 6px;letter-spacing:-.3px}
+h1 span{background:linear-gradient(90deg,var(--acc),var(--acc2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.lead{color:var(--muted);margin:0 0 26px;line-height:1.7}
+.card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:22px;margin-bottom:18px;backdrop-filter:blur(14px);box-shadow:0 20px 60px rgba(0,0,0,.35)}
+.step{display:flex;gap:12px;align-items:center;margin:0 0 14px;font-weight:700;font-size:18px}
+.num{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,var(--acc),var(--acc2));color:#0b1226;font-weight:800;flex:none}
+.tabs{display:flex;gap:8px;background:rgba(10,16,34,.6);padding:6px;border-radius:16px;margin-bottom:16px}
+.tabs button{flex:1;border:0;border-radius:12px;padding:12px;font:inherit;font-weight:700;color:var(--muted);background:transparent;cursor:pointer}
+.tabs button[aria-selected=true]{background:linear-gradient(135deg,rgba(94,234,212,.22),rgba(129,140,248,.25));color:var(--ink)}
+label{display:block;font-weight:600;margin:12px 0 6px}
+input[type=password],input[type=text],textarea{width:100%;padding:13px 14px;border-radius:14px;border:1px solid var(--line);background:rgba(8,13,28,.75);color:var(--ink);font:inherit;direction:ltr;text-align:left}
+textarea{min-height:64px;font-family:ui-monospace,Consolas,monospace;font-size:13px}
+.drop{border:1.5px dashed rgba(140,170,255,.4);border-radius:16px;padding:18px;text-align:center;color:var(--muted);cursor:pointer;display:block}
+.drop.ok{border-color:var(--ok);color:var(--ok)}
+.go{margin-top:18px;width:100%;padding:15px;border:0;border-radius:16px;font:inherit;font-size:17px;font-weight:800;color:#0b1226;background:linear-gradient(90deg,var(--acc),var(--acc2));cursor:pointer}
+.go:disabled{opacity:.5;cursor:wait}
+.msg{margin-top:14px;padding:12px 14px;border-radius:14px;display:none;line-height:1.6}
+.msg.err{display:block;background:rgba(253,164,175,.12);border:1px solid rgba(253,164,175,.4);color:var(--bad)}
+.msg.info{display:block;background:rgba(129,140,248,.12);border:1px solid rgba(129,140,248,.35)}
+table{width:100%;border-collapse:collapse;margin-top:8px}
+td,th{padding:10px 8px;border-bottom:1px solid var(--line);text-align:right}
+code{font-family:ui-monospace,Consolas,monospace;direction:ltr;display:inline-block}
+.small{font-size:13px;color:var(--muted)}
+.btn2{border:1px solid var(--line);background:rgba(94,234,212,.12);color:var(--ink);border-radius:10px;padding:7px 12px;font:inherit;cursor:pointer}
+.hidden{display:none}
+.badge{display:inline-block;padding:4px 10px;border-radius:999px;background:rgba(134,239,172,.14);color:var(--ok);font-size:13px;font-weight:700}
+</style>
+</head>
+<body>
+<main>
+  <h1>שחזור מפתחות <span>NuraWell</span></h1>
+  <p class="lead">הדף הזה עובד בלי אינטרנט ובלי להתקין כלום. שום מידע לא נשלח לשום מקום, הכול קורה רק במחשב הזה. אפשר אפילו לנתק את ה-Wi-Fi לפני שמתחילים.</p>
+
+  <section class="card">
+    <div class="step"><span class="num">1</span>במה משחזרים?</div>
+    <div class="tabs" role="tablist">
+      <button type="button" role="tab" aria-selected="true" data-mode="pass">יש לי את הסיסמה</button>
+      <button type="button" role="tab" aria-selected="false" data-mode="shares">יש לי 2 חלקי שחזור</button>
+    </div>
+
+    <div id="m-pass">
+      <label class="drop" id="d-sealed"><input type="file" id="f-sealed" accept=".json" hidden><span class="t">לחצו כאן ובחרו את הקובץ <code>keys.sealed.json</code></span></label>
+      <label for="pass">הסיסמה של הגיבוי</label>
+      <input type="password" id="pass" autocomplete="off">
+    </div>
+
+    <div id="m-shares" class="hidden">
+      <label class="drop" id="d-recovery"><input type="file" id="f-recovery" accept=".json" hidden><span class="t">לחצו כאן ובחרו את הקובץ <code>keys.recovery.json</code></span></label>
+      <label for="s1">חלק שחזור ראשון (מתחיל ב-NWKS1)</label>
+      <textarea id="s1" spellcheck="false"></textarea>
+      <label for="s2">חלק שחזור שני (כל חלק אחר מתוך השלושה)</label>
+      <textarea id="s2" spellcheck="false"></textarea>
+      <p class="small">אפשר להקליד מהדף המודפס. רווחים ושורות חדשות לא משנים. אם יש טעות הקלדה, הדף יגיד.</p>
+    </div>
+
+    <button class="go" id="go" type="button">שחזור המפתחות</button>
+    <div class="msg" id="msg"></div>
+  </section>
+
+  <section class="card hidden" id="out">
+    <div class="step"><span class="num">2</span>המפתחות שוחזרו <span class="badge">הצליח</span></div>
+    <p class="small">בדקו שטביעות האצבע (12 התווים) זהות לאלה שמודפסות בדף הגיבוי. זה מוכיח שהמפתח הנכון.</p>
+    <table><thead><tr><th>שם המפתח</th><th>טביעת אצבע</th><th></th></tr></thead><tbody id="rows"></tbody></table>
+    <button class="go" id="dl" type="button">הורדת קובץ המפתחות (restored.env)</button>
+    <p class="small">את הקובץ הזה מעבירים רק למפתח שמחזיר את האתר לאוויר, ומוחקים אחרי השימוש. ההוראות המלאות במדריך השחזור.</p>
+  </section>
+</main>
+<script>
+(() => {
+'use strict';
+const $ = (id) => document.getElementById(id);
+const te = new TextEncoder();
+const b64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
+const b64url = (s) => b64(s.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s.length + 3) % 4));
+const toB64url = (u) => btoa(String.fromCharCode(...u)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const hex = (u) => [...new Uint8Array(u)].map((b) => b.toString(16).padStart(2, '0')).join('');
+const sha = async (u) => hex(await crypto.subtle.digest('SHA-256', u));
+
+/* ---------- scrypt (RFC 7914) on WebCrypto PBKDF2 + Salsa20/8 ---------- */
+async function pbkdf2(pass, salt, len) {
+  const k = await crypto.subtle.importKey('raw', pass, 'PBKDF2', false, ['deriveBits']);
+  return new Uint8Array(await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt, iterations: 1 }, k, len * 8));
+}
+function salsa(B, x) {
+  for (let i = 0; i < 16; i++) x[i] = B[i];
+  const R = (a, b) => (a << b) | (a >>> (32 - b));
+  for (let i = 0; i < 8; i += 2) {
+    x[4]^=R(x[0]+x[12],7);x[8]^=R(x[4]+x[0],9);x[12]^=R(x[8]+x[4],13);x[0]^=R(x[12]+x[8],18);
+    x[9]^=R(x[5]+x[1],7);x[13]^=R(x[9]+x[5],9);x[1]^=R(x[13]+x[9],13);x[5]^=R(x[1]+x[13],18);
+    x[14]^=R(x[10]+x[6],7);x[2]^=R(x[14]+x[10],9);x[6]^=R(x[2]+x[14],13);x[10]^=R(x[6]+x[2],18);
+    x[3]^=R(x[15]+x[11],7);x[7]^=R(x[3]+x[15],9);x[11]^=R(x[7]+x[3],13);x[15]^=R(x[11]+x[7],18);
+    x[1]^=R(x[0]+x[3],7);x[2]^=R(x[1]+x[0],9);x[3]^=R(x[2]+x[1],13);x[0]^=R(x[3]+x[2],18);
+    x[6]^=R(x[5]+x[4],7);x[7]^=R(x[6]+x[5],9);x[4]^=R(x[7]+x[6],13);x[5]^=R(x[4]+x[7],18);
+    x[11]^=R(x[10]+x[9],7);x[8]^=R(x[11]+x[10],9);x[9]^=R(x[8]+x[11],13);x[10]^=R(x[9]+x[8],18);
+    x[12]^=R(x[15]+x[14],7);x[13]^=R(x[12]+x[15],9);x[14]^=R(x[13]+x[12],13);x[15]^=R(x[14]+x[13],18);
+  }
+  for (let i = 0; i < 16; i++) B[i] = (B[i] + x[i]) | 0;
+}
+function blockMix(B, Y, r, X, t) {
+  X.set(B.subarray((2 * r - 1) * 16, 2 * r * 16));
+  for (let i = 0; i < 2 * r; i++) {
+    for (let j = 0; j < 16; j++) X[j] ^= B[i * 16 + j];
+    salsa(X, t);
+    const o = ((i & 1) * r + (i >> 1)) * 16;
+    Y.set(X, o);
+  }
+  B.set(Y);
+}
+async function scrypt(pass, salt, N, r, p, dkLen) {
+  const B = await pbkdf2(pass, salt, p * 128 * r);
+  const W = 32 * r;
+  const V = new Uint32Array(W * N), Y = new Uint32Array(W), X16 = new Uint32Array(16), t = new Uint32Array(16);
+  for (let k = 0; k < p; k++) {
+    const X = new Uint32Array(B.buffer, k * 128 * r, W);
+    for (let i = 0; i < N; i++) { V.set(X, i * W); blockMix(X, Y, r, X16, t); }
+    for (let i = 0; i < N; i++) {
+      const j = X[(2 * r - 1) * 16] & (N - 1);
+      for (let q = 0; q < W; q++) X[q] ^= V[j * W + q];
+      blockMix(X, Y, r, X16, t);
+    }
+  }
+  return pbkdf2(pass, B, dkLen);
+}
+
+/* ---------- open a sealed backup file ---------- */
+async function openBackup(text, passphrase) {
+  let f;
+  try { f = JSON.parse(text); } catch { throw new Error('הקובץ שנבחר הוא לא קובץ גיבוי תקין.'); }
+  if (f.v !== 1 || f.kdf !== 'scrypt') throw new Error('גרסת קובץ לא מוכרת.');
+  const key = await scrypt(te.encode(passphrase.normalize('NFC')), b64(f.salt), f.N, f.r, f.p, 32);
+  const ck = await crypto.subtle.importKey('raw', key, 'AES-GCM', false, ['decrypt']);
+  const ct = b64(f.ct), tag = b64(f.tag), all = new Uint8Array(ct.length + tag.length);
+  all.set(ct); all.set(tag, ct.length);
+  try {
+    const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64(f.iv), additionalData: te.encode('nurawell-key-backup-v1'), tagLength: 128 }, ck, all);
+    return JSON.parse(new TextDecoder().decode(pt));
+  } catch { throw new Error('הסיסמה או חלקי השחזור לא מתאימים לקובץ הזה.'); }
+}
+
+/* ---------- Shamir 2-of-3 over GF(256) ---------- */
+const EXP = new Uint8Array(510), LOG = new Uint8Array(256);
+(() => { let x = 1; for (let i = 0; i < 255; i++) { EXP[i] = x; LOG[x] = i; x ^= (x << 1) ^ (x & 0x80 ? 0x11b : 0); x &= 0xff; } for (let i = 255; i < 510; i++) EXP[i] = EXP[i - 255]; })();
+const mul = (a, b) => (a === 0 || b === 0 ? 0 : EXP[LOG[a] + LOG[b]]);
+const div = (a, b) => (a === 0 ? 0 : EXP[(LOG[a] + 255 - LOG[b]) % 255]);
+function decodeShare(t) {
+  const m = /^NWKS1-(\d+)-(\d+)-([0-9a-f]{8})-([A-Za-z0-9_-]+)$/.exec(t.replace(/\s+/g, ''));
+  if (!m) throw new Error('חלק שחזור לא בפורמט הנכון. בדקו שהעתקתם אותו במלואו, מ-NWKS1 ועד הסוף.');
+  return { k: +m[1], x: +m[2], check: m[3], data: b64url(m[4]) };
+}
+async function combine(a, b) {
+  if (a.x === b.x) throw new Error('הוזן אותו חלק פעמיים. צריך שני חלקים שונים.');
+  const use = [a, b], out = new Uint8Array(a.data.length);
+  for (let n = 0; n < out.length; n++) {
+    let acc = 0;
+    for (let i = 0; i < 2; i++) {
+      let num = 1, den = 1;
+      for (let j = 0; j < 2; j++) { if (i === j) continue; num = mul(num, use[j].x); den = mul(den, use[j].x ^ use[i].x); }
+      acc ^= mul(use[i].data[n], div(num, den));
+    }
+    out[n] = acc;
+  }
+  if ((await sha(out)).slice(0, 8) !== a.check) throw new Error('חלקי השחזור לא מתאימים זה לזה, או שיש בהם טעות הקלדה.');
+  return out;
+}
+
+/* ---------- UI ---------- */
+let mode = 'pass'; const files = {}; let restored = null;
+document.querySelectorAll('[data-mode]').forEach((b) => b.addEventListener('click', () => {
+  mode = b.dataset.mode;
+  document.querySelectorAll('[data-mode]').forEach((x) => x.setAttribute('aria-selected', String(x === b)));
+  $('m-pass').classList.toggle('hidden', mode !== 'pass'); $('m-shares').classList.toggle('hidden', mode !== 'shares');
+}));
+for (const [inp, drop, key] of [['f-sealed', 'd-sealed', 'sealed'], ['f-recovery', 'd-recovery', 'recovery']]) {
+  $(inp).addEventListener('change', async (e) => {
+    const f = e.target.files[0]; if (!f) return;
+    files[key] = await f.text(); $(drop).classList.add('ok'); $(drop).querySelector('.t').textContent = '✓ נבחר: ' + f.name;
+  });
+}
+const say = (t, cls) => { const m = $('msg'); m.className = 'msg ' + cls; m.textContent = t; };
+$('go').addEventListener('click', async () => {
+  $('go').disabled = true; say('מחשב... זה לוקח כמה שניות, לא לסגור את הדף.', 'info');
+  await new Promise((r) => setTimeout(r, 30));
+  try {
+    if (mode === 'pass') {
+      if (!files.sealed) throw new Error('צריך לבחור את הקובץ keys.sealed.json.');
+      if (!$('pass').value) throw new Error('צריך להקליד את הסיסמה.');
+      restored = await openBackup(files.sealed, $('pass').value);
+    } else {
+      if (!files.recovery) throw new Error('צריך לבחור את הקובץ keys.recovery.json.');
+      const rec = await combine(decodeShare($('s1').value), decodeShare($('s2').value));
+      restored = await openBackup(files.recovery, toB64url(rec));
+      rec.fill(0);
+    }
+    const rows = $('rows'); rows.textContent = '';
+    for (const [k, v] of Object.entries(restored)) {
+      const tr = document.createElement('tr');
+      const fp = (await sha(te.encode(v))).slice(0, 12);
+      tr.innerHTML = '<td><code></code></td><td><code></code></td><td><button class="btn2" type="button">העתקה</button></td>';
+      tr.querySelectorAll('code')[0].textContent = k; tr.querySelectorAll('code')[1].textContent = fp;
+      tr.querySelector('button').addEventListener('click', async (ev) => { await navigator.clipboard.writeText(v); ev.target.textContent = 'הועתק ✓'; });
+      rows.appendChild(tr);
+    }
+    $('msg').className = 'msg'; $('out').classList.remove('hidden'); $('out').scrollIntoView({ behavior: 'smooth' });
+  } catch (e) { say(e.message || 'משהו לא הצליח.', 'err'); }
+  finally { $('go').disabled = false; }
+});
+$('dl').addEventListener('click', () => {
+  if (!restored) return;
+  const body = Object.entries(restored).map(([k, v]) => k + '=' + JSON.stringify(v)).join('\n') + '\n';
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([body], { type: 'text/plain' })); a.download = 'restored.env'; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+});
+})();
+</script>
+</body>
+</html>
