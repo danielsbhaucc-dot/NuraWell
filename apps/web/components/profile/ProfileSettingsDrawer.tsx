@@ -20,6 +20,12 @@ const SETTINGS_ITEMS: SettingsItem[] = [
     description: 'ייצוא, מחיקת חשבון והסכמות',
   },
   {
+    label: 'כניסה ואבטחה',
+    href: '/settings/security',
+    emoji: '🛡️',
+    description: 'Face ID, טביעת אצבע וקודי גיבוי',
+  },
+  {
     label: 'התראות מאלמוג',
     href: '/settings/almog',
     emoji: '🔔',

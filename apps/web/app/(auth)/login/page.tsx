@@ -4,7 +4,9 @@ import { useState, useEffect, useSyncExternalStore, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Mail, Lock, Eye, EyeOff, LogIn } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, LogIn, Fingerprint, KeyRound } from 'lucide-react';
+import { browserSupportsWebAuthn, startAuthentication } from '@simplewebauthn/browser';
+import { AnimatedDialog } from '../../../components/shared/AnimatedDialog';
 import { createClient } from '../../../lib/supabase/client';
 import { NuraWellLogo } from '../../../components/shared/NuraWellLogo';
 import { PublicAiPresence } from '../../../components/ai/PublicAiPresence';
@@ -48,6 +50,13 @@ function LoginFormContent() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [passkeySupported, setPasskeySupported] = useState(false);
+  const [passkeyBusy, setPasskeyBusy] = useState(false);
+  const [backupOpen, setBackupOpen] = useState(false);
+  const [backupEmail, setBackupEmail] = useState('');
+  const [backupCode, setBackupCode] = useState('');
+  const [backupBusy, setBackupBusy] = useState(false);
+  const [backupError, setBackupError] = useState<string | null>(null);
   /** Ops host serves its own admin login (same-origin cookies); hide public-app links there. */
   const isOpsHost = useSyncExternalStore(noopSubscribe, isOpsHostClient, () => false);
   const reason = searchParams?.get('reason');
@@ -149,9 +158,91 @@ function LoginFormContent() {
     }
   };
 
+  useEffect(() => {
+    setPasskeySupported(browserSupportsWebAuthn());
+  }, []);
+
+  const afterSignIn = () => {
+    // full navigation so the proxy re-checks the session (and, for admins, device approval)
+    window.location.assign(isOpsHost && redirect === APP_HOME_PATH ? '/' : redirect);
+  };
+
+  const handlePasskey = async () => {
+    setPasskeyBusy(true);
+    try {
+      const o = await fetch('/api/v1/auth/passkey', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ step: 'options' }) });
+      const od = (await o.json().catch(() => ({}))) as { options?: unknown; error?: string };
+      if (!o.ok || !od.options) {
+        toast.error('הכניסה לא הצליחה', od.error ?? 'אפשר לנסות שוב');
+        return;
+      }
+      let response;
+      try {
+        response = await startAuthentication({ optionsJSON: od.options as never });
+      } catch {
+        toast.info('הכניסה בוטלה', 'אפשר לנסות שוב או להיכנס עם סיסמה');
+        return;
+      }
+      const v = await fetch('/api/v1/auth/passkey', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ step: 'verify', response }) });
+      const vd = (await v.json().catch(() => ({}))) as { error?: string };
+      if (!v.ok) {
+        toast.error('הכניסה לא הצליחה', vd.error ?? 'אפשר לנסות שוב');
+        return;
+      }
+      toast.success('התחברת בהצלחה!');
+      afterSignIn();
+    } finally {
+      setPasskeyBusy(false);
+    }
+  };
+
+  const handleBackup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBackupBusy(true);
+    setBackupError(null);
+    try {
+      const r = await fetch('/api/v1/auth/backup-code', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: backupEmail, code: backupCode }) });
+      const d = (await r.json().catch(() => ({}))) as { error?: string };
+      if (!r.ok) {
+        setBackupError(d.error ?? 'הכניסה לא הצליחה');
+        return;
+      }
+      setBackupOpen(false);
+      toast.success('התחברת בהצלחה!', 'כדאי ליצור קודי גיבוי חדשים בהגדרות');
+      afterSignIn();
+    } catch {
+      setBackupError('משהו השתבש, אפשר לנסות שוב');
+    } finally {
+      setBackupBusy(false);
+    }
+  };
+
   return (
     <>
       <ToastContainer toasts={toast.toasts} onDismiss={toast.dismiss} />
+      <AnimatedDialog
+        open={backupOpen}
+        onClose={() => !backupBusy && setBackupOpen(false)}
+        variant="sheet"
+        aria-labelledby="backup-login-h"
+        backdropClassName="absolute inset-0 bg-slate-900/45"
+        panelClassName="crystal-surface max-w-md rounded-2xl p-5 shadow-2xl sm:rounded-2xl"
+      >
+        <form onSubmit={handleBackup} dir="rtl" className="space-y-3" noValidate>
+          <h3 id="backup-login-h" className="flex items-center gap-2 text-lg font-black text-slate-900">
+            <KeyRound className="w-5 h-5 text-amber-600" aria-hidden />
+            כניסה עם קוד גיבוי
+          </h3>
+          <p className="text-sm text-slate-600 leading-relaxed">כל קוד עובד פעם אחת בלבד. אחרי הכניסה כדאי ליצור קודים חדשים.</p>
+          <input type="email" dir="ltr" autoComplete="username" value={backupEmail} onChange={(e) => setBackupEmail(e.target.value)} placeholder="your@email.com" aria-label="כתובת אימייל" className="input-field text-sm" />
+          <input dir="ltr" autoComplete="one-time-code" value={backupCode} onChange={(e) => setBackupCode(e.target.value.toUpperCase())} placeholder="XXXXX-XXXXX" maxLength={16} aria-label="קוד גיבוי" className="input-field text-sm font-mono tracking-widest text-center" />
+          {backupError ? <p role="alert" className="text-sm font-semibold text-red-600">{backupError}</p> : null}
+          <button type="submit" disabled={backupBusy || !backupEmail || backupCode.replace(/[^A-Za-z0-9]/g, '').length !== 10} className="w-full min-h-[48px] rounded-xl font-bold text-white bg-linear-to-l from-emerald-600 to-teal-500 disabled:opacity-50 flex items-center justify-center gap-2">
+            {backupBusy ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : null}
+            כניסה
+          </button>
+        </form>
+      </AnimatedDialog>
       <main
         id="main-content"
         className={[
@@ -353,6 +444,39 @@ function LoginFormContent() {
                 </button>
               </div>
             </form>
+
+            <div className="mt-5 space-y-3">
+              <div className="flex items-center gap-3" aria-hidden>
+                <div className={`h-px flex-1 ${isDarkUi ? 'bg-white/15' : 'bg-amber-300/60'}`} />
+                <span className={`text-xs font-bold ${isDarkUi ? 'text-emerald-100/70' : 'text-gray-400'}`}>או</span>
+                <div className={`h-px flex-1 ${isDarkUi ? 'bg-white/15' : 'bg-amber-300/60'}`} />
+              </div>
+              {passkeySupported ? (
+                <button
+                  type="button"
+                  onClick={() => void handlePasskey()}
+                  disabled={passkeyBusy}
+                  className={[
+                    'w-full min-h-[52px] rounded-2xl font-bold flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-60',
+                    isDarkUi ? 'bg-white/10 text-white ring-1 ring-amber-200/50 backdrop-blur' : 'bg-white/80 text-emerald-800 ring-1 ring-amber-300/70 shadow-[0_6px_18px_rgba(217,119,6,0.12)]',
+                  ].join(' ')}
+                >
+                  {passkeyBusy ? <div className="w-5 h-5 border-2 border-current/30 border-t-current rounded-full animate-spin" /> : <Fingerprint className="w-5 h-5" aria-hidden />}
+                  כניסה עם Face ID או טביעת אצבע
+                </button>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => {
+                  setBackupEmail(email);
+                  setBackupError(null);
+                  setBackupOpen(true);
+                }}
+                className={`w-full text-sm font-semibold underline-offset-4 hover:underline ${isDarkUi ? 'text-emerald-100/80' : 'text-gray-500'}`}
+              >
+                אין גישה למכשיר? כניסה עם קוד גיבוי
+              </button>
+            </div>
 
             {!isOpsHost && <div className="mt-5 text-center">
               <p className={['text-sm', isDarkUi ? 'text-emerald-100/80' : 'text-gray-500'].join(' ')}>
