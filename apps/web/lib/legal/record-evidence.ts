@@ -30,14 +30,15 @@ export type ConsentSubmission = {
   screenshotDataUrl?: string | null;
 };
 
-export type RequestMeta = { ip: string | null; userAgent: string | null; sessionId: string | null; deviceId: string | null };
+export type RequestMeta = { ip: string | null; userAgent: string | null; sessionId: string | null; deviceId: string | null; requestId?: string | null };
 
 export function requestMeta(request: Request, sessionId: string | null): RequestMeta {
   const h = request.headers;
   const ip = (h.get('x-real-ip') || h.get('x-forwarded-for')?.split(',')[0] || '').trim() || null;
   const cookie = h.get('cookie') ?? '';
   const dev = /(?:^|;\s*)nw_dev=([^;]+)/.exec(cookie)?.[1] ?? null;
-  return { ip, userAgent: h.get('user-agent')?.slice(0, 400) ?? null, sessionId, deviceId: dev ? sha256Hex(dev).slice(0, 32) : null };
+  const requestId = (h.get('x-vercel-id') || h.get('x-request-id') || '').trim().slice(0, 120) || null;
+  return { ip, userAgent: h.get('user-agent')?.slice(0, 400) ?? null, sessionId, deviceId: dev ? sha256Hex(dev).slice(0, 32) : null, requestId };
 }
 
 export function validateSubmission(s: ConsentSubmission): string | null {
@@ -108,7 +109,7 @@ export async function recordConsentEvidence(
     const prev = (last as { record_hash?: string } | null)?.record_hash ?? GENESIS;
     const createdAt = new Date().toISOString();
     const payload: EvidencePayload = {
-      v: 1,
+      v: 2,
       user_id: userId,
       consent_type: 'health_data',
       action: sub.action,
@@ -124,6 +125,9 @@ export async function recordConsentEvidence(
       screenshot_sha256: shotSha,
       created_at: createdAt,
       prev_hash: prev,
+      consent_text_sha256: sha256Hex(canonicalJson(text)),
+      request_id: meta.requestId ?? null,
+      screenshot_bytes: shot?.length ?? null,
     };
     const payloadJson = canonicalJson(payload);
     const hash = recordHash(payloadJson);

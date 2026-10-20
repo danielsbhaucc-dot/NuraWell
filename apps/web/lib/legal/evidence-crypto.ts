@@ -19,7 +19,7 @@ export function canonicalJson(v: unknown): string {
 }
 
 export type EvidencePayload = {
-  v: 1;
+  v: 1 | 2;
   user_id: string;
   consent_type: string;
   action: 'grant' | 'withdraw';
@@ -35,6 +35,12 @@ export type EvidencePayload = {
   screenshot_sha256: string | null;
   created_at: string;
   prev_hash: string;
+  /** v2: SHA-256 of the canonical consent text object (title/body/word) the server rendered. */
+  consent_text_sha256?: string;
+  /** v2: platform request id (x-vercel-id) so the record can be matched to platform request logs. */
+  request_id?: string | null;
+  /** v2: byte size of the normalized screenshot whose hash is signed. */
+  screenshot_bytes?: number | null;
 };
 
 export function recordHash(payloadJson: string): string {
@@ -53,6 +59,12 @@ export function signingKey(): { priv: KeyObject; pub: KeyObject; keyId: string }
   const keyId = sha256Hex(pub.export({ format: 'der', type: 'spki' })).slice(0, 16);
   cached = { priv, pub, keyId };
   return cached;
+}
+
+/** SHA-256 over the SPKI DER of the signing public key (hex, colon-free). */
+export function publicKeyFingerprint(pem?: string): string {
+  const k = pem ? createPublicKey(pem) : signingKey().pub;
+  return sha256Hex(k.export({ format: 'der', type: 'spki' }));
 }
 
 export function publicKeyPem(): string {

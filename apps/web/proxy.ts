@@ -549,6 +549,6 @@ export async function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     // cost: skip static/metadata files (no auth/headers needed) to cut Edge Middleware invocations.
-    '/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|robots.txt|sitemap.xml|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico|webmanifest|woff2?|ttf|otf|mp3|mp4|webm|txt|xml|map)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|robots.txt|sitemap.xml|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico|webmanifest|woff2?|ttf|otf|mp3|mp4|webm|txt|xml|map|pem)$).*)',
   ],
 };
