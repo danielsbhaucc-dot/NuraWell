@@ -6,6 +6,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { isEncrypted } from './pii';
 import { AI_CONTEXT_ENC_KEYS, encryptProfilePatch, encryptTableRow, TABLE_ENC_TEXT, type EncTextTable } from './pii-fields';
 import { restorePiiPlaceholders } from './pii-placeholders';
+import { isHealthProcessingBlocked, patchHasHealthFields, stripHealthFields } from '@/lib/privacy/health-consent';
 
 type Row = Record<string, unknown>;
 const PLACEHOLDER = /\[\[?\s*[A-Zא-ת_][A-Z0-9_א-ת]*\s*\]\]?/i;
@@ -44,6 +45,8 @@ export async function sealTableRow<T extends Row>(table: EncTextTable, row: T, u
 
 export async function sealProfilePatch<T extends Row>(patch: T, userId: string): Promise<T> {
   let p: Row = patch;
+  // Health-data consent withdrawn → never write health fields again until re-granted.
+  if (patchHasHealthFields(p) && (await isHealthProcessingBlocked(userId))) p = stripHealthFields(p);
   const ctx = p.ai_context;
   if (ctx && typeof ctx === 'object' && !Array.isArray(ctx)) {
     p = { ...p, ai_context: await restoreFields(ctx as Row, AI_CONTEXT_ENC_KEYS, userId) };
