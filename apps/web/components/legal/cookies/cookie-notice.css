@@ -33,7 +33,7 @@
 .cn-stripe{flex:0 0 10px;width:10px;height:10px;border-radius:50%;background:var(--cn-em);box-shadow:0 0 0 3px rgba(4,120,87,.14)}
 .cn-cat.is-off .cn-stripe{background:#9ca3af;box-shadow:0 0 0 3px rgba(156,163,175,.18)}
 .cn-ct{flex:1;display:grid;gap:2px}
-.cn-ct strong{font-family:var(--font-rubik),sans-serif;font-size:16px;color:var(--cn-fg);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.cn-ct strong{font-family:var(--font-rubik),var(--font-heebo),sans-serif;font-size:16px;color:var(--cn-fg);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .cn-ct small{font-size:14px;color:var(--cn-mut);font-weight:600;line-height:1.5}
 .cn-tag{font-style:normal;font-size:12px;font-weight:800;padding:2px 9px;border-radius:99px;background:rgba(4,120,87,.09);color:var(--cn-em);border:1px solid rgba(201,151,58,.45)}
 .cn-cat.is-off .cn-tag{background:rgba(107,114,128,.1);color:#4b5563;border-color:rgba(107,114,128,.25)}
@@ -48,7 +48,8 @@
 .cn-items code{font-family:ui-monospace,monospace;font-size:12.5px;background:rgba(4,120,87,.07);color:var(--cn-fg);padding:1px 6px;border-radius:6px}
 .cn-ft{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:12px 16px calc(16px + env(safe-area-inset-bottom));border-top:1px solid var(--cn-hair);background:rgba(255,255,255,.4)}
 .cn-more{margin-inline-start:auto;font-size:14.5px}
-.cn-inline{font-family:var(--font-assistant),sans-serif}
+.cn-inline{font-family:var(--font-assistant),var(--font-heebo),sans-serif}
+.cn-btn{font-family:var(--font-assistant),var(--font-heebo),sans-serif}
 @keyframes cn-up{from{transform:translateY(24px);opacity:0}}
 @keyframes cn-fade{from{opacity:0}}
 @media(prefers-reduced-motion:reduce){.cn-banner,.cn-pn,.cn-ov{animation:none}}
@@ -63,3 +64,30 @@
 html[data-cookie-banner=on] .a11y-widget-root{bottom:calc(var(--cn-banner-h,0px) + 24px + env(safe-area-inset-bottom,0px))!important;transition:bottom .3s}
 @media(min-width:760px){html[data-cookie-banner=on] .a11y-widget-root{bottom:calc(var(--cn-banner-h,0px) + 36px + env(safe-area-inset-bottom,0px))!important}}
 html[data-cookie-panel=on] .a11y-widget-root{visibility:hidden!important;pointer-events:none!important}
+/* ===== Dark forest theme (opt3) — banner + panel ===== */
+.cn-root,.cn-wink{--cn-fg:#FDF3D6;--cn-mut:#E9F2E4;--cn-em:#E8B54A;--cn-hair:rgba(232,181,74,.25);--cn-gold:#E8B54A;--cn-fg2:#FDF3D6;--cn-olive:#E8B54A}
+.cn-banner,.cn-pn{background:linear-gradient(160deg,#174A3Ff2,#0F3B32eb);border:1px solid rgba(232,181,74,.35);color:#FDF3D6}
+.cn-banner .cn-gold,.cn-pn .cn-gold{color:#E8B54A}
+.cn-banner .cn-p a,.cn-pn .cn-p a,.cn-more{color:#E8B54A}
+.cn-banner .cn-wink,.cn-pn .cn-wink{background:rgba(232,181,74,.12)}
+.cn-chips span{background:rgba(232,181,74,.1);color:#F2CF7A}
+.cn-ph{background:rgba(10,42,35,.5)}
+.cn-ft{background:rgba(10,42,35,.55)}
+.cn-art.sm{border-color:rgba(232,181,74,.4);box-shadow:0 6px 16px -10px rgba(0,0,0,.6)}
+.cn-x{background:rgba(253,243,214,.08);border-color:rgba(232,181,74,.45);color:#FDF3D6;box-shadow:none}
+.cn-cat{background:rgba(253,243,214,.06);border:1px solid rgba(232,181,74,.22);box-shadow:0 10px 24px -20px rgba(0,0,0,.6)}
+.cn-stripe{background:#E8B54A;box-shadow:0 0 0 3px rgba(232,181,74,.18)}
+.cn-tag{background:rgba(232,181,74,.14);color:#F2CF7A;border-color:rgba(232,181,74,.45)}
+.cn-cat.is-off .cn-tag{background:rgba(253,243,214,.06);color:#D7DED3;border-color:rgba(253,243,214,.2)}
+.cn-cat.is-off .cn-stripe{background:#8FA39A;box-shadow:0 0 0 3px rgba(143,163,154,.2)}
+.cn-tg{background:linear-gradient(135deg,#2F7A62,#1F5E4C);box-shadow:inset 0 0 0 1px rgba(232,181,74,.45)}
+.cn-tg:after{background:#FDF3D6}
+.cn-tg.off{background:rgba(253,243,214,.16)}
+.cn-items li{color:#E9F2E4}
+.cn-items small{color:#CFE0C8}
+.cn-items code{background:rgba(253,243,214,.1);color:#FDF3D6}
+.cn-btn.g{color:#FDF3D6;box-shadow:inset 0 0 0 1.5px #E8B54A}
+.cn-btn:focus-visible,.cn-x:focus-visible,.cn-cat summary:focus-visible,.cn-more:focus-visible{outline:3px solid #F2CF7A}
+.cn-ov{background:rgba(4,20,16,.5)}
+
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.cn-banner,.cn-pn{background:linear-gradient(160deg,#174A3F,#0F3B32)}}
