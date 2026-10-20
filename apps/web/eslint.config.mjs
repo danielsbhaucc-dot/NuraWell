@@ -14,6 +14,25 @@ const config = [
       '@next/next/no-img-element': 'off',
       'no-eval': 'error',
       'no-implied-eval': 'error',
+      // דיאלוגים מובנים של הדפדפן אסורים — השתמשו ב-confirmDialog/alertDialog/promptDialog
+      // מתוך '@/components/shared/dialogs'.
+      'no-alert': 'error',
+      'no-restricted-globals': [
+        'error',
+        { name: 'alert', message: "Use alertDialog() from '@/components/shared/dialogs'." },
+        { name: 'confirm', message: "Use confirmDialog() from '@/components/shared/dialogs'." },
+        { name: 'prompt', message: "Use promptDialog() from '@/components/shared/dialogs'." },
+      ],
+      'no-restricted-properties': [
+        'error',
+        ...['window', 'globalThis', 'self'].flatMap((object) =>
+          ['alert', 'confirm', 'prompt'].map((property) => ({
+            object,
+            property,
+            message: "Use the designed dialogs from '@/components/shared/dialogs'.",
+          })),
+        ),
+      ],
       'no-console': ['warn', { allow: ['warn', 'error', 'info'] }],
       'jsx-a11y/alt-text': 'warn',
       'jsx-a11y/anchor-is-valid': 'warn',

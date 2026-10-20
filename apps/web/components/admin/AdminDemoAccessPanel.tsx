@@ -12,6 +12,7 @@ import {
   Unplug,
 } from 'lucide-react';
 import { encodeImageToWebpBlob, isWebpEncodeUnsupportedError } from '@/lib/client/encodeAlmogAvatarWebp';
+import { confirmDialog } from '@/components/shared/dialogs';
 
 type UserOption = {
   id: string;
@@ -202,7 +203,7 @@ export function AdminDemoAccessPanel() {
   };
 
   const deleteLink = async (id: string) => {
-    if (!confirm('למחוק את הקישור ולנתק את כל הסשנים?')) return;
+    if (!(await confirmDialog({ title: 'למחוק את הקישור?', message: 'כל הסשנים הפעילים ינותקו.', danger: true, confirmLabel: 'מחק' }))) return;
     setBusy(`delete-${id}`);
     try {
       const res = await fetch(`/api/v1/admin/demo-access/${id}`, {

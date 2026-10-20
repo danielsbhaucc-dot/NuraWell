@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, type CSSProperties, type ReactNode, type Ref } from 'react';
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode, type Ref } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { getAppOverlayRoot } from '../../lib/dom/app-overlay-root';
@@ -64,6 +64,62 @@ export function AnimatedDialog({
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
+  // נגישות: Esc סוגר, מלכודת פוקוס בתוך הפאנל, והחזרת פוקוס לאלמנט שפתח.
+  const innerRef = useRef<HTMLDivElement | null>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+  const setPanelRef = useCallback(
+    (el: HTMLDivElement | null) => {
+      innerRef.current = el;
+      if (typeof panelRef === 'function') panelRef(el);
+      else if (panelRef && typeof panelRef === 'object') {
+        (panelRef as { current: HTMLDivElement | null }).current = el;
+      }
+    },
+    [panelRef],
+  );
+  useEffect(() => {
+    if (!open || !mounted) return;
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    const FOCUSABLE =
+      'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
+    const raf = requestAnimationFrame(() => {
+      const panel = innerRef.current;
+      if (!panel || panel.contains(document.activeElement)) return;
+      const auto = panel.querySelector<HTMLElement>('[data-autofocus]');
+      const first = auto ?? panel.querySelector<HTMLElement>(FOCUSABLE);
+      (first ?? panel).focus?.();
+    });
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        onCloseRef.current();
+        return;
+      }
+      if (e.key !== 'Tab') return;
+      const panel = innerRef.current;
+      if (!panel) return;
+      const items = Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE));
+      if (!items.length) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      const active = document.activeElement;
+      if (e.shiftKey && (active === first || !panel.contains(active))) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && (active === last || !panel.contains(active))) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => {
+      cancelAnimationFrame(raf);
+      document.removeEventListener('keydown', onKey);
+      if (previouslyFocused && document.contains(previouslyFocused)) previouslyFocused.focus?.();
+    };
+  }, [open, mounted]);
+
   if (!mounted) return null;
 
   const overlayClass =
@@ -118,7 +174,8 @@ export function AnimatedDialog({
             transition={backdropTransition}
           />
           <motion.div
-            ref={panelRef}
+            ref={setPanelRef}
+            tabIndex={-1}
             role="dialog"
             aria-modal="true"
             aria-labelledby={ariaLabelledBy}

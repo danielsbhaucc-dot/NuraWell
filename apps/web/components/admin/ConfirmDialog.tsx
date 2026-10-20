@@ -17,6 +17,8 @@ interface ConfirmDialogProps {
   busy?: boolean;
   /** מצב התראה — כפתור אחד בלבד (מחליף window.alert). */
   alert?: boolean;
+  /** מצב קלט (מחליף window.prompt) — שדה טקסט מעוצב. */
+  input?: { value: string; onChange: (v: string) => void; placeholder?: string; label?: string };
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -58,6 +60,7 @@ export function ConfirmDialog({
   tone,
   busy = false,
   alert = false,
+  input,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
@@ -101,9 +104,33 @@ export function ConfirmDialog({
         </div>
       </div>
 
+      {input ? (
+        <form
+          className="mt-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!busy) onConfirm();
+          }}
+        >
+          <label className="sr-only" htmlFor="confirm-dialog-input">
+            {input.label ?? title}
+          </label>
+          <input
+            id="confirm-dialog-input"
+            data-autofocus
+            dir="auto"
+            value={input.value}
+            placeholder={input.placeholder}
+            onChange={(e) => input.onChange(e.target.value)}
+            className="w-full rounded-xl border border-gc/60 bg-background-card/60 px-3 py-2.5 text-base text-slate-800 shadow-inner outline-hidden backdrop-blur-md placeholder:text-slate-400 focus:ring-2 focus:ring-teal-400/60"
+          />
+        </form>
+      ) : null}
+
       <div className="mt-5 flex gap-2">
         <button
           type="button"
+          {...(!input ? { 'data-autofocus': true } : {})}
           onClick={onConfirm}
           disabled={busy}
           className={[

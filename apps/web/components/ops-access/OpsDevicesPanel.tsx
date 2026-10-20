@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { confirmDialog } from '@/components/shared/dialogs';
 
 type Device = { id: string; label: string; via: string; created_at: string; last_seen_at: string };
 const fmt = (s: string) => new Intl.DateTimeFormat('he-IL', { timeZone: 'Asia/Jerusalem', day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(s));
@@ -27,7 +28,7 @@ export function OpsDevicesPanel() {
   useEffect(() => { void load(); }, [load]);
 
   const regen = async () => {
-    if (unused > 0 && !confirm('ליצור קודים חדשים? הקודים הקיימים יבוטלו.')) return;
+    if (unused > 0 && !(await confirmDialog({ title: 'ליצור קודים חדשים?', message: 'הקודים הקיימים יבוטלו.', tone: 'warning', confirmLabel: 'צור קודים' }))) return;
     const j = await post({ action: 'regenerate_codes' });
     if (j.codes) { setCodes(j.codes); setBanner(false); void load(); }
   };
@@ -59,7 +60,7 @@ export function OpsDevicesPanel() {
           {devices.map((d) => (
             <li key={d.id} className="flex items-center justify-between gap-3 px-4 py-3 text-sm">
               <div><div className="font-medium">{d.label || 'מכשיר'}</div><div className="text-xs text-slate-500">{VIA[d.via] ?? d.via} · נראה לאחרונה {fmt(d.last_seen_at)}</div></div>
-              <button type="button" onClick={async () => { if (confirm('לבטל את המכשיר? הוא יצטרך אישור מחדש.')) { await post({ action: 'revoke', id: d.id }); void load(); } }} className="rounded-xl px-3 py-1.5 text-red-700 hover:bg-red-50">בטל</button>
+              <button type="button" onClick={async () => { if (await confirmDialog({ title: 'לבטל את המכשיר?', message: 'הוא יצטרך אישור מחדש.', danger: true, confirmLabel: 'בטל מכשיר' })) { await post({ action: 'revoke', id: d.id }); void load(); } }} className="rounded-xl px-3 py-1.5 text-red-700 hover:bg-red-50">בטל</button>
             </li>
           ))}
           {!devices.length && <li className="px-4 py-3 text-sm text-slate-500">אין מכשירים.</li>}
@@ -86,7 +87,7 @@ export function OpsPendingLoginAlert() {
   if (!reqs.length) return null;
   const r = reqs[0];
   const decide = async (approve: boolean) => {
-    if (!approve && !confirm('לחסום? כל החיבורים יתנתקו וגדעון יכובה.')) return;
+    if (!approve && !(await confirmDialog({ title: 'לחסום?', message: 'כל החיבורים יתנתקו וגדעון יכובה.', danger: true, confirmLabel: 'חסום' }))) return;
     await post({ action: 'decide', id: r.id, approve });
     setReqs((x) => x.slice(1));
   };
