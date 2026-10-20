@@ -19,7 +19,7 @@ export default function SafetyPage() {
     <LegalShell
       icon={<ShieldCheck className="w-8 h-8" />}
       title="בטיחות"
-      titleAccent="קודם כול, את/ה."
+      titleAccent="קודם כול, הבריאות שלך."
       currentPath="/safety"
       subtitle="הבטיחות שלך — הגוף, הנפש והמידע — היא בראש סדר העדיפויות. כאן מרוכזים כל אמצעי ההגנה שבנינו עבורך."
       updatedAt={UPDATED_AT}
