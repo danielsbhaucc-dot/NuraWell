@@ -3,6 +3,14 @@ import { sealProfilePatch } from '@/lib/crypto/pii-seal';
 import { buildSafetyScreening } from '@/lib/onboarding/safety-screening';
 
 import { z } from 'zod';
+import { headers } from 'next/headers';
+import { consumeRateLimit } from '@/lib/api/rate-limit';
+import {
+  checkPasswordPolicy,
+  PASSWORD_ERRORS,
+  PASSWORD_MAX_LENGTH,
+  PASSWORD_MIN_LENGTH,
+} from '@/lib/auth/password-policy';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { publicAppOriginSync } from '@/lib/public-app-url';
@@ -67,7 +75,7 @@ const onboardingSchema = z.object({
     .nullable(),
   preferred_channel: z.enum(PREFERRED_CHANNELS).default('in_app'),
   email: z.string().email('אימייל לא תקין'),
-  password: z.string().min(6, 'סיסמה קצרה מדי — לפחות 6 תווים'),
+  password: z.string().min(PASSWORD_MIN_LENGTH, PASSWORD_ERRORS.tooShort).max(PASSWORD_MAX_LENGTH, PASSWORD_ERRORS.tooLong),
   date_of_birth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'תאריך לידה לא תקין'),
   health_data_consent: z.literal('true', {
     error: 'נדרשת הסכמה למידע בריאותי',
@@ -174,6 +182,16 @@ export async function completeOnboarding(
   if (ageCheck.requiresParentalConsent && data.parental_consent !== 'true') {
     return { ok: false, error: 'נדרשת הסכמת הורה לשימוש בגיל 16–17' };
   }
+
+  // Rate-limit signups per IP (Postgres limiter, keys hashed in DB).
+  const h = await headers();
+  const ip = (h.get('x-real-ip') || h.get('x-forwarded-for')?.split(',')[0] || 'unknown').trim();
+  const rl = await consumeRateLimit({ key: ip, namespace: 'auth-signup', limit: 10, windowSeconds: 600 });
+  if (!rl.ok) return { ok: false, error: 'יותר מדי ניסיונות. נסו שוב בעוד כמה דקות.' };
+
+  // Server-side password policy (min length + HIBP k-anonymity). Cannot be bypassed client-side.
+  const pw = await checkPasswordPolicy(data.password, { source: 'signup' });
+  if (!pw.ok) return { ok: false, error: pw.error, fieldErrors: { password: [pw.error] } };
 
   const supabase = await createClient();
   const clientOrigin = formData.get('app_origin')?.toString().trim();
