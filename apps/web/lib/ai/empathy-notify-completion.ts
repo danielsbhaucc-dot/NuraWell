@@ -13,6 +13,8 @@ import {
 } from './groq-compat';
 import { ALMOG_NOTIFY_MAX_OUTPUT_TOKENS } from './prompts';
 import { stripReasoningArtifacts, validateNotifyText } from '../notifications/validate-notify-text';
+import type { NotifyGender } from '../notifications/notify-hebrew-lint';
+import { qcNotifyText } from '../notifications/notify-qc';
 
 /**
  * 📣 מנוע יצירת טקסט להתראות אלמוג.
@@ -42,7 +44,7 @@ const MIN_NOTIFY_BODY_CHARS = 6;
 const NOTIFY_AI_TIMEOUT_MS = 20_000;
 /** prevents 'קיבלתי את ההודעה שלך' hallucinations and third-person addressing */
 export const NOTIFY_DIRECT_ADDRESS_RULE =
-  'חשוב: ההקשר למעלה מתאר את *הנמען עצמו*. ההודעה נשלחת אליו ישירות — פנה אליו בגוף שני ("איך הלך לך…"), לעולם לא עליו בגוף שלישי ("יוסי לא דיווח", "לעזור לו") ולא למישהו אחר. זו הודעה יזומה ממך — הוא לא שלח לך כלום עכשיו: אסור "קיבלתי את ההודעה/העדכון", "תודה ששיתפת", ואסור להמציא אירועים, נתונים או שיחות שלא מופיעים בהקשר.';
+  'חשוב: ההקשר למעלה מתאר את *הנמען עצמו*. ההודעה נשלחת אליו ישירות — פנה אליו בגוף שני ("איך הלך לך…"), לעולם לא עליו בגוף שלישי ("הוא לא דיווח", "לעזור לו") ולא למישהו אחר. אם פונים בשם — רק בשם הנמען שמופיע בהקשר, אף פעם לא בשם אחר. זו הודעה יזומה ממך — הוא לא שלח לך כלום עכשיו: אסור "קיבלתי את ההודעה/העדכון", "תודה ששיתפת", ואסור להמציא אירועים, נתונים או שיחות שלא מופיעים בהקשר.';
 const MAX_BODY_CHARS = 320;
 
 type EmpathyNotifyCompletionOptions = {
@@ -57,6 +59,10 @@ type EmpathyNotifyCompletionOptions = {
    * שוב בשם נראה כפול בכרטיס ההתראה.
    */
   recipientFirstName?: string;
+  /** enables gender checks in the deterministic gate + the LLM editor */
+  recipientGender?: NotifyGender;
+  /** for usage metering of the editor pass */
+  userId?: string | null;
 };
 
 const openrouterAi = createAiProvider({ apiKey: process.env.OPENROUTER_API_KEY ?? '' });
@@ -271,8 +277,30 @@ export async function completeEmpathyNotifyBody(
           finishReason: out.finishReason,
           maxChars: MAX_BODY_CHARS,
           minChars: MIN_NOTIFY_BODY_CHARS,
+          firstName: options.recipientFirstName,
+          gender: options.recipientGender,
         });
-        if (checked.ok) return checked.text;
+        if (checked.ok) {
+          // second line of defence: cheap LLM copy-edit before the text is stored/pushed (fail-open)
+          let admin = null;
+          try {
+            const { createAdminClient } = await import('@/lib/supabase/admin');
+            admin = createAdminClient();
+          } catch {
+            admin = null;
+          }
+          const qc = await qcNotifyText(checked.text, {
+            firstName: options.recipientFirstName,
+            gender: options.recipientGender,
+            userId: options.userId ?? null,
+            admin,
+          });
+          if (qc.status === 'edited') {
+            // eslint-disable-next-line no-console
+            console.info('[empathy-notify] qc edited', { label: options.label });
+          }
+          return qc.text;
+        }
 
         const reason = `${checked.reason} (finishReason=${out.finishReason}, len=${body.length})`;
         errors.push(`${provider.label}#${attempt}: ${reason}`);

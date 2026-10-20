@@ -508,6 +508,12 @@ export async function sendAlmogHabitCheckpointNotification(
     frequencyPenalty: 0.55,
     maxTokens: ALMOG_NOTIFY_MAX_OUTPUT_TOKENS,
     recipientFirstName: firstName,
+    recipientGender: (genderInstruction ?? '').startsWith('המשתמשת נקבה')
+      ? 'female'
+      : (genderInstruction ?? '').startsWith('המשתמש זכר')
+        ? 'male'
+        : 'other',
+    userId: payload.userId,
     messages: [
       { role: 'system', content: systemPrompt },
       {

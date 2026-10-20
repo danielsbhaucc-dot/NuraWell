@@ -1,4 +1,5 @@
 import { decProfileResult } from '@/lib/crypto/pii-fields';
+import { genderFromInstruction } from '@/lib/notifications/notify-hebrew-lint';
 import { withAiUser } from '@/lib/ai/usage-meter';
 import { insertNotification } from '@/lib/notifications/deliver';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -160,6 +161,9 @@ export async function sendJourneyCompanionNudge(
 
   const body = await withAiUser(userId, () => completeEmpathyNotifyBody({
     label: 'almog_journey_companion',
+    recipientFirstName: firstName,
+    recipientGender: genderFromInstruction(genderInstruction),
+    userId,
     temperature: 0.84,
     presencePenalty: 0.48,
     frequencyPenalty: 0.52,
