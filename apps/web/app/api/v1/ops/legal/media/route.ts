@@ -15,7 +15,7 @@ export async function GET(request: Request) {
   if (!auth.ok) return auth.response;
   const admin = createAdminClient();
   const syncing = await repoSyncNeeded(admin).catch(() => false);
-  if (syncing) { const origin = new URL(request.url).origin; after(() => syncRepoManifest(admin, origin).then(() => undefined, () => undefined)); }
+  if (syncing) { after(() => syncRepoManifest(admin).then(() => undefined, () => undefined)); }
   const [{ data, error }, { data: rc }, { data: cost }] = await Promise.all([
     admin.from('media_provenance_assets').select('*').order('status').order('updated_at', { ascending: false }).limit(3000),
     admin.from('media_receipts').select('id, vendor, plan, period_start, period_end, trust').limit(1000),

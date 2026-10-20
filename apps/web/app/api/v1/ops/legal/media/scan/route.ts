@@ -15,7 +15,7 @@ export async function POST(request: Request) {
   if (!auth.ok) return auth.response;
   const admin = createAdminClient();
   await auditLegalAccess(admin, auth.user.id, 'legal_media_scan', {});
-  const repo = await syncRepoManifest(admin, new URL(request.url).origin);
+  const repo = await syncRepoManifest(admin);
   const st = await scanStorage(admin);
   return NextResponse.json({ total: st.total + repo.new + repo.changed + repo.unchanged, new: st.new + repo.new, changed: st.changed + repo.changed, errors: st.error + repo.error, cost: st.cost + repo.cost });
 }
