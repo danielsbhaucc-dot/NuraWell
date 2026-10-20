@@ -16,6 +16,7 @@ import {
 } from '../../lib/supabase/cached-auth';
 import { DemoAccessBanner } from '../../components/demo-access/DemoAccessBanner';
 import { ConsentSheetHost } from '../../components/legal/ConsentSheetHost';
+import { PasskeyNudgeHost } from '../../components/settings/PasskeyNudge';
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -83,6 +84,7 @@ export default async function DashboardLayout({
             <MobileHeader user={user} profileFullName={profile?.full_name ?? null} />
             <DemoAccessBanner />
             <ConsentSheetHost />
+            <PasskeyNudgeHost allowed={profile?.onboarding_completed === true && !showDolevWelcome && !showAlmogWelcome} />
             <main id="main-content" className="pb-44 pt-16 min-h-screen page-enter" tabIndex={-1}>
               {children}
             </main>
