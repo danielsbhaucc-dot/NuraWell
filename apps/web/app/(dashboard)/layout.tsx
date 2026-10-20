@@ -15,6 +15,7 @@ import {
   getCachedDashboardProfile,
 } from '../../lib/supabase/cached-auth';
 import { DemoAccessBanner } from '../../components/demo-access/DemoAccessBanner';
+import { HealthConsentPrompt } from '../../components/privacy/HealthConsentPrompt';
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -81,6 +82,7 @@ export default async function DashboardLayout({
             <AlmogFirstLoginHost show={Boolean(showAlmogWelcome)} profile={profileForDrawer} />
             <MobileHeader user={user} profileFullName={profile?.full_name ?? null} />
             <DemoAccessBanner />
+            <HealthConsentPrompt />
             <main id="main-content" className="pb-44 pt-16 min-h-screen page-enter" tabIndex={-1}>
               {children}
             </main>

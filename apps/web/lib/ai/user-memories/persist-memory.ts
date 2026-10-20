@@ -1,3 +1,4 @@
+import { createHealthMemoryGate } from '@/lib/privacy/health-memory';
 import { sealTableRow } from '@/lib/crypto/pii-seal';
 import { embedTextForRag } from '../openrouter-embeddings';
 import { normalizeFactTextForDedupe, stableMemoryVectorId } from '../memory-fact-dedupe';
@@ -27,6 +28,9 @@ export async function persistUserMemory(params: PersistUserMemoryParams): Promis
   skipped_reason?: string;
 }> {
   const text = params.memoryText.replace(/\s+/g, ' ').trim().slice(0, 600);
+  if (await createHealthMemoryGate(params.userId)(params.category, text)) {
+    return { id: '', upstash_vector_id: '', skipped_reason: 'health_consent_inactive' };
+  }
   const normKey = normalizeFactTextForDedupe(text);
   const vectorId = await stableMemoryVectorId(params.userId, normKey);
   const level = params.memoryLevel ?? 2;

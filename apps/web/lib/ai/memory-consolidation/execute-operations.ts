@@ -1,3 +1,4 @@
+import { createHealthMemoryGate } from '@/lib/privacy/health-memory';
 import { sealTableRow } from '@/lib/crypto/pii-seal';
 import { isStorableMemoryText } from '../safety/memory-text-guard';
 /**
@@ -42,8 +43,13 @@ export async function executeMemoryOperations(params: {
 
   const byId = new Map(existingInsights.map((row) => [row.id, row]));
 
+  const dropHealth = createHealthMemoryGate(userId);
   for (const op of operations) {
     try {
+      if ((op.op === 'ADD' || op.op === 'UPDATE') && (await dropHealth(op.category, op.insight_text))) {
+        result.skipped += 1;
+        continue;
+      }
       // anonymiser placeholders ("[PERSON_NAME]") destroy meaning — never store them as memory
       if ((op.op === 'ADD' || op.op === 'UPDATE') && !isStorableMemoryText(op.insight_text)) {
         result.skipped += 1;
