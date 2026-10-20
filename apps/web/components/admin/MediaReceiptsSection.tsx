@@ -12,11 +12,22 @@ const TRUST = { verified: { l: 'מאומת (DKIM של הספק)', c: 'border-tea
 
 function Row({ r, onSaved }: { r: Receipt; onSaved: () => void }) {
   const [p, setP] = useState({ vendor: r.vendor, plan: r.plan ?? '', period_start: r.period_start ?? '', period_end: r.period_end ?? '' });
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState<null | 'save' | Receipt['trust']>(null);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const dirty = p.vendor !== r.vendor || p.plan !== (r.plan ?? '') || p.period_start !== (r.period_start ?? '') || p.period_end !== (r.period_end ?? '');
   const save = async (trust?: Receipt['trust']) => {
-    setBusy(true);
-    await fetch('/api/v1/ops/legal/receipts/item', { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: r.id, vendor: p.vendor, plan: p.plan || null, period_start: p.period_start || null, period_end: p.period_end || null, ...(trust ? { trust } : {}) }) }).catch(() => undefined);
-    setBusy(false); onSaved();
+    if (p.period_start && p.period_end && p.period_end < p.period_start) { setMsg({ ok: false, text: 'סוף התקופה לפני תחילתה. כדאי לתקן את התאריכים.' }); return; }
+    setBusy(trust ?? 'save'); setMsg(null);
+    try {
+      const res = await fetch('/api/v1/ops/legal/receipts/item', { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: r.id, vendor: p.vendor, plan: p.plan.trim() || null, period_start: p.period_start || null, period_end: p.period_end || null, ...(trust ? { trust } : {}) }) });
+      const j = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
+      if (!res.ok || !j.ok) {
+        const text = res.status === 401 || res.status === 403 || res.status === 404 ? 'נראה שהחיבור למערכת פג. כדאי לרענן את הדף ולהתחבר שוב.' : res.status === 400 ? 'אחד השדות לא תקין (למשל תאריך או מסלול ארוך מדי). כדאי לבדוק ולנסות שוב.' : 'השמירה לא הצליחה בצד השרת. כדאי לנסות שוב בעוד רגע.';
+        setMsg({ ok: false, text }); return;
+      }
+      setMsg({ ok: true, text: trust === 'verified' ? 'הקבלה אושרה ונרשמה ביומן הראיות עם חותמת זמן' : trust === 'rejected' ? 'הקבלה סומנה כלא רלוונטית' : 'השינויים נשמרו ונרשמו ביומן הראיות עם חותמת זמן' });
+      onSaved();
+    } catch { setMsg({ ok: false, text: 'אין חיבור לשרת. כדאי לבדוק את האינטרנט ולנסות שוב.' }); } finally { setBusy(null); }
   };
   if (r.source === 'gmail_confirmation') {
     if (r.confirmed_at) return (
@@ -53,10 +64,11 @@ function Row({ r, onSaved }: { r: Receipt; onSaved: () => void }) {
         <input type="date" value={p.period_start} onChange={(e) => setP({ ...p, period_start: e.target.value })} className={cn(opsInputClass, 'py-1.5 text-xs')} aria-label="תחילת תקופה" />
         <input type="date" value={p.period_end} onChange={(e) => setP({ ...p, period_end: e.target.value })} className={cn(opsInputClass, 'py-1.5 text-xs')} aria-label="סוף תקופה" />
       </div>
-      <div className="mt-2 flex flex-wrap gap-2">
-        <button type="button" disabled={busy} onClick={() => save()} className={opsGlassBtnClass}>שמירה וחתימה</button>
-        {r.trust !== 'verified' ? <button type="button" disabled={busy} onClick={() => save('verified')} className={opsGlassBtnPrimaryClass}>אישור הקבלה</button> : null}
-        {r.trust !== 'rejected' ? <button type="button" disabled={busy} onClick={() => save('rejected')} className={opsGlassBtnClass}>לא רלוונטי</button> : null}
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <button type="button" disabled={!!busy || !dirty} onClick={() => save()} className={cn(opsGlassBtnClass, !dirty && 'opacity-50')} title={dirty ? undefined : 'אין שינויים לשמירה'}>{busy === 'save' ? <Loader2 size={14} className="animate-spin" /> : null}שמירת השינויים</button>
+        {r.trust !== 'verified' ? <button type="button" disabled={!!busy} onClick={() => save('verified')} className={opsGlassBtnPrimaryClass}>{busy === 'verified' ? <Loader2 size={14} className="animate-spin" /> : null}אישור הקבלה</button> : null}
+        {r.trust !== 'rejected' ? <button type="button" disabled={!!busy} onClick={() => save('rejected')} className={opsGlassBtnClass}>{busy === 'rejected' ? <Loader2 size={14} className="animate-spin" /> : null}לא רלוונטי</button> : null}
+        {msg ? <span role="status" aria-live="polite" className={cn('text-xs font-bold', msg.ok ? 'text-teal-800' : 'text-rose-700')}>{msg.text}</span> : !dirty && !busy ? <span className="text-[11px] text-slate-500">כדי לשמור, קודם משנים ספק, מסלול או תאריכים</span> : null}
       </div>
     </li>
   );
