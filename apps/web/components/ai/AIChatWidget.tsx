@@ -3,6 +3,8 @@ import { useHideOnScrollDown } from '@/lib/hooks/use-hide-on-scroll-down';
 import { RetypingTitle } from './RetypingTitle';
 import { CrisisResourcesCard } from '@/components/safety/CrisisResourcesCard';
 import { detectCrisisSignals } from '@/lib/safety/crisis-detector';
+import { REDACTED_CONTENT, isRedactedContent } from '@/lib/privacy/health-chat-redaction';
+import { DeletedMessageBubble } from './DeletedMessageBubble';
 
 import { Fragment, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
@@ -765,6 +767,8 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
   const attachReactionRef = useRef<(reaction: MentorEmojiReaction) => void>(() => {});
   const pendingReactionRef = useRef<MentorEmojiReaction | null>(null);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const setMessagesRef = useRef<(fn: (prev: any[]) => any[]) => void>(() => {});
   const fetchWithSession = useMemo(() => {
     return async (url: RequestInfo | URL, init?: RequestInit) => {
       const res = await fetch(url, init);
@@ -776,6 +780,18 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
       if (headerReaction) {
         pendingReactionRef.current = headerReaction;
         queueMicrotask(() => attachReactionRef.current(headerReaction));
+      }
+      if (res.headers.get('x-almog-redacted') === '1') {
+        // health text without consent: drop it from local state too (never resent)
+        queueMicrotask(() =>
+          setMessagesRef.current((prev) => {
+            const idx = [...prev].map((m) => m.role).lastIndexOf('user');
+            if (idx < 0) return prev;
+            const next = [...prev];
+            next[idx] = { ...next[idx], parts: [{ type: 'text', text: REDACTED_CONTENT }] } as never;
+            return next;
+          })
+        );
       }
       if (writer === 'memory-recall-tools') {
         queueMicrotask(() => setMemoryRecallWriterActive(true));
@@ -823,6 +839,7 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
   const { messages, setMessages, sendMessage, status, stop, error } = useChat({
     transport: chatTransport,
   });
+  setMessagesRef.current = setMessages as never;
 
   // הכותרת נוצרת ברקע אחרי התור (after) — מושכים שוב את השיחה כדי שהכותרת תתחלף חי.
   const prevStatusRef = useRef(status);
@@ -1744,7 +1761,9 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
                     key={msg.id ?? `${i}-${text.slice(0, 16)}`}
                     className={`flex ${isUser ? 'justify-start nw-chat-send' : 'justify-end items-end gap-2 nw-chat-receive'}`}
                   >
-                    {isUser ? (
+                    {isUser && isRedactedContent(text) ? (
+                      <DeletedMessageBubble text={text} time={formatHebrewTime(getMessageCreatedAt(msg))} />
+                    ) : isUser ? (
                       <div
                         className={`relative max-w-[82%] ${userReaction ? 'mb-3' : ''}`}
                       >
