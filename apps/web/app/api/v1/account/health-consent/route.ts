@@ -24,8 +24,8 @@ export async function GET(request: Request) {
   if (!auth.ok) return auth.response;
   try {
     const state = await getHealthConsentState(createAdminClient(), auth.user.id);
-    // Never recorded (older accounts) is treated as active consent given at onboarding.
-    return NextResponse.json({ active: state.granted !== false, decided_at: state.at });
+    // Legacy accounts without a record are NOT treated as consented; the app prompts them.
+    return NextResponse.json({ active: state.granted === true, needs_prompt: state.granted === null, decided_at: state.at });
   } catch {
     return NextResponse.json({ error: 'שגיאה בטעינת ההסכמה' }, { status: 500 });
   }

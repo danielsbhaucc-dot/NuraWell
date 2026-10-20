@@ -6,7 +6,10 @@ import {
   patchHasHealthFields,
   stripHealthFields,
   withdrawHealthConsent,
+  healthConsentStatus,
+  isHealthProcessingBlocked,
 } from '@/lib/privacy/health-consent';
+import { createHealthMemoryGate, isHealthMemory, scrubHealthJson } from '@/lib/privacy/health-memory';
 import { applyWeightFromUserMessage } from '@/lib/ai/chat-weight-intent';
 
 afterEach(() => __setHealthBlockLookup(null));
@@ -42,8 +45,11 @@ function fakeAdmin() {
 describe('withdrawHealthConsent', () => {
   it('records granted=false with policy version, wipes profile, deletes measurements, audits', async () => {
     const { admin, calls } = fakeAdmin();
-    const r = await withdrawHealthConsent(admin, 'u1', { source: 'test' });
-    expect(r).toEqual({ ok: true, measurementsDeleted: 3 });
+    const mem = { memories: 2, insights: 1, vectors: 3, dossier: true, aiContext: true };
+    const scrub = vi.fn(async () => mem);
+    const r = await withdrawHealthConsent(admin, 'u1', { source: 'test' }, scrub as never);
+    expect(r).toEqual({ ok: true, measurementsDeleted: 3, memory: mem });
+    expect(scrub).toHaveBeenCalledWith(admin, 'u1');
     const consent = calls.find((c) => c.table === 'user_consents')?.arg as Record<string, unknown>;
     expect(consent).toMatchObject({ user_id: 'u1', consent_type: 'health_data', granted: false });
     expect(consent.policy_version).toBeTruthy();
@@ -62,5 +68,63 @@ describe('processing stops after withdrawal', () => {
     const r = await applyWeightFromUserMessage(supabase, 'u1', 'אני שוקל 80 קילו');
     expect(r.logged).toBe(false);
     expect(insert).not.toHaveBeenCalled();
+  });
+});
+
+describe('fail-closed consent status', () => {
+  it.each([
+    ['granted', false],
+    ['withdrawn', true],
+    ['unknown', true],
+    ['error', true],
+  ] as const)('%s → blocked=%s', async (status, blocked) => {
+    __setHealthBlockLookup(async () => status);
+    expect(await isHealthProcessingBlocked('u1')).toBe(blocked);
+  });
+
+  it('a throwing lookup yields error (blocked)', async () => {
+    __setHealthBlockLookup(async () => { throw new Error('db down'); });
+    expect(await healthConsentStatus('u1')).toBe('error');
+    expect(await isHealthProcessingBlocked('u1')).toBe(true);
+  });
+
+  it('no cache: a new grant applies immediately', async () => {
+    let s: 'withdrawn' | 'granted' = 'withdrawn';
+    __setHealthBlockLookup(async () => s);
+    expect(await isHealthProcessingBlocked('u1')).toBe(true);
+    s = 'granted';
+    expect(await isHealthProcessingBlocked('u1')).toBe(false);
+  });
+});
+
+describe('memory health gate', () => {
+  it('drops health facts unless granted, passes non-health facts without a lookup', async () => {
+    const lookup = vi.fn(async () => 'unknown' as const);
+    __setHealthBlockLookup(lookup);
+    const gate = createHealthMemoryGate('u1');
+    expect(await gate('preferences', 'likes morning walks')).toBe(false);
+    expect(lookup).not.toHaveBeenCalled();
+    expect(await gate('health', 'anything')).toBe(true);
+    expect(await gate('general', 'weighs 82 kg')).toBe(true);
+    expect(lookup).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps health facts when granted', async () => {
+    __setHealthBlockLookup(async () => 'granted');
+    expect(await createHealthMemoryGate('u1')('health', 'diabetes')).toBe(false);
+  });
+
+  it('detects Hebrew health text', () => {
+    expect(isHealthMemory('general', 'המשקל שלי 80 קילו')).toBe(true);
+    expect(isHealthMemory('general', 'אוהב ללכת לים')).toBe(false);
+  });
+});
+
+describe('scrubHealthJson', () => {
+  it('drops health keys, keeps safety flags and the rest', () => {
+    const out = scrubHealthJson({ name: 'x', weight_kg: 80, medical_notes: 'y', safety_eating_disorder: true }) as Record<string, unknown>;
+    expect(out).toMatchObject({ name: 'x', safety_eating_disorder: true });
+    expect(out).not.toHaveProperty('weight_kg');
+    expect(out).not.toHaveProperty('medical_notes');
   });
 });

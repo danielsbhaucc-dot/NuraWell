@@ -1,3 +1,4 @@
+import { createHealthMemoryGate } from '@/lib/privacy/health-memory';
 import { sealTableRow } from '@/lib/crypto/pii-seal';
 import { isStorableMemoryText } from '../safety/memory-text-guard';
 import type { ExtractedMemoryFact } from '../extract-memory-facts';
@@ -157,12 +158,14 @@ export async function reconcileSessionMemories(params: {
 
   if (!params.facts.length) return result;
 
+  const dropHealth = createHealthMemoryGate(params.userId);
   for (const fact of params.facts) {
     try {
       const text = fact.text.replace(/\s+/g, ' ').trim();
       if (!isStorableMemoryText(text)) {
         continue;
       }
+      if (await dropHealth(fact.category, text)) continue;
       const vec = isUpstashVectorConfigured() ? await embedTextForRag(text) : [];
 
       const hits = isUpstashVectorConfigured()

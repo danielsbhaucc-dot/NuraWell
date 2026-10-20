@@ -6,6 +6,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { recordUserConsent } from './record-consent';
 import { CONSENT_TYPES } from './constants';
+import { scrubHealthFromMemory, type HealthScrubResult } from './health-memory';
 
 /** profiles columns that hold health data. */
 export const HEALTH_PROFILE_FIELDS = [
@@ -45,33 +46,39 @@ export async function getHealthConsentState(admin: SupabaseClient, userId: strin
   return { granted: row.granted, at: row.created_at };
 }
 
-type BlockLookup = (userId: string) => Promise<boolean>;
-let lookupOverride: BlockLookup | null = null;
-const cache = new Map<string, { v: boolean; at: number }>();
-/** For tests only. */
-export function __setHealthBlockLookup(fn: BlockLookup | null) {
+export type HealthConsentStatus = 'granted' | 'withdrawn' | 'unknown' | 'error';
+type StatusLookup = (userId: string) => Promise<HealthConsentStatus | boolean>;
+let lookupOverride: StatusLookup | null = null;
+/** For tests only. Return a status, or `true` (= withdrawn) / `false` (= granted). */
+export function __setHealthBlockLookup(fn: StatusLookup | null) {
   lookupOverride = fn;
-  cache.clear();
 }
-export function clearHealthBlockCache(userId: string) {
-  cache.delete(userId);
+/** Kept for API compatibility: there is no cache, every check reads the latest decision. */
+export function clearHealthBlockCache(_userId: string) {
+  void _userId;
 }
 
-/** True when the user's latest health-data decision is an explicit withdrawal. */
-export async function isHealthProcessingBlocked(userId: string): Promise<boolean> {
-  if (lookupOverride) return lookupOverride(userId);
-  const c = cache.get(userId);
-  if (c && Date.now() - c.at < 30_000) return c.v;
-  let v = false;
+/** Latest decision, no cache (withdraw/grant apply immediately). */
+export async function healthConsentStatus(userId: string): Promise<HealthConsentStatus> {
   try {
+    if (lookupOverride) {
+      const v = await lookupOverride(userId);
+      return v === true ? 'withdrawn' : v === false ? 'granted' : v;
+    }
     const { createAdminClient } = await import('@/lib/supabase/admin');
     const state = await getHealthConsentState(createAdminClient(), userId);
-    v = state.granted === false;
+    return state.granted === true ? 'granted' : state.granted === false ? 'withdrawn' : 'unknown';
   } catch {
-    v = false;
+    return 'error';
   }
-  cache.set(userId, { v, at: Date.now() });
-  return v;
+}
+
+/**
+ * Health writes are allowed only with an explicit grant on record.
+ * Withdrawn, legacy (no record) and lookup errors all block (fail closed).
+ */
+export async function isHealthProcessingBlocked(userId: string): Promise<boolean> {
+  return (await healthConsentStatus(userId)) !== 'granted';
 }
 
 /** Removes health fields from a profile patch. */
@@ -89,8 +96,9 @@ export function patchHasHealthFields(patch: Record<string, unknown>): boolean {
 export async function withdrawHealthConsent(
   admin: SupabaseClient,
   userId: string,
-  meta: { source: string }
-): Promise<{ ok: true; measurementsDeleted: number } | { ok: false; error: string }> {
+  meta: { source: string },
+  scrub: typeof scrubHealthFromMemory = scrubHealthFromMemory
+): Promise<{ ok: true; measurementsDeleted: number; memory: HealthScrubResult | null } | { ok: false; error: string }> {
   const rec = await recordUserConsent(admin, {
     userId,
     consentType: CONSENT_TYPES.healthData,
@@ -113,20 +121,27 @@ export async function withdrawHealthConsent(
     .eq('user_id', userId);
   if (mErr) return { ok: false, error: mErr.message };
 
+  let memory: HealthScrubResult | null = null;
+  try {
+    memory = await scrub(admin, userId);
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'memory scrub failed' };
+  }
+
   await admin
     .from('admin_audit_log')
     .insert({
       actor_id: userId,
       method: 'PRIVACY',
       path: 'health_consent_withdrawn',
-      detail: { measurements_deleted: count ?? 0, source: meta.source },
+      detail: { measurements_deleted: count ?? 0, memory, source: meta.source },
     })
     .then(
       () => undefined,
       () => undefined
     );
 
-  return { ok: true, measurementsDeleted: count ?? 0 };
+  return { ok: true, measurementsDeleted: count ?? 0, memory };
 }
 
 export async function grantHealthConsent(

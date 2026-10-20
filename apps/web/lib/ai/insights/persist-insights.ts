@@ -1,3 +1,4 @@
+import { createHealthMemoryGate } from '@/lib/privacy/health-memory';
 import { sealTableRow } from '@/lib/crypto/pii-seal';
 import { decTableResult } from '@/lib/crypto/pii-fields';
 import { isStorableMemoryText } from '../safety/memory-text-guard';
@@ -62,7 +63,12 @@ export async function persistInsights(params: {
   const nowIso = now.toISOString();
   const result: PersistInsightsResult = { inserted: 0, merged: 0, skipped: 0, errors: 0 };
 
+  const dropHealth = createHealthMemoryGate(userId);
   for (const insight of extraction.insights) {
+    if (await dropHealth(insight.category, insight.insight_text)) {
+      result.skipped += 1;
+      continue;
+    }
     const key = insightDedupeKey(insight.category, insight.insight_text);
     if (!key || key.endsWith('|') || !isStorableMemoryText(insight.insight_text)) {
       result.skipped += 1;

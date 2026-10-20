@@ -6,7 +6,8 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { isEncrypted } from './pii';
 import { AI_CONTEXT_ENC_KEYS, encryptProfilePatch, encryptTableRow, TABLE_ENC_TEXT, type EncTextTable } from './pii-fields';
 import { restorePiiPlaceholders } from './pii-placeholders';
-import { isHealthProcessingBlocked, patchHasHealthFields, stripHealthFields } from '@/lib/privacy/health-consent';
+import { healthConsentStatus, patchHasHealthFields, stripHealthFields } from '@/lib/privacy/health-consent';
+import { scrubHealthJson, isHealthText } from '@/lib/privacy/health-memory';
 
 type Row = Record<string, unknown>;
 const PLACEHOLDER = /\[\[?\s*[A-Zא-ת_][A-Z0-9_א-ת]*\s*\]\]?/i;
@@ -46,7 +47,17 @@ export async function sealTableRow<T extends Row>(table: EncTextTable, row: T, u
 export async function sealProfilePatch<T extends Row>(patch: T, userId: string): Promise<T> {
   let p: Row = patch;
   // Health-data consent withdrawn → never write health fields again until re-granted.
-  if (patchHasHealthFields(p) && (await isHealthProcessingBlocked(userId))) p = stripHealthFields(p);
+  const ctxHasHealth = (() => {
+    const c = p.ai_context;
+    if (!c || typeof c !== 'object') return false;
+    try { return isHealthText(JSON.stringify(c)) || /weight|health|medical|bmi|diet|condition/i.test(Object.keys(c).join(' ')); } catch { return true; }
+  })();
+  if (patchHasHealthFields(p) || ctxHasHealth) {
+    const status = await healthConsentStatus(userId);
+    if (status !== 'granted') p = stripHealthFields(p);
+    // ai_context patches usually carry the whole merged object; scrub it only after an explicit withdrawal.
+    if (ctxHasHealth && status === 'withdrawn') p = { ...p, ai_context: scrubHealthJson(p.ai_context) ?? {} };
+  }
   const ctx = p.ai_context;
   if (ctx && typeof ctx === 'object' && !Array.isArray(ctx)) {
     p = { ...p, ai_context: await restoreFields(ctx as Row, AI_CONTEXT_ENC_KEYS, userId) };

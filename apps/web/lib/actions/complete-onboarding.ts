@@ -303,6 +303,19 @@ export async function completeOnboarding(
   });
 
 
+  // Consent first: health fields are only written once health-data consent is on record.
+  const consentResult = await recordRegistrationConsents(admin, {
+    userId,
+    source: 'onboarding_form',
+    healthData: true,
+    parentalGuardian: ageCheck.requiresParentalConsent,
+    birthDate: data.date_of_birth,
+    age: ageCheck.age,
+  });
+  if (!consentResult.ok) {
+    console.warn('[complete-onboarding] consent record failed', consentResult.error);
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error: profileError } = await (admin.from('profiles') as any)
     .update(await sealProfilePatch({
@@ -342,17 +355,6 @@ export async function completeOnboarding(
     return { ok: false, error: 'החשבון נוצר אך שמירת הפרופיל נכשלה. פנו לתמיכה.' };
   }
 
-  const consentResult = await recordRegistrationConsents(admin, {
-    userId,
-    source: 'onboarding_form',
-    healthData: true,
-    parentalGuardian: ageCheck.requiresParentalConsent,
-    birthDate: data.date_of_birth,
-    age: ageCheck.age,
-  });
-  if (!consentResult.ok) {
-    console.warn('[complete-onboarding] consent record failed', consentResult.error);
-  }
 
   const vectorProfile: OnboardingProfileForChat = {
     full_name: data.full_name,

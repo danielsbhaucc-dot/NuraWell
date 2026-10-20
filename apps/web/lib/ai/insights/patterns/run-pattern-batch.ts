@@ -1,3 +1,4 @@
+import { createHealthMemoryGate } from '@/lib/privacy/health-memory';
 import { sealTableRow } from '@/lib/crypto/pii-seal';
 import { decTableResult } from '@/lib/crypto/pii-fields';
 import { decInteractionResult } from '@/lib/crypto/pii-fields';
@@ -196,7 +197,9 @@ export async function runPatternInsightsBatch(
           existing: existing.filter((e) => e.status === INSIGHT_STATUS.ACTIVE).map((e) => ({ key: e.dedupe_key.slice('pattern:'.length), insight: e.insight_text })),
           allowedDates: g.allowedDates,
         });
+        const dropHealth = createHealthMemoryGate(userId);
         for (const p of patterns) {
+          if (await dropHealth(p.category, p.insight_he)) continue;
           const key = `pattern:${p.key}`;
           const prev = existing.find((e) => e.dedupe_key === key) ?? null;
           const meta = metaFor(p, prev?.metadata ?? null, nowIso, now);
