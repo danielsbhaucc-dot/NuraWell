@@ -24,7 +24,7 @@ function Row({ r, onSaved }: { r: Receipt; onSaved: () => void }) {
     </li>
   );
   return (
-    <li className="rounded-2xl border border-gc/50 bg-white/55 p-3">
+    <li className="rounded-2xl border border-gc/50 bg-glass/55 backdrop-blur-md p-3">
       <div className="flex flex-wrap items-center gap-2 text-sm">
         <span className="font-bold text-slate-900">{VENDORS[r.vendor]?.label ?? r.vendor}</span>
         {r.plan ? <span className="text-slate-600">· {r.plan}</span> : null}

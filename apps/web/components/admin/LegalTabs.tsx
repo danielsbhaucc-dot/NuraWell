@@ -13,7 +13,7 @@ export function LegalTabs({ initialTab = 'consent' }: { initialTab?: 'consent' |
     setTab(t);
     const u = new URL(window.location.href); u.searchParams.set('tab', t); window.history.replaceState(null, '', u);
   };
-  const btn = (active: boolean) => cn('flex flex-1 items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-bold transition', active ? 'bg-white/90 text-teal-900 shadow-sm' : 'text-slate-600 hover:text-slate-900');
+  const btn = (active: boolean) => cn('flex flex-1 items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-bold transition', active ? 'bg-glass/90 backdrop-blur-md text-teal-900 shadow-sm' : 'text-slate-600 hover:text-slate-900');
   return (
     <div className="space-y-5" dir="rtl">
       <div role="tablist" aria-label="סוג התיעוד" className="flex gap-1 rounded-3xl border border-gc/50 bg-background-card/45 p-1 backdrop-blur-2xl">

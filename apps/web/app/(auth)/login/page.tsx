@@ -462,7 +462,7 @@ function LoginFormContent() {
                   disabled={passkeyBusy}
                   className={[
                     'w-full min-h-[52px] rounded-2xl font-bold flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-60',
-                    isDarkUi ? 'bg-white/10 text-white ring-1 ring-amber-200/50 backdrop-blur' : 'bg-white/80 text-emerald-800 ring-1 ring-amber-300/70 shadow-[0_6px_18px_rgba(217,119,6,0.12)]',
+                    isDarkUi ? 'bg-white/10 text-white ring-1 ring-amber-200/50 backdrop-blur' : 'bg-glass/80 backdrop-blur-md text-emerald-800 ring-1 ring-amber-300/70 shadow-[0_6px_18px_rgba(217,119,6,0.12)]',
                   ].join(' ')}
                 >
                   {passkeyBusy ? <div className="w-5 h-5 border-2 border-current/30 border-t-current rounded-full animate-spin" /> : <Fingerprint className="w-5 h-5" aria-hidden />}

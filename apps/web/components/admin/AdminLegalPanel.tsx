@@ -77,14 +77,14 @@ export function AdminLegalPanel() {
         <h2 className="mb-3 flex items-center gap-2 font-bold text-slate-900"><span className="grid h-6 w-6 place-items-center rounded-full bg-amber-100 text-xs text-amber-700">1</span>משתמשים עם תיעוד</h2>
         <label className="relative block">
           <Search size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden />
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="חיפוש לפי שם או מייל" className="w-full rounded-xl border border-gc/60 bg-white/70 py-2.5 pr-9 pl-3 text-sm outline-none focus:ring-2 focus:ring-emerald-300" />
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="חיפוש לפי שם או מייל" className="w-full rounded-xl border border-gc/60 bg-glass/70 backdrop-blur-md py-2.5 pr-9 pl-3 text-sm outline-none focus:ring-2 focus:ring-emerald-300" />
         </label>
         <OpsDivider className="my-3 px-0 sm:px-0" />
         {!users ? <Loader2 className="mx-auto my-6 animate-spin text-slate-400" /> : filtered.length === 0 ? <p className="py-6 text-center text-sm text-slate-500">אין עדיין תיעוד</p> : (
           <ul className="max-h-[60vh] space-y-1.5 overflow-y-auto">
             {filtered.map((u) => (
               <li key={u.user_id}>
-                <button type="button" onClick={() => pick(u.user_id)} className={cn('w-full rounded-xl border px-3 py-2.5 text-right transition', sel === u.user_id ? 'border-emerald-300 bg-emerald-50/80' : 'border-transparent hover:bg-white/60')}>
+                <button type="button" onClick={() => pick(u.user_id)} className={cn('w-full rounded-xl border px-3 py-2.5 text-right transition', sel === u.user_id ? 'border-emerald-300 bg-emerald-50/80' : 'border-transparent hover:bg-glass/60')}>
                   <span className="block truncate text-sm font-bold text-slate-900">{u.name || 'ללא שם'}</span>
                   <span className="block truncate text-xs text-slate-500" dir="ltr">{u.email}</span>
                   <span className="mt-1 flex items-center gap-2 text-[11px] text-slate-500">{u.events} אירועים · אחרון: {u.last_action === 'grant' ? 'הסכמה' : 'ביטול'} {fmt(u.last_at)}</span>
@@ -158,13 +158,13 @@ export function AdminLegalPanel() {
                             ['מכשיר', e.user_agent ?? '—'],
                             ['חותמת זמן מוסמכת', fmt(e.tsa_time)],
                           ].map(([k, v]) => (
-                            <div key={k} className="rounded-lg bg-white/60 px-3 py-2"><dt className="text-[11px] font-bold text-slate-500">{k}</dt><dd className="break-words text-slate-800">{v}</dd></div>
+                            <div key={k} className="rounded-lg bg-glass/60 backdrop-blur-md px-3 py-2"><dt className="text-[11px] font-bold text-slate-500">{k}</dt><dd className="break-words text-slate-800">{v}</dd></div>
                           ))}
-                          <div className="rounded-lg bg-white/60 px-3 py-2"><dt className="text-[11px] font-bold text-slate-500">גיבוב הרשומה</dt><dd className="break-all font-mono text-[11px] text-slate-700" dir="ltr">{e.record_hash}</dd></div>
+                          <div className="rounded-lg bg-glass/60 backdrop-blur-md px-3 py-2"><dt className="text-[11px] font-bold text-slate-500">גיבוב הרשומה</dt><dd className="break-all font-mono text-[11px] text-slate-700" dir="ltr">{e.record_hash}</dd></div>
                         </dl>
                         <div className="space-y-3">
                           {e.has_screenshot ? (
-                            <figure className="overflow-hidden rounded-xl border border-amber-200 bg-white">
+                            <figure className="overflow-hidden rounded-xl border border-amber-200 bg-glass/85 backdrop-blur-md">
                               {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img src={`/api/v1/ops/legal/image/${e.id}`} alt="צילום חלון ההסכמה" className="max-h-[420px] w-full object-contain" loading="lazy" />
                               <figcaption className="flex items-center justify-between px-3 py-2 text-xs text-slate-500">
@@ -172,8 +172,8 @@ export function AdminLegalPanel() {
                                 <a href={`/api/v1/ops/legal/image/${e.id}?download=1`} className="font-bold text-emerald-700 underline">הורדה</a>
                               </figcaption>
                             </figure>
-                          ) : <p className="rounded-xl bg-white/60 p-3 text-xs text-slate-500">אין צילום לאירוע זה</p>}
-                          <details className="rounded-xl bg-white/60 p-3 text-xs text-slate-700">
+                          ) : <p className="rounded-xl bg-glass/60 backdrop-blur-md p-3 text-xs text-slate-500">אין צילום לאירוע זה</p>}
+                          <details className="rounded-xl bg-glass/60 backdrop-blur-md p-3 text-xs text-slate-700">
                             <summary className="cursor-pointer font-bold">הנוסח שהוצג</summary>
                             <div className="mt-2 space-y-1">{e.text_lines.map((l, j) => <p key={j}>{l}</p>)}</div>
                           </details>

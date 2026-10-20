@@ -125,7 +125,7 @@ export function ConsentEvidenceSheet({ open, action, gender, onClose, mode = 'su
 
         <div className="mt-4 space-y-2.5">
           {t.sections.map((s, i) => (
-            <section key={s.heading} className="rounded-2xl border border-white/70 bg-white/60 p-3.5 shadow-sm backdrop-blur">
+            <section key={s.heading} className="rounded-2xl border border-white/70 bg-glass/60 backdrop-blur-md p-3.5 shadow-sm backdrop-blur">
               <h3 className="mb-1.5 flex items-center gap-2 text-sm font-bold text-slate-900">
                 <span className="grid h-5 w-5 place-items-center rounded-full bg-amber-100 text-[11px] font-bold text-amber-700">{i + 1}</span>
                 {s.heading}
@@ -148,7 +148,7 @@ export function ConsentEvidenceSheet({ open, action, gender, onClose, mode = 'su
           </span>
         </p>
 
-        <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-2xl border border-emerald-200/70 bg-white/70 p-3.5">
+        <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-2xl border border-emerald-200/70 bg-glass/70 backdrop-blur-md p-3.5">
           <input
             type="checkbox"
             checked={checked}
@@ -158,7 +158,7 @@ export function ConsentEvidenceSheet({ open, action, gender, onClose, mode = 'su
           />
           <span
             aria-hidden
-            className={`mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-lg border-2 transition ${checked ? 'border-emerald-600 bg-emerald-600 text-white' : 'border-slate-300 bg-white'} peer-focus-visible:ring-2 peer-focus-visible:ring-emerald-400`}
+            className={`mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-lg border-2 transition ${checked ? 'border-emerald-600 bg-emerald-600 text-white' : 'border-slate-300 bg-glass/85 backdrop-blur-md'} peer-focus-visible:ring-2 peer-focus-visible:ring-emerald-400`}
           >
             {checked ? <Check className="h-4 w-4" /> : null}
           </span>
@@ -176,7 +176,7 @@ export function ConsentEvidenceSheet({ open, action, gender, onClose, mode = 'su
             inputMode="text"
             data-testid="consent-typed"
             aria-invalid={typed.length > 2 && !wordOk}
-            className={`mt-1.5 w-full rounded-2xl border bg-white/80 px-4 py-3 text-lg font-semibold outline-none transition focus:ring-2 ${typed && wordOk ? 'border-emerald-400 focus:ring-emerald-300' : 'border-slate-200 focus:ring-amber-300'}`}
+            className={`mt-1.5 w-full rounded-2xl border bg-glass/80 backdrop-blur-md px-4 py-3 text-lg font-semibold outline-none transition focus:ring-2 ${typed && wordOk ? 'border-emerald-400 focus:ring-emerald-300' : 'border-slate-200 focus:ring-amber-300'}`}
             placeholder={t.expectedWord.replace('/', ' / ')}
           />
         </label>
@@ -193,7 +193,7 @@ export function ConsentEvidenceSheet({ open, action, gender, onClose, mode = 'su
           >
             {busy ? <Loader2 className="h-5 w-5 animate-spin" aria-label="שומר" /> : t.submitLabel}
           </button>
-          <button type="button" onClick={onClose} disabled={busy} className="min-h-12 flex-1 rounded-2xl border border-slate-200 bg-white/70 px-5 font-semibold text-slate-700">
+          <button type="button" onClick={onClose} disabled={busy} className="min-h-12 flex-1 rounded-2xl border border-slate-200 bg-glass/70 backdrop-blur-md px-5 font-semibold text-slate-700">
             {dismissLabel ?? 'לא עכשיו'}
           </button>
         </div>

@@ -185,7 +185,7 @@ function ItemCard({ item, open, onToggle, onChanged }: { item: Item; open: boole
   return (
     <li className={cn(opsGlassCardClass, 'p-3 sm:p-4', !item.present && 'opacity-70')} data-testid="media-evidence-item">
       <button type="button" onClick={onToggle} aria-expanded={open} className="flex w-full items-center gap-3 text-right">
-        <span className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-2xl border border-gc/50 bg-white/70">
+        <span className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-2xl border border-gc/50 bg-glass/70 backdrop-blur-md">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           {src ? <img src={src} alt="" loading="lazy" className="h-full w-full object-contain p-1" /> : <K.Icon size={22} className="text-teal-700" aria-hidden />}
         </span>
@@ -232,15 +232,15 @@ function ItemCard({ item, open, onToggle, onChanged }: { item: Item; open: boole
           ) : null}
           {item.kind === 'audio' && item.has_file ? <audio controls preload="none" src={`/api/v1/ops/legal/media/item/file?key=${q}`} className="w-full" /> : null}
 
-          <details open={item.status !== 'verified'} className="group rounded-2xl border border-gc/50 bg-white/50 p-3">
+          <details open={item.status !== 'verified'} className="group rounded-2xl border border-gc/50 bg-glass/50 backdrop-blur-md p-3">
             <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-bold text-slate-800">מקור ורישיון<ChevronDown size={16} className="text-slate-400 transition group-open:rotate-180" /></summary>
             <div className="mt-3"><ProvenanceForm item={item} onSaved={changed} /></div>
           </details>
-          <details open={['ai_music', 'ai_voice', 'ai_image'].includes(item.source_type)} className="group rounded-2xl border border-gc/50 bg-white/50 p-3">
+          <details open={['ai_music', 'ai_voice', 'ai_image'].includes(item.source_type)} className="group rounded-2xl border border-gc/50 bg-glass/50 backdrop-blur-md p-3">
             <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-bold text-slate-800">קבלות, חשבוניות וצילומים<ChevronDown size={16} className="text-slate-400 transition group-open:rotate-180" /></summary>
             <div className="mt-3"><AttachmentBox item={item} onSaved={changed} /></div>
           </details>
-          <details className="group rounded-2xl border border-gc/50 bg-white/50 p-3">
+          <details className="group rounded-2xl border border-gc/50 bg-glass/50 backdrop-blur-md p-3">
             <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-bold text-slate-800">פרטי הקובץ והיכן בשימוש<ChevronDown size={16} className="text-slate-400 transition group-open:rotate-180" /></summary>
             <dl className="mt-3 grid gap-2 text-xs sm:grid-cols-2">
               {([
@@ -249,13 +249,13 @@ function ItemCard({ item, open, onToggle, onChanged }: { item: Item; open: boole
                 ['הופעה ראשונה ב־git', item.first_commit ? `${fmt(item.first_commit.date)} · ${item.first_commit.author} · ${item.first_commit.sha.slice(0, 10)}` : '—', false],
                 ['מידע מוטמע', [item.metadata.c2pa ? `C2PA ${item.metadata.c2pa_claim_generator ?? ''}` : null, item.metadata.software, item.metadata.digital_source_type, item.metadata.id3 ? Object.values(item.metadata.id3).join(' · ') : null].filter(Boolean).join(' · ') || 'אין', false],
               ] as Array<[string, string, boolean]>).map(([k, v, mono]) => (
-                <div key={k} className="rounded-lg bg-white/70 px-3 py-2"><dt className="text-[11px] font-bold text-slate-500">{k}</dt><dd className={cn('break-all text-slate-800', mono && 'font-mono text-[11px]')} dir={mono ? 'ltr' : undefined}>{v}</dd></div>
+                <div key={k} className="rounded-lg bg-glass/70 backdrop-blur-md px-3 py-2"><dt className="text-[11px] font-bold text-slate-500">{k}</dt><dd className={cn('break-all text-slate-800', mono && 'font-mono text-[11px]')} dir={mono ? 'ltr' : undefined}>{v}</dd></div>
               ))}
             </dl>
             <p className="mt-3 text-[11px] font-bold text-slate-500">בשימוש ב:</p>
             <ul className="mt-1 flex flex-wrap gap-1.5">{(item.usages.length ? item.usages : ['לא נמצא שימוש']).map((u) => <li key={u}><Chip className="border-gc/60 text-slate-700">{u}</Chip></li>)}</ul>
           </details>
-          <details className="group rounded-2xl border border-gc/50 bg-white/50 p-3">
+          <details className="group rounded-2xl border border-gc/50 bg-glass/50 backdrop-blur-md p-3">
             <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-bold text-slate-800">רשומות חתומות ({item.records})<ChevronDown size={16} className="text-slate-400 transition group-open:rotate-180" /></summary>
             {!recs ? <Loader2 className="mx-auto my-3 animate-spin text-slate-400" /> : (
               <ol className="mt-3 space-y-1.5 border-r-2 border-teal-200/80 pr-3 text-xs">
@@ -311,7 +311,7 @@ export function AdminMediaEvidencePanel() {
   }, [items]);
   const todo = filtered.filter((i) => i.status !== 'verified');
   const done = filtered.filter((i) => i.status === 'verified');
-  const filterBtn = (active: boolean) => cn('rounded-full border px-3 py-1.5 text-xs font-bold transition', active ? 'border-teal-400/70 bg-teal-600 text-white' : 'border-gc/60 bg-white/50 text-slate-700 hover:bg-white/80');
+  const filterBtn = (active: boolean) => cn('rounded-full border px-3 py-1.5 text-xs font-bold transition', active ? 'border-teal-400/70 bg-teal-600 text-white' : 'border-gc/60 bg-glass/50 backdrop-blur-md text-slate-700 hover:bg-glass/80');
 
   return (
     <div dir="rtl" className="space-y-4" data-testid="media-evidence-panel">
@@ -326,7 +326,7 @@ export function AdminMediaEvidencePanel() {
         {scan ? <p role="status" className="mt-2 text-xs font-bold text-slate-600">{scan}</p> : null}
         <div className="mt-4 grid grid-cols-3 gap-2 text-center">
           {([['missing_source', counts.missing, 'חסר מקור', 'text-rose-700'], ['draft', counts.draft, 'חסרים פרטים', 'text-orange-700'], ['verified', counts.verified, 'מתועדים', 'text-teal-700']] as const).map(([s, n, l, c]) => (
-            <button key={s} type="button" onClick={() => setStatus(status === s ? 'all' : s)} className={cn('rounded-2xl border px-2 py-3 transition', status === s ? 'border-teal-400/70 bg-white/80' : 'border-gc/50 bg-white/40 hover:bg-white/70')}>
+            <button key={s} type="button" onClick={() => setStatus(status === s ? 'all' : s)} className={cn('rounded-2xl border px-2 py-3 transition', status === s ? 'border-teal-400/70 bg-glass/80 backdrop-blur-md' : 'border-gc/50 bg-glass/40 backdrop-blur-md hover:bg-glass/70')}>
               <span className={cn('block text-2xl font-black', c)}>{items ? n : '·'}</span><span className="text-xs font-bold text-slate-600">{l}</span>
             </button>
           ))}
