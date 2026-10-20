@@ -247,3 +247,16 @@ export function extractReplyQuoteIndexFromChatMessage(message: ChatDisplayMessag
   if (fromParts) return extractReplyQuoteIndex(fromParts);
   return typeof message.content === 'string' ? extractReplyQuoteIndex(message.content) : null;
 }
+
+/** Raw assistant text (markers intact) — used to split live bubbles with the shared parser. */
+export function extractRawTextFromChatMessage(message: ChatDisplayMessage): string {
+  const parts = Array.isArray(message.parts) ? message.parts : [];
+  const fromParts = textFromParts(parts);
+  if (fromParts) return fromParts;
+  return typeof message.content === 'string' ? message.content : '';
+}
+
+/** Display text for one bubble segment (same cleanup as a whole message). */
+export function displayTextFromRawSegment(raw: string): string {
+  return normalizeDisplayText(finalizeDisplayText(raw));
+}

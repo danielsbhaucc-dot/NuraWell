@@ -10,10 +10,14 @@ export function ReplyQuoteBubble({
   text,
   deleted,
   onJump,
+  author = 'ההודעה שלך',
+  testId = 'almog-reply-quote',
 }: {
   text: string | null;
   deleted: boolean;
   onJump?: () => void;
+  author?: string;
+  testId?: string;
 }) {
   const body = deleted || !text ? 'ההודעה נמחקה' : text;
   return (
@@ -23,7 +27,7 @@ export function ReplyQuoteBubble({
       onClick={deleted ? undefined : onJump}
       disabled={deleted || !onJump}
       aria-label={deleted ? 'ציטוט של הודעה שנמחקה' : `מעבר להודעה המצוטטת: ${body}`}
-      data-testid="almog-reply-quote"
+      data-testid={testId}
       className="mb-2 block w-full overflow-hidden rounded-[14px] text-right transition active:scale-[0.99] disabled:cursor-default motion-reduce:transition-none"
       style={{
         background: 'linear-gradient(160deg, rgba(6,78,59,0.42), rgba(2,44,34,0.34))',
@@ -38,7 +42,7 @@ export function ReplyQuoteBubble({
         <span className="min-w-0 flex-1 px-2.5 py-1.5">
           <span className="flex items-center gap-1 text-[11px] font-bold text-amber-200">
             <CornerUpLeft className="h-3 w-3" aria-hidden />
-            ההודעה שלך
+            {author}
           </span>
           <span
             className={`mt-0.5 line-clamp-2 whitespace-pre-wrap text-[13px] leading-snug ${deleted ? 'italic text-emerald-100/60' : 'text-emerald-50/90'}`}

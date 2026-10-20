@@ -9,6 +9,8 @@ import { REDACTED_CONTENT, isRedactedContent } from '@/lib/privacy/health-chat-r
 import { DeletedMessageBubble } from './DeletedMessageBubble';
 import { ReplyQuoteBubble } from './ReplyQuoteBubble';
 import { resolveReplyQuote } from '../../lib/client/reply-quote-resolve';
+import { QuoteSwipe, ComposerQuotePreview } from './QuoteSwipe';
+import { hasPendingBubble, resolveReplyQuoteTurnIndex, splitAssistantBubbles } from '../../lib/ai/reply-quote';
 
 import { Fragment, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
@@ -23,6 +25,8 @@ import {
   extractEmojiReactionFixFromChatMessage,
   extractEmojiReactionFromChatMessage,
   extractReplyQuoteIndexFromChatMessage,
+  extractRawTextFromChatMessage,
+  displayTextFromRawSegment,
   extractChatUiFromChatMessage,
   normalizeDisplayText,
   type ChatDisplayMessage,
@@ -565,6 +569,12 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
   const [hasBackgroundAnswer, setHasBackgroundAnswer] = useState(false);
   const [notificationContext, setNotificationContext] = useState<OpenAlmogChatDetail | null>(null);
   const [quoteFlashKey, setQuoteFlashKey] = useState<string | null>(null);
+  /** User-side quote of an Almog bubble (sent as reply_to_message_id / reply_to_assistant_back). */
+  const [userQuote, setUserQuote] = useState<{ key: string; text: string; dbId?: string; back?: number } | null>(null);
+  const userQuoteRef = useRef<typeof userQuote>(null);
+  userQuoteRef.current = userQuote;
+  /** Quotes on just-sent user messages (by message index) until history reload provides replyToId. */
+  const [sentUserQuotes, setSentUserQuotes] = useState<Record<number, { key: string; text: string }>>({});
   const jumpToQuoted = useCallback((key: string) => {
     const el = typeof document !== 'undefined' ? document.getElementById(`nw-msg-${key}`) : null;
     if (!el) return;
@@ -763,12 +773,24 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
       notification_id: notificationIdRef.current ?? undefined,
       ...(hint ? { task_report_hint: taskReportHintToPayload(hint) } : {}),
       ...(guideHint ? { guide_context_hint: guideContextHintToPayload(guideHint) } : {}),
+      ...(userQuoteRef.current?.dbId
+        ? { reply_to_message_id: userQuoteRef.current.dbId }
+        : userQuoteRef.current?.back
+          ? { reply_to_assistant_back: userQuoteRef.current.back }
+          : {}),
     };
   }, [userId]);
 
   const clearHintsAfterSend = () => {
     taskReportHintRef.current = null;
     guideContextHintRef.current = null;
+    const q = userQuoteRef.current;
+    if (q) {
+      const idx = messagesLenRef.current;
+      setSentUserQuotes((m) => ({ ...m, [idx]: { key: q.key, text: q.text } }));
+      userQuoteRef.current = null;
+      setUserQuote(null);
+    }
   };
 
   const [memoryRecallWriterActive, setMemoryRecallWriterActive] = useState(false);
@@ -856,6 +878,7 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
     [fetchWithSession, buildOutgoingChatBody]
   );
 
+  const messagesLenRef = useRef(0);
   const { messages, setMessages, sendMessage, status, stop, error } = useChat({
     transport: chatTransport,
   });
@@ -1020,6 +1043,7 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
     });
   }, [messages]);
 
+  messagesLenRef.current = messages.length;
   const isLoading = status === 'submitted' || status === 'streaming';
   const showLoading = isLoading || awaitingAssistantRecovery;
   /** מקליד רק אחרי שווי כחול כבר הוצג (או recovery באמצע טיסה). */
@@ -1807,6 +1831,45 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
                 const quoteTargetText = quoteTarget ? getMessageText(quoteTarget as ChatDisplayMessage) : null;
                 const quoteDeleted = Boolean(replyQuote?.deleted || (quoteTargetText != null && isRedactedContent(quoteTargetText)));
                 const quoteTargetKey = quoteTarget ? quoteTarget.id ?? `${replyQuote!.targetIndex}-${(quoteTargetText ?? '').slice(0, 16)}` : null;
+                const keyOf = (k: number) => {
+                  const m = messages[k]!;
+                  return m.id ?? `${k}-${getMessageText(m as ChatDisplayMessage).slice(0, 16)}`;
+                };
+                // Multi-bubble (live stream: split marker; history: already separate rows).
+                const rawAssistant = isUser ? '' : extractRawTextFromChatMessage(displayMsg);
+                const liveBubbles = isUser ? [] : splitAssistantBubbles(rawAssistant, messages.slice(0, i) as Parameters<typeof splitAssistantBubbles>[1]);
+                const isStreamingThis = !isUser && i === messages.length - 1 && status === 'streaming';
+                const pendingNextBubble = isStreamingThis && liveBubbles.length > 0 && hasPendingBubble(rawAssistant);
+                const multi = liveBubbles.length > 1 || pendingNextBubble;
+                const assistantDbId = (msg as { metadata?: { dbId?: string } }).metadata?.dbId;
+                /** back index = position from the end among stored assistant rows (bubbles count as rows) */
+                const assistantBackOf = (bubbleIdx: number, bubbleCount: number) => {
+                  let back = bubbleCount - bubbleIdx;
+                  for (let k = i + 1; k < messages.length; k += 1) {
+                    if (messages[k]!.role !== 'assistant') continue;
+                    back += Math.max(1, splitAssistantBubbles(extractRawTextFromChatMessage(messages[k] as ChatDisplayMessage)).length);
+                  }
+                  return back;
+                };
+                const quoteThis = (bubbleIdx: number, bubbleCount: number, bubbleText: string) =>
+                  setUserQuote({
+                    key: msgKey,
+                    text: bubbleText.replace(/\s+/g, ' ').trim().slice(0, 140),
+                    ...(assistantDbId && bubbleCount === 1 ? { dbId: assistantDbId } : { back: assistantBackOf(bubbleIdx, bubbleCount) }),
+                  });
+                // User-side quote shown on the user's bubble.
+                const userReplyToId = isUser ? (msg as { metadata?: { replyToId?: string } }).metadata?.replyToId : undefined;
+                const userQuoteIdx = userReplyToId
+                  ? messages.findIndex((x, k) => k < i && x.role === 'assistant' && (x as { metadata?: { dbId?: string } }).metadata?.dbId === userReplyToId)
+                  : -1;
+                const userSideQuote = isUser
+                  ? sentUserQuotes[i] ??
+                    (userReplyToId
+                      ? userQuoteIdx === -1
+                        ? { key: '', text: '' }
+                        : { key: keyOf(userQuoteIdx), text: getMessageText(messages[userQuoteIdx] as ChatDisplayMessage) }
+                      : null)
+                  : null;
                 return (
                   <div
                     key={msgKey}
@@ -1831,6 +1894,15 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
                           {showQuote && quotedReply && (
                             <WhatsAppQuote author="אלמוג" text={quotedReply.mentorMessage} />
                           )}
+                          {userSideQuote ? (
+                            <ReplyQuoteBubble
+                              author="אלמוג"
+                              testId="user-reply-quote"
+                              text={userSideQuote.text || null}
+                              deleted={!userSideQuote.text}
+                              onJump={userSideQuote.key ? () => jumpToQuoted(userSideQuote.key) : undefined}
+                            />
+                          ) : null}
                           <p className="whitespace-pre-wrap">{text}</p>
                           <div className="mt-1.5 flex items-center justify-end gap-1 text-[10px] text-slate-400">
                             <span>{formatHebrewTime(getMessageCreatedAt(msg))}</span>
@@ -1853,8 +1925,64 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
                       </div>
                     ) : (
                       <>
+                        {multi ? (
+                          <div className="flex max-w-[82%] flex-col items-end gap-1.5" data-testid="almog-bubble-group">
+                            {liveBubbles.map((b, bi) => {
+                              const bText = displayTextFromRawSegment(b.raw);
+                              if (!bText) return null;
+                              const tIdx = b.quoteN != null ? resolveReplyQuoteTurnIndex(messages.slice(0, i) as Parameters<typeof resolveReplyQuoteTurnIndex>[0], b.quoteN) : null;
+                              const tText = tIdx != null ? getMessageText(messages[tIdx] as ChatDisplayMessage) : null;
+                              const tDeleted = tText != null && isRedactedContent(tText);
+                              const isLastBubble = bi === liveBubbles.length - 1 && !pendingNextBubble;
+                              return (
+                                <motion.div
+                                  key={bi}
+                                  initial={bi > 0 ? { opacity: 0, y: 6 } : false}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  transition={{ duration: 0.22, ease: 'easeOut' as const }}
+                                  className="w-full"
+                                >
+                                  <QuoteSwipe disabled={isStreamingThis} onQuote={() => quoteThis(bi, liveBubbles.length, bText)}>
+                                    <div
+                                      className={`rounded-[20px] ${isLastBubble ? 'rounded-ee-md' : ''} px-3.5 py-2.5 text-[14px] leading-relaxed text-white`}
+                                      style={{
+                                        background: 'linear-gradient(145deg, #047857 0%, #059669 55%, #10b981 100%)',
+                                        border: '1px solid rgba(167,243,208,0.16)',
+                                        boxShadow: '0 8px 22px rgba(16,185,129,0.28)',
+                                      }}
+                                    >
+                                      {tIdx != null ? (
+                                        <ReplyQuoteBubble
+                                          text={tDeleted ? null : tText}
+                                          deleted={tDeleted}
+                                          onJump={() => jumpToQuoted(keyOf(tIdx))}
+                                        />
+                                      ) : null}
+                                      {renderAlmogMessage(bText)}
+                                      {isLastBubble ? (
+                                        <div className="mt-1.5 flex items-center text-[10px] text-emerald-50/75">
+                                          {formatHebrewTime(getMessageCreatedAt(msg))}
+                                        </div>
+                                      ) : null}
+                                    </div>
+                                  </QuoteSwipe>
+                                </motion.div>
+                              );
+                            })}
+                            {pendingNextBubble ? (
+                              <div
+                                data-testid="almog-next-bubble-typing"
+                                className="rounded-[20px] rounded-ee-md px-3 py-2"
+                                style={{ background: 'linear-gradient(145deg, rgba(4,120,87,0.75), rgba(16,185,129,0.6))', border: '1px solid rgba(167,243,208,0.16)' }}
+                              >
+                                <AlmogChatTypingDots />
+                              </div>
+                            ) : null}
+                          </div>
+                        ) : (
+                        <QuoteSwipe disabled={isStreamingThis} onQuote={() => quoteThis(0, 1, text)}>
                         <div
-                          className="max-w-[82%] rounded-[20px] rounded-ee-md px-3.5 py-2.5 text-[14px] leading-relaxed text-white"
+                          className="rounded-[20px] rounded-ee-md px-3.5 py-2.5 text-[14px] leading-relaxed text-white"
                           style={{
                             background: 'linear-gradient(145deg, #047857 0%, #059669 55%, #10b981 100%)',
                             border: '1px solid rgba(167,243,208,0.16)',
@@ -1874,6 +2002,8 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
                             {formatHebrewTime(getMessageCreatedAt(msg))}
                           </div>
                         </div>
+                        </QuoteSwipe>
+                        )}
                         <img
                           src={avatarSrc}
                           alt=""
@@ -2067,6 +2197,9 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
                     setTimeout(() => setVaultOpen(false), 2200);
                   }}
                 />
+              ) : null}
+              {userQuote ? (
+                <ComposerQuotePreview text={userQuote.text} onCancel={() => setUserQuote(null)} />
               ) : null}
               <form
                 className="flex items-end gap-2 rounded-2xl border border-emerald-400/15 bg-background-card/6 p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"

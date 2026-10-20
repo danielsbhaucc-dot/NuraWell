@@ -11,8 +11,12 @@
 export const REPLY_QUOTE_MAX_BACK = 6;
 const MARKER_RE = /⟦NW_RQ:(\d{1,2})⟧/;
 const MARKER_ALL_RE = /⟦NW_RQ:\d{0,2}⟧/g;
-/** A marker cut mid-stream ("⟦NW_R", "⟦NW_RQ:2") at the very end of the text so far. */
-const PARTIAL_TAIL_RE = /⟦(?:N(?:W(?:_(?:R(?:Q(?::\d{0,2})?)?)?)?)?)?$/;
+/** Bubble split marker: Almog may send 2–4 short bubbles in one model call. */
+export const BUBBLE_MARKER = '⟦NW_B⟧';
+export const MAX_BUBBLES = 4;
+const BUBBLE_RE = /⟦NW_B⟧/g;
+/** A marker cut mid-stream ("⟦NW_R", "⟦NW_RQ:2", "⟦NW_B") at the very end of the text so far. */
+const PARTIAL_TAIL_RE = /⟦(?:N(?:W(?:_(?:R(?:Q(?::\d{0,2})?)?|B)?)?)?)?$/;
 
 export type QuoteTurn = { role: string; content?: string };
 
@@ -26,7 +30,7 @@ export function extractReplyQuoteIndex(text: string | null | undefined): number 
 
 export function stripReplyQuoteMarker(text: string): string {
   if (!text || !text.includes('⟦')) return text;
-  return text.replace(MARKER_ALL_RE, '').replace(PARTIAL_TAIL_RE, '').replace(/^\s+/, '');
+  return text.replace(/\s*⟦NW_B⟧\s*/g, '\n\n').replace(MARKER_ALL_RE, '').replace(PARTIAL_TAIL_RE, '').replace(/^\s+/, '');
 }
 
 /** Number of consecutive user messages at the end of the turns (the current "burst"). */
@@ -97,4 +101,56 @@ export function buildReplyQuotePromptBlock(turns: QuoteTurn[]): string | null {
     'ההודעות האחרונות של המשתמש:',
     list,
   ].join('\n');
+}
+
+export type AssistantBubble = { raw: string; quoteN: number | null };
+
+/**
+ * Splits one model output into ordered bubbles (server and client use the same parser).
+ * Empty segments are dropped; overflow beyond MAX_BUBBLES is merged into the last bubble;
+ * each bubble keeps only its own quote marker. Quotes are policy-checked against turns and
+ * de-duplicated (two bubbles never quote the same message). A trailing empty segment while
+ * streaming means "Almog is typing the next bubble" (see hasPendingBubble).
+ */
+export function splitAssistantBubbles(text: string | null | undefined, turns?: QuoteTurn[]): AssistantBubble[] {
+  const src = String(text ?? '').replace(PARTIAL_TAIL_RE, '');
+  const segs = src.split(BUBBLE_RE).map((x) => x.trim()).filter((x) => stripReplyQuoteMarker(x).trim().length > 0);
+  if (segs.length > MAX_BUBBLES) {
+    const head = segs.slice(0, MAX_BUBBLES - 1);
+    const tail = segs.slice(MAX_BUBBLES - 1).map((x) => stripReplyQuoteMarker(x).trim()).join('\n\n');
+    const firstN = extractReplyQuoteIndex(segs[MAX_BUBBLES - 1]);
+    segs.splice(0, segs.length, ...head, firstN ? `⟦NW_RQ:${firstN}⟧${tail}` : tail);
+  }
+  const used = new Set<number>();
+  return segs.map((seg) => {
+    let n = extractReplyQuoteIndex(seg);
+    if (n != null && turns && !isReplyQuoteAllowed(turns, n)) n = null;
+    if (n != null && used.has(n)) n = null;
+    if (n != null) used.add(n);
+    return { raw: stripReplyQuoteMarker(seg).trim(), quoteN: n };
+  });
+}
+
+/** True while streaming when the text ends right after a bubble marker (next bubble not started). */
+export function hasPendingBubble(text: string | null | undefined): boolean {
+  const s = String(text ?? '').replace(PARTIAL_TAIL_RE, '').trimEnd();
+  return s.endsWith(BUBBLE_MARKER) || /⟦NW_B⟧\s*(?:⟦NW_RQ:\d{1,2}⟧)?\s*$/.test(s);
+}
+
+/** Prompt block for multi-bubble replies (always short; the model decides, server enforces caps). */
+export function buildBubblePromptBlock(): string {
+  return [
+    '— כמה בועות (כמו בוואטסאפ) —',
+    'כשיש לך כמה נקודות נפרדות באמת (למשל המשתמש שלח כמה הודעות או שאל כמה דברים), אפשר לפצל את התשובה ל-2 עד 4 בועות קצרות, כמו בן אדם שמקליד.',
+    'ברוב התשובות בועה אחת מספיקה. לא מפצלים תשובה אחת רציפה, ולא מפצלים סתם.',
+    `איך: בין בועה לבועה כותבים ${BUBBLE_MARKER}. כל בועה יכולה להתחיל בציטוט משלה ⟦NW_RQ:n⟧ של ההודעה שהיא עונה עליה, לפי אותם כללי ציטוט.`,
+    `דוגמה: ⟦NW_RQ:2⟧על הפיצה, זה בסדר גמור, לא צריך לפצות.${BUBBLE_MARKER}⟦NW_RQ:1⟧ולגבי המים, בערך 8 כוסות ביום.`,
+  ].join('\n');
+}
+
+/** Short Hebrew note telling the writer which of its own messages the user replied to. */
+export function buildUserQuotedNote(quotedAssistantText: string | null | undefined): string | null {
+  const t = String(quotedAssistantText ?? '').replace(/\s+/g, ' ').trim();
+  if (!t) return null;
+  return `— המשתמש הגיב בציטוט להודעה שלך: "${t.length > 120 ? `${t.slice(0, 120)}…` : t}". ההודעה האחרונה שלו מתייחסת אליה.`;
 }

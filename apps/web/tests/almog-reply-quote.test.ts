@@ -76,3 +76,58 @@ describe('client resolution', () => {
     expect(resolveReplyQuote(burst, 2, 2)).toEqual({ targetIndex: 0, deleted: false });
   });
 });
+
+import {
+  BUBBLE_MARKER,
+  MAX_BUBBLES,
+  buildUserQuotedNote,
+  hasPendingBubble as _hasPending,
+  splitAssistantBubbles as _split,
+  stripReplyQuoteMarker as _strip,
+} from '../lib/ai/reply-quote';
+
+describe('multi-bubble split', () => {
+  const burst = [
+    { role: 'assistant', content: 'שלום' },
+    { role: 'user', content: 'אכלתי פיצה' },
+    { role: 'user', content: 'כמה מים לשתות?' },
+  ];
+  it('single reply stays one bubble', () => {
+    const b = _split('תשובה אחת רגילה', burst);
+    expect(b).toEqual([{ raw: 'תשובה אחת רגילה', quoteN: null }]);
+  });
+  it('splits on marker with per-bubble quotes, marker never in text', () => {
+    const b = _split(`⟦NW_RQ:2⟧על הפיצה, הכול טוב.${BUBBLE_MARKER}⟦NW_RQ:1⟧מים: 8 כוסות.`, burst);
+    expect(b).toEqual([
+      { raw: 'על הפיצה, הכול טוב.', quoteN: 2 },
+      { raw: 'מים: 8 כוסות.', quoteN: 1 },
+    ]);
+    for (const x of b) expect(x.raw).not.toMatch(/⟦|⟧/);
+  });
+  it('drops empty bubbles and caps at MAX_BUBBLES (overflow merged into last)', () => {
+    const t = ['א', '', 'ב', 'ג', 'ד', 'ה'].join(BUBBLE_MARKER);
+    const b = _split(t, burst);
+    expect(b).toHaveLength(MAX_BUBBLES);
+    expect(b[3]!.raw).toBe('ד\n\nה');
+  });
+  it('enforces quote policy per bubble and dedupes', () => {
+    const single = [{ role: 'user', content: 'היי' }];
+    expect(_split(`⟦NW_RQ:1⟧היי!${BUBBLE_MARKER}מה נשמע?`, single).map((x) => x.quoteN)).toEqual([null, null]);
+    expect(_split(`⟦NW_RQ:1⟧א${BUBBLE_MARKER}⟦NW_RQ:1⟧ב`, burst).map((x) => x.quoteN)).toEqual([1, null]);
+    expect(_split(`⟦NW_RQ:6⟧א`, burst)[0]!.quoteN).toBeNull();
+  });
+  it('detects pending next bubble while streaming, incl. partial marker', () => {
+    expect(_hasPending(`א${BUBBLE_MARKER}`)).toBe(true);
+    expect(_hasPending(`א${BUBBLE_MARKER}⟦NW_RQ:1⟧`)).toBe(true);
+    expect(_hasPending('א⟦NW_')).toBe(false);
+    expect(_hasPending(`א${BUBBLE_MARKER}ב`)).toBe(false);
+    expect(_split('אבג⟦NW_B')).toEqual([{ raw: 'אבג', quoteN: null }]);
+  });
+  it('strip turns bubble marker into paragraph break', () => {
+    expect(_strip(`א${BUBBLE_MARKER}⟦NW_RQ:1⟧ב`)).toBe('א\n\nב');
+  });
+  it('user-quoted note truncates and handles empty', () => {
+    expect(buildUserQuotedNote('')).toBeNull();
+    expect(buildUserQuotedNote('x'.repeat(200))!.length).toBeLessThan(200);
+  });
+});

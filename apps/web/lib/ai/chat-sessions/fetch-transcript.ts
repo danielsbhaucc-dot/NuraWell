@@ -39,7 +39,7 @@ export async function fetchChatSessionTranscript(
       return {
         role,
         ...(typeof row.id === 'string' ? { id: row.id } : {}),
-        ...(role === 'assistant' && typeof row.reply_to_message_id === 'string' ? { reply_to_id: row.reply_to_message_id } : {}),
+        ...((role === 'assistant' || role === 'user') && typeof row.reply_to_message_id === 'string' ? { reply_to_id: row.reply_to_message_id } : {}),
         content: String(row.content ?? '').trim(),
         created_at: row.created_at as string,
         ...(reaction ? { emoji_reaction: reaction } : {}),
