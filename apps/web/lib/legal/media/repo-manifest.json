@@ -154,12 +154,12 @@
    "subject": "feat(ai): Almog mentor, lesson feedback, streaming chat, and docs"
   },
   "last_commit": {
-   "sha": "02cc05d4a32e93ab9efc3e04a5a7e7ad9f10a484",
-   "date": "2026-10-20T18:11:41+03:00",
+   "sha": "76940adc619203d24119723cc6c0dc3472685d82",
+   "date": "2026-10-20T18:30:24+03:00",
    "author": "danielsbhaucc-dot",
-   "subject": "feat(almog): async post-send reply quality check + 'נערכה' label (flag ON) (#233)"
+   "subject": "Legal: daily anchor + OTS upgrade crons, append-only legal access log; accessible 'נערכה' badge (#243)"
   },
-  "commits": 117
+  "commits": 118
  },
  {
   "asset_key": "inline:apps/web/components/ai/DeletedMessageBubble.tsx#0",
@@ -319,12 +319,12 @@
    "subject": "feat(legal): cookie notice (jar art + forest-guard wink), designed panel, /cookies page (#219)"
   },
   "last_commit": {
-   "sha": "0f538f7a8aed82fe546a626df051ff359d9114ba",
-   "date": "2026-10-20T18:18:30+03:00",
+   "sha": "87128b55cf4ec3373e2c1e469e11fc22c77465fc",
+   "date": "2026-10-20T18:44:25+03:00",
    "author": "danielsbhaucc-dot",
-   "subject": "fix(cookies): hide a11y FAB while cookie panel modal is open (#232)"
+   "subject": "feat(cookies): dark-forest theme (opt3) + rotating 🍪 headlines (#238)"
   },
-  "commits": 3
+  "commits": 4
  },
  {
   "asset_key": "inline:apps/web/components/legal/v2/HeroArt.tsx#0",
@@ -489,6 +489,33 @@
    "date": "2026-10-12T13:31:48+03:00",
    "author": "danielsbhaucc-dot",
    "subject": "התוכנית שלך: עיצוב מחדש (v3) — hero, פוקוס יומי, אקורדיונים (#116)"
+  },
+  "commits": 1
+ },
+ {
+  "asset_key": "inline:apps/web/components/settings/PasskeyNudge.tsx#0",
+  "origin": "inline",
+  "kind": "illustration",
+  "path": "apps/web/components/settings/PasskeyNudge.tsx",
+  "title": "PasskeyNudge · SVG 1",
+  "mime": "image/svg+xml",
+  "sha256": "26aa025b285315ae085f209548d0abddcf5b9a75271f17c6e740352b4a72858b",
+  "content_b64": "PHN2ZyB2aWV3Qm94PSIwIDAgMTQ4IDE0OCIgY2xhc3NOYW1lPSJyZWxhdGl2ZSBoLWZ1bGwgdy1mdWxsIj4KICAgICAgICA8ZGVmcz4KICAgICAgICAgIDxsaW5lYXJHcmFkaWVudCBpZD0icGtGYWNlIiB4MT0iMCIgeTE9IjAiIHgyPSIxIiB5Mj0iMSI+CiAgICAgICAgICAgIDxzdG9wIG9mZnNldD0iMCIgc3RvcENvbG9yPSIjNUVFQUQ0IiAvPgogICAgICAgICAgICA8c3RvcCBvZmZzZXQ9IjEiIHN0b3BDb2xvcj0iIzEwQjk4MSIgLz4KICAgICAgICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgICAgICAgICA8bGluZWFyR3JhZGllbnQgaWQ9InBrR29sZCIgeDE9IjAiIHkxPSIwIiB4Mj0iMSIgeTI9IjEiPgogICAgICAgICAgICA8c3RvcCBvZmZzZXQ9IjAiIHN0b3BDb2xvcj0iI0Y2RDU4RSIgLz4KICAgICAgICAgICAgPHN0b3Agb2Zmc2V0PSIxIiBzdG9wQ29sb3I9IiNDODk3M0EiIC8+CiAgICAgICAgICA8L2xpbmVhckdyYWRpZW50PgogICAgICAgICAgPGNsaXBQYXRoIGlkPSJwa0NsaXAiPjxyZWN0IHg9IjMwIiB5PSIyNiIgd2lkdGg9Ijg4IiBoZWlnaHQ9Ijg4IiByeD0iMjYiIC8+PC9jbGlwUGF0aD4KICAgICAgICA8L2RlZnM+CiAgICAgICAgey8qIHNjYW4gZnJhbWUgY29ybmVycyAqL30KICAgICAgICA8ZyBjbGFzc05hbWU9InBrLWNvcm5lcnMiIGZpbGw9Im5vbmUiIHN0cm9rZT0idXJsKCNwa0dvbGQpIiBzdHJva2VXaWR0aD0iNCIgc3Ryb2tlTGluZWNhcD0icm91bmQiPgogICAgICAgICAgPHBhdGggZD0iTTMwIDQ4IFY0MCBhMTQgMTQgMCAwIDEgMTQgLTE0IEg1MiIgLz4KICAgICAgICAgIDxwYXRoIGQ9Ik05NiAyNiBIMTA0IGExNCAxNCAwIDAgMSAxNCAxNCBWNDgiIC8+CiAgICAgICAgICA8cGF0aCBkPSJNMTE4IDkyIFYxMDAgYTE0IDE0IDAgMCAxIC0xNCAxNCBIOTYiIC8+CiAgICAgICAgICA8cGF0aCBkPSJNNTIgMTE0IEg0NCBhMTQgMTQgMCAwIDEgLTE0IC0xNCBWOTIiIC8+CiAgICAgICAgPC9nPgogICAgICAgIHsvKiBmYWNlID0ga2V5IGJvdyAqL30KICAgICAgICA8ZyBjbGFzc05hbWU9InBrLWZhY2UiPgogICAgICAgICAgPGNpcmNsZSBjeD0iNzQiIGN5PSI3MCIgcj0iMjciIGZpbGw9InJnYmEoMTYsMTg1LDEyOSwwLjEyKSIgc3Ryb2tlPSJ1cmwoI3BrRmFjZSkiIHN0cm9rZVdpZHRoPSIzLjUiIC8+CiAgICAgICAgICA8Y2lyY2xlIGN4PSI2NC41IiBjeT0iNjUiIHI9IjMuMiIgZmlsbD0iI0E3RjNEMCIgLz4KICAgICAgICAgIDxjaXJjbGUgY3g9IjgzLjUiIGN5PSI2NSIgcj0iMy4yIiBmaWxsPSIjQTdGM0QwIiAvPgogICAgICAgICAgPHBhdGggZD0iTTYzIDc3IHExMSAxMCAyMiAwIiBmaWxsPSJub25lIiBzdHJva2U9IiNBN0YzRDAiIHN0cm9rZVdpZHRoPSIzLjIiIHN0cm9rZUxpbmVjYXA9InJvdW5kIiAvPgogICAgICAgIDwvZz4KICAgICAgICB7Lyoga2V5IHNoYWZ0ICsgdGVldGggKGdvbGQpLCBoYW5naW5nIGZyb20gdGhlIGZhY2UgKi99CiAgICAgICAgPGcgY2xhc3NOYW1lPSJway1rZXkiIHN0cm9rZT0iI0Q5QUU1NyIgc3Ryb2tlV2lkdGg9IjQiIHN0cm9rZUxpbmVjYXA9InJvdW5kIiBmaWxsPSJub25lIj4KICAgICAgICAgIDxwYXRoIGQ9Ik03NCA5NyBWMTMyIiAvPgogICAgICAgICAgPHBhdGggZD0iTTc0IDExOCBIODQiIC8+CiAgICAgICAgICA8cGF0aCBkPSJNNzQgMTI3IEg4MSIgLz4KICAgICAgICA8L2c+CiAgICAgICAgPGcgY2xpcFBhdGg9InVybCgjcGtDbGlwKSI+CiAgICAgICAgICA8cmVjdCBjbGFzc05hbWU9InBrLXNjYW4iIHg9IjMwIiB5PSIyNiIgd2lkdGg9Ijg4IiBoZWlnaHQ9IjMiIHJ4PSIxLjUiIGZpbGw9IiM1RUVBRDQiIG9wYWNpdHk9IjAuODUiIC8+CiAgICAgICAgPC9nPgogICAgICAgIDxjaXJjbGUgY2xhc3NOYW1lPSJway1zcGFyayIgY3g9IjEyMCIgY3k9IjIyIiByPSIzIiBmaWxsPSIjRjZENThFIiAvPgogICAgICAgIDxjaXJjbGUgY2xhc3NOYW1lPSJway1zcGFyayBway1zcGFyazIiIGN4PSIyNCIgY3k9IjEyMCIgcj0iMi4yIiBmaWxsPSIjRjZENThFIiAvPgogICAgICA8L3N2Zz4=",
+  "usages": [
+   "components/settings/PasskeyNudge.tsx",
+   "/ (layout)"
+  ],
+  "first_commit": {
+   "sha": "d7093232d716d5bb2fcb643eb31379baa493981c",
+   "date": "2026-10-20T18:39:46+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "Post-login Face ID offer sheet + privacy biometric line (#242)"
+  },
+  "last_commit": {
+   "sha": "d7093232d716d5bb2fcb643eb31379baa493981c",
+   "date": "2026-10-20T18:39:46+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "Post-login Face ID offer sheet + privacy biometric line (#242)"
   },
   "commits": 1
  },
@@ -1049,6 +1076,7 @@
   "sha256": "a2b1ba14061537d3c4a2cf5582a2f6a26b5d3f10d75e7b8094de5a5343824f96",
   "content_b64": null,
   "usages": [
+   "components/legal/cookies/CookieNotice.tsx",
    "components/legal/cookies/cookie-notice.css"
   ],
   "first_commit": {
