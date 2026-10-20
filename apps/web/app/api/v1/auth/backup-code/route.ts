@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { consumeRateLimit, rateLimitResponse } from '@/lib/api/rate-limit';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { redeemBackupCode, resolveRp } from '@/lib/auth/passkeys';
+import { backupCodesAllowed, redeemBackupCode, resolveRp } from '@/lib/auth/passkeys';
 import { issueSessionForUser } from '@/lib/auth/issue-session';
 import { clientIp, json, readBody, sleepUntil } from '@/lib/auth/http';
 
@@ -27,7 +27,8 @@ export async function POST(req: Request): Promise<Response> {
   const db = createAdminClient();
   const { data: uid } = await db.rpc('auth_user_id_by_email', { p_email: email });
   let result: Response;
-  if (typeof uid !== 'string') {
+  if (typeof uid !== 'string' || !(await backupCodesAllowed(db, uid))) {
+    // non-admins: identical generic failure, codes are never checked (no hint whether any exist)
     result = json({ error: FAIL }, 401);
   } else {
     const r = await redeemBackupCode(db, uid, code);

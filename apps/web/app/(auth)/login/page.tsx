@@ -465,6 +465,7 @@ function LoginFormContent() {
                   כניסה עם Face ID או טביעת אצבע
                 </button>
               ) : null}
+              {isOpsHost ? (
               <button
                 type="button"
                 onClick={() => {
@@ -472,10 +473,11 @@ function LoginFormContent() {
                   setBackupError(null);
                   setBackupOpen(true);
                 }}
-                className={`w-full text-sm font-semibold underline-offset-4 hover:underline ${isDarkUi ? 'text-emerald-100/80' : 'text-gray-500'}`}
+                className={`w-full text-xs font-medium opacity-70 underline-offset-4 hover:underline ${isDarkUi ? 'text-emerald-100/80' : 'text-gray-500'}`}
               >
-                אין גישה למכשיר? כניסה עם קוד גיבוי
+                קוד גיבוי
               </button>
+              ) : null}
             </div>
 
             {!isOpsHost && <div className="mt-5 text-center">

@@ -8,7 +8,7 @@ import { ToastContainer, useToast } from '@/components/shared/Toast';
 import { createClient } from '@/lib/supabase/client';
 
 type Passkey = { id: string; label: string; device_type: string; backed_up: boolean; created_at: string; last_used_at: string | null };
-type State = { passkeys: Passkey[]; backup_codes_left: number; fresh: boolean; device_ok: boolean };
+type State = { passkeys: Passkey[]; backup_codes_left: number; backup_codes_enabled?: boolean; fresh: boolean; device_ok: boolean };
 
 const API = '/api/v1/account/security';
 const fmt = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString('he-IL', { day: 'numeric', month: 'short', year: 'numeric' }) : 'עוד לא');
@@ -250,6 +250,7 @@ export function SecuritySettingsClient() {
             )}
           </section>
 
+          {state.backup_codes_enabled ? (
           <section className="crystal-surface rounded-2xl p-5 space-y-4" aria-labelledby="bc-h">
             <div className="flex items-start gap-3">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-amber-100 to-teal-100 ring-1 ring-amber-300/60">
@@ -281,6 +282,7 @@ export function SecuritySettingsClient() {
               {state.backup_codes_left > 0 ? 'יצירת קודים חדשים' : 'יצירת קודי גיבוי'}
             </button>
           </section>
+          ) : null}
         </>
       )}
 

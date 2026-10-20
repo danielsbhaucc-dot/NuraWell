@@ -290,6 +290,12 @@ export async function revokePasskey(db: SupabaseClient, userId: string, id: stri
 }
 
 /* ───────────── backup codes ───────────── */
+
+/** Backup codes are an admin-only factor (Daniel, Oct 2026). Regular users sign in with passkey or email. */
+export async function backupCodesAllowed(db: SupabaseClient, userId: string): Promise<boolean> {
+  const { data } = await db.from('profiles').select('role').eq('id', userId).maybeSingle();
+  return (data as { role?: string } | null)?.role === 'admin';
+}
 const ALPHA = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 export function newBackupCode(): string {
   let s = '';
