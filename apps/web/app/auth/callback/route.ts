@@ -1,3 +1,4 @@
+import { limitIp } from '@/lib/ceo/stepup-http';
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { scheduleAlmogKickoff } from '@/lib/auth/schedule-almog-kickoff';
@@ -7,7 +8,10 @@ import { sendWelcomeDolevEmail } from '@/lib/auth/send-welcome-dolev-email';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+// skipcq: JS-0067, JS-R1005 -- ES module export (Next.js route handler), not a global
 export async function GET(request: Request) {
+  const limited = await limitIp(request, 'auth-callback', 30);
+  if (limited) return limited;
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get('code');
   const tokenHash = searchParams.get('token_hash');

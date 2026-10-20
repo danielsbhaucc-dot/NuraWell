@@ -1,3 +1,4 @@
+import { limitIp } from '@/lib/ceo/stepup-http';
 import { NextResponse } from 'next/server';
 import { requireApiAdmin } from '@/lib/api/route-guards';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -22,7 +23,10 @@ function cookieOf(req: Request, name: string): string | null {
  * Admin on a TRUSTED main-site device → one-time 60 s handoff URL to the Ops host.
  * Untrusted device → 403 device_unverified (the page sends the admin to /device-check). Non-admin → 404.
  */
+// skipcq: JS-0067, JS-R1005 -- ES module export (Next.js route handler), not a global
 export async function POST(request: Request) {
+  const limited = await limitIp(request, 'ops-session-ticket', 20);
+  if (limited) return limited;
   const auth = await requireApiAdmin(request, { skipDeviceGate: true });
   if (!auth.ok) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   const db = createAdminClient();

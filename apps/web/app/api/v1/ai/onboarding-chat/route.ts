@@ -1,3 +1,4 @@
+import { limitIp } from '@/lib/ceo/stepup-http';
 import { sealProfilePatch } from '@/lib/crypto/pii-seal';
 import { decProfileResult } from '@/lib/crypto/pii-fields';
 import { enterAiUsage } from '@/lib/ai/usage-meter';
@@ -80,7 +81,10 @@ function publicExtractedToProfilePatch(e: OnboardingExtracted): Record<string, u
   return patch;
 }
 
+// skipcq: JS-0067, JS-R1005 -- ES module export (Next.js route handler), not a global
 export async function POST(request: Request) {
+  const limited = await limitIp(request, 'ai-onboarding-chat', 60);
+  if (limited) return limited;
   try {
     const auth = await requireApiSession(request);
     if (!auth.ok) return auth.response;
