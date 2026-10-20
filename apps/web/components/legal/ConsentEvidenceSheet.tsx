@@ -32,51 +32,87 @@ type Props = {
   dismissLabel?: string;
 };
 
-export const MAX_SHEET_SEGMENTS = 4;
-const SEG_H = 1600; // px per segment at 1080 wide
+export const MAX_SHEET_SEGMENTS = 6;
+/** Segment height as a multiple of the capture width: tall strips so the PDF can lay 3 side by side, full page height. */
+const SEG_ASPECT = 2.9;
+const CAP_W = 1080;
 
 function encode(c: HTMLCanvasElement): string {
-  for (const q of [0.8, 0.65, 0.5]) {
+  for (const q of [0.82, 0.68, 0.55]) {
     const url = c.toDataURL('image/webp', q);
-    if (!url.startsWith('data:image/webp')) return c.toDataURL('image/jpeg', 0.7);
-    if (url.length * 0.75 < 140_000 || q === 0.5) return url;
+    if (!url.startsWith('data:image/webp')) return c.toDataURL('image/jpeg', 0.72);
+    if (url.length * 0.75 < 200_000 || q === 0.55) return url;
   }
-  return c.toDataURL('image/webp', 0.5);
+  return c.toDataURL('image/webp', 0.55);
+}
+
+/**
+ * Temporarily un-clips the live sheet so the WHOLE content (top to the checkbox + typed word + buttons)
+ * is laid out at its natural height with no scrollbars: removes max-height/overflow on the sheet and on
+ * every scrollable descendant, hides scrollbars, and pins the width so nothing wraps differently.
+ * Returns a restore function. This is the root-cause fix for viewport-cropped captures with scrollbars.
+ */
+export function expandForCapture(node: HTMLElement): () => void {
+  const touched: Array<[HTMLElement, string | null]> = [];
+  const set = (el: HTMLElement, css: string) => {
+    touched.push([el, el.getAttribute('style')]);
+    el.setAttribute('style', `${el.getAttribute('style') ?? ''};${css}`);
+  };
+  const width = node.getBoundingClientRect().width;
+  set(node, `max-height:none!important;height:auto!important;overflow:visible!important;width:${width}px!important;scrollbar-width:none!important`);
+  node.querySelectorAll<HTMLElement>('*').forEach((el) => {
+    const cs = getComputedStyle(el);
+    if (/(auto|scroll|hidden)/.test(cs.overflowY + cs.overflowX) && el.scrollHeight > el.clientHeight + 1) {
+      set(el, 'max-height:none!important;height:auto!important;overflow:visible!important;scrollbar-width:none!important');
+    }
+  });
+  node.setAttribute('data-capturing', '1');
+  return () => {
+    node.removeAttribute('data-capturing');
+    for (const [el, st] of touched.reverse()) (st == null ? el.removeAttribute('style') : el.setAttribute('style', st));
+  };
 }
 
 /**
  * Captures the WHOLE sheet top to bottom (including the checkbox + typed word in their final state),
- * not just the visible scroll area. Tall sheets are split into ordered segments (≤4, ≤1600px each at
- * 1080px wide); each segment is hashed and signed server-side in order. Best-effort.
+ * not just the visible scroll area. Tall sheets are split into ordered strips (≤6, each ≤2.9× the width);
+ * each strip is hashed and signed server-side exactly as stored. Best-effort.
  */
-async function captureSheet(node: HTMLElement): Promise<string[]> {
+export async function captureSheet(node: HTMLElement): Promise<string[]> {
+  const restore = expandForCapture(node);
   try {
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
     const { toCanvas } = await import('html-to-image');
-    const fullH = Math.max(node.scrollHeight, node.offsetHeight);
-    const ratio = Math.min(2, 1080 / Math.max(1, node.offsetWidth));
+    const w0 = Math.ceil(node.getBoundingClientRect().width);
+    const fullH = Math.ceil(Math.max(node.scrollHeight, node.getBoundingClientRect().height));
+    const ratio = Math.min(2.5, CAP_W / Math.max(1, w0));
     const canvas = await toCanvas(node, {
       pixelRatio: ratio,
       cacheBust: true,
       backgroundColor: '#eef3e4',
+      width: w0,
       height: fullH,
-      style: { maxHeight: 'none', height: `${fullH}px`, overflow: 'visible' },
+      canvasWidth: w0,
+      canvasHeight: fullH,
+      style: { maxHeight: 'none', height: `${fullH}px`, overflow: 'visible', transform: 'none', margin: '0' },
     });
-    const scale = canvas.width > 1080 ? 1080 / canvas.width : 1;
-    const w = Math.round(canvas.width * scale);
-    const totalH = Math.round(canvas.height * scale);
-    const n = Math.min(MAX_SHEET_SEGMENTS, Math.max(1, Math.ceil(totalH / SEG_H)));
+    const w = canvas.width;
+    const totalH = canvas.height;
+    const n = Math.min(MAX_SHEET_SEGMENTS, Math.max(1, Math.ceil(totalH / (w * SEG_ASPECT))));
     const segH = Math.ceil(totalH / n);
     const out: string[] = [];
     for (let i = 0; i < n; i++) {
       const seg = document.createElement('canvas');
       seg.width = w;
       seg.height = Math.min(segH, totalH - i * segH);
-      seg.getContext('2d')?.drawImage(canvas, 0, (i * segH) / scale, canvas.width, seg.height / scale, 0, 0, w, seg.height);
+      seg.getContext('2d')?.drawImage(canvas, 0, i * segH, w, seg.height, 0, 0, w, seg.height);
       out.push(encode(seg));
     }
     return out;
   } catch {
     return [];
+  } finally {
+    restore();
   }
 }
 
@@ -170,7 +206,7 @@ export function ConsentEvidenceSheet({ open, action, gender, onClose, mode = 'su
         ref={panel}
         dir="rtl"
         data-testid="consent-evidence-sheet"
-        className="relative max-h-[86dvh] overflow-y-auto overscroll-contain bg-[linear-gradient(180deg,rgba(238,243,228,0.96),rgba(231,238,220,0.95)_60%,rgba(243,236,220,0.96))] px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-2.5 text-right font-[family-name:var(--font-assistant,inherit)] text-slate-800 backdrop-blur-2xl backdrop-saturate-150 contrast-more:bg-glass-hi sm:px-6 sm:pt-5"
+        className="relative max-h-[86dvh] overflow-y-auto overscroll-contain [&[data-capturing]::-webkit-scrollbar]:hidden [&[data-capturing]]:[scrollbar-width:none] bg-[linear-gradient(180deg,rgba(238,243,228,0.96),rgba(231,238,220,0.95)_60%,rgba(243,236,220,0.96))] px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-2.5 text-right font-[family-name:var(--font-assistant,inherit)] text-slate-800 backdrop-blur-2xl backdrop-saturate-150 contrast-more:bg-glass-hi sm:px-6 sm:pt-5"
       >
         <div className="mx-auto mb-4 h-[5px] w-9 rounded-full bg-emerald-950/20 contrast-more:bg-slate-700 sm:hidden" aria-hidden />
         <div className="flex flex-col items-center px-2 text-center">

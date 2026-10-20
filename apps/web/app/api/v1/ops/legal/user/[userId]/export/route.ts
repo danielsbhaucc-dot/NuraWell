@@ -4,6 +4,7 @@ import { requireApiAdmin } from '@/lib/api/route-guards';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { auditLegalAccess } from '@/lib/legal/evidence-verify';
 import { buildEvidencePackage } from '@/lib/legal/evidence-export';
+import { runPreExportCheck } from '@/lib/legal/preexport-check';
 import { contentDisposition, storeAndLogExport } from '@/lib/legal/export-store';
 
 export const runtime = 'nodejs';
@@ -17,9 +18,23 @@ export async function GET(request: Request, ctx: { params: Promise<{ userId: str
   const { userId } = await ctx.params;
   if (!z.string().uuid().safeParse(userId).success) return NextResponse.json({ error: 'bad_id' }, { status: 400 });
   const admin = createAdminClient();
-  await auditLegalAccess(admin, auth.user.id, 'legal_export_package', { user_id: userId });
-  const pkg = await buildEvidencePackage(admin, userId, { id: auth.user.id, label: 'דניאל רחמן (מנהל המערכת)' });
-  const pdfOnly = new URL(request.url).searchParams.get('format') === 'pdf';
+  const url = new URL(request.url);
+  // Export is blocked while critical pre-export items are open, unless an explicit, logged override is given.
+  const pc = await runPreExportCheck(admin, userId);
+  const reason = (url.searchParams.get('override_reason') ?? '').trim().slice(0, 500);
+  const crit = pc.items.filter((i) => i.severity === 'critical');
+  let override: { reason: string; by: string; at: string; items: string[] } | undefined;
+  if (crit.length) {
+    if (url.searchParams.get('override') !== '1' || reason.length < 10) {
+      await auditLegalAccess(admin, auth.user.id, 'legal_export_blocked', { user_id: userId, critical: crit.map((i) => i.key) });
+      return NextResponse.json({ error: 'precheck_blocked', critical: crit.map((i) => ({ key: i.key, title: i.title })) }, { status: 409, headers: { 'Cache-Control': 'no-store' } });
+    }
+    override = { reason, by: 'דניאל רחמן (מנהל המערכת)', at: new Date().toISOString(), items: crit.map((i) => i.title) };
+    await auditLegalAccess(admin, auth.user.id, 'legal_export_override', { user_id: userId, critical: crit.map((i) => i.key), reason });
+  }
+  await auditLegalAccess(admin, auth.user.id, 'legal_export_package', { user_id: userId, override: !!override });
+  const pkg = await buildEvidencePackage(admin, userId, { id: auth.user.id, label: 'דניאל רחמן (מנהל המערכת)' }, { override });
+  const pdfOnly = url.searchParams.get('format') === 'pdf';
   const out = pdfOnly ? pkg.pdf : pkg.zip;
   const logged = await storeAndLogExport(admin, { actorId: auth.user.id, kind: 'consent', subject: userId, caseRef: pkg.caseRef, format: pdfOnly ? 'pdf' : 'zip', bytes: out, files: pdfOnly ? undefined : pkg.files, displayName: (pkg as { displayName?: string | null }).displayName ?? null, recordHashes: pkg.recordHashes, generatedAt: pkg.generatedAt });
   const body = new Uint8Array(logged.bytes);

@@ -147,6 +147,8 @@ export type PdfInput = {
   tsaName?: string;
   /** Provider log pulls attached to this case, if any (on-demand). Anything not 'ok' is flagged. */
   providerLogs?: Array<{ provider: string; status: string; note?: string }>;
+  /** Set when the admin exported despite open critical pre-export items. Always disclosed on page 1. */
+  override?: { reason: string; by: string; at: string; items: string[] };
 };
 
 export type Issue = { level: 'fail' | 'warn'; key: string; title: string; meaning: string; events: number[] };
@@ -405,41 +407,79 @@ export class Writer {
     this.y -= 4;
   }
 
-  /** Up to 3 screenshot segments per row, each with index, verification code, short hash, match badge. */
-  async segmentGrid(doc: PDFDocument, segs: Array<{ i: number; sha256: string; computed: string | null | undefined; png: Buffer | null }>) {
+  /**
+   * Full-sheet capture, laid out large: up to 3 strips side by side per page, uniformly scaled so the
+   * row fills the page width (or the page height, whichever binds). The heading is always kept on the
+   * same page as the first row (no orphaned heading). Each strip keeps "חלק X מתוך N", its verification
+   * code, short hash and a match badge. Hashes are computed on the stored files; the PDF only displays them scaled.
+   */
+  async segmentGrid(doc: PDFDocument, segs: Array<{ i: number; sha256: string; computed: string | null | undefined; png: Buffer | null }>, heading?: string) {
     const gap = 10;
-    const cols = 3;
-    const cw = (W - 2 * M - gap * (cols - 1)) / cols;
+    const pad = 5;
+    const labelH = 56;
+    const headH = heading ? 30 : 0;
+    const noteH = 26;
+    const fullTop = H - 52;
+    const bottom = 50;
     const total = segs.length;
-    for (let r = 0; r < segs.length; r += cols) {
-      const row = segs.slice(r, r + cols);
-      const imgs = await Promise.all(row.map(async (sg) => (sg.png ? doc.embedPng(sg.png) : null)));
-      const hs = imgs.map((im) => (im ? Math.min(250, (im.height * cw) / im.width) : 40));
-      const rowH = Math.max(...hs) + 52;
-      this.ensure(rowH);
-      row.forEach((sg, k) => {
-        const xr = W - M - k * (cw + gap);
-        const x = xr - cw;
+    const embedOne = async (b: Buffer) => {
+      const isPng = b.length > 4 && b[0] === 0x89 && b[1] === 0x50;
+      const isJpg = b.length > 2 && b[0] === 0xff && b[1] === 0xd8;
+      if (isPng) return doc.embedPng(b);
+      if (isJpg) return doc.embedJpg(b);
+      const sharp = (await import('sharp')).default;
+      return doc.embedPng(await sharp(b).png().toBuffer());
+    };
+    const imgs = await Promise.all(segs.map(async (sg) => (sg.png ? embedOne(sg.png).catch(() => null) : null)));
+    for (let r = 0; r < total; r += 3) {
+      const idx = [0, 1, 2].map((k) => r + k).filter((k) => k < total);
+      const cols = idx.length === 1 && total > 1 ? Math.min(3, total) : idx.length;
+      const colW = (W - 2 * M - gap * (cols - 1)) / cols;
+      const first = r === 0;
+      const last = r + 3 >= total;
+      const reserve = (first ? headH : 0) + labelH + (last ? noteH : 0) + 2 * pad;
+      const scaleFor = (avail: number) =>
+        Math.min(...idx.map((k) => { const im = imgs[k]; return im ? Math.min((colW - 2 * pad) / im.width, avail / im.height) : Infinity; }));
+      const fullScale = scaleFor(fullTop - bottom - reserve);
+      let scale = scaleFor(this.y - bottom - reserve);
+      // Use the rest of this page only if it costs little legibility; otherwise start a fresh page.
+      if (!(scale >= fullScale * 0.8) || !isFinite(scale)) {
+        this.newPage();
+        scale = fullScale;
+      }
+      if (!isFinite(scale)) scale = 1;
+      if (first && heading) this.h2(heading);
+      const imgH = Math.max(40, ...idx.map((k) => (imgs[k] ? imgs[k]!.height * scale : 40)));
+      const cardWs = idx.map((k) => (imgs[k] ? imgs[k]!.width * scale + 2 * pad : colW));
+      const rowW = cardWs.reduce((a, b) => a + b, 0) + gap * (idx.length - 1);
+      let xr = W - M - Math.max(0, (W - 2 * M - rowW) / 2);
+      const top = this.y + 6;
+      const cardH = imgH + 2 * pad + labelH;
+      idx.forEach((k, j) => {
+        const sg = segs[k]!;
         const im = imgs[k];
-        const h = hs[k]!;
-        this.page.drawRectangle({ x, y: this.y - rowH + 6, width: cw, height: rowH, color: C.card, borderColor: C.line, borderWidth: 0.4 });
+        const cw = cardWs[j]!;
+        const x = xr - cw;
+        this.page.drawRectangle({ x, y: top - cardH, width: cw, height: cardH, color: C.card, borderColor: C.line, borderWidth: 0.4 });
         if (im) {
-          const iw = Math.min(cw - 10, (im.width * h) / im.height);
-          this.page.drawImage(im, { x: x + (cw - iw) / 2, y: this.y - h, width: iw, height: h - 4 });
-          this.page.drawRectangle({ x: x + (cw - iw) / 2, y: this.y - h, width: iw, height: h - 4, borderColor: C.gold, borderWidth: 0.6 });
-        } else this.text('הקובץ לא נטען', { size: 8.5, color: C.rose, y: this.y - 20, xRight: xr - 6 });
+          const iw = im.width * scale;
+          const ih = im.height * scale;
+          this.page.drawImage(im, { x: x + pad, y: top - pad - ih, width: iw, height: ih });
+          this.page.drawRectangle({ x: x + pad, y: top - pad - ih, width: iw, height: ih, borderColor: C.gold, borderWidth: 0.6 });
+        } else this.text('הקובץ לא נטען', { size: 8.5, color: C.rose, y: top - 24, xRight: xr - 8 });
+        const hash = sg.computed ?? sg.sha256;
         const ok = !!sg.computed && sg.computed === sg.sha256;
-        const yy = this.y - Math.max(...hs) - 8;
-        this.text(`חלק ${sg.i} מתוך ${total}`, { size: 8.5, font: this.f.bold, color: C.ink, y: yy, xRight: xr - 6 });
-        const code = verifyCode(sg.computed ?? sg.sha256);
-        this.page.drawText(code, { x: x + 6, y: yy, size: 7.6, font: this.f.mono, color: C.emerald });
-        const short = `${(sg.computed ?? sg.sha256).slice(0, 16)}...${(sg.computed ?? sg.sha256).slice(-8)}`;
-        this.page.drawText(short, { x: x + 6, y: yy - 12, size: 6.6, font: this.f.mono, color: C.muted });
-        this.badge(sg.computed === undefined ? null : ok, ok ? 'זהה לחתום' : 'לא זהה', xr - 6, yy - 30);
+        const yy = top - 2 * pad - imgH - 12;
+        this.text(`חלק ${sg.i} מתוך ${total}`, { size: 9, font: this.f.bold, color: C.ink, y: yy, xRight: xr - 7 });
+        this.page.drawText(verifyCode(hash), { x: x + 7, y: yy, size: 7.8, font: this.f.mono, color: C.emerald });
+        const short = cw > 150 ? `${hash.slice(0, 16)}...${hash.slice(-8)}` : `${hash.slice(0, 10)}...${hash.slice(-6)}`;
+        this.page.drawText(short, { x: x + 7, y: yy - 13, size: 6.6, font: this.f.mono, color: C.muted });
+        this.badge(sg.computed === undefined ? null : ok, ok ? 'זהה לחתום' : 'לא זהה', xr - 7, yy - 32);
+        xr -= cw + gap;
       });
-      this.y -= rowH + 6;
+      this.y = top - cardH - 12;
     }
-    this.para('קוד האימות (NW-...) הוא 12 התווים הראשונים של גיבוב SHA-256 של הקובץ. הגיבוב המלא נעול ברשומה החתומה (payload.json, השדות screenshot_sha256 ו־screenshot_segments).', { size: 8, color: C.muted, gap: 4 });
+    this.para('קוד האימות (NW-...) הוא 12 התווים הראשונים של גיבוב SHA-256 של הקובץ. הגיבוב המלא נעול ברשומה החתומה (payload.json, השדות screenshot_sha256 ו־screenshot_segments). הגיבוב מחושב על הקובץ השמור עצמו; בתוך המסמך התמונה רק מוצגת בגודל מותאם, בלי שינוי תוכן.', { size: 8, color: C.muted, gap: 4 });
   }
 
   image(img: PDFImage, maxW: number, maxH: number) {
@@ -489,6 +529,12 @@ export async function buildEvidencePdf(input: PdfInput): Promise<Buffer> {
   w.badge(!failed, !failed ? (issues.length ? 'בדיקת השלמות עברה, עם הערות (ראו למטה)' : 'בדיקת שלמות מלאה עברה בהצלחה') : 'נמצאו כשלים בבדיקת השלמות (ראו למטה)', W - M, w.y);
   w.y -= 30;
   if (issues.length) w.redFlags(issues, failed);
+  if (input.override) {
+    w.para('התיק הופק למרות כשלים חמורים פתוחים בבדיקה שלפני ההפקה (עקיפה מתועדת)', { size: 10.5, font: f.bold, color: C.rose, gap: 2 });
+    w.para(`מי אישר: ${input.override.by} · מתי: ${fmt(input.override.at)}`, { size: 9, gap: 1 });
+    w.para(`הסיבה שנרשמה: ${input.override.reason}`, { size: 9, gap: 1 });
+    w.para(`הכשלים שהיו פתוחים: ${input.override.items.join(' · ')}`, { size: 9, gap: 8 });
+  }
   w.kv([
     ['מספר תיק', input.caseRef, 'ltr'],
     ['הופק על ידי', input.generatedBy],
@@ -539,8 +585,7 @@ export async function buildEvidencePdf(input: PdfInput): Promise<Buffer> {
     w.divider();
     if (e.screenshotPng) {
       const segs = [{ i: 1, sha256: e.screenshotSha ?? '', computed: e.screenshotShaComputed ?? null, png: e.screenshotPng }, ...(e.screenshotSegments ?? [])];
-      w.h2(segs.length > 1 ? `צילום החלון המלא (${segs.length} חלקים, לפי הסדר)` : 'צילום החלון כפי שנלכד במכשיר');
-      await w.segmentGrid(doc, segs);
+      await w.segmentGrid(doc, segs, segs.length > 1 ? `צילום החלון המלא (${segs.length} חלקים, לפי הסדר)` : 'צילום החלון כפי שנלכד במכשיר');
     } else if (e.screenshotSha) {
       w.para('לרשומה זו נשמר צילום, אך הוא לא נטען בעת ההפקה.', { size: 9, color: C.rose });
     } else {
