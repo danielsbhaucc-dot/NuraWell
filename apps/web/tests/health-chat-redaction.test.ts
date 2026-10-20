@@ -24,8 +24,8 @@ describe('Almog redaction reply', () => {
   it('is gendered, never echoes content, does not pressure', () => {
     const f = almogRedactionReply('female');
     const m = almogRedactionReply('male');
-    expect(f).toContain('תרצי');
-    expect(m).toContain('תרצה');
+    expect(f).toContain('ספרי');
+    expect(m).toContain('ספר לי');
     for (const r of [f, m, almogRedactionReply(null)]) {
       expect(r).toContain('נמחקה');
       expect(r).not.toMatch(/93|קילו|סוכרת/);
