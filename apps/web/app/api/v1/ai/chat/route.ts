@@ -185,6 +185,14 @@ import { applyGuideAccessFromSignals } from '../../../../../lib/ai/chat-guide-ac
 import { fetchUserGuideSummaries } from '../../../../../lib/guides/fetch-user-guides';
 import { formatGuidesStateForAi, formatGuideCompanionForAi } from '../../../../../lib/guides/progress';
 import { createAdminClient } from '../../../../../lib/supabase/admin';
+import { healthConsentStatus } from '../../../../../lib/privacy/health-consent';
+import {
+  HEALTH_CONSENT_OFF_PROMPT,
+  REDACTED_CONTENT,
+  isHealthChatMessage,
+  respondWithHealthRedaction,
+  sanitizeIncomingMessages,
+} from '../../../../../lib/privacy/health-chat-redaction';
 import { formatGuideRulesForAi, readGuideRules } from '../../../../../lib/guides/guide-rules';
 import {
   fetchTodayChatTurns,
@@ -2505,7 +2513,8 @@ async function handleChatPost(request: Request) {
   }
   stage = 'body_ok';
 
-  const { messages, user_id: bodyUserId } = parsed.data;
+  let { messages } = parsed.data;
+  const { user_id: bodyUserId } = parsed.data;
 
   /**
    * ברירת מחדל Terra; Llama 4 (Groq/OpenRouter) בוחר כותב אחרי הנתב.
@@ -2526,6 +2535,27 @@ async function handleChatPost(request: Request) {
   if (!lastUserText) {
     console.error('[ai/chat]', { debug_id: debugId, stage: 'empty_message' });
     return new Response(JSON.stringify({ error: 'Empty user message' }), { status: 400 });
+  }
+
+  /**
+   * Health-consent hard gate — runs before ANY use of the text (router, embeddings, models,
+   * logs, persistence). Without an active grant (withdrawn / legacy / lookup error) health
+   * content is never stored or forwarded: only a placeholder row remains.
+   */
+  const healthConsentOff = (await healthConsentStatus(user.id)) !== 'granted';
+  if (healthConsentOff) {
+    messages = sanitizeIncomingMessages(messages as never).messages as typeof messages;
+    if (isHealthChatMessage(lastUserText) && !parsed.data.resume_assistant) {
+      return respondWithHealthRedaction({
+        supabase,
+        admin: createAdminClient(),
+        userId: user.id,
+        sessionId: parsed.data.session_id ?? crypto.randomUUID(),
+        debugId,
+        ensureSession: ensureChatSession,
+        insert: insertAiInteraction,
+      });
+    }
   }
   /** ALMOG_VOICE: one register per user, persisted & derived from their own messages (sticky) */
   const almogRegisterPromise = import('../../../../../lib/ai/almog-register').then(({ resolveAlmogRegister }) =>
@@ -3656,6 +3686,7 @@ async function handleChatPost(request: Request) {
     }
     const previousReactionBlock = buildPreviousReactionPromptBlock(dbTurns ?? [], lastUserText);
     const dynamicSystemPrompt = [
+      ...(healthConsentOff ? [HEALTH_CONSENT_OFF_PROMPT] : []),
       '— מה שידוע לך על השיחה הזו —',
       writerPersona,
       // continuityAnchor / freshSessionLine already go in turnStance below (were sent twice)
