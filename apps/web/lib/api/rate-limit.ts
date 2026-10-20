@@ -58,7 +58,7 @@ function isUpstashRedisConfigured(): boolean {
  * INCR+EXPIRE atomic לתוך Upstash Redis REST. שורד restart של edge instance ומכסה
  * את כל ה-instances ביחד.
  */
-async function checkUpstashRedis(input: RateLimitInput, now: number): Promise<RateLimitResult> {
+async function checkUpstashRedis(input: RateLimitInput, now: number): Promise<RateLimitResult | null> {
   const url = process.env.UPSTASH_REDIS_REST_URL!.trim().replace(/\/+$/, '');
   const token = process.env.UPSTASH_REDIS_REST_TOKEN!.trim();
   const bucket = Math.floor(now / 1000 / input.windowSeconds);
@@ -93,20 +93,8 @@ async function checkUpstashRedis(input: RateLimitInput, now: number): Promise<Ra
       count = first.result;
     }
   } catch {
-    if (process.env.NODE_ENV === 'production') {
-      return {
-        ok: false,
-        limit: input.limit,
-        remaining: 0,
-        resetAt,
-      };
-    }
-    return {
-      ok: true,
-      limit: input.limit,
-      remaining: input.limit,
-      resetAt,
-    };
+    // Redis down → fail over to Postgres/memory instead of blocking all traffic.
+    return null;
   }
 
   const remaining = Math.max(0, input.limit - count);
@@ -217,13 +205,58 @@ async function logLimitHit(input: RateLimitInput, result: RateLimitResult): Prom
 
 // skipcq: JS-0067, JS-R1005 -- module-scoped (ES module)
 async function consumeRaw(input: RateLimitInput, now: number): Promise<RateLimitResult> {
-  if (isUpstashRedisConfigured()) return checkUpstashRedis(input, now);
+  if (isUpstashRedisConfigured()) {
+    const redisResult = await checkUpstashRedis(input, now);
+    if (redisResult) return redisResult;
+    void logFallback('redis', input.namespace, now);
+  }
   const cfg = supabaseRest();
   if (cfg) {
     const pgResult = await checkPostgres(input, now, cfg);
     if (pgResult) return pgResult;
+    void logFallback('postgres', input.namespace, now);
   }
   return checkMemory(input, now);
+}
+
+const FALLBACK_LOG_INTERVAL_MS = 5 * 60_000;
+const FALLBACK_SPIKE_THRESHOLD = 50;
+const fallbackState = { windowStart: 0, count: 0, lastLoggedAt: 0, spikeLogged: false };
+
+/**
+ * Distributed limiter failed and we degraded. Throttled audit entry (≤1 per 5 min per
+ * instance) so it is visible in the security log; a separate high-severity alert when
+ * failures spike inside one window.
+ */
+// skipcq: JS-0067, JS-R1005 -- module-scoped (ES module)
+async function logFallback(backend: 'redis' | 'postgres', namespace: string, now: number): Promise<void> {
+  if (now - fallbackState.windowStart > FALLBACK_LOG_INTERVAL_MS) {
+    fallbackState.windowStart = now;
+    fallbackState.count = 0;
+    fallbackState.spikeLogged = false;
+  }
+  fallbackState.count += 1;
+  const spike = fallbackState.count >= FALLBACK_SPIKE_THRESHOLD && !fallbackState.spikeLogged;
+  const due = now - fallbackState.lastLoggedAt >= FALLBACK_LOG_INTERVAL_MS;
+  if (!spike && !due) return;
+  if (spike) fallbackState.spikeLogged = true;
+  fallbackState.lastLoggedAt = now;
+  const cfg = supabaseRest();
+  if (!cfg) return;
+  try {
+    await fetch(`${cfg.url}/rest/v1/admin_audit_log`, {
+      method: 'POST',
+      headers: { apikey: cfg.key, Authorization: `Bearer ${cfg.key}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify({
+        method: 'SECURITY',
+        path: spike ? 'rate_limit_fallback_spike' : 'rate_limit_fallback',
+        detail: { backend, namespace, failures_in_window: fallbackState.count, severity: spike ? 'high' : 'medium' },
+      }),
+      cache: 'no-store',
+    });
+  } catch {
+    /* never throw from logging */
+  }
 }
 
 // skipcq: JS-0067 -- ES module export
