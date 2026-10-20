@@ -2,7 +2,8 @@ import 'server-only';
 /** "אני צריך ראיה" for one media asset: ZIP = PDF + original file + every signed record + TSA/OTS proofs + snapshots + receipts + git proof. */
 import { zipSync, strToU8 } from 'fflate';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { publicKeyPem, sha256Hex } from '../evidence-crypto';
+import { publicKeyPem, publishedSigningKeys, sha256Hex } from '../evidence-crypto';
+import { buildEvidenceViewer, type ViewerRecord } from '../evidence-viewer';
 import { buildOtsFile, type OtsProof } from '../ots';
 import { buildMediaEvidencePdf } from './pdf';
 import { loadAsset, verifyMediaAsset } from './provenance';
@@ -47,6 +48,8 @@ export async function buildMediaEvidencePackage(admin: SupabaseClient, key: stri
   const snapshots: Array<{ url: string; at: string; status: number; sha: string | null; wayback: string | null }> = [];
   const attachments: Array<{ name: string; label: string; sha256: string }> = [];
   const pdfRecords = [];
+  const viewerRecords: ViewerRecord[] = [];
+  const EV_HE: Record<string, string> = { scan: 'סריקה ותיעוד הקובץ', provenance: 'עדכון מקור וזכויות', license_snapshot: 'שמירת עמוד רישיון', attachment: 'מסמך מצורף', ai_describe: 'תיאור אוטומטי', receipt: 'קבלה', receipt_update: 'עדכון קבלה' };
   for (const [idx, r] of v.records.entries()) {
     const n = String(idx + 1).padStart(2, '0');
     const dir = `records/${n}-${r.event}`;
@@ -70,6 +73,11 @@ export async function buildMediaEvidencePackage(admin: SupabaseClient, key: stri
       if (b) files[`attachments/${n}-${safe(String(data.name))}`] = new Uint8Array(b.bytes);
     }
     const c = v.checks[idx]!;
+    const vImgs: ViewerRecord['images'] = [];
+    if (r.event === 'attachment') { const f = Object.entries(files).find(([k]) => k.startsWith(`attachments/${n}-`)); const mime = /\.png$/i.test(f?.[0] ?? '') ? 'image/png' : /\.jpe?g$/i.test(f?.[0] ?? '') ? 'image/jpeg' : /\.webp$/i.test(f?.[0] ?? '') ? 'image/webp' : null; if (f && mime) vImgs.push({ name: f[0].split('/').pop()!, mime, bytes: f[1], expected_sha256: String(data.sha256), caption: String(data.label ?? data.name) }); }
+    viewerRecords.push({ n: idx + 1, title: EV_HE[r.event] ?? r.event, at: r.created_at, tone: 'info', reference: r.record_hash.slice(0, 12).toUpperCase(), payload_json: r.payload_json, record_hash: r.record_hash, prev_hash: r.prev_hash, signature: r.signature, key_id: r.signing_key_id ?? null, images: vImgs,
+      fields: Object.entries(data).filter(([, x]) => typeof x === 'string' || typeof x === 'number').slice(0, 8).map(([k, x]) => [k, String(x).slice(0, 300)] as [string, string]),
+      server_checks: [{ label: 'חותמת זמן', ok: c.tsa_ok }, { label: 'עיגון ציבורי', ok: (c.ots ?? 0) > 0 }] });
     pdfRecords.push({ n: idx + 1, event: r.event, at: r.created_at, hash: r.record_hash, prev: r.prev_hash, signature: r.signature, keyId: r.signing_key_id, tsaOk: c.tsa_ok, tsaTime: c.tsa_time, ots: c.ots, problems: c.problems });
   }
   const fc = a.first_commit;
@@ -98,6 +106,13 @@ export async function buildMediaEvidencePackage(admin: SupabaseClient, key: stri
   });
   files['evidence-report.pdf'] = new Uint8Array(pdf);
   files['public-key.pem'] = strToU8(publicKeyPem());
+  if (preview && viewerRecords[0]) viewerRecords[0].images.unshift({ name: 'preview.jpg', mime: 'image/jpeg', bytes: new Uint8Array(preview), expected_sha256: null, caption: 'תצוגה מקדימה של הקובץ' });
+  files['תיק-ראיות.html'] = strToU8(await buildEvidenceViewer({
+    kind: 'media', case_ref: caseRef, generated_at: generatedAt, generated_by: actor.label, title: `תיק מדיה · ${a.title ?? a.path ?? key}`,
+    subject: [['קובץ', a.title ?? a.path ?? key], ['סוג', a.kind], ['טביעת אצבע (SHA-256)', a.sha256 ?? '—'], ['מקור', String((a.provenance as { source_type?: string } | null)?.source_type ?? a.source_type)], ['בדיקת שלמות בשרת', v.ok ? 'תקין' : 'לא תקין']],
+    overall_ok: v.ok, keys: publishedSigningKeys().map((k) => ({ key_id: k.key_id, pem: k.pem, status: k.status })), records: viewerRecords,
+    notes: ['הקובץ המקורי נמצא בתיקייה file/ ואפשר לבדוק את טביעת האצבע שלו לפי VERIFY.txt.'],
+  }));
   files['VERIFY.txt'] = strToU8(VERIFY_GUIDE);
   files['evidence.json'] = strToU8(JSON.stringify({ case_ref: caseRef, generated_at: generatedAt, asset: { ...a, metadata: undefined }, integrity_ok: v.ok, file_ok: v.file_ok, checks: v.checks, attestations: v.attestations, chain_anchors: anchors ?? [] }, null, 2));
   files['SHA256SUMS.txt'] = strToU8(Object.keys(files).sort().map((k) => `${sha256Hex(files[k]!)}  ${k}`).join('\n') + '\n');

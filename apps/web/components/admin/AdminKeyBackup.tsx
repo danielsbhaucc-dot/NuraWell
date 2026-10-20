@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { CheckCircle2, Download, KeyRound, Loader2, Lock, Printer, ShieldAlert, ShieldCheck } from 'lucide-react';
 import { opsGlassBtnClass, opsGlassCardClass } from '@/components/admin/OpsPanel';
 import { cn } from '@/lib/cn';
-import { createClient } from '@/lib/supabase/client';
+import { StepUpDialog } from '@/components/admin/StepUpDialog';
 import { buildZip, fmtDate, renderShareCard, WHERE, type ClientBundle } from '@/lib/security/key-backup-bundle';
 
 type Status = { last: { at: string; inventory: { name: string; fingerprint: string }[]; regenerated: boolean } | null; stepUp: boolean };
@@ -72,17 +72,15 @@ export function AdminKeyBackup() {
     } finally { setBusy(false); }
   };
 
-  const reauth = async () => {
-    await createClient().auth.signOut({ scope: 'local' });
-    // full reload on purpose: the session cookie was just cleared
-    window.location.href = (`/login?redirect=${encodeURIComponent('/ops/legal?tab=keys')}`);
-  };
+  const [stepUp, setStepUp] = useState(false);
+  const reauth = async () => { setStepUp(true); };
 
   const mark = (k: string) => setDone((d) => ({ ...d, [k]: true }));
   const allDone = bundle && ['zip', 's1', 's2', 's3'].every((k) => done[k]);
 
   return (
     <div className="space-y-4" dir="rtl" data-testid="key-backup">
+      <StepUpDialog open={stepUp} purpose="ops.sensitive" reason="יצירת גיבוי מפתחות" onClose={() => setStepUp(false)} onVerified={() => { setStepUp(false); setErr(null); void generate(); }} />
       <section className={cn(opsGlassCardClass, 'relative overflow-hidden p-5 sm:p-6')}>
         <div aria-hidden className="pointer-events-none absolute -left-16 -top-16 h-48 w-48 rounded-full bg-indigo-400/25 blur-3xl" />
         <div aria-hidden className="pointer-events-none absolute -bottom-20 right-0 h-48 w-48 rounded-full bg-teal-400/20 blur-3xl" />

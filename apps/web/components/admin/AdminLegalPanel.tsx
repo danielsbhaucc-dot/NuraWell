@@ -4,8 +4,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { CheckCircle2, ChevronDown, Download, FileText, Image as ImageIcon, Loader2, Search, ShieldAlert, ShieldCheck, Scale, Mail } from 'lucide-react';
 import { OpsDivider, opsGlassBtnClass, opsGlassCardClass } from '@/components/admin/OpsPanel';
 import { cn } from '@/lib/cn';
-import { AdminLegalPasswords } from '@/components/admin/AdminLegalPasswords';
-import { AdminLegalGuide } from '@/components/admin/AdminLegalGuide';
 import { AdminLegalPrecheck, type PreCheckState } from '@/components/admin/AdminLegalPrecheck';
 
 type UserRow = { user_id: string; name: string | null; email: string | null; events: number; last_action: string; last_at: string };
@@ -41,7 +39,7 @@ export function AdminLegalPanel() {
   const [busy, setBusy] = useState<string | null>(null);
   const [open, setOpen] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
-  const [pwTick, setPwTick] = useState(0);
+  const [, setPwTick] = useState(0);
   const [made, setMade] = useState<string | null>(null);
   const [pre, setPre] = useState<PreCheckState | null>(null);
   const [ovr, setOvr] = useState(false);
@@ -54,6 +52,7 @@ export function AdminLegalPanel() {
     fetch('/api/v1/ops/legal/users', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : Promise.reject())).then((d) => setUsers(d.users)).catch(() => setErr('לא הצלחנו לטעון את הרשימה'));
   }, []);
 
+  useEffect(() => { const u = new URLSearchParams(window.location.search).get('user'); if (u) void pick(u); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const pick = useCallback(async (id: string) => {
     setSel(id); setDetail(null); setChecks(null); setPre(null); setOvr(false); setOvrReason(''); setOvrAck(false); setLoading(true); setErr(null);
     try {
@@ -167,7 +166,7 @@ export function AdminLegalPanel() {
                 </div>
               ) : null}
               {made ? (
-                <p className="mt-3 rounded-xl border border-amber-300/50 bg-amber-50/40 px-3 py-2 text-[13px] font-semibold text-emerald-900 backdrop-blur">הקובץ {made} הורד ומוצפן. הסיסמה שלו מחכה למטה, בחלק ״סיסמאות״.</p>
+                <p className="mt-3 rounded-xl border border-amber-300/50 bg-amber-50/40 px-3 py-2 text-[13px] font-semibold text-emerald-900 backdrop-blur">הקובץ {made} הורד ומוצפן. הסיסמה שלו מחכה בלשונית ״תיקי ראיות״.</p>
               ) : null}
               {checks ? (
                 <div className={cn('mt-4 flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-bold', checks.ok ? 'border-emerald-300/70 bg-emerald-50/80 text-emerald-800' : 'border-rose-300/70 bg-rose-50 text-rose-800')}>
@@ -251,8 +250,6 @@ export function AdminLegalPanel() {
           </>
         )}
       </section>
-      <div className="lg:col-span-2"><AdminLegalPasswords refreshKey={pwTick} /></div>
-      <div className="lg:col-span-2"><AdminLegalGuide /></div>
     </div>
   );
 }

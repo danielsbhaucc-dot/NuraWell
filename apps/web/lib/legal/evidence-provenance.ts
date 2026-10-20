@@ -80,6 +80,7 @@ export function buildProvenance(r: Rec, ip: string | null, shotShaComputed: stri
     const num = (k: string) => (typeof cm[k] === 'number' ? String(cm[k]) : '?');
     rows.push(
       { field: 'זמן הצילום במכשיר', value: typeof cm.captured_at === 'string' ? cm.captured_at : '—', source: 'browser', how: `שעון המכשיר ברגע הצילום${typeof cm.tz === 'string' ? ` (אזור זמן ${cm.tz})` : ''}. משמש להצלבה מול זמן השרת.`, mono: true },
+      ...(typeof cm.id_uid === 'string' ? [{ field: 'פס זיהוי בצילום', value: `משתמש ${cm.id_uid} · ${String(cm.id_email_masked ?? '—')} · ${String(cm.id_at_il ?? '—')} · ${String(cm.id_device ?? '—')}`, source: 'browser' as const, how: 'נצרב לתוך הצילום עצמו ברגע האישור, לפני הגיבוב והחתימה, ולכן מכוסה בחתימה. השרת וידא שהמשתמש בפס הוא בעל החשבון המחובר.', mono: false }] : []),
       { field: 'גודל מסך', value: `screen ${num('screen_w')}x${num('screen_h')} | viewport ${num('viewport_w')}x${num('viewport_h')} | dpr ${num('dpr')}`, source: 'browser', how: 'מידות המסך והחלון שהדפדפן דיווח. אמורות להתאים למידות הצילום.', mono: true },
       { field: 'זמן הקלדת המילה', value: typeof cm.typing_ms === 'number' ? `${(cm.typing_ms / 1000).toFixed(1)} שניות` : '—', source: 'browser', how: 'מההקשה הראשונה ועד האחרונה בשדה המילה. מראה שהמילה הוקלדה ולא הודבקה מראש.' },
     );
