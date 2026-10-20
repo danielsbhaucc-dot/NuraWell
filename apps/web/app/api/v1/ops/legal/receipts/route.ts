@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireApiAdmin } from '@/lib/api/route-guards';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { uploadReceiptFile } from '@/lib/legal/media/receipts';
+import { reparseGmailConfirmations, uploadReceiptFile } from '@/lib/legal/media/receipts';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -11,7 +11,9 @@ export const maxDuration = 60;
 export async function GET(request: Request) {
   const auth = await requireApiAdmin(request);
   if (!auth.ok) return auth.response;
-  const { data, error } = await createAdminClient().from('media_receipts').select('id, source, vendor, plan, amount, currency, receipt_date, period_start, period_end, subject, original_from, forwarder_ok, dkim, spf, trust, attachments, confirmation_code, record_hash, created_at').order('created_at', { ascending: false }).limit(500);
+  const admin = createAdminClient();
+  await reparseGmailConfirmations(admin).catch(() => 0);
+  const { data, error } = await admin.from('media_receipts').select('id, source, vendor, plan, amount, currency, receipt_date, period_start, period_end, subject, original_from, forwarder_ok, dkim, spf, trust, attachments, confirmation_code, confirmation_link, record_hash, created_at').order('created_at', { ascending: false }).limit(500);
   if (error) return NextResponse.json({ error: 'load_failed' }, { status: 500 });
   return NextResponse.json({ receipts: data ?? [], address: process.env.RECEIPTS_INBOUND_ADDRESS ?? 'receipts@nurawell.ai', configured: !!process.env.RECEIPTS_INBOUND_SECRET && !!process.env.RECEIPTS_ALLOWED_FORWARDERS }, { headers: { 'Cache-Control': 'no-store' } });
 }

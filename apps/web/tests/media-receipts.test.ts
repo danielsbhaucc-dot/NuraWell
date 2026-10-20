@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addMonths, coverageFor, detectVendor, forwarderAllowed, gmailConfirmationCode, isGmailForwardingConfirmation, normalizeForwarder, parseAmount, parsePeriod, parsePlan } from '@/lib/legal/media/receipts-core';
+import { addMonths, coverageFor, detectVendor, forwarderAllowed, gmailConfirmationCode, extractGmailConfirmation, decodeQuotedPrintable, isGmailForwardingConfirmation, normalizeForwarder, parseAmount, parsePeriod, parsePlan } from '@/lib/legal/media/receipts-core';
 import { maskReceiptText } from '@/lib/legal/media/receipts';
 
 describe('receipt rules', () => {
@@ -26,6 +26,13 @@ describe('receipt rules', () => {
   it('gmail confirmation', () => {
     expect(isGmailForwardingConfirmation('forwarding-noreply@google.com', '(#123) Gmail Forwarding Confirmation')).toBe(true);
     expect(gmailConfirmationCode('Confirmation code: 123456789')).toBe('123456789');
+    expect(gmailConfirmationCode('', '(#987654321) Gmail Forwarding Confirmation')).toBe('987654321');
+    expect(gmailConfirmationCode('קוד האישור: 555666777')).toBe('555666777');
+    expect(gmailConfirmationCode('קוד אישור - 111222333')).toBe('111222333');
+    expect(decodeQuotedPrintable('=D7=A7=D7=95=D7=93 a=\r\nb')).toBe('קוד ab');
+    const raw = 'Subject: (#246813579) Gmail Forwarding Confirmation\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\nhttps://mail-settings.google.com/mail/vf-%5BANGjdJ=\r\n_abc%5D-xyz\r\n';
+    expect(extractGmailConfirmation({ raw })).toEqual({ code: '246813579', link: 'https://mail-settings.google.com/mail/vf-%5BANGjdJ_abc%5D-xyz' });
+    expect(extractGmailConfirmation({ html: '<a href="https://mail.google.com/mail/vf-%5Bx%5D?a=1&amp;b=2">x</a>' }).link).toBe('https://mail.google.com/mail/vf-%5Bx%5D?a=1&b=2');
   });
   it('coverage by generator + date', () => {
     const r = [{ id: '1', vendor: 'suno' as const, plan: 'Pro', period_start: '2026-10-01', period_end: '2026-11-01', trust: 'verified' }];
