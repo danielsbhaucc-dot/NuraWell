@@ -22,7 +22,7 @@ export async function POST(request: Request) {
   }
 
   const admin = createAdminClient();
-  // Gideon: tell Daniel when Or finished a forwarded item (hourly cadence; normal send layer → Shabbat gate applies)
+  // Gideon: tell Daniel when Ori finished a forwarded item (hourly cadence; normal send layer → Shabbat gate applies)
   await notifyDevForwardsDone(admin).catch(() => 0);
   const idleSkip = await maybeReturnCronIdleSkip(request, admin, 'auto-close-chat-sessions');
   if (idleSkip) return idleSkip;

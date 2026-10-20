@@ -5,7 +5,7 @@ import { classifyRisk, fingerprint, forwardedLine, isMorningBatchTime } from '@/
 const db = { from: () => ({ insert: () => Promise.resolve({}) }) } as never;
 
 describe('Gideon capability guard (promises need a successful tool)', () => {
-  it('promise without action → honest reply + auto capability request to Or', async () => {
+  it('promise without action → honest reply + auto capability request to Ori', async () => {
     const forward = vi.fn(async () => ({ id: 'r1', deduped: false, risk: 'low' as const }));
     const r = await guardCapability(db, 'תזכיר לי כל יום ב-9 לשתות מים', 'סבבה, אזכיר לך כל יום ב-9', [], { forward });
     expect(r.text).toBe(CANT_DO_TEXT);
@@ -35,17 +35,18 @@ describe('Gideon capability guard (promises need a successful tool)', () => {
     expect((await guardCapability(db, 'כמה משתמשים?', 'יש 12 משתמשים פעילים', [])).text).toBe('יש 12 משתמשים פעילים');
   });
 
-  it('registry is machine-readable and includes forward + Or status', () => {
+  it('registry is machine-readable and includes forward + Ori status', () => {
     const names = capabilityRegistry().map((c) => c.name);
     expect(names).toContain('forward_to_developer');
     expect(names).toContain('or_work_status');
   });
 });
 
-describe('Or profile & auto-consult', () => {
-  it('system prompt knows Or', () => {
-    expect(CEO_SYSTEM_PROMPT).toContain('אור הוא המתכנת');
-    expect(CEO_SYSTEM_PROMPT).toContain('כל באג או בעיה טכנית עוברים אליו');
+describe('Ori profile & auto-consult', () => {
+  it('system prompt knows Ori', () => {
+    expect(CEO_SYSTEM_PROMPT).toContain('אורי הוא ראש צוות המתכנתים');
+    expect(CEO_SYSTEM_PROMPT).toContain('אור הוא מתכנת בצוות של אורי');
+    expect(CEO_SYSTEM_PROMPT).toContain('כל באג או בעיה טכנית עוברים לאורי');
     expect(CEO_SYSTEM_PROMPT).toMatch(/02:00.*10:00.*16:00/);
     expect(CEO_SYSTEM_PROMPT).toContain('or_work_status');
     expect(CEO_SYSTEM_PROMPT).toContain('done');
@@ -62,7 +63,7 @@ describe('Or profile & auto-consult', () => {
     expect(isMorningBatchTime(new Date('2026-10-19T20:00:00Z'))).toBe(false); // 23:00 IL
   });
   it('summary line lists forwards', () => {
-    expect(forwardedLine([{ title: 'באג בצ׳אט', kind: 'finding' }])).toContain('העברתי לאור (1)');
+    expect(forwardedLine([{ title: 'באג בצ׳אט', kind: 'finding' }])).toContain('העברתי לאורי (1)');
     expect(forwardedLine([])).toBe('');
   });
 });

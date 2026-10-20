@@ -27,7 +27,7 @@ function fakeDb(names: string[] = [], doneRows: { id: string; title: string; or_
 }
 const args = { title: 'ניסוח לא טבעי אצל דנה כהן', problem_he: 'דנה כתבה ל dana@x.com', problem_en: 'phrasing', evidence: 'id 3f2b1c4d-1111-2222-3333-444455556666, 054-1234567', suggested_fix: 'fix prompt' };
 
-describe('Gideon → Or forward', () => {
+describe('Gideon → Ori forward', () => {
   it('scrubs names, emails, phones, ids', () => {
     const s = scrubPii(`${args.title} ${args.problem_he} ${args.evidence}`, ['דנה כהן', 'דנה']);
     expect(s).not.toMatch(/דנה|dana@|054-1234567|3f2b1c4d/);
@@ -64,7 +64,7 @@ describe('Gideon → Or forward', () => {
     const sent: string[] = [];
     const n = await notifyDoneForwards(fakeDb([], [{ id: 'f1', title: 'ניסוח', or_notes: 'תוקן ב-PR', status: 'done', kind: 'finding' } as never]), async (t) => { sent.push(t); });
     expect(n).toBe(1);
-    expect(sent[0]).toContain('עדכון בוקר מאור');
+    expect(sent[0]).toContain('עדכון בוקר מאורי');
   });
 
   it('issue body is bilingual', () => {

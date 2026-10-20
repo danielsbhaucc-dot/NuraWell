@@ -4,7 +4,7 @@ import { isMorningBatchTime, notifyDoneForwards } from './dev-forward';
 import { digestRecipients, readGideonSettings } from './settings';
 import { createTelegramChannel, resolveBotToken } from './telegram';
 
-/** Cron hook (hourly): Or's finished items → one morning update ~07:30 IL, through the gated send (Shabbat/quiet). */
+/** Cron hook (hourly): Ori's finished items → one morning update ~07:30 IL, through the gated send (Shabbat/quiet). */
 export async function notifyDevForwardsDone(db: SupabaseClient, now = new Date()): Promise<number> {
   if (!isMorningBatchTime(now)) return 0;
   if (!(await resolveBotToken())) return 0;
