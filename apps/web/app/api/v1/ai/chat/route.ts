@@ -3990,6 +3990,7 @@ async function handleChatPost(request: Request) {
               assistantMessage: assistantText,
               liveFile: updatedSummary ?? chatSession?.live_conversation_file,
               messageCount: Number(chatSession?.message_count ?? 0) + 2,
+              healthConsentOff,
             });
           } catch (summaryErr) {
             console.warn('[ai/chat]', {
