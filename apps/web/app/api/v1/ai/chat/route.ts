@@ -2545,7 +2545,9 @@ async function handleChatPost(request: Request) {
   const healthConsentOff = (await healthConsentStatus(user.id)) !== 'granted';
   if (healthConsentOff) {
     messages = sanitizeIncomingMessages(messages as never).messages as typeof messages;
-    if (isHealthChatMessage(lastUserText) && !parsed.data.resume_assistant) {
+    // No resume_assistant exemption: a crafted/replayed resume must not carry health text
+    // to the router, models, memory or the DB (found in the prod e2e test).
+    if (isHealthChatMessage(lastUserText)) {
       return respondWithHealthRedaction({
         supabase,
         admin: createAdminClient(),
