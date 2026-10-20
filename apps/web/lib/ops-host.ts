@@ -158,6 +158,7 @@ export function isOpsPanelBrowserPath(pathname: string): boolean {
     '/users',
     '/audio',
     '/accessibility',
+    '/privacy',
     '/challenge',
     '/demo-access',
     '/ops',

@@ -27,6 +27,7 @@ import {
   UserCircle,
   X,
   Bot,
+  ShieldCheck,
 } from 'lucide-react';
 import { cn } from '../../lib/cn';
 import { OpsSessionGuard } from './OpsSessionGuard';
@@ -82,6 +83,7 @@ export function AdminShell({
   const isAlmogSettings = np === '/ops/almog' || np === '/ops/mentors';
   const isSiteSettings = np === '/ops/site-settings';
   const isAccessibility = np === '/ops/accessibility';
+  const isPrivacy = np === '/ops/privacy';
   const isSystemRagIngest = np === '/ops/system-rag-ingest';
   const isAlmogNavSection = isAlmogSettings || isSystemRagIngest;
   const isJourneyHub = np === '/ops/journey' || np === '/ops/journey-hub' || np.startsWith('/ops/steps');
@@ -442,6 +444,18 @@ export function AdminShell({
             >
               <Accessibility size={20} className={cn('shrink-0', isAccessibility && 'text-emerald-600')} />
               <span className={cn('truncate', !showNavLabels && 'lg:sr-only')}>נגישות</span>
+            </Link>
+            <Link prefetch={false}
+              href={opsHref('/privacy')}
+              onClick={() => setSidebarOpen(false)}
+              className={cn(
+                navBtn(isPrivacy, 'emerald'),
+                'border border-gc/40 bg-background-card/30 shadow-xs',
+              )}
+              title="פרטיות"
+            >
+              <ShieldCheck size={20} className={cn('shrink-0', isPrivacy && 'text-emerald-600')} />
+              <span className={cn('truncate', !showNavLabels && 'lg:sr-only')}>פרטיות</span>
             </Link>
             <Link prefetch={false}
               href={coursesHref}

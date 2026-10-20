@@ -8,6 +8,7 @@ import { allowedChatIds, opsLink } from './channel';
 import { digestRecipients, readGideonSettings, type GideonSettings } from './settings';
 import { CEO_CONTENT_MODEL, complete } from './llm';
 import { TOOL_BY_NAME } from './tools';
+import { privacyDigestLine } from '../privacy/compliance-server';
 import { dueForReminder, formatTaskLine, openOwnerTasks, taskButtons } from './owner-tasks';
 
 export type CostAnomaly = { component: string; culprit: string; yesterday_usd: number; baseline_usd: number; ratio: number | null };
@@ -74,7 +75,9 @@ async function buildDigestInner(db: SupabaseClient, period: DigestPeriod, deps: 
   });
   const title = { daily: '☀️ עדכון יומי', weekly: '📊 סיכום שבועי', monthly: '🧭 דוח חודשי' }[period];
   const links = `\n\n🔗 ${opsLink('/business')}\n🔗 ${opsLink('/errors')}\n🔗 ${opsLink('/ceo')}`;
-  return `${title} · ${CEO_NAME}\n\n${(message.content ?? '').trim()}${links}`;
+  // monthly only: one deterministic line about open privacy-compliance items (no extra model call)
+  const privacy = period === 'monthly' ? await privacyDigestLine(db, opsLink('/privacy')).catch(() => null) : null;
+  return `${title} · ${CEO_NAME}\n\n${(message.content ?? '').trim()}${privacy ? `\n\n${privacy}` : ''}${links}`;
 }
 
 export async function sendDigest(db: SupabaseClient, channel: CeoChannel, period: DigestPeriod, deps: { complete?: typeof complete; extract?: typeof extractFinding } = {}) {
@@ -98,6 +101,8 @@ export async function sendDigest(db: SupabaseClient, channel: CeoChannel, period
     for (const c of chats) await channel.send(c, `📌 תזכורת: ${formatTaskLine(t)}${t.detail ? `\n${t.detail}` : ''}`, taskButtons(t.id), { kind: 'reminder', topic: 'owner_tasks' });
     await db.from('ceo_owner_tasks').update({ last_reminded_at: new Date().toISOString() }).eq('id', t.id);
   }
+  // compliance doc 08: monthly in-DB restore drill (result shows in Ops → פרטיות; failure = open item next digest)
+  if (period === 'monthly') await db.rpc('owner_restore_drill').then(() => undefined, () => undefined);
   await audit(db, 'cron', 'digest', { period, chats: chats.length });
   return { sent: chats.length };
 }
