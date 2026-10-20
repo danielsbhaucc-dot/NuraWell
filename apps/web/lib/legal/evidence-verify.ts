@@ -102,11 +102,19 @@ export async function verifyUserEvidence(admin: SupabaseClient, userId: string, 
 }
 
 export async function auditLegalAccess(admin: SupabaseClient, actorId: string, path: string, detail: Record<string, unknown>) {
+  const uid = typeof detail.user_id === 'string' && /^[0-9a-f-]{36}$/i.test(detail.user_id) ? detail.user_id : null;
+  // Append-only legal log (excluded from retention). Never throws into the request path.
   await admin
-    .from('admin_audit_log')
-    .insert({ actor_id: actorId, method: 'LEGAL', path, detail })
+    .from('legal_access_log')
+    .insert({ actor_id: actorId, action: path, user_id: uid, detail })
     .then(
       () => undefined,
       () => undefined
     );
+}
+
+/** Reads the append-only legal access log for one user, shaped like the old audit rows. */
+export async function loadLegalAccessLog(admin: SupabaseClient, userId: string, limit: number) {
+  const { data } = await admin.from('legal_access_log').select('created_at, actor_id, action').eq('user_id', userId).order('created_at', { ascending: false }).limit(limit);
+  return ((data ?? []) as { created_at: string; actor_id: string | null; action: string }[]).map((r) => ({ created_at: r.created_at, actor_id: r.actor_id, path: r.action }));
 }
