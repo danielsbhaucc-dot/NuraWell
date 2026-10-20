@@ -1,3 +1,4 @@
+import { relinkAsset } from '@/lib/legal/media/links';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireApiAdmin } from '@/lib/api/route-guards';
@@ -15,6 +16,8 @@ export async function POST(request: Request) {
   if (!auth.ok) return auth.response;
   const p = body.safeParse(await request.json().catch(() => null));
   if (!p.success) return NextResponse.json({ error: 'bad_input', issues: p.error.issues.slice(0, 4).map((i) => i.path.join('.')) }, { status: 400 });
-  const r = await updateProvenance(createAdminClient(), p.data.key, p.data.provenance, { id: auth.user.id });
+  const admin = createAdminClient();
+  const r = await updateProvenance(admin, p.data.key, p.data.provenance, { id: auth.user.id });
+  if (r.ok) await relinkAsset(admin).catch(() => 0);
   return NextResponse.json(r, { status: r.ok ? 200 : r.error === 'not_found' ? 404 : 500 });
 }

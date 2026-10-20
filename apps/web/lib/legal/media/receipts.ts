@@ -1,4 +1,5 @@
 import 'server-only';
+import { linkReceipt } from './links';
 /**
  * Receipt intake: raw RFC 822 message (from the receipts@ email worker or a manual upload) →
  * vendor DKIM/SPF check, rules-based parse, original .eml + attachments as content-addressed blobs,
@@ -97,14 +98,17 @@ export async function ingestReceipt(admin: SupabaseClient, input: IngestReceiptI
   const id = (ins as { id: string }).id;
   const rec = await appendMediaEvidence(admin, `receipt:${id}`, 'receipt', { ...row, message_id: headers['message-id'] ?? null, parsed_by: parsedBy, received_at: new Date().toISOString(), envelope_from_hash: input.envelopeFrom ? sha256Hex(input.envelopeFrom.toLowerCase()) : null, actor_id: input.actorId ?? null });
   if (rec.ok) await admin.from('media_receipts').update({ record_hash: rec.recordHash }).eq('id', id);
-  return { ok: true as const, id, vendor, trust, duplicate: false };
+  const link = await linkReceipt(admin, id).catch(() => ({ linked: 0, unmatched: true }));
+  return { ok: true as const, id, vendor, trust, duplicate: false, ...link };
 }
 
 export async function updateReceipt(admin: SupabaseClient, id: string, patch: { vendor?: string; plan?: string | null; period_start?: string | null; period_end?: string | null; trust?: 'verified' | 'review' | 'rejected' }, actorId: string) {
   const rec = await appendMediaEvidence(admin, `receipt:${id}`, 'receipt_update', { patch, actor_id: actorId });
   if (!rec.ok) return { ok: false as const, error: rec.error };
   const { error } = await admin.from('media_receipts').update({ ...patch, record_hash: rec.recordHash, updated_at: new Date().toISOString() }).eq('id', id);
-  return error ? { ok: false as const, error: error.message } : { ok: true as const };
+  if (error) return { ok: false as const, error: error.message };
+  await linkReceipt(admin, id).catch(() => null);
+  return { ok: true as const };
 }
 
 /** Masks anything identifying before the (rare) AI fallback: emails, long digit runs, card tails, addresses lines. */
@@ -145,5 +149,6 @@ export async function uploadReceiptFile(admin: SupabaseClient, f: { name: string
   const id = (ins as { id: string }).id;
   const rec = await appendMediaEvidence(admin, `receipt:${id}`, 'receipt', { ...row, actor_id: actorId, received_at: new Date().toISOString() });
   if (rec.ok) await admin.from('media_receipts').update({ record_hash: rec.recordHash }).eq('id', id);
-  return { ok: true as const, id, duplicate: false };
+  const link = await linkReceipt(admin, id).catch(() => ({ linked: 0, unmatched: true }));
+  return { ok: true as const, id, duplicate: false, ...link };
 }
