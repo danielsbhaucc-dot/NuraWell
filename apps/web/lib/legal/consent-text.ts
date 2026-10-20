@@ -3,7 +3,7 @@
  * same content into the evidence snapshot (authoritative); the client renders it in the sheet.
  * Any wording change MUST bump CONSENT_TEXT_VERSION.
  */
-export const CONSENT_TEXT_VERSION = 'hc-2026-10-20.1';
+export const CONSENT_TEXT_VERSION = 'hc-2026-10-20.2';
 
 export type ConsentAction = 'grant' | 'withdraw';
 export type ConsentGender = 'female' | 'male' | null;
@@ -85,7 +85,7 @@ export function consentText(action: ConsentAction, gender: ConsentGender): Conse
     sections: [
       {
         heading: 'מה יימחק מיד',
-        items: ['משקל, גובה, יעד ומצבים בריאותיים מהפרופיל', 'כל המדידות שנשמרו', 'כל מה שאלמוג זכר על בריאות, משקל ותזונה'],
+        items: ['משקל, גובה, יעד ומצבים בריאותיים מהפרופיל', 'כל המדידות שנשמרו', 'כל מה שאלמוג זכר על בריאות, משקל ותזונה', 'הודעות קודמות שנוגעות לבריאות יימחקו מהיסטוריית השיחות, וגם כותרות וסיכומים של שיחות כאלה'],
       },
       {
         heading: 'מה ישתנה',

@@ -7,6 +7,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { recordUserConsent } from './record-consent';
 import { CONSENT_TYPES } from './constants';
 import { scrubHealthFromMemory, type HealthScrubResult } from './health-memory';
+import { scrubHealthFromChatHistory, type HistoryScrubResult } from './health-history-scrub';
 
 /** profiles columns that hold health data. */
 export const HEALTH_PROFILE_FIELDS = [
@@ -97,7 +98,8 @@ export async function withdrawHealthConsent(
   admin: SupabaseClient,
   userId: string,
   meta: { source: string },
-  scrub: typeof scrubHealthFromMemory = scrubHealthFromMemory
+  scrub: typeof scrubHealthFromMemory = scrubHealthFromMemory,
+  scrubHistory: (a: SupabaseClient, u: string) => Promise<HistoryScrubResult> = scrubHealthFromChatHistory
 ): Promise<{ ok: true; measurementsDeleted: number; memory: HealthScrubResult | null } | { ok: false; error: string }> {
   const rec = await recordUserConsent(admin, {
     userId,
@@ -128,13 +130,20 @@ export async function withdrawHealthConsent(
     return { ok: false, error: e instanceof Error ? e.message : 'memory scrub failed' };
   }
 
+  let history: HistoryScrubResult | null = null;
+  try {
+    history = await scrubHistory(admin, userId);
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'history scrub failed' };
+  }
+
   await admin
     .from('admin_audit_log')
     .insert({
       actor_id: userId,
       method: 'PRIVACY',
       path: 'health_consent_withdrawn',
-      detail: { measurements_deleted: count ?? 0, memory, source: meta.source },
+      detail: { measurements_deleted: count ?? 0, memory, history, source: meta.source },
     })
     .then(
       () => undefined,
