@@ -10,10 +10,29 @@ import { setOwnerTask } from './owner-tasks';
 import { invalidateTrust, killSwitch, requestDevice, securityState } from './security';
 import { detectDeviceChange } from './intents';
 
+type TgChat = { id: number; type?: string };
+type TgUser = { id: number; is_bot?: boolean };
 type Update = {
-  message?: { chat: { id: number }; text?: string; message_id?: number };
-  callback_query?: { id: string; data?: string; message?: { chat: { id: number }; message_id: number } };
+  message?: { chat: TgChat; from?: TgUser; text?: string; message_id?: number };
+  callback_query?: { id: string; from?: TgUser; data?: string; message?: { chat: TgChat; message_id: number } };
 };
+
+/**
+ * Hard identity gate (code, never the model): the sender is Daniel only when BOTH the numeric
+ * Telegram user id (from.id) and the private chat id are on the env allowlist, the chat is a
+ * private 1:1 chat (from.id === chat.id) and the sender is not a bot. Names/usernames are never used.
+ * Anything else → null (fail closed, also when the allowlist env is empty).
+ */
+export function authorizedSender(u: Update, allowed = allowedChatIds()): string | null {
+  const chat = u.message?.chat ?? u.callback_query?.message?.chat;
+  const from = u.message?.from ?? u.callback_query?.from;
+  if (!chat || !from || from.is_bot) return null;
+  if (chat.type !== 'private') return null;
+  const chatId = String(chat.id);
+  const fromId = String(from.id);
+  if (!/^\d{1,20}$/.test(chatId) || fromId !== chatId) return null;
+  return allowed.has(chatId) && allowed.has(fromId) ? chatId : null;
+}
 
 /** Secret-token header check (set via setWebhook secret_token). Fails closed when env is missing. */
 export function verifyTelegramSecret(header: string | null, secret = process.env.TELEGRAM_WEBHOOK_SECRET?.trim()): boolean {
@@ -27,12 +46,14 @@ export async function handleTelegramUpdate(...a: Parameters<typeof handleTelegra
 async function handleTelegramUpdateInner(db: SupabaseClient, channel: CeoChannel, u: Update, deps: { runTurn?: typeof runCeoTurn } = {}) {
   const chatId = String(u.message?.chat.id ?? u.callback_query?.message?.chat.id ?? '');
   if (!chatId) return { ignored: true };
-  if (!allowedChatIds().has(chatId)) {
+  if (!authorizedSender(u)) {
     // silent for strangers, but tell Daniel (once a day per chat) and drop the passkey trust window
+    await db.from('ceo_audit_log').insert({ actor: 'telegram', event: 'stranger_blocked', detail: { chat_tail: chatId.slice(-4), from_tail: String(u.message?.from?.id ?? u.callback_query?.from?.id ?? '').slice(-4), kind: u.callback_query ? 'callback' : 'message' } }).then(() => null, () => null);
     const once = await consumeRateLimit({ key: chatId, namespace: 'ceo-stranger', limit: 1, windowSeconds: 86_400 });
     if (once.ok) {
       await invalidateTrust(db, 'unknown chat').catch(() => {});
       for (const id of allowedChatIds()) {
+        if (id === chatId) continue; // never answer the blocked sender itself
         await channel.send(id, `⚠️ צ'אט לא מוכר ניסה לדבר עם גדעון (מסתיים ב-${chatId.slice(-4)}). לא קיבל תשובה. אם זה לא אתה, אפשר לכבות את גדעון מ-Ops.`, undefined, { kind: 'security' }).catch(() => {});
       }
     }
