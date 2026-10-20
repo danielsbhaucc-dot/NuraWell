@@ -39,7 +39,8 @@ describe('pii crypto', () => {
 
   it('detects tampering', () => {
     const enc = encryptJson({ a: 1 }, U1) as string;
-    const bad = enc.slice(0, -2) + (enc.endsWith('A') ? 'B' : 'A') + enc.slice(-1);
+    const i = Math.floor(enc.length / 2);
+    const bad = enc.slice(0, i) + (enc[i] === 'A' ? 'B' : 'A') + enc.slice(i + 1);
     expect(() => decryptJson(bad, U1)).toThrow();
   });
 

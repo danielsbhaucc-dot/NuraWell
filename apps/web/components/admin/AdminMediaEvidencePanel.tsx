@@ -34,8 +34,8 @@ const FIELDS_BY_TYPE: Record<SourceType, Array<keyof Provenance>> = {
   in_house: ['notes'],
   stock_cc0: ['source_url', 'author', 'license_name', 'license_url', 'notes'],
   stock_license: ['source_url', 'author', 'author_url', 'license_name', 'license_url', 'notes'],
-  ai_image: ['generator', 'model', 'prompt', 'created_on', 'account', 'plan', 'source_url', 'notes'],
-  ai_music: ['generator', 'model', 'prompt', 'track_id', 'track_url', 'created_on', 'account', 'plan', 'notes'],
+  ai_image: ['generator', 'model', 'prompt', 'created_on', 'account', 'plan', 'source_url', 'license_status', 'notes'],
+  ai_music: ['generator', 'model', 'prompt', 'track_id', 'track_url', 'created_on', 'account', 'plan', 'license_status', 'notes'],
   ai_voice: ['generator', 'model', 'created_on', 'account', 'plan', 'notes'],
   font_license: ['source_url', 'author', 'license_name', 'license_url'],
   library_license: ['source_url', 'license_name', 'license_url'],
@@ -101,6 +101,13 @@ function ProvenanceForm({ item, onSaved }: { item: Item; onSaved: () => void }) 
               </select>
             </label>
           );
+          if (k === 'license_status') return (
+            <label key={k} className="block text-xs font-bold text-slate-600">מצב הרישיון
+              <select value={v} onChange={(e) => setP({ ...p, license_status: (e.target.value || null) as Provenance['license_status'] })} className={cn(opsInputClass, 'mt-1')}>
+                <option value="">לא צוין</option><option value="pending">ממתין להוכחה</option><option value="confirmed">מאושר</option>
+              </select>
+            </label>
+          );
           if (k === 'prompt' || k === 'notes') return (
             <label key={k} className="block text-xs font-bold text-slate-600 sm:col-span-2">{label(k)}{required ? <span className="text-rose-600"> *</span> : null}
               <textarea value={v} onChange={(e) => setP({ ...p, [k]: e.target.value })} rows={k === 'prompt' ? 4 : 2} className={cn(opsInputClass, 'mt-1 resize-y')} dir="auto" />
@@ -152,6 +159,35 @@ function AttachmentBox({ item, onSaved }: { item: Item; onSaved: () => void }) {
         {msg ? <span role="status" className="text-xs font-bold text-slate-700">{msg}</span> : null}
       </div>
     </div>
+  );
+}
+
+function PendingLicenseCard({ p, onDone }: { p: { key: string; title: string; action: string; kind?: string }; onDone: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  const send = async (file: File | undefined) => {
+    if (!file) return;
+    if (file.size > 8_000_000) { setMsg('הקובץ גדול מ־8MB'); return; }
+    setBusy(true); setMsg(null);
+    try {
+      const b64 = await new Promise<string>((res, rej) => { const fr = new FileReader(); fr.onload = () => res(String(fr.result).split(',')[1] ?? ''); fr.onerror = rej; fr.readAsDataURL(file); });
+      const r = await fetch('/api/v1/ops/legal/media/item/attachment', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ key: p.key, name: file.name, mime: file.type || 'application/pdf', label: 'קבלת רכישה (רישיון מסחרי)', data_b64: b64, resolves_license: true }) });
+      if (!r.ok) throw new Error();
+      setMsg('נשמר, נחתם וקיבל חותמת זמן. הרישיון סומן כמאושר'); onDone();
+    } catch { setMsg('ההעלאה נכשלה (תמונה או PDF בלבד)'); } finally { setBusy(false); }
+  };
+  return (
+    <li className="flex flex-col gap-2 rounded-2xl border border-orange-200/80 bg-orange-50/70 p-3 sm:flex-row sm:items-center sm:justify-between" data-testid="pending-license">
+      <div className="min-w-0">
+        <p className="text-sm font-bold text-orange-950">{p.kind === 'receipt' ? `🧾 ${p.title}: קבלה לא שויכה` : `🎵 ${p.title}: הרישיון ממתין`}</p>
+        <p className="text-xs text-orange-900/80">{p.action}</p>
+        {msg ? <p role="status" className="mt-1 text-xs font-bold text-teal-800">{msg}</p> : null}
+      </div>
+      {p.kind === 'receipt' ? <a href="#receipts" className={cn(opsGlassBtnPrimaryClass, 'shrink-0')}>לקבלה</a> : <label className={cn(opsGlassBtnPrimaryClass, 'shrink-0 cursor-pointer')}>
+        {busy ? <Loader2 size={14} className="animate-spin" /> : <Paperclip size={14} />}העלאת קבלה
+        <input type="file" accept="image/png,image/jpeg,image/webp,application/pdf" className="sr-only" disabled={busy} onChange={(e) => void send(e.target.files?.[0])} />
+      </label>}
+    </li>
   );
 }
 
@@ -280,6 +316,7 @@ function ItemCard({ item, open, onToggle, onChanged }: { item: Item; open: boole
 export function AdminMediaEvidencePanel() {
   const [items, setItems] = useState<Item[] | null>(null);
   const [ai, setAi] = useState<{ calls: number; total_usd: number } | null>(null);
+  const [pending, setPending] = useState<Array<{ key: string; title: string; action: string; kind?: string }>>([]);
   const [q, setQ] = useState('');
   const [status, setStatus] = useState<'all' | Item['status']>('all');
   const [kind, setKind] = useState<string>('all');
@@ -290,7 +327,7 @@ export function AdminMediaEvidencePanel() {
   const [showDone, setShowDone] = useState(false);
 
   const load = useCallback(() => {
-    fetch('/api/v1/ops/legal/media', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : Promise.reject())).then((d) => { setItems(d.items); setAi(d.ai); }).catch(() => setErr('לא הצלחנו לטעון את רשימת המדיה'));
+    fetch('/api/v1/ops/legal/media', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : Promise.reject())).then((d) => { setItems(d.items); setAi(d.ai); setPending(d.pending ?? []); }).catch(() => setErr('לא הצלחנו לטעון את רשימת המדיה'));
   }, []);
   useEffect(() => { load(); }, [load]);
   useEffect(() => { const k = new URLSearchParams(window.location.search).get('asset'); if (k) { setOpen(k); setShowDone(true); } }, []);
@@ -349,6 +386,12 @@ export function AdminMediaEvidencePanel() {
         </div>
       </div>
 
+      {pending.length ? (
+        <section aria-label="פעולות פתוחות" className={cn(opsGlassCardClass, 'space-y-2 p-4')}>
+          <h3 className="text-sm font-bold text-slate-900">פעולות שמחכות לך</h3>
+          <ul className="space-y-2">{pending.map((p) => <PendingLicenseCard key={p.key} p={p} onDone={load} />)}</ul>
+        </section>
+      ) : null}
       <ReceiptsSection onChanged={load} />
       {err ? <p role="alert" className="rounded-xl bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700">{err}</p> : null}
       {!items ? <div className={cn(opsGlassCardClass, 'grid place-items-center p-10')}><Loader2 className="animate-spin text-slate-400" /></div> : (

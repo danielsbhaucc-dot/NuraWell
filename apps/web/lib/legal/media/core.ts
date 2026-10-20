@@ -11,11 +11,12 @@ export * from './labels';
 export function missingFields(p: Provenance, hasGitProof = false): Array<keyof Provenance> {
   const t = p.source_type ?? 'unknown';
   if (t === 'in_house' && !hasGitProof) return ['notes'];
-  return REQUIRED[t].filter((k) => {
+  const pending: Array<keyof Provenance> = p.license_status === 'pending' ? ['license_status'] : [];
+  return [...pending, ...REQUIRED[t].filter((k) => {
     const v = p[k];
     if (k === 'attachments') return !Array.isArray(v) || v.length === 0;
     return v === undefined || v === null || (typeof v === 'string' && !v.trim());
-  });
+  })];
 }
 
 export function statusFor(p: Provenance, hasGitProof = false): 'verified' | 'draft' | 'missing_source' {

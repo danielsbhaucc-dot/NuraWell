@@ -4,5 +4,5 @@ main = "src/index.js"
 compatibility_date = "2026-10-01"
 
 [vars]
-APP_INBOUND_URL = "https://nurawell.ai/api/v1/legal/receipts/inbound"
+APP_INBOUND_URL = "https://ops.nurawell.ai/api/v1/legal/receipts/inbound"
 # secret (wrangler secret put RECEIPTS_INBOUND_SECRET) — same value as the app env var
