@@ -1,4 +1,4 @@
-import { Cormorant_Garamond, DM_Sans, Heebo, Rubik } from 'next/font/google';
+import { Assistant, Cormorant_Garamond, DM_Sans, Heebo, Rubik } from 'next/font/google';
 
 /**
  * משקלים בשימוש פעיל — אין משקל מת להסרה בטוחה (ביקורת Safe Perf):
@@ -34,4 +34,12 @@ export const dmSans = DM_Sans({
   display: 'swap',
 });
 
-export const fontVariables = `${heebo.variable} ${rubik.variable} ${cormorant.variable} ${dmSans.variable}`;
+/** Assistant — גוף טקסט בעמודים הציבוריים/משפטיים (מערכת C3). */
+export const assistant = Assistant({
+  subsets: ['hebrew', 'latin'],
+  weight: ['400', '600', '700', '800'],
+  variable: '--font-assistant',
+  display: 'swap',
+});
+
+export const fontVariables = `${assistant.variable} ${heebo.variable} ${rubik.variable} ${cormorant.variable} ${dmSans.variable}`;

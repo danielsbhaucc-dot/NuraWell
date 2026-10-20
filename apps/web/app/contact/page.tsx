@@ -18,6 +18,8 @@ export default function ContactPage() {
     <LegalShell
       icon={<Mail className="w-8 h-8" />}
       title="צור קשר"
+      titleAccent="אנחנו כאן בשבילך."
+      currentPath="/contact"
       subtitle="אנחנו כאן לשאלות, משוב ותמיכה. בחרו את הערוץ המתאים — ונחזור אליכם בהקדם."
       updatedAt={UPDATED_AT}
     >
