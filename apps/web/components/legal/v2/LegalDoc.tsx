@@ -1,106 +1,117 @@
 import type { ReactNode } from 'react';
-import Link from 'next/link';
-import { LEGAL_NAV } from '../legal-nav';
 import { LegalToc } from './LegalToc';
+import { LdChrome, LdQuote, type LdStat } from './LdChrome';
 
 /**
- * Theme-agnostic legal document layout (v2).
- * All visuals come from CSS custom properties under `.ld[data-theme=...]`
- * (see app/legal-v2.css). Swap the theme by changing `theme` only.
+ * Public legal document layout (C3 design system).
+ * Visual tokens live in app/legal-v2.css under `.ld[data-theme=...]`.
  */
 export type LegalDocSection = {
   id: string;
   title: string;
-  /** "בקצרה" one-liner shown above the section body. */
+  /** "בקצרה" one-liner, always visible above the collapsible body. */
   short?: string;
   body: ReactNode;
+  /** Expanded by default (e.g. the data table). */
+  open?: boolean;
 };
 
 export type LegalSummaryCard = { title: string; text: string; icon?: ReactNode };
 
+const TONES = ['em', 'amb', 'teal'] as const;
+
 export function LegalDoc({
-  theme = 'editorial-gold',
   eyebrow,
   title,
+  titleAccent,
   lead,
   updatedAt,
   version,
   summary,
   sections,
   currentPath,
+  stat,
+  quote,
+  quoteAfter,
 }: {
+  /** Kept for backwards compatibility; theme comes from LEGAL_THEME. */
   theme?: string;
   eyebrow: string;
   title: string;
+  titleAccent?: string;
   lead: string;
   updatedAt: string;
   version: string;
   summary: LegalSummaryCard[];
   sections: LegalDocSection[];
   currentPath: string;
+  stat?: LdStat;
+  /** Mid-page pull-quote: [text, gold accent]. */
+  quote?: [string, string?];
+  /** Index of the section after which the quote is placed. */
+  quoteAfter?: number;
 }) {
+  const qAt = quote ? Math.min(quoteAfter ?? Math.floor(sections.length / 2) - 1, sections.length - 1) : -1;
   return (
-    <div className="ld" data-theme={theme} dir="rtl" lang="he">
-      <a href="#ld-main" className="ld-skip">דילוג לתוכן</a>
-      <header className="ld-top">
-        <Link href="/" className="ld-brand">NuraWell</Link>
-        <nav aria-label="מסמכים משפטיים" className="ld-docs">
-          {LEGAL_NAV.map((n) => (
-            <Link key={n.href} href={n.href} aria-current={n.href === currentPath ? 'page' : undefined}>
-              {n.label}
-            </Link>
-          ))}
-        </nav>
-      </header>
+    <LdChrome
+      eyebrow={eyebrow}
+      title={title}
+      titleAccent={titleAccent}
+      lead={lead}
+      chips={[`עודכן ${updatedAt}`, `גרסה ${version}`]}
+      stat={stat}
+      currentPath={currentPath}
+    >
+      <LegalToc items={sections.map((s, i) => ({ id: s.id, num: String(i + 1), label: s.title }))} />
 
-      <div className="ld-hero">
-        <p className="ld-eyebrow">{eyebrow}</p>
-        <h1 className="ld-title">{title}</h1>
-        <p className="ld-lead">{lead}</p>
-        <p className="ld-meta">
-          עודכן: <time>{updatedAt}</time> · גרסה {version}
-        </p>
-      </div>
-
-      <section aria-labelledby="ld-short" className="ld-summary">
-        <h2 id="ld-short" className="ld-summary-h">בקצרה</h2>
-        <ul className="ld-cards">
-          {summary.map((c) => (
-            <li key={c.title} className="ld-card">
-              {c.icon ? <span className="ld-card-icon" aria-hidden>{c.icon}</span> : null}
-              <strong>{c.title}</strong>
-              <span>{c.text}</span>
+      <section aria-labelledby="ld-short" className="ld-block">
+        <h2 id="ld-short" className="ld-h2">בקצרה</h2>
+        <p className="ld-sub">הדברים החשובים ביותר, לפני הפירוט.</p>
+        <ul className="ld-cards" data-count={summary.length}>
+          {summary.map((c, i) => (
+            <li key={c.title} className={`ld-card t-${TONES[i % 3]}`}>
+              {c.icon ? <span className="ld-ib" aria-hidden>{c.icon}</span> : null}
+              <span>
+                <strong>{c.title}</strong>
+                <span className="ld-card-txt">{c.text}</span>
+              </span>
             </li>
           ))}
         </ul>
       </section>
 
-      <div className="ld-body">
-        <LegalToc items={sections.map((s, i) => ({ id: s.id, label: `${i + 1}. ${s.title}` }))} />
-        <main id="ld-main" className="ld-main">
-          {sections.map((s, i) => (
-            <section key={s.id} id={s.id} className="ld-sec" aria-labelledby={`${s.id}-h`}>
-              <h2 id={`${s.id}-h`} className="ld-sec-h">
-                <span className="ld-num" aria-hidden>{String(i + 1).padStart(2, '0')}</span>
+      <main id="ld-main" className="ld-main">
+        {sections.map((s, i) => (
+          <div key={s.id}>
+            <div className="ld-sep" aria-hidden />
+            <section id={s.id} className="ld-sec" aria-labelledby={`${s.id}-h`}>
+              <h2 id={`${s.id}-h`} className="ld-h2">
+                <span className="ld-num">{i + 1}.</span>
                 {s.title}
               </h2>
-              {s.short ? (
-                <p className="ld-short"><strong>בקצרה: </strong>{s.short}</p>
-              ) : null}
-              <div className="ld-prose">{s.body}</div>
+              {s.short ? <p className="ld-sub"><span className="ld-sr">בקצרה: </span>{s.short}</p> : null}
+              <details className="ld-acc ld-glass" open={s.open}>
+                <summary>
+                  <span className="ld-acc-t">
+                    <strong>{s.open ? 'הפירוט המלא' : 'לקריאת הסעיף המלא'}</strong>
+                    <small>{s.title}</small>
+                  </span>
+                  <span className="ld-chev" aria-hidden>
+                    <svg width="16" height="16" viewBox="0 0 16 16"><path d="M3 6l5 5 5-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
+                  </span>
+                </summary>
+                <div className="ld-acc-body ld-prose">{s.body}</div>
+              </details>
             </section>
-          ))}
-        </main>
-      </div>
-
-      <footer className="ld-foot">
-        <p>© {new Date().getFullYear()} NuraWell</p>
-      </footer>
-    </div>
+            {i === qAt && quote ? <LdQuote accent={quote[1]}>{quote[0]}</LdQuote> : null}
+          </div>
+        ))}
+      </main>
+    </LdChrome>
   );
 }
 
-/** Responsive data table: real <table> on wide screens, labelled cards on mobile (pure CSS). */
+/** Responsive data table: card-rows on desktop, labelled cards on mobile (pure CSS). */
 export function LegalDataTable({
   caption,
   columns,
@@ -119,7 +130,7 @@ export function LegalDataTable({
         </thead>
         <tbody>
           {rows.map((r, ri) => (
-            <tr key={ri}>
+            <tr key={ri} className={`t-${TONES[ri % 3]}`}>
               {r.map((cell, ci) =>
                 ci === 0 ? (
                   <th key={ci} scope="row" data-label={columns[ci]}>{cell}</th>

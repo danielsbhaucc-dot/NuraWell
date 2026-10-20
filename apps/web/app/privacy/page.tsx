@@ -50,6 +50,7 @@ const sections: LegalDocSection[] = [
   },
   {
     id: 'collect',
+    open: true,
     title: 'איזה מידע נאסף, למה ולכמה זמן',
     short: 'רק מה שנחוץ כדי ללוות אותך. אין פרסום, אין מכירת מידע ואין מעקב בין אתרים.',
     body: (
@@ -242,8 +243,12 @@ export default function PrivacyPage() {
       theme={LEGAL_THEME}
       currentPath="/privacy"
       eyebrow="מדיניות פרטיות"
-      title="המידע שלך, בשקיפות מלאה"
-      lead="מה אנחנו אוספים, למה, כמה זמן, עם מי זה משותף, ואיך שולטים בזה."
+      title="הפרטיות שלך,"
+      titleAccent="שמורה כמו זהב."
+      lead="אוספים רק מה שנדרש כדי ללוות אותך — ולא יותר. בשפה פשוטה: מה נאסף, למה, לכמה זמן, ואיך את/ה שולט/ת בזה."
+      stat={{ big: '0', label: 'עוגיות פרסום או מעקב', text: 'רק עוגיות חיוניות להפעלת האתר.' }}
+      quote={['אין פרסום. אין מעקב. אין מכירת מידע —', 'לעולם.']}
+      quoteAfter={4}
       updatedAt="20 באוקטובר 2026"
       version={LEGAL_POLICY_VERSION}
       summary={[

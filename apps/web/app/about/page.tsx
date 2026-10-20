@@ -19,6 +19,8 @@ export default function AboutPage() {
     <LegalShell
       icon={<Leaf className="w-8 h-8" />}
       title="אודות NuraWell"
+      titleAccent="שינוי שמרגיש אנושי."
+      currentPath="/about"
       subtitle="בנינו מקום שבו שינוי אורח חיים מרגיש אנושי — בקצב שלכם, עם ליווי חכם ובלי עונשים."
       updatedAt={UPDATED_AT}
     >

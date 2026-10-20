@@ -319,7 +319,8 @@ export default function TermsPage() {
       theme={LEGAL_THEME}
       currentPath="/terms"
       eyebrow="תנאי שימוש"
-      title="ההסכם בינינו, בשפה ברורה"
+      title="ההסכם בינינו,"
+      titleAccent="בשפה ברורה."
       lead="הכללים לשימוש ב־NuraWell: מה אנחנו מתחייבים לתת, מה מצופה ממך, ומה השירות לא מחליף."
       updatedAt={UPDATED_AT}
       version={LEGAL_POLICY_VERSION}

@@ -1,2 +1,2 @@
-/** Active visual theme for legal pages. Swap here once the design direction is chosen. */
-export const LEGAL_THEME: 'editorial-gold' | 'glass' = 'editorial-gold';
+/** Active visual theme for public/legal pages. */
+export const LEGAL_THEME: 'c3' | 'editorial-gold' | 'glass' = 'c3';
