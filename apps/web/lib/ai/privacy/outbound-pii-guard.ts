@@ -79,6 +79,13 @@ async function shieldFor(userId: string | null): Promise<PiiShield> {
     seed = (await Promise.race([seedLoader(userId), new Promise<null>((r) => setTimeout(() => r(null), 1500))])) ?? {};
     if (Object.keys(seed).length) seedCache.set(userId, { at: Date.now(), seed });
   }
+  // profile lookup timed out / failed / has no name → never send unmasked: fall back to the
+  // directory shield (every known user name), merged with whatever phone/email we did get.
+  if (!seed.full_name?.trim()) {
+    const dir = await directoryShield();
+    if (!seed.phone && !seed.email) return dir;
+    return createPiiShield({ ...seed, known_person_names: directory?.names ?? [] });
+  }
   return createPiiShield(seed);
 }
 

@@ -14,6 +14,8 @@ export type NotifyQualitySweepResult = { scanned: number; lint_fixed: number; ll
 
 const MAX_SCAN = 300;
 const MAX_LLM = 40;
+/** master has maxDuration 300 and other steps; the sweep never takes more than this */
+const TIME_BUDGET_MS = 45_000;
 
 export async function runNotifyQualitySweep(admin: SupabaseClient, now = new Date()): Promise<NotifyQualitySweepResult> {
   const since = new Date(now.getTime() - 26 * 3600_000).toISOString();
@@ -28,7 +30,9 @@ export async function runNotifyQualitySweep(admin: SupabaseClient, now = new Dat
   if (error) throw new Error(error.message);
   const out: NotifyQualitySweepResult = { scanned: 0, lint_fixed: 0, llm_checked: 0, llm_fixed: 0 };
   const profiles = new Map<string, { firstName: string; gender: ReturnType<typeof genderFromInstruction> }>();
+  const started = Date.now();
   for (const row of (data ?? []) as Array<{ id: string; user_id: string; body: string | null }>) {
+    if (Date.now() - started > TIME_BUDGET_MS) break;
     const body = row.body?.trim();
     if (!body) continue;
     out.scanned += 1;
