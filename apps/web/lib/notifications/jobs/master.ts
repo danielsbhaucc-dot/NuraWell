@@ -866,6 +866,16 @@ async function runMasterCron() {
     errors.push(`perf_retention: ${e instanceof Error ? e.message : String(e)}`);
   }
 
+  /** Data retention (migration 000160): batched deletes + ai_usage monthly rollup; logs to admin_audit_log */
+  let retention: unknown = null;
+  try {
+    const { data, error } = await admin.rpc('run_data_retention', { p_batch: 5000 });
+    if (error) throw new Error(error.message);
+    retention = data;
+  } catch (e) {
+    errors.push(`data_retention: ${e instanceof Error ? e.message : String(e)}`);
+  }
+
   let taskLadder: unknown = null;
   try {
     const { runTaskLadderMonitorBatch } = await import('@/lib/tasks/monitor-job');
@@ -886,6 +896,7 @@ async function runMasterCron() {
     ok: true,
     task_ladder: taskLadder,
     billing,
+    retention,
     window_hours: 24,
     analyzed,
     analysis_skipped: analysisSkipped,
