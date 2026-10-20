@@ -3,7 +3,7 @@
  * Deterministic and local: the text is never sent to any model/provider to classify it,
  * and is never logged. Ambiguous messages are treated as health (fail closed).
  */
-import { isHealthText } from './health-memory';
+import { isHealthText } from './health-text';
 
 export const REDACTED_PLACEHOLDER = 'ההודעה נמחקה על ידי אלמוג';
 export const REDACTION_REASON = 'מידע בריאותי — אין הסכמה לשמירה';
