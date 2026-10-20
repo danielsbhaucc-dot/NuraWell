@@ -6,6 +6,7 @@ import { cn } from '@/lib/cn';
 import { AdminLegalPanel } from './AdminLegalPanel';
 import { AdminMediaEvidencePanel } from './AdminMediaEvidencePanel';
 import { AdminKeyBackup } from './AdminKeyBackup';
+import { AdminKmsWrap } from './AdminKmsWrap';
 import { LegalSearch } from './LegalSearch';
 
 /** משפטי: one place for user-consent evidence and media provenance. */
@@ -24,7 +25,7 @@ export function LegalTabs({ initialTab = 'consent' }: { initialTab?: 'consent' |
         <button role="tab" aria-selected={tab === 'media'} type="button" onClick={() => pick('media')} className={btn(tab === 'media')} data-testid="legal-tab-media"><Images size={16} />מקור מדיה וזכויות</button>
         <button role="tab" aria-selected={tab === 'keys'} type="button" onClick={() => pick('keys')} className={btn(tab === 'keys')} data-testid="legal-tab-keys"><KeyRound size={16} />גיבוי מפתחות</button>
       </div>
-      <div role="tabpanel">{tab === 'consent' ? <AdminLegalPanel /> : tab === 'media' ? <AdminMediaEvidencePanel /> : <AdminKeyBackup />}</div>
+      <div role="tabpanel">{tab === 'consent' ? <AdminLegalPanel /> : tab === 'media' ? <AdminMediaEvidencePanel /> : <><AdminKeyBackup /><AdminKmsWrap /></>}</div>
     </div>
   );
 }

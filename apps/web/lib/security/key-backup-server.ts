@@ -1,6 +1,7 @@
 import 'server-only';
 import { createHash, hkdfSync, randomBytes } from 'node:crypto';
 import { encodeShare, sealBackup, splitSecret } from '@/lib/crypto/key-backup';
+import { ensureKmsKeysSync } from '@/lib/security/kms-envelope';
 
 export const BACKUP_KEY_NAMES = ['PII_ENCRYPTION_KEY', 'SECURE_VAULT_KEY', 'GIDEON_SETTINGS_KEY', 'CONSENT_SIGNING_PRIVATE_KEY', 'DB_BACKUP_AGE_IDENTITY'] as const;
 
@@ -12,6 +13,7 @@ const fp = (v: string) => createHash('sha256').update(v).digest('hex').slice(0, 
  * restore sets it explicitly and Gideon secrets survive any service-role rotation.
  */
 function collect(env: NodeJS.ProcessEnv = process.env): { keys: Record<string, string>; gideonDerived: boolean } {
+  if (env === process.env) ensureKmsKeysSync();
   const keys: Record<string, string> = {};
   for (const n of BACKUP_KEY_NAMES) {
     const v = env[n]?.trim();
