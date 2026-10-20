@@ -8,6 +8,7 @@ import { decryptString } from '@/lib/crypto/pii';
 import { authenticationOptions, CHALLENGE_COOKIE, challengeCookieOpts, consumeChallenge, resolveRp, verifyAuthentication } from '@/lib/auth/passkeys';
 import { readCookie } from '@/lib/auth/http';
 import { auditLegalAccess } from '@/lib/legal/evidence-verify';
+import { consumeGrant, readCookieFrom, STEPUP_COOKIE } from '@/lib/auth/stepup';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -31,7 +32,7 @@ export async function GET(request: Request) {
 
 const body = z.discriminatedUnion('op', [
   z.object({ op: z.literal('challenge') }),
-  z.object({ op: z.literal('reveal'), id: z.string().uuid(), response: z.record(z.string(), z.unknown()) }),
+  z.object({ op: z.literal('reveal'), id: z.string().uuid(), response: z.record(z.string(), z.unknown()).optional() }),
   z.object({ op: z.literal('log'), id: z.string().uuid(), action: z.enum(['copy', 'draft']) }),
 ]);
 
@@ -67,10 +68,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true }, { headers: NO_STORE });
   }
 
-  const rp = resolveRp(request);
-  const ch = await consumeChallenge(admin, readCookie(request, CHALLENGE_COOKIE), 'login');
-  const v = await verifyAuthentication(admin, ch && rp && ch.origin === rp.origin ? ch : null, b.response as unknown as AuthenticationResponseJSON);
   const clear = (r: NextResponse) => { r.cookies.set(CHALLENGE_COOKIE, '', { ...challengeCookieOpts(PATH), maxAge: 0 }); return r; };
+  // Either a fresh passkey assertion here, or a single-use step-up grant (QR→phone / TOTP / backup code).
+  let method = 'passkey';
+  let v: { ok: true; userId: string } | { ok: false; error: string };
+  if (b.response) {
+    const rp = resolveRp(request);
+    const ch = await consumeChallenge(admin, readCookie(request, CHALLENGE_COOKIE), 'login');
+    v = await verifyAuthentication(admin, ch && rp && ch.origin === rp.origin ? ch : null, b.response as unknown as AuthenticationResponseJSON);
+  } else {
+    const g = await consumeGrant(admin, auth.user.id, 'legal.password', readCookieFrom(request, STEPUP_COOKIE));
+    v = g.ok ? { ok: true, userId: auth.user.id } : { ok: false, error: 'stepup_required' };
+    if (g.ok) method = g.method;
+  }
   if (!v.ok || v.userId !== auth.user.id) {
     await auditLegalAccess(admin, auth.user.id, 'legal_export_password_reveal_denied', { secret_id: sec.id, reason: v.ok ? 'other_user' : v.error });
     return clear(NextResponse.json({ error: 'reauth_failed' }, { status: 401 }));
@@ -81,6 +91,6 @@ export async function POST(request: Request) {
   } catch {
     return clear(NextResponse.json({ error: 'decrypt_failed' }, { status: 500 }));
   }
-  await auditLegalAccess(admin, auth.user.id, 'legal_export_password_revealed', { secret_id: sec.id, case_ref: sec.case_ref, method: 'passkey' });
+  await auditLegalAccess(admin, auth.user.id, 'legal_export_password_revealed', { secret_id: sec.id, case_ref: sec.case_ref, method });
   return clear(NextResponse.json({ password, label: sec.label }, { headers: NO_STORE }));
 }

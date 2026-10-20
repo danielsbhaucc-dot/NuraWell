@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { MotionConfig } from 'framer-motion';
 import { Check, HeartPulse, Loader2, ShieldCheck, Trash2 } from 'lucide-react';
 import { AnimatedDialog } from '@/components/shared/AnimatedDialog';
+import { deviceSummary, drawIdentityStrip, israelTime, maskEmail, shortUid, type IdentityStrip } from '@/lib/legal/identity-strip';
 import { consentText, isAcceptedConsentWord, type ConsentAction, type ConsentGender } from '@/lib/legal/consent-text';
 
 /** Device-side facts (browser-claimed; signed into the record but labelled as such in the report). */
@@ -16,6 +17,11 @@ export type ConsentClientMeta = {
   dpr: number;
   typing_ms: number | null;
   tz: string | null;
+  /** Identity strip values burned into the screenshot (same values, for cross-checking). */
+  id_uid?: string;
+  id_email_masked?: string;
+  id_device?: string;
+  id_at_il?: string;
 };
 export type ConsentCollected = { text_version: string; typed_word: string; checkbox: true; screenshot: string | null; screenshots?: string[]; client?: ConsentClientMeta };
 
@@ -78,7 +84,7 @@ export function expandForCapture(node: HTMLElement): () => void {
  * not just the visible scroll area. Tall sheets are split into ordered strips (≤6, each ≤2.9× the width);
  * each strip is hashed and signed server-side exactly as stored. Best-effort.
  */
-export async function captureSheet(node: HTMLElement): Promise<string[]> {
+export async function captureSheet(node: HTMLElement, identity?: IdentityStrip | null): Promise<string[]> {
   const restore = expandForCapture(node);
   try {
     await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
@@ -86,7 +92,7 @@ export async function captureSheet(node: HTMLElement): Promise<string[]> {
     const w0 = Math.ceil(node.getBoundingClientRect().width);
     const fullH = Math.ceil(Math.max(node.scrollHeight, node.getBoundingClientRect().height));
     const ratio = Math.min(2.5, CAP_W / Math.max(1, w0));
-    const canvas = await toCanvas(node, {
+    const raw = await toCanvas(node, {
       pixelRatio: ratio,
       cacheBust: true,
       backgroundColor: '#eef3e4',
@@ -96,6 +102,8 @@ export async function captureSheet(node: HTMLElement): Promise<string[]> {
       canvasHeight: fullH,
       style: { maxHeight: 'none', height: `${fullH}px`, overflow: 'visible', transform: 'none', margin: '0' },
     });
+    // Identity strip is drawn into the pixels BEFORE encoding, so it is part of the hashed, signed image.
+    const canvas = identity ? drawIdentityStrip(raw, identity) : raw;
     const w = canvas.width;
     const totalH = canvas.height;
     const n = Math.min(MAX_SHEET_SEGMENTS, Math.max(1, Math.ceil(totalH / (w * SEG_ASPECT))));
@@ -153,7 +161,13 @@ export function ConsentEvidenceSheet({ open, action, gender, onClose, mode = 'su
     setBusy(true);
     setError(null);
     const capturedAt = new Date().toISOString();
-    const screenshots = await captureSheet(panel.current);
+    let identity: IdentityStrip | null = null;
+    try {
+      const { createClient } = await import('@/lib/supabase/client');
+      const { data } = await createClient().auth.getUser();
+      if (data.user) identity = { uid: shortUid(data.user.id), email: maskEmail(data.user.email), at: israelTime(capturedAt), device: deviceSummary(navigator.userAgent), version: t.version };
+    } catch { identity = null; }
+    const screenshots = await captureSheet(panel.current, identity);
     const screenshot = screenshots[0] ?? null;
     const client: ConsentClientMeta = {
       captured_at: capturedAt,
@@ -164,6 +178,7 @@ export function ConsentEvidenceSheet({ open, action, gender, onClose, mode = 'su
       dpr: Math.round((window.devicePixelRatio || 1) * 100) / 100,
       typing_ms: typingStart.current != null && typingEnd.current != null ? Math.max(0, Math.round(typingEnd.current - typingStart.current)) : null,
       tz: (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone ?? null; } catch { return null; } })(),
+      ...(identity ? { id_uid: identity.uid, id_email_masked: identity.email.slice(0, 64), id_device: identity.device, id_at_il: identity.at.slice(0, 64) } : {}),
     };
     const collected: ConsentCollected = { text_version: t.version, typed_word: typed.trim(), checkbox: true, screenshot, screenshots, client };
     if (mode === 'collect') {

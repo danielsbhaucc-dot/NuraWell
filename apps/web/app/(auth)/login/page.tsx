@@ -5,7 +5,8 @@ import { useState, useEffect, useSyncExternalStore, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Mail, Lock, Eye, EyeOff, LogIn, Fingerprint, KeyRound } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, LogIn, Fingerprint, KeyRound, QrCode } from 'lucide-react';
+import { StepUpDialog } from '@/components/admin/StepUpDialog';
 import { browserSupportsWebAuthn, startAuthentication } from '@simplewebauthn/browser';
 import { AnimatedDialog } from '../../../components/shared/AnimatedDialog';
 import { createClient } from '../../../lib/supabase/client';
@@ -52,6 +53,7 @@ function LoginFormContent() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [passkeySupported, setPasskeySupported] = useState(false);
+  const [qrOpen, setQrOpen] = useState(false);
   const [passkeyBusy, setPasskeyBusy] = useState(false);
   const [backupOpen, setBackupOpen] = useState(false);
   const [backupEmail, setBackupEmail] = useState('');
@@ -469,6 +471,20 @@ function LoginFormContent() {
                   כניסה עם Face ID או טביעת אצבע
                 </button>
               ) : null}
+              <button
+                type="button"
+                onClick={() => setQrOpen(true)}
+                data-testid="login-qr"
+                className={[
+                  'w-full min-h-[48px] rounded-2xl font-bold flex items-center justify-center gap-2 transition-all active:scale-95',
+                  isDarkUi ? 'bg-white/5 text-emerald-50 ring-1 ring-white/20' : 'bg-glass/50 text-emerald-800 ring-1 ring-emerald-300/60',
+                ].join(' ')}
+              >
+                <QrCode className="w-5 h-5" aria-hidden />
+                כניסה עם הטלפון (סריקת קוד)
+              </button>
+              <StepUpDialog open={qrOpen} variant="login" purpose="auth.login" reason="סורקים ומאשרים בטלפון" onClose={() => setQrOpen(false)}
+                onVerified={() => { setQrOpen(false); toast.success('התחברת בהצלחה!'); afterSignIn(); }} />
               {isOpsHost ? (
               <button
                 type="button"
