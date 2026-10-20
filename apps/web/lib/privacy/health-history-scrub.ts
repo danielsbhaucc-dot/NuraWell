@@ -25,6 +25,13 @@ export async function scrubHealthFromChatHistory(admin: SupabaseClient, userId: 
     }
     if (rows.length < 500) break;
   }
+  // reply-QC audit copies (original/edited Almog text) must not outlive the scrub
+  const { data: edits } = await admin.from('ai_interaction_edits').select('id, original_content, edited_content').eq('user_id', userId);
+  for (const e of (edits ?? []) as Array<{ id: number; original_content: string; edited_content: string }>) {
+    if (isHealthChatMessage(decryptChatContent(e.original_content, userId)) || isHealthChatMessage(decryptChatContent(e.edited_content, userId))) {
+      await admin.from('ai_interaction_edits').delete().eq('id', e.id).eq('user_id', userId);
+    }
+  }
   let sessions = 0;
   const { data: sess, error: sErr } = await admin.from('chat_sessions').select('id, title, summary, preview_text').eq('user_id', userId);
   if (sErr) throw new Error(sErr.message);

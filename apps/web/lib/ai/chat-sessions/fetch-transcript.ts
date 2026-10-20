@@ -41,6 +41,7 @@ export async function fetchChatSessionTranscript(
         content: String(row.content ?? '').trim(),
         created_at: row.created_at as string,
         ...(reaction ? { emoji_reaction: reaction } : {}),
+        ...(role === 'assistant' && (row.metadata as Record<string, unknown> | null)?.qc_edited_at ? { edited: true } : {}),
       };
     })
     .filter((t) => t.content.length > 0);

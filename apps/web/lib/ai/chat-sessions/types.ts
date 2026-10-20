@@ -45,4 +45,6 @@ export type ChatTranscriptTurn = {
   created_at: string;
   /** תגובת אימוג'י של המנטור על הודעת משתמש (אם יש) */
   emoji_reaction?: ChatTranscriptEmojiReaction | null;
+  /** תשובת אלמוג תוקנה אוטומטית אחרי השליחה (בדיקת איכות) */
+  edited?: boolean;
 };
