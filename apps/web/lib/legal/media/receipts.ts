@@ -94,6 +94,7 @@ export async function ingestReceipt(admin: SupabaseClient, input: IngestReceiptI
   };
   const parsedBy = aiUsed ? 'rules+ai' : 'rules';
   const { data: ins, error } = await admin.from('media_receipts').insert(row).select('id').single();
+  if (error?.code === '23505') { const { data: d2 } = await admin.from('media_receipts').select('id').eq('eml_sha', eml.sha256).maybeSingle(); if (d2) return { ok: true as const, id: (d2 as { id: string }).id, duplicate: true }; }
   if (error) return { ok: false as const, error: error.message };
   const id = (ins as { id: string }).id;
   const rec = await appendMediaEvidence(admin, `receipt:${id}`, 'receipt', { ...row, message_id: headers['message-id'] ?? null, parsed_by: parsedBy, received_at: new Date().toISOString(), envelope_from_hash: input.envelopeFrom ? sha256Hex(input.envelopeFrom.toLowerCase()) : null, actor_id: input.actorId ?? null });

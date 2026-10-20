@@ -41,7 +41,9 @@ export async function importEvidenceBundle(admin: SupabaseClient, zip: Buffer, a
       out.files.push({ file: f, sha256: s.sha256 });
     }
     const row = { source: 'upload', vendor: r.vendor, plan: r.plan ?? null, amount: r.amount ?? null, currency: r.currency ?? null, receipt_date: r.receipt_date ?? null, period_start: r.period_start ?? null, period_end: r.period_end ?? null, subject: r.subject ?? r.files[0]!, original_from: null, forwarder_ok: true, trust: r.trust, eml_sha: key, attachments: atts };
+    // Idempotent: unique index on eml_sha; a concurrent insert of the same file is a skip, not a twin.
     const { data: ins, error } = await admin.from('media_receipts').insert(row).select('id').single();
+    if (error?.code === '23505') { out.receipts_skipped++; continue; }
     if (error) throw new Error(error.message);
     const id = (ins as { id: string }).id;
     const rec = await appendMediaEvidence(admin, `receipt:${id}`, 'receipt', { ...row, note: r.note ?? null, imported_by: actorId, imported_at: new Date().toISOString(), method: 'bundle_import' });
@@ -73,6 +75,10 @@ export async function processImportQueue(admin: SupabaseClient, max = 2) {
   const { data } = await admin.from('media_import_queue').select('id, zip_sha, zip_b64, actor_id').is('processed_at', null).order('created_at').limit(max);
   const done: Array<{ sha: string; ok: boolean }> = [];
   for (const q of (data ?? []) as Array<{ id: string; zip_sha: string; zip_b64: string; actor_id: string }>) {
+    // Atomic claim: only one drain (panel open / scheduled run) may process a bundle. Stale claims (>10 min) are retaken.
+    const stale = new Date(Date.now() - 10 * 60_000).toISOString();
+    const { data: claimed } = await admin.from('media_import_queue').update({ claimed_at: new Date().toISOString() }).eq('id', q.id).is('processed_at', null).or(`claimed_at.is.null,claimed_at.lt."${stale}"`).select('id');
+    if (!claimed?.length) continue;
     const zip = Buffer.from(q.zip_b64, 'base64');
     let result: Record<string, unknown>;
     if (sha256Hex(zip) !== q.zip_sha) result = { ok: false, error: 'sha_mismatch' };
