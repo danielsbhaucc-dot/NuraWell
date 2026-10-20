@@ -5,6 +5,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { GENESIS, sha256Hex, signHash } from '../evidence-crypto';
 import { requestTimestamp } from '../tsa';
 import { otsStamp } from '../ots';
+import { putLegalObject } from '../evidence-storage';
 import { buildMediaPayload, type MediaEvidencePayload } from './core';
 
 export type AppendResult = { ok: true; id: string; recordHash: string; createdAt: string } | { ok: false; error: string };
@@ -41,7 +42,7 @@ export async function attestMedia(admin: SupabaseClient, recordId: string, hash:
   const [tsa, ots] = await Promise.all([requestTimestamp(hash), otsStamp(hash)]);
   const rows: Array<Record<string, unknown>> = [
     tsa.ok
-      ? { record_id: recordId, kind: 'tsa', digest: hash, payload: { url: tsa.url, token_b64: tsa.tokenB64, nonce: tsa.nonceHex, gen_time: tsa.genTime } }
+      ? { record_id: recordId, kind: 'tsa', digest: hash, payload: { url: tsa.url, ...(await offloadTsaToken(hash, tsa.tokenB64)), nonce: tsa.nonceHex, gen_time: tsa.genTime } }
       : { record_id: recordId, kind: 'tsa', digest: hash, payload: { failed: true, error: tsa.error.slice(0, 300) } },
   ];
   if (ots.length) rows.push({ record_id: recordId, kind: 'ots', digest: hash, payload: { proofs: ots } });
@@ -70,4 +71,21 @@ export async function maybeAnchorMediaChainHead(admin: SupabaseClient, force = f
     payload: { count: hashes.length, nonce: randomBytes(4).toString('hex'), tsa: tsa.ok ? { url: tsa.url, token_b64: tsa.tokenB64, nonce: tsa.nonceHex, gen_time: tsa.genTime } : { failed: true }, ots },
   });
   return { anchored: true, head, count: hashes.length };
+}
+
+/**
+ * RFC 3161 tokens are ~6KB of incompressible base64. Keep them in the private EU legal bucket and
+ * store only the object key + SHA-256 in the (append-only) attestation row. The record hash chain is
+ * unaffected (it lives in media_evidence). Falls back to inline storage if the bucket is unavailable.
+ */
+export async function offloadTsaToken(hash: string, tokenB64: string): Promise<Record<string, string>> {
+  try {
+    const bytes = Buffer.from(tokenB64, 'base64');
+    const sha = sha256Hex(bytes);
+    const key = await putLegalObject(`media-tsa/${hash.slice(0, 2)}/${hash}-${sha.slice(0, 12)}.tsr`, bytes, 'application/timestamp-reply', sha);
+    if (key) return { token_ref: key, token_sha256: sha };
+  } catch (e) {
+    console.warn('[media-evidence] tsa offload failed, storing inline', { error: e instanceof Error ? e.name : 'error' });
+  }
+  return { token_b64: tokenB64 };
 }

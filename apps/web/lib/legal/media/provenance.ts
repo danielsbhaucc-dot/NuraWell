@@ -6,6 +6,7 @@ import { publicKeyPem, sha256Hex } from '../evidence-crypto';
 import { verifyTsaResponse } from '../tsa';
 import { GENERATORS, SOURCE_TYPES, missingFields, statusFor, verifyMediaChain, type MediaRecord, type Provenance } from './core';
 import { appendMediaEvidence } from './record';
+import { loadLegalObject } from '../evidence-storage';
 import { storeMediaBlob } from './store';
 import type { IndexRow } from './ingest';
 
@@ -91,7 +92,17 @@ export async function loadMediaEvidence(admin: SupabaseClient, key: string) {
   const records = (recs ?? []) as Array<MediaRecord & { signing_key_id: string }>;
   const ids = records.map((r) => r.id);
   const { data: atts } = ids.length ? await admin.from('media_evidence_attestations').select('record_id, kind, digest, payload, created_at').in('record_id', ids) : { data: [] };
-  return { records, attestations: (atts ?? []) as Array<{ record_id: string; kind: string; digest: string; payload: Record<string, unknown>; created_at: string }> };
+  const attestations = (atts ?? []) as Array<{ record_id: string; kind: string; digest: string; payload: Record<string, unknown>; created_at: string }>;
+  // Offloaded TSA tokens: fetch from the legal bucket and accept only if the stored SHA-256 matches.
+  await Promise.all(attestations.map(async (a) => {
+    const ref = a.payload?.token_ref;
+    if (a.kind !== 'tsa' || typeof ref !== 'string' || a.payload.token_b64) return;
+    try {
+      const bytes = await loadLegalObject(ref);
+      if (bytes && sha256Hex(bytes) === a.payload.token_sha256) a.payload = { ...a.payload, token_b64: bytes.toString('base64') };
+    } catch { /* leaves token missing → tsa_ok=false, surfaced in verification */ }
+  }));
+  return { records, attestations };
 }
 
 export async function verifyMediaAsset(admin: SupabaseClient, key: string, fileBytes?: Buffer | null) {
