@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { ChevronLeft, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import type { Anomaly, Explained, Story, Summary } from '@/lib/logging/insights';
-import { ActiveFilters, ago, CatIcon, Dot, Empty, fmtIl, Glass, Metrics, OptionGroup, Pill, SearchBar, Section, Segmented, Sheet, Skeleton, STATUS, useDisclosure, type Status } from './glass';
+import { ActiveFilters, ago, CatIcon, Dot, Empty, fmtIl, Glass, Metrics, Stripe, OptionGroup, Pill, SearchBar, Section, Segmented, Sheet, Skeleton, STATUS, useDisclosure, type Status } from './glass';
 
 type Feed = { events: Explained[]; stories: Story[]; anomalies: Anomaly[]; summary: Summary; nextBefore: string | null };
 type Range = '1h' | '24h' | '7d' | '30d';
@@ -15,26 +15,27 @@ const RANGES: [Range, string][] = [['1h', 'שעה'], ['24h', 'יום'], ['7d', '
 function EventRow({ e }: { e: Explained }) {
   const [open, setOpen] = useState(false);
   return (
-    <li>
-      <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} className="flex w-full items-center gap-3 px-4 py-3.5 text-start transition hover:bg-black/[0.02]">
-        <CatIcon cat={e.category} className="shrink-0 text-slate-400" />
+    <li className="relative">
+      <Stripe status={e.status} />
+      <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} className="flex w-full items-center gap-3 px-4 py-3.5 text-start transition hover:bg-cream/50">
+        <CatIcon cat={e.category} className="shrink-0 text-slate-500" />
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-2"><Dot status={e.status} pulse={e.status === 'pending'} /><span className="truncate text-[14px] font-medium text-slate-900 dark:text-cream">{e.title}</span></span>
           <span className="mt-0.5 block truncate ps-4 text-[12.5px] text-slate-500">{e.why}</span>
         </span>
-        <span className="shrink-0 text-[12px] tabular-nums text-slate-400" title={fmtIl(e.at)}>{ago(e.at)}</span>
+        <span className="shrink-0 text-[12px] tabular-nums text-slate-500" title={fmtIl(e.at)}>{ago(e.at)}</span>
       </button>
       {open ? (
         <div className="px-4 pb-4 ps-11 text-[13px]">
           {e.todo ? <p className="mb-3 text-slate-700 dark:text-slate-200"><span className="font-medium">מה לעשות: </span>{e.todo}</p> : null}
           <dl className="grid grid-cols-[6rem_1fr] gap-x-3 gap-y-1.5 text-slate-600 dark:text-slate-300">
-            <dt className="text-slate-400">סטטוס</dt><dd><Pill status={e.status} /> {e.severity >= 6 ? <span className="text-slate-400">· חומרה {e.severity}/10</span> : null}</dd>
-            <dt className="text-slate-400">זמן</dt><dd>{fmtIl(e.at)}</dd>
-            <dt className="text-slate-400">אירוע</dt><dd dir="ltr" className="text-end font-mono text-[12px]">{e.event}</dd>
-            {e.actor ? <Fragment><dt className="text-slate-400">מבצע</dt><dd dir="ltr" className="text-end font-mono text-[12px]">{e.actor}</dd></Fragment> : null}
-            {Object.entries(e.detail).filter(([, v]) => v != null && v !== '').map(([k, v]) => <Fragment key={k}><dt className="text-slate-400">{k}</dt><dd className="break-words">{String(v)}</dd></Fragment>)}
+            <dt className="text-slate-500">סטטוס</dt><dd><Pill status={e.status} /> {e.severity >= 6 ? <span className="text-slate-500">· חומרה {e.severity}/10</span> : null}</dd>
+            <dt className="text-slate-500">זמן</dt><dd>{fmtIl(e.at)}</dd>
+            <dt className="text-slate-500">אירוע</dt><dd dir="ltr" className="text-end font-mono text-[12px]">{e.event}</dd>
+            {e.actor ? <Fragment><dt className="text-slate-500">מבצע</dt><dd dir="ltr" className="text-end font-mono text-[12px]">{e.actor}</dd></Fragment> : null}
+            {Object.entries(e.detail).filter(([, v]) => v != null && v !== '').map(([k, v]) => <Fragment key={k}><dt className="text-slate-500">{k}</dt><dd className="break-words">{String(v)}</dd></Fragment>)}
           </dl>
-          <p className="mt-3 text-[11.5px] text-slate-400">פרטים מצונזרים — בלי קודים, טוקנים, מיילים או מזהים מלאים.</p>
+          <p className="mt-3 text-[11.5px] text-slate-500">פרטים מצונזרים — בלי קודים, טוקנים, מיילים או מזהים מלאים.</p>
         </div>
       ) : null}
     </li>
@@ -44,9 +45,10 @@ function EventRow({ e }: { e: Explained }) {
 function StoryRow({ s }: { s: Story }) {
   const [open, setOpen] = useState(false);
   return (
-    <li>
-      <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} className="flex w-full items-center gap-3 px-4 py-3.5 text-start hover:bg-black/[0.02]">
-        <CatIcon cat="login" className="shrink-0 text-slate-400" />
+    <li className="relative">
+      <Stripe status={s.outcome} />
+      <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} className="flex w-full items-center gap-3 px-4 py-3.5 text-start hover:bg-cream/50">
+        <CatIcon cat="login" className="shrink-0 text-slate-500" />
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-2"><Dot status={s.outcome} /><span className="truncate text-[14px] font-medium text-slate-900 dark:text-cream">{s.headline}</span></span>
           <span className="mt-0.5 block ps-4 text-[12.5px] text-slate-500">{s.events.length} שלבים · {fmtIl(s.start)}</span>
@@ -58,7 +60,7 @@ function StoryRow({ s }: { s: Story }) {
           {s.events.map((e) => (
             <li key={e.id} className="relative py-1.5 text-[13px] text-slate-700 dark:text-slate-200">
               <span className={cn('absolute -start-[1.6rem] top-[0.7rem] h-1.5 w-1.5 rounded-full', STATUS[e.status].dot)} />
-              {e.title} <span className="text-slate-400">· {new Date(e.at).toLocaleTimeString('he-IL', { timeZone: 'Asia/Jerusalem', hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+              {e.title} <span className="text-slate-500">· {new Date(e.at).toLocaleTimeString('he-IL', { timeZone: 'Asia/Jerusalem', hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
             </li>
           ))}
         </ol>
@@ -104,12 +106,13 @@ export function ActivityLog() {
   return (
     <div className="flex flex-col gap-8">
       {top ? (
-        <Glass className="flex items-start gap-3 px-4 py-3.5">
+        <Glass glow="failed" className="flex items-start gap-3 overflow-hidden bg-gradient-to-l from-rose-500/[0.08] to-transparent px-5 py-4">
+          <Stripe status="failed" />
           <Dot status="failed" pulse />
           <div className="min-w-0 flex-1">
             <div className="text-[14px] font-medium text-slate-900 dark:text-cream">{top.title}</div>
             <div className="mt-0.5 text-[13px] text-slate-500">{top.why} {top.todo}</div>
-            {feed!.anomalies.length > 1 ? <div className="mt-1 text-[12px] text-slate-400">ועוד {feed!.anomalies.length - 1} חריגות</div> : null}
+            {feed!.anomalies.length > 1 ? <div className="mt-1 text-[12px] text-slate-500">ועוד {feed!.anomalies.length - 1} חריגות</div> : null}
           </div>
           <Link prefetch={false} href="/ops/ceo/security" className="shrink-0 text-[13px] font-medium text-slate-800 underline underline-offset-4 dark:text-cream">מכשירים</Link>
         </Glass>
@@ -128,7 +131,7 @@ export function ActivityLog() {
             trailing={<button type="button" onClick={() => setLive(!live)} aria-pressed={live} title={live ? 'עדכון חי פעיל' : 'עדכון חי מושהה'} className="flex h-10 items-center gap-1.5 rounded-xl px-2 text-[12px] text-slate-500"><Dot status={live ? 'success' : 'info'} pulse={live} />{live ? 'חי' : 'מושהה'}</button>} />
           <div className="flex items-center justify-between gap-2">
             <Segmented value={range} options={RANGES} onChange={setRange} />
-            <button type="button" onClick={() => void load()} aria-label="רענון" className="grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:text-slate-700"><RefreshCw size={15} /></button>
+            <button type="button" onClick={() => void load()} aria-label="רענון" className="grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:text-slate-700"><RefreshCw size={15} /></button>
           </div>
           <ActiveFilters parts={parts} onClear={() => { setCat('all'); setStatus('all'); }} />
         </div>
