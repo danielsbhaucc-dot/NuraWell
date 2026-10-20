@@ -219,8 +219,8 @@ export function OnboardingFormClient() {
       toast.warning('אישור משפטי', 'יש לאשר את תנאי השימוש ומדיניות הפרטיות');
       return;
     }
-    if (!email.trim() || !password || password.length < 8) {
-      toast.warning('חשבון', `${gc.fill} אימייל וסיסמה (לפחות 8 תווים)`);
+    if (!email.trim() || !password || password.length < 10) {
+      toast.warning('חשבון', `${gc.fill} אימייל וסיסמה (לפחות 10 תווים, אותיות וספרה)`);
       return;
     }
     const metricsErr = validateBodyMetrics({ currentWeight, targetWeight, height });
@@ -701,12 +701,12 @@ export function OnboardingFormClient() {
                     <label>
                       <span className="text-sm font-bold text-emerald-50 flex items-center gap-2 mb-2">
                         <Lock className="w-4 h-4 text-emerald-400" />
-                        סיסמה (לפחות 8 תווים)
+                        סיסמה (לפחות 10 תווים, אותיות וספרה)
                       </span>
                       <input
                         type="password"
                         autoComplete="new-password"
-                        minLength={6}
+                        minLength={10}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         className="onboarding-input-dark w-full"
