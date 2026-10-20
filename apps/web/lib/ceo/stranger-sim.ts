@@ -9,7 +9,20 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 export const SIM_MINUTES = 30;
 const START = new Set(['/סימולציה', '/simulate']);
 const EXIT = new Set(['אני מוותר', 'סיום סימולציה']);
-export const isSimStart = (t: string) => START.has(t.trim().replace(/@\w+$/, ''));
+const SIM_WORD = /(סימולציה|סימולציית\s*זר|simulat(e|ion))/i;
+const SIM_VERB = /(תעשה|תעשי|עשה|הפעל|תפעיל|תפעילי|תריץ|הרץ|תתחיל|התחל|נתחיל|בוא\s+נעשה|תכנס|רוצה|אפשר|start|run|do|begin|let'?s)/i;
+const AS_STRANGER = /(תבדוק|בדוק|תבחן|תתייחס)\s+(אליי|אלי|אותי)\s+(כזר|כמו\s+(ל)?זר)|תעמיד\s+פנים\s+שאני\s+זר|test\s+me\s+as\s+a\s+stranger/i;
+const NEG = /(אל\s+ת|לא\s+צריך|בלי\s+סימולציה|don'?t|do\s+not)/i;
+const QUESTION = /^(מה|איך|למה|מתי|האם|כמה|what|how|why|when)\b|\?/i;
+/** Natural phrasing: "גדעון תעשה לי סימולציה", "הפעל סימולציה", "תבדוק אותי כזר", "simulate me". Not questions/negations. */
+export function isSimStartNatural(text: string): boolean {
+  const t = text.trim().replace(/^גדעון[\s,:]*/, '').replace(/[.!]+$/, '').trim();
+  if (!t || t.length > 80 || t.includes('/') || NEG.test(t) || QUESTION.test(t)) return false;
+  if (AS_STRANGER.test(t)) return true;
+  if (/^(סימולציה|simulate|simulation)(\s+(עכשיו|בבקשה|please|now))?$/i.test(t)) return true;
+  return SIM_WORD.test(t) && SIM_VERB.test(t) && !/סיום|יציאה|תסיים|תעצור|stop|end/i.test(t);
+}
+export const isSimStart = (t: string) => START.has(t.trim().replace(/@\w+$/, '')) || isSimStartNatural(t);
 export const isSimExit = (t: string) => EXIT.has(t.trim());
 
 export type SimAttempt = { at: string; kind: SimKind };
