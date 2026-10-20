@@ -26,8 +26,9 @@ describe('Almog redaction reply', () => {
     const m = almogRedactionReply('male');
     expect(f).toContain('ספרי');
     expect(m).toContain('ספר לי');
+    expect(m).toContain('ללא הסכמה מפורשת');
     for (const r of [f, m, almogRedactionReply(null)]) {
-      expect(r).toContain('נמחקה');
+      expect(r).toMatch(/נמחק|מחקתי/);
       expect(r).not.toMatch(/93|קילו|סוכרת/);
       expect(r).not.toMatch(/\/[הת]\b/);
     }
@@ -69,6 +70,31 @@ describe('respondWithHealthRedaction — no leakage', () => {
     expect((rows[0] as { content: string }).content).toBe(REDACTED_CONTENT);
     const all = JSON.stringify({ rows, logs, body });
     expect(all).not.toMatch(/93\.4|סוכרת|שוקלת/);
+  });
+
+  it.each([
+    [0, true],
+    [1, false],
+    [5, false],
+  ])('server-side stored notice count %i → consent line %s; notice flagged', async (count, first) => {
+    const rows: Array<{ content: string; metadata?: Record<string, unknown> }> = [];
+    const chain: Record<string, unknown> = {};
+    for (const k of ['select', 'eq']) chain[k] = () => chain;
+    chain.maybeSingle = async () => ({ data: { gender: 'male' } });
+    chain.contains = (_c: string, v: unknown) => {
+      expect(v).toEqual({ redaction_notice: true });
+      return Promise.resolve({ count });
+    };
+    const admin = { from: () => chain };
+    const res = await respondWithHealthRedaction({
+      supabase: {}, admin, userId: 'u1', sessionId: 's1', debugId: 'd1',
+      ensureSession: async () => {},
+      insert: async (_sb, row) => void rows.push(row),
+    });
+    const body = await res.text();
+    expect(body.includes('ללא הסכמה מפורשת')).toBe(first);
+    expect(/הסכמה|הגדרות/.test(body)).toBe(first);
+    expect(rows[1].metadata).toEqual({ redaction_notice: true });
   });
 
   it('persist failure logs no content', async () => {
