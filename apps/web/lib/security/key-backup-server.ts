@@ -2,7 +2,7 @@ import 'server-only';
 import { createHash, hkdfSync, randomBytes } from 'node:crypto';
 import { encodeShare, sealBackup, splitSecret } from '@/lib/crypto/key-backup';
 
-export const BACKUP_KEY_NAMES = ['PII_ENCRYPTION_KEY', 'SECURE_VAULT_KEY', 'GIDEON_SETTINGS_KEY', 'CONSENT_SIGNING_PRIVATE_KEY'] as const;
+export const BACKUP_KEY_NAMES = ['PII_ENCRYPTION_KEY', 'SECURE_VAULT_KEY', 'GIDEON_SETTINGS_KEY', 'CONSENT_SIGNING_PRIVATE_KEY', 'DB_BACKUP_AGE_IDENTITY'] as const;
 
 const fp = (v: string) => createHash('sha256').update(v).digest('hex').slice(0, 12);
 

@@ -14,7 +14,7 @@ import { chmodSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { combineShares, decodeShare, encodeShare, openBackup, sealBackup, splitSecret } from '../../apps/web/lib/crypto/key-backup.ts';
 
-const NAMES = ['PII_ENCRYPTION_KEY', 'SECURE_VAULT_KEY', 'GIDEON_SETTINGS_KEY', 'CONSENT_SIGNING_PRIVATE_KEY'];
+const NAMES = ['PII_ENCRYPTION_KEY', 'SECURE_VAULT_KEY', 'GIDEON_SETTINGS_KEY', 'CONSENT_SIGNING_PRIVATE_KEY', 'DB_BACKUP_AGE_IDENTITY'];
 const fp = (v: string) => createHash('sha256').update(v).digest('hex').slice(0, 12);
 
 function backup(out: string, keys: Record<string, string>, pass: string) {

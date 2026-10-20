@@ -8,6 +8,8 @@
 | `GIDEON_SETTINGS_KEY` (unset → HKDF of `SUPABASE_SERVICE_ROLE_KEY`) | Gideon bot secrets | Rotating the service-role key silently breaks these. Set an explicit key before any rotation. |
 | `CONSENT_SIGNING_PRIVATE_KEY` (Ed25519, fp `7c67785f…8ecb`) | New consent-evidence signatures | Old signatures stay verifiable (public key); new ones impossible until rotated |
 
+| `DB_BACKUP_AGE_IDENTITY` (age X25519 identity) | Nightly DB backups in R2 `backups/db/` (public key in `scripts/backup/db-backup.age.pub`) | All DB backups unreadable |
+
 ## Backup design (two independent paths, either one restores)
 1. **Passphrase file** `keys.sealed.json` – scrypt (N=2^17) + AES-256-GCM, passphrase ≥ 16 chars (memorable words + digits).
 2. **Shamir 2-of-3** – `keys.recovery.json` is sealed with a random 32-byte recovery key split into `share-1/2/3.txt`; any two restore, one alone reveals nothing. Each share carries a checksum (tamper/typo detection).

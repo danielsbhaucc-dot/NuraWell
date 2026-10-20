@@ -20,6 +20,7 @@ const LABEL: Record<string, string> = {
   SECURE_VAULT_KEY: 'מפתח הכספת המאובטחת',
   GIDEON_SETTINGS_KEY: 'מפתח ההגדרות של גדעון',
   CONSENT_SIGNING_PRIVATE_KEY: 'מפתח החתימה על הסכמות',
+  DB_BACKUP_AGE_IDENTITY: 'מפתח פתיחת גיבוי מסד הנתונים',
 };
 
 export function fmtDate(iso: string) {
