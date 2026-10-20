@@ -20,7 +20,9 @@ const bodySchema = z
     typed_word: z.string().max(40),
     checkbox: z.literal(true),
     screenshot: z.string().max(820_000).nullable().optional(),
+    screenshots: z.array(z.string().max(820_000)).max(4).optional(),
     source: z.enum(['settings_privacy', 'chat', 'prompt']).optional(),
+    client: z.record(z.string(), z.union([z.string().max(64), z.number(), z.null()])).optional(),
   })
   .strict();
 
@@ -83,12 +85,13 @@ export async function POST(request: Request) {
   const admin = createAdminClient();
   const { data: sess } = await auth.supabase.auth.getSession();
   const source = `${b.source ?? 'settings_privacy'}`;
+  const meta = requestMeta(request, jwtSessionId(sess.session?.access_token));
   const ev = await recordConsentEvidence(
     admin,
     auth.user.id,
     source,
-    { action: b.action, textVersion: b.text_version, typedWord: b.typed_word, checkbox: b.checkbox, screenshotDataUrl: b.screenshot ?? null },
-    requestMeta(request, jwtSessionId(sess.session?.access_token))
+    { action: b.action, textVersion: b.text_version, typedWord: b.typed_word, checkbox: b.checkbox, screenshotDataUrl: b.screenshot ?? b.screenshots?.[0] ?? null, extraScreenshots: (b.screenshots ?? []).slice(1), client: b.client ?? null },
+    meta
   );
   if (!ev.ok) {
     const msg = ERR[ev.error];
@@ -96,11 +99,11 @@ export async function POST(request: Request) {
   }
 
   if (b.action === 'withdraw') {
-    const r = await withdrawHealthConsent(admin, auth.user.id, { source });
+    const r = await withdrawHealthConsent(admin, auth.user.id, { source, evidenceId: ev.id, requestId: meta.requestId ?? null });
     if (!r.ok) return NextResponse.json({ error: 'הביטול נכשל, נסה שוב' }, { status: 500 });
     return NextResponse.json({ active: false, measurements_deleted: r.measurementsDeleted, reference: ev.reference });
   }
-  const r = await grantHealthConsent(admin, auth.user.id, { source });
+  const r = await grantHealthConsent(admin, auth.user.id, { source, evidenceId: ev.id, requestId: meta.requestId ?? null });
   if (!r.ok) return NextResponse.json({ error: 'השמירה נכשלה, נסה שוב' }, { status: 500 });
   return NextResponse.json({ active: true, reference: ev.reference });
 }

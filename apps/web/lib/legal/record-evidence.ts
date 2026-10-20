@@ -19,6 +19,7 @@ import { canonicalJson, GENESIS, recordHash, sha256Hex, signHash, type EvidenceP
 import { requestTimestamp } from './tsa';
 import { otsStamp } from './ots';
 import { storeEvidenceImage } from './evidence-storage';
+import { verifyCode } from './verify-code';
 
 export const MAX_SCREENSHOT_INPUT_BYTES = 600_000;
 
@@ -28,7 +29,24 @@ export type ConsentSubmission = {
   typedWord: string;
   checkbox: boolean;
   screenshotDataUrl?: string | null;
+  /** Segments 2..4 of a full-sheet scroll capture (segment 1 is screenshotDataUrl). */
+  extraScreenshots?: string[];
+  /** Device-side facts claimed by the browser (sanitized; never trusted for validation). */
+  client?: unknown;
 };
+
+export type ClientMeta = { captured_at: string | null; screen_w: number | null; screen_h: number | null; viewport_w: number | null; viewport_h: number | null; dpr: number | null; typing_ms: number | null; tz: string | null };
+
+/** Bounds and types every browser-claimed field; anything malformed becomes null. */
+export function sanitizeClientMeta(v: unknown): ClientMeta | null {
+  if (!v || typeof v !== 'object') return null;
+  const o = v as Record<string, unknown>;
+  const int = (x: unknown, max: number) => (typeof x === 'number' && Number.isFinite(x) && x >= 0 && x <= max ? Math.round(x) : null);
+  const iso = typeof o.captured_at === 'string' && o.captured_at.length <= 40 && !Number.isNaN(Date.parse(o.captured_at)) ? new Date(o.captured_at).toISOString() : null;
+  const dpr = typeof o.dpr === 'number' && Number.isFinite(o.dpr) && o.dpr > 0 && o.dpr <= 10 ? Math.round(o.dpr * 100) / 100 : null;
+  const tz = typeof o.tz === 'string' && /^[A-Za-z0-9_+\-/]{1,64}$/.test(o.tz) ? o.tz : null;
+  return { captured_at: iso, screen_w: int(o.screen_w, 20000), screen_h: int(o.screen_h, 20000), viewport_w: int(o.viewport_w, 20000), viewport_h: int(o.viewport_h, 20000), dpr, typing_ms: int(o.typing_ms, 3_600_000), tz };
+}
 
 export type RequestMeta = { ip: string | null; userAgent: string | null; sessionId: string | null; deviceId: string | null; requestId?: string | null };
 
@@ -96,6 +114,18 @@ export async function recordConsentEvidence(
   const shotSha = shot ? sha256Hex(shot) : null;
   let stored: { storage: string; key: string } | null = null;
   if (shot && shotSha) stored = await storeEvidenceImage(admin, userId, shotSha, shot);
+  // Full-sheet capture: every segment is normalized, hashed, stored, and listed IN ORDER in the signed payload.
+  const segments: Array<{ i: number; sha256: string; bytes: number; storage: string; key: string }> = [];
+  if (shot && shotSha && stored) {
+    segments.push({ i: 1, sha256: shotSha, bytes: shot.length, ...stored });
+    for (const [j, url] of (sub.extraScreenshots ?? []).slice(0, 3).entries()) {
+      const b = await normalizeScreenshot(url).catch(() => null);
+      if (!b) continue;
+      const h = sha256Hex(b);
+      const st = await storeEvidenceImage(admin, userId, h, b);
+      if (st) segments.push({ i: j + 2, sha256: h, bytes: b.length, ...st });
+    }
+  }
 
   for (let attempt = 0; attempt < 3; attempt++) {
     const { data: last } = await admin
@@ -128,6 +158,8 @@ export async function recordConsentEvidence(
       consent_text_sha256: sha256Hex(canonicalJson(text)),
       request_id: meta.requestId ?? null,
       screenshot_bytes: shot?.length ?? null,
+      client: sanitizeClientMeta(sub.client),
+      screenshot_segments: segments.length ? segments.map((s) => ({ i: s.i, sha256: s.sha256, bytes: s.bytes })) : null,
     };
     const payloadJson = canonicalJson(payload);
     const hash = recordHash(payloadJson);
@@ -153,6 +185,7 @@ export async function recordConsentEvidence(
         screenshot_storage: stored?.storage ?? null,
         screenshot_key: stored?.key ?? null,
         screenshot_bytes: shot?.length ?? null,
+        screenshot_segments: segments.length ? segments : null,
         payload_json: payloadJson,
         prev_hash: prev,
         record_hash: hash,
@@ -169,7 +202,7 @@ export async function recordConsentEvidence(
     const id = (ins as { id: string }).id;
     const reference = `NW-${createdAt.slice(0, 10).replace(/-/g, '')}-${hash.slice(0, 8).toUpperCase()}`;
     await attest(admin, id, hash);
-    if (opts.sendReceipt !== false) await sendReceipt(admin, userId, id, sub.action, createdAt, reference, gender);
+    if (opts.sendReceipt !== false) await sendReceipt(admin, userId, id, sub.action, createdAt, reference, gender, hash);
     void maybeAnchorChainHead(admin).catch(() => undefined);
     return { ok: true, id, recordHash: hash, reference, createdAt };
   }
@@ -192,7 +225,8 @@ async function sendReceipt(
   action: ConsentAction,
   createdAt: string,
   reference: string,
-  gender: ReturnType<typeof normalizeGender>
+  gender: ReturnType<typeof normalizeGender>,
+  recordHashHex: string
 ) {
   try {
     const { data } = await admin.auth.admin.getUserById(userId);
@@ -205,15 +239,24 @@ async function sendReceipt(
 <p>${hello} של מה שאושר עכשיו ב־NuraWell:</p>
 <table style="border-collapse:collapse"><tr><td style="padding:4px 0 4px 16px;color:#5b6b61">מה אושר</td><td><b>${what}</b></td></tr>
 <tr><td style="padding:4px 0 4px 16px;color:#5b6b61">מתי</td><td>${when} (שעון ישראל)</td></tr>
-<tr><td style="padding:4px 0 4px 16px;color:#5b6b61">מספר אסמכתא</td><td dir="ltr" style="text-align:right">${reference}</td></tr></table>
+<tr><td style="padding:4px 0 4px 16px;color:#5b6b61">מספר אסמכתא</td><td dir="ltr" style="text-align:right">${reference}</td></tr>
+<tr><td style="padding:4px 0 4px 16px;color:#5b6b61">קוד אימות</td><td dir="ltr" style="text-align:right">${verifyCode(recordHashHex)}</td></tr>
+<tr><td style="padding:4px 0 4px 16px;color:#5b6b61">מזהה רשומה</td><td dir="ltr" style="text-align:right;font-family:monospace;font-size:12px">${recordId}</td></tr>
+<tr><td style="padding:4px 0 4px 16px;color:#5b6b61;vertical-align:top">טביעת אצבע (SHA-256)</td><td dir="ltr" style="text-align:right;font-family:monospace;font-size:11px;word-break:break-all">${recordHashHex}</td></tr></table>
+<p style="color:#5b6b61;font-size:13px">המייל הזה נשלח דרך ספק דואר חיצוני ונשמר גם אצלך. הוא מאפשר להוכיח, בלי לסמוך עלינו, מה נרשם ומתי.</p>
 <p style="color:#5b6b61">אפשר לשנות את זה בכל רגע בהגדרות הפרטיות או בבקשה מאלמוג. אם לא את/ה אישרת, פשוט השיבו למייל הזה.</p></div>`.replace('אם לא את/ה אישרת', 'אם זה לא היה אישור שלך');
     const { sendResendEmail } = await import('@/lib/email/resend');
     const r = await sendResendEmail({ to, subject: `אישור: ${what} · ${reference}`, html, sender: 'default', purpose: 'consent_receipt' });
+    // The receipt references the record hash, so it cannot be inside that same signed record; instead the
+    // receipt facts (incl. the mail provider's message id) are signed as their own canonical statement.
+    const statement = { record_id: recordId, record_hash: recordHashHex, ok: r.ok, provider: 'resend', provider_id: r.ok ? r.id ?? null : null, to_hash: sha256Hex(to.toLowerCase()), html_sha256: sha256Hex(html), reference, sent_at: new Date().toISOString(), error: r.ok ? null : String(r.error ?? '').slice(0, 200) };
+    const stmtJson = canonicalJson(statement);
+    const stmtSig = signHash(sha256Hex(stmtJson));
     await admin.from('consent_evidence_attestations').insert({
       record_id: recordId,
       kind: 'email_receipt',
       digest: sha256Hex(html),
-      payload: { ok: r.ok, provider_id: r.ok ? r.id ?? null : null, to_hash: sha256Hex(to.toLowerCase()), reference, sent_at: new Date().toISOString() },
+      payload: { ...statement, statement_json: stmtJson, statement_sha256: sha256Hex(stmtJson), signature: stmtSig.signature, key_id: stmtSig.keyId },
     });
   } catch {
     /* receipt is best-effort; record stands on its own */

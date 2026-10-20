@@ -191,6 +191,14 @@ export async function completeOnboarding(
     typedWord: String(formData.get('health_consent_typed') ?? ''),
     checkbox: formData.get('health_consent_checkbox') === 'true',
     screenshotDataUrl: (formData.get('health_consent_screenshot') as string | null) || null,
+    extraScreenshots: [2, 3, 4].map((n) => (formData.get(`health_consent_screenshot_${n}`) as string | null) || null).filter((x): x is string => !!x),
+    client: (() => {
+      try {
+        return JSON.parse(String(formData.get('health_consent_client') ?? 'null')) as unknown;
+      } catch {
+        return null;
+      }
+    })(),
   };
   if (validateSubmission(consentSub)) {
     return { ok: false, error: 'צריך לאשר את ההסכמה למידע בריאותי בחלון ההסכמה' };
@@ -375,6 +383,7 @@ export async function completeOnboarding(
       userAgent: h.get('user-agent')?.slice(0, 400) ?? null,
       sessionId: null,
       deviceId: null,
+      requestId: h.get('x-vercel-id')?.slice(0, 120) ?? null,
     });
     if (!ev.ok) console.warn('[complete-onboarding] consent evidence failed', ev.error);
   } catch (e) {

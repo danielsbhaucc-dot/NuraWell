@@ -8,6 +8,8 @@ import { buildOtsFile, type OtsProof } from './ots';
 import { buildEvidencePdf, type PdfEvent } from './evidence-pdf';
 import { decryptIp, loadLegalAccessLog, verifyUserEvidence, type EvidenceRow } from './evidence-verify';
 import { loadEvidenceImage } from './evidence-storage';
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
 
 export function referenceFor(r: { created_at: string; record_hash: string }) {
   return `NW-${r.created_at.slice(0, 10).replace(/-/g, '')}-${r.record_hash.slice(0, 8).toUpperCase()}`;
@@ -32,12 +34,19 @@ export const PUBLIC_KEY_PATH = '/.well-known/nurawell-consent-signing.pem';
 
 export const verifyGuide = (fp: string, url: string, tsa: string) => `מדריך אימות עצמאי — לעורך דין או למומחה
 =================================================
+פתיחת התיק: הקובץ (ZIP או PDF) מוצפן ב-AES-256 בסיסמה ייחודית לכל הפקה. הסיסמה נמסרת בנפרד
+(Ops ← משפטי ← סיסמאות). ההצפנה עוטפת את הקבצים בלבד: כל הגיבובים, החתימות, אסימוני חותמת הזמן
+וקובצי העיגון שבתוך התיק חושבו על הקבצים המקוריים ולכן מאומתים כרגיל אחרי הפתיחה.
+  7z x <file>.zip -p'<סיסמה>'          (או כל תוכנה שתומכת ב-ZIP AES-256)
+  qpdf --password='<סיסמה>' --decrypt in.pdf out.pdf   (לא חובה; כל קורא PDF פותח עם הסיסמה)
+
 לכל רשומה בתיקייה records/NN-*:
   payload.json      הרשומה הקנונית שנחתמה
   record.sha256     גיבוב הרשומה
   signature.b64     חתימת Ed25519 של השרת על הגיבוב (כמחרוזת hex)
   snapshot.html     הנוסח המדויק שהוצג
-  screenshot.webp   צילום החלון (אם קיים)
+  screenshot.webp   צילום החלון, חלק 1 (אם קיים)
+  screenshot-N.webp חלקים נוספים של צילום החלון המלא, לפי הסדר ב-screenshot_segments שב-payload.json
   timestamp.tsr     אסימון חותמת זמן RFC 3161
   *.ots             הוכחות עיגון OpenTimestamps
 
@@ -53,6 +62,7 @@ export const verifyGuide = (fp: string, url: string, tsa: string) => `מדריך
    ots upgrade records/01/*.ots && ots verify -d $(cat records/01/record.sha256) records/01/<file>.ots
 6) נוסח וצילום: sha256sum של snapshot.html ושל screenshot.webp חייבים להיות זהים ל-rendered_sha256 ול-screenshot_sha256 ב-payload.json.
 7) SHA256SUMS.txt מכיל גיבוב לכל קובץ בתיק.
+8) affidavit-template.docx היא תבנית תצהיר ערוך מערכת. זו תבנית בלבד, וצריך עורך דין לבדוק ולערוך אותה לפני חתימה.
 8) מפתח ציבורי עצמאי (לא רק מהתיק):
    curl -s ${url} -o pub.pem && cmp pub.pem public-key.pem
    openssl pkey -pubin -in pub.pem -outform DER | sha256sum     # = ${fp}
@@ -69,7 +79,8 @@ export async function buildEvidencePackage(admin: SupabaseClient, userId: string
   const { data: anchors } = await admin.from('consent_evidence_attestations').select('created_at, digest, payload').eq('kind', 'chain_anchor').order('created_at', { ascending: false }).limit(30);
 
   const { data: auditRows } = await admin.from('admin_audit_log').select('id, created_at, method, path, detail').eq('actor_id', userId).eq('method', 'PRIVACY').order('created_at').limit(500);
-  const { data: consentRows } = await admin.from('user_consents').select('created_at, granted, source, policy_version').eq('user_id', userId).eq('consent_type', 'health_data').order('created_at').limit(500);
+  // consent_history survives account deletion (user_consents cascades with the auth user).
+  const { data: consentRows } = await admin.from('consent_history').select('created_at, granted, source, policy_version, evidence_id, request_id').eq('user_id', userId).eq('consent_type', 'health_data').order('created_at').limit(500);
   const pubPem = publicKeyPem();
   const fingerprint = publicKeyFingerprint(pubPem);
   const keyUrl = `${publicAppOriginSync()}${PUBLIC_KEY_PATH}`;
@@ -99,11 +110,17 @@ export async function buildEvidencePackage(admin: SupabaseClient, userId: string
         png = await sharp(img).png().toBuffer();
       }
     }
+    const segs: NonNullable<PdfEvent['screenshotSegments']> = [];
+    for (const sg of (r.screenshot_segments ?? []).filter((x) => x.i > 1).sort((a, b) => a.i - b.i)) {
+      const b = await loadEvidenceImage(admin, userId, sg.storage, sg.key).catch(() => null);
+      if (b) files[`${dir}/screenshot-${sg.i}.webp`] = new Uint8Array(b);
+      segs.push({ i: sg.i, sha256: sg.sha256, computed: b ? sha256Hex(b) : null, png: b ? await sharp(b).png().toBuffer() : null });
+    }
     const recs = v.records as EvidenceRow[];
     const nb = chainNeighbors(recs, i);
     const corr = corroboration(r, (auditRows ?? []) as never[], (consentRows ?? []) as never[]);
     files[`${dir}/chain.txt`] = strToU8(`prev ${nb.prevHash}\nthis ${r.record_hash}\nnext ${nb.nextHash ?? '-'}\n`);
-    files[`${dir}/server-log.jsonl`] = strToU8(corr.map((c) => JSON.stringify({ table: c.source, at: c.at, row: JSON.parse(c.line) })).join('\n') + '\n');
+    files[`${dir}/server-log.jsonl`] = strToU8(corr.map((c) => JSON.stringify({ table: c.source, at: c.at, linked_by: c.link, row: JSON.parse(c.line) })).join('\n') + '\n');
     let tokenSha: string | undefined;
     if (tsaRow) {
       const tok = Buffer.from(String(tsaRow.payload.token_b64), 'base64');
@@ -140,6 +157,7 @@ export async function buildEvidencePackage(admin: SupabaseClient, userId: string
       tsa: { ok: check.tsa.ok, genTime: check.tsa.gen_time, url: check.tsa.url, tokenSha },
       otsCalendars: proofs.map((p) => new URL(p.calendar).hostname),
       screenshotShaComputed: r.screenshot_sha256 ? shotComputed : undefined,
+      screenshotSegments: segs,
       provenance: buildProvenance(r, ip, shotComputed, { url: check.tsa.url, genTime: check.tsa.gen_time }),
       corroboration: corr,
       canonicalJson: r.payload_json,
@@ -176,6 +194,11 @@ export async function buildEvidencePackage(admin: SupabaseClient, userId: string
   });
   files['evidence-report.pdf'] = new Uint8Array(pdf);
   files['public-key.pem'] = strToU8(publicKeyPem());
+  try {
+    files['affidavit-template.docx'] = new Uint8Array(
+      await readFile(path.join(process.cwd(), 'lib/legal/templates/affidavit-system-operator-template.docx')),
+    );
+  } catch { /* template missing in this build; the report still works */ }
   files['VERIFY.txt'] = strToU8(verifyGuide(fingerprint, keyUrl, tsaName(tsaUrl)));
   files['evidence.json'] = strToU8(
     JSON.stringify(
@@ -199,5 +222,5 @@ export async function buildEvidencePackage(admin: SupabaseClient, userId: string
       .map((k) => `${sha256Hex(files[k]!)}  ${k}`)
       .join('\n') + '\n'
   );
-  return { zip: Buffer.from(zipSync(files, { level: 6 })), caseRef, pdf, ok: v.ok, generatedAt, recordHashes: (v.records as EvidenceRow[]).map((r) => r.record_hash) };
+  return { zip: Buffer.from(zipSync(files, { level: 6 })), files, displayName: (prof as { full_name?: string } | null)?.full_name ?? null, caseRef, pdf, ok: v.ok, generatedAt, recordHashes: (v.records as EvidenceRow[]).map((r) => r.record_hash) };
 }

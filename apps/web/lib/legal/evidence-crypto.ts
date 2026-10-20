@@ -41,6 +41,10 @@ export type EvidencePayload = {
   request_id?: string | null;
   /** v2: byte size of the normalized screenshot whose hash is signed. */
   screenshot_bytes?: number | null;
+  /** v2: browser-claimed device facts (capture time, screen/viewport size, typing duration). */
+  client?: Record<string, unknown> | null;
+  /** v2: ordered full-sheet capture segments (segment 1 == screenshot_sha256). */
+  screenshot_segments?: Array<{ i: number; sha256: string; bytes: number }> | null;
 };
 
 export function recordHash(payloadJson: string): string {

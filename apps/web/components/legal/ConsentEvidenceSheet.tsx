@@ -5,7 +5,18 @@ import { Check, HeartPulse, Loader2, ShieldCheck, Trash2 } from 'lucide-react';
 import { AnimatedDialog } from '@/components/shared/AnimatedDialog';
 import { consentText, isAcceptedConsentWord, type ConsentAction, type ConsentGender } from '@/lib/legal/consent-text';
 
-export type ConsentCollected = { text_version: string; typed_word: string; checkbox: true; screenshot: string | null };
+/** Device-side facts (browser-claimed; signed into the record but labelled as such in the report). */
+export type ConsentClientMeta = {
+  captured_at: string;
+  screen_w: number;
+  screen_h: number;
+  viewport_w: number;
+  viewport_h: number;
+  dpr: number;
+  typing_ms: number | null;
+  tz: string | null;
+};
+export type ConsentCollected = { text_version: string; typed_word: string; checkbox: true; screenshot: string | null; screenshots?: string[]; client?: ConsentClientMeta };
 
 type Props = {
   open: boolean;
@@ -20,27 +31,51 @@ type Props = {
   dismissLabel?: string;
 };
 
-/** Captures the rendered sheet as a compact WebP (≤1080px wide, ~80KB). Best-effort. */
-async function captureSheet(node: HTMLElement): Promise<string | null> {
+export const MAX_SHEET_SEGMENTS = 4;
+const SEG_H = 1600; // px per segment at 1080 wide
+
+function encode(c: HTMLCanvasElement): string {
+  for (const q of [0.8, 0.65, 0.5]) {
+    const url = c.toDataURL('image/webp', q);
+    if (!url.startsWith('data:image/webp')) return c.toDataURL('image/jpeg', 0.7);
+    if (url.length * 0.75 < 140_000 || q === 0.5) return url;
+  }
+  return c.toDataURL('image/webp', 0.5);
+}
+
+/**
+ * Captures the WHOLE sheet top to bottom (including the checkbox + typed word in their final state),
+ * not just the visible scroll area. Tall sheets are split into ordered segments (≤4, ≤1600px each at
+ * 1080px wide); each segment is hashed and signed server-side in order. Best-effort.
+ */
+async function captureSheet(node: HTMLElement): Promise<string[]> {
   try {
     const { toCanvas } = await import('html-to-image');
+    const fullH = Math.max(node.scrollHeight, node.offsetHeight);
     const ratio = Math.min(2, 1080 / Math.max(1, node.offsetWidth));
-    const canvas = await toCanvas(node, { pixelRatio: ratio, cacheBust: true, backgroundColor: '#fbfaf4' });
-    let out = canvas;
-    if (canvas.width > 1080) {
-      out = document.createElement('canvas');
-      out.width = 1080;
-      out.height = Math.round((canvas.height * 1080) / canvas.width);
-      out.getContext('2d')?.drawImage(canvas, 0, 0, out.width, out.height);
+    const canvas = await toCanvas(node, {
+      pixelRatio: ratio,
+      cacheBust: true,
+      backgroundColor: '#fbfaf4',
+      height: fullH,
+      style: { maxHeight: 'none', height: `${fullH}px`, overflow: 'visible' },
+    });
+    const scale = canvas.width > 1080 ? 1080 / canvas.width : 1;
+    const w = Math.round(canvas.width * scale);
+    const totalH = Math.round(canvas.height * scale);
+    const n = Math.min(MAX_SHEET_SEGMENTS, Math.max(1, Math.ceil(totalH / SEG_H)));
+    const segH = Math.ceil(totalH / n);
+    const out: string[] = [];
+    for (let i = 0; i < n; i++) {
+      const seg = document.createElement('canvas');
+      seg.width = w;
+      seg.height = Math.min(segH, totalH - i * segH);
+      seg.getContext('2d')?.drawImage(canvas, 0, (i * segH) / scale, canvas.width, seg.height / scale, 0, 0, w, seg.height);
+      out.push(encode(seg));
     }
-    for (const q of [0.8, 0.65, 0.5]) {
-      const url = out.toDataURL('image/webp', q);
-      if (!url.startsWith('data:image/webp')) return out.toDataURL('image/jpeg', 0.7);
-      if (url.length * 0.75 < 80_000 || q === 0.5) return url;
-    }
-    return null;
+    return out;
   } catch {
-    return null;
+    return [];
   }
 }
 
@@ -51,12 +86,16 @@ export function ConsentEvidenceSheet({ open, action, gender, onClose, mode = 'su
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const panel = useRef<HTMLDivElement>(null);
+  const typingStart = useRef<number | null>(null);
+  const typingEnd = useRef<number | null>(null);
   const withdraw = action === 'withdraw';
 
   useEffect(() => {
     if (!open) {
       setChecked(false);
       setTyped('');
+      typingStart.current = null;
+      typingEnd.current = null;
       setError(null);
       setBusy(false);
     }
@@ -69,8 +108,20 @@ export function ConsentEvidenceSheet({ open, action, gender, onClose, mode = 'su
     if (!ready || !panel.current) return;
     setBusy(true);
     setError(null);
-    const screenshot = await captureSheet(panel.current);
-    const collected: ConsentCollected = { text_version: t.version, typed_word: typed.trim(), checkbox: true, screenshot };
+    const capturedAt = new Date().toISOString();
+    const screenshots = await captureSheet(panel.current);
+    const screenshot = screenshots[0] ?? null;
+    const client: ConsentClientMeta = {
+      captured_at: capturedAt,
+      screen_w: Math.round(window.screen?.width ?? 0),
+      screen_h: Math.round(window.screen?.height ?? 0),
+      viewport_w: Math.round(window.innerWidth),
+      viewport_h: Math.round(window.innerHeight),
+      dpr: Math.round((window.devicePixelRatio || 1) * 100) / 100,
+      typing_ms: typingStart.current != null && typingEnd.current != null ? Math.max(0, Math.round(typingEnd.current - typingStart.current)) : null,
+      tz: (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone ?? null; } catch { return null; } })(),
+    };
+    const collected: ConsentCollected = { text_version: t.version, typed_word: typed.trim(), checkbox: true, screenshot, screenshots, client };
     if (mode === 'collect') {
       setBusy(false);
       onDone({ collected });
@@ -170,7 +221,12 @@ export function ConsentEvidenceSheet({ open, action, gender, onClose, mode = 'su
           <input
             type="text"
             value={typed}
-            onChange={(e) => setTyped(e.target.value)}
+            onChange={(e) => {
+              const now = performance.now();
+              if (typingStart.current == null) typingStart.current = now;
+              typingEnd.current = now;
+              setTyped(e.target.value);
+            }}
             maxLength={30}
             autoComplete="off"
             inputMode="text"

@@ -2,7 +2,7 @@
 const nextConfig = {
   /** Native / heavy deps must not be bundled into Route Handlers (avoids 503 on Vercel). */
   serverExternalPackages: ['@aws-sdk/client-s3', 'web-push', 'sharp'],
-  outputFileTracingIncludes: { '/api/v1/ops/legal/**': ['./lib/legal/fonts/**'] },
+  outputFileTracingIncludes: { '/api/v1/ops/legal/**': ['./lib/legal/fonts/**', './lib/legal/templates/**'] },
   /**
    * אכיפת TypeScript ב-build — חובה לאבטחה.
    * ignoreBuildErrors:true מסיר את שכבת ההגנה של TypeScript ומאפשר לקוד לא-בטוח

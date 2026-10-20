@@ -5,7 +5,7 @@
 import { canonicalJson, sha256Hex } from './evidence-crypto';
 
 export type ProvenanceRow = { field: string; value: string; source: 'server' | 'browser' | 'header' | 'computed' | 'external'; how: string; mono?: boolean };
-export type CorroborationRow = { source: string; at: string; line: string };
+export type CorroborationRow = { source: string; at: string; line: string; link: 'evidence_id' | 'time_window' };
 export type OtsStatusRow = { calendar: string; status: 'bitcoin' | 'pending'; height?: number | null };
 
 type Rec = {
@@ -75,18 +75,41 @@ export function buildProvenance(r: Rec, ip: string | null, shotShaComputed: stri
     { field: 'מזהה בקשה', value: typeof p.request_id === 'string' ? p.request_id : 'לא נשמר ברשומה זו', source: 'header', how: 'x-vercel-id, לצורך הצלבה מול יומני הפלטפורמה.', mono: typeof p.request_id === 'string' },
     { field: 'צילום החלון', value: r.screenshot_sha256 ?? 'אין', source: 'browser', how: 'צולם בדפדפן ברגע האישור. השרת המיר אותו מחדש, חישב את הגיבוב ונעל אותו בתוך הרשומה החתומה.', mono: !!r.screenshot_sha256 },
   );
+  const cm = p.client && typeof p.client === 'object' ? (p.client as Record<string, unknown>) : null;
+  if (cm) {
+    const num = (k: string) => (typeof cm[k] === 'number' ? String(cm[k]) : '?');
+    rows.push(
+      { field: 'זמן הצילום במכשיר', value: typeof cm.captured_at === 'string' ? cm.captured_at : '—', source: 'browser', how: `שעון המכשיר ברגע הצילום${typeof cm.tz === 'string' ? ` (אזור זמן ${cm.tz})` : ''}. משמש להצלבה מול זמן השרת.`, mono: true },
+      { field: 'גודל מסך', value: `screen ${num('screen_w')}x${num('screen_h')} | viewport ${num('viewport_w')}x${num('viewport_h')} | dpr ${num('dpr')}`, source: 'browser', how: 'מידות המסך והחלון שהדפדפן דיווח. אמורות להתאים למידות הצילום.', mono: true },
+      { field: 'זמן הקלדת המילה', value: typeof cm.typing_ms === 'number' ? `${(cm.typing_ms / 1000).toFixed(1)} שניות` : '—', source: 'browser', how: 'מההקשה הראשונה ועד האחרונה בשדה המילה. מראה שהמילה הוקלדה ולא הודבקה מראש.' },
+    );
+  }
   if (r.screenshot_sha256) rows.push({ field: 'גיבוב הקובץ השמור היום', value: shotShaComputed ?? 'הקובץ לא נטען', source: 'computed', how: shotShaComputed === r.screenshot_sha256 ? 'חושב עכשיו מהקובץ באחסון. זהה לגיבוב החתום.' : 'לא זהה או לא נטען.', mono: !!shotShaComputed });
   return rows;
 }
 
 /** Records written by other code paths in the same request (separate tables), near the event time. */
-export function corroboration(r: Rec, audit: Audit[], consents: Array<{ created_at: string; granted: boolean; source?: string; policy_version?: string }>, windowMs = 120_000): CorroborationRow[] {
+type ConsentRow = { created_at: string; granted: boolean; source?: string | null; policy_version?: string | null; evidence_id?: string | null; request_id?: string | null };
+const linkedId = (d: unknown): string | null => (d && typeof d === 'object' && typeof (d as { evidence_id?: unknown }).evidence_id === 'string' ? (d as { evidence_id: string }).evidence_id : null);
+
+/**
+ * Rows written by other code paths in the same request. Rows that store evidence_id are linked
+ * directly; older rows without it fall back to a time window around the event.
+ */
+export function corroboration(r: Rec, audit: Audit[], consents: ConsentRow[], windowMs = 120_000): CorroborationRow[] {
   const t = new Date(r.created_at).getTime();
   const near = (iso: string) => Math.abs(new Date(iso).getTime() - t) <= windowMs && new Date(iso).getTime() >= t - 5_000;
   const want = r.action === 'grant' ? 'health_consent_granted' : 'health_consent_withdrawn';
   const out: CorroborationRow[] = [];
-  for (const c of consents) if (near(c.created_at) && c.granted === (r.action === 'grant')) out.push({ source: 'user_consents', at: c.created_at, line: canonicalJson({ granted: c.granted, source: c.source ?? null, policy_version: c.policy_version ?? null }) });
-  for (const a of audit) if (a.path === want && near(a.created_at)) out.push({ source: 'admin_audit_log', at: a.created_at, line: canonicalJson({ method: a.method ?? null, path: a.path, detail: a.detail ?? null }) });
+  const match = (id: string | null | undefined, at: string, ok: boolean): CorroborationRow['link'] | null => (id ? (id === r.id ? 'evidence_id' : null) : ok && near(at) ? 'time_window' : null);
+  for (const c of consents) {
+    const link = match(c.evidence_id, c.created_at, c.granted === (r.action === 'grant'));
+    if (link) out.push({ source: 'consent_history', at: c.created_at, link, line: canonicalJson({ granted: c.granted, source: c.source ?? null, policy_version: c.policy_version ?? null, evidence_id: c.evidence_id ?? null, request_id: c.request_id ?? null }) });
+  }
+  for (const a of audit) {
+    const link = match(linkedId(a.detail), a.created_at, a.path === want);
+    if (link) out.push({ source: 'admin_audit_log', at: a.created_at, link, line: canonicalJson({ method: a.method ?? null, path: a.path, detail: a.detail ?? null }) });
+  }
   return out;
 }
 

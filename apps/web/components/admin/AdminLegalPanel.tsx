@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { CheckCircle2, ChevronDown, Download, FileText, Image as ImageIcon, Loader2, Search, ShieldAlert, ShieldCheck, Scale, Mail } from 'lucide-react';
 import { OpsDivider, opsGlassBtnClass, opsGlassCardClass } from '@/components/admin/OpsPanel';
 import { cn } from '@/lib/cn';
+import { AdminLegalPasswords } from '@/components/admin/AdminLegalPasswords';
+import { AdminLegalGuide } from '@/components/admin/AdminLegalGuide';
 
 type UserRow = { user_id: string; name: string | null; email: string | null; events: number; last_action: string; last_at: string };
 type Ev = {
@@ -35,9 +37,11 @@ export function AdminLegalPanel() {
   const [detail, setDetail] = useState<Detail | null>(null);
   const [loading, setLoading] = useState(false);
   const [checks, setChecks] = useState<{ ok: boolean; checked_at: string; checks: Check[] } | null>(null);
-  const [busy, setBusy] = useState<'verify' | 'export' | 'pdf' | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
   const [open, setOpen] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [pwTick, setPwTick] = useState(0);
+  const [made, setMade] = useState<string | null>(null);
 
   useEffect(() => {
     fetch('/api/v1/ops/legal/users', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : Promise.reject())).then((d) => setUsers(d.users)).catch(() => setErr('לא הצלחנו לטעון את הרשימה'));
@@ -62,10 +66,25 @@ export function AdminLegalPanel() {
       const r = await fetch(`/api/v1/ops/legal/user/${sel}/export${fmtKind === 'pdf' ? '?format=pdf' : ''}`);
       if (!r.ok) throw new Error();
       const blob = await r.blob();
-      const name = /filename="([^"]+)"/.exec(r.headers.get('content-disposition') ?? '')?.[1] ?? `evidence.${fmtKind}`;
+      const name = decodeURIComponent(r.headers.get('x-export-file') ?? '') || `evidence.${fmtKind}`;
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click();
       setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+      setMade(name); setPwTick((t) => t + 1);
     } catch { setErr('הפקת התיק נכשלה'); } finally { setBusy(null); }
+  };
+
+  /** On demand only: provider logs for one event (encrypted ZIP, 7-day copy, permanent generation log). */
+  const pullLogs = async (eventId: string) => {
+    if (!sel) return; setBusy(`logs:${eventId}`);
+    try {
+      const r = await fetch(`/api/v1/ops/legal/user/${sel}/platform-logs?evidence=${eventId}`);
+      if (!r.ok) throw new Error();
+      const blob = await r.blob();
+      const name = decodeURIComponent(r.headers.get('x-export-file') ?? '') || 'provider-logs.zip';
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+      setMade(name); setPwTick((t) => t + 1);
+    } catch { setErr('שליפת יומני הספק נכשלה'); } finally { setBusy(null); }
   };
 
   const filtered = (users ?? []).filter((u) => !q || `${u.name ?? ''} ${u.email ?? ''}`.toLowerCase().includes(q.toLowerCase()));
@@ -118,6 +137,9 @@ export function AdminLegalPanel() {
                   </button>
                 </div>
               </div>
+              {made ? (
+                <p className="mt-3 rounded-xl border border-amber-300/50 bg-amber-50/40 px-3 py-2 text-[13px] font-semibold text-emerald-900 backdrop-blur">הקובץ {made} הורד ומוצפן. הסיסמה שלו מחכה למטה, בחלק ״סיסמאות״.</p>
+              ) : null}
               {checks ? (
                 <div className={cn('mt-4 flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-bold', checks.ok ? 'border-emerald-300/70 bg-emerald-50/80 text-emerald-800' : 'border-rose-300/70 bg-rose-50 text-rose-800')}>
                   {checks.ok ? <CheckCircle2 size={18} /> : <ShieldAlert size={18} />}
@@ -173,6 +195,9 @@ export function AdminLegalPanel() {
                               </figcaption>
                             </figure>
                           ) : <p className="rounded-xl bg-glass/60 backdrop-blur-md p-3 text-xs text-slate-500">אין צילום לאירוע זה</p>}
+                          <button type="button" onClick={() => pullLogs(e.id)} disabled={!!busy} className={cn(opsGlassBtnClass, 'w-full justify-center gap-2 text-xs')} data-testid="legal-provider-logs">
+                            {busy === `logs:${e.id}` ? <Loader2 size={14} className="animate-spin" /> : <FileText size={14} />}שליפת יומני ספק לאירוע הזה
+                          </button>
                           <details className="rounded-xl bg-glass/60 backdrop-blur-md p-3 text-xs text-slate-700">
                             <summary className="cursor-pointer font-bold">הנוסח שהוצג</summary>
                             <div className="mt-2 space-y-1">{e.text_lines.map((l, j) => <p key={j}>{l}</p>)}</div>
@@ -196,6 +221,8 @@ export function AdminLegalPanel() {
           </>
         )}
       </section>
+      <div className="lg:col-span-2"><AdminLegalPasswords refreshKey={pwTick} /></div>
+      <div className="lg:col-span-2"><AdminLegalGuide /></div>
     </div>
   );
 }
