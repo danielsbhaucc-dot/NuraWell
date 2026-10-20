@@ -82,6 +82,10 @@ export async function POST(request: Request) {
   if (!parsed.success) return NextResponse.json({ error: 'בקשה לא תקינה' }, { status: 400 });
   const b = parsed.data;
 
+  // The identity strip inside the screenshot must belong to this session's user.
+  const stripUid = typeof b.client?.id_uid === 'string' ? b.client.id_uid : null;
+  if (stripUid && !auth.user.id.replace(/-/g, '').startsWith(stripUid)) return NextResponse.json({ error: 'בקשה לא תקינה' }, { status: 400 });
+
   const admin = createAdminClient();
   const { data: sess } = await auth.supabase.auth.getSession();
   const source = `${b.source ?? 'settings_privacy'}`;

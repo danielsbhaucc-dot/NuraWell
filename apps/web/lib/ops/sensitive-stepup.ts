@@ -10,7 +10,19 @@ import { isFreshSession } from '@/lib/auth/passkeys';
 export type StepUpCtx = { accessToken: string | null | undefined; userId: string; req: Request };
 type Verifier = (c: StepUpCtx) => Promise<boolean> | boolean;
 
-const verifiers: Verifier[] = [(c) => isFreshSession(c.accessToken)];
+/** Purpose used by the cross-device / TOTP / backup-code step-up for these actions. */
+export const SENSITIVE_PURPOSE = 'ops.sensitive';
+
+/** Grant from <StepUpDialog purpose="ops.sensitive">: GET only peeks, every other method consumes it (single use). */
+const grantVerifier: Verifier = async (c) => {
+  const { createAdminClient } = await import('@/lib/supabase/admin');
+  const { STEPUP_COOKIE, consumeGrant, peekGrant, readCookieFrom } = await import('@/lib/auth/stepup');
+  const db = createAdminClient();
+  const ck = readCookieFrom(c.req, STEPUP_COOKIE);
+  return c.req.method === 'GET' ? peekGrant(db, c.userId, SENSITIVE_PURPOSE, ck) : (await consumeGrant(db, c.userId, SENSITIVE_PURPOSE, ck)).ok;
+};
+
+const verifiers: Verifier[] = [(c) => isFreshSession(c.accessToken), grantVerifier];
 
 export function registerStepUpVerifier(v: Verifier) {
   verifiers.push(v);
