@@ -6,6 +6,7 @@ import { OpsDivider, opsGlassBtnClass, opsGlassCardClass } from '@/components/ad
 import { cn } from '@/lib/cn';
 import { AdminLegalPasswords } from '@/components/admin/AdminLegalPasswords';
 import { AdminLegalGuide } from '@/components/admin/AdminLegalGuide';
+import { AdminLegalPrecheck, type PreCheckState } from '@/components/admin/AdminLegalPrecheck';
 
 type UserRow = { user_id: string; name: string | null; email: string | null; events: number; last_action: string; last_at: string };
 type Ev = {
@@ -42,13 +43,19 @@ export function AdminLegalPanel() {
   const [err, setErr] = useState<string | null>(null);
   const [pwTick, setPwTick] = useState(0);
   const [made, setMade] = useState<string | null>(null);
+  const [pre, setPre] = useState<PreCheckState | null>(null);
+  const [ovr, setOvr] = useState(false);
+  const [ovrReason, setOvrReason] = useState('');
+  const [ovrAck, setOvrAck] = useState(false);
+  const blocked = !pre || pre.critical > 0;
+  const overrideReady = !!pre && pre.critical > 0 && ovrAck && ovrReason.trim().length >= 10;
 
   useEffect(() => {
     fetch('/api/v1/ops/legal/users', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : Promise.reject())).then((d) => setUsers(d.users)).catch(() => setErr('לא הצלחנו לטעון את הרשימה'));
   }, []);
 
   const pick = useCallback(async (id: string) => {
-    setSel(id); setDetail(null); setChecks(null); setLoading(true); setErr(null);
+    setSel(id); setDetail(null); setChecks(null); setPre(null); setOvr(false); setOvrReason(''); setOvrAck(false); setLoading(true); setErr(null);
     try {
       const r = await fetch(`/api/v1/ops/legal/user/${id}`, { cache: 'no-store' });
       if (!r.ok) throw new Error();
@@ -63,7 +70,11 @@ export function AdminLegalPanel() {
   const download = async (fmtKind: 'zip' | 'pdf') => {
     if (!sel) return; setBusy(fmtKind === 'zip' ? 'export' : 'pdf');
     try {
-      const r = await fetch(`/api/v1/ops/legal/user/${sel}/export${fmtKind === 'pdf' ? '?format=pdf' : ''}`);
+      const qs = new URLSearchParams();
+      if (fmtKind === 'pdf') qs.set('format', 'pdf');
+      if (pre && pre.critical > 0) { qs.set('override', '1'); qs.set('override_reason', ovrReason.trim()); }
+      const r = await fetch(`/api/v1/ops/legal/user/${sel}/export${qs.size ? `?${qs}` : ''}`);
+      if (r.status === 409) { setErr('ההפקה חסומה: יש כשלים חמורים פתוחים בבדיקה שלפני ההפקה.'); return; }
       if (!r.ok) throw new Error();
       const blob = await r.blob();
       const name = decodeURIComponent(r.headers.get('x-export-file') ?? '') || `evidence.${fmtKind}`;
@@ -130,13 +141,31 @@ export function AdminLegalPanel() {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <button type="button" onClick={verify} disabled={!!busy} className={cn(opsGlassBtnClass, 'gap-2')}>{busy === 'verify' ? <Loader2 size={16} className="animate-spin" /> : <ShieldCheck size={16} />}בדיקת שלמות</button>
-                  <button type="button" onClick={() => download('pdf')} disabled={!!busy} className={cn(opsGlassBtnClass, 'gap-2')}>{busy === 'pdf' ? <Loader2 size={16} className="animate-spin" /> : <FileText size={16} />}PDF בלבד</button>
-                  <button type="button" onClick={() => download('zip')} disabled={!!busy} data-testid="legal-need-evidence"
+                  <button type="button" onClick={() => download('pdf')} disabled={!!busy || (blocked && !overrideReady)} className={cn(opsGlassBtnClass, 'gap-2')}>{busy === 'pdf' ? <Loader2 size={16} className="animate-spin" /> : <FileText size={16} />}PDF בלבד</button>
+                  <button type="button" onClick={() => download('zip')} disabled={!!busy || (blocked && !overrideReady)} data-testid="legal-need-evidence"
                     className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-gradient-to-l from-amber-500 to-amber-600 px-4 text-sm font-bold text-white shadow-lg shadow-amber-900/15 disabled:opacity-50">
                     {busy === 'export' ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}אני צריך ראיה
                   </button>
                 </div>
               </div>
+              {pre && pre.critical > 0 ? (
+                <div className="mt-3 rounded-2xl border border-rose-300/60 bg-rose-500/5 p-3 backdrop-blur" data-testid="precheck-override">
+                  {!ovr ? (
+                    <button type="button" onClick={() => setOvr(true)} className="text-sm font-bold text-rose-800 underline">להפיק בכל זאת (עקיפה מתועדת)</button>
+                  ) : (
+                    <div className="space-y-2">
+                      <p className="text-[13px] leading-relaxed text-rose-900">העקיפה נרשמת ביומן, והמסמך יציין בעמוד הראשון שהופק למרות הכשלים, מי אישר, מתי ולמה.</p>
+                      <label className="block text-xs font-bold text-slate-700">למה צריך להפיק עכשיו (לפחות 10 תווים)
+                        <textarea value={ovrReason} onChange={(e) => setOvrReason(e.target.value)} maxLength={500} rows={2} className="mt-1 w-full rounded-xl border border-gc/60 bg-glass/70 px-3 py-2 text-sm font-normal outline-none backdrop-blur-md focus:ring-2 focus:ring-rose-300" />
+                      </label>
+                      <label className="flex items-center gap-2 text-[13px] font-semibold text-slate-800">
+                        <input type="checkbox" checked={ovrAck} onChange={(e) => setOvrAck(e.target.checked)} className="h-4 w-4 accent-rose-600" />
+                        אני מבין שהמסמך יציג את הכשלים בגלוי
+                      </label>
+                    </div>
+                  )}
+                </div>
+              ) : null}
               {made ? (
                 <p className="mt-3 rounded-xl border border-amber-300/50 bg-amber-50/40 px-3 py-2 text-[13px] font-semibold text-emerald-900 backdrop-blur">הקובץ {made} הורד ומוצפן. הסיסמה שלו מחכה למטה, בחלק ״סיסמאות״.</p>
               ) : null}
@@ -148,6 +177,7 @@ export function AdminLegalPanel() {
               ) : null}
             </div>
 
+            <AdminLegalPrecheck userId={detail.user.id} onChange={setPre} />
             <div className="flex items-center gap-2 text-sm font-bold text-slate-700"><span className="grid h-6 w-6 place-items-center rounded-full bg-amber-100 text-xs text-amber-700">2</span>ציר זמן</div>
             <ol className="relative space-y-3 border-r-2 border-amber-200/80 pr-5">
               {detail.events.map((e, i) => {
