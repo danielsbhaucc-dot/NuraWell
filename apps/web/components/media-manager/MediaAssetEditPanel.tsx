@@ -153,6 +153,13 @@ export function MediaAssetEditPanel({
           ) : null}
         </p>
       ) : null}
+      <a
+        href={`/ops/legal?tab=media&asset=${encodeURIComponent(`db:${asset.id}`)}`}
+        className="flex items-center justify-between rounded-xl border border-teal-200/70 bg-teal-50/70 px-3 py-2 text-[11px] font-bold text-teal-900"
+      >
+        <span>מקור, רישיון וראיות משפטיות לקובץ הזה</span>
+        <span aria-hidden>←</span>
+      </a>
       <div className="flex flex-wrap gap-2">
         <button
           type="button"

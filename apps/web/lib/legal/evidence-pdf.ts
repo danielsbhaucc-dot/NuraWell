@@ -10,11 +10,11 @@ import fontkit from '@pdf-lib/fontkit';
 import bidiFactory from 'bidi-js';
 
 const bidi = bidiFactory();
-const W = 595.28;
-const H = 841.89;
-const M = 44;
+export const W = 595.28;
+export const H = 841.89;
+export const M = 44;
 
-const C = {
+export const C = {
   ink: rgb(0.12, 0.17, 0.15),
   muted: rgb(0.38, 0.44, 0.41),
   emerald: rgb(0.02, 0.59, 0.41),
@@ -53,9 +53,9 @@ function drawVisual(page: PDFPage, v: string, x: number, y: number, size: number
   }
 }
 
-type Fonts = { head: PDFFont; headBold: PDFFont; body: PDFFont; bold: PDFFont; mono: PDFFont };
+export type Fonts = { head: PDFFont; headBold: PDFFont; body: PDFFont; bold: PDFFont; mono: PDFFont };
 
-async function loadFonts(doc: PDFDocument): Promise<Fonts> {
+export async function loadFonts(doc: PDFDocument): Promise<Fonts> {
   doc.registerFontkit(fontkit);
   const dir = path.join(process.cwd(), 'lib/legal/fonts');
   const f = async (n: string) => doc.embedFont(await readFile(path.join(dir, n)), { subset: true });
@@ -132,16 +132,16 @@ export type PdfInput = {
   chainAnchors: { at: string; head: string; count: number; tsa: boolean; ots: number }[];
 };
 
-const fmt = (iso: string | null | undefined) =>
+export const fmt = (iso: string | null | undefined) =>
   iso ? new Intl.DateTimeFormat('he-IL', { dateStyle: 'medium', timeStyle: 'medium', timeZone: 'Asia/Jerusalem' }).format(new Date(iso)) + ' (שעון ישראל)' : '—';
 const actionHe = (a: string) => (a === 'grant' ? 'מתן הסכמה' : 'ביטול הסכמה');
 const sourceHe = (s: string) => ({ onboarding: 'הרשמה', settings_privacy: 'הגדרות פרטיות', chat: 'שיחה עם אלמוג', prompt: 'חלון בקשת הסכמה' })[s] ?? s;
 
-class Writer {
+export class Writer {
   page!: PDFPage;
   y = 0;
   pageNo = 0;
-  constructor(private doc: PDFDocument, private f: Fonts, private caseRef: string) {}
+  constructor(private doc: PDFDocument, private f: Fonts, private caseRef: string, private header = 'NuraWell · תיק ראיות להסכמה') {}
 
   newPage(title?: string) {
     this.page = this.doc.addPage([W, H]);
@@ -151,7 +151,7 @@ class Writer {
     p.drawRectangle({ x: 0, y: H - 6, width: W, height: 6, color: C.emerald });
     p.drawRectangle({ x: 0, y: H - 6, width: W * 0.35, height: 6, color: C.teal });
     p.drawRectangle({ x: W * 0.8, y: H - 6, width: W * 0.2, height: 6, color: C.gold });
-    this.text('NuraWell · תיק ראיות להסכמה', { size: 8.5, color: C.muted, y: H - 24 });
+    this.text(this.header, { size: 8.5, color: C.muted, y: H - 24 });
     p.drawText(this.caseRef, { x: M, y: H - 24, size: 8, font: this.f.mono, color: C.muted });
     p.drawLine({ start: { x: M, y: 34 }, end: { x: W - M, y: 34 }, thickness: 0.6, color: C.line });
     p.drawText(`${this.pageNo}`, { x: M, y: 20, size: 8.5, font: this.f.body, color: C.muted });

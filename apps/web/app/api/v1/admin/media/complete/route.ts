@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, after } from 'next/server';
+import { scanStorage } from '@/lib/legal/media/ingest';
 import { HeadObjectCommand } from '@aws-sdk/client-s3';
 import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import { readJsonBody } from '@/lib/api/json-request';
@@ -101,6 +102,8 @@ async function completeUpload(
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  // legal provenance: hash + record the new file right after the response (never blocks the upload)
+  after(() => scanStorage(createAdminClient(), { only: (row as { id: string }).id }).then(() => undefined, () => undefined));
 
   return NextResponse.json({ ...row, url: publicUrl });
 }
@@ -137,6 +140,8 @@ async function completeVideo(
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  // legal provenance: hash + record the new file right after the response (never blocks the upload)
+  after(() => scanStorage(createAdminClient(), { only: (row as { id: string }).id }).then(() => undefined, () => undefined));
 
   return NextResponse.json({ ...row, url: externalUrl });
 }
