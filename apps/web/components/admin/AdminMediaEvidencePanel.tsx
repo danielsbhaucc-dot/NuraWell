@@ -162,7 +162,7 @@ function AttachmentBox({ item, onSaved }: { item: Item; onSaved: () => void }) {
   );
 }
 
-function PendingLicenseCard({ p, onDone }: { p: { key: string; title: string; action: string }; onDone: () => void }) {
+function PendingLicenseCard({ p, onDone }: { p: { key: string; title: string; action: string; kind?: string }; onDone: () => void }) {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const send = async (file: File | undefined) => {
@@ -179,14 +179,14 @@ function PendingLicenseCard({ p, onDone }: { p: { key: string; title: string; ac
   return (
     <li className="flex flex-col gap-2 rounded-2xl border border-orange-200/80 bg-orange-50/70 p-3 sm:flex-row sm:items-center sm:justify-between" data-testid="pending-license">
       <div className="min-w-0">
-        <p className="text-sm font-bold text-orange-950">🎵 {p.title}: הרישיון ממתין</p>
+        <p className="text-sm font-bold text-orange-950">{p.kind === 'receipt' ? `🧾 ${p.title}: קבלה לא שויכה` : `🎵 ${p.title}: הרישיון ממתין`}</p>
         <p className="text-xs text-orange-900/80">{p.action}</p>
         {msg ? <p role="status" className="mt-1 text-xs font-bold text-teal-800">{msg}</p> : null}
       </div>
-      <label className={cn(opsGlassBtnPrimaryClass, 'shrink-0 cursor-pointer')}>
+      {p.kind === 'receipt' ? <a href="#receipts" className={cn(opsGlassBtnPrimaryClass, 'shrink-0')}>לקבלה</a> : <label className={cn(opsGlassBtnPrimaryClass, 'shrink-0 cursor-pointer')}>
         {busy ? <Loader2 size={14} className="animate-spin" /> : <Paperclip size={14} />}העלאת קבלה
         <input type="file" accept="image/png,image/jpeg,image/webp,application/pdf" className="sr-only" disabled={busy} onChange={(e) => void send(e.target.files?.[0])} />
-      </label>
+      </label>}
     </li>
   );
 }
@@ -316,7 +316,7 @@ function ItemCard({ item, open, onToggle, onChanged }: { item: Item; open: boole
 export function AdminMediaEvidencePanel() {
   const [items, setItems] = useState<Item[] | null>(null);
   const [ai, setAi] = useState<{ calls: number; total_usd: number } | null>(null);
-  const [pending, setPending] = useState<Array<{ key: string; title: string; action: string }>>([]);
+  const [pending, setPending] = useState<Array<{ key: string; title: string; action: string; kind?: string }>>([]);
   const [q, setQ] = useState('');
   const [status, setStatus] = useState<'all' | Item['status']>('all');
   const [kind, setKind] = useState<string>('all');

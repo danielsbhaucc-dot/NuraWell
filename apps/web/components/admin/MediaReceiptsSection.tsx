@@ -80,7 +80,7 @@ export function ReceiptsSection({ onChanged }: { onChanged: () => void }) {
   };
   const pending = (data?.receipts ?? []).filter((r) => r.trust === 'review').length;
   return (
-    <section className={cn(opsGlassCardClass, 'p-4')}>
+    <section id="receipts" className={cn(opsGlassCardClass, 'p-4')}>
       <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} className="flex w-full items-center justify-between text-right">
         <span className="flex items-center gap-2 font-bold text-slate-900"><Mail size={16} className="text-teal-700" />קבלות ומנויים{pending ? <span className="rounded-full bg-orange-100 px-2 text-xs text-orange-800">{pending} לבדיקה</span> : null}</span>
         <ChevronDown size={16} className={cn('text-slate-400 transition', open && 'rotate-180')} />

@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { buildBusinessMetrics } from '@/lib/admin/business-metrics';
 import { deleteUserCompletely } from '@/lib/admin/delete-user-completely';
 import { opsLink } from './channel';
+import { pendingLicenseItems, unmatchedReceipts } from '@/lib/legal/media/pending';
 import { openOwnerTasks, setOwnerTask } from './owner-tasks';
 import { autoForward, forwardSchema, orWorkStatus, type ForwardArgs } from './dev-forward';
 import { describePref, listPrefs, PrefInput, savePref, setPrefActive } from './prefs';
@@ -141,6 +142,37 @@ export const CEO_TOOLS: CeoTool[] = [
         habit: s.habit_key,
         steps: steps.filter((x) => x.station_id === s.id).map((x) => ({ id: x.id, title: x.title, published: x.is_published, video: Boolean(x.video_external_id || x.video_external_url), tasks: Array.isArray(x.tasks) ? x.tasks.length : 0, link: opsLink(`/steps/${x.id}`) })),
       }));
+    },
+  },
+  {
+    name: 'legal_overview',
+    description: 'משפטי: media provenance status counts, pending licenses (need a receipt upload), unmatched receipts, receipts count. Read-only; never returns evidence contents.',
+    schema: z.object({}),
+    write: false,
+    run: async (db) => {
+      const [assets, receipts, pending, unmatched] = await Promise.all([
+        rows<{ status: string; source_type: string }>(db.from('media_provenance_assets').select('status, source_type').eq('present', true).limit(5000)),
+        rows<{ id: string }>(db.from('media_receipts').select('id').limit(2000)),
+        pendingLicenseItems(db).catch(() => []),
+        unmatchedReceipts(db).catch(() => []),
+      ]);
+      const byStatus: Record<string, number> = {};
+      for (const a of assets) byStatus[a.status] = (byStatus[a.status] ?? 0) + 1;
+      return { media_total: assets.length, by_status: byStatus, receipts: receipts.length, pending_licenses: pending, unmatched_receipts: unmatched, link: opsLink('/legal?tab=media') };
+    },
+  },
+  {
+    name: 'legal_search',
+    description: 'Search משפטי by text (media title/path/source/license, receipt vendor/plan/subject). Returns titles + Ops links only.',
+    schema: z.object({ q: z.string().min(2).max(80) }),
+    write: false,
+    run: async (db, a) => {
+      const like = `%${String((a as { q: string }).q).toLowerCase().replace(/[%_\\]/g, '')}%`;
+      const [m, r] = await Promise.all([
+        rows<{ asset_key: string; title: string | null; status: string }>(db.from('media_provenance_assets').select('asset_key, title, status').ilike('search_text', like).limit(10)),
+        rows<{ id: string; vendor: string; plan: string | null; period_start: string | null; period_end: string | null }>(db.from('media_receipts').select('id, vendor, plan, period_start, period_end').ilike('search_text', like).limit(10)),
+      ]);
+      return { media: m.map((x) => ({ title: x.title ?? x.asset_key, status: x.status, link: opsLink(`/legal?tab=media&asset=${encodeURIComponent(x.asset_key)}`) })), receipts: r.map((x) => ({ vendor: x.vendor, plan: x.plan, period: [x.period_start, x.period_end], link: opsLink('/legal?tab=media#receipts') })) };
     },
   },
   {

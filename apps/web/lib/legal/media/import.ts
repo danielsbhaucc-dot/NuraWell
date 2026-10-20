@@ -12,6 +12,7 @@ import { appendMediaEvidence } from './record';
 import { storeMediaBlob } from './store';
 import { addAttachment, loadAsset, provenanceInputSchema, updateProvenance } from './provenance';
 import { scanStorage } from './ingest';
+import { relinkAsset } from './links';
 
 const d = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional();
 export const importSchema = z.object({
@@ -48,6 +49,7 @@ export async function importEvidenceBundle(admin: SupabaseClient, zip: Buffer, a
     out.receipts_new++;
   }
 
+  const finish = async () => { await relinkAsset(admin).catch(() => 0); };
   for (const a of spec.assets) {
     if (!(await loadAsset(admin, a.key)) && a.key.startsWith('db:')) await scanStorage(admin, { only: a.key.slice(3) });
     const cur = await loadAsset(admin, a.key);
@@ -62,6 +64,7 @@ export async function importEvidenceBundle(admin: SupabaseClient, zip: Buffer, a
       if (r.ok) out.attachments++;
     }
   }
+  await finish();
   return out;
 }
 

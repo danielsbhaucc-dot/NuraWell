@@ -63,6 +63,7 @@ export type Provenance = {
   attachments?: Array<{ sha256: string; name: string; mime: string; label: string }>;
   confirmed_by_owner?: boolean;
   /** 'pending' keeps the asset open until the decisive proof (e.g. purchase receipt + download) is attached. */
+  receipt_ids?: string[];
   license_status?: 'pending' | 'confirmed' | null;
 };
 
