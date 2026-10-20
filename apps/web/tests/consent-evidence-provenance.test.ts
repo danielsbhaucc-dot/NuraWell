@@ -39,6 +39,9 @@ describe('evidence provenance', () => {
   it('finds server-side audit rows for the same event and chain neighbors', () => {
     const c = corroboration(rec(), [{ created_at: '2026-10-20T15:17:11.892Z', path: 'health_consent_granted', method: 'PRIVACY', detail: { source: 'settings_privacy' } }, { created_at: '2026-10-20T14:00:00Z', path: 'health_consent_granted' }], []);
     expect(c).toHaveLength(1);
+    expect(c[0]!.link).toBe('time_window');
+    const linked = corroboration(rec(), [{ created_at: '2026-10-20T18:00:00Z', path: 'health_consent_granted', detail: { evidence_id: 'r1' } }, { created_at: '2026-10-20T15:17:11Z', path: 'health_consent_granted', detail: { evidence_id: 'other' } }], [{ created_at: '2026-10-20T15:17:11Z', granted: true, evidence_id: 'r1' }]);
+    expect(linked.map((x) => x.link)).toEqual(['evidence_id', 'evidence_id']);
     const n = chainNeighbors([rec(), rec({ id: 'r2', record_hash: 'e'.repeat(64) })], 0);
     expect(n.nextHash).toBe('e'.repeat(64));
   });
@@ -64,5 +67,22 @@ describe('evidence provenance', () => {
         provenance: buildProvenance(rec({ screenshot_sha256: null }), 'מוצפן', null, {}), corroboration: [], canonicalJson: rec().payload_json, neighbors: { position: 1, total: 1, prevHash: 'GENESIS', nextHash: null }, otsStatus: [] }],
     });
     expect(pdf.length).toBeGreaterThan(10_000);
+  });
+});
+
+import { sanitizeClientMeta } from '@/lib/legal/record-evidence';
+describe('client meta', () => {
+  it('bounds browser-claimed fields', () => {
+    expect(sanitizeClientMeta({ captured_at: '2026-10-20T15:00:00.000Z', screen_w: 390.4, screen_h: 844, viewport_w: 390, viewport_h: 700, dpr: 3, typing_ms: 2150, tz: 'Asia/Jerusalem' }))
+      .toEqual({ captured_at: '2026-10-20T15:00:00.000Z', screen_w: 390, screen_h: 844, viewport_w: 390, viewport_h: 700, dpr: 3, typing_ms: 2150, tz: 'Asia/Jerusalem' });
+    const bad = sanitizeClientMeta({ captured_at: 'x', screen_w: -1, dpr: 99, typing_ms: 'a', tz: '<script>' })!;
+    expect(Object.values(bad).every((v) => v === null)).toBe(true);
+    expect(sanitizeClientMeta(null)).toBeNull();
+  });
+  it('adds provenance rows for device capture time, screen and typing time', () => {
+    const r = rec({ payload_json: canonicalJson({ v: 2, client: { captured_at: '2026-10-20T15:00:00.000Z', screen_w: 390, screen_h: 844, viewport_w: 390, viewport_h: 700, dpr: 3, typing_ms: 2150, tz: null } }) });
+    const rows = buildProvenance(r, null, null, {});
+    expect(rows.find((x) => x.field === 'זמן הקלדת המילה')!.value).toContain('2.1');
+    expect(rows.find((x) => x.field === 'גודל מסך')!.value).toContain('390x844');
   });
 });

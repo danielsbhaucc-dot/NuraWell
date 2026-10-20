@@ -29,13 +29,20 @@ export const EMAIL_SENDERS: Record<EmailSenderKey, SenderDef> = {
   },
 };
 
-/** מחזיר מחרוזת From ל-Resend, למשל `Dolev <dolev@nurawell.ai>` */
+const FROM_RE = /^(?:[^<>@]+<[^\s<>@]+@[^\s<>@]+\.[^\s<>@]+>|[^\s<>@]+@[^\s<>@]+\.[^\s<>@]+)$/;
+
+/** Cleans an env-provided From (stray quotes/whitespace); returns null when it is not a valid Resend From. */
+export function normalizeFrom(v: string | undefined | null): string | null {
+  const t = String(v ?? '').trim().replace(/^["']+|["']+$/g, '').replace(/\s+/g, ' ').trim();
+  return t && FROM_RE.test(t) ? t : null;
+}
+
+/** מחזיר מחרוזת From ל-Resend, למשל `Dolev <dolev@nurawell.ai>`. env לא תקין → ברירת המחדל (במקום כשל שליחה). */
 export function resolveEmailFrom(key: EmailSenderKey = 'default'): string {
   const def = EMAIL_SENDERS[key];
-  const fromEnv = process.env[def.envVar]?.trim();
+  const raw = process.env[def.envVar];
+  const fromEnv = normalizeFrom(raw);
   if (fromEnv) return fromEnv;
-  if (key === 'default') {
-    return def.fallback;
-  }
+  if (raw?.trim()) console.warn(`[email] ${def.envVar} is not a valid From address; using built-in default`);
   return def.fallback;
 }

@@ -29,6 +29,15 @@ export const HEALTH_PROFILE_WIPE: Record<(typeof HEALTH_PROFILE_FIELDS)[number],
   activity_level: null,
 };
 
+/** Links privacy audit rows to the signed consent evidence record of the same request. */
+export type HealthConsentMeta = { source: string; evidenceId?: string | null; requestId?: string | null };
+function evidenceLink(m: HealthConsentMeta): Record<string, string> {
+  const o: Record<string, string> = {};
+  if (m.evidenceId) o.evidence_id = m.evidenceId;
+  if (m.requestId) o.request_id = m.requestId;
+  return o;
+}
+
 export type HealthConsentState = { granted: boolean | null; at: string | null };
 
 /** Latest explicit health_data consent decision (null = never recorded). */
@@ -97,7 +106,7 @@ export function patchHasHealthFields(patch: Record<string, unknown>): boolean {
 export async function withdrawHealthConsent(
   admin: SupabaseClient,
   userId: string,
-  meta: { source: string },
+  meta: HealthConsentMeta,
   scrub: typeof scrubHealthFromMemory = scrubHealthFromMemory,
   scrubHistory: (a: SupabaseClient, u: string) => Promise<HistoryScrubResult> = scrubHealthFromChatHistory
 ): Promise<{ ok: true; measurementsDeleted: number; memory: HealthScrubResult | null } | { ok: false; error: string }> {
@@ -106,7 +115,7 @@ export async function withdrawHealthConsent(
     consentType: CONSENT_TYPES.healthData,
     granted: false,
     source: meta.source,
-    metadata: { data_wiped: true },
+    metadata: { data_wiped: true, ...evidenceLink(meta) },
   });
   if (!rec.ok) return rec;
   clearHealthBlockCache(userId);
@@ -143,7 +152,7 @@ export async function withdrawHealthConsent(
       actor_id: userId,
       method: 'PRIVACY',
       path: 'health_consent_withdrawn',
-      detail: { measurements_deleted: count ?? 0, memory, history, source: meta.source },
+      detail: { measurements_deleted: count ?? 0, memory, history, source: meta.source, ...evidenceLink(meta) },
     })
     .then(
       () => undefined,
@@ -156,19 +165,20 @@ export async function withdrawHealthConsent(
 export async function grantHealthConsent(
   admin: SupabaseClient,
   userId: string,
-  meta: { source: string }
+  meta: HealthConsentMeta
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const rec = await recordUserConsent(admin, {
     userId,
     consentType: CONSENT_TYPES.healthData,
     granted: true,
     source: meta.source,
+    metadata: evidenceLink(meta),
   });
   if (!rec.ok) return rec;
   clearHealthBlockCache(userId);
   await admin
     .from('admin_audit_log')
-    .insert({ actor_id: userId, method: 'PRIVACY', path: 'health_consent_granted', detail: { source: meta.source } })
+    .insert({ actor_id: userId, method: 'PRIVACY', path: 'health_consent_granted', detail: { source: meta.source, ...evidenceLink(meta) } })
     .then(
       () => undefined,
       () => undefined
