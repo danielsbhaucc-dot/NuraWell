@@ -3,6 +3,7 @@ import { headers } from 'next/headers';
 import { AccessibilityToolbarClient } from '@/components/a11y/AccessibilityToolbarClient';
 import { accessibilityBootstrapScript } from '@/lib/a11y/apply-preferences';
 import { DialogHost } from '@/components/shared/dialogs';
+import { CookieNotice } from '@/components/legal/cookies/CookieNotice';
 import { fontVariables } from './fonts';
 import './globals.css';
 
@@ -131,6 +132,7 @@ export default async function RootLayout({
         </a>
         <AccessibilityToolbarClient>{children}</AccessibilityToolbarClient>
         <DialogHost />
+        <CookieNotice />
       </body>
     </html>
   );

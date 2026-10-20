@@ -25,6 +25,7 @@ export function LegalDoc({
   title,
   titleAccent,
   lead,
+  leadExtra,
   updatedAt,
   version,
   summary,
@@ -40,6 +41,7 @@ export function LegalDoc({
   title: string;
   titleAccent?: string;
   lead: string;
+  leadExtra?: ReactNode;
   updatedAt: string;
   version: string;
   summary: LegalSummaryCard[];
@@ -58,6 +60,7 @@ export function LegalDoc({
       title={title}
       titleAccent={titleAccent}
       lead={lead}
+      leadExtra={leadExtra}
       chips={[`עודכן ${updatedAt}`, `גרסה ${version}`]}
       stat={stat}
       currentPath={currentPath}

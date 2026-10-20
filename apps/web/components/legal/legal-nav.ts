@@ -5,6 +5,7 @@ export const LEGAL_NAV: LegalNavItem[] = [
   { href: '/contact', label: 'צור קשר' },
   { href: '/terms', label: 'תנאי שימוש' },
   { href: '/privacy', label: 'מדיניות פרטיות' },
+  { href: '/cookies', label: 'עוגיות' },
   { href: '/safety', label: 'בטיחות' },
   { href: '/accessibility', label: 'נגישות וזכויות יוצרים' },
 ];

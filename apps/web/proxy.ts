@@ -131,6 +131,7 @@ const PUBLIC_ROUTES = [
   '/contact',
   '/terms',
   '/privacy',
+  '/cookies',
   '/safety',
   '/accessibility',
   '/pricing',
