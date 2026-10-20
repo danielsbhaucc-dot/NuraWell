@@ -269,6 +269,7 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
       </section>
 
       <HealthConsentSection
+        gender={gender}
         onToast={(msg, kind) => (kind === 'success' ? toast.success(msg) : toast.error(msg))}
       />
 
