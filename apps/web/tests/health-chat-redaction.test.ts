@@ -92,3 +92,12 @@ describe('DB guard migration', () => {
       expect(sql).toContain(t);
   });
 });
+
+describe('chat route gate', () => {
+  it('has no resume_assistant exemption from health redaction', async () => {
+    const fs = await import('node:fs');
+    const src = fs.readFileSync(new URL('../app/api/v1/ai/chat/route.ts', import.meta.url), 'utf8');
+    expect(src).toMatch(/if \(isHealthChatMessage\(lastUserText\)\) \{/);
+    expect(src).not.toMatch(/isHealthChatMessage\(lastUserText\)\s*&&\s*!parsed\.data\.resume_assistant/);
+  });
+});
