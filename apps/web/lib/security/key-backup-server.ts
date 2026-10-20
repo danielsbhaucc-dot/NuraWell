@@ -35,8 +35,12 @@ export type BackupBundle = {
 };
 
 /** Returns only ciphertext + shares. Plain values never leave this function and are never logged. */
-export function buildKeyBackup(passphrase: string, env: NodeJS.ProcessEnv = process.env): BackupBundle {
+export const AGE_IDENTITY_RE = /^AGE-SECRET-KEY-1[0-9A-Z]{58}$/;
+
+/** `extra`: optional secrets supplied by the owner at backup time (e.g. the DB-backup age identity, never stored server-side). */
+export function buildKeyBackup(passphrase: string, env: NodeJS.ProcessEnv = process.env, extra: Record<string, string> = {}): BackupBundle {
   const { keys, gideonDerived } = collect(env);
+  if (extra.DB_BACKUP_AGE_IDENTITY && AGE_IDENTITY_RE.test(extra.DB_BACKUP_AGE_IDENTITY)) keys.DB_BACKUP_AGE_IDENTITY = extra.DB_BACKUP_AGE_IDENTITY;
   if (!Object.keys(keys).length) throw new Error('no_keys');
   const recoveryKey = randomBytes(32);
   try {
