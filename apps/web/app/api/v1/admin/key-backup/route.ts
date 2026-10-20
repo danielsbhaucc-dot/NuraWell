@@ -6,7 +6,7 @@ import { consumeRateLimit, rateLimitResponse } from '@/lib/api/rate-limit';
 import { audit } from '@/lib/auth/passkeys';
 import { migrateGideonSecrets } from '@/lib/ceo/settings';
 import { hasSensitiveStepUp } from '@/lib/ops/sensitive-stepup';
-import { buildKeyBackup, passphraseScore } from '@/lib/security/key-backup-server';
+import { AGE_IDENTITY_RE, buildKeyBackup, passphraseScore } from '@/lib/security/key-backup-server';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 export const runtime = 'nodejs';
@@ -44,7 +44,7 @@ export async function GET(request: Request) {
   );
 }
 
-const Body = z.object({ passphrase: z.string().min(16).max(256), regenerate: z.boolean().optional() });
+const Body = z.object({ passphrase: z.string().min(16).max(256), regenerate: z.boolean().optional(), db_backup_identity: z.string().regex(AGE_IDENTITY_RE).optional() });
 
 export async function POST(request: Request) {
   const auth = await requireOpsApiAdmin(request);
@@ -65,7 +65,7 @@ export async function POST(request: Request) {
   if (!raw.ok) return raw.response;
   const parsed = Body.safeParse(raw.value);
   if (!parsed.success) return NextResponse.json({ error: 'passphrase', message: 'הסיסמה צריכה להיות באורך 16 תווים לפחות.' }, { status: 400, headers: NO_STORE });
-  const { passphrase, regenerate } = parsed.data;
+  const { passphrase, regenerate, db_backup_identity } = parsed.data;
   if (passphraseScore(passphrase) < 3) {
     return NextResponse.json({ error: 'weak', message: 'הסיסמה חלשה מדי. כדאי לחבר 4 מילים ומספר.' }, { status: 400, headers: NO_STORE });
   }
@@ -80,7 +80,7 @@ export async function POST(request: Request) {
 
   let bundle;
   try {
-    bundle = buildKeyBackup(passphrase);
+    bundle = buildKeyBackup(passphrase, process.env, db_backup_identity ? { DB_BACKUP_AGE_IDENTITY: db_backup_identity } : {});
   } catch {
     await audit(db, uid, 'key_backup_failed', {});
     return NextResponse.json({ error: 'failed', message: 'לא הצלחנו ליצור גיבוי. אף מפתח לא נחשף.' }, { status: 500, headers: NO_STORE });

@@ -44,6 +44,7 @@ export function AdminKeyBackup() {
   const [st, setSt] = useState<Status | null>(null);
   const [pass, setPass] = useState('');
   const [pass2, setPass2] = useState('');
+  const [dbKey, setDbKey] = useState<string | null>(null);
   const [regen, setRegen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<{ msg: string; stepup?: boolean } | null>(null);
@@ -63,10 +64,10 @@ export function AdminKeyBackup() {
   const generate = async () => {
     setBusy(true); setErr(null);
     try {
-      const r = await fetch('/api/v1/admin/key-backup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ passphrase: pass, regenerate: !!st?.last }) });
+      const r = await fetch('/api/v1/admin/key-backup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ passphrase: pass, regenerate: !!st?.last, ...(dbKey ? { db_backup_identity: dbKey } : {}) }) });
       const j = (await r.json().catch(() => ({}))) as { bundle?: ClientBundle; error?: string; message?: string };
       if (!r.ok || !j.bundle) { setErr({ msg: j.message ?? 'יצירת הגיבוי נכשלה. נסו שוב.', stepup: j.error === 'stepup' }); return; }
-      setBundle(j.bundle); setPass(''); setPass2(''); setDone({}); load();
+      setBundle(j.bundle); setPass(''); setPass2(''); setDbKey(null); setDone({}); load();
     } catch {
       setErr({ msg: 'אין חיבור לשרת. נסו שוב.' });
     } finally { setBusy(false); }
@@ -113,6 +114,19 @@ export function AdminKeyBackup() {
           <input type="password" autoComplete="new-password" value={pass2} onChange={(e) => setPass2(e.target.value)} placeholder="להקליד שוב את הסיסמה"
             className="min-h-[48px] w-full rounded-2xl border border-gc/60 bg-background-card/70 px-4 text-base" aria-label="אימות הסיסמה" />
           {pass2 && pass !== pass2 && <p className="text-xs font-bold text-rose-700">הסיסמאות לא זהות</p>}
+          <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-dashed border-gc/60 bg-background-card/50 p-3 text-sm text-slate-700">
+            <input type="file" accept=".txt,text/plain" className="sr-only" aria-label="קובץ מפתח הגיבוי של מסד הנתונים"
+              onChange={async (e) => {
+                const f = e.target.files?.[0];
+                e.target.value = '';
+                if (!f || f.size > 4096) return;
+                const m = /AGE-SECRET-KEY-1[0-9A-Z]{58}/.exec(await f.text());
+                setDbKey(m ? m[0] : null);
+                setErr(m ? null : { msg: 'הקובץ הזה לא נראה כמו מפתח הגיבוי של מסד הנתונים.' });
+              }} />
+            <KeyRound size={18} className="shrink-0" />
+            <span className="flex-1">{dbKey ? <b className="text-teal-800">מפתח הגיבוי של מסד הנתונים נוסף, ויישמר בגיבוי הזה</b> : <>לא חובה: להוסיף את קובץ <b>מפתח הגיבוי של מסד הנתונים</b> (אם קיבלת אותו)</>}</span>
+          </label>
           {st?.last && (
             <label className="flex items-start gap-2 rounded-2xl bg-amber-500/10 p-3 text-sm text-amber-900">
               <input type="checkbox" checked={regen} onChange={(e) => setRegen(e.target.checked)} className="mt-1" />

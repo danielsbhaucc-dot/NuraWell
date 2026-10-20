@@ -43,11 +43,13 @@ export function createR2PutPresignedUrl(params: {
   bucket: string;
   key: string;
   expiresSeconds?: number;
+  /** R2 jurisdiction subdomain, e.g. 'eu' for EU-jurisdiction buckets. */
+  jurisdiction?: string | null;
 }): string {
   const { accountId, accessKeyId, secretAccessKey } = getR2Credentials();
   const expiresSeconds = Math.min(Math.max(params.expiresSeconds ?? 300, 60), 900);
   const { shortDate, longDate } = amzDates();
-  const host = `${accountId}.r2.cloudflarestorage.com`;
+  const host = `${accountId}.${params.jurisdiction ? `${params.jurisdiction}.` : ''}r2.cloudflarestorage.com`;
   const credentialScope = `${shortDate}/${REGION}/${SERVICE}/aws4_request`;
   const canonicalUri = `/${encodePathSegment(params.bucket)}/${params.key
     .split('/')
