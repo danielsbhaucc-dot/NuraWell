@@ -19,7 +19,7 @@ export interface CeoChannel {
 
 /** Comma/space separated allowlist from env. Empty => nobody (fail closed). */
 export function allowedChatIds(raw = process.env.CEO_TELEGRAM_ALLOWED_CHAT_IDS): Set<string> {
-  return new Set((raw ?? '').split(/[\s,]+/).map((s) => s.trim()).filter(Boolean));
+  return new Set((raw ?? '').split(/[\s,]+/).map((s) => s.trim()).filter((s) => /^\d{1,20}$/.test(s))); // numeric private ids only
 }
 
 /** Deep links into the admin panel (Ops host). Telegram output still strips them via stripOpsLinks. */

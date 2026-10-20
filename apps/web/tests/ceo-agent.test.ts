@@ -74,7 +74,7 @@ describe('security', () => {
     const { db } = fakeDb();
     const f = tgFetch();
     const runTurn = vi.fn();
-    const r = await handleTelegramUpdate(db, createTelegramChannel(f as never), { message: { chat: { id: 7 }, text: 'hi' } }, { runTurn });
+    const r = await handleTelegramUpdate(db, createTelegramChannel(f as never), { message: { from: { id: 7 }, chat: { id: 7, type: 'private' }, text: 'hi' } }, { runTurn });
     expect(r).toEqual({ ignored: true });
     expect(runTurn).not.toHaveBeenCalled();
     // the stranger gets nothing; only the owner (42) is alerted
@@ -134,7 +134,7 @@ describe('agent turn + mocked Telegram', () => {
     const { db, t } = fakeDb();
     const a = await proposeAction(db, 'set_test_user', { userId: '11111111-1111-4111-8111-111111111111', enabled: true });
     const f = tgFetch();
-    await handleTelegramUpdate(db, createTelegramChannel(f as never), { callback_query: { id: 'cb', data: `ceo:a:${a.id}`, message: { chat: { id: 42 }, message_id: 9 } } });
+    await handleTelegramUpdate(db, createTelegramChannel(f as never), { callback_query: { id: 'cb', from: { id: 42 }, data: `ceo:a:${a.id}`, message: { chat: { id: 42, type: 'private' }, message_id: 9 } } });
     expect(t.profiles[0].notify_test_opt_in).toBe(true);
     const methods = f.mock.calls.map((c) => String((c as unknown[])[0]).split('/').pop());
     expect(methods).toEqual(['answerCallbackQuery', 'editMessageText']);
@@ -262,9 +262,9 @@ describe('owner task tracker', () => {
     const { db, t } = fakeDb();
     t.ceo_owner_tasks = [{ id: 'k1', title: 'לצלם סרטון', status: 'open' }];
     const f = tgFetch();
-    await handleTelegramUpdate(db, createTelegramChannel(f as never), { callback_query: { id: 'cb', data: 'ceo:ts:k1', message: { chat: { id: 42 }, message_id: 3 } } });
+    await handleTelegramUpdate(db, createTelegramChannel(f as never), { callback_query: { id: 'cb', from: { id: 42 }, data: 'ceo:ts:k1', message: { chat: { id: 42, type: 'private' }, message_id: 3 } } });
     expect(t.ceo_owner_tasks[0].status).toBe('snoozed');
-    await handleTelegramUpdate(db, createTelegramChannel(f as never), { callback_query: { id: 'cb', data: 'ceo:td:k1', message: { chat: { id: 42 }, message_id: 3 } } });
+    await handleTelegramUpdate(db, createTelegramChannel(f as never), { callback_query: { id: 'cb', from: { id: 42 }, data: 'ceo:td:k1', message: { chat: { id: 42, type: 'private' }, message_id: 3 } } });
     expect(t.ceo_owner_tasks[0].status).toBe('done');
   });
   it('create tool is restricted to human-only origins', async () => {
@@ -307,7 +307,7 @@ describe('demo fast path + picker + effects', () => {
     t.profiles.push({ id: '22222222-2222-4222-8222-222222222222', full_name: 'Test', role: 'test' });
     const a = await proposeAction(db, 'create_demo_link', { guest_name: 'אלכס' });
     const f = tgFetch();
-    await handleTelegramUpdate(db, createTelegramChannel(f as never), { callback_query: { id: 'cb', data: `ceo:t:${a.id}:22222222`, message: { chat: { id: 42 }, message_id: 9 } } });
+    await handleTelegramUpdate(db, createTelegramChannel(f as never), { callback_query: { id: 'cb', from: { id: 42 }, data: `ceo:t:${a.id}:22222222`, message: { chat: { id: 42, type: 'private' }, message_id: 9 } } });
     expect((t.ceo_pending_actions[0].args as { targetUserId: string }).targetUserId).toBe('22222222-2222-4222-8222-222222222222');
     const edit = f.mock.calls.find((c) => String((c as unknown[])[0]).endsWith('editMessageText')) as unknown[];
     const body = JSON.parse(String((edit[1] as { body: string }).body));
@@ -316,7 +316,7 @@ describe('demo fast path + picker + effects', () => {
   it('incoming message gets 👀 reaction + typing', async () => {
     const { db } = fakeDb();
     const f = tgFetch();
-    await handleTelegramUpdate(db, createTelegramChannel(f as never), { message: { chat: { id: 42 }, text: 'היי', message_id: 5 } }, { runTurn: async () => ({ text: 'שלום', buttons: [] }) });
+    await handleTelegramUpdate(db, createTelegramChannel(f as never), { message: { from: { id: 42 }, chat: { id: 42, type: 'private' }, text: 'היי', message_id: 5 } }, { runTurn: async () => ({ text: 'שלום', buttons: [] }) });
     const methods = f.mock.calls.map((c) => String((c as unknown[])[0]).split('/').pop());
     expect(methods.slice(0, 2)).toEqual(['setMessageReaction', 'sendChatAction']);
   });
@@ -364,12 +364,12 @@ describe('stolen-phone protection', () => {
     const { db, t } = fakeDb();
     const f = tgFetch();
     // gate stubbed open: quiet-time behavior is covered in gideon-quiet.test.ts (keeps this test day-independent)
-    await handleTelegramUpdate(db, createTelegramChannel(f as never, undefined, async () => 'send'), { message: { chat: { id: 999 }, text: 'היי' } });
+    await handleTelegramUpdate(db, createTelegramChannel(f as never, undefined, async () => 'send'), { message: { from: { id: 999 }, chat: { id: 999, type: 'private' }, text: 'היי' } });
     const sent = f.mock.calls.map((c) => JSON.parse(String(((c as unknown[])[1] as { body: string }).body)));
     expect(sent).toHaveLength(1);
     expect(sent[0].chat_id).toBe('42');
     expect(sent[0].text).toContain('לא מוכר');
-    await handleTelegramUpdate(db, createTelegramChannel(tgFetch() as never), { message: { chat: { id: 42 }, text: '/lock' } });
+    await handleTelegramUpdate(db, createTelegramChannel(tgFetch() as never), { message: { from: { id: 42 }, chat: { id: 42, type: 'private' }, text: '/lock' } });
     expect(t.gideon_settings[0].disabled).toBe(true);
   });
 });
