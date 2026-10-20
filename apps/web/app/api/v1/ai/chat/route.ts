@@ -110,6 +110,8 @@ import {
   persistUserEmojiReaction,
 } from '../../../../../lib/ai/emoji-reaction/persist-user-reaction';
 import type { MentorEmojiReaction } from '../../../../../lib/ai/emoji-reaction/types';
+import { buildBubblePromptBlock, buildReplyQuotePromptBlock, buildUserQuotedNote, splitAssistantBubbles, stripReplyQuoteMarker } from '../../../../../lib/ai/reply-quote';
+import { resolveAssistantBackIndex, resolveReplyQuoteMessageId, validateUserQuotedAssistantMessage } from '../../../../../lib/ai/reply-quote/resolve-server';
 import {
   enqueuePendingChatLog,
   formatChatTurnForPendingLog,
@@ -255,6 +257,10 @@ const chatBodySchema = z.object({
   notification_id: z.string().uuid().optional(),
   /** המשך יצירת תשובה אחרי רענון — בלי שכפול הודעת משתמש ב-DB */
   resume_assistant: z.boolean().optional(),
+  /** User-side quote of an Almog message (validated server-side: same user + session, assistant row). */
+  reply_to_message_id: z.string().uuid().optional(),
+  /** Same, for a live bubble that has no db id yet: k-th latest assistant message of the session. */
+  reply_to_assistant_back: z.number().int().min(1).max(20).optional(),
   /** הקשר מובנה ממסך הבית — task_id + slot, בלי להסתמך על ניחוש מהטקסט */
   task_report_hint: z
     .object({
@@ -3043,12 +3049,24 @@ async function handleChatPost(request: Request) {
   /**
    * Persist הודעת משתמש — לא חוסם TTFB. אותו תוכן/מטא כמו קודם.
    */
+  let userQuoted: { id: string; content: string } | null = null;
+  try {
+    const qid =
+      parsed.data.reply_to_message_id ??
+      (parsed.data.reply_to_assistant_back
+        ? await resolveAssistantBackIndex(supabase, { userId: user.id, sessionId, k: parsed.data.reply_to_assistant_back })
+        : null);
+    if (qid) userQuoted = await validateUserQuotedAssistantMessage(supabase, { userId: user.id, sessionId, messageId: qid });
+  } catch {
+    userQuoted = null;
+  }
   if (!skipUserPersist) {
     void insertAiInteraction(supabase, {
       user_id: user.id,
       session_id: sessionId,
       role: 'user',
       content: lastUserText,
+      ...(userQuoted ? { reply_to_message_id: userQuoted.id } : {}),
       model_name: effectiveModel,
       metadata: {
         edge: true,
@@ -3171,7 +3189,7 @@ async function handleChatPost(request: Request) {
   // V2: short full window + session live file (rolling summary) carries older turns
   // UI/reaction markers are display protocol — never show them to the writer (Claude started imitating them).
   const cleanHistory = mergedMessages.map((m) =>
-    m.role === 'assistant' ? { ...m, content: stripRawChatUi(stripEmojiReactionMarker(m.content)).replace(/⟦NW_UIR?:[^⟧]*⟧/g, '') } : m
+    m.role === 'assistant' ? { ...m, content: stripReplyQuoteMarker(stripRawChatUi(stripEmojiReactionMarker(m.content)).replace(/⟦NW_UIR?:[^⟧]*⟧/g, '')) } : m
   );
   const recentMessages = almogPromptV2Enabled() ? budgetHistoryV2(cleanHistory) : cleanHistory;
 
@@ -3710,6 +3728,7 @@ async function handleChatPost(request: Request) {
       contextSections.splice(0, contextSections.length, ...b.sections);
     }
     const previousReactionBlock = buildPreviousReactionPromptBlock(dbTurns ?? [], lastUserText);
+    const replyQuoteBlock = buildReplyQuotePromptBlock(recentMessages);
     const dynamicSystemPrompt = [
       ...(healthConsentOff ? [HEALTH_CONSENT_OFF_PROMPT] : []),
       '— מה שידוע לך על השיחה הזו —',
@@ -3721,6 +3740,9 @@ async function handleChatPost(request: Request) {
       addressingFooter,
       turnStance,
       previousReactionBlock,
+      replyQuoteBlock,
+      buildBubblePromptBlock(),
+      userQuoted ? buildUserQuotedNote(stripReplyQuoteMarker(userQuoted.content)) : null,
       '',
       mcfg.finalGuardrails,
       buildAlmogVoiceSticky(mcfg.writer),
@@ -3819,7 +3841,13 @@ async function handleChatPost(request: Request) {
           }
         }
 
-        const assistantText = preferSanitizedWriterOutput(stripRawChatUi(stripEmojiReactionMarker(t)));
+        const bubbleParts = splitAssistantBubbles(stripRawChatUi(stripEmojiReactionMarker(t)), recentMessages)
+          .map((b) => ({ text: preferSanitizedWriterOutput(b.raw), quoteN: b.quoteN }))
+          .filter((b) => b.text.trim());
+        const assistantText =
+          bubbleParts.map((b) => b.text).join('\n\n') ||
+          preferSanitizedWriterOutput(stripReplyQuoteMarker(stripRawChatUi(stripEmojiReactionMarker(t))));
+        const bubbles = bubbleParts.length ? bubbleParts : [{ text: assistantText, quoteN: null as number | null }];
         const reactionFix = extractEmojiReactionFix(t);
         if (reactionFix) {
           after(async () => {
@@ -3932,14 +3960,24 @@ async function handleChatPost(request: Request) {
          */
         after(async () => {
           try {
+            // One stored row per bubble, in order (sequential inserts keep created_at ordering).
+            for (let bi = 0; bi < bubbles.length; bi += 1) {
+            const bubble = bubbles[bi]!;
+            const replyToMessageId =
+              bubble.quoteN != null
+                ? await resolveReplyQuoteMessageId(supabase, { userId: user.id, sessionId, n: bubble.quoteN }).catch(() => null)
+                : null;
+            const last = bi === bubbles.length - 1;
             await insertAiInteraction(supabase, {
               user_id: user.id,
               session_id: sessionId,
               role: 'assistant',
-              content: assistantText,
+              content: bubble.text,
+              ...(replyToMessageId ? { reply_to_message_id: replyToMessageId } : {}),
               model_name: assistantModelName,
-              tokens_used: totalTokens,
-              metadata: {
+              ...(last ? { tokens_used: totalTokens } : {}),
+              metadata: !last ? { edge: true, streamed: true, bubble_index: bi, bubble_count: bubbles.length, writer: mcfg.writer } : {
+                ...(bubbles.length > 1 ? { bubble_index: bi, bubble_count: bubbles.length } : {}),
                 edge: true,
                 streamed: true,
                 safety_net_used: safetyNetUsed,
@@ -3956,6 +3994,7 @@ async function handleChatPost(request: Request) {
                 writer: mcfg.writer,
               },
             });
+            }
           } catch (persistErr) {
             console.error('[ai/chat]', {
               debug_id: debugId,

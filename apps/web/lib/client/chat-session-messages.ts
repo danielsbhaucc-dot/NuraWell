@@ -11,6 +11,8 @@ export type ChatHistoryUiMessage = {
   metadata?: {
     emojiReaction?: MentorEmojiReaction;
     edited?: boolean;
+    dbId?: string;
+    replyToId?: string;
   };
 };
 
@@ -30,7 +32,12 @@ export function transcriptTurnsToUiMessages(turns: ChatTranscriptTurn[]): ChatHi
       role,
       parts: [{ type: 'text', text: turn.content }],
       createdAt: turn.created_at,
-      ...(emojiReaction ? { metadata: { emojiReaction } } : turn.edited ? { metadata: { edited: true } } : {}),
+      metadata: {
+        ...(emojiReaction ? { emojiReaction } : {}),
+        ...(turn.edited ? { edited: true } : {}),
+        ...(turn.id ? { dbId: turn.id } : {}),
+        ...(turn.reply_to_id ? { replyToId: turn.reply_to_id } : {}),
+      },
     };
   });
 }
