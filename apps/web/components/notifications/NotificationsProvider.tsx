@@ -1011,7 +1011,7 @@ export function NotificationsProvider({
                       role="separator"
                     >
                       <span className="h-px flex-1 bg-linear-to-l from-transparent via-emerald-300/70 to-emerald-300/70" />
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-glass/80 backdrop-blur-md px-3 py-1 text-[11px] font-bold text-emerald-800 ring-1 ring-emerald-200/70 backdrop-blur-sm">
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-glass/80 px-3 py-1 text-[11px] font-bold text-emerald-800 ring-1 ring-emerald-200/70 backdrop-blur-sm">
                         <History className="h-3.5 w-3.5" aria-hidden />
                         התראות קודמות
                       </span>

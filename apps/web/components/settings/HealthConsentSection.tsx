@@ -91,7 +91,7 @@ export function HealthConsentSection({
 
       <p className="text-xs text-emerald-900/80 font-medium">{ex.line}</p>
 
-      <div className="rounded-xl border border-emerald-900/10 bg-glass/50 backdrop-blur-md backdrop-blur-sm">
+      <div className="rounded-xl border border-emerald-900/10 bg-glass/50 backdrop-blur-sm">
         <h3 className="m-0">
           <button
             type="button"

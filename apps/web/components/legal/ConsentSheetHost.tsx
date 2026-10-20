@@ -75,7 +75,7 @@ export function ConsentSheetHost() {
         }}
       />
       {toast ? (
-        <div role="status" dir="rtl" className="fixed inset-x-0 bottom-24 z-[400] mx-auto w-fit max-w-[92vw] rounded-2xl border border-emerald-200 bg-glass/90 backdrop-blur-md px-4 py-3 text-sm font-semibold text-emerald-800 shadow-xl backdrop-blur">
+        <div role="status" dir="rtl" className="fixed inset-x-0 bottom-24 z-[400] mx-auto w-fit max-w-[92vw] rounded-2xl border border-emerald-200 bg-glass/90 px-4 py-3 text-sm font-semibold text-emerald-800 shadow-xl backdrop-blur">
           {toast}
         </div>
       ) : null}

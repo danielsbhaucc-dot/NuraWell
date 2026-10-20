@@ -125,7 +125,7 @@ export function ConsentEvidenceSheet({ open, action, gender, onClose, mode = 'su
 
         <div className="mt-4 space-y-2.5">
           {t.sections.map((s, i) => (
-            <section key={s.heading} className="rounded-2xl border border-white/70 bg-glass/60 backdrop-blur-md p-3.5 shadow-sm backdrop-blur">
+            <section key={s.heading} className="rounded-2xl border border-white/70 bg-glass/60 p-3.5 shadow-sm backdrop-blur">
               <h3 className="mb-1.5 flex items-center gap-2 text-sm font-bold text-slate-900">
                 <span className="grid h-5 w-5 place-items-center rounded-full bg-amber-100 text-[11px] font-bold text-amber-700">{i + 1}</span>
                 {s.heading}
