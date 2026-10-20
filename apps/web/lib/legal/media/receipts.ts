@@ -8,9 +8,9 @@ import { linkReceipt } from './links';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { sha256Hex } from '../evidence-crypto';
 import { appendMediaEvidence } from './record';
-import { storeMediaBlob } from './store';
+import { loadMediaBlob, storeMediaBlob } from './store';
 import {
-  VENDORS, detectVendor, forwarderAllowed, gmailConfirmationCode, isGmailForwardingConfirmation, parseAmount, parsePeriod, parsePlan,
+  VENDORS, detectVendor, forwarderAllowed, extractGmailConfirmation, isGmailForwardingConfirmation, parseAmount, parsePeriod, parsePlan,
 } from './receipts-core';
 
 export function allowedForwarders(): string[] {
@@ -90,7 +90,7 @@ export async function ingestReceipt(admin: SupabaseClient, input: IngestReceiptI
     source: isConfirm ? 'gmail_confirmation' : input.source, vendor, plan, amount, currency, receipt_date: receiptDate,
     period_start: period.start, period_end: period.end, subject, original_from: from.slice(0, 200), forwarder_ok: fwdOk,
     dkim: { results: auth.dkim, dmarc: auth.dmarc, vendor_dkim_pass: vendorDkim }, spf: auth.spf, trust, eml_sha: eml.sha256, attachments: atts,
-    confirmation_code: isConfirm ? gmailConfirmationCode(text) : null,
+    ...(isConfirm ? (() => { const g = extractGmailConfirmation({ subject, text: mail.text ?? '', html: mail.html ?? '', raw: input.raw.toString('latin1') }); return { confirmation_code: g.code, confirmation_link: g.link }; })() : { confirmation_code: null, confirmation_link: null }),
   };
   const parsedBy = aiUsed ? 'rules+ai' : 'rules';
   const { data: ins, error } = await admin.from('media_receipts').insert(row).select('id').single();
@@ -151,4 +151,22 @@ export async function uploadReceiptFile(admin: SupabaseClient, f: { name: string
   if (rec.ok) await admin.from('media_receipts').update({ record_hash: rec.recordHash }).eq('id', id);
   const link = await linkReceipt(admin, id).catch(() => ({ linked: 0, unmatched: true }));
   return { ok: true as const, id, duplicate: false, ...link };
+}
+
+/** Re-parse stored Gmail forwarding-confirmation mails whose code/link were missed (parser fixes apply retroactively). */
+export async function reparseGmailConfirmations(admin: SupabaseClient): Promise<number> {
+  const { data } = await admin.from('media_receipts').select('id, eml_sha').eq('source', 'gmail_confirmation').or('confirmation_code.is.null,confirmation_link.is.null').limit(10);
+  let n = 0;
+  for (const r of (data ?? []) as Array<{ id: string; eml_sha: string | null }>) {
+    if (!r.eml_sha) continue;
+    const b = await loadMediaBlob(admin, r.eml_sha).catch(() => null);
+    if (!b) continue;
+    const PostalMime = (await import('postal-mime')).default;
+    const mail = await PostalMime.parse(b.bytes);
+    const g = extractGmailConfirmation({ subject: mail.subject ?? '', text: mail.text ?? '', html: mail.html ?? '', raw: b.bytes.toString('latin1') });
+    if (!g.code && !g.link) continue;
+    await admin.from('media_receipts').update({ confirmation_code: g.code, confirmation_link: g.link, updated_at: new Date().toISOString() }).eq('id', r.id);
+    n++;
+  }
+  return n;
 }
