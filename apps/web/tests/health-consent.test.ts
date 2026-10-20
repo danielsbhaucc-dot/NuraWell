@@ -47,7 +47,7 @@ describe('withdrawHealthConsent', () => {
     const { admin, calls } = fakeAdmin();
     const mem = { memories: 2, insights: 1, vectors: 3, dossier: true, aiContext: true };
     const scrub = vi.fn(async () => mem);
-    const r = await withdrawHealthConsent(admin, 'u1', { source: 'test' }, scrub as never);
+    const r = await withdrawHealthConsent(admin, 'u1', { source: 'test' }, scrub as never, async () => ({ messages: 0, sessions: 0 }));
     expect(r).toEqual({ ok: true, measurementsDeleted: 3, memory: mem });
     expect(scrub).toHaveBeenCalledWith(admin, 'u1');
     const consent = calls.find((c) => c.table === 'user_consents')?.arg as Record<string, unknown>;
