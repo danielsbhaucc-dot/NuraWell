@@ -28,6 +28,7 @@ const schema = z.discriminatedUnion('kind', [
  *  • goal → profiles.main_goal (shown at the top of "התוכנית שלך").
  * Level changes reuse /api/v1/tasks/level (ladder rules + task_events).
  */
+// skipcq: JS-0067, JS-R1005 -- ES module export (Next.js route handler), not a global
 export async function POST(request: Request) {
   const limited = await limitIp(request, 'ai-chat-agreements', 60);
   if (limited) return limited;

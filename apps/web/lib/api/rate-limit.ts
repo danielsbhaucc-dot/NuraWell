@@ -145,6 +145,7 @@ function checkMemory(input: RateLimitInput, now: number): RateLimitResult {
   };
 }
 
+// skipcq: JS-0067, JS-R1005 -- module-scoped (ES module)
 function supabaseRest(): { url: string; key: string } | null {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim().replace(/\/+$/, '');
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
@@ -156,6 +157,7 @@ function supabaseRest(): { url: string; key: string } | null {
  * Postgres-backed distributed limiter (atomic upsert in `rate_limit_consume`).
  * Keys are hashed in the DB — no raw IP/user ids stored. Falls back to memory on error.
  */
+// skipcq: JS-0067, JS-R1005 -- module-scoped (ES module)
 async function checkPostgres(
   input: RateLimitInput,
   now: number,
@@ -186,6 +188,7 @@ async function checkPostgres(
 const loggedHits = new Map<string, number>();
 
 /** Best-effort audit entry (admin_audit_log, method SECURITY) — once per namespace+key per window. */
+// skipcq: JS-0067, JS-R1005 -- module-scoped (ES module)
 async function logLimitHit(input: RateLimitInput, result: RateLimitResult): Promise<void> {
   const cfg = supabaseRest();
   if (!cfg) return;
@@ -212,21 +215,22 @@ async function logLimitHit(input: RateLimitInput, result: RateLimitResult): Prom
   }
 }
 
+// skipcq: JS-0067, JS-R1005 -- module-scoped (ES module)
 async function consumeRaw(input: RateLimitInput, now: number): Promise<RateLimitResult> {
   if (isUpstashRedisConfigured()) return checkUpstashRedis(input, now);
   const cfg = supabaseRest();
   if (cfg) {
-    const r = await checkPostgres(input, now, cfg);
-    if (r) return r;
+    const pgResult = await checkPostgres(input, now, cfg);
+    if (pgResult) return pgResult;
   }
   return checkMemory(input, now);
 }
 
 export async function consumeRateLimit(input: RateLimitInput): Promise<RateLimitResult> {
   const now = Date.now();
-  const r = await consumeRaw(input, now);
-  if (!r.ok) await logLimitHit(input, r);
-  return r;
+  const result = await consumeRaw(input, now);
+  if (!result.ok) await logLimitHit(input, result);
+  return result;
 }
 
 /**
