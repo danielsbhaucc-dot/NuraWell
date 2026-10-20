@@ -57,7 +57,6 @@ import {
 } from '../../../../../lib/ai/sanitize-writer-output';
 import { parseLlmJsonObject } from '../../../../../lib/ai/parse-llm-json';
 import { extractOpenRouterDeltaText } from '../../../../../lib/ai/openrouter-delta-text';
-import { computeChatCostUsd } from '../../../../../lib/admin/cost-model';
 import { embedTextForRag } from '../../../../../lib/ai/openrouter-embeddings';
 import { buildRelevantMemoriesPromptBlock } from '../../../../../lib/ai/user-memories/retrieve-relevant-memories';
 import {
@@ -3071,14 +3070,7 @@ async function handleChatPost(request: Request) {
       metadata: {
         edge: true,
         heavy_context: useHeavyContext,
-        context_router: {
-          reason: contextDecision.reason ?? null,
-          needs_user_memory_rag: contextDecision.needs_user_memory_rag,
-          needs_system_knowledge_rag: contextDecision.needs_system_knowledge_rag,
-          needs_full_progress_report: contextDecision.needs_full_progress_report,
-          needs_journey_knowledge: contextDecision.needs_journey_knowledge,
-          needs_principles: contextDecision.needs_principles,
-        },
+        // Router diagnostics are logged per request (debug_id); not stored per message.
       },
     }).catch((persistErr) => {
       console.warn('[ai/chat]', {
@@ -3941,18 +3933,6 @@ async function handleChatPost(request: Request) {
           });
         }
 
-        const providerCostUsd = usage?.costUsd;
-        const estimatedCostUsd = computeChatCostUsd(assistantModelName, {
-          totalTokens,
-          inputTokens,
-          outputTokens,
-          cacheReadTokens: cacheReadInputTokens,
-          cacheCreationTokens: cacheCreationInputTokens,
-        });
-        const costUsd =
-          typeof providerCostUsd === 'number' && providerCostUsd > 0
-            ? providerCostUsd
-            : estimatedCostUsd;
 
         /**
          * Persist assistant + bump session — אחרי סגירת stream.
@@ -3983,14 +3963,9 @@ async function handleChatPost(request: Request) {
                 safety_net_used: safetyNetUsed,
                 trivial_bypass: trivialBypass,
                 fallback_used: !t,
-                input_tokens: inputTokens,
-                output_tokens: outputTokens,
-                cache_read_input_tokens: cacheReadInputTokens,
-                cache_creation_input_tokens: cacheCreationInputTokens,
+                // Token counts and cost live in ai_usage_events (metered per provider call).
                 finish_reason: effectiveFinishReason,
                 continued_after_length: finishReason === 'length' && t !== (text ?? '').trim(),
-                cost_usd: costUsd,
-                provider_cost_usd: providerCostUsd ?? null,
                 writer: mcfg.writer,
               },
             });
