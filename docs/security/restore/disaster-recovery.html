@@ -1,0 +1,32 @@
+<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>תוכנית חירום · NuraWell</title><style>/*STYLE*/ .page{padding:22px 22px} h2{margin:16px 0 6px;font-size:18px} .card{padding:11px 14px;margin:6px 0;font-size:13.5px} td,th{padding:5px 6px;font-size:13px} @media print{.page{zoom:.8;padding:0}}</style></head>
+<body><div class="page">
+<div class="hero"><div class="eyebrow">דף אחד · להדפיס ולשמור ליד חלק שחזור 1</div><h1>אם משהו קורס: תוכנית החזרה לאוויר</h1><p>כל מה שצריך כדי שכל מפתח יחזיר את NuraWell לעבודה, גם בלי מי שבנה את המערכת.</p></div>
+
+<h2><span class="n">1</span>איפה כל דבר נמצא</h2>
+<table>
+<tr><th>מה</th><th>איפה</th><th>הערה</th></tr>
+<tr><td>הקוד</td><td>GitHub · <code>danielsbhaucc-dot/NuraWell</code></td><td>הענף <code>main</code> הוא מה שבאוויר. ההוראות לכל מפתח נמצאות בקבצים <code>AI_CONTEXT.md</code> ו-<code>RULES.md</code>.</td></tr>
+<tr><td>האתר והשרתים</td><td>Vercel · הפרויקט NuraWell (פרנקפורט)</td><td>כל מיזוג ל-<code>main</code> עולה לאוויר לבד.</td></tr>
+<tr><td>מסד הנתונים</td><td>Supabase · פרויקט באירופה</td><td>בתוכנית החינמית אין גיבוי אוטומטי שאפשר לשחזר ממנו בלחיצה. לכן חשוב ייצוא תקופתי של מסד הנתונים.</td></tr>
+<tr><td>הדומיין והמייל הנכנס</td><td>Cloudflare · <code>nurawell.ai</code></td><td>שם מוגדרים DNS, ניתוב הקבלות ודף 404.</td></tr>
+<tr><td>מייל יוצא</td><td>Resend</td><td>שולח מהכתובת no-reply@nurawell.ai.</td></tr>
+<tr><td>זיכרון של אלמוג</td><td>Upstash Vector (אירלנד)</td><td>אם המידע הזה אובד, אלמוג פשוט "שוכח". שום מידע של משתמשים לא נפגע.</td></tr>
+<tr><td>מפתחות ההצפנה</td><td>Vercel, במשתנים מוגנים, ובגיבוי המפתחות</td><td>סיסמה במנהל הסיסמאות · חלק 1 בכספת · חלק 2 במנהל הסיסמאות · חלק 3 אצל עורך הדין</td></tr>
+</table>
+
+<h2><span class="n">2</span>מה עושים לפי סוג התקלה</h2>
+<div class="card"><b>האתר לא עולה:</b> ב-Vercel, במסך Deployments, בוחרים את הגרסה האחרונה שעבדה ולוחצים Promote to Production. זה חוזר לאוויר תוך דקה.</div>
+<div class="card"><b>חשבון השרת נמחק או ננעל:</b> יוצרים פרויקט Vercel חדש מאותו מאגר GitHub, ומעתיקים את כל משתני הסביבה. את המפתחות משחזרים לפי מדריך השחזור, ואת שאר המשתנים (מסד נתונים, מייל) מקבלים מחדש מהמסכים של כל שירות. בסוף מכוונים את הדומיין ב-Cloudflare לפרויקט החדש.</div>
+<div class="card"><b>מידע במסד הנתונים נמחק או השתבש:</b> משחזרים מהייצוא האחרון של מסד הנתונים (אם עוברים לתוכנית בתשלום, אפשר לשחזר גם במסך Database ואז Backups). לא משנים מפתחות, כי הם לא תלויים במסד.</div>
+<div class="card warn"><b>חשד לפריצה:</b> כותבים לגדעון "ניתוק מכל המכשירים" (או מנתקים את כל המשתמשים ב-Supabase, במסך Authentication). אחר כך מחליפים סיסמאות ב-GitHub, ב-Vercel, ב-Supabase וב-Cloudflare, ופונים לעורך הדין לגבי חובת דיווח לרשות להגנת הפרטיות.</div>
+<div class="card"><b>מפתחות ההצפנה אבדו:</b> פותחים את "מדריך גיבוי ושחזור המפתחות" ופועלים לפי שלב 4.</div>
+
+<h2><span class="n">3</span>למי פונים</h2>
+<table>
+<tr><td><b>הבעלים</b></td><td>דניאל רחמן · danielsbhaucc@gmail.com</td></tr>
+<tr><td><b>עורך הדין</b></td><td>מחזיק בחלק שחזור 3. שם ומספר: ____________________</td></tr>
+<tr><td><b>מפתח גיבוי</b></td><td>שם ומספר: ____________________</td></tr>
+<tr><td><b>תמיכה של השירותים</b></td><td>vercel.com/help · supabase.com/support · dash.cloudflare.com (Support) · resend.com/support · github.com/contact</td></tr>
+</table>
+<div class="foot">NuraWell · מסמך פנימי · עודכן ב-{{DATE}}</div>
+</div></body></html>
