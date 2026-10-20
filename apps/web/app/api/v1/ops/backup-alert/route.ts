@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { authorizeCronRequest } from '@/lib/api/authorize-cron';
+import { authorizeDbBackupRequest } from '@/lib/api/authorize-db-backup';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { alertOwnerSecurity } from '@/lib/ops/device-notify';
 import { ownerAdminId } from '@/lib/ops/owner-actions';
@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 
 /** Nightly DB backup workflow failed → Telegram + email to the owner (Bearer CRON_SECRET). */
 export async function POST(request: Request) {
-  const denied = await authorizeCronRequest(request);
+  const denied = await authorizeDbBackupRequest(request);
   if (denied) return denied;
   const body = (await request.json().catch(() => ({}))) as { run_url?: unknown };
   const runUrl = typeof body.run_url === 'string' && /^https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/actions\/runs\/\d+$/.test(body.run_url) ? body.run_url : '';

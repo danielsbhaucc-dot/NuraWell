@@ -1,0 +1,46 @@
+name: Nightly encrypted DB backup
+
+on:
+  schedule:
+    - cron: '30 0 * * *' # ~03:30 Israel (summer), 02:30 in winter
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: db-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: scripts/backup
+      - name: Install Postgres 17 client + age
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list >/dev/null
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-17 age >/dev/null
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
+      - name: Dump, encrypt, upload, verify, prune
+        env:
+          DATABASE_URL: ${{ secrets.SUPABASE_DB_URL }}
+          CRON_SECRET: ${{ secrets.DB_BACKUP_SECRET }}
+          BACKUP_API_URL: ${{ secrets.VERCEL_APP_URL }}
+          OUT_DIR: ${{ runner.temp }}/backup
+        run: bash scripts/backup/db-backup.sh
+      - name: Alert owner on failure
+        if: failure()
+        env:
+          CRON_SECRET: ${{ secrets.DB_BACKUP_SECRET }}
+          APP_URL: ${{ secrets.VERCEL_APP_URL }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" -H 'Content-Type: application/json' \
+            -d "{\"run_url\":\"$RUN_URL\"}" "$APP_URL/api/v1/ops/backup-alert" >/dev/null || echo "alert call failed"
