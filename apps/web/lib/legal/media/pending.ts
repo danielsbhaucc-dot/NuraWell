@@ -18,7 +18,7 @@ export async function pendingLicenseItems(db: SupabaseClient): Promise<PendingLi
 
 /** Receipts the rules could not place (no vendor/period, or flagged for review): shown in the same card list. */
 export async function unmatchedReceipts(db: SupabaseClient): Promise<PendingLicense[]> {
-  const { data } = await db.from('media_receipts').select('id, vendor, subject, period_start, period_end, trust').or('trust.eq.review,period_start.is.null,period_end.is.null').neq('trust', 'rejected').limit(50);
+  const { data } = await db.from('media_receipts').select('id, vendor, subject, period_start, period_end, trust').or('trust.eq.review,period_start.is.null,period_end.is.null').neq('trust', 'rejected').neq('source', 'gmail_confirmation').limit(50);
   return ((data ?? []) as Array<{ id: string; vendor: string; subject: string | null; period_start: string | null }>).map((r) => ({
     key: `receipt:${r.id}`, kind: 'receipt' as const,
     title: r.subject?.slice(0, 80) || r.vendor,

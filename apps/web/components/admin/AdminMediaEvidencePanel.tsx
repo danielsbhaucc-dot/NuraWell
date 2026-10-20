@@ -1,5 +1,6 @@
 'use client';
 
+import { useLiveRefresh } from '@/lib/hooks/useLiveRefresh';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { CheckCircle2, ChevronDown, Download, FileText, Film, Image as ImageIcon, Loader2, Music, Paperclip, RefreshCw, Search, ShieldAlert, ShieldCheck, Type as FontIcon, Shapes, X } from 'lucide-react';
 import { OpsDivider, opsGlassBtnClass, opsGlassBtnPrimaryClass, opsGlassCardClass, opsInputClass } from '@/components/admin/OpsPanel';
@@ -330,6 +331,7 @@ export function AdminMediaEvidencePanel() {
     fetch('/api/v1/ops/legal/media', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : Promise.reject())).then((d) => { setItems(d.items); setAi(d.ai); setPending(d.pending ?? []); }).catch(() => setErr('לא הצלחנו לטעון את רשימת המדיה'));
   }, []);
   useEffect(() => { load(); }, [load]);
+  useLiveRefresh(load, 60_000);
   useEffect(() => { const k = new URLSearchParams(window.location.search).get('asset'); if (k) { setOpen(k); setShowDone(true); } }, []);
 
   const rescan = async () => {
