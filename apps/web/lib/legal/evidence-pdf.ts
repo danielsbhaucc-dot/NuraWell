@@ -8,6 +8,7 @@ import path from 'node:path';
 import { PDFDocument, rgb, StandardFonts, type PDFFont, type PDFPage, type PDFImage } from 'pdf-lib';
 import fontkit from '@pdf-lib/fontkit';
 import bidiFactory from 'bidi-js';
+import { asciiJson, SOURCE_HE, type CorroborationRow, type OtsStatusRow, type ProvenanceRow } from './evidence-provenance';
 
 const bidi = bidiFactory();
 const W = 595.28;
@@ -118,6 +119,14 @@ export type PdfEvent = {
   otsCalendars: string[];
   emailReceipt: { ok: boolean; reference?: string; sentAt?: string } | null;
   checks: { label: string; ok: boolean | null }[];
+  /** v2 report extras (all optional so older callers keep working). */
+  screenshotShaComputed?: string | null;
+  provenance?: ProvenanceRow[];
+  corroboration?: CorroborationRow[];
+  canonicalJson?: string;
+  neighbors?: { position: number; total: number; prevHash: string; nextHash: string | null };
+  otsStatus?: OtsStatusRow[];
+  tsaName?: string;
 };
 
 export type PdfInput = {
@@ -130,6 +139,9 @@ export type PdfInput = {
   publicKeyPem: string;
   accessLog: { at: string; actor: string; action: string }[];
   chainAnchors: { at: string; head: string; count: number; tsa: boolean; ots: number }[];
+  publicKeyFingerprint?: string;
+  publicKeyUrl?: string;
+  tsaName?: string;
 };
 
 const fmt = (iso: string | null | undefined) =>
@@ -257,7 +269,52 @@ class Writer {
     this.y -= 8;
   }
 
+  mono(s: string, size = 7.2, color = C.ink) {
+    const lines = hardWrapMono(s, this.f.mono, size, W - 2 * M - 16);
+    const lh = size * 1.35;
+    for (let i = 0; i < lines.length; i++) {
+      this.ensure(lh + 4);
+      this.page.drawRectangle({ x: M, y: this.y - 3, width: W - 2 * M, height: lh, color: rgb(0.955, 0.965, 0.955) });
+      this.page.drawText(lines[i]!, { x: M + 8, y: this.y, size, font: this.f.mono, color });
+      this.y -= lh;
+    }
+    this.y -= 6;
+  }
+
+  provenance(rows: ProvenanceRow[]) {
+    const colors: Record<ProvenanceRow['source'], ReturnType<typeof rgb>> = { server: C.emerald, computed: C.teal, header: C.gold, browser: rgb(0.45, 0.4, 0.6), external: rgb(0.2, 0.35, 0.7) };
+    for (const row of rows) {
+      const r = { ...row, mono: !!row.mono && /^[\x20-\x7e]*$/.test(row.value) };
+      const valLines = r.mono ? hardWrapMono(r.value, this.f.mono, 7.6, W - 2 * M - 150) : wrap(r.value, this.f.body, 9.5, W - 2 * M - 150);
+      const howLines = wrap(r.how, this.f.body, 8.2, W - 2 * M - 150);
+      const h = valLines.length * 11 + howLines.length * 11 + 8;
+      this.ensure(h + 2);
+      this.page.drawRectangle({ x: M, y: this.y - h + 11, width: W - 2 * M, height: h, color: C.card, borderColor: C.line, borderWidth: 0.3 });
+      this.page.drawRectangle({ x: W - M - 3, y: this.y - h + 11, width: 3, height: h, color: colors[r.source] });
+      this.text(r.field, { size: 9, font: this.f.bold, color: C.ink, y: this.y - 1, xRight: W - M - 10 });
+      const chip = visual(SOURCE_HE[r.source]);
+      const cw = this.f.bold.widthOfTextAtSize(chip, 7.5) + 10;
+      this.page.drawRectangle({ x: W - M - 10 - cw, y: this.y - 16, width: cw, height: 11, color: colors[r.source], opacity: 0.14 });
+      drawVisual(this.page, chip, W - M - 5 - cw, this.y - 13.5, 7.5, this.f.bold, colors[r.source]);
+      let yy = this.y - 1;
+      const xr = W - M - 140;
+      for (const l of valLines) {
+        if (r.mono) this.page.drawText(l, { x: xr - this.f.mono.widthOfTextAtSize(l, 7.6), y: yy, size: 7.6, font: this.f.mono, color: C.ink });
+        else this.text(l, { size: 9.5, y: yy, xRight: xr });
+        yy -= 11;
+      }
+      for (const l of howLines) {
+        this.text(l, { size: 8.2, color: C.muted, y: yy, xRight: xr });
+        yy -= 11;
+      }
+      this.y -= h + 3;
+    }
+    this.y -= 4;
+  }
+
   image(img: PDFImage, maxW: number, maxH: number) {
+    const room = this.y - 50 - 16;
+    if (room >= 200) maxH = Math.min(maxH, room);
     const s = Math.min(maxW / img.width, maxH / img.height, 1);
     const w = img.width * s;
     const h = img.height * s;
@@ -302,7 +359,7 @@ export async function buildEvidencePdf(input: PdfInput): Promise<Buffer> {
   w.kv([
     ['מספר תיק', input.caseRef, 'ltr'],
     ['הופק על ידי', input.generatedBy],
-    ['תוכן', '1. זיהוי · 2. ציר זמן · 3. פירוט אירועים · 4. בדיקת שלמות · 5. שרשרת משמורת · 6. מתודולוגיה ואימות · 7. תעודת רשומה מוסדית'],
+    ['תוכן', '1. זיהוי · 2. ציר זמן · 3. פירוט אירועים · 4. בדיקת שלמות ואימות עצמאי · 5. שרשרת משמורת · 6. מתודולוגיה ואימות · 7. תעודת רשומה מוסדית'],
   ]);
 
   // ── 1 identification
@@ -333,16 +390,49 @@ export async function buildEvidencePdf(input: PdfInput): Promise<Buffer> {
       ['תיבת אישור', e.checkbox ? 'סומנה' : 'לא סומנה'],
       ['מילה שהוקלדה', `"${e.typedWord}"`],
     ]);
+    w.ensure(30);
+    let xr = W - M;
+    for (const c of e.checks) {
+      const bw = w.badge(c.ok, c.label, xr, w.y);
+      xr -= bw + 6;
+      if (xr < M + 90) {
+        xr = W - M;
+        w.y -= 22;
+      }
+    }
+    w.y -= 26;
     w.h2('הנוסח שהוצג (שחזור מדויק מהרשומה)');
     for (const l of e.displayedText) w.para(l, { size: 9.5, color: C.ink, gap: 1 });
     w.divider();
     if (e.screenshotPng) {
       w.h2('צילום החלון כפי שנלכד במכשיר');
       const img = await doc.embedPng(e.screenshotPng);
-      w.image(img, W - 2 * M - 40, 300);
+      w.image(img, W - 2 * M - 40, 330);
+      w.para('SHA-256 של קובץ הצילום המקורי (screenshot.webp בתיק):', { size: 8.5, color: C.muted, gap: 0 });
+      w.mono(e.screenshotShaComputed ?? e.screenshotSha ?? '—', 8);
+      const same = !!e.screenshotSha && e.screenshotShaComputed === e.screenshotSha;
+      w.ensure(24);
+      w.badge(e.screenshotShaComputed === undefined ? null : same, same ? 'זהה לגיבוב שננעל ברשומה החתומה ברגע הצילום' : 'לא זהה לגיבוב החתום', W - M, w.y);
+      w.y -= 26;
+    } else if (e.screenshotSha) {
+      w.para('לרשומה זו נשמר צילום, אך הוא לא נטען בעת ההפקה.', { size: 9, color: C.rose });
+    } else {
+      w.para('באירוע זה לא נשמר צילום (למשל ביטול מתוך שיחה). הנתונים נשענים על הרשומה שנרשמה בשרת.', { size: 9, color: C.muted });
     }
-    w.h2('מכשיר ורשת');
-    w.kv([
+    w.divider();
+    if (e.provenance?.length) {
+      w.h2('מאיפה הגיע כל נתון');
+      w.para('לכל שדה מצוין מי יצר אותו: השרת, תשתית הרשת, הדפדפן או גורם חיצוני. כל השדות, חוץ מהזמן החיצוני, נעולים יחד בתוך הרשומה החתומה.', { size: 8.8, color: C.muted, gap: 6 });
+      w.provenance(e.provenance);
+    }
+    if (e.corroboration) {
+      w.h2('אישור עצמאי בצד השרת');
+      w.para('השרת רשם את ההחלטה גם בטבלאות נפרדות, בקוד נפרד, באותה בקשה. כך המילה, הסימון והנוסח לא נשענים רק על הצילום: המילה ומצב התיבה נקלטו מגוף הבקשה ונבדקו בשרת, והנוסח נבנה מחדש מהתבנית של השרת וגובב (ראו "גיבוב הנוסח שהוצג").', { size: 9, gap: 6 });
+      if (e.corroboration.length) for (const c of e.corroboration) { w.para(`${c.source} · ${fmt(c.at)}`, { size: 8.5, font: f.bold, color: C.muted, gap: 0 }); w.mono(asciiJson(c.line)); }
+      else w.para('לא נמצאה שורת יומן תואמת בחלון של שתי דקות.', { size: 9, color: C.muted });
+    }
+    if (!e.provenance?.length) w.h2('מכשיר ורשת');
+    if (!e.provenance?.length) w.kv([
       ['כתובת IP', e.ip ?? '—', 'ltr'],
       ['גיבוב IP', e.ipHash ?? '—', 'mono'],
       ['דפדפן / מכשיר', e.userAgent ?? '—', 'ltr'],
@@ -362,17 +452,19 @@ export async function buildEvidencePdf(input: PdfInput): Promise<Buffer> {
       ['עיגון ציבורי', e.otsCalendars.length ? `${e.otsCalendars.length} שרתי עיגון: ${e.otsCalendars.join(', ')}` : 'לא זמין'],
       ['קבלה לדוא"ל בעל החשבון', e.emailReceipt?.ok ? `נשלחה ${fmt(e.emailReceipt.sentAt)}` : 'לא נשלחה'],
     ]);
-    w.ensure(30);
-    let xr = W - M;
-    for (const c of e.checks) {
-      const bw = w.badge(c.ok, c.label, xr, w.y);
-      xr -= bw + 6;
-      if (xr < M + 90) {
-        xr = W - M;
-        w.y -= 22;
+    if (e.canonicalJson) {
+      w.h2('קטעי יומן גולמיים');
+      w.para('הרשומה הקנונית בדיוק כפי שנחתמה (payload.json). תווים בעברית מוצגים בקוד Unicode, וזו אותה רשומה בדיוק. הגיבוב מחושב על הקובץ שבתיק.', { size: 8.5, color: C.muted, gap: 2 });
+      w.mono(asciiJson(e.canonicalJson), 6.8);
+      if (e.neighbors) {
+        w.para(`מיקום בשרשרת: ${e.neighbors.position} מתוך ${e.neighbors.total}`, { size: 8.5, font: f.bold, color: C.muted, gap: 0 });
+        w.mono(`prev  ${e.neighbors.prevHash}\nthis  ${e.recordHash}\nnext  ${e.neighbors.nextHash ?? '(none: latest record)'}`.replace(/\n/g, '  |  '), 6.8);
+      }
+      if (e.otsStatus?.length) {
+        w.para('מצב עיגון בביטקוין (OpenTimestamps)', { size: 8.5, font: f.bold, color: C.muted, gap: 0 });
+        w.mono(e.otsStatus.map((o) => `${o.calendar}: ${o.status === 'bitcoin' ? `BTC block ${o.height ?? '?'}` : 'pending'}`).join(' | '), 6.8);
       }
     }
-    w.y -= 26;
   }
 
   // ── 4 integrity
@@ -391,6 +483,30 @@ export async function buildEvidencePdf(input: PdfInput): Promise<Buffer> {
       input.chainAnchors.slice(-12).map((a) => [fmt(a.at), String(a.count), a.tsa ? 'קיימת' : '—', a.ots ? `${a.ots} שרתים` : '—'])
     );
   }
+
+  // ── 4b independent verification
+  w.newPage('4.1 אימות עצמאי: למה אנחנו לא יכולים לזייף');
+  const pts: string[] = [
+    `חתימה דיגיטלית: כל רשומה נחתמה ב־Ed25519. כל אחד יכול לאמת אותה במפתח הציבורי שמפורסם בכתובת קבועה${input.publicKeyUrl ? ` (${input.publicKeyUrl})` : ''}. שינוי של תו אחד ברשומה מבטל את החתימה.`,
+    `חותמת זמן חיצונית: גיבוב כל רשומה נשלח ברגע האירוע ל־${input.tsaName ?? 'רשות חותמת זמן'} לפי תקן RFC 3161. הרשות חתמה על הגיבוב ועל השעה במפתח שלה, שאין לנו גישה אליו. לכן אי אפשר ליצור היום רשומה "מתוארכת לאחור".`,
+    'עיגון בביטקוין: אותו גיבוב נשלח גם ל־OpenTimestamps, שמעגן אותו בבלוקצ׳יין ביטקוין הציבורי. אחרי האישור בבלוק, אף אחד, כולל אנחנו, לא יכול לשנות את הרשומה בלי שזה יתגלה. מצב האישור מופיע בכל אירוע.',
+    'הוספה בלבד: במסד הנתונים מוגדר מנגנון שחוסם עדכון, מחיקה וריקון של טבלאות הראיות, גם למפתח המנהל של השרת. בנוסף, כל רשומה מכילה את הגיבוב של הקודמת, כך שמחיקה או החלפה באמצע שוברות את השרשרת.',
+    'הצילום ננעל ברגע הצילום: הגיבוב של קובץ הצילום חושב בשרת כשהבקשה התקבלה, ונכנס לתוך הרשומה שנחתמה ונשלחה לחותמת הזמן. החלפת הצילום אחר כך תיתן גיבוב אחר.',
+  ];
+  pts.forEach((s, i) => w.para(`${i + 1}. ${s}`, { gap: 6 }));
+  w.divider();
+  w.kv([
+    ['אלגוריתם חתימה', 'Ed25519', 'ltr'],
+    ['טביעת המפתח (SHA-256)', input.publicKeyFingerprint ?? '—', 'mono'],
+    ['כתובת המפתח הציבורי', input.publicKeyUrl ?? 'public-key.pem בתיק', 'ltr'],
+    ['רשות חותמת זמן', input.tsaName ?? '—'],
+  ]);
+  w.h2('פקודות האימות (מלא ב־VERIFY.txt)');
+  w.mono('sha256sum records/01/payload.json   # = record.sha256', 7.4);
+  w.mono('openssl pkeyutl -verify -pubin -inkey public-key.pem -rawin -in msg -sigfile sig', 7.4);
+  w.mono('openssl ts -verify -digest $(cat records/01/record.sha256) -in records/01/timestamp.tsr -CAfile cacert.pem -untrusted tsa.crt', 7.4);
+  w.mono('ots verify -d $(cat records/01/record.sha256) records/01/<calendar>.ots', 7.4);
+  w.mono('sha256sum records/01/screenshot.webp   # = screenshot_sha256 in payload.json', 7.4);
 
   // ── 5 custody
   w.newPage('5. שרשרת משמורת ויומן גישה');
