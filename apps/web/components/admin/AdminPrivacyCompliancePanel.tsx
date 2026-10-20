@@ -40,28 +40,27 @@ function Toggle({ checked, label, busy, onChange }: { checked: boolean; label: s
 
 function ItemCard({ n, item, data, rows, busy, set }: { n: number; item: ComplianceItem; data: Data; rows: Map<string, ComplianceRow>; busy: string | null; set: (k: string, v: boolean) => void }) {
   const state = itemState(item, rows, data.facts);
-  const [open, setOpen] = useState(state !== 'done');
+  const [open, setOpen] = useState(false);
   const row = rows.get(item.key);
   const u = data.facts.userCount;
+  const due = item.yearly ? `עד ${yearlyDue()}` : item.everyMonths ? `כל ${item.everyMonths} חודשים` : row?.done_at && !item.auto ? `סומן ${fmt(row.done_at)}` : item.auto ? 'אוטומטי' : null;
+  const pid = `pc-${item.key}`;
   return (
-    <section className={cn(opsGlassCardClass, 'p-0 sm:p-0')}>
-      <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} className="flex w-full items-start gap-3 p-4 text-start sm:p-5">
-        <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-sm font-black text-background-card shadow-md shadow-emerald-600/30">{n}</span>
+    <div className={cn('transition-colors', open && 'bg-background-card/30')}>
+      <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-controls={pid} className="flex min-h-14 w-full items-center gap-3 px-4 py-3.5 text-start transition hover:bg-background-card/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-400/50 sm:px-5">
+        <span className={cn('grid size-8 shrink-0 place-items-center rounded-xl font-display text-xs font-black shadow-sm', state === 'done' ? 'bg-emerald-500/15 text-emerald-700' : 'bg-gradient-to-br from-emerald-500 to-teal-600 text-background-card shadow-emerald-600/30')}>{String(n).padStart(2, '0')}</span>
         <span className="min-w-0 flex-1">
-          <span className="block font-display text-[15px] font-black leading-snug text-slate-900">{item.title}</span>
-          <span className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[11px] font-semibold text-slate-500">
-            {item.yearly ? <span>מועד אחרון: {yearlyDue()}</span> : null}
-            {item.everyMonths ? <span>כל {item.everyMonths} חודשים</span> : null}
-            {row?.done_at && !item.auto ? <span>סומן ב־{fmt(row.done_at)}</span> : null}
-          </span>
+          <span className={cn('block font-display text-[15px] font-bold leading-snug', state === 'done' ? 'text-slate-600' : 'text-slate-900')}>{item.title}</span>
+          {due ? <span className="mt-0.5 block text-[11px] font-semibold text-slate-500">{due}</span> : null}
         </span>
         <Badge s={state} />
-        <ChevronDown size={18} className={cn('mt-1 shrink-0 text-slate-400 transition', open && 'rotate-180')} />
+        <ChevronDown size={18} aria-hidden className={cn('shrink-0 text-slate-400 transition-transform duration-200', open && 'rotate-180')} />
       </button>
       {open ? (
-        <div className="space-y-3 border-t border-gc/40 px-4 pb-4 pt-3 sm:px-5 sm:pb-5">
-          <p className="text-sm leading-relaxed text-slate-700"><b className="text-slate-900">למה: </b>{item.why}</p>
-          <ol className="list-decimal space-y-1 ps-5 text-sm leading-relaxed text-slate-700">{item.how.map((h) => <li key={h}>{h}</li>)}</ol>
+        <div id={pid} className="space-y-4 px-4 pb-5 pt-1 sm:px-5 sm:ps-16">
+          <div className="rounded-2xl border border-amber-300/40 bg-amber-50/40 px-3.5 py-3"><p className="text-[11px] font-black tracking-wide text-amber-700">למה זה חשוב</p><p className="mt-1 text-sm leading-relaxed text-slate-700">{item.why}</p></div>
+          <p className="text-[11px] font-black tracking-wide text-emerald-700">איך עושים</p>
+          <ol className="-mt-2 list-decimal space-y-1.5 ps-5 text-sm leading-relaxed text-slate-700 marker:font-bold marker:text-emerald-600">{item.how.map((h) => <li key={h}>{h}</li>)}</ol>
 
           {item.auto === 'thresholds' ? (
             <div className="grid gap-2 sm:grid-cols-2">
@@ -113,7 +112,7 @@ function ItemCard({ n, item, data, rows, busy, set }: { n: number; item: Complia
           ) : null}
         </div>
       ) : null}
-    </section>
+    </div>
   );
 }
 
@@ -146,40 +145,80 @@ export function AdminPrivacyCompliancePanel() {
 
   const states = COMPLIANCE_ITEMS.map((i) => itemState(i, rows, data.facts));
   const done = states.filter((s) => s === 'done').length;
-  const owner = COMPLIANCE_ITEMS.filter((i) => i.group === 'owner');
   const high = COMPLIANCE_ITEMS.filter((i) => i.group === 'high');
   const have = new Set(data.docs.map((d) => d.slug));
 
+  const owner = COMPLIANCE_ITEMS.filter((i) => i.group === 'owner' && i.auto !== 'thresholds');
+  const thr = COMPLIANCE_ITEMS.find((i) => i.auto === 'thresholds');
+  const count = (k: ItemState) => states.filter((s) => s === k).length;
+  const u = data.facts.userCount;
+
   return (
-    <div className="space-y-6">
-      <div className={cn(opsGlassCardClass, 'flex flex-wrap items-center gap-4')}>
-        <div className="relative grid size-16 shrink-0 place-items-center rounded-full" style={{ background: `conic-gradient(#10b981 ${(done / states.length) * 360}deg, rgba(148,163,184,.25) 0)` }}>
-          <div className="grid size-12 place-items-center rounded-full bg-background-card font-display text-sm font-black text-slate-900">{done}/{states.length}</div>
+    <div className="mx-auto max-w-3xl space-y-10 pb-10">
+      <Group n={1} title="סיכום התקדמות" sub="הסטטוס נשמר ומתעדכן אוטומטית. כל סימון נרשם ביומן הפעולות">
+        <div className={cn(opsGlassCardClass, 'space-y-4')}>
+          <div className="flex items-center gap-4">
+            <div className="relative grid size-20 shrink-0 place-items-center rounded-full shadow-lg shadow-emerald-600/15" style={{ background: `conic-gradient(#10b981 ${(done / states.length) * 360}deg, rgba(148,163,184,.22) 0)` }}>
+              <div className="grid size-[62px] place-items-center rounded-full bg-background-card"><span className="font-display text-lg font-black text-slate-900" dir="ltr">{done}/{states.length}</span></div>
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="font-display text-lg font-black text-slate-900">{done === states.length ? 'הכול מסודר' : `נשארו ${states.length - done} משימות`}</p>
+              <p className="mt-1 text-xs leading-relaxed text-slate-600">גדעון יזכיר לך פעם בחודש על מה שפתוח.</p>
+              <p className="mt-1 text-[11px] font-semibold text-slate-500">עדכון אחרון: {fmt(data.lastUpdated)}</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2 border-t border-gc/40 pt-4 sm:grid-cols-4">
+            {(['done', 'partial', 'open', 'overdue'] as const).map((k) => {
+              const { label, cls, Icon } = STATE[k];
+              return <div key={k} className={cn('flex items-center justify-between rounded-2xl border px-3 py-2', cls)}><span className="inline-flex items-center gap-1.5 text-xs font-bold"><Icon size={14} />{label}</span><span className="font-display text-base font-black">{count(k)}</span></div>;
+            })}
+          </div>
         </div>
-        <div className="min-w-0 flex-1">
-          <p className="font-display text-base font-black text-slate-900">מה נשאר לך לעשות</p>
-          <p className="mt-0.5 text-xs leading-relaxed text-slate-600">הסטטוס נשמר ומתעדכן אוטומטית. כל סימון נרשם ביומן הפעולות. גדעון יזכיר לך פעם בחודש על מה שפתוח.</p>
-          <p className="mt-1 text-[11px] font-semibold text-slate-500">עדכון אחרון: {fmt(data.lastUpdated)}</p>
-        </div>
-      </div>
+      </Group>
       {error ? <p role="alert" className="rounded-2xl border border-rose-300/50 bg-rose-500/10 px-3 py-2 text-sm font-semibold text-rose-800">{error}</p> : null}
 
-      <Group title="המשימות שלך" sub="מה שרק בעל המאגר יכול לעשות">
-        {owner.map((it, i) => <ItemCard key={it.key} n={i + 1} item={it} data={data} rows={rows} busy={busy} set={set} />)}
-      </Group>
-      <Group title="דרישות לרמת האבטחה הגבוהה" sub="לא חובה ברמה הנוכחית. מומלץ לקראת ההשקה או כשמספר המשתמשים יגדל">
-        {high.map((it, i) => <ItemCard key={it.key} n={owner.length + i + 1} item={it} data={data} rows={rows} busy={busy} set={set} />)}
+      <Group n={2} title="המשימות שלך" sub="מה שרק בעל המאגר יכול לעשות. לחיצה על שורה פותחת הסבר">
+        <div className={cn(opsGlassCardClass, 'divide-y divide-gc/40 overflow-hidden p-0 sm:p-0')}>
+          {owner.map((it, i) => <ItemCard key={it.key} n={i + 1} item={it} data={data} rows={rows} busy={busy} set={set} />)}
+        </div>
       </Group>
 
-      <Group title="המסמכים" sub="נפתחים רק לך, אחרי בדיקת הרשאה בשרת. מסמך 06 חסוי">
-        <div className={cn(opsGlassCardClass, 'divide-y divide-gc/40 p-0 sm:p-0')}>
+      <Group n={3} title="דרישות לרמת האבטחה הגבוהה" sub="לא חובה ברמה הנוכחית. מומלץ לקראת ההשקה או כשמספר המשתמשים יגדל">
+        <div className={cn(opsGlassCardClass, 'divide-y divide-gc/40 overflow-hidden p-0 sm:p-0')}>
+          {high.map((it, i) => <ItemCard key={it.key} n={owner.length + i + 1} item={it} data={data} rows={rows} busy={busy} set={set} />)}
+        </div>
+      </Group>
+
+      {thr ? (
+        <Group n={4} title="ספי משתמשים" sub={`${u.toLocaleString('he-IL')} משתמשים כרגע. ${thr.why}`}>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {[{ at: THRESHOLDS.dpo, l: 'בדיקה חוזרת של ממונה פרטיות' }, { at: THRESHOLDS.ppaNotice, l: 'הודעה לרשות להגנת הפרטיות' }].map((t) => {
+              const pct = Math.min(100, (u / t.at) * 100);
+              return (
+                <div key={t.at} className={cn(opsGlassCardClass, 'space-y-3')}>
+                  <div className="flex items-start justify-between gap-2"><span className="inline-flex items-center gap-1.5 text-sm font-bold text-slate-800"><Users size={15} className="text-emerald-600" />{t.l}</span><Badge s={u >= t.at ? 'overdue' : 'done'} /></div>
+                  <div className="h-2.5 overflow-hidden rounded-full bg-slate-200/60"><div className={cn('h-full rounded-full', u >= t.at ? 'bg-rose-500' : 'bg-gradient-to-l from-amber-400 to-emerald-500')} style={{ width: `${Math.max(pct, 1.5)}%` }} /></div>
+                  <p className="text-xs font-semibold text-slate-500" dir="ltr" style={{ textAlign: 'end' }}>{u.toLocaleString('he-IL')} / {t.at.toLocaleString('he-IL')}</p>
+                </div>
+              );
+            })}
+          </div>
+        </Group>
+      ) : null}
+
+      <Group n={thr ? 5 : 4} title="המסמכים" sub="נפתחים רק לך, אחרי בדיקת הרשאה בשרת. מסמך 06 חסוי">
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-3">
           {COMPLIANCE_DOCS.map((d) => (
-            <div key={d.slug} className="flex flex-wrap items-center gap-2 px-4 py-3 sm:px-5">
-              <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-emerald-500/10 text-emerald-700">{d.sensitive ? <Lock size={16} /> : <FileText size={16} />}</span>
-              <span className="min-w-0 flex-1 text-sm font-bold text-slate-900"><span className="text-slate-400" dir="ltr">{d.slug.slice(0, 2)}</span> · {d.title}</span>
-              {(['pdf', 'docx'] as const).map((ext) => have.has(`${d.slug}.${ext}`) ? (
-                <a key={ext} href={`/api/v1/admin/privacy-compliance/docs/${d.slug}.${ext}`} target="_blank" rel="noopener noreferrer" className={opsGlassBtnClass}><Download size={13} />{ext === 'pdf' ? 'PDF' : 'Word'}</a>
-              ) : null)}
+            <div key={d.slug} className={cn(opsGlassCardClass, 'flex flex-col gap-3 p-3.5 sm:p-4')}>
+              <div className="flex items-start gap-2.5">
+                <span className={cn('grid size-9 shrink-0 place-items-center rounded-xl', d.sensitive ? 'bg-amber-400/15 text-amber-700' : 'bg-emerald-500/10 text-emerald-700')}>{d.sensitive ? <Lock size={16} /> : <FileText size={16} />}</span>
+                <div className="min-w-0 flex-1"><p className="font-display text-[11px] font-black text-slate-400" dir="ltr" style={{ textAlign: 'start' }}>{d.slug.slice(0, 2)}</p><p className="text-sm font-bold leading-snug text-slate-900">{d.title}</p></div>
+              </div>
+              <div className="mt-auto flex gap-2">
+                {(['pdf', 'docx'] as const).map((ext) => have.has(`${d.slug}.${ext}`) ? (
+                  <a key={ext} href={`/api/v1/admin/privacy-compliance/docs/${d.slug}.${ext}`} target="_blank" rel="noopener noreferrer" className={cn(opsGlassBtnClass, 'min-w-0 flex-1 justify-center px-2')}><Download size={13} />{ext === 'pdf' ? 'PDF' : 'Word'}</a>
+                ) : null)}
+              </div>
             </div>
           ))}
         </div>
@@ -188,15 +227,18 @@ export function AdminPrivacyCompliancePanel() {
   );
 }
 
-function Group({ title, sub, children }: { title: string; sub: string; children: React.ReactNode }) {
+function Group({ n, title, sub, children }: { n: number; title: string; sub: string; children: React.ReactNode }) {
   return (
-    <div className="space-y-3">
+    <section className="space-y-4" aria-labelledby={`pg-${n}`}>
       <div className="flex items-center gap-3">
-        <span className="h-px flex-1 bg-gradient-to-l from-amber-400/60 to-transparent" />
-        <div className="text-center"><p className="font-display text-sm font-black text-slate-900">{title}</p><p className="text-[11px] text-slate-500">{sub}</p></div>
-        <span className="h-px flex-1 bg-gradient-to-r from-amber-400/60 to-transparent" />
+        <span className="grid size-10 shrink-0 place-items-center rounded-2xl border border-amber-300/60 bg-gradient-to-br from-amber-200/70 to-amber-400/40 font-display text-sm font-black text-amber-900 shadow-sm shadow-amber-500/20">{String(n).padStart(2, '0')}</span>
+        <div className="min-w-0 flex-1">
+          <h2 id={`pg-${n}`} className="font-display text-base font-black text-slate-900 sm:text-lg">{title}</h2>
+          <p className="text-xs leading-relaxed text-slate-500">{sub}</p>
+        </div>
       </div>
-      <div className="space-y-3">{children}</div>
-    </div>
+      <div aria-hidden className="h-px bg-gradient-to-l from-amber-400/70 via-emerald-400/40 to-transparent" />
+      {children}
+    </section>
   );
 }
