@@ -109,6 +109,16 @@ export function CookieNotice() {
     if (!hidden && !readSeen()) setBanner(true);
   }, [hidden]);
 
+  // Hide floating buttons (accessibility FAB) while the modal panel is open.
+  useEffect(() => {
+    if (!panel) return;
+    const root = document.documentElement;
+    root.dataset.cookiePanel = 'on';
+    return () => {
+      delete root.dataset.cookiePanel;
+    };
+  }, [panel]);
+
   // Lift floating buttons (accessibility FAB) above the banner while it is visible.
   useEffect(() => {
     const root = document.documentElement;
