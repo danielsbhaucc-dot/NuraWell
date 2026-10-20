@@ -1,5 +1,6 @@
 'use client';
 
+import { AFTER_LOGIN_KEY } from '@/lib/auth/passkey-nudge';
 import { useState, useEffect, useSyncExternalStore, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -140,6 +141,9 @@ function LoginFormContent() {
         window.location.assign(redirect === APP_HOME_PATH ? '/' : redirect);
         return;
       }
+      try {
+        sessionStorage.setItem(AFTER_LOGIN_KEY, String(Date.now()));
+      } catch {}
       toast.success('התחברת בהצלחה!', 'מעבירים אותך לקורסים...');
       setTimeout(() => {
         router.push(redirect);
