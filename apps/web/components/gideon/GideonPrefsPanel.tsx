@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { confirmDialog } from '@/components/shared/dialogs';
 
 type Pref = { id: string; kind: string; label: string; params: Record<string, unknown>; active: boolean; source?: string; expires_at?: string | null; description: string };
 type Held = { id: number; kind: string; topic: string | null; text: string; deliver_after: string; created_at: string };
@@ -67,7 +68,7 @@ export function GideonPrefsPanel() {
             </ul>
             <div className="mt-2 flex gap-2">
               <button className={btn} disabled={busy} onClick={() => post({ action: 'flush_now' }, 'נשלח לטלגרם ✅')}>שלח עכשיו</button>
-              <button className="rounded-2xl border px-4 py-2 text-sm" disabled={busy} onClick={() => confirm('למחוק את ההודעות הממתינות בלי לשלוח?') && post({ action: 'drop_held' }, 'נמחקו')}>מחק בלי לשלוח</button>
+              <button className="rounded-2xl border px-4 py-2 text-sm" disabled={busy} onClick={async () => { if (await confirmDialog({ title: 'למחוק את ההודעות הממתינות בלי לשלוח?', danger: true, confirmLabel: 'מחק' })) void post({ action: 'drop_held' }, 'נמחקו'); }}>מחק בלי לשלוח</button>
             </div>
           </div>
         ) : null}
@@ -107,7 +108,7 @@ export function GideonPrefsPanel() {
               <div className="text-xs text-slate-600">{p.description} · {p.source === 'gideon' ? 'נשמר דרך גדעון' : 'נוסף כאן'}</div>
               <div className="mt-2 flex gap-2">
                 <button className="rounded-xl border px-2 py-1 text-xs" disabled={busy} onClick={() => post({ action: 'set_active', id: p.id, active: !p.active })}>{p.active ? 'השבת' : 'הפעל'}</button>
-                <button className="rounded-xl border border-red-200 px-2 py-1 text-xs text-red-700" disabled={busy} onClick={() => confirm('למחוק את ההוראה?') && post({ action: 'delete', id: p.id }, 'נמחק')}>מחק</button>
+                <button className="rounded-xl border border-red-200 px-2 py-1 text-xs text-red-700" disabled={busy} onClick={async () => { if (await confirmDialog({ title: 'למחוק את ההוראה?', danger: true, confirmLabel: 'מחק' })) void post({ action: 'delete', id: p.id }, 'נמחק'); }}>מחק</button>
               </div>
             </li>
           )) : <li className="text-slate-500">אין.</li>}

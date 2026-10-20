@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useState } from 'react';
+import { confirmDialog } from '@/components/shared/dialogs';
 
 type StatusPayload = {
   ok?: boolean;
@@ -162,8 +163,8 @@ export default function RagDebugPage() {
             type="button"
             className="rounded-lg border border-amber-600 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-900 hover:bg-amber-100 disabled:opacity-50"
             disabled={busy || !message.trim()}
-            onClick={() => {
-              if (!confirm('לכתוב וקטורים ל-Upstash עבור המשתמש המחובר?')) return;
+            onClick={async () => {
+              if (!(await confirmDialog({ title: 'לכתוב וקטורים ל-Upstash עבור המשתמש המחובר?', tone: 'warning', confirmLabel: 'כתוב' }))) return;
               void postSelfTest(true);
             }}
           >
