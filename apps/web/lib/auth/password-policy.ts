@@ -4,7 +4,7 @@ import { reportEvent } from '@/lib/monitoring/report-error';
 
 /**
  * Server-side password policy (Supabase leaked-password protection needs Pro).
- * - Min length 8.
+ * - Min length 10, must contain at least one letter (any script) and one digit.
  * - HaveIBeenPwned Pwned Passwords range API with k-anonymity: only the first 5
  *   hex chars of the SHA-1 leave the server; `Add-Padding: true` hides the
  *   bucket size; responses are never cached.
@@ -13,7 +13,7 @@ import { reportEvent } from '@/lib/monitoring/report-error';
  * The password / full hash is never logged, stored, or sent anywhere else.
  */
 
-export const PASSWORD_MIN_LENGTH = 8;
+export const PASSWORD_MIN_LENGTH = 10;
 export const PASSWORD_MAX_LENGTH = 128;
 export const HIBP_TIMEOUT_MS = 2000;
 /** Uniform minimum duration so found / not-found responses take similar time. */
@@ -22,13 +22,14 @@ export const PASSWORD_CHECK_MIN_MS = 300;
 export const PASSWORD_ERRORS = {
   tooShort: `הסיסמה קצרה מדי — לפחות ${PASSWORD_MIN_LENGTH} תווים`,
   tooLong: 'הסיסמה ארוכה מדי',
+  weak: 'הסיסמה צריכה לכלול גם אותיות וגם לפחות ספרה אחת',
   pwned:
     'הסיסמה הזאת הופיעה בדליפות מידע ברשת, ולכן קל לנחש אותה. בחרו בבקשה סיסמה אחרת.',
 } as const;
 
 export type PasswordCheckResult =
   | { ok: true; hibp: 'clean' | 'unavailable' }
-  | { ok: false; reason: 'too_short' | 'too_long' | 'pwned'; error: string };
+  | { ok: false; reason: 'too_short' | 'too_long' | 'weak' | 'pwned'; error: string };
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
@@ -78,6 +79,8 @@ export async function checkPasswordPolicy(
     result = { ok: false, reason: 'too_short', error: PASSWORD_ERRORS.tooShort };
   } else if (password.length > PASSWORD_MAX_LENGTH) {
     result = { ok: false, reason: 'too_long', error: PASSWORD_ERRORS.tooLong };
+  } else if (!/\p{L}/u.test(password) || !/\p{Nd}/u.test(password)) {
+    result = { ok: false, reason: 'weak', error: PASSWORD_ERRORS.weak };
   } else {
     const pwned = await isPwnedPassword(password, opts.fetchImpl);
     if (pwned === null) {
