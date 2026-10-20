@@ -94,8 +94,41 @@ export function forwarderAllowed(envelopeFrom: string, headers: Record<string, s
 export function isGmailForwardingConfirmation(from: string, subject: string) {
   return /forwarding-noreply@google\.com/i.test(from) && /(forwarding|העברה)/i.test(subject);
 }
-export function gmailConfirmationCode(text: string): string | null {
-  return /(?:confirmation code|קוד האישור)[^\d]{0,20}(\d{6,12})/i.exec(text)?.[1] ?? /\b(\d{9})\b/.exec(text)?.[1] ?? null;
+/** Decode quoted-printable soft breaks/escapes (UTF-8) so a raw message can be scanned as a fallback. */
+export function decodeQuotedPrintable(s: string): string {
+  const t = s.replace(/=\r?\n/g, '');
+  const bytes: number[] = [];
+  for (let i = 0; i < t.length; i++) {
+    if (t[i] === '=' && /^[0-9A-F]{2}$/i.test(t.slice(i + 1, i + 3))) { bytes.push(parseInt(t.slice(i + 1, i + 3), 16)); i += 2; }
+    else { const c = t.charCodeAt(i); if (c < 128) bytes.push(c); else bytes.push(...Buffer.from(t[i], 'utf8')); }
+  }
+  return Buffer.from(bytes).toString('utf8');
+}
+const CODE_RES = [
+  /\(#\s*(\d{6,12})\)/,
+  /(?:confirmation code|verification code)\s*[:：]?\s*(\d{6,12})/i,
+  /קוד(?:\s+ה?אישור|\s+ה?אימות)[^\d]{0,20}(\d{6,12})/,
+];
+export function gmailConfirmationCode(text: string, subject = ''): string | null {
+  for (const src of [subject, text]) for (const re of CODE_RES) { const m = re.exec(src); if (m) return m[1]; }
+  return /(?<![\d#])(\d{9})(?!\d)/.exec(text)?.[1] ?? null;
+}
+/** The one-click verification link Gmail puts in the mail (mail.google.com / mail-settings.google.com / isolated.mail.google.com). */
+export function gmailConfirmationLink(...sources: string[]): string | null {
+  for (const raw of sources) {
+    const s = (raw ?? '').replace(/&amp;/g, '&');
+    const m = /https:\/\/(?:[\w-]+\.)*mail(?:-settings)?\.google\.com\/mail\/[^\s"'<>)\]]+/i.exec(s);
+    if (m) return m[0].replace(/[.,;]+$/, '');
+  }
+  return null;
+}
+/** Best-effort extraction from parsed text/html/subject, falling back to the raw (QP-decoded) message. */
+export function extractGmailConfirmation(p: { subject?: string; text?: string; html?: string; raw?: string }): { code: string | null; link: string | null } {
+  const rawDec = p.raw ? decodeQuotedPrintable(p.raw) : '';
+  const rawSubj = /^subject:\s*(.*(?:\r?\n[ \t].*)*)/im.exec(p.raw ?? '')?.[1] ?? '';
+  const htmlText = (p.html ?? '').replace(/<[^>]+>/g, ' ');
+  const code = gmailConfirmationCode(p.text ?? '', p.subject ?? '') ?? gmailConfirmationCode(htmlText, rawSubj) ?? gmailConfirmationCode(rawDec);
+  return { code, link: gmailConfirmationLink(p.text ?? '', p.html ?? '', rawDec) };
 }
 
 export type ReceiptPeriod = { id: string; vendor: VendorId; plan: string | null; period_start: string | null; period_end: string | null; trust: string };

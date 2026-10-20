@@ -6,7 +6,7 @@ import { opsGlassBtnClass, opsGlassBtnPrimaryClass, opsGlassCardClass, opsInputC
 import { cn } from '@/lib/cn';
 import { VENDORS, type VendorId } from '@/lib/legal/media/receipts-core';
 
-type Receipt = { id: string; source: string; vendor: VendorId; plan: string | null; amount: number | null; currency: string | null; receipt_date: string | null; period_start: string | null; period_end: string | null; subject: string | null; original_from: string | null; forwarder_ok: boolean; dkim: { vendor_dkim_pass?: boolean }; trust: 'verified' | 'review' | 'rejected'; attachments: Array<{ name: string }>; confirmation_code: string | null; created_at: string };
+type Receipt = { id: string; source: string; vendor: VendorId; plan: string | null; amount: number | null; currency: string | null; receipt_date: string | null; period_start: string | null; period_end: string | null; subject: string | null; original_from: string | null; forwarder_ok: boolean; dkim: { vendor_dkim_pass?: boolean }; trust: 'verified' | 'review' | 'rejected'; attachments: Array<{ name: string }>; confirmation_code: string | null; confirmation_link?: string | null; created_at: string };
 const TRUST = { verified: { l: 'מאומת (DKIM של הספק)', c: 'border-teal-300/70 bg-teal-500/10 text-teal-800' }, review: { l: 'לבדיקה', c: 'border-orange-300/70 bg-orange-500/10 text-orange-800' }, rejected: { l: 'נדחה', c: 'border-rose-300/70 bg-rose-500/10 text-rose-800' } } as const;
 
 function Row({ r, onSaved }: { r: Receipt; onSaved: () => void }) {
@@ -20,7 +20,8 @@ function Row({ r, onSaved }: { r: Receipt; onSaved: () => void }) {
   if (r.source === 'gmail_confirmation') return (
     <li className="rounded-2xl border border-amber-200/70 bg-amber-50/70 p-3 text-sm text-amber-950">
       <p className="font-bold">Gmail מבקש לאשר העברה אוטומטית לכתובת הקבלות</p>
-      <p className="mt-1">קוד האישור: <span className="font-mono text-base font-black" dir="ltr">{r.confirmation_code ?? 'לא זוהה, הקישור נמצא במייל המקורי'}</span></p>
+      <p className="mt-1">קוד האישור: <span className="font-mono text-base font-black" dir="ltr">{r.confirmation_code ?? 'לא זוהה'}</span></p>
+      {r.confirmation_link && /^https:\/\/([\w-]+\.)*google\.com\//.test(r.confirmation_link) ? <p className="mt-2"><a href={r.confirmation_link} target="_blank" rel="noopener noreferrer" className="inline-flex rounded-full border border-amber-300 bg-amber-100/80 px-3 py-1 text-xs font-bold text-amber-950 underline-offset-2 hover:underline">לאישור בלחיצה אחת ב-Gmail</a></p> : null}
     </li>
   );
   return (
