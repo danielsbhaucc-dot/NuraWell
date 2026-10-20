@@ -99,6 +99,7 @@ export async function ingestReceipt(admin: SupabaseClient, input: IngestReceiptI
   const rec = await appendMediaEvidence(admin, `receipt:${id}`, 'receipt', { ...row, message_id: headers['message-id'] ?? null, parsed_by: parsedBy, received_at: new Date().toISOString(), envelope_from_hash: input.envelopeFrom ? sha256Hex(input.envelopeFrom.toLowerCase()) : null, actor_id: input.actorId ?? null });
   if (rec.ok) await admin.from('media_receipts').update({ record_hash: rec.recordHash }).eq('id', id);
   const link = await linkReceipt(admin, id).catch(() => ({ linked: 0, unmatched: true }));
+  if (!isConfirm && fwdOk && input.source === 'email') await resolveGmailConfirmations(admin).catch(() => 0);
   return { ok: true as const, id, vendor, trust, duplicate: false, ...link };
 }
 
@@ -155,7 +156,7 @@ export async function uploadReceiptFile(admin: SupabaseClient, f: { name: string
 
 /** Re-parse stored Gmail forwarding-confirmation mails whose code/link were missed (parser fixes apply retroactively). */
 export async function reparseGmailConfirmations(admin: SupabaseClient): Promise<number> {
-  const { data } = await admin.from('media_receipts').select('id, eml_sha').eq('source', 'gmail_confirmation').or('confirmation_code.is.null,confirmation_link.is.null').limit(10);
+  const { data } = await admin.from('media_receipts').select('id, eml_sha').eq('source', 'gmail_confirmation').is('confirmed_at', null).or('confirmation_code.is.null,confirmation_link.is.null').limit(10);
   let n = 0;
   for (const r of (data ?? []) as Array<{ id: string; eml_sha: string | null }>) {
     if (!r.eml_sha) continue;
@@ -169,4 +170,28 @@ export async function reparseGmailConfirmations(admin: SupabaseClient): Promise<
     n++;
   }
   return n;
+}
+
+/**
+ * A Gmail forwarding-confirmation notice is resolved once forwarding demonstrably works:
+ * any later mail that arrived by email from an allowed forwarder. Idempotent; logged in the evidence chain.
+ */
+export async function resolveGmailConfirmations(admin: SupabaseClient): Promise<number> {
+  const { data: open } = await admin.from('media_receipts').select('id, created_at').eq('source', 'gmail_confirmation').is('confirmed_at', null).limit(20);
+  let n = 0;
+  for (const c of (open ?? []) as Array<{ id: string; created_at: string }>) {
+    const { data: next } = await admin.from('media_receipts').select('id, created_at').eq('source', 'email').eq('forwarder_ok', true).gt('created_at', c.created_at).order('created_at', { ascending: true }).limit(1);
+    const proof = (next ?? [])[0] as { id: string; created_at: string } | undefined;
+    if (!proof) continue;
+    if ((await markGmailConfirmationResolved(admin, c.id, { by: 'forwarded_mail', proof_receipt_id: proof.id, at: proof.created_at })).ok) n++;
+  }
+  return n;
+}
+
+export async function markGmailConfirmationResolved(admin: SupabaseClient, id: string, how: { by: 'forwarded_mail' | 'admin'; proof_receipt_id?: string; at?: string; actor_id?: string }) {
+  const rec = await appendMediaEvidence(admin, `receipt:${id}`, 'receipt_update', { patch: { confirmed: true }, ...how });
+  if (!rec.ok) return { ok: false as const, error: rec.error };
+  const at = how.at ?? new Date().toISOString();
+  const { error } = await admin.from('media_receipts').update({ confirmed_at: at, trust: 'verified', record_hash: rec.recordHash, updated_at: new Date().toISOString() }).eq('id', id).eq('source', 'gmail_confirmation').is('confirmed_at', null);
+  return error ? { ok: false as const, error: error.message } : { ok: true as const };
 }
