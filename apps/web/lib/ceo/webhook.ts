@@ -85,7 +85,7 @@ async function handleTelegramUpdateInner(db: SupabaseClient, channel: CeoChannel
     if (kind === 'ca' || kind === 'cr') {
       const { decideCapability } = await import('./dev-forward');
       const title = await decideCapability(db, id, kind === 'ca');
-      await channel.ack({ callbackId: cb.id, chatId, messageId: cb.message?.message_id }, !title ? 'הבקשה כבר טופלה.' : kind === 'ca' ? `✅ אישרת. אור יבנה: ${title}` : `❌ בוטל: ${title}`);
+      await channel.ack({ callbackId: cb.id, chatId, messageId: cb.message?.message_id }, !title ? 'הבקשה כבר טופלה.' : kind === 'ca' ? `✅ אישרת. אורי יבנה: ${title}` : `❌ בוטל: ${title}`);
       return { capability: kind };
     }
     if (kind === 'fd') {
@@ -93,9 +93,9 @@ async function handleTelegramUpdateInner(db: SupabaseClient, channel: CeoChannel
       await channel.typing?.(chatId);
       const { proposeForwardFromDraft, extractFinding } = await import('./dev-forward');
       const r = await proposeForwardFromDraft(db, id, { extract: extractFinding }).catch(() => null);
-      if (!r) await channel.send(chatId, 'לא מצאתי את הסיכום הזה. אפשר לכתוב לי מה להעביר לאור.', undefined, { kind: 'reply' });
-      else if ('already' in r) await channel.send(chatId, 'הממצאים מהסיכום הזה כבר הועברו לאור.', undefined, { kind: 'reply' });
-      else if ('none' in r) await channel.send(chatId, 'לא מצאתי בסיכום הזה ממצא טכני להעביר לאור.', undefined, { kind: 'reply' });
+      if (!r) await channel.send(chatId, 'לא מצאתי את הסיכום הזה. אפשר לכתוב לי מה להעביר לאורי.', undefined, { kind: 'reply' });
+      else if ('already' in r) await channel.send(chatId, 'הממצאים מהסיכום הזה כבר הועברו לאורי.', undefined, { kind: 'reply' });
+      else if ('none' in r) await channel.send(chatId, 'לא מצאתי בסיכום הזה ממצא טכני להעביר לאורי.', undefined, { kind: 'reply' });
       else {
         const card = approvalCard(r.action);
         await channel.send(chatId, card.text, card.buttons, { kind: 'reply' });
