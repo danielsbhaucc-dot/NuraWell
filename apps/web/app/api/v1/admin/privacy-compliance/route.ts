@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { allItemKeys } from '@/lib/privacy/compliance-checklist';
+import { COMPLIANCE_ITEMS, allItemKeys, itemNextDue, itemState } from '@/lib/privacy/compliance-checklist';
 import { loadCompliance } from '@/lib/privacy/compliance-server';
 
 export const runtime = 'nodejs';
@@ -14,8 +14,11 @@ const notFound = () => NextResponse.json({ error: 'Not found' }, { status: 404, 
 export async function GET(request: Request) {
   const auth = await requireOpsApiAdmin(request);
   if (!auth.ok) return notFound();
-  const { rows, facts, drillMeta, lastUpdated, docs } = await loadCompliance(createAdminClient());
-  return NextResponse.json({ rows, facts, drillMeta, lastUpdated, docs }, { headers: NO_STORE });
+  const { rows, map, facts, drillMeta, lastUpdated, docs } = await loadCompliance(createAdminClient());
+  const now = new Date();
+  // server-computed status: done items reopen automatically when their interval comes around
+  const status = Object.fromEntries(COMPLIANCE_ITEMS.map((i) => [i.key, { state: itemState(i, map, facts, now), nextDue: itemNextDue(i, map, facts)?.toISOString() ?? null }]));
+  return NextResponse.json({ rows, facts, drillMeta, lastUpdated, docs, status, now: now.toISOString() }, { headers: NO_STORE });
 }
 
 const Body = z.object({ key: z.string().max(80), done: z.boolean() });

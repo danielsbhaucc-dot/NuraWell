@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'fs';
 import path from 'path';
 import {
-  COMPLIANCE_ITEMS, DPA_VENDORS, allItemKeys, isKnownDocFile, itemState, openItems, rowDone,
+  COMPLIANCE_ITEMS, DPA_VENDORS, allItemKeys, isKnownDocFile, itemNextDue, itemState, openItems, reopenedItems, rowDone, REOPEN_LEAD_DAYS,
   type AutoFacts, type ComplianceRow,
 } from '@/lib/privacy/compliance-checklist';
 
@@ -21,7 +21,7 @@ describe('privacy compliance checklist', () => {
     const it2 = item('db_definitions_policy');
     expect(rowDone(it2, row('db_definitions_policy', '2026-03-01T00:00:00Z'), now)).toBe(true);
     expect(rowDone(it2, row('db_definitions_policy', '2025-12-30T00:00:00Z'), now)).toBe(false);
-    expect(itemState(it2, new Map([['db_definitions_policy', row('db_definitions_policy', '2025-12-30T00:00:00Z')]]), facts, now)).toBe('overdue');
+    expect(itemState(it2, new Map([['db_definitions_policy', row('db_definitions_policy', '2025-12-30T00:00:00Z')]]), facts, now)).toBe('open');
   });
   it('pentest expires after 18 months', () => {
     expect(rowDone(item('pentest'), row('pentest', '2025-04-01T00:00:00Z'), now)).toBe(false);
@@ -62,5 +62,48 @@ describe('privacy compliance checklist', () => {
     const api = readFileSync(path.join(base, 'app/api/v1/admin/privacy-compliance/route.ts'), 'utf8');
     expect(api).toMatch(/admin_audit_log/);
     expect(() => readFileSync(path.join(base, 'public/06-subprocessors.pdf'))).toThrow();
+  });
+
+  describe('auto-reopen', () => {
+    const one = (k: string, at: string | null, done = true) => new Map([[k, { item_key: k, done, done_at: at, updated_at: at ?? '' }]]);
+    it('yearly: done → open on 1 Jan IL → overdue after 31 Dec of next year', () => {
+      const m = one('security_policy_yearly', '2026-05-01T00:00:00Z');
+      const it2 = item('security_policy_yearly');
+      expect(itemState(it2, m, facts, new Date('2026-12-31T12:00:00Z'))).toBe('done');
+      expect(itemState(it2, m, facts, new Date('2026-12-31T22:30:00Z'))).toBe('open'); // 00:30 IL, 1 Jan
+      expect(itemState(it2, m, facts, new Date('2027-12-31T23:00:00Z'))).toBe('overdue');
+      expect(itemNextDue(it2, m, facts)?.toISOString()).toBe('2027-12-31T21:59:59.000Z');
+    });
+    it('month intervals reopen 30 days before due and go overdue after', () => {
+      const m = one('pentest', '2025-01-15T00:00:00Z'); // due 2026-07-15
+      const p = item('pentest');
+      expect(REOPEN_LEAD_DAYS).toBe(30);
+      expect(itemState(p, m, facts, new Date('2026-06-01T00:00:00Z'))).toBe('done');
+      expect(itemState(p, m, facts, new Date('2026-06-20T00:00:00Z'))).toBe('open');
+      expect(itemState(p, m, facts, new Date('2026-07-16T00:00:00Z'))).toBe('overdue');
+    });
+    it('every manual item has a recurrence (none stays done forever)', () => {
+      for (const i of COMPLIANCE_ITEMS.filter((x) => !x.auto)) expect(Boolean(i.yearly || i.everyMonths || i.reviewMonths), i.key).toBe(true);
+      expect(item('mfa').reviewMonths).toBe(6);
+      expect(item('dpa').reviewMonths).toBe(12);
+    });
+    it('vendor subs: one expired vendor reopens the item; past due → overdue', () => {
+      const ks = item('mfa').subs!.map((s) => `mfa:${s.key}`);
+      const m = new Map(ks.map((k, i) => [k, { item_key: k, done: true, done_at: i === 0 ? '2026-01-01T00:00:00Z' : '2026-05-01T00:00:00Z', updated_at: '' }]));
+      expect(itemState(item('mfa'), m, facts, new Date('2026-06-10T00:00:00Z'))).toBe('partial');
+      expect(itemState(item('mfa'), m, facts, new Date('2026-07-05T00:00:00Z'))).toBe('overdue');
+    });
+    it('fail-safe: missing/invalid/future dates are open', () => {
+      expect(itemState(item('lawyer_review'), one('lawyer_review', null), facts, now)).toBe('open');
+      expect(itemState(item('lawyer_review'), one('lawyer_review', 'garbage'), facts, now)).toBe('open');
+      expect(itemState(item('lawyer_review'), one('lawyer_review', '2099-01-01T00:00:00Z'), facts, now)).toBe('open');
+      expect(itemState(item('backup_drill'), new Map(), { ...facts, drill: { ok: true, at: 'x' } }, now)).toBe('open');
+    });
+    it('reopenedItems reports each item once, in the 24h window it reopened', () => {
+      const m = one('dpo_decision', '2025-11-20T00:00:00Z'); // due 2026-11-20, reopen 2026-10-21
+      const day = (s: string) => new Date(s);
+      expect(reopenedItems(m, facts, day('2026-10-20T00:00:00Z'), day('2026-10-21T00:00:00Z')).map((i) => i.key)).toEqual(['dpo_decision']);
+      expect(reopenedItems(m, facts, day('2026-10-21T00:00:00Z'), day('2026-10-22T00:00:00Z'))).toEqual([]);
+    });
   });
 });

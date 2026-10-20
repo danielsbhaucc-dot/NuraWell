@@ -66,3 +66,13 @@ export function OpsPanelHeader({
     </div>
   );
 }
+
+/** Ops section divider: a single-hue teal hairline that fades out, anchored by a small gold jewel dot. */
+export function OpsDivider({ className }: { className?: string }) {
+  return (
+    <div aria-hidden className={cn('relative flex h-3 items-center px-4 sm:px-5', className)}>
+      <span className="size-1.5 shrink-0 rotate-45 rounded-[2px] bg-amber-500/80 shadow-[0_0_0_3px_rgba(245,158,11,0.12)]" />
+      <span className="ms-2 h-px flex-1 bg-gradient-to-r from-teal-700/45 via-teal-700/20 to-transparent rtl:bg-gradient-to-l" />
+    </div>
+  );
+}

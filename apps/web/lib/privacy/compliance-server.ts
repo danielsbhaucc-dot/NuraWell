@@ -1,6 +1,6 @@
 import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { type AutoFacts, type ComplianceRow, openItems } from './compliance-checklist';
+import { type AutoFacts, type ComplianceRow, openItems, reopenedItems } from './compliance-checklist';
 
 export async function loadCompliance(db: SupabaseClient) {
   const since = new Date(Date.now() - 30 * 86_400_000).toISOString();
@@ -30,4 +30,12 @@ export async function privacyDigestLine(db: SupabaseClient, link: string): Promi
   if (!open.length) return null;
   const names = open.slice(0, 3).map((i) => i.title).join(' · ');
   return `🔐 פרטיות: ${open.length} סעיפים פתוחים (${names}${open.length > 3 ? ' ועוד' : ''})\n🔗 ${link}`;
+}
+
+/** Daily digest: items that auto-reopened in the last 24h (each mentioned once). */
+export async function privacyReopenedLine(db: SupabaseClient, link: string, now = new Date()): Promise<string | null> {
+  const { map, facts } = await loadCompliance(db);
+  const re = reopenedItems(map, facts, new Date(now.getTime() - 86_400_000), now);
+  if (!re.length) return null;
+  return `🔁 פרטיות: נפתח מחדש לטיפול: ${re.map((i) => i.title).join(' · ')}\n🔗 ${link}`;
 }

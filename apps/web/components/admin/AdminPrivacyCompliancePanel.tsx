@@ -2,14 +2,17 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { CheckCircle2, ChevronDown, Circle, Clock, Download, ExternalLink, FileText, Loader2, Lock, AlertTriangle, Users, Search, X, SearchX } from 'lucide-react';
-import { opsGlassBtnClass, opsGlassCardClass } from '@/components/admin/OpsPanel';
+import { OpsDivider, opsGlassBtnClass, opsGlassCardClass } from '@/components/admin/OpsPanel';
 import { cn } from '@/lib/cn';
 import {
-  COMPLIANCE_DOCS, COMPLIANCE_ITEMS, THRESHOLDS, itemState, rowDone, yearlyDue,
+  COMPLIANCE_DOCS, COMPLIANCE_ITEMS, THRESHOLDS, intervalLabel, itemState, rowDone,
   type AutoFacts, type ComplianceItem, type ComplianceRow, type ItemState,
 } from '@/lib/privacy/compliance-checklist';
 
-type Data = { rows: ComplianceRow[]; facts: AutoFacts; drillMeta: Record<string, unknown>; lastUpdated: string | null; docs: { slug: string; updated_at: string }[] };
+type Data = { rows: ComplianceRow[]; facts: AutoFacts; drillMeta: Record<string, unknown>; lastUpdated: string | null; docs: { slug: string; updated_at: string }[]; status?: Record<string, { state: ItemState; nextDue: string | null }> };
+
+/** Server status wins; local computation is the fallback (same pure logic). Unknown → open. */
+const stateOf = (item: ComplianceItem, rows: Map<string, ComplianceRow>, data: Data): ItemState => data.status?.[item.key]?.state ?? itemState(item, rows, data.facts);
 
 const fmt = (iso: string | null | undefined) =>
   iso ? new Intl.DateTimeFormat('he-IL', { timeZone: 'Asia/Jerusalem', day: 'numeric', month: 'numeric', year: 'numeric' }).format(new Date(iso)) : '—';
@@ -39,11 +42,15 @@ function Toggle({ checked, label, busy, onChange }: { checked: boolean; label: s
 }
 
 function ItemCard({ n, item, data, rows, busy, set }: { n: number; item: ComplianceItem; data: Data; rows: Map<string, ComplianceRow>; busy: string | null; set: (k: string, v: boolean) => void }) {
-  const state = itemState(item, rows, data.facts);
+  const state = stateOf(item, rows, data);
   const [open, setOpen] = useState(false);
   const row = rows.get(item.key);
   const u = data.facts.userCount;
-  const due = item.yearly ? `עד ${yearlyDue()}` : item.everyMonths ? `כל ${item.everyMonths} חודשים` : row?.done_at && !item.auto ? `סומן ${fmt(row.done_at)}` : item.auto ? 'אוטומטי' : null;
+  const nextDue = data.status?.[item.key]?.nextDue ?? null;
+  const every = intervalLabel(item);
+  const wasDone = !!row?.done || (!!item.subs && item.subs.some((s) => rows.get(`${item.key}:${s.key}`)?.done));
+  const reopened = state !== 'done' && wasDone;
+  const due = [reopened ? 'נפתח מחדש' : null, nextDue ? `${state === 'done' ? 'הבא' : 'מועד'}: ${fmt(nextDue)}` : null, every, !every && item.auto ? 'אוטומטי' : null].filter(Boolean).join(' · ') || null;
   const pid = `pc-${item.key}`;
   return (
     <div className={cn('transition-colors', open && 'bg-background-card/30')}>
@@ -69,7 +76,7 @@ function ItemCard({ n, item, data, rows, busy, set }: { n: number; item: Complia
                 return (
                   <div key={t.at} className="rounded-2xl border border-gc/50 bg-background-card/30 p-3">
                     <div className="flex items-center justify-between text-xs font-bold text-slate-700"><span className="inline-flex items-center gap-1"><Users size={13} />{t.l}</span><span dir="ltr">{u.toLocaleString('he-IL')} / {t.at.toLocaleString('he-IL')}</span></div>
-                    <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-200/60"><div className={cn('h-full rounded-full', u >= t.at ? 'bg-rose-500' : 'bg-gradient-to-l from-amber-400 to-emerald-500')} style={{ width: `${Math.max(pct, 1.5)}%` }} /></div>
+                    <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-200/60"><div className={cn('h-full rounded-full', u >= t.at ? 'bg-rose-500' : 'bg-emerald-500/80')} style={{ width: `${Math.max(pct, 1.5)}%` }} /></div>
                   </div>
                 );
               })}
@@ -147,7 +154,7 @@ export function AdminPrivacyCompliancePanel() {
 
   if (!data) return <div className={cn(opsGlassCardClass, 'flex items-center justify-center gap-2 py-10 text-sm text-slate-600')}>{error ?? <><Loader2 size={16} className="animate-spin" />טוען…</>}</div>;
 
-  const states = COMPLIANCE_ITEMS.map((i) => itemState(i, rows, data.facts));
+  const states = COMPLIANCE_ITEMS.map((i) => stateOf(i, rows, data));
   const done = states.filter((s) => s === 'done').length;
   const high = COMPLIANCE_ITEMS.filter((i) => i.group === 'high');
   const have = new Set(data.docs.map((d) => d.slug));
@@ -160,7 +167,7 @@ export function AdminPrivacyCompliancePanel() {
   const searching = needle.length > 0 || filter !== 'all';
   const passState = (st: ItemState) => filter === 'all' || (filter === 'open' ? st === 'open' || st === 'partial' : st === filter);
   const passText = (t: string) => !needle || t.toLowerCase().includes(needle);
-  const itemMatch = (it: ComplianceItem) => passState(itemState(it, rows, data.facts)) && passText([it.title, it.why, ...it.how, ...(it.subs ?? []).map((x) => x.label)].join(' '));
+  const itemMatch = (it: ComplianceItem) => passState(stateOf(it, rows, data)) && passText([it.title, it.why, ...it.how, ...(it.subs ?? []).map((x) => x.label)].join(' '));
   const ownerF = owner.filter(itemMatch);
   const highF = high.filter(itemMatch);
   const thrShow = thr ? itemMatch(thr) || (!searching) : false;
@@ -168,7 +175,7 @@ export function AdminPrivacyCompliancePanel() {
   const total = ownerF.length + highF.length + (thrShow && thr ? 1 : 0) + docsF.length;
   const secOpen = (n: number, hits: number) => (searching ? hits > 0 : openSec.has(n));
   const chipsFor = (list: ComplianceItem[]) => {
-    const st = list.map((it) => itemState(it, rows, data.facts));
+    const st = list.map((it) => stateOf(it, rows, data));
     const d = st.filter((x) => x === 'done').length, od = st.filter((x) => x === 'overdue').length;
     return <>{od ? <MiniChip k="overdue" n={od} /> : null}<span className="rounded-full border border-gc/50 bg-background-card/50 px-2 py-0.5 text-[11px] font-black text-slate-600" dir="ltr">{d}/{st.length}</span></>;
   };
@@ -225,14 +232,14 @@ export function AdminPrivacyCompliancePanel() {
       </Group>
 
       {thr ? (
-        <Group n={4} open={secOpen(4, thrShow ? 1 : 0)} hidden={searching && !thrShow} onToggle={toggleSec} chips={<Badge s={itemState(thr, rows, data.facts)} />} title="ספי משתמשים" sub={`${u.toLocaleString('he-IL')} משתמשים כרגע. ${thr.why}`}>
+        <Group n={4} open={secOpen(4, thrShow ? 1 : 0)} hidden={searching && !thrShow} onToggle={toggleSec} chips={<Badge s={stateOf(thr, rows, data)} />} title="ספי משתמשים" sub={`${u.toLocaleString('he-IL')} משתמשים כרגע. ${thr.why}`}>
           <div className="grid gap-3 sm:grid-cols-2">
             {[{ at: THRESHOLDS.dpo, l: 'בדיקה חוזרת של ממונה פרטיות' }, { at: THRESHOLDS.ppaNotice, l: 'הודעה לרשות להגנת הפרטיות' }].map((t) => {
               const pct = Math.min(100, (u / t.at) * 100);
               return (
                 <div key={t.at} className={cn(opsGlassCardClass, 'space-y-3')}>
                   <div className="flex items-start justify-between gap-2"><span className="inline-flex items-center gap-1.5 text-sm font-bold text-slate-800"><Users size={15} className="text-emerald-600" />{t.l}</span><Badge s={u >= t.at ? 'overdue' : 'done'} /></div>
-                  <div className="h-2.5 overflow-hidden rounded-full bg-slate-200/60"><div className={cn('h-full rounded-full', u >= t.at ? 'bg-rose-500' : 'bg-gradient-to-l from-amber-400 to-emerald-500')} style={{ width: `${Math.max(pct, 1.5)}%` }} /></div>
+                  <div className="h-2.5 overflow-hidden rounded-full bg-slate-200/60"><div className={cn('h-full rounded-full', u >= t.at ? 'bg-rose-500' : 'bg-emerald-500/80')} style={{ width: `${Math.max(pct, 1.5)}%` }} /></div>
                   <p className="text-xs font-semibold text-slate-500" dir="ltr" style={{ textAlign: 'end' }}>{u.toLocaleString('he-IL')} / {t.at.toLocaleString('he-IL')}</p>
                 </div>
               );
@@ -260,7 +267,7 @@ export function AdminPrivacyCompliancePanel() {
       </Group>
       {searching && total === 0 ? (
         <div className={cn(opsGlassCardClass, 'flex flex-col items-center gap-3 py-12 text-center')}>
-          <span className="grid size-14 place-items-center rounded-2xl bg-gradient-to-br from-amber-200/70 to-emerald-200/60 text-emerald-700 shadow-inner"><SearchX size={24} /></span>
+          <span className="grid size-14 place-items-center rounded-2xl bg-emerald-500/10 ring-1 ring-emerald-500/20 text-emerald-700 shadow-inner"><SearchX size={24} /></span>
           <p className="font-display text-base font-black text-slate-900">לא מצאתי כלום</p>
           <p className="max-w-xs text-xs leading-relaxed text-slate-500">נסה מילה אחרת או סינון אחר.</p>
           <button type="button" onClick={() => { setQ(''); setFilter('all'); }} className={opsGlassBtnClass}>ניקוי החיפוש</button>
@@ -290,7 +297,7 @@ function Group({ n, title, sub, open, hidden, onToggle, chips, children }: { n: 
         <span className="flex shrink-0 items-center gap-1.5">{chips}</span>
         <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-background-card/50 text-slate-500 transition group-hover:bg-background-card"><ChevronDown size={17} aria-hidden className={cn('transition-transform duration-200', open && 'rotate-180')} /></span>
       </button>
-      <div aria-hidden className="h-px bg-gradient-to-l from-amber-400/70 via-emerald-400/40 to-transparent" />
+      <OpsDivider />
       {open ? <div id={`pgb-${n}`}>{children}</div> : null}
     </section>
   );
