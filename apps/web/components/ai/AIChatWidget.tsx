@@ -862,7 +862,30 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
         if (ms > 5_000) void refreshSessionList({ silent: true });
       }, ms),
     );
-    return () => timers.forEach((t) => window.clearTimeout(t));
+    // Post-send quality check may lightly fix the last Almog reply within ~60s — pick it up and mark "נערכה".
+    let qcDone = false;
+    const qcTimers = [7_000, 18_000, 40_000].map((ms) =>
+      window.setTimeout(() => {
+        if (qcDone || sessionIdRef.current !== sid) return;
+        void fetch(`/api/v1/ai/chat-sessions/${encodeURIComponent(sid)}/latest-edit`, { credentials: 'same-origin' })
+          .then((r) => (r.ok ? r.json() : null))
+          .then((j: { edited?: boolean; content?: string } | null) => {
+            if (!j?.edited || typeof j.content !== 'string' || !j.content.trim() || sessionIdRef.current !== sid) return;
+            qcDone = true;
+            const fixed = j.content;
+            setMessagesRef.current((prevMsgs) => {
+              const idx = prevMsgs.map((m) => m.role).lastIndexOf('assistant');
+              if (idx < 0) return prevMsgs;
+              const next = [...prevMsgs];
+              const cur = next[idx];
+              next[idx] = { ...cur, parts: [{ type: 'text', text: fixed }], metadata: { ...(cur?.metadata ?? {}), edited: true } };
+              return next;
+            });
+          })
+          .catch(() => {});
+      }, ms),
+    );
+    return () => [...timers, ...qcTimers].forEach((t) => window.clearTimeout(t));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status]);
 
@@ -1818,6 +1841,9 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
                         >
                           {renderAlmogMessage(text)}
                           <div className="mt-1.5 text-[10px] text-emerald-50/75">
+                            {(msg as { metadata?: { edited?: boolean } }).metadata?.edited ? (
+                              <span className="me-1.5 italic" title="אלמוג תיקן ניסוח קטן אחרי השליחה">נערכה ·</span>
+                            ) : null}
                             {formatHebrewTime(getMessageCreatedAt(msg))}
                           </div>
                         </div>
