@@ -1,13 +1,23 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { HeartPulse, Loader2 } from 'lucide-react';
+import { ChevronDown, HeartPulse, Loader2 } from 'lucide-react';
+import type { ProfileGender } from '@/lib/privacy/gender-hebrew';
+import { healthConsentExplainer } from '@/lib/privacy/health-consent-explainer';
 import { CONSENT_CHANGED_EVENT, openConsentSheet } from '@/components/legal/ConsentSheetHost';
 
 type State = { active: boolean; decided_at: string | null };
 
 /** Health-data consent: designed switch + confirmation sheets (no native dialogs). */
-export function HealthConsentSection({ onToast }: { onToast?: (msg: string, kind: 'success' | 'error') => void }) {
+export function HealthConsentSection({
+  onToast,
+  gender,
+}: {
+  onToast?: (msg: string, kind: 'success' | 'error') => void;
+  gender?: ProfileGender;
+}) {
+  const [open, setOpen] = useState(false);
+  const ex = healthConsentExplainer(gender);
   const [state, setState] = useState<State | null>(null);
   const [loadError, setLoadError] = useState(false);
 
@@ -79,6 +89,30 @@ export function HealthConsentSection({ onToast }: { onToast?: (msg: string, kind
         </div>
       )}
 
+      <p className="text-xs text-emerald-900/80 font-medium">{ex.line}</p>
+
+      <div className="rounded-xl border border-emerald-900/10 bg-white/50 backdrop-blur-sm">
+        <h3 className="m-0">
+          <button
+            type="button"
+            id="health-consent-how-btn"
+            aria-expanded={open}
+            aria-controls="health-consent-how"
+            onClick={() => setOpen((v) => !v)}
+            className="flex w-full items-center justify-between gap-2 rounded-xl px-3 py-2.5 text-sm font-bold text-emerald-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-600"
+          >
+            {ex.title}
+            <ChevronDown aria-hidden className={`h-4 w-4 transition-transform ${open ? 'rotate-180' : ''}`} />
+          </button>
+        </h3>
+        <div id="health-consent-how" role="region" aria-labelledby="health-consent-how-btn" hidden={!open}>
+          <ul className="space-y-2 px-4 pb-3 text-sm leading-relaxed text-slate-700 list-disc marker:text-emerald-700 pr-5">
+            {ex.bullets.map((b) => (
+              <li key={b}>{b}</li>
+            ))}
+          </ul>
+        </div>
+      </div>
     </section>
   );
 }
