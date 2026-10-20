@@ -884,6 +884,15 @@ async function runMasterCron() {
     errors.push(`task_ladder: ${e instanceof Error ? e.message : String(e)}`);
   }
 
+  /** Nightly notification phrasing sweep: free lint + cheap LLM editor only for flagged rows */
+  let notifyQuality: unknown = null;
+  try {
+    const { runNotifyQualitySweep } = await import('@/lib/notifications/jobs/notify-quality-sweep');
+    notifyQuality = await runNotifyQualitySweep(admin);
+  } catch (e) {
+    errors.push(`notify_quality: ${e instanceof Error ? e.message : String(e)}`);
+  }
+
   let billing: unknown = null;
   try {
     const { runBillingRetention } = await import('@/lib/billing/retention-job');
@@ -896,6 +905,7 @@ async function runMasterCron() {
     ok: true,
     task_ladder: taskLadder,
     billing,
+    notify_quality: notifyQuality,
     retention,
     window_hours: 24,
     analyzed,
