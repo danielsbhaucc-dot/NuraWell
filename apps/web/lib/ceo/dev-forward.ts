@@ -2,8 +2,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 
 /**
- * Gideon → Or (developer bot) pipeline. After Daniel's one-tap approval a finding is saved in
- * ceo_dev_forwards (status new) for Or; optionally also a GitHub issue labeled `from-gideon`.
+ * Gideon → Ori (team lead) pipeline. After Daniel's one-tap approval a finding is saved in
+ * ceo_dev_forwards (status new) for Ori; optionally also a GitHub issue labeled `from-gideon`.
  * No PII leaves: names/emails/phones/ids are scrubbed before the issue is written.
  */
 export const DEV_FORWARD_REPO = (process.env.GIDEON_GITHUB_REPO || 'danielsbhaucc-dot/NuraWell').trim();
@@ -63,7 +63,7 @@ export function issueBody(a: ForwardArgs): string {
 }
 
 /**
- * Executes after approval. Success = row saved with status 'new' (Or polls the table).
+ * Executes after approval. Success = row saved with status 'new' (Ori polls the table).
  * A GitHub issue is opened additionally only when GIDEON_GITHUB_TOKEN exists; its failure is non-fatal.
  */
 export async function forwardToDeveloper(db: SupabaseClient, raw: ForwardArgs, deps: { fetch?: typeof fetch } = {}) {
@@ -82,7 +82,7 @@ export async function forwardToDeveloper(db: SupabaseClient, raw: ForwardArgs, d
     ? db.from('ceo_dev_forwards').update(patch).eq('id', raw.forwardId).select('id').single()
     : db.from('ceo_dev_forwards').insert({ source: 'chat', ...patch }).select('id').single();
   const { data, error } = await q;
-  if (error || !data) throw new Error('לא הצלחתי לשמור את הממצא לאור. כדאי לנסות שוב.');
+  if (error || !data) throw new Error('לא הצלחתי לשמור את הממצא לאורי. כדאי לנסות שוב.');
   const id = (data as { id: string }).id;
 
   const token = process.env.GIDEON_GITHUB_TOKEN?.trim();
@@ -105,7 +105,7 @@ _ceo_dev_forwards.id: ${id}_`, labels: [DEV_FORWARD_LABEL] }),
   }
 }
 
-/** Items Or finished (done/rejected) → ONE combined morning message (caller decides when). */
+/** Items Ori finished (done/rejected) → ONE combined morning message (caller decides when). */
 export async function notifyDoneForwards(db: SupabaseClient, send: (text: string) => Promise<void>): Promise<number> {
   const { data } = await db.from('ceo_dev_forwards').select('id, title, kind, status, or_notes').in('status', ['done', 'rejected']).is('done_notified_at', null).limit(20);
   const rows = (data ?? []) as { id: string; title: string | null; kind: string; status: string; or_notes: string | null }[];
@@ -117,7 +117,7 @@ export async function notifyDoneForwards(db: SupabaseClient, send: (text: string
   if (!mine.length) return 0;
   const line = (r: (typeof mine)[number]) =>
     `${r.status === 'done' ? '✅' : '↩️'} ${r.kind === 'capability_request' && r.status === 'done' ? 'יכולת חדשה: ' : ''}${r.title ?? 'ממצא'}${r.or_notes ? ` — ${r.or_notes.slice(0, 200)}` : ''}`;
-  await send(`☀️ עדכון בוקר מאור (${mine.length})\n${mine.map(line).join('\n')}`);
+  await send(`☀️ עדכון בוקר מאורי (${mine.length})\n${mine.map(line).join('\n')}`);
   return mine.length;
 }
 
@@ -128,13 +128,13 @@ export function isMorningBatchTime(now = new Date()): boolean {
   return mins >= 7 * 60 + 30 && mins < 11 * 60;
 }
 
-/** Save a digest so its "🛠️ העבר לאור" button can reference it. Returns the draft id. */
+/** Save a digest so its "🛠️ העבר לאורי" button can reference it. Returns the draft id. */
 export async function saveDigestDraft(db: SupabaseClient, text: string): Promise<string | null> {
   const { data } = await db.from('ceo_dev_forwards').insert({ source: 'digest', source_text: text.slice(0, 20000), status: 'draft' }).select('id').single();
   return (data as { id: string } | null)?.id ?? null;
 }
 
-export const FORWARD_BUTTON_TEXT = '🛠️ העבר לאור';
+export const FORWARD_BUTTON_TEXT = '🛠️ העבר לאורי';
 export const forwardButton = (id: string) => ({ text: FORWARD_BUTTON_TEXT, data: `ceo:fd:${id}` });
 
 /** Button press: turn the saved digest into a finding (one LLM call) and propose the action for approval. */
@@ -199,8 +199,8 @@ export function classifyRisk(text: string): ForwardRisk {
 }
 
 /**
- * Forward automatically (harmless: it only queues work for Or). Anonymized, deduped against open items.
- * Sensitive capability requests wait for Daniel's approval before Or implements them.
+ * Forward automatically (harmless: it only queues work for Ori). Anonymized, deduped against open items.
+ * Sensitive capability requests wait for Daniel's approval before Ori implements them.
  */
 export async function autoForward(
   db: SupabaseClient,
@@ -252,11 +252,11 @@ export async function decideCapability(db: SupabaseClient, id: string, approve: 
 }
 
 export const capabilityButtons = (id: string) => [[
-  { text: '✅ אשר לאור לבנות', data: `ceo:ca:${id}` },
+  { text: '✅ אשר לאורי לבנות', data: `ceo:ca:${id}` },
   { text: '❌ לא צריך', data: `ceo:cr:${id}` },
 ]];
 
-/** Forwards created since `sinceIso` — for the "what I forwarded to Or" line in summaries. */
+/** Forwards created since `sinceIso` — for the "what I forwarded to Ori" line in summaries. */
 export async function forwardedSince(db: SupabaseClient, sinceIso: string): Promise<{ title: string; kind: string }[]> {
   const { data } = await db.from('ceo_dev_forwards').select('title, kind').gte('created_at', sinceIso).neq('status', 'draft').neq('status', 'proposed').order('created_at').limit(10);
   return ((data ?? []) as { title: string | null; kind: string }[]).map((r) => ({ title: r.title ?? '', kind: r.kind }));
@@ -265,10 +265,10 @@ export async function forwardedSince(db: SupabaseClient, sinceIso: string): Prom
 export function forwardedLine(items: { title: string; kind: string }[]): string {
   if (!items.length) return '';
   const t = items.slice(0, 5).map((i) => `${i.kind === 'capability_request' ? '🧩' : '🛠️'} ${i.title}`).join('\n');
-  return `\n\nהעברתי לאור (${items.length}):\n${t}${items.length > 5 ? `\nועוד ${items.length - 5}` : ''}`;
+  return `\n\nהעברתי לאורי (${items.length}):\n${t}${items.length > 5 ? `\nועוד ${items.length - 5}` : ''}`;
 }
 
-/** Status snapshot for "על מה אור עובד?" — Gideon must answer only from this. */
+/** Status snapshot for "על מה אורי עובד?" — Gideon must answer only from this. */
 export async function orWorkStatus(db: SupabaseClient) {
   const { data } = await db.from('ceo_dev_forwards').select('title, kind, status, approval, or_notes, handled_at, created_at').in('status', ['new', 'in_progress', 'done', 'rejected']).order('created_at', { ascending: false }).limit(20);
   return data ?? [];

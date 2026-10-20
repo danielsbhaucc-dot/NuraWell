@@ -6,10 +6,10 @@ import { CEO_NAME } from '@/lib/ceo/agent';
 import { Card } from '@/components/ui';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'הועבר לאור' };
+export const metadata = { title: 'הועבר לאורי' };
 
 const fmt = new Intl.DateTimeFormat('he-IL', { timeZone: 'Asia/Jerusalem', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-const STATUS: Record<string, string> = { proposed: 'ממתין לאישור שלך', new: '🆕 חדש, מחכה לאור', in_progress: '🔧 אור עובד על זה', done: '✅ טופל', rejected: '↩️ נדחה' };
+const STATUS: Record<string, string> = { proposed: 'ממתין לאישור שלך', new: '🆕 חדש, מחכה לאורי', in_progress: '🔧 אורי עובד על זה', done: '✅ טופל', rejected: '↩️ נדחה' };
 
 async function decide(formData: FormData) {
   'use server';
@@ -31,11 +31,11 @@ export default async function DevForwardsPage() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-2">
-        <h1 className="px-1 font-display text-[1.75rem] font-black leading-tight tracking-tight text-slate-900">🛠️ הועבר לאור</h1>
+        <h1 className="px-1 font-display text-[1.75rem] font-black leading-tight tracking-tight text-slate-900">🛠️ הועבר לאורי</h1>
         <a href="/ops/ceo" className="rounded-xl bg-primary-100/40 px-3 py-1.5 text-sm font-semibold text-primary-900">חזרה ל{CEO_NAME}</a>
       </div>
       <p className="text-sm text-primary-800/80">
-        באגים, ממצאים טכניים ובקשות יכולת ש{CEO_NAME} העביר לאור אוטומטית. בקשות יכולת רגישות מחכות לאישור שלך כאן. אור אוסף אותם מכאן ומעדכן את ההתקדמות. בלי פרטים מזהים של משתמשים.
+        באגים, ממצאים טכניים ובקשות יכולת ש{CEO_NAME} העביר לאורי אוטומטית. בקשות יכולת רגישות מחכות לאישור שלך כאן. אורי אוסף אותם מכאן ומעדכן את ההתקדמות. בלי פרטים מזהים של משתמשים.
       </p>
       {!rows.length ? <Card>עוד לא הועבר כלום</Card> : null}
       {rows.map((r) => (
@@ -44,7 +44,7 @@ export default async function DevForwardsPage() {
           {r.approval === 'pending' ? (
             <form action={decide} className="flex gap-2">
               <input type="hidden" name="id" value={r.id} />
-              <button name="approve" value="1" className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold text-cream">אשר לאור לבנות</button>
+              <button name="approve" value="1" className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold text-cream">אשר לאורי לבנות</button>
               <button name="approve" value="0" className="rounded-lg border border-primary-200 px-4 py-2 text-sm font-bold text-primary-800">לא צריך</button>
             </form>
           ) : r.approval === 'approved' ? <div className="text-xs text-emerald-700">אושר על ידך</div> : null}
@@ -58,7 +58,7 @@ export default async function DevForwardsPage() {
             ) : null}
             {r.handled_at ? ` · טופל ${fmt.format(new Date(r.handled_at))}` : null}
           </div>
-          {r.or_notes ? <div className="text-sm text-primary-800">הערות אור: {r.or_notes}</div> : null}
+          {r.or_notes ? <div className="text-sm text-primary-800">הערות אורי: {r.or_notes}</div> : null}
         </Card>
       ))}
     </div>

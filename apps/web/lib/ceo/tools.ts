@@ -505,7 +505,7 @@ const JOURNEY: CeoTool[] = [
 const DEV: CeoTool[] = [
   {
     name: 'recent_digest_findings',
-    description: 'Latest saved summaries/reviews (weekly/monthly digests) with their forward status, so you can forward a finding to Or when Daniel asks (e.g. "תעביר לאור את עניין הניסוח").',
+    description: 'Latest saved summaries/reviews (weekly/monthly digests) with their forward status, so you can forward a finding to Ori when Daniel asks (e.g. "תעביר לאורי את עניין הניסוח").',
     schema: z.object({ limit: z.number().int().min(1).max(5).default(2) }),
     write: false,
     run: async (db, a) =>
@@ -516,7 +516,7 @@ const DEV: CeoTool[] = [
   {
     name: 'forward_to_developer',
     description:
-      'Forward a technical/code/bug/security/privacy/performance/Almog-quality finding to Or (lead engineer) — AUTOMATIC, no approval needed (it only queues work). NOT for business/product/personal decisions (those go to Daniel). Title + problem in Hebrew AND English, anonymized evidence (NO names, emails, phones, ids — "משתמש A"), concrete suggested fix. Deduped against open items. Tell Daniel "העברתי לאור" only after this returns ok.',
+      'Forward a technical/code/bug/security/privacy/performance/Almog-quality finding to Ori (team lead programmer, who decides; Or is a developer on his team) — AUTOMATIC, no approval needed (it only queues work). NOT for business/product/personal decisions (those go to Daniel). Title + problem in Hebrew AND English, anonymized evidence (NO names, emails, phones, ids — "משתמש A"), concrete suggested fix. Deduped against open items. Tell Daniel "העברתי לאורי" only after this returns ok.',
     schema: forwardSchema,
     write: false,
     run: async (db, a) => {
@@ -580,7 +580,7 @@ const DEV: CeoTool[] = [
   },
   {
     name: 'report_ops_lockout',
-    description: 'LAST RESORT, only when Daniel himself (this chat) says he is locked out of Ops and every approval method failed. Files a sensitive lockout item for Or. Never on behalf of anyone else. Afterwards tell Daniel Or will handle it and point him to the self-service emergency guide.',
+    description: 'LAST RESORT, only when Daniel himself (this chat) says he is locked out of Ops and every approval method failed. Files a sensitive lockout item for Ori. Never on behalf of anyone else. Afterwards tell Daniel Ori will handle it and point him to the self-service emergency guide.',
     schema: z.object({ what_failed_he: z.string().min(3).max(600) }),
     write: false,
     run: async (db, a) => {
@@ -595,7 +595,7 @@ const DEV: CeoTool[] = [
   },
   {
     name: 'or_work_status',
-    description: 'What Or (the developer) is working on: forwarded items with status new/in_progress/done/rejected and Or\'s notes. Use for "על מה אור עובד?". Never say Or fixed something unless its status is done.',
+    description: 'What Ori (team lead) and his team are working on: forwarded items with status new/in_progress/done/rejected and Ori\'s notes. Use for "על מה אורי עובד?". Never say Ori fixed something unless its status is done.',
     schema: z.object({}),
     write: false,
     run: (db) => orWorkStatus(db),
@@ -661,7 +661,7 @@ const CAP_HE: Record<string, string> = {
   db_delete: 'מחיקה (בלתי הפיך)', send_user_notification: 'התראה למשתמש בקול של אלמוג', delete_user: 'מחיקת חשבון (בלתי הפיך)',
   owner_tasks_list: 'משימות פתוחות של דניאל', owner_task_create: 'פתיחת משימה לדניאל', owner_task_update: 'עדכון משימה של דניאל',
   journey_agent_start: 'הפעלת סוכן התוכן על חומר גלם', journey_agent_reply: 'תשובה לסוכן התוכן', journey_agent_sessions_list: 'סשנים של סוכן התוכן',
-  recent_digest_findings: 'סיכומים אחרונים שאפשר להעביר לאור', forward_to_developer: 'העברת ממצא טכני לאור (אוטומטי, בלי אישור)', send_ops_access_link: 'כפתור כניסה ל-Ops (לצ׳אט המאומת)', report_ops_lockout: 'דיווח נעילה מחוץ ל-Ops לאור (מוצא אחרון)', or_work_status: 'על מה אור עובד (סטטוסים)',
+  recent_digest_findings: 'סיכומים אחרונים שאפשר להעביר לאורי', forward_to_developer: 'העברת ממצא טכני לאורי (אוטומטי, בלי אישור)', send_ops_access_link: 'כפתור כניסה ל-Ops (לצ׳אט המאומת)', report_ops_lockout: 'דיווח נעילה מחוץ ל-Ops לאורי (מוצא אחרון)', or_work_status: 'על מה אורי עובד (סטטוסים)',
   owner_pref_set: 'שמירת הוראה קבועה של דניאל (שבת, שעות שקט, השתקה) שנאכפת בקוד', owner_prefs_list: 'ההוראות הקבועות של דניאל', owner_pref_remove: 'ביטול הוראה קבועה',
 };
 export function capabilityManifest(): string {

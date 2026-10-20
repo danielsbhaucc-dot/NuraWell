@@ -18,7 +18,7 @@ function IssueRow({ i, onChange }: { i: Issue; onChange: () => void }) {
     const r = await fetch('/api/v1/admin/logs', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }).catch(() => null);
     const j = r ? await r.json().catch(() => ({})) : {};
     setBusy(false);
-    setMsg(r?.ok ? (j.already ? 'כבר אצל אור' : 'עודכן') : 'לא הצליח, נסה שוב');
+    setMsg(r?.ok ? (j.already ? 'כבר אצל אורי' : 'עודכן') : 'לא הצליח, נסה שוב');
     if (r?.ok) onChange();
   };
   return (
@@ -41,7 +41,7 @@ function IssueRow({ i, onChange }: { i: Issue; onChange: () => void }) {
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <Segmented value={i.status} options={[['new', 'חדש'], ['in_progress', 'בטיפול'], ['resolved', 'נפתר']]} onChange={(s) => void act({ action: 'error_status', fp: i.fingerprint, status: s })} />
-            <button type="button" disabled={busy} onClick={() => void act({ action: 'forward', fp: i.fingerprint })} className="inline-flex items-center gap-1 text-[13px] font-medium text-slate-800 underline underline-offset-4 disabled:opacity-50 dark:text-cream"><ArrowUpLeft size={14} />העבר לאור</button>
+            <button type="button" disabled={busy} onClick={() => void act({ action: 'forward', fp: i.fingerprint })} className="inline-flex items-center gap-1 text-[13px] font-medium text-slate-800 underline underline-offset-4 disabled:opacity-50 dark:text-cream"><ArrowUpLeft size={14} />העבר לאורי</button>
             {msg ? <span className="text-[12px] text-slate-500">{msg}</span> : null}
           </div>
         </div>

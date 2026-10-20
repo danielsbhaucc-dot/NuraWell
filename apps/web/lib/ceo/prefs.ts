@@ -8,7 +8,7 @@ import { CITY_HE, DEFAULT_SHABBAT, fmtIl, holyWindows, resolveUntil, shabbatPara
  */
 export const MUTABLE_TOPICS = ['daily', 'weekly', 'monthly', 'cost', 'owner_tasks', 'agent_report', 'dev_forward'] as const;
 export const TOPIC_HE: Record<string, string> = {
-  daily: 'עדכון יומי', weekly: 'סיכום שבועי', monthly: 'דוח חודשי', cost: 'התראות עלות', owner_tasks: 'תזכורות משימות', agent_report: 'דיווחי סוכן התוכן', dev_forward: 'עדכונים מאור על משימות שהועברו', security: 'התראות אבטחה',
+  daily: 'עדכון יומי', weekly: 'סיכום שבועי', monthly: 'דוח חודשי', cost: 'התראות עלות', owner_tasks: 'תזכורות משימות', agent_report: 'דיווחי סוכן התוכן', dev_forward: 'עדכונים מאורי על משימות שהועברו', security: 'התראות אבטחה',
 };
 const DAY_HE = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
 const HHMM = z.string().regex(/^([01]?\d|2[0-3]):([0-5]\d)$/, 'שעה בפורמט HH:MM');

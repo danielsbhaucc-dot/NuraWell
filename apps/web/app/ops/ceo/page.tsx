@@ -47,7 +47,7 @@ export default async function OpsCeoPage() {
         <OpsRow href="/ops/ceo/security" icon={ShieldCheck} tone="emerald" title="אבטחה" desc="Face ID, נעילה ושחרור" />
         <OpsRow href="/ops/ceo/prefs" icon={Moon} tone="amber" title="הוראות ושקט" desc="בקשות קבועות ושבת" />
         <OpsRow href="/ops/ceo/insights" icon={ListChecks} tone="sky" title="משימות ואיכות" />
-        <OpsRow href="/ops/ceo/dev-forwards" icon={Wrench} tone="rose" title="הועבר לאור" />
+        <OpsRow href="/ops/ceo/dev-forwards" icon={Wrench} tone="rose" title="הועבר לאורי" />
       </OpsGroup>
 
       <OpsGroup title={`ממתין לאישור (${pending?.length ?? 0})`}>

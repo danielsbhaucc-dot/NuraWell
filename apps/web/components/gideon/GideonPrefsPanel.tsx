@@ -8,7 +8,7 @@ type Win = { start: string; end: string; reason: string };
 type Data = { prefs: Pref[]; quiet: { until: string; reasons: string[]; emergencies: string } | null; nextWindows: Win[]; held: Held[] };
 
 const CITIES: [string, string][] = [['Jerusalem', 'ירושלים'], ['Tel Aviv', 'תל אביב'], ['Haifa', 'חיפה'], ['Beer Sheva', 'באר שבע'], ['Ashdod', 'אשדוד'], ['Petach Tikvah', 'פתח תקווה'], ['Tiberias', 'טבריה'], ['Eilat', 'אילת']];
-const TOPICS: [string, string][] = [['daily', 'עדכון יומי'], ['weekly', 'סיכום שבועי'], ['monthly', 'דוח חודשי'], ['cost', 'התראות עלות'], ['owner_tasks', 'תזכורות משימות'], ['agent_report', 'דיווחי סוכן התוכן'], ['dev_forward', 'עדכונים מאור']];
+const TOPICS: [string, string][] = [['daily', 'עדכון יומי'], ['weekly', 'סיכום שבועי'], ['monthly', 'דוח חודשי'], ['cost', 'התראות עלות'], ['owner_tasks', 'תזכורות משימות'], ['agent_report', 'דיווחי סוכן התוכן'], ['dev_forward', 'עדכונים מאורי']];
 const DAYS = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳'];
 const fmt = (s: string) => new Date(s).toLocaleString('he-IL', { timeZone: 'Asia/Jerusalem', weekday: 'short', day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' });
 const card = 'rounded-3xl border border-slate-200 bg-white p-5';
