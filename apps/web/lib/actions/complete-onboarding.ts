@@ -33,6 +33,7 @@ import {
   WEAKEST_TIMES,
 } from '@/lib/onboarding/types';
 import { clearChallengeGateCookie } from '@/lib/challenge/gate-cookie';
+import { recordConsentEvidence, validateSubmission } from '@/lib/legal/record-evidence';
 
 const timeRegex = /^([01]\d|2[0-3]):[0-5]\d$/;
 
@@ -181,6 +182,18 @@ export async function completeOnboarding(
 
   if (ageCheck.requiresParentalConsent && data.parental_consent !== 'true') {
     return { ok: false, error: 'נדרשת הסכמת הורה לשימוש בגיל 16–17' };
+  }
+
+  // Health consent must come through the evidence sheet (checkbox + typed word); validated before any account is created.
+  const consentSub = {
+    action: 'grant' as const,
+    textVersion: String(formData.get('health_consent_text_version') ?? ''),
+    typedWord: String(formData.get('health_consent_typed') ?? ''),
+    checkbox: formData.get('health_consent_checkbox') === 'true',
+    screenshotDataUrl: (formData.get('health_consent_screenshot') as string | null) || null,
+  };
+  if (validateSubmission(consentSub)) {
+    return { ok: false, error: 'צריך לאשר את ההסכמה למידע בריאותי בחלון ההסכמה' };
   }
 
   // Rate-limit signups per IP (Postgres limiter, keys hashed in DB).
@@ -353,6 +366,19 @@ export async function completeOnboarding(
 
   if (profileError) {
     return { ok: false, error: 'החשבון נוצר אך שמירת הפרופיל נכשלה. פנו לתמיכה.' };
+  }
+
+  // Signed, timestamped evidence of the onboarding health consent (same flow as settings/chat).
+  try {
+    const ev = await recordConsentEvidence(admin, userId, 'onboarding', consentSub, {
+      ip: ip === 'unknown' ? null : ip,
+      userAgent: h.get('user-agent')?.slice(0, 400) ?? null,
+      sessionId: null,
+      deviceId: null,
+    });
+    if (!ev.ok) console.warn('[complete-onboarding] consent evidence failed', ev.error);
+  } catch (e) {
+    console.warn('[complete-onboarding] consent evidence error', e instanceof Error ? e.message : 'error');
   }
 
 

@@ -20,6 +20,7 @@ import {
   LegalConsentCheckbox,
   ParentalConsentCheckbox,
 } from '@/components/legal/PrivacyConsentFields';
+import type { ConsentCollected } from '@/components/legal/ConsentEvidenceSheet';
 import { validateBirthDate } from '@/lib/privacy/age-validation';
 import { SCREENING_GUIDANCE } from '@/lib/onboarding/safety-screening';
 
@@ -58,6 +59,7 @@ export function OnboardingFormClient() {
   const [password, setPassword] = useState('');
   const [birthDate, setBirthDate] = useState('');
   const [healthConsent, setHealthConsent] = useState(false);
+  const [consentEvidence, setConsentEvidence] = useState<ConsentCollected | null>(null);
   const [screen, setScreen] = useState({ ed_history: false, pregnancy: false, fluid_restriction: false, medical_followup: false });
   const [parentalConsent, setParentalConsent] = useState(false);
   const [legalConsent, setLegalConsent] = useState(false);
@@ -252,6 +254,12 @@ export function OnboardingFormClient() {
     fd.set('password', password);
     fd.set('date_of_birth', birthDate);
     fd.set('health_data_consent', 'true');
+    if (consentEvidence) {
+      fd.set('health_consent_text_version', consentEvidence.text_version);
+      fd.set('health_consent_typed', consentEvidence.typed_word);
+      fd.set('health_consent_checkbox', 'true');
+      if (consentEvidence.screenshot) fd.set('health_consent_screenshot', consentEvidence.screenshot);
+    }
     fd.set('legal_consent', 'true');
     if (ageInfo?.ok && ageInfo.requiresParentalConsent) {
       fd.set('parental_consent', parentalConsent ? 'true' : 'false');
@@ -403,7 +411,7 @@ export function OnboardingFormClient() {
                     />
                   ) : null}
 
-                  <HealthDataConsentBlock checked={healthConsent} onChange={setHealthConsent} />
+                  <HealthDataConsentBlock checked={healthConsent} onChange={setHealthConsent} gender={gender} onEvidence={setConsentEvidence} />
 
                   <fieldset className={`mt-4 rounded-2xl border border-emerald-200/20 bg-white/5 p-3 ${healthConsent ? '' : 'opacity-50 pointer-events-none'}`}>
                     <legend className="px-1 text-sm font-bold text-emerald-100/90">כדי להתאים את התוכנית בבטחה (לא חובה)</legend>

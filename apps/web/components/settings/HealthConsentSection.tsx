@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { HeartPulse, Loader2, ShieldCheck, AlertTriangle } from 'lucide-react';
-import { AnimatedDialog } from '@/components/shared/AnimatedDialog';
+import { HeartPulse, Loader2 } from 'lucide-react';
+import { CONSENT_CHANGED_EVENT, openConsentSheet } from '@/components/legal/ConsentSheetHost';
 
 type State = { active: boolean; decided_at: string | null };
 
@@ -10,10 +10,6 @@ type State = { active: boolean; decided_at: string | null };
 export function HealthConsentSection({ onToast }: { onToast?: (msg: string, kind: 'success' | 'error') => void }) {
   const [state, setState] = useState<State | null>(null);
   const [loadError, setLoadError] = useState(false);
-  const [dialog, setDialog] = useState<'withdraw' | 'grant' | null>(null);
-  const [understood, setUnderstood] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -26,34 +22,15 @@ export function HealthConsentSection({ onToast }: { onToast?: (msg: string, kind
     };
   }, []);
 
-  const close = () => {
-    if (saving) return;
-    setDialog(null);
-    setUnderstood(false);
-    setError(null);
-  };
-
-  const submit = async (action: 'withdraw' | 'grant') => {
-    setSaving(true);
-    setError(null);
-    try {
-      const res = await fetch('/api/v1/account/health-consent', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(action === 'withdraw' ? { action, confirm: true } : { action }),
-      });
-      const data = (await res.json().catch(() => ({}))) as { error?: string; active?: boolean };
-      if (!res.ok) throw new Error(data.error ?? 'הפעולה נכשלה');
-      setState({ active: action === 'grant', decided_at: new Date().toISOString() });
-      setDialog(null);
-      setUnderstood(false);
-      onToast?.(action === 'withdraw' ? 'ההסכמה בוטלה והמידע הבריאותי נמחק' : 'ההסכמה הופעלה מחדש', 'success');
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'הפעולה נכשלה');
-    } finally {
-      setSaving(false);
-    }
-  };
+  useEffect(() => {
+    const onChanged = (e: Event) => {
+      const active = (e as CustomEvent<{ active?: boolean }>).detail?.active === true;
+      setState({ active, decided_at: new Date().toISOString() });
+      onToast?.(active ? 'ההסכמה הופעלה מחדש' : 'ההסכמה בוטלה והמידע הבריאותי נמחק', 'success');
+    };
+    window.addEventListener(CONSENT_CHANGED_EVENT, onChanged);
+    return () => window.removeEventListener(CONSENT_CHANGED_EVENT, onChanged);
+  }, [onToast]);
 
   const active = state?.active === true;
 
@@ -89,7 +66,7 @@ export function HealthConsentSection({ onToast }: { onToast?: (msg: string, kind
             role="switch"
             aria-checked={active}
             aria-labelledby="health-consent-label"
-            onClick={() => setDialog(active ? 'withdraw' : 'grant')}
+            onClick={() => openConsentSheet({ action: active ? 'withdraw' : 'grant', source: 'settings_privacy' })}
             className={`relative h-8 w-14 shrink-0 rounded-full transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 ${
               active ? 'bg-emerald-600' : 'bg-slate-300'
             }`}
@@ -102,108 +79,6 @@ export function HealthConsentSection({ onToast }: { onToast?: (msg: string, kind
         </div>
       )}
 
-      <AnimatedDialog
-        open={dialog === 'withdraw'}
-        onClose={close}
-        zIndex={280}
-        aria-labelledby="hc-withdraw-title"
-        aria-describedby="hc-withdraw-desc"
-        variant="sheet"
-        mobileChromePadding
-        backdropClassName="absolute inset-0 bg-slate-900/45"
-        panelClassName="crystal-surface max-w-md rounded-2xl p-5 shadow-2xl sm:rounded-2xl"
-      >
-        <div className="flex items-center gap-2">
-          <span className="w-9 h-9 rounded-xl bg-rose-100 flex items-center justify-center" aria-hidden>
-            <AlertTriangle className="w-5 h-5 text-rose-600" />
-          </span>
-          <h3 id="hc-withdraw-title" className="text-lg font-black text-slate-900">לבטל את ההסכמה?</h3>
-        </div>
-        <div id="hc-withdraw-desc" className="mt-3 text-sm text-slate-700 leading-relaxed space-y-2">
-          <p>אם תבטל, זה מה שיקרה מיד:</p>
-          <ul className="list-disc pr-5 space-y-1">
-            <li>כל המדידות שלך וכל המידע הבריאותי בפרופיל יימחקו לצמיתות.</li>
-            <li>לא נאסוף יותר מידע בריאותי, גם אם תכתוב אותו בשיחה.</li>
-            <li>גרפי ההתקדמות וההתאמות לפי מדדים לא יהיו זמינים.</li>
-            <li>החשבון, השיחות, המשימות וההתקדמות במסע נשארים כמו שהם.</li>
-          </ul>
-          <p>
-            כדאי קודם להוריד עותק של הנתונים בכפתור &quot;הורד את הנתונים שלי&quot;. אפשר להפעיל את ההסכמה מחדש
-            בכל עת, אבל המידע שנמחק לא יחזור.
-          </p>
-        </div>
-        <label className="mt-4 flex items-start gap-2 text-sm text-slate-800 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={understood}
-            onChange={(e) => setUnderstood(e.target.checked)}
-            className="mt-1 h-4 w-4"
-          />
-          הבנתי שהמידע הבריאותי יימחק לצמיתות
-        </label>
-        {error ? <p className="mt-2 text-sm font-semibold text-red-600" role="alert">{error}</p> : null}
-        <div className="mt-5 flex gap-2">
-          <button
-            type="button"
-            onClick={() => void submit('withdraw')}
-            disabled={!understood || saving}
-            className="flex-1 min-h-[44px] rounded-xl font-bold text-white bg-rose-600 disabled:opacity-50 flex items-center justify-center gap-2"
-          >
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : null}
-            בטל ומחק
-          </button>
-          <button
-            type="button"
-            onClick={close}
-            disabled={saving}
-            className="flex-1 min-h-[44px] rounded-xl font-bold text-slate-700 border border-slate-200 bg-white/70"
-          >
-            השאר פעיל
-          </button>
-        </div>
-      </AnimatedDialog>
-
-      <AnimatedDialog
-        open={dialog === 'grant'}
-        onClose={close}
-        zIndex={280}
-        aria-labelledby="hc-grant-title"
-        variant="sheet"
-        mobileChromePadding
-        backdropClassName="absolute inset-0 bg-slate-900/45"
-        panelClassName="crystal-surface max-w-md rounded-2xl p-5 shadow-2xl sm:rounded-2xl"
-      >
-        <div className="flex items-center gap-2">
-          <span className="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center" aria-hidden>
-            <ShieldCheck className="w-5 h-5 text-emerald-700" />
-          </span>
-          <h3 id="hc-grant-title" className="text-lg font-black text-slate-900">להפעיל מחדש את ההסכמה?</h3>
-        </div>
-        <p className="mt-3 text-sm text-slate-700 leading-relaxed">
-          נוכל שוב לשמור מדידות ומידע בריאותי שתמסור, מוצפנים, ולהשתמש בהם רק כדי להתאים את הליווי. אפשר לבטל
-          בכל עת. המידע שנמחק קודם לא יחזור.
-        </p>
-        {error ? <p className="mt-2 text-sm font-semibold text-red-600" role="alert">{error}</p> : null}
-        <div className="mt-5 flex gap-2">
-          <button
-            type="button"
-            onClick={() => void submit('grant')}
-            disabled={saving}
-            className="flex-1 min-h-[44px] rounded-xl font-bold text-white bg-linear-to-l from-emerald-600 to-teal-500 disabled:opacity-50 flex items-center justify-center gap-2"
-          >
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden /> : null}
-            כן, הפעל
-          </button>
-          <button
-            type="button"
-            onClick={close}
-            disabled={saving}
-            className="flex-1 min-h-[44px] rounded-xl font-bold text-slate-700 border border-slate-200 bg-white/70"
-          >
-            לא עכשיו
-          </button>
-        </div>
-      </AnimatedDialog>
     </section>
   );
 }

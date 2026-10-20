@@ -186,6 +186,8 @@ import { fetchUserGuideSummaries } from '../../../../../lib/guides/fetch-user-gu
 import { formatGuidesStateForAi, formatGuideCompanionForAi } from '../../../../../lib/guides/progress';
 import { createAdminClient } from '../../../../../lib/supabase/admin';
 import { healthConsentStatus } from '../../../../../lib/privacy/health-consent';
+import { detectConsentChangeIntent } from '../../../../../lib/legal/consent-chat-intent';
+import { respondWithConsentOffer } from '../../../../../lib/legal/consent-chat-offer';
 import {
   HEALTH_CONSENT_OFF_PROMPT,
   REDACTED_CONTENT,
@@ -2542,6 +2544,27 @@ async function handleChatPost(request: Request) {
    * logs, persistence). Without an active grant (withdrawn / legacy / lookup error) health
    * content is never stored or forwarded: only a placeholder row remains.
    */
+  /**
+   * Explicit consent-change request ("אני רוצה לבטל את ההסכמה"): deterministic, before any model.
+   * The server only OFFERS the designed sheet (structured header); consent changes solely through
+   * the sheet's signed evidence flow. The model can never flip consent.
+   */
+  if (!parsed.data.resume_assistant) {
+    const consentIntent = detectConsentChangeIntent(lastUserText);
+    if (consentIntent) {
+      return respondWithConsentOffer({
+        supabase,
+        admin: createAdminClient(),
+        userId: user.id,
+        sessionId: parsed.data.session_id ?? crypto.randomUUID(),
+        debugId,
+        intent: consentIntent,
+        userText: lastUserText,
+        ensureSession: ensureChatSession,
+        insert: insertAiInteraction,
+      });
+    }
+  }
   const healthConsentOff = (await healthConsentStatus(user.id)) !== 'granted';
   if (healthConsentOff) {
     messages = sanitizeIncomingMessages(messages as never).messages as typeof messages;

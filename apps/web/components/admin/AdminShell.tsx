@@ -27,8 +27,7 @@ import {
   UserCircle,
   X,
   Bot,
-  ShieldCheck,
-} from 'lucide-react';
+  ShieldCheck, Scale } from 'lucide-react';
 import { cn } from '../../lib/cn';
 import { OpsSessionGuard } from './OpsSessionGuard';
 import { AdminAiAssistantCard } from './AdminAiAssistantCard';
@@ -84,6 +83,7 @@ export function AdminShell({
   const isSiteSettings = np === '/ops/site-settings';
   const isAccessibility = np === '/ops/accessibility';
   const isPrivacy = np === '/ops/privacy';
+  const isLegal = np === '/ops/legal';
   const isSystemRagIngest = np === '/ops/system-rag-ingest';
   const isAlmogNavSection = isAlmogSettings || isSystemRagIngest;
   const isJourneyHub = np === '/ops/journey' || np === '/ops/journey-hub' || np.startsWith('/ops/steps');
@@ -456,6 +456,18 @@ export function AdminShell({
             >
               <ShieldCheck size={20} className={cn('shrink-0', isPrivacy && 'text-emerald-600')} />
               <span className={cn('truncate', !showNavLabels && 'lg:sr-only')}>פרטיות</span>
+            </Link>
+            <Link prefetch={false}
+              href={opsHref('/legal')}
+              onClick={() => setSidebarOpen(false)}
+              className={cn(
+                navBtn(isLegal, 'emerald'),
+                'border border-gc/40 bg-background-card/30 shadow-xs',
+              )}
+              title="משפטי"
+            >
+              <Scale size={20} className={cn('shrink-0', isLegal && 'text-emerald-600')} />
+              <span className={cn('truncate', !showNavLabels && 'lg:sr-only')}>משפטי</span>
             </Link>
             <Link prefetch={false}
               href={coursesHref}

@@ -3,6 +3,7 @@ import { useHideOnScrollDown } from '@/lib/hooks/use-hide-on-scroll-down';
 import { RetypingTitle } from './RetypingTitle';
 import { CrisisResourcesCard } from '@/components/safety/CrisisResourcesCard';
 import { detectCrisisSignals } from '@/lib/safety/crisis-detector';
+import { ConsentChatButton } from '@/components/legal/ConsentChatButton';
 import { REDACTED_CONTENT, isRedactedContent } from '@/lib/privacy/health-chat-redaction';
 import { DeletedMessageBubble } from './DeletedMessageBubble';
 
@@ -764,6 +765,8 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
     Record<string, MentorEmojiReaction | null>
   >({});
   const appliedReactionFixRef = useRef<Set<string>>(new Set());
+  /** structured server action: show the inline consent button under Almog's explanation */
+  const [pendingConsentAction, setPendingConsentAction] = useState<'grant' | 'withdraw' | null>(null);
   const attachReactionRef = useRef<(reaction: MentorEmojiReaction) => void>(() => {});
   const pendingReactionRef = useRef<MentorEmojiReaction | null>(null);
 
@@ -780,6 +783,10 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
       if (headerReaction) {
         pendingReactionRef.current = headerReaction;
         queueMicrotask(() => attachReactionRef.current(headerReaction));
+      }
+      const consentAction = res.headers.get('x-almog-consent-action');
+      if (consentAction === 'grant' || consentAction === 'withdraw') {
+        queueMicrotask(() => setPendingConsentAction(consentAction));
       }
       if (res.headers.get('x-almog-redacted') === '1') {
         // health text without consent: drop it from local state too (never resent)
@@ -1836,6 +1843,9 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
                   getSessionId={() => sessionIdRef.current}
                   onSend={sendQuickReply}
                 />
+              ) : null}
+              {pendingConsentAction && !isLoading ? (
+                <ConsentChatButton action={pendingConsentAction} onOpen={() => setPendingConsentAction(null)} />
               ) : null}
               {crisisInConversation ? <CrisisResourcesCard /> : null}
 
