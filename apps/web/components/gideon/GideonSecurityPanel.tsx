@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { confirmDialog } from '@/components/shared/dialogs';
 
 type State = { disabled: boolean; locked_until: string | null; stepup_trust_minutes: number; reverify_minutes: number; trusted_until: string | null; last_verified_at: string | null };
 type Device = { id: string; label: string; created_at: string; last_used_at: string | null };
@@ -64,7 +65,7 @@ export function GideonSecurityPanel() {
           {st?.disabled ? '⛔ גדעון כבוי' : locked ? `🔒 נעול עד ${fmt(st!.locked_until)}` : '✅ פעיל'} · חלון אמון עד: {fmt(st?.trusted_until ?? null)} · אימות אחרון: {fmt(st?.last_verified_at ?? null)}
         </p>
         <div className="mt-4 flex flex-wrap gap-3">
-          <button className="rounded-2xl bg-red-600 px-4 py-2.5 font-semibold text-white" onClick={() => confirm('לכבות את גדעון עכשיו? כל הפעולות הממתינות יבוטלו.') && post({ action: 'kill', reason: 'Ops kill switch' })}>
+          <button className="rounded-2xl bg-red-600 px-4 py-2.5 font-semibold text-white" onClick={async () => { if (await confirmDialog({ title: 'לכבות את גדעון עכשיו?', message: 'כל הפעולות הממתינות יבוטלו.', danger: true, confirmLabel: 'כבה' })) void post({ action: 'kill', reason: 'Ops kill switch' }); }}>
             ⛔ כיבוי מיידי
           </button>
           {st?.disabled || locked ? (
@@ -81,7 +82,7 @@ export function GideonSecurityPanel() {
           {devices.length ? devices.map((k) => (
             <li key={k.id} className="flex items-center justify-between gap-2">
               <span>📱 {k.label || 'מכשיר'} · נרשם {fmt(k.created_at)} · שימוש אחרון {fmt(k.last_used_at)}</span>
-              <button className="rounded-xl border border-red-200 px-2 py-1 text-xs text-red-700" onClick={() => confirm('להסיר את המכשיר? האישור יישלח לטלגרם.') && post({ action: 'remove_key', id: k.id })}>הסר</button>
+              <button className="rounded-xl border border-red-200 px-2 py-1 text-xs text-red-700" onClick={async () => { if (await confirmDialog({ title: 'להסיר את המכשיר?', message: 'האישור יישלח לטלגרם.', danger: true, confirmLabel: 'הסר' })) void post({ action: 'remove_key', id: k.id }); }}>הסר</button>
             </li>
           )) : <li>עוד לא נרשם מכשיר. עד אז פעולות רגישות חסומות.</li>}
         </ul>

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { headers } from 'next/headers';
 import { AccessibilityToolbarClient } from '@/components/a11y/AccessibilityToolbarClient';
 import { accessibilityBootstrapScript } from '@/lib/a11y/apply-preferences';
+import { DialogHost } from '@/components/shared/dialogs';
 import { fontVariables } from './fonts';
 import './globals.css';
 
@@ -129,6 +130,7 @@ export default async function RootLayout({
           דלג לתוכן הראשי
         </a>
         <AccessibilityToolbarClient>{children}</AccessibilityToolbarClient>
+        <DialogHost />
       </body>
     </html>
   );

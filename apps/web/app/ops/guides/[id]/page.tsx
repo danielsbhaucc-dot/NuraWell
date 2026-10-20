@@ -8,6 +8,7 @@ import { resolveGuideBackgroundUrl } from '@/lib/guides/resolve-background';
 import { useMediaManager } from '@/components/media-manager/MediaManagerProvider';
 import type { MediaAsset } from '@/components/media-manager/types';
 import { GuideLessonEditor } from '@/components/admin/GuideLessonEditor';
+import { promptDialog } from '@/components/shared/dialogs';
 
 interface LessonRow {
   id: string;
@@ -126,7 +127,7 @@ export default function OpsGuideDetailPage() {
   };
 
   const addLesson = async () => {
-    const title = prompt('שם הפרק:');
+    const title = await promptDialog({ title: 'שם הפרק', placeholder: 'למשל: פרק 1', confirmLabel: 'הוסף' });
     if (!title?.trim()) return;
     await fetch(`/api/v1/admin/guides/${id}/lessons`, {
       method: 'POST',
