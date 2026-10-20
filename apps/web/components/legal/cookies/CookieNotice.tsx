@@ -7,9 +7,9 @@ import {
   COOKIE_GROUPS,
   COOKIE_NOTICE_STORAGE_KEY,
   COOKIE_NOTICE_VERSION,
-  COOKIE_WINK,
   OPEN_COOKIE_PANEL_EVENT,
 } from '@/lib/legal/cookie-inventory';
+import { COOKIE_HEADLINES } from './cookie-headlines';
 import './cookie-notice.css';
 
 const HIDDEN_PREFIXES = ['/ops', '/gideon', '/device-check', '/auth/'];
@@ -30,10 +30,10 @@ function writeSeen() {
   }
 }
 
-export function CookieWink({ className = '' }: { className?: string }) {
+export function CookieWink({ className = '', text = COOKIE_HEADLINES[0].wink }: { className?: string; text?: string }) {
   return (
     <p className={`cn-wink ${className}`}>
-      <span aria-hidden="true">🦊</span> {COOKIE_WINK}
+      <span aria-hidden="true">🦊</span> {text}
     </p>
   );
 }
@@ -100,6 +100,12 @@ export function CookieNotice() {
   const pathname = usePathname() || '/';
   const [banner, setBanner] = useState(false);
   const [panel, setPanel] = useState(false);
+  // Stable default on SSR/first render; random pick only after mount (no hydration mismatch).
+  const [hi, setHi] = useState(0);
+  useEffect(() => {
+    setHi(Math.floor(Math.random() * COOKIE_HEADLINES.length));
+  }, []);
+  const head = COOKIE_HEADLINES[hi];
   const panelRef = useRef<HTMLDivElement>(null);
   const bannerRef = useRef<HTMLDivElement>(null);
   const lastFocus = useRef<HTMLElement | null>(null);
@@ -108,6 +114,25 @@ export function CookieNotice() {
   useEffect(() => {
     if (!hidden && !readSeen()) setBanner(true);
   }, [hidden]);
+
+  // Lift floating buttons (accessibility FAB) above the banner while it is visible.
+  useEffect(() => {
+    const root = document.documentElement;
+    const el = bannerRef.current;
+    if (!banner || panel || !el) {
+      delete root.dataset.cookieBanner;
+      return;
+    }
+    const sync = () => root.style.setProperty('--cn-banner-h', `${Math.ceil(el.getBoundingClientRect().height)}px`);
+    sync();
+    root.dataset.cookieBanner = 'on';
+    const ro = new ResizeObserver(sync);
+    ro.observe(el);
+    return () => {
+      ro.disconnect();
+      delete root.dataset.cookieBanner;
+    };
+  }, [banner, panel]);
 
   // Hide floating buttons (accessibility FAB) while the modal panel is open.
   useEffect(() => {
@@ -203,13 +228,13 @@ export function CookieNotice() {
           <div className="cn-art" role="img" aria-label="צנצנת עוגיות נעולה במנעול על אדן חלון שטוף שמש" />
           <div className="cn-bwrap">
             <h2 className="cn-h">
-              שומרים רק על <span className="cn-gold">מה שצריך</span>
+              {head.lead} <span className="cn-gold">{head.gold}</span>
             </h2>
             <p className="cn-p">
               רק עוגיות חיוניות, כדי שהחיבור לחשבון יישמר והחשבון יהיה מוגן. בלי מעקב, בלי פרסום.{' '}
               <Link href="/cookies">כל הפרטים על העוגיות</Link>
             </p>
-            <CookieWink />
+            <CookieWink text={head.wink} />
             <div className="cn-chips" aria-hidden="true">
               <span>✦ בלי מעקב</span>
               <span>✦ בלי פרסום</span>
@@ -259,7 +284,7 @@ export function CookieNotice() {
               </button>
             </div>
             <div className="cn-pbody">
-              <CookieWink />
+              <CookieWink text={head.wink} />
               <CookiePanelBody />
             </div>
             <div className="cn-ft">
