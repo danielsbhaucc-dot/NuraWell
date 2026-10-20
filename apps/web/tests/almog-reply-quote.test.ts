@@ -97,23 +97,26 @@ describe('multi-bubble split', () => {
     expect(b).toEqual([{ raw: 'תשובה אחת רגילה', quoteN: null }]);
   });
   it('splits on marker with per-bubble quotes, marker never in text', () => {
-    const b = _split(`⟦NW_RQ:2⟧על הפיצה, הכול טוב.${BUBBLE_MARKER}⟦NW_RQ:1⟧מים: 8 כוסות.`, burst);
+    const b = _split(`⟦NW_RQ:2⟧על הפיצה, הכול טוב. ארוחה אחת לא מוחקת שבוע שלם של עבודה.${BUBBLE_MARKER}⟦NW_RQ:1⟧מים: בימי אימון כדאי לכוון ל-2.5 עד 3 ליטר.`, burst);
     expect(b).toEqual([
-      { raw: 'על הפיצה, הכול טוב.', quoteN: 2 },
-      { raw: 'מים: 8 כוסות.', quoteN: 1 },
+      { raw: 'על הפיצה, הכול טוב. ארוחה אחת לא מוחקת שבוע שלם של עבודה.', quoteN: 2 },
+      { raw: 'מים: בימי אימון כדאי לכוון ל-2.5 עד 3 ליטר.', quoteN: 1 },
     ]);
     for (const x of b) expect(x.raw).not.toMatch(/⟦|⟧/);
   });
   it('drops empty bubbles and caps at MAX_BUBBLES (overflow merged into last)', () => {
-    const t = ['א', '', 'ב', 'ג', 'ד', 'ה'].join(BUBBLE_MARKER);
+    const L = (c: string) => c.repeat(40);
+    const t = [L('א'), '', L('ב'), L('ג'), L('ד'), L('ה')].join(BUBBLE_MARKER);
     const b = _split(t, burst);
-    expect(b).toHaveLength(MAX_BUBBLES);
-    expect(b[3]!.raw).toBe('ד\n\nה');
+    expect(MAX_BUBBLES).toBe(3);
+    expect(b).toHaveLength(3);
+    expect(b[2]!.raw).toBe(`${L('ג')}\n\n${L('ד')}\n\n${L('ה')}`);
   });
   it('enforces quote policy per bubble and dedupes', () => {
     const single = [{ role: 'user', content: 'היי' }];
-    expect(_split(`⟦NW_RQ:1⟧היי!${BUBBLE_MARKER}מה נשמע?`, single).map((x) => x.quoteN)).toEqual([null, null]);
-    expect(_split(`⟦NW_RQ:1⟧א${BUBBLE_MARKER}⟦NW_RQ:1⟧ב`, burst).map((x) => x.quoteN)).toEqual([1, null]);
+    const long = 'מ'.repeat(60);
+    expect(_split(`⟦NW_RQ:1⟧${long}${BUBBLE_MARKER}${long}`, [{ role: 'user', content: 'ספר לי על שינה' }]).map((x) => x.quoteN)).toEqual([null, null]);
+    expect(_split(`⟦NW_RQ:1⟧${long}${BUBBLE_MARKER}⟦NW_RQ:1⟧${long}`, burst).map((x) => x.quoteN)).toEqual([1, null]);
     expect(_split(`⟦NW_RQ:6⟧א`, burst)[0]!.quoteN).toBeNull();
   });
   it('detects pending next bubble while streaming, incl. partial marker', () => {
@@ -122,6 +125,16 @@ describe('multi-bubble split', () => {
     expect(_hasPending('א⟦NW_')).toBe(false);
     expect(_hasPending(`א${BUBBLE_MARKER}ב`)).toBe(false);
     expect(_split('אבג⟦NW_B')).toEqual([{ raw: 'אבג', quoteN: null }]);
+  });
+  it('greeting reply is always one bubble', () => {
+    const long = 'ש'.repeat(80);
+    const b = _split(`${long}${BUBBLE_MARKER}${long}`, [{ role: 'user', content: 'היי, מה שלומך?' }]);
+    expect(b).toHaveLength(1);
+    expect(b[0]!.raw).toBe(`${long}\n\n${long}`);
+  });
+  it('short total reply is always one bubble (keeps first quote)', () => {
+    const b = _split(`⟦NW_RQ:2⟧בסדר.${BUBBLE_MARKER}ומים: 8 כוסות.`, burst);
+    expect(b).toEqual([{ raw: 'בסדר.\n\nומים: 8 כוסות.', quoteN: 2 }]);
   });
   it('strip turns bubble marker into paragraph break', () => {
     expect(_strip(`א${BUBBLE_MARKER}⟦NW_RQ:1⟧ב`)).toBe('א\n\nב');
