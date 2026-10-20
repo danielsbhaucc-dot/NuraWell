@@ -126,6 +126,7 @@ const PUBLIC_ROUTES = [
   '/auth/bridge-to-ops', // admin-only page: server returns 404 to everyone else
   '/device-check', // same
   '/demo',
+  '/approve', // QR approval on the phone: the page asks to sign in itself (keeps the #t= secret); API enforces auth
   '/gideon', // passkey step-up pages: one-time link + WebAuthn are the auth
   '/about',
   '/contact',

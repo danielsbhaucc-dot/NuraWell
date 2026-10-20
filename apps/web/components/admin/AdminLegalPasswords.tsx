@@ -1,10 +1,10 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { browserSupportsWebAuthn, startAuthentication } from '@simplewebauthn/browser';
 import { Check, Copy, KeyRound, Loader2, Mail, ScanFace, X } from 'lucide-react';
 import { opsGlassBtnClass, opsGlassCardClass } from '@/components/admin/OpsPanel';
 import { cn } from '@/lib/cn';
+import { StepUpDialog } from '@/components/admin/StepUpDialog';
 
 type Item = { id: string; kind: string; label: string; case_ref: string; file_name: string; format: string; created_at: string; expires_at: string };
 const API = '/api/v1/ops/legal/passwords';
@@ -31,21 +31,18 @@ export function AdminLegalPasswords({ refreshKey = 0 }: { refreshKey?: number })
 
   const log = (id: string, action: 'copy' | 'draft') => fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ op: 'log', id, action }) }).catch(() => undefined);
 
-  const reveal = async (it: Item) => {
-    setErr(null);
-    if (!browserSupportsWebAuthn()) return setErr('המכשיר הזה לא תומך ב־Face ID או במפתח גישה');
+  const [pending, setPending] = useState<Item | null>(null);
+  const reveal = (it: Item) => { setErr(null); setPending(it); };
+  const afterStepUp = async () => {
+    const it = pending; setPending(null); if (!it) return;
     setBusy(it.id);
     try {
-      const c = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ op: 'challenge' }) });
-      if (!c.ok) throw new Error();
-      const { options } = await c.json();
-      const response = await startAuthentication({ optionsJSON: options });
-      const r = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ op: 'reveal', id: it.id, response }) });
+      const r = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ op: 'reveal', id: it.id }) });
       if (!r.ok) throw new Error(r.status === 401 ? 'auth' : 'x');
       const d = await r.json();
       setShown((s) => ({ ...s, [it.id]: d.password }));
     } catch (e) {
-      setErr(e instanceof Error && e.message === 'auth' ? 'האימות לא עבר. צריך את ה־Face ID או מפתח הגישה שלך' : 'לא הצלחנו להציג את הסיסמה');
+      setErr(e instanceof Error && e.message === 'auth' ? 'האימות לא עבר. נסו שוב.' : 'לא הצלחנו להציג את הסיסמה');
     } finally { setBusy(null); }
   };
 
@@ -63,7 +60,7 @@ export function AdminLegalPasswords({ refreshKey = 0 }: { refreshKey?: number })
   return (
     <section dir="rtl" className={cn(opsGlassCardClass, 'p-4 sm:p-5')} aria-label="סיסמאות" data-testid="legal-passwords">
       <h2 className="mb-1 flex items-center gap-2 font-bold text-slate-900"><KeyRound size={18} className="text-amber-600" />סיסמאות</h2>
-      <p className="mb-3 text-[13px] text-slate-600">כל קובץ ראיות מוצפן בסיסמה משלו. להצגה צריך Face ID או מפתח גישה, וכל הצגה נרשמת. הסיסמה נמחקת יחד עם הקובץ אחרי 7 ימים.</p>
+      <p className="mb-3 text-[13px] text-slate-600">כל קובץ ראיות מוצפן בסיסמה משלו. להצגה מאשרים עם הטלפון (Face ID), קוד מאפליקציה או קוד גיבוי, וכל הצגה נרשמת. הסיסמה נמחקת יחד עם הקובץ אחרי 7 ימים.</p>
       {err ? <p role="alert" className="mb-3 rounded-xl border border-rose-300/60 bg-rose-100/50 px-3 py-2 text-sm font-semibold text-rose-800 backdrop-blur">{err}</p> : null}
       {!items ? <Loader2 className="mx-auto my-4 animate-spin text-slate-400" /> : items.length === 0 ? <p className="py-4 text-center text-sm text-slate-500">עוד לא הופקו קבצים</p> : (
         <ul className="space-y-2">
@@ -76,7 +73,7 @@ export function AdminLegalPasswords({ refreshKey = 0 }: { refreshKey?: number })
                 </div>
                 {!shown[it.id] ? (
                   <button type="button" onClick={() => reveal(it)} disabled={busy === it.id} className={cn(opsGlassBtnClass, 'gap-2')} data-testid="legal-pw-reveal">
-                    {busy === it.id ? <Loader2 size={16} className="animate-spin" /> : <ScanFace size={16} />}הצגה עם Face ID
+                    {busy === it.id ? <Loader2 size={16} className="animate-spin" /> : <ScanFace size={16} />}הצגת הסיסמה
                   </button>
                 ) : (
                   <div className="flex flex-wrap items-center gap-2">
@@ -91,6 +88,7 @@ export function AdminLegalPasswords({ refreshKey = 0 }: { refreshKey?: number })
         </ul>
       )}
 
+      <StepUpDialog open={!!pending} purpose="legal.password" reason="הצגת סיסמה של תיק ראיות" onClose={() => setPending(null)} onVerified={() => void afterStepUp()} />
       {draft ? (
         <div className="fixed inset-0 z-50 grid place-items-end bg-emerald-950/40 backdrop-blur-sm sm:place-items-center" role="dialog" aria-modal="true" aria-label="טיוטת שליחה">
           <div className="w-full max-w-lg rounded-t-[28px] border border-amber-200/40 bg-[linear-gradient(160deg,rgba(236,247,240,0.94),rgba(250,240,214,0.92))] p-5 shadow-2xl backdrop-blur-xl sm:rounded-[28px]">

@@ -9,6 +9,7 @@ import { ReceiptsSection } from './MediaReceiptsSection';
 import { FIELD_LABEL_HE, GENERATORS, SOURCE_LABEL_HE, SOURCE_TYPES, type Provenance, type SourceType } from '@/lib/legal/media/labels';
 
 type Commit = { sha: string; author: string; date: string; subject: string } | null;
+export type MediaItem = Item;
 type Item = {
   key: string; origin: string; kind: string; path: string | null; title: string | null; mime: string | null; bytes: number | null; width: number | null; height: number | null;
   sha256: string | null; phash: string | null; source_type: SourceType; status: 'verified' | 'draft' | 'missing_source'; provenance: Provenance; usages: string[]; missing: string[];
@@ -192,7 +193,7 @@ function PendingLicenseCard({ p, onDone }: { p: { key: string; title: string; ac
   );
 }
 
-function ItemCard({ item, open, onToggle, onChanged }: { item: Item; open: boolean; onToggle: () => void; onChanged: () => void }) {
+export function ItemCard({ item, open, onToggle, onChanged }: { item: Item; open: boolean; onToggle: () => void; onChanged: () => void }) {
   const [recs, setRecs] = useState<Rec[] | null>(null);
   const [busy, setBusy] = useState<'zip' | 'pdf' | 'verify' | null>(null);
   const [verify, setVerify] = useState<Verify | null>(null);

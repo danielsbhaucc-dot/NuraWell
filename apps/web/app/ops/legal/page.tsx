@@ -10,9 +10,9 @@ export default async function OpsLegalPage({ searchParams }: { searchParams: Pro
   await requireAdminPageOr404();
   return (
     <div className="space-y-5 sm:space-y-6">
-      <OpsPageHeader icon={Scale} eyebrow="משפטי" title="הסכמות, מקורות מדיה וראיות" tone="emerald"
-        description="כל אישור וביטול של הסכמה, ומקור וזכויות של כל קובץ באתר. הכול חתום ועם חותמת זמן, ואפשר להפיק תיק ראיות מוכן לבית משפט." />
-      <LegalTabs initialTab={tab === 'media' ? 'media' : tab === 'keys' ? 'keys' : 'consent'} />
+      <OpsPageHeader icon={Scale} eyebrow="משפטי" title="מרכז זכויות וראיות" tone="emerald"
+        description="מדיה, קבלות, הסכמות ותיקי ראיות במקום אחד. רק מה שצריך אותך מופיע למעלה." />
+      <LegalTabs initialTab={(['overview', 'media', 'receipts', 'consent', 'evidence', 'keys'] as const).find((t) => t === tab) ?? 'overview'} />
     </div>
   );
 }

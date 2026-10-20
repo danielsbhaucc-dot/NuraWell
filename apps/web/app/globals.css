@@ -7798,3 +7798,17 @@ html.a11y-reduce-motion .nw-chat-receive {
     background-color: #edf5f0;
   }
 }
+
+/* Mobile RTL body text: Hebrew has no hyphenation, so greedy wrapping in ~320px columns leaves a ragged
+   30–45px gap on the left of most lines. Justify multi-line paragraphs on narrow screens so lines fill the
+   width; the last line stays aligned to the start. Zero-specificity + base layer, so any text-center /
+   text-end utility still wins, and short single-line labels look unchanged. */
+@layer base {
+  @media (max-width: 640px) {
+    :where([dir='rtl']) :where(p, li, dd, blockquote) {
+      text-align: justify;
+      text-justify: inter-word;
+      text-align-last: start;
+    }
+  }
+}

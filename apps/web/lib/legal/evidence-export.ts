@@ -1,7 +1,8 @@
 import 'server-only';
 import { zipSync, strToU8 } from 'fflate';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { publicKeyFingerprint, publicKeyPem, sha256Hex } from './evidence-crypto';
+import { publicKeyFingerprint, publicKeyPem, publishedSigningKeys, sha256Hex } from './evidence-crypto';
+import { buildEvidenceViewer, type ViewerRecord } from './evidence-viewer';
 import { buildProvenance, chainNeighbors, corroboration, otsStatus, tsaName } from './evidence-provenance';
 import { publicAppOriginSync } from '@/lib/public-app-url';
 import { buildOtsFile, type OtsProof } from './ots';
@@ -34,6 +35,9 @@ export const PUBLIC_KEY_PATH = '/.well-known/nurawell-consent-signing.pem';
 
 export const verifyGuide = (fp: string, url: string, tsa: string) => `מדריך אימות עצמאי — לעורך דין או למומחה
 =================================================
+הדרך הקלה: פותחים את תיק-ראיות.html בכל דפדפן (גם בלי אינטרנט). הוא מציג הכול ובודק לבד גיבובים,
+שרשרת, חתימות וצילומים. הבדיקה הידנית שלמטה היא לאימות עצמאי מלא.
+
 פתיחת התיק: הקובץ (ZIP או PDF) מוצפן ב-AES-256 בסיסמה ייחודית לכל הפקה. הסיסמה נמסרת בנפרד
 (Ops ← משפטי ← סיסמאות). ההצפנה עוטפת את הקבצים בלבד: כל הגיבובים, החתימות, אסימוני חותמת הזמן
 וקובצי העיגון שבתוך התיק חושבו על הקבצים המקוריים ולכן מאומתים כרגיל אחרי הפתיחה.
@@ -87,6 +91,7 @@ export async function buildEvidencePackage(admin: SupabaseClient, userId: string
   const tsaUrl = v.attestations.find((a) => a.kind === 'tsa' && a.payload.url)?.payload.url as string | undefined;
   const files: Record<string, Uint8Array> = {};
   const events: PdfEvent[] = [];
+  const viewerRecords: ViewerRecord[] = [];
   const sharp = (await import('sharp')).default;
   for (const [i, r] of (v.records as EvidenceRow[]).entries()) {
     const n = String(i + 1).padStart(2, '0');
@@ -132,6 +137,23 @@ export async function buildEvidencePackage(admin: SupabaseClient, userId: string
       files[`${dir}/${new URL(pr.calendar).hostname}.ots`] = new Uint8Array(buildOtsFile(r.record_hash, pr));
     });
     const ip = decryptIp(r);
+    {
+      const imgs: ViewerRecord['images'] = [];
+      if (files[`${dir}/screenshot.webp`]) imgs.push({ name: 'screenshot.webp', mime: 'image/webp', bytes: files[`${dir}/screenshot.webp`]!, expected_sha256: r.screenshot_sha256, caption: 'צילום החלון ברגע האישור' });
+      for (const sg of (r.screenshot_segments ?? []).filter((x) => x.i > 1).sort((a, b) => a.i - b.i)) { const f = files[`${dir}/screenshot-${sg.i}.webp`]; if (f) imgs.push({ name: `screenshot-${sg.i}.webp`, mime: 'image/webp', bytes: f, expected_sha256: sg.sha256, caption: `המשך הצילום (${sg.i})` }); }
+      const cm = (() => { try { return (JSON.parse(r.payload_json) as { client?: Record<string, unknown> }).client ?? null; } catch { return null; } })();
+      viewerRecords.push({
+        n: i + 1, title: r.action === 'grant' ? 'מתן הסכמה' : 'ביטול הסכמה', at: r.created_at, tone: r.action === 'grant' ? 'good' : 'bad', reference: referenceFor(r),
+        payload_json: r.payload_json, record_hash: r.record_hash, prev_hash: r.prev_hash, signature: r.signature, key_id: r.signing_key_id ?? null, images: imgs,
+        fields: [
+          ['מילה שהוקלדה', `"${r.typed_word}"`], ['תיבת אישור', r.checkbox_checked ? 'סומנה' : 'לא סומנה'], ['גרסת נוסח', r.text_version], ['מקור', r.source],
+          ...(cm && typeof cm.id_uid === 'string' ? [['פס זיהוי בצילום', `משתמש ${cm.id_uid} · ${String(cm.id_email_masked ?? '')} · ${String(cm.id_at_il ?? '')} · ${String(cm.id_device ?? '')}`] as [string, string]] : []),
+          ['מכשיר', r.user_agent ?? '—'], ['כתובת IP', ip ?? '—'], ['חותמת זמן מוסמכת', check.tsa.gen_time ? `${check.tsa.gen_time} · ${tsaName(check.tsa.url)}` : 'אין'],
+        ],
+        server_checks: [{ label: 'חותמת זמן', ok: check.tsa.ok }, { label: 'עיגון ציבורי', ok: check.ots.calendars > 0 }, { label: 'קבלה בדוא"ל', ok: check.email_receipt }],
+        text_lines: htmlToLines(r.rendered_html),
+      });
+    }
     events.push({
       index: i + 1,
       reference: referenceFor(r),
@@ -200,6 +222,13 @@ export async function buildEvidencePackage(admin: SupabaseClient, userId: string
       await readFile(path.join(process.cwd(), 'lib/legal/templates/affidavit-system-operator-template.docx')),
     );
   } catch { /* template missing in this build; the report still works */ }
+  const displayName = (prof as { full_name?: string } | null)?.full_name || '—';
+  files['תיק-ראיות.html'] = strToU8(await buildEvidenceViewer({
+    kind: 'consent', case_ref: caseRef, generated_at: generatedAt, generated_by: actor.label, title: `תיק הסכמה · ${displayName}`,
+    subject: [['שם', displayName], ['דוא"ל', au.user?.email ?? '—'], ['מזהה משתמש', userId], ['בדיקת שלמות בשרת', v.ok ? 'תקין' : 'לא תקין']],
+    overall_ok: v.ok, keys: publishedSigningKeys().map((k) => ({ key_id: k.key_id, pem: k.pem, status: k.status })), records: viewerRecords,
+    notes: opts.override ? [`הופק למרות כשלים פתוחים: ${opts.override.reason}`] : [],
+  }));
   files['VERIFY.txt'] = strToU8(verifyGuide(fingerprint, keyUrl, tsaName(tsaUrl)));
   files['evidence.json'] = strToU8(
     JSON.stringify(
