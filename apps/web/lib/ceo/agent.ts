@@ -6,6 +6,7 @@ import { approvalCardFor, audit, proposeAction } from './actions';
 import { detectDemoIntent } from './intents';
 import { CEO_CHAT_MODEL, CEO_CONTENT_MODEL, CEO_STRONG_MODEL, complete } from './llm';
 import { capabilityManifest, TOOL_BY_NAME, toolSpecs } from './tools';
+import { commandsManifest } from './commands';
 import { israelTimeContext } from './time-context';
 import { openOwnerTasks } from './owner-tasks';
 import { describePref, listPrefs } from './prefs';
@@ -144,7 +145,7 @@ export async function runCeoTurn(db: SupabaseClient, chatKey: string, userText: 
   const [snapshot, prefs] = await Promise.all([liveSnapshot(db), listPrefs(db).catch(() => [] as OwnerPref[])]);
 
   const messages: Msg[] = [
-    { role: 'system', content: `${CEO_SYSTEM_PROMPT}\n\n## היכולות שלך (כל הכלים)\n${capabilityManifest()}\n• draft_lesson_content: כתיבת תוכן שיעור מלא (טקסט בלבד)` },
+    { role: 'system', content: `${CEO_SYSTEM_PROMPT}\n\n## היכולות שלך (כל הכלים)\n${capabilityManifest()}\n• draft_lesson_content: כתיבת תוכן שיעור מלא (טקסט בלבד)\n\n## פקודות שמטופלות בקוד (קיימות! אל תגיד שאין לך אותן; הפנה את דניאל לפקודה המדויקת)\n${commandsManifest()}\nאל תטען שביקשת משהו מאורי אלא אם כלי שמעביר לאורי הצליח בתור הזה.` },
     { role: 'system', content: `${israelTimeContext()}\n\nתמונת מצב חיה (24 שעות אחרונות, מ-SQL):\n${snapshot}\n\n${prefsContext(prefs)}${conv?.summary ? `\n\nסיכום שיחה קודמת: ${conv.summary}` : ''}` },
     ...turns,
     { role: 'user', content: userText },

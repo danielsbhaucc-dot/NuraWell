@@ -9,6 +9,7 @@ import { allowedChatIds } from './channel';
 import { setOwnerTask } from './owner-tasks';
 import { invalidateTrust, killSwitch, requestDevice, securityState } from './security';
 import { detectDeviceChange } from './intents';
+import { suggestCommand } from './commands';
 import { endSim, getSim, isSimExit, isSimStart, recordSimAttempt, SIM_MINUTES, SIM_REASON, simExpired, simKind, simSummary, startSim, type Sim } from './stranger-sim';
 
 type TgChat = { id: number; type?: string };
@@ -57,7 +58,9 @@ async function handleTelegramUpdateInner(db: SupabaseClient, channel: CeoChannel
       await channel.send(authed, simSummary(sim, 'timeout'), undefined, { kind: 'reply' });
       sim = null; // timed out: this update continues as normal authorized Daniel
     }
-    if (!sim && u.message && isSimStart(t)) {
+    const simButton = u.callback_query?.data === 'ceo:sim:start';
+    if (!sim && ((u.message && isSimStart(t)) || simButton)) {
+      if (simButton && u.callback_query) await channel.ack({ callbackId: u.callback_query.id, chatId: authed, messageId: u.callback_query.message?.message_id }, '🎭 מפעיל סימולציה…').catch(() => {});
       await startSim(db, authed);
       await db.from('ceo_audit_log').insert({ actor: 'telegram', event: 'stranger_sim_started', detail: { chat_tail: authed.slice(-4), minutes: SIM_MINUTES } }).then(() => null, () => null);
       await channel.send(authed, `🎭 סימולציית זר הופעלה ל-${SIM_MINUTES} דקות.\nמעכשיו אני מתייחס אליך כמו לזר: כל הודעה, פקודה או לחיצה תיחסם עוד לפני ה-AI, בלי מידע ובלי פעולות. נסה לשכנע, להתחזות, ללחוץ על כפתורים — מה שבא לך.\nזר אמיתי לא מקבל שום תשובה; לך אסמן רק שההודעה נחסמה.\nליציאה: "אני מוותר" או "סיום סימולציה".`, undefined, { kind: 'reply' });
@@ -184,6 +187,11 @@ async function handleTelegramUpdateInner(db: SupabaseClient, channel: CeoChannel
   if (text === '/start') {
     await channel.send(chatId, 'שלום דניאל, אני כאן. אפשר לשאול אותי כל דבר על המערכת.', undefined, { kind: 'reply' });
     return { ok: true };
+  }
+  const sug = suggestCommand(text);
+  if (sug) {
+    await channel.send(chatId, `לא מכיר את ${text.split(/\s/)[0]}. התכוונת ל-${sug.cmd}?`, sug.callback ? [[{ text: `✅ כן, ${sug.cmd}`, data: sug.callback }]] : undefined, { kind: 'reply' });
+    return { suggested: sug.cmd };
   }
   const msgId = u.message?.message_id;
   if (msgId) await channel.react?.(chatId, msgId, '👀');
