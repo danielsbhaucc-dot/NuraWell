@@ -20,7 +20,11 @@
 import { createHash } from 'node:crypto';
 import { MessageChannel, Worker, receiveMessageOnPort } from 'node:worker_threads';
 
-export const ENVELOPE_KEY_NAMES = ['PII_ENCRYPTION_KEY', 'SECURE_VAULT_KEY', 'CONSENT_SIGNING_PRIVATE_KEY'] as const;
+/**
+ * Master keys + the two evidence-button provider tokens (lib/legal/legal-tokens.ts). The KMS rollout
+ * must wrap all five (KMS_WRAPPED_<NAME>); a name without a wrapped var keeps using its plain env var.
+ */
+export const ENVELOPE_KEY_NAMES = ['PII_ENCRYPTION_KEY', 'SECURE_VAULT_KEY', 'CONSENT_SIGNING_PRIVATE_KEY', 'LEGAL_LOGS_VERCEL_TOKEN', 'LEGAL_LOGS_SUPABASE_TOKEN'] as const;
 export type EnvelopeKeyName = (typeof ENVELOPE_KEY_NAMES)[number];
 export type EnvelopeMode = 'off' | 'verify' | 'enforce';
 

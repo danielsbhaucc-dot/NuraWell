@@ -92,7 +92,7 @@ export async function runPreExportCheck(admin: SupabaseClient, userId: string): 
     checks: v.checks,
     attestations: v.attestations,
     shotMeta,
-    logsConfigured: { supabase: true, vercel: !!process.env.LEGAL_LOGS_VERCEL_TOKEN?.trim() },
+    logsConfigured: { supabase: !!process.env.LEGAL_LOGS_SUPABASE_TOKEN?.trim(), vercel: !!process.env.LEGAL_LOGS_VERCEL_TOKEN?.trim() },
   });
   const critical = items.filter((i) => i.severity === 'critical').length;
   return { checkedAt: new Date().toISOString(), critical, warn: items.filter((i) => i.severity === 'warn').length, items, canExport: critical === 0 };

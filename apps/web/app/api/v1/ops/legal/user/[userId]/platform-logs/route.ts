@@ -5,7 +5,9 @@ import { requireApiAdmin } from '@/lib/api/route-guards';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { auditLegalAccess } from '@/lib/legal/evidence-verify';
 import { sha256Hex } from '@/lib/legal/evidence-crypto';
-import { fetchSupabaseLogs, fetchVercelContext } from '@/lib/legal/platform-logs';
+import { fetchSupabaseLogs, fetchSupabaseProviderLogs, fetchVercelContext } from '@/lib/legal/platform-logs';
+import { runEvidenceRequest } from '@/lib/legal/legal-tokens';
+import { hasSensitiveStepUp } from '@/lib/ops/sensitive-stepup';
 import { buildLogsPdf } from '@/lib/legal/evidence-pdf';
 import { verifyCode } from '@/lib/legal/verify-code';
 import { contentDisposition, storeAndLogExport } from '@/lib/legal/export-store';
@@ -20,9 +22,13 @@ export const maxDuration = 60;
  * AES-256 ZIP (raw JSON per provider + rendered PDF); the copy and its passphrase expire after 7 days,
  * the generation itself is logged permanently.
  */
-export async function GET(request: Request, ctx: { params: Promise<{ userId: string }> }) {
+export async function POST(request: Request, ctx: { params: Promise<{ userId: string }> }) {
   const auth = await requireApiAdmin(request);
   if (!auth.ok) return auth.response;
+  // Provider tokens are powerful (not read-only at the provider): Ops sensitive step-up, single-use grant.
+  const { data: sess } = await auth.supabase.auth.getSession();
+  if (!(await hasSensitiveStepUp({ accessToken: sess.session?.access_token, userId: auth.user.id, req: request })))
+    return NextResponse.json({ error: 'stepup_required', stepUp: true }, { status: 403, headers: { 'Cache-Control': 'no-store' } });
   const { userId } = await ctx.params;
   const evidenceId = new URL(request.url).searchParams.get('evidence') ?? '';
   if (!z.string().uuid().safeParse(userId).success || !z.string().uuid().safeParse(evidenceId).success) return NextResponse.json({ error: 'bad_id' }, { status: 400 });
@@ -33,11 +39,12 @@ export async function GET(request: Request, ctx: { params: Promise<{ userId: str
   const requestId = (() => { try { const p = JSON.parse(rec.payload_json) as { request_id?: unknown }; return typeof p.request_id === 'string' ? p.request_id : null; } catch { return null; } })();
   await auditLegalAccess(admin, auth.user.id, 'legal_platform_logs_requested', { user_id: userId, evidence_id: rec.id });
 
-  const [sb, vc] = await Promise.all([fetchSupabaseLogs(userId, rec.created_at, admin), fetchVercelContext(rec.created_at, requestId)]);
+  const [sb, sp, vc] = await runEvidenceRequest({ db: admin, actorId: auth.user.id, subjectUserId: userId, evidenceId: rec.id, stepUp: true }, () =>
+    Promise.all([fetchSupabaseLogs(userId, rec.created_at, admin), fetchSupabaseProviderLogs(userId, rec.created_at), fetchVercelContext(rec.created_at, requestId)]));
   const generatedAt = new Date().toISOString();
   const caseRef = `NW-LOGS-${generatedAt.slice(0, 10).replace(/-/g, '')}-${rec.record_hash.slice(0, 6).toUpperCase()}`;
   const files: Record<string, Uint8Array> = {};
-  const providers = [sb, vc].map((p) => {
+  const providers = [sb, sp, vc].map((p) => {
     const fileName = `${p.provider}-logs.json`;
     const bytes = strToU8(JSON.stringify({ provider: p.provider, source: p.source, status: p.status, note: p.note ?? null, fetched_at: generatedAt, evidence_id: rec.id, record_hash: rec.record_hash, request_id: requestId, rows: p.rows }, null, 2));
     files[fileName] = bytes;

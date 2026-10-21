@@ -5,6 +5,7 @@ import { CheckCircle2, ChevronDown, Download, FileText, Image as ImageIcon, Load
 import { OpsDivider, opsGlassBtnClass, opsGlassCardClass } from '@/components/admin/OpsPanel';
 import { cn } from '@/lib/cn';
 import { Divider } from '@/components/admin/hub/Divider';
+import { StepUpDialog } from '@/components/admin/StepUpDialog';
 import { AdminLegalPrecheck, type PreCheckState } from '@/components/admin/AdminLegalPrecheck';
 
 type UserRow = { user_id: string; name: string | null; email: string | null; events: number; last_action: string; last_at: string };
@@ -46,6 +47,7 @@ export function AdminLegalPanel() {
   const [ovr, setOvr] = useState(false);
   const [ovrReason, setOvrReason] = useState('');
   const [ovrAck, setOvrAck] = useState(false);
+  const [logsStepUp, setLogsStepUp] = useState<string | null>(null);
   const blocked = !pre || pre.critical > 0;
   const overrideReady = !!pre && pre.critical > 0 && ovrAck && ovrReason.trim().length >= 10;
 
@@ -88,7 +90,8 @@ export function AdminLegalPanel() {
   const pullLogs = async (eventId: string) => {
     if (!sel) return; setBusy(`logs:${eventId}`);
     try {
-      const r = await fetch(`/api/v1/ops/legal/user/${sel}/platform-logs?evidence=${eventId}`);
+      const r = await fetch(`/api/v1/ops/legal/user/${sel}/platform-logs?evidence=${eventId}`, { method: 'POST' });
+      if (r.status === 403 && ((await r.clone().json().catch(() => ({}))) as { stepUp?: boolean }).stepUp) { setLogsStepUp(eventId); return; }
       if (!r.ok) throw new Error();
       const blob = await r.blob();
       const name = decodeURIComponent(r.headers.get('x-export-file') ?? '') || 'provider-logs.zip';
@@ -252,6 +255,7 @@ export function AdminLegalPanel() {
           </>
         )}
       </section>
+      <StepUpDialog open={!!logsStepUp} purpose="ops.sensitive" reason="שליפת יומני ספק לתיק ראיות" onClose={() => setLogsStepUp(null)} onVerified={() => { const id = logsStepUp; setLogsStepUp(null); if (id) void pullLogs(id); }} />
     </div>
   );
 }
