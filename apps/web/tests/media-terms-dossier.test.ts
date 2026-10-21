@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { commercialAssessment, dossierGaps, GENERATOR_PROVIDER, pickTermsVersion, PROVIDER_TERMS, termsChanged, waybackTimestamp, type TermsSnapshot } from '@/lib/legal/media/terms-core';
+import { commercialAssessment, dossierGaps, hasVendorStatement, GENERATOR_PROVIDER, pickTermsVersion, PROVIDER_TERMS, termsChanged, waybackTimestamp, type TermsSnapshot } from '@/lib/legal/media/terms-core';
 import { GENERATORS } from '@/lib/legal/media/labels';
 
 const S = (fetched_at: string, sha: string | null, url = 'https://suno.com/terms'): TermsSnapshot => ({ url, fetched_at, sha256: sha, http_status: 200 });
@@ -34,6 +34,9 @@ describe('rights dossier', () => {
   it('Suno free is non-commercial, Pro is commercial', () => {
     expect(commercialAssessment('suno', 'Free (חינם) בזמן היצירה').allowed).toBe('no');
     expect(commercialAssessment('suno', 'Pro').allowed).toBe('yes');
+    expect(commercialAssessment('suno', 'Free', { vendorStatement: true }).note_he).toMatch(/^conditional: commercial after Pro download\/purchased download/);
+    expect(hasVendorStatement([{ label: 'הצהרת ספק: הודעה 2' }])).toBe(true);
+    expect(hasVendorStatement([{ label: 'קבלה' }])).toBe(false);
     expect(commercialAssessment('suno', null).allowed).toBe('conditional');
     expect(commercialAssessment('grok', 'SuperGrok').note_he).toContain('Created with Grok');
     expect(commercialAssessment('gemini_music', 'Google AI Pro').allowed).toBe('yes');

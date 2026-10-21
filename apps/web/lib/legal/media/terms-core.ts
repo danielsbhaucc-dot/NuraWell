@@ -47,12 +47,13 @@ export function termsChanged(prev: TermsSnapshot[], url: string, sha: string | n
 export type Commercial = { allowed: 'yes' | 'no' | 'conditional'; note_he: string };
 
 /** Commercial-use reading of the provider terms for the plan at creation (rules, not legal advice). */
-export function commercialAssessment(generator: GeneratorId | null | undefined, plan: string | null | undefined): Commercial {
+export function commercialAssessment(generator: GeneratorId | null | undefined, plan: string | null | undefined, opts: { vendorStatement?: boolean } = {}): Commercial {
   const p = (plan ?? '').toLowerCase();
   const free = /free|חינם|basic/.test(p);
   switch (generator) {
     case 'suno':
       if (!plan) return { allowed: 'conditional', note_he: 'Suno: מסחרי רק אם השיר נוצר במנוי Pro או Premier והורד בכפתור ההורדה הרשמי. חסר מסלול בזמן היצירה.' };
+      if (free && opts.vendorStatement) return { allowed: 'conditional', note_he: 'conditional: commercial after Pro download/purchased download. Suno אישרה בכתב (2026-10-20) שרכישת הורדה בודדת, או הורדה בזמן מנוי Pro או Premier, נותנת זכויות מסחריות קבועות גם אחרי ביטול. התשובות נוצרו על ידי עוזר ה־AI של Suno ועלולות לטעות. עד שתהיה הורדה כזו וקבלה, השיר לשימוש אישי בלבד.' };
       if (free) return { allowed: 'no', note_he: 'Suno: שיר שנוצר בחינם (Free או Basic) מותר לשימוש אישי ולא מסחרי בלבד, גם אם שודרג אחר כך.' };
       if (/pro|premier/.test(p)) return { allowed: 'yes', note_he: 'Suno: Pro או Premier בזמן היצירה, הבעלות עוברת אליך. מסחרי רק לקובץ שהורד בכפתור הרשמי. הזכות קבועה גם אחרי ביטול.' };
       return { allowed: 'conditional', note_he: 'Suno: לא ברור אם המסלול הוא Pro או Premier.' };
@@ -73,6 +74,9 @@ export type DossierInput = {
   generator?: GeneratorId | null; plan?: string | null; created_on?: string | null; sha256?: string | null;
   receipt_ids?: string[] | null; terms_found?: number; terms_exact?: number;
 };
+
+/** A vendor written statement is an attachment whose label starts with 'הצהרת ספק'. */
+export const hasVendorStatement = (atts: Array<{ label?: string | null }> | null | undefined) => (atts ?? []).some((a) => (a.label ?? '').startsWith('הצהרת ספק'));
 
 /** The five links an AI asset dossier must have, and which are missing. */
 export function dossierGaps(d: DossierInput): string[] {
