@@ -40,7 +40,8 @@
 > הערה: `/landing-v2` עצמו הוא HTML שמוגש מ-route (`apps/web/app/landing-v2/`), עם CSS/JS ואיורי SVG שכתבנו בקוד (בבעלותנו) וגופני Rubik ו-Assistant מוטמעים (SIL OFL 1.1, כולל subset עברי).
 
 - **הלוגו בדף התצוגה המקדימה** (`/landing-v2`) הוא הלוגו של NuraWell מהריפו (`apps/web/public/brand/nurawell-special-on-dark.svg`, אותו קובץ שבכותרת האפליקציה), מוטמע כ-data URI. נכס שלנו.
-| גופן: Fredoka (fredoka-he) | apps/web/public/landing-v2/fonts/fredoka-he.woff2 | Google Fonts (Fredoka) | SIL Open Font License 1.1 | yes | no | 2026-10-21 | landing-brief/wow/assets/fonts/ |
-| גופן: Fredoka (fredoka-lat) | apps/web/public/landing-v2/fonts/fredoka-lat.woff2 | Google Fonts (Fredoka) | SIL Open Font License 1.1 | yes | no | 2026-10-21 | landing-brief/wow/assets/fonts/ |
 | גופן: Frank Ruhl Libre (frank-he) | apps/web/public/landing-v2/fonts/frank-he.woff2 | Google Fonts (Frank Ruhl Libre) | SIL Open Font License 1.1 | yes | no | 2026-10-21 | landing-brief/wow/assets/fonts/ |
 | גופן: Frank Ruhl Libre (frank-lat) | apps/web/public/landing-v2/fonts/frank-lat.woff2 | Google Fonts (Frank Ruhl Libre) | SIL Open Font License 1.1 | yes | no | 2026-10-21 | landing-brief/wow/assets/fonts/ |
+
+| גופן: Secular One (secular-he) | apps/web/public/landing-v2/fonts/secular-he.woff2 | Google Fonts (Secular One) | SIL Open Font License 1.1 | yes | no | 2026-10-21 | landing-brief/wow/assets/fonts/ |
+| גופן: Secular One (secular-lat) | apps/web/public/landing-v2/fonts/secular-lat.woff2 | Google Fonts (Secular One) | SIL Open Font License 1.1 | yes | no | 2026-10-21 | landing-brief/wow/assets/fonts/ |
