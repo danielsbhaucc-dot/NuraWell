@@ -91,3 +91,35 @@ html[data-cookie-panel=on] .a11y-widget-root{visibility:hidden!important;pointer
 .cn-ov{background:rgba(4,20,16,.5)}
 
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.cn-banner,.cn-pn{background:linear-gradient(160deg,#174A3F,#0F3B32)}}
+
+/* ===== V3 — amber/copper glass shell around the night-forest panel ===== */
+html[data-cookie-banner=on] body:after{content:'';position:fixed;inset:0;z-index:59;pointer-events:none;background:linear-gradient(180deg,rgba(2,10,8,.3),rgba(2,10,8,.7));-webkit-backdrop-filter:blur(6px) saturate(.8);backdrop-filter:blur(6px) saturate(.8);animation:cn-fade .3s}
+.cn-banner{padding:10px;border-radius:30px;display:flex;flex-direction:column;gap:10px;background:linear-gradient(150deg,rgba(176,108,52,.84),rgba(122,68,34,.88) 55%,rgba(160,96,44,.82));-webkit-backdrop-filter:blur(26px) saturate(1.5);backdrop-filter:blur(26px) saturate(1.5);border:1px solid rgba(242,207,122,.7);box-shadow:inset 0 1px 0 rgba(255,220,160,.45),inset 0 0 40px rgba(242,207,122,.12),0 2px 6px rgba(0,0,0,.25),0 30px 70px -20px rgba(0,0,0,.8)}
+.cn-banner .cn-art{border-radius:22px;border:1px solid rgba(232,181,74,.4);height:150px}
+.cn-banner .cn-bwrap{border-radius:22px;background:linear-gradient(160deg,#174A3F,#0F3B32);border:1px solid rgba(232,181,74,.3);box-shadow:inset 0 1px 0 rgba(242,207,122,.18);padding:16px 18px}
+@media(min-width:760px){
+ .cn-banner{flex-direction:row;align-items:stretch;max-width:min(1040px,calc(100vw - 48px));inset:auto 24px 24px;padding:10px;gap:10px;border-radius:28px}
+ .cn-banner .cn-art{order:0;flex:0 0 232px;height:auto;min-height:0;border:1px solid rgba(232,181,74,.4);border-radius:20px;background-position:50% 62%;background-size:cover}
+ .cn-banner .cn-bwrap{order:1;flex:1;min-width:0;display:flex;flex-direction:column;padding:22px 28px 20px;border-radius:20px}
+ .cn-banner .cn-h{font-size:22px;line-height:1.25;margin-bottom:6px}
+ .cn-banner .cn-p{font-size:15.5px;line-height:1.65;max-width:62ch}
+ .cn-banner .cn-wink{margin-top:12px;padding:8px 14px;font-size:14px;max-width:62ch;border-radius:12px}
+ .cn-banner .cn-btns{flex-direction:row;align-items:center;justify-content:flex-start;gap:12px;margin-top:16px;padding-top:16px;border-top:1px solid rgba(232,181,74,.2)}
+ .cn-banner .cn-btns .cn-btn{flex:0 0 auto;min-height:46px;padding:0 26px;font-size:15px}
+ .cn-banner .cn-btn.p{min-width:170px}
+ .cn-banner .cn-chips{display:flex;margin:0;order:9;margin-inline-start:auto}
+}
+@media(min-width:760px) and (max-width:1023px){.cn-banner .cn-art{flex-basis:180px}.cn-banner .cn-bwrap{padding:18px 20px}.cn-banner .cn-chips{display:none}}
+@media(min-width:1440px){.cn-banner{max-width:1120px;bottom:32px}.cn-banner .cn-art{flex-basis:260px}.cn-banner .cn-h{font-size:24px}.cn-banner .cn-p{font-size:16px}}
+@media(prefers-reduced-motion:reduce){html[data-cookie-banner=on] body:after{animation:none}}
+@media(min-width:760px){
+ .cn-banner .cn-bwrap{display:grid;grid-template-columns:auto 1fr;align-content:center}
+ .cn-banner .cn-bwrap>.cn-h,.cn-banner .cn-bwrap>.cn-p,.cn-banner .cn-bwrap>.cn-wink{grid-column:1/-1}
+ .cn-banner .cn-btns{grid-column:1;grid-row:4;border-top:0;padding-top:0;margin-top:18px}
+ .cn-banner .cn-chips{grid-column:2;grid-row:4;align-self:center;justify-content:flex-end;margin-top:18px}
+ .cn-banner .cn-bwrap:after{content:'';grid-column:1/-1;grid-row:4;align-self:start;height:1px;background:linear-gradient(270deg,rgba(232,181,74,.35),rgba(232,181,74,.05));margin-top:2px}
+}
+@media(min-width:760px){.cn-banner .cn-art{background-position:50% 50%}.cn-banner .cn-p,.cn-banner .cn-wink{text-wrap:pretty}.cn-banner .cn-wink{width:fit-content}}
+@media(min-width:1024px){.cn-banner .cn-art{flex-basis:300px}}
+@media(min-width:1440px){.cn-banner .cn-art{flex-basis:330px}}
+@media(min-width:760px) and (max-width:1023px){.cn-banner{align-items:center}.cn-banner .cn-art{flex-basis:224px;aspect-ratio:4/3;height:auto;align-self:center}.cn-banner .cn-bwrap{align-self:stretch}}
