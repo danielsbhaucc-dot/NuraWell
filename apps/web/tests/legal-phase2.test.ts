@@ -122,3 +122,35 @@ describe('failure path', () => {
     expect(findIssues({ events: [ev({})] as any })).toEqual([]);
   });
 });
+
+describe('legal provider tokens guard', () => {
+  it('blocks + audits + alerts outside an evidence request; audits each use inside', async () => {
+    const { runEvidenceRequest, legalToken, __setLegalTokenHooks } = await import('@/lib/legal/legal-tokens');
+    const { fetchVercelContext, fetchSupabaseProviderLogs } = await import('@/lib/legal/platform-logs');
+    const rows: any[] = []; const alerts: string[] = [];
+    const db = { from: () => ({ insert: (r: any) => { rows.push(r); return Promise.resolve({}); } }) } as any;
+    __setLegalTokenHooks({ alert: async (_d, t) => { alerts.push(t); }, db: () => db });
+    process.env.LEGAL_LOGS_VERCEL_TOKEN = 'v-test'; process.env.LEGAL_LOGS_SUPABASE_TOKEN = 's-test';
+    process.env.VERCEL_PROJECT_ID = 'prj_x'; process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://abcxyz.supabase.co';
+    const seen: string[] = [];
+    const f = (async (url: string, init: any) => { seen.push(`${url.split('?')[0]} ${init.headers.Authorization}`); return new Response(JSON.stringify(url.includes('vercel') ? { deployments: [] } : { result: [{ timestamp: 1 }] }), { status: 200 }); }) as any;
+
+    expect(await legalToken('vercel', 'test')).toBeNull();
+    expect((await fetchVercelContext('2026-10-01T10:00:00Z', null, f)).note).toBe('token_blocked_outside_evidence_request');
+    expect(seen).toHaveLength(0);
+    expect(rows.filter((r) => r.action === 'legal_token_misuse')).toHaveLength(2);
+    expect(alerts).toHaveLength(2);
+
+    await expect(runEvidenceRequest({ db, actorId: 'a', subjectUserId: 'u', evidenceId: 'e', stepUp: false }, async () => 1)).rejects.toThrow();
+    const uid = '00000000-0000-0000-0000-000000000001';
+    const [vc, sp] = await runEvidenceRequest({ db, actorId: 'admin1', subjectUserId: uid, evidenceId: 'ev1', stepUp: true }, () =>
+      Promise.all([fetchVercelContext('2026-10-01T10:00:00Z', null, f), fetchSupabaseProviderLogs(uid, '2026-10-01T10:00:00Z', f)]));
+    expect(vc.status).toBe('empty'); expect(sp.status).toBe('ok');
+    const used = rows.filter((r) => r.action === 'legal_token_used');
+    expect(used.map((r) => r.detail.provider).sort()).toEqual(['supabase', 'vercel']);
+    expect(used.every((r) => r.actor_id === 'admin1' && r.user_id === uid && r.detail.evidence_id === 'ev1' && r.detail.at)).toBe(true);
+    expect(alerts).toHaveLength(2);
+    expect(JSON.stringify(rows)).not.toContain('v-test');
+    delete process.env.LEGAL_LOGS_VERCEL_TOKEN; delete process.env.LEGAL_LOGS_SUPABASE_TOKEN;
+  });
+});
