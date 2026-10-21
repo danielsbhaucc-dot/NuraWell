@@ -1,5 +1,6 @@
 import { decProfileResult } from '@/lib/crypto/pii-fields';
 import { serve } from '@upstash/workflow/nextjs';
+import { qstashWorkflowOptions } from '@/lib/api/qstash-receivers';
 import { requireQstashConfigured } from '../../../../lib/workflows/require-qstash-configured';
 import { createAdminClient } from '../../../../lib/supabase/admin';
 import { gateOnboardingCheckIn } from '../../../../lib/workflows/onboarding-check-in-gates';
@@ -52,6 +53,6 @@ const { POST: workflowPost } = serve<WorkflowBody>(async (context) => {
   });
 
   return { ok: true as const, reminded: true as const };
-});
+}, qstashWorkflowOptions());
 
 export const POST = requireQstashConfigured(workflowPost);
