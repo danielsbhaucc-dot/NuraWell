@@ -78,12 +78,5 @@ export function mergeTranscriptWithClientMessages(opts: {
   return next.slice(-Math.max(2, opts.windowSize));
 }
 
-export function formatTranscriptForLlm(turns: ChatTranscriptTurn[]): string {
-  if (!turns.length) return '';
-  return turns
-    .map((t) => {
-      const who = t.role === 'user' ? 'משתמש' : 'אלמוג';
-      return `${who}: ${t.content}`;
-    })
-    .join('\n\n');
-}
+// client-safe (no crypto imports) — re-exported for server callers
+export { formatTranscriptForLlm } from './format-transcript';

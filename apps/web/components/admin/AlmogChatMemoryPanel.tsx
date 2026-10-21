@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 import { glassCardStyle, glassPanelStyle } from '@/components/media-manager/glass-styles';
 import { buildChatSessionListTitle } from '@/lib/ai/chat-sessions/session-list-title';
-import { formatTranscriptForLlm } from '@/lib/ai/chat-sessions/fetch-transcript';
+import { formatTranscriptForLlm } from '@/lib/ai/chat-sessions/format-transcript';
 import type {
   TranscriptAccessInsight,
   TranscriptAccessTimelineStep,

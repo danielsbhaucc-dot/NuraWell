@@ -56,3 +56,10 @@ Ops → משפטי → **גיבוי מפתחות** (`/ops/legal?tab=keys`, `comp
 - Decrypt now tries `GIDEON_SETTINGS_KEY` first, then the legacy service-role HKDF, so nothing strands.
 - When unset, the backup contains the *derived* key under the name `GIDEON_SETTINGS_KEY`. Setting that restored value in Vercel decouples Gideon from the service-role key without re-encryption.
 - Or set a brand-new 32-byte base64 `GIDEON_SETTINGS_KEY`: the next backup run calls `migrateGideonSecrets()`, which re-encrypts the stored Telegram secrets under it. Then make a fresh backup.
+
+## Lost both Telegram and the Ops device (Gideon access)
+1. Ops login from a new computer: password + email code (or printed recovery code) approves the device.
+2. Message Gideon from the new Telegram account → one-time code to the owner email (`GIDEON_OWNER_EMAIL`), 10 min, 3 tries.
+   Or Ops → Gideon → Security → "חשבונות טלגרם נוספים" → approve (step-up: TOTP / backup code / phone QR).
+3. Blocked? Unblock there (step-up), then message again.
+4. To make it the primary account (Telegram Face ID, owner alerts): update `CEO_TELEGRAM_ALLOWED_CHAT_IDS` in Vercel and redeploy; re-register Face ID in Ops.

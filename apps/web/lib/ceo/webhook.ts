@@ -10,6 +10,7 @@ import { setOwnerTask } from './owner-tasks';
 import { invalidateTrust, killSwitch, requestDevice, securityState } from './security';
 import { detectDeviceChange } from './intents';
 import { suggestCommand } from './commands';
+import { handleUnknownSender, verifiedFromIds, type VerifyDeps } from './telegram-verify';
 import { endSim, getSim, isSimExit, isSimStart, recordSimAttempt, SIM_MINUTES, SIM_REASON, simExpired, simKind, simSummary, startSim, type Sim } from './stranger-sim';
 
 type TgChat = { id: number; type?: string };
@@ -45,10 +46,13 @@ export async function handleTelegramUpdate(...a: Parameters<typeof handleTelegra
   return withAiUsage({ feature: 'gideon_chat' }, () => handleTelegramUpdateInner(...a));
 }
 
-async function handleTelegramUpdateInner(db: SupabaseClient, channel: CeoChannel, u: Update, deps: { runTurn?: typeof runCeoTurn } = {}) {
+async function handleTelegramUpdateInner(db: SupabaseClient, channel: CeoChannel, u: Update, deps: { runTurn?: typeof runCeoTurn; verify?: VerifyDeps } = {}) {
   const chatId = String(u.message?.chat.id ?? u.callback_query?.message?.chat.id ?? '');
   if (!chatId) return { ignored: true };
-  const authed = authorizedSender(u);
+  const envAllowed = allowedChatIds();
+  // env allowlist (primary) + from.ids verified by one-time code / Ops step-up (fail closed on DB error)
+  const verified = await verifiedFromIds(db);
+  const authed = authorizedSender(u, verified.size ? new Set([...envAllowed, ...verified]) : envAllowed);
   let sim: Sim | null = null;
   if (authed) {
     const t = u.message?.text?.trim() ?? '';
@@ -84,6 +88,12 @@ async function handleTelegramUpdateInner(db: SupabaseClient, channel: CeoChannel
       if (u.callback_query) await channel.ack({ callbackId: u.callback_query.id, chatId }).catch(() => {});
       await channel.send(chatId, `🔒 [סימולציה] ההודעה נחסמה\nסיבה: ${SIM_REASON[kind]}`, undefined, { kind: 'reply' }).catch(() => {});
       return { ignored: true, simulation: true };
+    }
+    // Unknown private sender → verify-before-block (no data, no AI, no tools). Blocked → total silence.
+    const fromId = String(u.message?.from?.id ?? u.callback_query?.from?.id ?? '');
+    if (fromId === chatId && !envAllowed.has(chatId)) {
+      const outcome = await handleUnknownSender(db, channel, u, deps.verify).catch(() => 'silent' as const);
+      return { ignored: true, verification: outcome };
     }
     const once = await consumeRateLimit({ key: chatId, namespace: 'ceo-stranger', limit: 1, windowSeconds: 86_400 });
     if (once.ok) {
