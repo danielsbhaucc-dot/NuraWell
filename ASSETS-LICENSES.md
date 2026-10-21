@@ -32,3 +32,5 @@
 | צילום מסך: שיחה עם אלמוג (מחשב) | apps/web/public/landing-v2/real/d-chat.webp | own app (NuraWell), demo account with fake data | owned (first-party product screenshot) | yes | no | 2026-10-21 | landing-brief/wow/assets/real/all (captured from our app, demo user) |
 
 > הערה: `/landing-v2` עצמו הוא HTML שמוגש מ-route (`apps/web/app/landing-v2/`), עם CSS/JS ואיורי SVG שכתבנו בקוד (בבעלותנו) וגופני Rubik ו-Assistant מוטמעים (SIL OFL 1.1, כולל subset עברי).
+
+- **הלוגו בדף התצוגה המקדימה** (`/landing-v2`) הוא הלוגו של NuraWell מהריפו (`apps/web/public/brand/nurawell-special-on-dark.svg`, אותו קובץ שבכותרת האפליקציה), מוטמע כ-data URI. נכס שלנו.
