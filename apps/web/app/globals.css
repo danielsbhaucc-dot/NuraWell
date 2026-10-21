@@ -313,19 +313,14 @@
 }
 
 @layer components {
-  .login-auth-lock {
-  /* Login/register auth: lock viewport — prevents overscroll white flash */
-  &html {
+  /* Login/register auth: lock viewport — prevents overscroll white flash.
+     The class is applied to both <html> and <body>. */
+  html.login-auth-lock,
+  body.login-auth-lock {
     height: 100%;
     overflow: hidden;
     overscroll-behavior: none;
   }
-  & body {
-    height: 100%;
-    overflow: hidden;
-    overscroll-behavior: none;
-  }
-}
 }
 
 @layer components {
