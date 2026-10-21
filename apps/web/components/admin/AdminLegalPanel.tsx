@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { CheckCircle2, ChevronDown, Download, FileText, Image as ImageIcon, Loader2, Search, ShieldAlert, ShieldCheck, Scale, Mail } from 'lucide-react';
 import { OpsDivider, opsGlassBtnClass, opsGlassCardClass } from '@/components/admin/OpsPanel';
 import { cn } from '@/lib/cn';
+import { Divider } from '@/components/admin/hub/Divider';
 import { AdminLegalPrecheck, type PreCheckState } from '@/components/admin/AdminLegalPrecheck';
 
 type UserRow = { user_id: string; name: string | null; email: string | null; events: number; last_action: string; last_at: string };
@@ -110,9 +111,10 @@ export function AdminLegalPanel() {
         </label>
         <OpsDivider className="my-3 px-0 sm:px-0" />
         {!users ? <Loader2 className="mx-auto my-6 animate-spin text-slate-400" /> : filtered.length === 0 ? <p className="py-6 text-center text-sm text-slate-500">אין עדיין תיעוד</p> : (
-          <ul className="max-h-[60vh] space-y-1.5 overflow-y-auto">
-            {filtered.map((u) => (
-              <li key={u.user_id}>
+          <ul className="max-h-[60vh] overflow-y-auto">
+            {filtered.map((u, i) => (
+              <li key={u.user_id} className="relative py-1">
+                {i > 0 ? <Divider tone="teal" className="absolute inset-x-3 top-0" /> : null}
                 <button type="button" onClick={() => pick(u.user_id)} className={cn('w-full rounded-xl border px-3 py-2.5 text-right transition', sel === u.user_id ? 'border-emerald-300 bg-emerald-50/80' : 'border-transparent hover:bg-glass/60')}>
                   <span className="block truncate text-sm font-bold text-slate-900">{u.name || 'ללא שם'}</span>
                   <span className="block truncate text-xs text-slate-500" dir="ltr">{u.email}</span>
@@ -241,9 +243,9 @@ export function AdminLegalPanel() {
             </ol>
 
             <div className="flex items-center gap-2 text-sm font-bold text-slate-700"><span className="grid h-6 w-6 place-items-center rounded-full bg-amber-100 text-xs text-amber-700">3</span>יומן גישה לתיעוד</div>
-            <ul className={cn(opsGlassCardClass, 'divide-y divide-amber-100 p-2 text-sm')}>
+            <ul className={cn(opsGlassCardClass, 'p-2 text-sm')}>
               {detail.access_log.length === 0 ? <li className="p-3 text-slate-500">אין גישות קודמות</li> : detail.access_log.map((l, i) => (
-                <li key={i} className="flex justify-between gap-3 px-3 py-2"><span>{LOG[l.path] ?? l.path}</span><span className="text-xs text-slate-500">{fmt(l.created_at)}</span></li>
+                <li key={i} className="relative flex justify-between gap-3 px-3 py-2">{i > 0 ? <Divider tone="teal" className="absolute inset-x-3 top-0" /> : null}<span>{LOG[l.path] ?? l.path}</span><span className="text-xs text-slate-500">{fmt(l.created_at)}</span></li>
               ))}
             </ul>
             <p className="flex items-center gap-1.5 text-xs text-slate-500"><Mail size={13} />כל צפייה, בדיקה והפקה נרשמות ביומן הגישה ונכללות בתיק הראיות.</p>

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { CheckCircle2, ChevronDown, Loader2, Mail, Paperclip, ShieldCheck, ShieldAlert } from 'lucide-react';
 import { opsGlassBtnClass, opsGlassBtnPrimaryClass, opsGlassCardClass, opsInputClass } from '@/components/admin/OpsPanel';
 import { cn } from '@/lib/cn';
+import { Divider } from '@/components/admin/hub/Divider';
 import { VENDORS, type VendorId } from '@/lib/legal/media/receipts-core';
 import { useLiveRefresh } from '@/lib/hooks/useLiveRefresh';
 
@@ -74,8 +75,8 @@ function Row({ r, onSaved }: { r: Receipt; onSaved: () => void }) {
   );
 }
 
-export function ReceiptsSection({ onChanged }: { onChanged: () => void }) {
-  const [open, setOpen] = useState(false);
+export function ReceiptsSection({ onChanged, defaultOpen = false }: { onChanged: () => void; defaultOpen?: boolean }) {
+  const [open, setOpen] = useState(defaultOpen);
   const [data, setData] = useState<{ receipts: Receipt[]; address: string; configured: boolean } | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [vendor, setVendor] = useState<VendorId>('suno');
@@ -116,8 +117,10 @@ export function ReceiptsSection({ onChanged }: { onChanged: () => void }) {
       </button>
       {open ? !data ? <Loader2 className="mx-auto my-4 animate-spin text-slate-400" /> : (
         <div className="mt-3 space-y-3">
+          <Divider tone="gold" />
           <p className="text-sm text-slate-600">קבלות שמגיעות לכתובת <span className="font-bold" dir="ltr">{data.address}</span> נשמרות כאן אוטומטית, עם המייל המקורי, בדיקת חתימת הספק וחותמת זמן. כך כל תמונה ושיר מ־AI מראים אם נוצרו בזמן מנוי בתשלום.</p>
           {!data.configured ? <p className="rounded-xl bg-orange-50 px-3 py-2 text-xs font-bold text-orange-800">קליטת המיילים עוד לא הופעלה. בינתיים אפשר להעלות קבלה ידנית.</p> : null}
+          <Divider variant="section" label="הוספה ידנית" className="pt-1" />
           <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-dashed border-gc/70 p-3">
             <select value={vendor} onChange={(e) => setVendor(e.target.value as VendorId)} className={cn(opsInputClass, 'w-40 py-1.5 text-xs')} aria-label="ספק">{Object.entries(VENDORS).filter(([k]) => k !== 'unknown').map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}</select>
             <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={cn(opsInputClass, 'w-40 py-1.5 text-xs')} aria-label="תאריך הקבלה" />
@@ -133,6 +136,7 @@ export function ReceiptsSection({ onChanged }: { onChanged: () => void }) {
             </label>
             {imp ? <span role="status" className="text-xs font-bold text-slate-700">{imp}</span> : null}
           </div>
+          <Divider variant="section" label="קבלות" count={data.receipts.length} className="pt-1" />
           {data.receipts.length ? <ul className="space-y-2">{data.receipts.map((r) => <Row key={r.id} r={r} onSaved={() => { load(); onChanged(); }} />)}</ul> : <p className="text-center text-xs text-slate-500">עוד אין קבלות.</p>}
         </div>
       ) : null}
