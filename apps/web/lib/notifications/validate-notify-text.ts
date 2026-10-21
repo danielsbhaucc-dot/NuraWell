@@ -14,7 +14,7 @@ import { truncateAtWordBoundary } from '../text/truncate-graphemes';
 import { lintNotifyHebrew, type NotifyGender } from './notify-hebrew-lint';
 
 export type NotifyValidation =
-  | { ok: true; text: string }
+  | { ok: true; text: string; fixes?: string[] }
   | { ok: false; reason: string };
 
 export type NotifyValidateOptions = {
@@ -95,5 +95,5 @@ export function validateNotifyText(raw: string, opts: NotifyValidateOptions = {}
   const lint = lintNotifyHebrew(text, { firstName: opts.firstName, gender: opts.gender });
   if (lint.issues.length) return { ok: false, reason: `phrasing: ${lint.issues.join('; ')}` };
   text = truncateNotifyText(lint.text, maxChars);
-  return { ok: true, text };
+  return lint.fixes.length ? { ok: true, text, fixes: lint.fixes } : { ok: true, text };
 }

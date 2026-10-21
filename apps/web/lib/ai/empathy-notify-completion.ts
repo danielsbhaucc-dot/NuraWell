@@ -15,6 +15,14 @@ import { ALMOG_NOTIFY_MAX_OUTPUT_TOKENS } from './prompts';
 import { stripReasoningArtifacts, validateNotifyText } from '../notifications/validate-notify-text';
 import type { NotifyGender } from '../notifications/notify-hebrew-lint';
 import { qcNotifyText } from '../notifications/notify-qc';
+import {
+  applyAutoFixRules,
+  categoryFromReason,
+  loadActiveStyleRules,
+  logNotifyQualityEvents,
+  styleRulesPromptBlock,
+  type NotifyQualityEvent,
+} from '../notifications/quality-learning';
 
 /**
  * 📣 מנוע יצירת טקסט להתראות אלמוג.
@@ -221,6 +229,20 @@ export async function completeEmpathyNotifyBody(
   const temperature = options.temperature ?? 0.85;
   const requestedMaxTokens = options.maxTokens ?? ALMOG_NOTIFY_MAX_OUTPUT_TOKENS;
 
+  // learned "avoid X → say Y" rules (nightly, capped, reviewable in Ops) — injected into the prompt
+  let admin: import('@supabase/supabase-js').SupabaseClient | null = null;
+  try {
+    const { createAdminClient } = await import('@/lib/supabase/admin');
+    admin = createAdminClient();
+  } catch {
+    admin = null;
+  }
+  const styleRules = await loadActiveStyleRules(admin);
+  const styleBlock = styleRulesPromptBlock(styleRules);
+  const qualityEvents: NotifyQualityEvent[] = [];
+  const flushEvents = () =>
+    void logNotifyQualityEvents(qualityEvents.splice(0), { firstName: options.recipientFirstName, admin });
+
   const providers = notifyProviders();
   if (providers.length === 0) {
     throw new Error(
@@ -268,6 +290,7 @@ export async function completeEmpathyNotifyBody(
           ...splitSystemMessages([
             ...options.messages,
             { role: 'system', content: NOTIFY_DIRECT_ADDRESS_RULE },
+            ...(styleBlock ? [{ role: 'system' as const, content: styleBlock }] : []),
           ]),
         });
 
@@ -281,25 +304,30 @@ export async function completeEmpathyNotifyBody(
           gender: options.recipientGender,
         });
         if (checked.ok) {
-          // second line of defence: cheap LLM copy-edit before the text is stored/pushed (fail-open)
-          let admin = null;
-          try {
-            const { createAdminClient } = await import('@/lib/supabase/admin');
-            admin = createAdminClient();
-          } catch {
-            admin = null;
+          if (checked.fixes?.length) {
+            qualityEvents.push({ stage: 'lint_fix', category: checked.fixes[0]!, source: options.label, before: body, after: checked.text });
           }
-          const qc = await qcNotifyText(checked.text, {
+          const learned = applyAutoFixRules(checked.text, styleRules);
+          if (learned.applied.length) {
+            qualityEvents.push({ stage: 'lint_fix', category: 'learned_rule', source: options.label, before: checked.text, after: learned.text });
+          }
+          // second line of defence: cheap LLM copy-edit before the text is stored/pushed (fail-open)
+          const qc = await qcNotifyText(learned.text, {
             firstName: options.recipientFirstName,
             gender: options.recipientGender,
             userId: options.userId ?? null,
             admin,
           });
           if (qc.status === 'edited') {
-            // eslint-disable-next-line no-console
-            console.info('[empathy-notify] qc edited', { label: options.label });
+            qualityEvents.push({ stage: 'qc_edit', category: 'llm_edit', source: options.label, before: learned.text, after: qc.text });
+          } else if (qc.status === 'rejected') {
+            qualityEvents.push({ stage: 'qc_reject', category: 'llm_fix_rejected', source: options.label, before: learned.text });
           }
+          flushEvents();
           return qc.text;
+        }
+        if (body) {
+          qualityEvents.push({ stage: 'lint_reject', category: categoryFromReason(checked.reason), source: options.label, before: body });
         }
 
         const reason = `${checked.reason} (finishReason=${out.finishReason}, len=${body.length})`;
@@ -329,6 +357,7 @@ export async function completeEmpathyNotifyBody(
     }
   }
 
+  flushEvents();
   const suffix = options.label ? ` (${options.label})` : '';
   const finishHint = lastFinishReason ? ` finish_reason=${lastFinishReason};` : '';
   throw new Error(

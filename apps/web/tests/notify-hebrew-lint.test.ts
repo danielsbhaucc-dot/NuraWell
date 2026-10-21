@@ -37,7 +37,7 @@ describe('lintNotifyHebrew — issues', () => {
     const r = validateNotifyText('אהלן יוסי! צהריים טובים 🌤️ איך הולך עם המים היום?', { firstName: 'דניאל' });
     expect(r.ok).toBe(false);
     const ok = validateNotifyText('בוקר אורר ☀️ איך הולך עם שני כוסות המים היום?!!', { firstName: 'דניאל' });
-    expect(ok).toEqual({ ok: true, text: 'בוקר אור ☀️ איך הולך עם שתי כוסות המים היום?' });
+    expect(ok).toMatchObject({ ok: true, text: 'בוקר אור ☀️ איך הולך עם שתי כוסות המים היום?' });
   });
 });
 
