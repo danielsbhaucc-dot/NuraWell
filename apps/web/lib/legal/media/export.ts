@@ -10,6 +10,9 @@ import { loadAsset, verifyMediaAsset } from './provenance';
 import { loadMediaBlob } from './store';
 import { imageFacts } from './image';
 import type { EmbeddedMeta } from './core';
+import { GENERATORS, type Provenance } from './labels';
+import { commercialAssessment, dossierGaps, GENERATOR_PROVIDER, pickTermsVersion, PROVIDER_TERMS } from './terms-core';
+import { loadTermsHistory, snapshotProviderTerms } from './terms';
 
 const REPO_URL = 'https://github.com/danielsbhaucc-dot/NuraWell';
 
@@ -86,6 +89,41 @@ export async function buildMediaEvidencePackage(admin: SupabaseClient, key: stri
     files['git-proof.txt'] = strToU8([`מאגר: ${REPO_URL}`, `נתיב: ${a.path}`, `הופעה ראשונה: ${fc.sha} ${fc.date} ${fc.author} — ${fc.subject}`, `${REPO_URL}/commit/${fc.sha}`,
       lc ? `שינוי אחרון: ${lc.sha} ${lc.date} ${lc.author} — ${lc.subject}` : '', '', 'בדיקה:', `git log --follow --format='%H %aI %an %s' -- ${a.path}`, `git show ${fc.sha} --stat`].join('\n'));
   }
+  // Rights dossier for AI assets: service + plan, creation day, file hash, covering receipt, terms in force that day.
+  const prov = (a.provenance ?? {}) as Provenance;
+  let dossier: Record<string, unknown> | null = null;
+  if (/^ai_/.test(String(prov.source_type ?? a.source_type))) {
+    const provider = prov.generator ? GENERATOR_PROVIDER[prov.generator] : null;
+    const terms: Array<Record<string, unknown>> = [];
+    if (provider) {
+      await snapshotProviderTerms(admin, [provider]).catch(() => undefined);
+      const hist = await loadTermsHistory(admin, provider);
+      for (const url of PROVIDER_TERMS[provider].urls) {
+        const pick = pickTermsVersion(hist, url, prov.created_on ?? null);
+        if (!pick) { terms.push({ url, found: false }); continue; }
+        const b = await loadMediaBlob(admin, pick.snap.sha256!).catch(() => null);
+        const name = `terms/${provider}/${safe(new URL(url).hostname + new URL(url).pathname)}-${pick.snap.fetched_at.slice(0, 10)}.${ext(b?.mime ?? 'text/html')}`;
+        if (b) files[name] = new Uint8Array(b.bytes);
+        terms.push({ url, found: true, file: b ? name : null, sha256: pick.snap.sha256, fetched_at: pick.snap.fetched_at, from_creation_day_or_before: pick.exact });
+      }
+    }
+    const ids = (prov.receipt_ids as string[] | undefined) ?? [];
+    const { data: rc } = ids.length ? await admin.from('media_receipts').select('id, vendor, plan, amount, currency, receipt_date, period_start, period_end, trust, eml_sha, record_hash').in('id', ids) : { data: [] };
+    const receipts = (rc ?? []) as Array<Record<string, unknown>>;
+    for (const r of receipts) {
+      const sha = r.eml_sha as string | null;
+      if (!sha) continue;
+      const b = await loadMediaBlob(admin, sha).catch(() => null);
+      if (b) files[`receipts/${safe(String(r.vendor))}-${String(r.receipt_date ?? r.period_start ?? 'x')}-${String(r.id).slice(0, 8)}.eml`] = new Uint8Array(b.bytes);
+    }
+    const commercial = commercialAssessment(prov.generator ?? null, prov.plan ?? null);
+    const gaps = dossierGaps({ generator: prov.generator ?? null, plan: prov.plan ?? null, created_on: prov.created_on ?? null, sha256: a.sha256, receipt_ids: ids,
+      terms_found: terms.filter((t) => t.found).length, terms_exact: terms.filter((t) => t.from_creation_day_or_before).length });
+    dossier = { service: prov.generator ? GENERATORS[prov.generator].label : null, plan_at_creation: prov.plan ?? null, created_on: prov.created_on ?? null, file_sha256: a.sha256,
+      receipts: receipts.map(({ eml_sha: _e, ...r }) => r), terms, commercial_use: commercial, gaps,
+      note: 'סיכום לפי תנאי השימוש של הספק, לא ייעוץ משפטי.' };
+    files['rights-dossier.json'] = strToU8(JSON.stringify(dossier, null, 2));
+  }
   const { data: anchors } = await admin.from('media_evidence_attestations').select('created_at, digest, payload').eq('kind', 'chain_anchor').order('created_at', { ascending: false }).limit(30);
   const meta = (a.metadata ?? {}) as EmbeddedMeta & Record<string, unknown>;
   const embedded: Array<[string, string]> = [];
@@ -111,10 +149,10 @@ export async function buildMediaEvidencePackage(admin: SupabaseClient, key: stri
     kind: 'media', case_ref: caseRef, generated_at: generatedAt, generated_by: actor.label, title: `תיק מדיה · ${a.title ?? a.path ?? key}`,
     subject: [['קובץ', a.title ?? a.path ?? key], ['סוג', a.kind], ['טביעת אצבע (SHA-256)', a.sha256 ?? '—'], ['מקור', String((a.provenance as { source_type?: string } | null)?.source_type ?? a.source_type)], ['בדיקת שלמות בשרת', v.ok ? 'תקין' : 'לא תקין']],
     overall_ok: v.ok, keys: publishedSigningKeys().map((k) => ({ key_id: k.key_id, pem: k.pem, status: k.status })), records: viewerRecords,
-    notes: ['הקובץ המקורי נמצא בתיקייה file/ ואפשר לבדוק את טביעת האצבע שלו לפי VERIFY.txt.'],
+    notes: ['הקובץ המקורי נמצא בתיקייה file/ ואפשר לבדוק את טביעת האצבע שלו לפי VERIFY.txt.', ...(dossier ? [`זכויות: ${(dossier.commercial_use as { note_he: string }).note_he}`, `תיק זכויות: rights-dossier.json, תנאי הספק בתיקייה terms/ והקבלות בתיקייה receipts/.${(dossier.gaps as string[]).length ? ` חסר: ${(dossier.gaps as string[]).join(', ')}` : ''}`] : [])],
   }));
   files['VERIFY.txt'] = strToU8(VERIFY_GUIDE);
-  files['evidence.json'] = strToU8(JSON.stringify({ case_ref: caseRef, generated_at: generatedAt, asset: { ...a, metadata: undefined }, integrity_ok: v.ok, file_ok: v.file_ok, checks: v.checks, attestations: v.attestations, chain_anchors: anchors ?? [] }, null, 2));
+  files['evidence.json'] = strToU8(JSON.stringify({ case_ref: caseRef, generated_at: generatedAt, asset: { ...a, metadata: undefined }, integrity_ok: v.ok, rights_dossier: dossier, file_ok: v.file_ok, checks: v.checks, attestations: v.attestations, chain_anchors: anchors ?? [] }, null, 2));
   files['SHA256SUMS.txt'] = strToU8(Object.keys(files).sort().map((k) => `${sha256Hex(files[k]!)}  ${k}`).join('\n') + '\n');
   return { zip: Buffer.from(zipSync(files, { level: 6 })), files, pdf, caseRef, ok: v.ok, generatedAt, recordHashes: v.records.map((r) => r.record_hash) };
 }

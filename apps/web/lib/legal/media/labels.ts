@@ -25,9 +25,9 @@ export type AssetOrigin = 'repo' | 'inline' | 'storage' | 'font' | 'library';
 export const GENERATORS = {
   gpt_image: { label: 'GPT Image (OpenAI)', tos: 'https://openai.com/policies/terms-of-use/' },
   grok: { label: 'Grok Imagine (xAI)', tos: 'https://x.ai/legal/terms-of-service' },
-  nano_banana: { label: 'Nano Banana (Google Gemini)', tos: 'https://policies.google.com/terms/generative-ai' },
+  nano_banana: { label: 'Nano Banana (Google Gemini)', tos: 'https://policies.google.com/terms' },
   suno: { label: 'Suno', tos: 'https://suno.com/terms' },
-  gemini_music: { label: 'Gemini / Lyria (Google)', tos: 'https://policies.google.com/terms/generative-ai' },
+  gemini_music: { label: 'Gemini / Lyria (Google)', tos: 'https://policies.google.com/terms' },
   elevenlabs: { label: 'ElevenLabs', tos: 'https://elevenlabs.io/terms-of-use' },
   other: { label: 'אחר', tos: '' },
 } as const;
