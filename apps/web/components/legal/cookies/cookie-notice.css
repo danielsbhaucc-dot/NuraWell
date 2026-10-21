@@ -122,3 +122,4 @@ html[data-cookie-banner=on] body:after{content:'';position:fixed;inset:0;z-index
 @media(min-width:760px){.cn-banner .cn-art{background-position:50% 50%}.cn-banner .cn-p,.cn-banner .cn-wink{text-wrap:pretty}.cn-banner .cn-wink{width:fit-content}}
 @media(min-width:1024px){.cn-banner .cn-art{flex-basis:300px}}
 @media(min-width:1440px){.cn-banner .cn-art{flex-basis:330px}}
+@media(min-width:760px) and (max-width:1023px){.cn-banner{align-items:center}.cn-banner .cn-art{flex-basis:224px;aspect-ratio:4/3;height:auto;align-self:center}.cn-banner .cn-bwrap{align-self:stretch}}
