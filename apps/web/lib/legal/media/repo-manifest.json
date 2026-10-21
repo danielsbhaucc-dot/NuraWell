@@ -1372,6 +1372,32 @@
   "font_family": null
  },
  {
+  "asset_key": "repo:apps/web/public/landing-v2/real/d-settings.webp",
+  "origin": "repo",
+  "kind": "image",
+  "path": "apps/web/public/landing-v2/real/d-settings.webp",
+  "public_url": "/landing-v2/real/d-settings.webp",
+  "title": "d-settings.webp",
+  "mime": "image/webp",
+  "sha256": "c3af8d204433ddd7a46635141c6948ab11817744d03ab472c8ea09b939e3a530",
+  "content_b64": null,
+  "usages": [],
+  "first_commit": {
+   "sha": "bfb32a09f586d502cb03272e01565a69a0b660ed",
+   "date": "2026-10-21T20:10:21+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "landing-v2 round 3: 342-line Almog pool (lazy JSON, no-repeat 10), real privacy screens gallery, desktop/mobile fixes"
+  },
+  "last_commit": {
+   "sha": "bfb32a09f586d502cb03272e01565a69a0b660ed",
+   "date": "2026-10-21T20:10:21+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "landing-v2 round 3: 342-line Almog pool (lazy JSON, no-repeat 10), real privacy screens gallery, desktop/mobile fixes"
+  },
+  "commits": 1,
+  "font_family": null
+ },
+ {
   "asset_key": "repo:apps/web/public/landing-v2/real/desktop.webp",
   "origin": "repo",
   "kind": "image",
@@ -1471,6 +1497,118 @@
    "date": "2026-10-21T17:07:18+03:00",
    "author": "danielsbhaucc-dot",
    "subject": "Landing v2 preview at /landing-v2 (noindex, not linked) (#293)"
+  },
+  "commits": 1,
+  "font_family": null
+ },
+ {
+  "asset_key": "repo:apps/web/public/landing-v2/real/p-consent.webp",
+  "origin": "repo",
+  "kind": "image",
+  "path": "apps/web/public/landing-v2/real/p-consent.webp",
+  "public_url": "/landing-v2/real/p-consent.webp",
+  "title": "p-consent.webp",
+  "mime": "image/webp",
+  "sha256": "5ba018c5c652ae3cfefdc8b9b5584b59d29f963366cf6f6f8ff427196805be91",
+  "content_b64": null,
+  "usages": [
+   "app/landing-v2/landing-html.ts"
+  ],
+  "first_commit": {
+   "sha": "bfb32a09f586d502cb03272e01565a69a0b660ed",
+   "date": "2026-10-21T20:10:21+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "landing-v2 round 3: 342-line Almog pool (lazy JSON, no-repeat 10), real privacy screens gallery, desktop/mobile fixes"
+  },
+  "last_commit": {
+   "sha": "bfb32a09f586d502cb03272e01565a69a0b660ed",
+   "date": "2026-10-21T20:10:21+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "landing-v2 round 3: 342-line Almog pool (lazy JSON, no-repeat 10), real privacy screens gallery, desktop/mobile fixes"
+  },
+  "commits": 1,
+  "font_family": null
+ },
+ {
+  "asset_key": "repo:apps/web/public/landing-v2/real/p-cookies.webp",
+  "origin": "repo",
+  "kind": "image",
+  "path": "apps/web/public/landing-v2/real/p-cookies.webp",
+  "public_url": "/landing-v2/real/p-cookies.webp",
+  "title": "p-cookies.webp",
+  "mime": "image/webp",
+  "sha256": "f140bf72960f7da3fae26fa6f6d9d5d00f80fbbaaa9aad2d2979180c83bbead8",
+  "content_b64": null,
+  "usages": [
+   "app/landing-v2/landing-html.ts"
+  ],
+  "first_commit": {
+   "sha": "bfb32a09f586d502cb03272e01565a69a0b660ed",
+   "date": "2026-10-21T20:10:21+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "landing-v2 round 3: 342-line Almog pool (lazy JSON, no-repeat 10), real privacy screens gallery, desktop/mobile fixes"
+  },
+  "last_commit": {
+   "sha": "bfb32a09f586d502cb03272e01565a69a0b660ed",
+   "date": "2026-10-21T20:10:21+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "landing-v2 round 3: 342-line Almog pool (lazy JSON, no-repeat 10), real privacy screens gallery, desktop/mobile fixes"
+  },
+  "commits": 1,
+  "font_family": null
+ },
+ {
+  "asset_key": "repo:apps/web/public/landing-v2/real/p-export.webp",
+  "origin": "repo",
+  "kind": "image",
+  "path": "apps/web/public/landing-v2/real/p-export.webp",
+  "public_url": "/landing-v2/real/p-export.webp",
+  "title": "p-export.webp",
+  "mime": "image/webp",
+  "sha256": "5ce60b5cf7e86ea830b69721dcc0d58a516618a19ea7328dd50df0d54df0405a",
+  "content_b64": null,
+  "usages": [
+   "app/landing-v2/landing-html.ts"
+  ],
+  "first_commit": {
+   "sha": "bfb32a09f586d502cb03272e01565a69a0b660ed",
+   "date": "2026-10-21T20:10:21+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "landing-v2 round 3: 342-line Almog pool (lazy JSON, no-repeat 10), real privacy screens gallery, desktop/mobile fixes"
+  },
+  "last_commit": {
+   "sha": "bfb32a09f586d502cb03272e01565a69a0b660ed",
+   "date": "2026-10-21T20:10:21+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "landing-v2 round 3: 342-line Almog pool (lazy JSON, no-repeat 10), real privacy screens gallery, desktop/mobile fixes"
+  },
+  "commits": 1,
+  "font_family": null
+ },
+ {
+  "asset_key": "repo:apps/web/public/landing-v2/real/p-legal.webp",
+  "origin": "repo",
+  "kind": "image",
+  "path": "apps/web/public/landing-v2/real/p-legal.webp",
+  "public_url": "/landing-v2/real/p-legal.webp",
+  "title": "p-legal.webp",
+  "mime": "image/webp",
+  "sha256": "edb9e03ba62d5662e2a3aea39238e1ceb452dd29c13d6e2f2a42221a38362406",
+  "content_b64": null,
+  "usages": [
+   "app/landing-v2/landing-html.ts"
+  ],
+  "first_commit": {
+   "sha": "bfb32a09f586d502cb03272e01565a69a0b660ed",
+   "date": "2026-10-21T20:10:21+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "landing-v2 round 3: 342-line Almog pool (lazy JSON, no-repeat 10), real privacy screens gallery, desktop/mobile fixes"
+  },
+  "last_commit": {
+   "sha": "bfb32a09f586d502cb03272e01565a69a0b660ed",
+   "date": "2026-10-21T20:10:21+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "landing-v2 round 3: 342-line Almog pool (lazy JSON, no-repeat 10), real privacy screens gallery, desktop/mobile fixes"
   },
   "commits": 1,
   "font_family": null
