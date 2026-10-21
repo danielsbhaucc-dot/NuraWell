@@ -13,6 +13,7 @@ import { storeMediaBlob } from './store';
 import { addAttachment, loadAsset, provenanceInputSchema, updateProvenance } from './provenance';
 import { scanStorage } from './ingest';
 import { relinkAsset } from './links';
+import { parseAmount, receiptTextFromFile } from './receipts-core';
 
 const d = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional();
 export const importSchema = z.object({
@@ -40,7 +41,10 @@ export async function importEvidenceBundle(admin: SupabaseClient, zip: Buffer, a
       atts.push({ sha256: s.sha256, name: f.split('/').pop()!, mime: mimeOf(f), bytes: b.length });
       out.files.push({ file: f, sha256: s.sha256 });
     }
-    const row = { source: 'upload', vendor: r.vendor, plan: r.plan ?? null, amount: r.amount ?? null, currency: r.currency ?? null, receipt_date: r.receipt_date ?? null, period_start: r.period_start ?? null, period_end: r.period_end ?? null, subject: r.subject ?? r.files[0]!, original_from: null, forwarder_ok: true, trust: r.trust, eml_sha: key, attachments: atts };
+    // import.json rarely carries the amount; read it from the bundled mail (.json/.html) like the inbound path does.
+    let amount = r.amount ?? null; let currency = r.currency ?? null;
+    if (amount === null) for (const f of r.files) { const t = receiptTextFromFile(f, get(f)); if (!t) continue; const p = parseAmount(t); if (p.amount !== null) { amount = p.amount; currency = currency ?? p.currency; break; } }
+    const row = { source: 'upload', vendor: r.vendor, plan: r.plan ?? null, amount, currency, receipt_date: r.receipt_date ?? null, period_start: r.period_start ?? null, period_end: r.period_end ?? null, subject: r.subject ?? r.files[0]!, original_from: null, forwarder_ok: true, trust: r.trust, eml_sha: key, attachments: atts };
     // Idempotent: unique index on eml_sha; a concurrent insert of the same file is a skip, not a twin.
     const { data: ins, error } = await admin.from('media_receipts').insert(row).select('id').single();
     if (error?.code === '23505') { out.receipts_skipped++; continue; }
