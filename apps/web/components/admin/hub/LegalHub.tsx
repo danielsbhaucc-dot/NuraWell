@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, CheckCircle2, ChevronLeft, FileArchive, Images, Inbox, KeyRound, LayoutGrid, Loader2, Receipt, Search, Sparkles, UserCheck, X } from 'lucide-react';
 import { opsGlassBtnClass, opsGlassCardClass } from '@/components/admin/OpsPanel';
 import { cn } from '@/lib/cn';
+import { Divider } from './Divider';
 import { useLiveRefresh } from '@/lib/hooks/useLiveRefresh';
 import { AdminLegalPanel } from '@/components/admin/AdminLegalPanel';
 import { AdminLegalPasswords } from '@/components/admin/AdminLegalPasswords';
@@ -87,10 +88,10 @@ export function LegalHub({ initialTab = 'overview' }: { initialTab?: HubTab }) {
       <div role="tabpanel">
         {tab === 'overview' ? <Overview data={data} onOpenAsset={openAsset} onGo={go} onChanged={load} />
           : tab === 'media' ? <MediaGrid data={data} onOpen={openAsset} />
-          : tab === 'receipts' ? <ReceiptsSection onChanged={load} />
+          : tab === 'receipts' ? <ReceiptsSection onChanged={load} defaultOpen />
           : tab === 'consent' ? <AdminLegalPanel />
-          : tab === 'evidence' ? <div className="space-y-4"><EvidenceIntro /><AdminLegalPasswords /><AdminLegalGuide /></div>
-          : <div className="space-y-4"><AdminKeyBackup /><AdminKmsWrap /><StepUpSettings /></div>}
+          : tab === 'evidence' ? <div className="space-y-4"><EvidenceIntro /><Divider variant="section" label="סיסמאות" /><AdminLegalPasswords /><Divider variant="section" label="מדריך" /><AdminLegalGuide /></div>
+          : <div className="space-y-4"><AdminKeyBackup /><Divider variant="section" label="הצפנת מפתחות בענן" /><AdminKmsWrap /><Divider variant="section" label="דרכי אימות" /><StepUpSettings /></div>}
       </div>
 
       {asset ? <AssetSheet assetKey={asset} hub={data?.assets.find((a) => a.key === asset) ?? null} onClose={closeAsset} onChanged={load} /> : null}
@@ -125,9 +126,12 @@ function Overview({ data, onOpenAsset, onGo, onChanged }: { data: HubData | null
           <>
             <h2 className="mt-0.5 font-[Rubik] text-xl font-bold text-slate-900 sm:text-2xl">{data.inbox.length === 1 ? 'דבר אחד צריך אותך' : `${data.inbox.length} דברים צריכים אותך`}</h2>
             <p className="mt-1 text-[13px] text-slate-600">כל השאר טופל לבד: {s.auto_linked + s.confirmed_links} קבלות שויכו, {s.verified} קבצים מתועדים.</p>
-            <ul className="mt-3 space-y-2.5">
-              {shown.map((it) => (
-                <li key={it.id} className="flex flex-wrap items-start gap-3 rounded-[20px] border border-gc/40 bg-glass/30 p-3.5 backdrop-blur-md sm:flex-nowrap" data-testid="hub-inbox-item">
+            <Divider tone="gold" className="my-3.5" />
+            <ul className="overflow-hidden rounded-[20px] border border-gc/40 bg-glass/25 backdrop-blur-md">
+              {shown.map((it, i) => (
+                <li key={it.id} className="relative" data-testid="hub-inbox-item">
+                  {i > 0 ? <Divider tone="teal" className="absolute inset-x-4 top-0" /> : null}
+                  <div className="flex flex-wrap items-start gap-3 p-3.5 sm:flex-nowrap">
                   <span className={cn('grid h-9 w-9 shrink-0 place-items-center rounded-xl', DOT[it.kind])}>{it.kind === 'match' ? <Sparkles size={17} /> : it.kind.startsWith('receipt') || it.kind === 'missing_receipt' ? <Receipt size={17} /> : it.kind === 'forwarding' ? <Inbox size={17} /> : <Images size={17} />}</span>
                   <div className="min-w-0 flex-1 basis-[calc(100%-3rem)] sm:basis-0">
                     <p className="font-[Rubik] text-[14.5px] font-bold leading-snug text-slate-900">{it.title}</p>
@@ -136,6 +140,7 @@ function Overview({ data, onOpenAsset, onGo, onChanged }: { data: HubData | null
                   <button type="button" disabled={busy === it.id} onClick={() => void act(it)} className={cn('mr-12 inline-flex min-h-9 shrink-0 items-center gap-1 rounded-xl px-3.5 text-[13px] font-bold sm:mr-0', it.kind === 'match' ? 'bg-linear-to-br from-amber-500 to-amber-700 text-amber-50 shadow-[0_6px_16px_rgba(180,83,9,0.28)]' : 'border border-teal-700/25 bg-teal-600/10 text-teal-800')}>
                     {it.action}<ChevronLeft size={14} />
                   </button>
+                  </div>
                 </li>
               ))}
             </ul>
@@ -154,12 +159,14 @@ function Overview({ data, onOpenAsset, onGo, onChanged }: { data: HubData | null
         <Stat eyebrow="קבלות" value={String(s.receipts)} sub={`${s.auto_linked + s.confirmed_links} שויכו לקבצים`} tone="amber" />
         <Stat eyebrow="אחסון ראיות" value={`${s.evidence_mb}MB`} sub="רחוק מאוד מהמגבלה" tone="emerald" />
       </div>
+      <Divider variant="section" className="py-1 lg:col-span-12" />
       <section className={cn(opsGlassCardClass, 'p-5 lg:col-span-12')} aria-label="פעילות אחרונה">
         <div className="flex items-end justify-between gap-3">
           <div><p className="text-[12px] font-bold tracking-wide text-amber-700">פעילות אחרונה</p><h3 className="font-[Rubik] font-bold text-slate-900">מדיה שנוספה או השתנתה</h3></div>
           <button type="button" onClick={() => onGo('media')} className={cn(opsGlassBtnClass, 'shrink-0 gap-1 whitespace-nowrap text-[13px]')}>לכל המדיה<ArrowLeft size={14} /></button>
         </div>
-        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        <Divider tone="gold" className="my-3.5" />
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
           {data.assets.slice(0, 6).map((a) => <AssetTile key={a.key} a={a} onOpen={onOpenAsset} />)}
         </div>
       </section>
@@ -235,7 +242,8 @@ function MediaGrid({ data, onOpen }: { data: HubData | null; onOpen: (k: string)
       </div>
       {list.length === 0 ? <p className={cn(opsGlassCardClass, 'p-8 text-center text-sm text-slate-500')}>לא נמצא. אפשר לנסות מילה אחרת או את החיפוש הגדול למעלה.</p> : groups.map(([g, items]) => (
         <section key={g || 'all'} className="space-y-2">
-          {g ? <h3 className="px-1 font-[Rubik] text-sm font-bold text-teal-800">{g} · {items.length}</h3> : null}
+          {g ? <h3 className="sr-only">{g}</h3> : null}
+          {g ? <Divider variant="section" label={g} count={items.length} className="py-1" /> : null}
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6">{items.map((a) => <AssetTile key={a.key} a={a} onOpen={onOpen} />)}</div>
         </section>
       ))}
@@ -249,6 +257,7 @@ function EvidenceIntro() {
       <span aria-hidden className="pointer-events-none absolute -left-10 -top-12 h-40 w-40 rounded-full bg-teal-400/25 blur-3xl" />
       <p className="text-[12px] font-bold tracking-wide text-amber-700">תיקי ראיות</p>
       <h2 className="font-[Rubik] text-lg font-bold text-slate-900">קובץ אחד שנפתח בכל דפדפן ובודק את עצמו</h2>
+      <Divider tone="gold" className="my-3" />
       <p className="mt-1 max-w-3xl text-[13.5px] leading-relaxed text-slate-600">כל תיק שמפיקים כולל את <b>תיק-ראיות.html</b>: פותחים אותו בלחיצה כפולה, גם בלי אינטרנט, ורואים סיכום, ציר זמן, צילומים וקבלות. הדפדפן מאמת לבד את טביעות האצבע והחתימות ומציג ״תקין״ או ״לא תקין״ ליד כל פריט. ה־PDF נשאר בתיק כרגיל. מפיקים תיק מתוך המשתמש (הסכמות) או מתוך הקובץ (מדיה).</p>
     </section>
   );
