@@ -8,6 +8,7 @@ import { GENERATORS, SOURCE_TYPES, missingFields, statusFor, verifyMediaChain, t
 import { appendMediaEvidence } from './record';
 import { loadLegalObject } from '../evidence-storage';
 import { storeMediaBlob } from './store';
+import { waybackTimestamp } from './terms-core';
 import type { IndexRow } from './ingest';
 
 const url = z.union([z.string().trim().url().max(2000), z.literal(''), z.null()]).optional();
@@ -37,7 +38,7 @@ export async function updateProvenance(admin: SupabaseClient, key: string, input
   if (!rec.ok) return { ok: false as const, error: rec.error };
   const missing = missingFields(prov, hasGit);
   await admin.from('media_provenance_assets').update({ provenance: prov, source_type: prov.source_type, status: statusFor(prov, hasGit), missing, latest_record_hash: rec.recordHash, records: a.records + 1, updated_at: new Date().toISOString() }).eq('asset_key', key);
-  void snapshotUrls(admin, key, [prov.source_url, prov.license_url, prov.tos_url, prov.track_url]).catch(() => undefined);
+  void snapshotUrls(admin, key, [prov.source_url, prov.license_url, prov.tos_url, prov.track_url], fetch, prov.created_on ?? null).catch(() => undefined);
   return { ok: true as const, missing };
 }
 
@@ -59,7 +60,7 @@ export async function addAttachment(admin: SupabaseClient, key: string, file: { 
 }
 
 /** Archives the public source / license / ToS page as it is now (bytes + hash, TSA-stamped) + Wayback lookup. */
-export async function snapshotUrls(admin: SupabaseClient, key: string, urls: Array<string | null | undefined>, fetchImpl: typeof fetch = fetch) {
+export async function snapshotUrls(admin: SupabaseClient, key: string, urls: Array<string | null | undefined>, fetchImpl: typeof fetch = fetch, createdOn: string | null = null) {
   const list = [...new Set(urls.filter((u): u is string => !!u && /^https:\/\//.test(u)))].slice(0, 4);
   const { data: prev } = await admin.from('media_evidence').select('payload_json').eq('asset_key', key).eq('event', 'license_snapshot');
   const done = new Set(((prev ?? []) as Array<{ payload_json: string }>).map((r) => { try { return JSON.parse(r.payload_json).data.url as string; } catch { return ''; } }));
@@ -76,12 +77,12 @@ export async function snapshotUrls(admin: SupabaseClient, key: string, urls: Arr
     } catch (e) { err = e instanceof Error ? e.name : 'error'; }
     let wayback: { url: string; timestamp: string } | null = null;
     try {
-      const w = await fetchImpl(`https://archive.org/wayback/available?url=${encodeURIComponent(u)}`, { signal: AbortSignal.timeout(8000) });
+      const w = await fetchImpl(`https://archive.org/wayback/available?url=${encodeURIComponent(u)}${waybackTimestamp(createdOn) ? `&timestamp=${waybackTimestamp(createdOn)}` : ''}`, { signal: AbortSignal.timeout(8000) });
       const j = (await w.json()) as { archived_snapshots?: { closest?: { url?: string; timestamp?: string; available?: boolean } } };
       const c = j.archived_snapshots?.closest;
       if (c?.available && c.url) wayback = { url: c.url, timestamp: c.timestamp ?? '' };
     } catch { /* optional */ }
-    await appendMediaEvidence(admin, key, 'license_snapshot', { url: u, fetched_at: new Date().toISOString(), http_status: status, content_type: ctype, bytes, sha256: blobSha, blob_sha: blobSha, error: err, wayback });
+    await appendMediaEvidence(admin, key, 'license_snapshot', { url: u, fetched_at: new Date().toISOString(), http_status: status, content_type: ctype, bytes, sha256: blobSha, blob_sha: blobSha, error: err, wayback, wayback_target_day: createdOn });
     out.push({ url: u, ok: !!blobSha });
   }
   return out;
