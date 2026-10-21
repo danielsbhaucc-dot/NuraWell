@@ -1268,6 +1268,78 @@
   "font_family": null
  },
  {
+  "asset_key": "repo:apps/web/public/landing-v2/fonts/frank-he.woff2",
+  "origin": "repo",
+  "kind": "font",
+  "path": "apps/web/public/landing-v2/fonts/frank-he.woff2",
+  "public_url": "/landing-v2/fonts/frank-he.woff2",
+  "title": "frank-he.woff2",
+  "mime": "font/woff2",
+  "sha256": "acdf9ed0a3fc287df8401d796892c1f72118f291e510e38328396f48e200b08c",
+  "content_b64": null,
+  "usages": [
+   "app/landing-v2/landing-html.ts"
+  ],
+  "first_commit": null,
+  "last_commit": null,
+  "commits": 0,
+  "font_family": "frank"
+ },
+ {
+  "asset_key": "repo:apps/web/public/landing-v2/fonts/frank-lat.woff2",
+  "origin": "repo",
+  "kind": "font",
+  "path": "apps/web/public/landing-v2/fonts/frank-lat.woff2",
+  "public_url": "/landing-v2/fonts/frank-lat.woff2",
+  "title": "frank-lat.woff2",
+  "mime": "font/woff2",
+  "sha256": "b8081e5e9acd530df59ef062f9274e201569b94c9bfa6881950f3eb259d7b375",
+  "content_b64": null,
+  "usages": [
+   "app/landing-v2/landing-html.ts"
+  ],
+  "first_commit": null,
+  "last_commit": null,
+  "commits": 0,
+  "font_family": "frank"
+ },
+ {
+  "asset_key": "repo:apps/web/public/landing-v2/fonts/fredoka-he.woff2",
+  "origin": "repo",
+  "kind": "font",
+  "path": "apps/web/public/landing-v2/fonts/fredoka-he.woff2",
+  "public_url": "/landing-v2/fonts/fredoka-he.woff2",
+  "title": "fredoka-he.woff2",
+  "mime": "font/woff2",
+  "sha256": "ab46fdbead875af9c6e967705a149f398554e9bb0f2f50c19d13b54ea4fa3195",
+  "content_b64": null,
+  "usages": [
+   "app/landing-v2/landing-html.ts"
+  ],
+  "first_commit": null,
+  "last_commit": null,
+  "commits": 0,
+  "font_family": "fredoka"
+ },
+ {
+  "asset_key": "repo:apps/web/public/landing-v2/fonts/fredoka-lat.woff2",
+  "origin": "repo",
+  "kind": "font",
+  "path": "apps/web/public/landing-v2/fonts/fredoka-lat.woff2",
+  "public_url": "/landing-v2/fonts/fredoka-lat.woff2",
+  "title": "fredoka-lat.woff2",
+  "mime": "font/woff2",
+  "sha256": "99d6c78e043710d4f83ed90716779798b7b04eb690f73e0ad0e8f32d1f0e98c2",
+  "content_b64": null,
+  "usages": [
+   "app/landing-v2/landing-html.ts"
+  ],
+  "first_commit": null,
+  "last_commit": null,
+  "commits": 0,
+  "font_family": "fredoka"
+ },
+ {
   "asset_key": "repo:apps/web/public/landing-v2/real/chat.webp",
   "origin": "repo",
   "kind": "image",
@@ -1383,16 +1455,16 @@
   "content_b64": null,
   "usages": [],
   "first_commit": {
-   "sha": "bfb32a09f586d502cb03272e01565a69a0b660ed",
-   "date": "2026-10-21T20:10:21+03:00",
+   "sha": "d12f189fc6d2f12376a7bde5198ac4d7100aef85",
+   "date": "2026-10-21T20:30:15+03:00",
    "author": "danielsbhaucc-dot",
-   "subject": "landing-v2 round 3: 342-line Almog pool (lazy JSON, no-repeat 10), real privacy screens gallery, desktop/mobile fixes"
+   "subject": "landing-v2 round 3: Almog pool 342 lines, real privacy screens, desktop+mobile fixes (#296)"
   },
   "last_commit": {
-   "sha": "bfb32a09f586d502cb03272e01565a69a0b660ed",
-   "date": "2026-10-21T20:10:21+03:00",
+   "sha": "d12f189fc6d2f12376a7bde5198ac4d7100aef85",
+   "date": "2026-10-21T20:30:15+03:00",
    "author": "danielsbhaucc-dot",
-   "subject": "landing-v2 round 3: 342-line Almog pool (lazy JSON, no-repeat 10), real privacy screens gallery, desktop/mobile fixes"
+   "subject": "landing-v2 round 3: Almog pool 342 lines, real privacy screens, desktop+mobile fixes (#296)"
   },
   "commits": 1,
   "font_family": null
@@ -1515,16 +1587,16 @@
    "app/landing-v2/landing-html.ts"
   ],
   "first_commit": {
-   "sha": "bfb32a09f586d502cb03272e01565a69a0b660ed",
-   "date": "2026-10-21T20:10:21+03:00",
+   "sha": "d12f189fc6d2f12376a7bde5198ac4d7100aef85",
+   "date": "2026-10-21T20:30:15+03:00",
    "author": "danielsbhaucc-dot",
-   "subject": "landing-v2 round 3: 342-line Almog pool (lazy JSON, no-repeat 10), real privacy screens gallery, desktop/mobile fixes"
+   "subject": "landing-v2 round 3: Almog pool 342 lines, real privacy screens, desktop+mobile fixes (#296)"
   },
   "last_commit": {
-   "sha": "bfb32a09f586d502cb03272e01565a69a0b660ed",
-   "date": "2026-10-21T20:10:21+03:00",
+   "sha": "d12f189fc6d2f12376a7bde5198ac4d7100aef85",
+   "date": "2026-10-21T20:30:15+03:00",
    "author": "danielsbhaucc-dot",
-   "subject": "landing-v2 round 3: 342-line Almog pool (lazy JSON, no-repeat 10), real privacy screens gallery, desktop/mobile fixes"
+   "subject": "landing-v2 round 3: Almog pool 342 lines, real privacy screens, desktop+mobile fixes (#296)"
   },
   "commits": 1,
   "font_family": null
@@ -1543,16 +1615,16 @@
    "app/landing-v2/landing-html.ts"
   ],
   "first_commit": {
-   "sha": "bfb32a09f586d502cb03272e01565a69a0b660ed",
-   "date": "2026-10-21T20:10:21+03:00",
+   "sha": "d12f189fc6d2f12376a7bde5198ac4d7100aef85",
+   "date": "2026-10-21T20:30:15+03:00",
    "author": "danielsbhaucc-dot",
-   "subject": "landing-v2 round 3: 342-line Almog pool (lazy JSON, no-repeat 10), real privacy screens gallery, desktop/mobile fixes"
+   "subject": "landing-v2 round 3: Almog pool 342 lines, real privacy screens, desktop+mobile fixes (#296)"
   },
   "last_commit": {
-   "sha": "bfb32a09f586d502cb03272e01565a69a0b660ed",
-   "date": "2026-10-21T20:10:21+03:00",
+   "sha": "d12f189fc6d2f12376a7bde5198ac4d7100aef85",
+   "date": "2026-10-21T20:30:15+03:00",
    "author": "danielsbhaucc-dot",
-   "subject": "landing-v2 round 3: 342-line Almog pool (lazy JSON, no-repeat 10), real privacy screens gallery, desktop/mobile fixes"
+   "subject": "landing-v2 round 3: Almog pool 342 lines, real privacy screens, desktop+mobile fixes (#296)"
   },
   "commits": 1,
   "font_family": null
@@ -1571,16 +1643,16 @@
    "app/landing-v2/landing-html.ts"
   ],
   "first_commit": {
-   "sha": "bfb32a09f586d502cb03272e01565a69a0b660ed",
-   "date": "2026-10-21T20:10:21+03:00",
+   "sha": "d12f189fc6d2f12376a7bde5198ac4d7100aef85",
+   "date": "2026-10-21T20:30:15+03:00",
    "author": "danielsbhaucc-dot",
-   "subject": "landing-v2 round 3: 342-line Almog pool (lazy JSON, no-repeat 10), real privacy screens gallery, desktop/mobile fixes"
+   "subject": "landing-v2 round 3: Almog pool 342 lines, real privacy screens, desktop+mobile fixes (#296)"
   },
   "last_commit": {
-   "sha": "bfb32a09f586d502cb03272e01565a69a0b660ed",
-   "date": "2026-10-21T20:10:21+03:00",
+   "sha": "d12f189fc6d2f12376a7bde5198ac4d7100aef85",
+   "date": "2026-10-21T20:30:15+03:00",
    "author": "danielsbhaucc-dot",
-   "subject": "landing-v2 round 3: 342-line Almog pool (lazy JSON, no-repeat 10), real privacy screens gallery, desktop/mobile fixes"
+   "subject": "landing-v2 round 3: Almog pool 342 lines, real privacy screens, desktop+mobile fixes (#296)"
   },
   "commits": 1,
   "font_family": null
@@ -1599,16 +1671,16 @@
    "app/landing-v2/landing-html.ts"
   ],
   "first_commit": {
-   "sha": "bfb32a09f586d502cb03272e01565a69a0b660ed",
-   "date": "2026-10-21T20:10:21+03:00",
+   "sha": "d12f189fc6d2f12376a7bde5198ac4d7100aef85",
+   "date": "2026-10-21T20:30:15+03:00",
    "author": "danielsbhaucc-dot",
-   "subject": "landing-v2 round 3: 342-line Almog pool (lazy JSON, no-repeat 10), real privacy screens gallery, desktop/mobile fixes"
+   "subject": "landing-v2 round 3: Almog pool 342 lines, real privacy screens, desktop+mobile fixes (#296)"
   },
   "last_commit": {
-   "sha": "bfb32a09f586d502cb03272e01565a69a0b660ed",
-   "date": "2026-10-21T20:10:21+03:00",
+   "sha": "d12f189fc6d2f12376a7bde5198ac4d7100aef85",
+   "date": "2026-10-21T20:30:15+03:00",
    "author": "danielsbhaucc-dot",
-   "subject": "landing-v2 round 3: 342-line Almog pool (lazy JSON, no-repeat 10), real privacy screens gallery, desktop/mobile fixes"
+   "subject": "landing-v2 round 3: Almog pool 342 lines, real privacy screens, desktop+mobile fixes (#296)"
   },
   "commits": 1,
   "font_family": null
