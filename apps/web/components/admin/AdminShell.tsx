@@ -79,6 +79,7 @@ export function AdminShell({
   const isHome = np === '/ops';
   const isUsers = np === '/ops/users' || np.startsWith('/ops/users/');
   const isCosts = np === '/ops/costs';
+  const isNotifyQuality = np === '/ops/notify-quality';
   const isAlmogSettings = np === '/ops/almog' || np === '/ops/mentors';
   const isSiteSettings = np === '/ops/site-settings';
   const isAccessibility = np === '/ops/accessibility';
@@ -266,6 +267,16 @@ export function AdminShell({
             >
               <DollarSign size={20} className={cn('shrink-0', isCosts && 'text-emerald-600')} />
               <span className={cn('truncate', !showNavLabels && 'lg:sr-only')}>עלויות</span>
+            </Link>
+
+            <Link prefetch={false}
+              href={opsHref('/notify-quality')}
+              onClick={() => setSidebarOpen(false)}
+              className={navBtn(isNotifyQuality, 'emerald')}
+              title="איכות התראות"
+            >
+              <Sparkles size={20} className={cn('shrink-0', isNotifyQuality && 'text-emerald-600')} />
+              <span className={cn('truncate', !showNavLabels && 'lg:sr-only')}>איכות התראות</span>
             </Link>
 
             <Link prefetch={false}
