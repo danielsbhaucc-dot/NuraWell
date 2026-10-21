@@ -6,16 +6,16 @@ describe('validateBirthDate', () => {
 
   it('accepts adult users', () => {
     const result = validateBirthDate('1990-01-15', now);
-    expect(result).toEqual({ ok: true, age: 36, requiresParentalConsent: false });
+    expect(result).toEqual({ ok: true, age: 36 });
   });
 
-  it('requires parental consent for 16–17', () => {
-    const result = validateBirthDate('2010-06-20', now);
-    expect(result.ok).toBe(true);
-    if (result.ok) {
-      expect(result.age).toBe(16);
-      expect(result.requiresParentalConsent).toBe(true);
-    }
+  it('accepts exactly 18 on the birthday', () => {
+    expect(validateBirthDate('2008-06-20', now)).toEqual({ ok: true, age: 18 });
+  });
+
+  it('rejects 16–17 (no parental-consent path)', () => {
+    expect(validateBirthDate('2010-06-20', now)).toEqual({ ok: false, code: 'too_young' });
+    expect(validateBirthDate('2008-06-21', now)).toEqual({ ok: false, code: 'too_young' });
   });
 
   it('rejects under 16', () => {

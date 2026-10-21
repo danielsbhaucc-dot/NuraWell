@@ -136,7 +136,7 @@ export default function SafetyPage() {
         <LegalSection num="8" title="בטיחות ילדים">
           <p>
             <Users className="inline w-4 h-4 align-middle text-emerald-600" aria-hidden /> השירות אינו
-            מיועד לילדים מתחת לגיל 16, ואיננו אוספים מהם מידע ביודעין. פרטים נוספים ב<Link href="/terms">תנאי השימוש</Link> ו<Link href="/privacy">מדיניות הפרטיות</Link>.
+            מיועד לקטינים מתחת לגיל 18, ואיננו אוספים מהם מידע ביודעין. פרטים נוספים ב<Link href="/terms">תנאי השימוש</Link> ו<Link href="/privacy">מדיניות הפרטיות</Link>.
           </p>
         </LegalSection>
 

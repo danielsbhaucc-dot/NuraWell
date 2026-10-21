@@ -1,7 +1,7 @@
-import { ADULT_AGE, MIN_USER_AGE } from './constants';
+import { MIN_USER_AGE } from './constants';
 
 export type AgeValidationResult =
-  | { ok: true; age: number; requiresParentalConsent: boolean }
+  | { ok: true; age: number }
   | { ok: false; code: 'invalid_date' | 'too_young' | 'future_date' };
 
 function parseBirthDate(raw: string): Date | null {
@@ -30,9 +30,5 @@ export function validateBirthDate(raw: string, now = new Date()): AgeValidationR
   const age = calculateAge(birthDate, now);
   if (age < MIN_USER_AGE) return { ok: false, code: 'too_young' };
 
-  return {
-    ok: true,
-    age,
-    requiresParentalConsent: age >= MIN_USER_AGE && age < ADULT_AGE,
-  };
+  return { ok: true, age };
 }

@@ -84,7 +84,6 @@ const onboardingSchema = z.object({
   legal_consent: z.literal('true', {
     error: 'נדרש אישור תנאי שימוש ומדיניות פרטיות',
   }),
-  parental_consent: z.enum(['true', 'false']).optional(),
 });
 
 export type OnboardingActionState =
@@ -154,7 +153,6 @@ export async function completeOnboarding(
     date_of_birth: formData.get('date_of_birth'),
     health_data_consent: formData.get('health_data_consent'),
     legal_consent: formData.get('legal_consent'),
-    parental_consent: formData.get('parental_consent') || 'false',
   };
 
   const parsed = onboardingSchema.safeParse(raw);
@@ -173,15 +171,11 @@ export async function completeOnboarding(
   if (!ageCheck.ok) {
     const msg =
       ageCheck.code === 'too_young'
-        ? 'השירות מיועד לגיל 16 ומעלה'
+        ? 'השירות מיועד לגיל 18 ומעלה'
         : ageCheck.code === 'future_date'
           ? 'תאריך לידה לא יכול להיות בעתיד'
           : 'תאריך לידה לא תקין';
     return { ok: false, error: msg };
-  }
-
-  if (ageCheck.requiresParentalConsent && data.parental_consent !== 'true') {
-    return { ok: false, error: 'נדרשת הסכמת הורה לשימוש בגיל 16–17' };
   }
 
   // Health consent must come through the evidence sheet (checkbox + typed word); validated before any account is created.
@@ -300,7 +294,7 @@ export async function completeOnboarding(
     pregnancy: data.screen_pregnancy === 'true',
     fluidRestriction: data.screen_fluid_restriction === 'true',
     medicalFollowup: data.screen_medical_followup === 'true',
-    minor: ageCheck.requiresParentalConsent,
+    minor: false,
   });
   // no weight focus for ED history / pregnancy / minors: drop weights even if typed
   const currentWeight = screening.no_weight ? null : (data.current_weight ?? null);
@@ -329,7 +323,7 @@ export async function completeOnboarding(
     userId,
     source: 'onboarding_form',
     healthData: true,
-    parentalGuardian: ageCheck.requiresParentalConsent,
+    parentalGuardian: false,
     birthDate: data.date_of_birth,
     age: ageCheck.age,
   });

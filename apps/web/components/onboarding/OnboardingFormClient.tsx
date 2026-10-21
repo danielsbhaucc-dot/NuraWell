@@ -18,7 +18,6 @@ import { OnboardingSummaryStep } from './OnboardingSummaryStep';
 import {
   HealthDataConsentBlock,
   LegalConsentCheckbox,
-  ParentalConsentCheckbox,
 } from '@/components/legal/PrivacyConsentFields';
 import type { ConsentCollected } from '@/components/legal/ConsentEvidenceSheet';
 import { validateBirthDate } from '@/lib/privacy/age-validation';
@@ -61,7 +60,6 @@ export function OnboardingFormClient() {
   const [healthConsent, setHealthConsent] = useState(false);
   const [consentEvidence, setConsentEvidence] = useState<ConsentCollected | null>(null);
   const [screen, setScreen] = useState({ ed_history: false, pregnancy: false, fluid_restriction: false, medical_followup: false });
-  const [parentalConsent, setParentalConsent] = useState(false);
   const [legalConsent, setLegalConsent] = useState(false);
 
   const ageInfo = useMemo(() => {
@@ -72,8 +70,8 @@ export function OnboardingFormClient() {
   const name = address('', fullName);
   const gc = useMemo(() => genderCopy(gender), [gender]);
 
-  // ED history / pregnancy / minor → no weight fields at all (habits only)
-  const noWeight = screen.ed_history || screen.pregnancy || Boolean(ageInfo?.ok && ageInfo.requiresParentalConsent);
+  // ED history / pregnancy → no weight fields at all (habits only)
+  const noWeight = screen.ed_history || screen.pregnancy;
 
   const progress = useMemo(() => (step / TOTAL_STEPS) * 100, [step]);
 
@@ -125,13 +123,9 @@ export function OnboardingFormClient() {
         toast.warning(
           'גיל',
           ageResult.code === 'too_young'
-            ? 'השירות מיועד לגיל 16 ומעלה'
+            ? 'השירות מיועד לגיל 18 ומעלה'
             : 'תאריך לידה לא תקין'
         );
-        return;
-      }
-      if (ageResult.requiresParentalConsent && !parentalConsent) {
-        toast.warning('הסכמת הורה', 'נדרשת הסכמת הורה לשימוש בגיל 16–17');
         return;
       }
       if (!healthConsent) {
@@ -263,9 +257,6 @@ export function OnboardingFormClient() {
       if (consentEvidence.client) fd.set('health_consent_client', JSON.stringify(consentEvidence.client));
     }
     fd.set('legal_consent', 'true');
-    if (ageInfo?.ok && ageInfo.requiresParentalConsent) {
-      fd.set('parental_consent', parentalConsent ? 'true' : 'false');
-    }
     if (typeof window !== 'undefined') {
       fd.set('app_origin', window.location.origin);
     }
@@ -405,13 +396,6 @@ export function OnboardingFormClient() {
                       required
                     />
                   </label>
-
-                  {ageInfo?.ok && ageInfo.requiresParentalConsent ? (
-                    <ParentalConsentCheckbox
-                      checked={parentalConsent}
-                      onChange={setParentalConsent}
-                    />
-                  ) : null}
 
                   <HealthDataConsentBlock checked={healthConsent} onChange={setHealthConsent} gender={gender} onEvidence={setConsentEvidence} />
 

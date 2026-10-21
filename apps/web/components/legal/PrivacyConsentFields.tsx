@@ -114,31 +114,3 @@ export function LegalConsentCheckbox({
     </label>
   );
 }
-
-type ParentalConsentCheckboxProps = {
-  checked: boolean;
-  onChange: (value: boolean) => void;
-  disabled?: boolean;
-};
-
-export function ParentalConsentCheckbox({
-  checked,
-  onChange,
-  disabled,
-}: ParentalConsentCheckboxProps) {
-  return (
-    <label className="mt-3 flex items-start gap-3 cursor-pointer rounded-xl border border-white/15 bg-background-card/5 p-3">
-      <input
-        type="checkbox"
-        checked={checked}
-        disabled={disabled}
-        onChange={(e) => onChange(e.target.checked)}
-        className="mt-1 h-4 w-4 rounded border-white/30 accent-emerald-500"
-      />
-      <span className="text-xs leading-relaxed text-emerald-50/90">
-        אני בן/בת 16–17, ויש לי הסכמה ופיקוח של הורה או אפוטרופוס חוקי לשימוש בשירות, בהתאם לתנאי
-        השימוש.
-      </span>
-    </label>
-  );
-}
