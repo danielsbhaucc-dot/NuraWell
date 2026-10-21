@@ -49,3 +49,16 @@ describe('landing-v2 links', () => {
     expect(src).toContain('window.NW_TIMING={perWord:250,min:2500');
   });
 });
+
+describe('landing-v2 desktop paint budget and Almog widget placement', () => {
+  it('keeps the desktop paint diet (no header backdrop blur, static background blobs, offscreen animation pause)', () => {
+    expect(src).toContain('r6 desktop paint diet');
+    expect(src).toMatch(/header\.top,\.top\{backdrop-filter:none!important/);
+    expect(src).toMatch(/\.bgfx i\{display:none!important\}/);
+    expect(src).toContain("classList.toggle('nw-off'");
+  });
+  it('collapses the Almog bubble to the orb when it would cover page content', () => {
+    expect(src).toContain('function alCovers(){');
+    expect(src).toMatch(/#al\.ping:not\(\.talk\) \.msg\{opacity:0!important;visibility:hidden!important/);
+  });
+});
