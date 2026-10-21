@@ -154,12 +154,12 @@
    "subject": "feat(ai): Almog mentor, lesson feedback, streaming chat, and docs"
   },
   "last_commit": {
-   "sha": "76940adc619203d24119723cc6c0dc3472685d82",
-   "date": "2026-10-20T18:30:24+03:00",
+   "sha": "286c1b93552157800e2cfdbeb34f7b4d9cce4994",
+   "date": "2026-10-20T21:28:08+03:00",
    "author": "danielsbhaucc-dot",
-   "subject": "Legal: daily anchor + OTS upgrade crons, append-only legal access log; accessible 'נערכה' badge (#243)"
+   "subject": "feat(chat): Almog WhatsApp-style quoting, multi-bubble replies, user-side quoting (#255)"
   },
-  "commits": 118
+  "commits": 119
  },
  {
   "asset_key": "inline:apps/web/components/ai/DeletedMessageBubble.tsx#0",
@@ -430,12 +430,12 @@
    "subject": "התוכנית שלי כתוכנית כתובה וחיה של אלמוג (#104)"
   },
   "last_commit": {
-   "sha": "10877c7eb004437c814032b6465ae306b806bd53",
-   "date": "2026-10-13T09:49:24+03:00",
+   "sha": "57b21ed8a1cdbbb984570d3ba85de1ead9979b3a",
+   "date": "2026-10-20T19:38:53+03:00",
    "author": "danielsbhaucc-dot",
-   "subject": "UI feedback round: glass header + right hamburger, notifications load-more/divider/deep-link labels, SOS header/note/dedupe/name placeholders, FAB auto-hide, uniform bg, task expand animation, lesson static feedback + nav, plan habit cards, history from SSOT incl. Almog tasks"
+   "subject": "עיצוב: בלי משטחים לבנים — זכוכית ירוק-שמנת בכל המערכת (#246)"
   },
-  "commits": 4
+  "commits": 5
  },
  {
   "asset_key": "inline:apps/web/components/plans/PlanMap.tsx#0",
@@ -588,7 +588,8 @@
   "sha256": "93ecab56b243eea4f4f2a890bc340341042898f484f46b9919c365017942d153",
   "content_b64": null,
   "usages": [
-   "lib/legal/evidence-pdf.ts"
+   "lib/legal/evidence-pdf.ts",
+   "lib/legal/evidence-viewer.ts"
   ],
   "first_commit": {
    "sha": "4dbdd23b427b62b527e9caab5388f945739b2119",
@@ -616,7 +617,8 @@
   "sha256": "7db29a71f35e1b3cd9168e69ecba50d2f9f1fddee3e4e9dd727166234c15d3cb",
   "content_b64": null,
   "usages": [
-   "lib/legal/evidence-pdf.ts"
+   "lib/legal/evidence-pdf.ts",
+   "lib/legal/evidence-viewer.ts"
   ],
   "first_commit": {
    "sha": "4dbdd23b427b62b527e9caab5388f945739b2119",
@@ -644,7 +646,8 @@
   "sha256": "2d6393d64232ea3e0eeff79165d80df61c0859213abdd638b0ec1e81d21098dc",
   "content_b64": null,
   "usages": [
-   "lib/legal/evidence-pdf.ts"
+   "lib/legal/evidence-pdf.ts",
+   "lib/legal/evidence-viewer.ts"
   ],
   "first_commit": {
    "sha": "4dbdd23b427b62b527e9caab5388f945739b2119",
@@ -1260,6 +1263,266 @@
    "date": "2026-10-12T20:05:31+03:00",
    "author": "danielsbhaucc-dot",
    "subject": "New NuraWell logo (Outfit) (#122)"
+  },
+  "commits": 1,
+  "font_family": null
+ },
+ {
+  "asset_key": "repo:apps/web/public/landing-v2/real/chat.webp",
+  "origin": "repo",
+  "kind": "image",
+  "path": "apps/web/public/landing-v2/real/chat.webp",
+  "public_url": "/landing-v2/real/chat.webp",
+  "title": "chat.webp",
+  "mime": "image/webp",
+  "sha256": "2e813fa23a36a6f6351dfac5408db4bd9d619b6a41217f585be25b2544f595fd",
+  "content_b64": null,
+  "usages": [],
+  "first_commit": {
+   "sha": "f52c42ab26ddfdef62274a97391ff876e94ea7a4",
+   "date": "2026-10-21T16:46:52+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "Landing v2 preview at /landing-v2 (noindex, not linked); real app screenshots + license rows"
+  },
+  "last_commit": {
+   "sha": "f52c42ab26ddfdef62274a97391ff876e94ea7a4",
+   "date": "2026-10-21T16:46:52+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "Landing v2 preview at /landing-v2 (noindex, not linked); real app screenshots + license rows"
+  },
+  "commits": 1,
+  "font_family": null
+ },
+ {
+  "asset_key": "repo:apps/web/public/landing-v2/real/d-chat.webp",
+  "origin": "repo",
+  "kind": "image",
+  "path": "apps/web/public/landing-v2/real/d-chat.webp",
+  "public_url": "/landing-v2/real/d-chat.webp",
+  "title": "d-chat.webp",
+  "mime": "image/webp",
+  "sha256": "8410b2cec46f8ee82b7841fa7d480a2964c778665b087f4ad3c5d4e8a11070d2",
+  "content_b64": null,
+  "usages": [],
+  "first_commit": {
+   "sha": "f52c42ab26ddfdef62274a97391ff876e94ea7a4",
+   "date": "2026-10-21T16:46:52+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "Landing v2 preview at /landing-v2 (noindex, not linked); real app screenshots + license rows"
+  },
+  "last_commit": {
+   "sha": "f52c42ab26ddfdef62274a97391ff876e94ea7a4",
+   "date": "2026-10-21T16:46:52+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "Landing v2 preview at /landing-v2 (noindex, not linked); real app screenshots + license rows"
+  },
+  "commits": 1,
+  "font_family": null
+ },
+ {
+  "asset_key": "repo:apps/web/public/landing-v2/real/d-journey.webp",
+  "origin": "repo",
+  "kind": "image",
+  "path": "apps/web/public/landing-v2/real/d-journey.webp",
+  "public_url": "/landing-v2/real/d-journey.webp",
+  "title": "d-journey.webp",
+  "mime": "image/webp",
+  "sha256": "6cd99e4bdd512b5b5733d33fc7e9d136652e5afd3a0c9e122f6d0330e17aa695",
+  "content_b64": null,
+  "usages": [],
+  "first_commit": {
+   "sha": "f52c42ab26ddfdef62274a97391ff876e94ea7a4",
+   "date": "2026-10-21T16:46:52+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "Landing v2 preview at /landing-v2 (noindex, not linked); real app screenshots + license rows"
+  },
+  "last_commit": {
+   "sha": "f52c42ab26ddfdef62274a97391ff876e94ea7a4",
+   "date": "2026-10-21T16:46:52+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "Landing v2 preview at /landing-v2 (noindex, not linked); real app screenshots + license rows"
+  },
+  "commits": 1,
+  "font_family": null
+ },
+ {
+  "asset_key": "repo:apps/web/public/landing-v2/real/d-plan.webp",
+  "origin": "repo",
+  "kind": "image",
+  "path": "apps/web/public/landing-v2/real/d-plan.webp",
+  "public_url": "/landing-v2/real/d-plan.webp",
+  "title": "d-plan.webp",
+  "mime": "image/webp",
+  "sha256": "e7f026afcc15d76b9c2001805b6a72dba84217af89c3785df1bb17306d6e9a1f",
+  "content_b64": null,
+  "usages": [],
+  "first_commit": {
+   "sha": "f52c42ab26ddfdef62274a97391ff876e94ea7a4",
+   "date": "2026-10-21T16:46:52+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "Landing v2 preview at /landing-v2 (noindex, not linked); real app screenshots + license rows"
+  },
+  "last_commit": {
+   "sha": "f52c42ab26ddfdef62274a97391ff876e94ea7a4",
+   "date": "2026-10-21T16:46:52+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "Landing v2 preview at /landing-v2 (noindex, not linked); real app screenshots + license rows"
+  },
+  "commits": 1,
+  "font_family": null
+ },
+ {
+  "asset_key": "repo:apps/web/public/landing-v2/real/desktop.webp",
+  "origin": "repo",
+  "kind": "image",
+  "path": "apps/web/public/landing-v2/real/desktop.webp",
+  "public_url": "/landing-v2/real/desktop.webp",
+  "title": "desktop.webp",
+  "mime": "image/webp",
+  "sha256": "9fbb8f5f5c26d8d63637c8bd247e765d112297e870f0365467240e712ff793e6",
+  "content_b64": null,
+  "usages": [],
+  "first_commit": {
+   "sha": "f52c42ab26ddfdef62274a97391ff876e94ea7a4",
+   "date": "2026-10-21T16:46:52+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "Landing v2 preview at /landing-v2 (noindex, not linked); real app screenshots + license rows"
+  },
+  "last_commit": {
+   "sha": "f52c42ab26ddfdef62274a97391ff876e94ea7a4",
+   "date": "2026-10-21T16:46:52+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "Landing v2 preview at /landing-v2 (noindex, not linked); real app screenshots + license rows"
+  },
+  "commits": 1,
+  "font_family": null
+ },
+ {
+  "asset_key": "repo:apps/web/public/landing-v2/real/home.webp",
+  "origin": "repo",
+  "kind": "image",
+  "path": "apps/web/public/landing-v2/real/home.webp",
+  "public_url": "/landing-v2/real/home.webp",
+  "title": "home.webp",
+  "mime": "image/webp",
+  "sha256": "f9a654447f0a8ff2ed5de74f4a4bf0904aa34bf409dfe89b975a7ce42b1cd0ff",
+  "content_b64": null,
+  "usages": [],
+  "first_commit": {
+   "sha": "f52c42ab26ddfdef62274a97391ff876e94ea7a4",
+   "date": "2026-10-21T16:46:52+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "Landing v2 preview at /landing-v2 (noindex, not linked); real app screenshots + license rows"
+  },
+  "last_commit": {
+   "sha": "f52c42ab26ddfdef62274a97391ff876e94ea7a4",
+   "date": "2026-10-21T16:46:52+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "Landing v2 preview at /landing-v2 (noindex, not linked); real app screenshots + license rows"
+  },
+  "commits": 1,
+  "font_family": null
+ },
+ {
+  "asset_key": "repo:apps/web/public/landing-v2/real/journey.webp",
+  "origin": "repo",
+  "kind": "image",
+  "path": "apps/web/public/landing-v2/real/journey.webp",
+  "public_url": "/landing-v2/real/journey.webp",
+  "title": "journey.webp",
+  "mime": "image/webp",
+  "sha256": "f126f500f53fefb7e31090d929bb95ad4457e6a6b0f3d9086acabfcbb33a836a",
+  "content_b64": null,
+  "usages": [],
+  "first_commit": {
+   "sha": "f52c42ab26ddfdef62274a97391ff876e94ea7a4",
+   "date": "2026-10-21T16:46:52+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "Landing v2 preview at /landing-v2 (noindex, not linked); real app screenshots + license rows"
+  },
+  "last_commit": {
+   "sha": "f52c42ab26ddfdef62274a97391ff876e94ea7a4",
+   "date": "2026-10-21T16:46:52+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "Landing v2 preview at /landing-v2 (noindex, not linked); real app screenshots + license rows"
+  },
+  "commits": 1,
+  "font_family": null
+ },
+ {
+  "asset_key": "repo:apps/web/public/landing-v2/real/login.webp",
+  "origin": "repo",
+  "kind": "image",
+  "path": "apps/web/public/landing-v2/real/login.webp",
+  "public_url": "/landing-v2/real/login.webp",
+  "title": "login.webp",
+  "mime": "image/webp",
+  "sha256": "099ab375c1f2192aa9d67ec8c97949b7d765ef563a9fe533121fd5fab982570b",
+  "content_b64": null,
+  "usages": [],
+  "first_commit": {
+   "sha": "f52c42ab26ddfdef62274a97391ff876e94ea7a4",
+   "date": "2026-10-21T16:46:52+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "Landing v2 preview at /landing-v2 (noindex, not linked); real app screenshots + license rows"
+  },
+  "last_commit": {
+   "sha": "f52c42ab26ddfdef62274a97391ff876e94ea7a4",
+   "date": "2026-10-21T16:46:52+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "Landing v2 preview at /landing-v2 (noindex, not linked); real app screenshots + license rows"
+  },
+  "commits": 1,
+  "font_family": null
+ },
+ {
+  "asset_key": "repo:apps/web/public/landing-v2/real/plan.webp",
+  "origin": "repo",
+  "kind": "image",
+  "path": "apps/web/public/landing-v2/real/plan.webp",
+  "public_url": "/landing-v2/real/plan.webp",
+  "title": "plan.webp",
+  "mime": "image/webp",
+  "sha256": "6e6bc76d9edc4ed1d38b9d5c044651e1f454b670ac70258ca4fa15c1c376cde8",
+  "content_b64": null,
+  "usages": [],
+  "first_commit": {
+   "sha": "f52c42ab26ddfdef62274a97391ff876e94ea7a4",
+   "date": "2026-10-21T16:46:52+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "Landing v2 preview at /landing-v2 (noindex, not linked); real app screenshots + license rows"
+  },
+  "last_commit": {
+   "sha": "f52c42ab26ddfdef62274a97391ff876e94ea7a4",
+   "date": "2026-10-21T16:46:52+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "Landing v2 preview at /landing-v2 (noindex, not linked); real app screenshots + license rows"
+  },
+  "commits": 1,
+  "font_family": null
+ },
+ {
+  "asset_key": "repo:apps/web/public/landing-v2/real/reminders.webp",
+  "origin": "repo",
+  "kind": "image",
+  "path": "apps/web/public/landing-v2/real/reminders.webp",
+  "public_url": "/landing-v2/real/reminders.webp",
+  "title": "reminders.webp",
+  "mime": "image/webp",
+  "sha256": "4082cde0b2e97efb1ca34efcd0a9f859950d4383331f3044107b7e62d977f1e7",
+  "content_b64": null,
+  "usages": [],
+  "first_commit": {
+   "sha": "f52c42ab26ddfdef62274a97391ff876e94ea7a4",
+   "date": "2026-10-21T16:46:52+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "Landing v2 preview at /landing-v2 (noindex, not linked); real app screenshots + license rows"
+  },
+  "last_commit": {
+   "sha": "f52c42ab26ddfdef62274a97391ff876e94ea7a4",
+   "date": "2026-10-21T16:46:52+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "Landing v2 preview at /landing-v2 (noindex, not linked); real app screenshots + license rows"
   },
   "commits": 1,
   "font_family": null

@@ -136,6 +136,7 @@ const PUBLIC_ROUTES = [
   '/safety',
   '/accessibility',
   '/pricing',
+  '/landing-v2', // preview of the new landing page (noindex, not linked)
   '/sitemap.xml',
   '/robots.txt',
   '/manifest.webmanifest',
