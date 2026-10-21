@@ -91,3 +91,26 @@ html[data-cookie-panel=on] .a11y-widget-root{visibility:hidden!important;pointer
 .cn-ov{background:rgba(4,20,16,.5)}
 
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.cn-banner,.cn-pn{background:linear-gradient(160deg,#174A3F,#0F3B32)}}
+
+/* ===== Elevation variants (design branch). html[data-cn-elev=a|b|c] ===== */
+/* A — layered soft multi-shadow + gold rim light + lift-in */
+html[data-cn-elev=a] .cn-banner{box-shadow:inset 0 1px 0 rgba(242,207,122,.55),inset 0 0 0 1px rgba(232,181,74,.18),0 1px 2px rgba(4,20,16,.25),0 6px 12px -4px rgba(4,20,16,.3),0 18px 36px -12px rgba(4,30,24,.45),0 40px 80px -24px rgba(6,60,46,.55);animation:cn-lift .7s cubic-bezier(.16,1,.3,1)}
+html[data-cn-elev=a] .cn-banner:before{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:2;background:linear-gradient(180deg,rgba(242,207,122,.22),transparent 22%),radial-gradient(120% 60% at 50% -10%,rgba(242,207,122,.18),transparent 60%);mix-blend-mode:screen}
+html[data-cn-elev=a] .cn-banner .cn-art{box-shadow:inset 0 -18px 30px -18px rgba(4,20,16,.55)}
+html[data-cn-elev=a] .cn-btn.p{box-shadow:0 1px 0 rgba(255,255,255,.5) inset,0 12px 26px -10px rgba(232,181,74,.75)}
+@keyframes cn-lift{0%{transform:translateY(40px) scale(.97);opacity:0;box-shadow:0 0 0 rgba(0,0,0,0)}100%{transform:none;opacity:1}}
+
+/* B — floating card detached from edges, idle float, page blurred behind */
+html[data-cn-elev=b][data-cookie-banner=on] body:after{content:'';position:fixed;inset:0;z-index:59;pointer-events:none;background:linear-gradient(180deg,transparent 30%,rgba(4,24,19,.42));-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);-webkit-mask:linear-gradient(180deg,transparent 25%,#000 70%);mask:linear-gradient(180deg,transparent 25%,#000 70%)}
+html[data-cn-elev=b] .cn-banner{inset:auto 20px 22px;border-radius:30px;box-shadow:inset 0 1px 0 rgba(242,207,122,.4),0 30px 60px -18px rgba(2,16,12,.7),0 60px 120px -40px rgba(6,60,46,.6);animation:cn-up .5s cubic-bezier(.2,.8,.2,1),cn-float 6s ease-in-out .6s infinite}
+html[data-cn-elev=b] .cn-banner .cn-art{margin:10px 10px 0;border-radius:22px;border:1px solid rgba(232,181,74,.35);box-shadow:0 14px 28px -16px rgba(0,0,0,.7)}
+@media(min-width:760px){html[data-cn-elev=b] .cn-banner{bottom:36px;max-width:880px}html[data-cn-elev=b] .cn-banner .cn-art{margin:12px;margin-inline-end:0;border-inline-end:1px solid rgba(232,181,74,.35)}}
+@keyframes cn-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+
+/* C — bold elevated glass, inner glow/bevel, glowing gold border */
+html[data-cn-elev=c] .cn-banner{border:1.5px solid transparent;background:linear-gradient(160deg,#1A5446f5,#0D352Ced) padding-box,linear-gradient(135deg,#F2CF7A,rgba(232,181,74,.25) 35%,rgba(232,181,74,.15) 65%,#E8B54A) border-box;box-shadow:inset 0 2px 0 rgba(253,243,214,.18),inset 0 -3px 0 rgba(0,0,0,.25),inset 0 0 40px rgba(232,181,74,.08),0 0 0 1px rgba(4,20,16,.4),0 0 28px -4px rgba(232,181,74,.45),0 30px 60px -20px rgba(2,16,12,.75);animation:cn-up .5s cubic-bezier(.2,.8,.2,1),cn-glow 4.5s ease-in-out .6s infinite}
+html[data-cn-elev=c] .cn-banner .cn-art{border-color:rgba(232,181,74,.45)}
+html[data-cn-elev=c] .cn-h{text-shadow:0 2px 0 rgba(0,0,0,.25)}
+html[data-cn-elev=c] .cn-btn.p{box-shadow:inset 0 1px 0 rgba(255,255,255,.6),inset 0 -2px 0 rgba(140,95,20,.35),0 0 20px -4px rgba(232,181,74,.8)}
+@keyframes cn-glow{0%,100%{box-shadow:inset 0 2px 0 rgba(253,243,214,.18),inset 0 -3px 0 rgba(0,0,0,.25),inset 0 0 40px rgba(232,181,74,.08),0 0 0 1px rgba(4,20,16,.4),0 0 22px -6px rgba(232,181,74,.35),0 30px 60px -20px rgba(2,16,12,.75)}50%{box-shadow:inset 0 2px 0 rgba(253,243,214,.18),inset 0 -3px 0 rgba(0,0,0,.25),inset 0 0 40px rgba(232,181,74,.12),0 0 0 1px rgba(4,20,16,.4),0 0 34px -2px rgba(232,181,74,.55),0 30px 60px -20px rgba(2,16,12,.75)}}
+@media(prefers-reduced-motion:reduce){html[data-cn-elev] .cn-banner{animation:none!important}}
