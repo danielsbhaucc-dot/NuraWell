@@ -39,3 +39,13 @@ describe('landing-v2 big-idea cards', () => {
     expect(src).toContain("c.style.setProperty('--ch'");
   });
 });
+
+describe('landing-v2 links', () => {
+  it('has no placeholder # links and points CTAs to real routes', () => {
+    expect(src).not.toMatch(/href=\\"#\\"/);
+    for (const r of ['/register', '/login', '/terms', '/privacy', '/safety', '/accessibility']) expect(src).toContain(`href=\\"${r}\\"`);
+  });
+  it('uses one shared reading-time config for timed sequences', () => {
+    expect(src).toContain('window.NW_TIMING={perWord:250,min:2500');
+  });
+});
