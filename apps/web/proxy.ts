@@ -185,6 +185,15 @@ export async function proxy(request: NextRequest) {
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   const pathname = request.nextUrl.pathname;
+
+  // Local demo screenshots only: let /auth/v1 and /rest/v1 fall through to the
+  // next.config rewrites (local PostgREST + auth). Never set this in production.
+  if (
+    process.env.NURAWELL_LOCAL_DEMO === '1' &&
+    (pathname.startsWith('/auth/v1/') || pathname === '/auth/v1' || pathname.startsWith('/rest/v1/') || pathname === '/rest/v1')
+  ) {
+    return NextResponse.next();
+  }
   const hostHeader = request.headers.get('x-forwarded-host') || request.headers.get('host');
   const incomingHost = requestHostname(hostHeader);
 
