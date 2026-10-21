@@ -129,7 +129,7 @@ function Overview({ data, onOpenAsset, onGo, onChanged }: { data: HubData | null
               {shown.map((it) => (
                 <li key={it.id} className="flex flex-wrap items-start gap-3 rounded-[20px] border border-gc/40 bg-glass/30 p-3.5 backdrop-blur-md sm:flex-nowrap" data-testid="hub-inbox-item">
                   <span className={cn('grid h-9 w-9 shrink-0 place-items-center rounded-xl', DOT[it.kind])}>{it.kind === 'match' ? <Sparkles size={17} /> : it.kind.startsWith('receipt') || it.kind === 'missing_receipt' ? <Receipt size={17} /> : it.kind === 'forwarding' ? <Inbox size={17} /> : <Images size={17} />}</span>
-                  <div className="min-w-0 flex-1">
+                  <div className="min-w-0 flex-1 basis-[calc(100%-3rem)] sm:basis-0">
                     <p className="font-[Rubik] text-[14.5px] font-bold leading-snug text-slate-900">{it.title}</p>
                     <p className="mt-0.5 text-[13px] leading-relaxed text-slate-600">{it.why}</p>
                   </div>
@@ -157,7 +157,7 @@ function Overview({ data, onOpenAsset, onGo, onChanged }: { data: HubData | null
       <section className={cn(opsGlassCardClass, 'p-5 lg:col-span-12')} aria-label="פעילות אחרונה">
         <div className="flex items-end justify-between gap-3">
           <div><p className="text-[12px] font-bold tracking-wide text-amber-700">פעילות אחרונה</p><h3 className="font-[Rubik] font-bold text-slate-900">מדיה שנוספה או השתנתה</h3></div>
-          <button type="button" onClick={() => onGo('media')} className={cn(opsGlassBtnClass, 'gap-1 text-[13px]')}>לכל המדיה<ArrowLeft size={14} /></button>
+          <button type="button" onClick={() => onGo('media')} className={cn(opsGlassBtnClass, 'shrink-0 gap-1 whitespace-nowrap text-[13px]')}>לכל המדיה<ArrowLeft size={14} /></button>
         </div>
         <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
           {data.assets.slice(0, 6).map((a) => <AssetTile key={a.key} a={a} onOpen={onOpenAsset} />)}
