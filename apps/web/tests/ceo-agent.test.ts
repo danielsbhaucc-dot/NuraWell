@@ -75,10 +75,12 @@ describe('security', () => {
     const f = tgFetch();
     const runTurn = vi.fn();
     const r = await handleTelegramUpdate(db, createTelegramChannel(f as never), { message: { from: { id: 7 }, chat: { id: 7, type: 'private' }, text: 'hi' } }, { runTurn });
-    expect(r).toEqual({ ignored: true });
+    expect(r).toMatchObject({ ignored: true });
     expect(runTurn).not.toHaveBeenCalled();
-    // the stranger gets nothing; only the owner (42) is alerted
-    expect(f.mock.calls.every((c) => JSON.parse(String(((c as unknown[])[1] as { body: string }).body)).chat_id === '42')).toBe(true);
+    // verify-before-block: the unknown sender gets only the neutral code prompt; the owner (42) is alerted
+    const bodies = f.mock.calls.map((c) => JSON.parse(String(((c as unknown[])[1] as { body: string }).body)));
+    expect(bodies.filter((b) => b.chat_id !== '42').map((b) => b.text)).toEqual(['כדי להמשיך, הקלד את קוד האימות.']);
+    expect(bodies.some((b) => b.chat_id === '42')).toBe(true);
   });
   it('classification guard blocks personal data', () => {
     expect(isTechnicalSafe('{"errors":3,"users_total":2}')).toBe(true);
@@ -366,9 +368,10 @@ describe('stolen-phone protection', () => {
     // gate stubbed open: quiet-time behavior is covered in gideon-quiet.test.ts (keeps this test day-independent)
     await handleTelegramUpdate(db, createTelegramChannel(f as never, undefined, async () => 'send'), { message: { from: { id: 999 }, chat: { id: 999, type: 'private' }, text: 'היי' } });
     const sent = f.mock.calls.map((c) => JSON.parse(String(((c as unknown[])[1] as { body: string }).body)));
-    expect(sent).toHaveLength(1);
-    expect(sent[0].chat_id).toBe('42');
-    expect(sent[0].text).toContain('לא מוכר');
+    const owner = sent.filter((m) => m.chat_id === '42');
+    expect(owner).toHaveLength(1);
+    expect(owner[0].text).toContain('חשבון טלגרם חדש');
+    expect(sent.filter((m) => m.chat_id === '999').map((m) => m.text)).toEqual(['כדי להמשיך, הקלד את קוד האימות.']);
     await handleTelegramUpdate(db, createTelegramChannel(tgFetch() as never), { message: { from: { id: 42 }, chat: { id: 42, type: 'private' }, text: '/lock' } });
     expect(t.gideon_settings[0].disabled).toBe(true);
   });

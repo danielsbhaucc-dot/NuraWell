@@ -101,11 +101,12 @@ describe('Gideon stranger simulation', () => {
   it('a stranger cannot start, exit, or get any notice', async () => {
     const S = { id: 7 };
     for (const t of ['/simulate', '/סימולציה', 'אני מוותר', 'סיום סימולציה']) {
-      expect(await go(dm(t, S, { id: 7, type: 'private' }))).toEqual({ ignored: true });
+      expect(await go(dm(t, S, { id: 7, type: 'private' }))).toMatchObject({ ignored: true });
       expect(await go(dm(t, S, { id: 42, type: 'private' }))).toEqual({ ignored: true });
     }
     expect(sims.size).toBe(0);
-    expect(channel.send.mock.calls.every((c) => c[0] !== '7')).toBe(true);
+    // a stranger only ever sees the neutral verification prompt (never sim / data)
+    expect(channel.send.mock.calls.filter((c) => c[0] === '7').every((c) => c[1] === 'כדי להמשיך, הקלד את קוד האימות.')).toBe(true);
     expect(sent().some((t) => t.includes('סימולציה'))).toBe(false);
   });
 

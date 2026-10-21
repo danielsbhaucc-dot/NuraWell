@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { confirmDialog } from '@/components/shared/dialogs';
+import { GideonTelegramIdentities } from './GideonTelegramIdentities';
 
 type State = { disabled: boolean; locked_until: string | null; stepup_trust_minutes: number; reverify_minutes: number; trusted_until: string | null; last_verified_at: string | null };
 type Device = { id: string; label: string; created_at: string; last_used_at: string | null };
@@ -75,6 +76,8 @@ export function GideonSecurityPanel() {
           ) : null}
         </div>
       </section>
+
+      <GideonTelegramIdentities />
 
       <section className="rounded-3xl border border-slate-200 bg-glass/85 backdrop-blur-md p-5">
         <h2 className="text-lg font-bold">מכשירים עם Face ID</h2>
