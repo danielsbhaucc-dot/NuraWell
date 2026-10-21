@@ -1,4 +1,5 @@
 import { serve } from '@upstash/workflow/nextjs';
+import { qstashWorkflowOptions } from '@/lib/api/qstash-receivers';
 import { requireQstashConfigured } from '../../../../lib/workflows/require-qstash-configured';
 import { createAdminClient } from '../../../../lib/supabase/admin';
 import { parseAlmogFollowupPayload, type AlmogFollowupPayload } from '../../../../lib/workflows/almog-followup-payload';
@@ -44,6 +45,6 @@ const { POST: workflowPost } = serve<AlmogFollowupPayload>(async (context) => {
   }
 
   return { ok: true as const, reminded: true as const };
-});
+}, qstashWorkflowOptions());
 
 export const POST = requireQstashConfigured(workflowPost);

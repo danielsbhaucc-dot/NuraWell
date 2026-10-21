@@ -1,4 +1,5 @@
 import { serve } from '@upstash/workflow/nextjs';
+import { qstashWorkflowOptions } from '@/lib/api/qstash-receivers';
 import { requireQstashConfigured } from '../../../../lib/workflows/require-qstash-configured';
 import { createAdminClient } from '../../../../lib/supabase/admin';
 import {
@@ -137,6 +138,6 @@ const { POST: workflowPost } = serve<AlmogOnboardingKickoffPayload>(async (conte
   }
 
   return { ok: true as const, sent, stopped: lastReason ?? 'max_attempts_reached' };
-});
+}, qstashWorkflowOptions());
 
 export const POST = requireQstashConfigured(workflowPost);
