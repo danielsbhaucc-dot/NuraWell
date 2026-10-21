@@ -62,3 +62,9 @@ describe('landing-v2 desktop paint budget and Almog widget placement', () => {
     expect(src).toMatch(/#al\.ping:not\(\.talk\) \.msg\{opacity:0!important;visibility:hidden!important/);
   });
 });
+
+describe('landing-v2 tree lines fit the desktop viewport', () => {
+  it('scales the auto-play tree lines by viewport height on desktop', () => {
+    expect(src).toMatch(/\.gt\[data-auto\] \.tl-l\{font-size:clamp\(19px,min\(2\.6vw,3\.3vh\),36px\)!important/);
+  });
+});
