@@ -1280,9 +1280,19 @@
   "usages": [
    "app/landing-v2/landing-html.ts"
   ],
-  "first_commit": null,
-  "last_commit": null,
-  "commits": 0,
+  "first_commit": {
+   "sha": "795b2b82c9c55d825ad29e6e4895d3bf2911429d",
+   "date": "2026-10-21T21:00:51+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "landing-v2 round 4: light-sentence intro, OFL display fonts, typographic play, dictionary rewrite card, desktop waves/seed/zoom fixes, tree auto-play (#297)"
+  },
+  "last_commit": {
+   "sha": "795b2b82c9c55d825ad29e6e4895d3bf2911429d",
+   "date": "2026-10-21T21:00:51+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "landing-v2 round 4: light-sentence intro, OFL display fonts, typographic play, dictionary rewrite card, desktop waves/seed/zoom fixes, tree auto-play (#297)"
+  },
+  "commits": 1,
   "font_family": "frank"
  },
  {
@@ -1298,20 +1308,30 @@
   "usages": [
    "app/landing-v2/landing-html.ts"
   ],
-  "first_commit": null,
-  "last_commit": null,
-  "commits": 0,
+  "first_commit": {
+   "sha": "795b2b82c9c55d825ad29e6e4895d3bf2911429d",
+   "date": "2026-10-21T21:00:51+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "landing-v2 round 4: light-sentence intro, OFL display fonts, typographic play, dictionary rewrite card, desktop waves/seed/zoom fixes, tree auto-play (#297)"
+  },
+  "last_commit": {
+   "sha": "795b2b82c9c55d825ad29e6e4895d3bf2911429d",
+   "date": "2026-10-21T21:00:51+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "landing-v2 round 4: light-sentence intro, OFL display fonts, typographic play, dictionary rewrite card, desktop waves/seed/zoom fixes, tree auto-play (#297)"
+  },
+  "commits": 1,
   "font_family": "frank"
  },
  {
-  "asset_key": "repo:apps/web/public/landing-v2/fonts/fredoka-he.woff2",
+  "asset_key": "repo:apps/web/public/landing-v2/fonts/secular-he.woff2",
   "origin": "repo",
   "kind": "font",
-  "path": "apps/web/public/landing-v2/fonts/fredoka-he.woff2",
-  "public_url": "/landing-v2/fonts/fredoka-he.woff2",
-  "title": "fredoka-he.woff2",
+  "path": "apps/web/public/landing-v2/fonts/secular-he.woff2",
+  "public_url": "/landing-v2/fonts/secular-he.woff2",
+  "title": "secular-he.woff2",
   "mime": "font/woff2",
-  "sha256": "ab46fdbead875af9c6e967705a149f398554e9bb0f2f50c19d13b54ea4fa3195",
+  "sha256": "c1e45f5b9740b8fd19702768bd60f6649dbeec8a06035c2264f607273369b7ba",
   "content_b64": null,
   "usages": [
    "app/landing-v2/landing-html.ts"
@@ -1319,17 +1339,17 @@
   "first_commit": null,
   "last_commit": null,
   "commits": 0,
-  "font_family": "fredoka"
+  "font_family": "secular"
  },
  {
-  "asset_key": "repo:apps/web/public/landing-v2/fonts/fredoka-lat.woff2",
+  "asset_key": "repo:apps/web/public/landing-v2/fonts/secular-lat.woff2",
   "origin": "repo",
   "kind": "font",
-  "path": "apps/web/public/landing-v2/fonts/fredoka-lat.woff2",
-  "public_url": "/landing-v2/fonts/fredoka-lat.woff2",
-  "title": "fredoka-lat.woff2",
+  "path": "apps/web/public/landing-v2/fonts/secular-lat.woff2",
+  "public_url": "/landing-v2/fonts/secular-lat.woff2",
+  "title": "secular-lat.woff2",
   "mime": "font/woff2",
-  "sha256": "99d6c78e043710d4f83ed90716779798b7b04eb690f73e0ad0e8f32d1f0e98c2",
+  "sha256": "3fbb660178c8127fc5b26ad4ca504a05136a0bf169b9a5e7c27134feb6994fca",
   "content_b64": null,
   "usages": [
    "app/landing-v2/landing-html.ts"
@@ -1337,7 +1357,7 @@
   "first_commit": null,
   "last_commit": null,
   "commits": 0,
-  "font_family": "fredoka"
+  "font_family": "secular"
  },
  {
   "asset_key": "repo:apps/web/public/landing-v2/real/chat.webp",
