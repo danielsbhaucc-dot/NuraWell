@@ -1,5 +1,6 @@
 import { decProfileResult } from '@/lib/crypto/pii-fields';
 import { serve } from '@upstash/workflow/nextjs';
+import { qstashWorkflowOptions } from '@/lib/api/qstash-receivers';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { requireQstashConfigured } from '@/lib/workflows/require-qstash-configured';
 import { sendWelcomeDolevEmail } from '@/lib/auth/send-welcome-dolev-email';
@@ -63,6 +64,6 @@ const { POST: workflowPost } = serve<Body>(async (context) => {
   });
 
   return { ok: true as const };
-});
+}, qstashWorkflowOptions());
 
 export const POST = requireQstashConfigured(workflowPost);

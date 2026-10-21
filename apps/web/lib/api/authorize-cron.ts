@@ -1,6 +1,6 @@
 import { enterAiUsage } from '@/lib/ai/usage-meter';
 import { NextResponse } from 'next/server';
-import { Receiver } from '@upstash/qstash';
+import { qstashReceivers, verifyQstashAny } from '@/lib/api/qstash-receivers';
 import { workflowPublicBaseUrl } from '../workflows/resolve-workflow-public-url';
 import { timingSafeEqualStr } from './timing-safe-equal';
 
@@ -56,7 +56,6 @@ export async function authorizeCronRequest(request: Request): Promise<NextRespon
   }
   const secret = process.env.CRON_SECRET?.trim();
   const qstashCurrent = process.env.QSTASH_CURRENT_SIGNING_KEY?.trim();
-  const qstashNext = process.env.QSTASH_NEXT_SIGNING_KEY?.trim();
 
   if (!qstashCurrent && !secret) {
     return NextResponse.json(
@@ -74,10 +73,7 @@ export async function authorizeCronRequest(request: Request): Promise<NextRespon
     try {
       const cloned = request.clone();
       const bodyText = await cloned.text();
-      const receiver = new Receiver({
-        currentSigningKey: qstashCurrent,
-        nextSigningKey: qstashNext ?? '',
-      });
+      const receivers = qstashReceivers();
 
       /**
        * אימות מחזק: בודקים את החתימה מול URLs קנוניים מ-allowlist (לא ערכים
@@ -86,15 +82,8 @@ export async function authorizeCronRequest(request: Request): Promise<NextRespon
        */
       const candidateUrls = buildCanonicalUrlsForRequest(request);
       for (const candidate of candidateUrls) {
-        try {
-          const valid = await receiver.verify({
-            signature: upstashSignature,
-            body: bodyText,
-            url: candidate,
-          });
-          if (valid) return null;
-        } catch {
-          /** ננסה את הבא */
+        if (await verifyQstashAny({ signature: upstashSignature, body: bodyText, url: candidate }, receivers)) {
+          return null;
         }
       }
     } catch {
