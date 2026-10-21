@@ -31,3 +31,11 @@ describe('landing-v2 Hebrew copy', () => {
   it('has no slash-gender forms', () => expect(all).not.toMatch(/[\u05d0-\u05ea]\/(ה|ת|ים|ות)(?![\u05d0-\u05ea])/));
   it('spells הכול in full', () => expect(all).not.toMatch(/(?<![\u05d0-\u05ea])[ובלמה]?הכל(?![\u05d0-\u05ea])/));
 });
+
+describe('landing-v2 big-idea cards', () => {
+  it('cards size to content and the carousel height follows the tallest card', () => {
+    expect(src).toMatch(/\.nd \.cc\{height:auto!important/);
+    expect(src).toMatch(/\.nd \.carou\{height:var\(--ch/);
+    expect(src).toContain("c.style.setProperty('--ch'");
+  });
+});
