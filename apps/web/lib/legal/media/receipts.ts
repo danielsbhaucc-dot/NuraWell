@@ -69,6 +69,7 @@ export async function ingestReceipt(admin: SupabaseClient, input: IngestReceiptI
 
   let vendor: string = isConfirm ? 'unknown' : detectVendor(from, subject, text);
   let { amount, currency } = parseAmount(text);
+  if (amount === null && mail.html) ({ amount, currency } = parseAmount(mail.html));
   let plan = parsePlan(vendor as never, `${subject}\n${text}`);
   let annualHint = false;
   let aiUsed = false;

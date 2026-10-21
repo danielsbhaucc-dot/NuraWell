@@ -31,11 +31,31 @@ export function detectVendor(from: string, subject: string, text: string): Vendo
 }
 
 const CUR: Array<[RegExp, string]> = [[/₪|ILS|ש"ח|שח\b/, 'ILS'], [/\$|USD/, 'USD'], [/€|EUR/, 'EUR'], [/£|GBP/, 'GBP']];
-export function parseAmount(text: string): { amount: number | null; currency: string | null } {
-  const lines = text.split(/\n/).map((l) => l.trim()).filter(Boolean);
-  const pref = lines.filter((l) => /total|amount paid|סה"כ|סך הכל|לתשלום|שולם|charged|amount/i.test(l));
-  for (const l of [...pref, ...lines]) {
-    const m = /(?:(₪|\$|€|£|USD|ILS|EUR|GBP)\s?)(\d{1,5}(?:[.,]\d{2})?)|(\d{1,5}(?:[.,]\d{2})?)\s?(₪|\$|€|£|USD|ILS|EUR|GBP|ש"ח)/.exec(l);
+const SYM = '₪|\\$|€|£|USD|ILS|EUR|GBP|ש"ח';
+const AMOUNT_RE = new RegExp(`(?:(${SYM})\\s?)(\\d{1,5}(?:[.,]\\d{2})?)(?!\\d)|(?<![\\d.,])(\\d{1,5}(?:[.,]\\d{2})?)\\s?(${SYM})`);
+/** Future/quoted prices (trial notices, price changes) are not what was charged. */
+const NOT_CHARGED = /התשלום הבא|יבוצע רק|החיוב הראשון|לאחר מכן|החל מ-?|next payment|will be charged|starting|after the trial|renews at/i;
+
+/** Normalizes receipt text: drops bidi marks (Google Play wraps every price in U+200F), NBSPs, HTML entities. */
+export function normalizeReceiptText(text: string): string {
+  return text
+    .replace(/<(?:br|\/p|\/div|\/tr|\/td)[^>]*>/gi, '\n').replace(/<[^>]+>/g, ' ')
+    .replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'").replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)))
+    .replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069\ufeff]/g, '')
+    .replace(/[\u00a0\u202f\u2009]/g, ' ')
+    .replace(/״/g, '"')
+    .replace(/[ \t]+/g, ' ');
+}
+
+export function parseAmount(input: string): { amount: number | null; currency: string | null } {
+  const raw = normalizeReceiptText(input).split(/\n/).map((l) => l.trim()).filter(Boolean);
+  // Re-join a number wrapped onto the next line before its currency ("74.90\n₪/חודש").
+  const lines: string[] = [];
+  for (const l of raw) { if (lines.length && /^(₪|\$|€|£|USD|ILS|EUR|GBP|ש"ח)/.test(l) && /\d$/.test(lines[lines.length - 1]!)) lines[lines.length - 1] += ` ${l}`; else lines.push(l); }
+  const pref = lines.filter((l) => /total|amount paid|סה"כ|סך הכל|לתשלום|שולם|charged|refund|החזר כספי בסכום|היום:/i.test(l));
+  const rest = lines.filter((l) => !pref.includes(l) && !NOT_CHARGED.test(l));
+  for (const l of [...pref, ...rest]) {
+    const m = AMOUNT_RE.exec(l);
     if (m) {
       const num = Number((m[2] ?? m[3])!.replace(',', '.'));
       const sym = m[1] ?? m[4] ?? '';
@@ -43,6 +63,15 @@ export function parseAmount(text: string): { amount: number | null; currency: st
     }
   }
   return { amount: null, currency: null };
+}
+
+/** Bundle-import files: a Gmail connector .json (plaintextBody/htmlBody), an .html body, or plain text. */
+export function receiptTextFromFile(name: string, bytes: Uint8Array): string | null {
+  const ext = name.split('.').pop()?.toLowerCase();
+  const s = Buffer.from(bytes).toString('utf8');
+  if (ext === 'json') { try { const j = JSON.parse(s) as { plaintextBody?: string; htmlBody?: string; snippet?: string }; return j.plaintextBody || j.htmlBody || j.snippet || null; } catch { return null; } }
+  if (ext === 'html' || ext === 'htm' || ext === 'txt') return s;
+  return null;
 }
 
 export function parsePlan(vendor: VendorId, text: string): string | null {
