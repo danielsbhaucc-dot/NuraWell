@@ -30,6 +30,12 @@
 | צילום מסך: התוכנית (מחשב) | apps/web/public/landing-v2/real/d-plan.webp | own app (NuraWell), demo account with fake data | owned (first-party product screenshot) | yes | no | 2026-10-21 | landing-brief/wow/assets/real/all (captured from our app, demo user) |
 | צילום מסך: המסע (מחשב) | apps/web/public/landing-v2/real/d-journey.webp | own app (NuraWell), demo account with fake data | owned (first-party product screenshot) | yes | no | 2026-10-21 | landing-brief/wow/assets/real/all (captured from our app, demo user) |
 | צילום מסך: שיחה עם אלמוג (מחשב) | apps/web/public/landing-v2/real/d-chat.webp | own app (NuraWell), demo account with fake data | owned (first-party product screenshot) | yes | no | 2026-10-21 | landing-brief/wow/assets/real/all (captured from our app, demo user) |
+| צילום מסך: הגדרות (מחשב) | apps/web/public/landing-v2/real/d-settings.webp | own app (NuraWell), demo/non-identifying data only | owned (first-party product screenshot) | yes | no | 2026-10-21 | landing-brief/wow/assets/real/ |
+| צילום מסך: פרטיות ונתונים / ייצוא נתונים | apps/web/public/landing-v2/real/p-export.webp | own app (NuraWell), demo/non-identifying data only | owned (first-party product screenshot) | yes | no | 2026-10-21 | landing-brief/wow/assets/real/ |
+| צילום מסך: הסכמה לשמירת מידע בריאותי | apps/web/public/landing-v2/real/p-consent.webp | own app (NuraWell), demo/non-identifying data only | owned (first-party product screenshot) | yes | no | 2026-10-21 | landing-brief/wow/assets/real/ |
+| צילום מסך: מדיניות עוגיות (דף ציבורי) | apps/web/public/landing-v2/real/p-cookies.webp | own app (NuraWell), demo/non-identifying data only | owned (first-party product screenshot) | yes | no | 2026-10-21 | landing-brief/wow/assets/real/ |
+| צילום מסך: מדיניות פרטיות (דף ציבורי) | apps/web/public/landing-v2/real/p-legal.webp | own app (NuraWell), demo/non-identifying data only | owned (first-party product screenshot) | yes | no | 2026-10-21 | landing-brief/wow/assets/real/ |
+| שורות הפתיחה של אלמוג (טקסט) | apps/web/public/landing-v2/real/almog-lines.json | written in-house for NuraWell | owned (first-party copy) | yes | no | 2026-10-21 | landing-brief/wow/pool/gen.py |
 
 > הערה: `/landing-v2` עצמו הוא HTML שמוגש מ-route (`apps/web/app/landing-v2/`), עם CSS/JS ואיורי SVG שכתבנו בקוד (בבעלותנו) וגופני Rubik ו-Assistant מוטמעים (SIL OFL 1.1, כולל subset עברי).
 
