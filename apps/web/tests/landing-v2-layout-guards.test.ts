@@ -46,7 +46,7 @@ describe('landing-v2 links', () => {
     for (const r of ['/register', '/login', '/terms', '/privacy', '/safety', '/accessibility']) expect(src).toContain(`href=\\"${r}\\"`);
   });
   it('uses one shared reading-time config for timed sequences', () => {
-    expect(src).toContain('window.NW_TIMING={perWord:250,min:2500');
+    expect(src).toContain('window.NW_TIMING={perWord:425,min:4200');
   });
 });
 
@@ -66,5 +66,27 @@ describe('landing-v2 desktop paint budget and Almog widget placement', () => {
 describe('landing-v2 tree lines fit the desktop viewport', () => {
   it('scales the auto-play tree lines by viewport height on desktop', () => {
     expect(src).toMatch(/\.gt\[data-auto\] \.tl-l\{font-size:clamp\(19px,min\(2\.6vw,3\.3vh\),36px\)!important/);
+  });
+});
+
+describe('landing-v2 round 7', () => {
+  it('intro uses the Hebrew display font and waits for it', () => {
+    expect(src).toContain("#op .op-msg,#op .op-msg *,.op-seed p,.op-seed p *{font-family:'Secular One'");
+    expect(src).toContain("document.fonts.load('400 1em");
+    expect(src).toMatch(/secular-lat\.woff2\\" as=\\"font/);
+  });
+  it('auto-play growth is one continuous eased progression (no per-step jumps)', () => {
+    expect(src).toContain('const toP=t=>ez(Math.min(1,t/G))');
+    expect(src).not.toContain('(t-cum[k])/durs[k]*.2');
+  });
+  it('fixed background layers cover the large viewport (no band under a collapsing URL bar)', () => {
+    expect(src).toContain('height:calc(100lvh + 80px)!important');
+  });
+  it('mounts the site cookie notice after the intro with the same storage key and version', () => {
+    expect(src).toContain("const KEY='nurawell-cookie-notice',VER='2026-10-20'");
+    expect(src).toContain("if(R.classList.contains('op')){setTimeout(wait,400);return}");
+  });
+  it('has the journey stations and finale', () => {
+    expect(src).toContain("className='jfin'");
   });
 });

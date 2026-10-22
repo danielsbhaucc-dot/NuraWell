@@ -545,6 +545,17 @@ export async function proxy(request: NextRequest) {
     }
   }
 
+  /**
+   * Home on the public *.vercel.app host (and localhost) is the landing page served by app/landing-v2/route.ts.
+   * Only reached by visitors that were not redirected above (signed-in users keep their redirect to the app).
+   * Any other host keeps the previous home page (app/page.tsx), which stays in the repo.
+   */
+  if (pathname === '/' && !effectiveOpsHost && (incomingHost.endsWith('.vercel.app') || isLocal)) {
+    const rw = NextResponse.rewrite(new URL('/landing-v2', request.url), { request: { headers: requestHeaders } });
+    copyCookies(response, rw);
+    return applySecurityHeaders(rw);
+  }
+
   return applySecurityHeaders(response);
 }
 
