@@ -86,8 +86,19 @@ describe('landing-v2 round 7', () => {
     expect(src).toContain("const KEY='nurawell-cookie-notice',VER='2026-10-20'");
     expect(src).toContain("if(R.classList.contains('op')){setTimeout(wait,400);return}");
   });
-  it('has the journey stations and finale', () => {
-    expect(src).toContain("className='jfin'");
+  it('replaces the station toasts with the your-plant mini-game (local only, skippable)', () => {
+    expect(src).not.toContain("className='jfin'");
+    expect(src).not.toContain("bar.className='jr'");
+    expect(src).toContain("const K='nw-plant-v1'");
+    expect(src).toContain('בלי משחק, תודה');
+    expect(src).toContain('העץ שלכם');
+    expect(src).toContain('בואו נגדל אותו באמת');
+    const game = src.slice(src.indexOf('r8 mini-game your-plant'), src.indexOf('r7 cookie notice'));
+    expect(game).not.toMatch(/fetch\(|XMLHttpRequest|sendBeacon/);
+  });
+  it('keeps mobile growth scenes one screen tall', () => {
+    expect(src).toContain('.gt[data-auto] .gt-st{display:flex!important;flex-direction:column;height:100svh!important');
+    expect(src).toContain('.sd[data-auto] .sd-st{display:flex!important;flex-direction:column;height:100svh!important');
   });
 });
 
