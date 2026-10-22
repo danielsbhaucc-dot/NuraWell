@@ -90,3 +90,9 @@ describe('landing-v2 round 7', () => {
     expect(src).toContain("className='jfin'");
   });
 });
+
+describe('landing mobile fast-scroll painting', () => {
+  it('does not lazy-paint sections on mobile (content-visibility off below 821px)', () => {
+    expect(src).toContain('@media(max-width:820px){main>section.sec{content-visibility:visible!important');
+  });
+});
