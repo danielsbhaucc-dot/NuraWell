@@ -29,7 +29,11 @@ export async function POST(request: Request, context: RouteContext) {
   const admin = createAdminClient();
   const endedAt = parsed.data.action === 'end' ? new Date(parsed.data.ended_at ?? Date.now()) : null;
   const res = await setSubscriptionEnded(admin, userId, endedAt);
-  if (!res.ok) return NextResponse.json({ error: res.error === 'no_subscription' ? 'אין מנוי למשתמש' : 'העדכון נכשל' }, { status: res.error === 'no_subscription' ? 404 : 500 });
+  if (!res.ok) {
+    if (res.error === 'no_subscription') return NextResponse.json({ error: 'אין מנוי למשתמש' }, { status: 404 });
+    if (res.error === 'invalid_transition') return NextResponse.json({ error: 'המנוי כבר במצב הזה' }, { status: 409 });
+    return NextResponse.json({ error: 'העדכון נכשל' }, { status: 500 });
+  }
   await admin.from('admin_audit_log').insert({ actor_id: auth.user.id, method: 'POST', path: 'admin/subscription', detail: { action: parsed.data.action, subscription_id: res.subscription_id } }).then(() => undefined, () => undefined);
   return NextResponse.json({ ok: true });
 }

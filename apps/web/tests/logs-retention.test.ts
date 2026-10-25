@@ -109,3 +109,12 @@ describe('suspicious-pattern responses', () => {
     expect(readFileSync(join(__dirname, '..', 'app/api/v1/ops/legal/logs/export/route.ts'), 'utf8')).toMatch(/logs_exported/);
   });
 });
+
+import { ACCOUNT_RETENTION_ROW } from '@/lib/logs/policy';
+import { describe as d2, expect as e2, it as i2 } from 'vitest';
+d2('account retention row', () => {
+  i2('is display-only and describes both choices + the legacy default', () => {
+    e2(ACCOUNT_RETENTION_ROW.retention_he).toMatch(/24 חודשים/);
+    e2(ACCOUNT_RETENTION_ROW.note_he).toMatch(/ותיקים/);
+  });
+});

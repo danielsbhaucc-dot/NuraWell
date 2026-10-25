@@ -33,6 +33,8 @@ test.describe.serial('billing + retention (prod, test account)', () => {
     expect(['keep_24m', 'delete_now']).toContain(before.choice);
 
     await page.goto('/settings/privacy');
+    // the test account has no health consent, so the consent sheet opens over the page; close it (never consent)
+    await closeConsentSheet(page);
     const section = page.getByTestId('retention-choice-section');
     await expect(section).toBeVisible({ timeout: 20_000 });
     // the test account has no health-data consent, so the consent prompt opens over the page; close it (never consent)

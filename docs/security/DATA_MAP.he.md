@@ -14,6 +14,7 @@
 | כספת | secure_vault_items | S3 | AES-256-GCM, iv/tag נפרדים, AAD=userId, מפתח SECURE_VAULT_KEY | תקין |
 | הסכמות ומשפטי | consent_evidence(_blobs), consent_history, legal_access_log | S2 | נשמר בכוונה לאחר מחיקה (ראיה משפטית) | לתעד בסיס חוקי ותקופה |
 | חיוב | billing_events | S2 | user_id→NULL במחיקה | — |
+| מנוי ושמירה אחרי סיום | subscriptions, profiles.post_sub_retention, user_consents (post_subscription_retention), billing_* (000188) | S2 | RLS; לפי בחירת המשתמש: מחיקה מיד או 24 חודשים מסיום המנוי (ברירת מחדל לחשבונות ותיקים: 24 חודשים); תיעוד הבחירה 7 שנים | — |
 | אדמין/אבטחה | admin_audit_log, ops_security_events, error_events | S1 | IP מוסר אחרי 30 יום; מחיקה אחרי 365 | — |
 | עמוד ציבורי | site_settings | S0 | מיגרציה 000176: עמודת demo_default_target_user_id חסומה ל-anon/authenticated | תוקן |
 | ספקים חיצוניים | ספקי AI, Upstash, R2 (גיבויים מוצפנים age), Vercel, Supabase | — | כל קריאה לספק AI עוברת במסנן המזהים המרכזי (שם/טלפון/מייל/ת"ז → פסאודונים), בכל המודלים; נאכף בבדיקת CI | — |
