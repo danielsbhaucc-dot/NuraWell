@@ -87,14 +87,14 @@ export function StepProgress({ sections, currentSection, progress, onSectionClic
           }}
         >
           {isDone ? (
-            <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" strokeWidth={3} />
+            <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-on-dark" strokeWidth={3} />
           ) : (
-            <Icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isCurrent ? 'text-emerald-900' : 'text-white/90'}`} />
+            <Icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isCurrent ? 'text-primary-900' : 'text-on-dark/90'}`} />
           )}
         </motion.div>
         <span
           className={`text-[9px] sm:text-[10px] font-bold leading-tight text-center px-0.5 ${
-            isCurrent ? 'text-white' : isDone ? 'text-emerald-100' : 'text-white/55'
+            isCurrent ? 'text-on-dark' : isDone ? 'text-primary-100' : 'text-on-dark/55'
           }`}
         >
           <span className="sm:hidden">{meta.short}</span>
@@ -109,10 +109,10 @@ export function StepProgress({ sections, currentSection, progress, onSectionClic
   return (
     <div className="w-full" dir="rtl">
       <div className="flex w-full items-center justify-between gap-0">{nodes}</div>
-      <p className="mt-2.5 text-center text-[10px] sm:text-xs text-white/85 font-medium leading-snug">
+      <p className="mt-2.5 text-center text-[10px] sm:text-xs text-on-dark/85 font-medium leading-snug">
         {isSectionDone(currentSection, progress, sections) ? (
           <>
-            <span className="text-emerald-100">שלב זה הושלם</span>
+            <span className="text-primary-100">שלב זה הושלם</span>
             {' · '}
           </>
         ) : (
@@ -121,7 +121,7 @@ export function StepProgress({ sections, currentSection, progress, onSectionClic
             {' · '}
           </>
         )}
-        <span className="font-bold text-white">{sectionMeta[currentSection].label}</span>
+        <span className="font-bold text-on-dark">{sectionMeta[currentSection].label}</span>
       </p>
     </div>
   );

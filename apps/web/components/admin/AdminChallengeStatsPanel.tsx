@@ -36,7 +36,7 @@ export function AdminChallengeStatsPanel() {
   if (loading) {
     return (
       <div className="flex justify-center py-10">
-        <Loader2 className="h-8 w-8 animate-spin text-violet-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-iris-500" />
       </div>
     );
   }
@@ -44,10 +44,10 @@ export function AdminChallengeStatsPanel() {
   if (!stats) return null;
 
   const cards = [
-    { label: 'הרשמות', value: stats.enrollments, icon: Users, color: 'text-violet-600' },
-    { label: 'פעילים', value: stats.active, icon: BarChart3, color: 'text-emerald-600' },
-    { label: 'המתנה', value: stats.waiting, icon: Users, color: 'text-amber-600' },
-    { label: 'סיימו', value: stats.completed, icon: BarChart3, color: 'text-sky-600' },
+    { label: 'הרשמות', value: stats.enrollments, icon: Users, color: 'text-iris-600' },
+    { label: 'פעילים', value: stats.active, icon: BarChart3, color: 'text-primary-600' },
+    { label: 'המתנה', value: stats.waiting, icon: Users, color: 'text-accent-600' },
+    { label: 'סיימו', value: stats.completed, icon: BarChart3, color: 'text-secondary-600' },
   ];
 
   return (
@@ -63,17 +63,17 @@ export function AdminChallengeStatsPanel() {
         ))}
       </div>
       <div className="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
-        <div className="rounded-xl bg-emerald-50 px-4 py-3">
+        <div className="rounded-xl bg-primary-50 px-4 py-3">
           <span className="text-ink-faint">אחוז סיום</span>
-          <div className="font-bold text-emerald-800">{stats.completion_rate_pct}%</div>
+          <div className="font-bold text-primary-800">{stats.completion_rate_pct}%</div>
         </div>
-        <div className="rounded-xl bg-violet-50 px-4 py-3">
+        <div className="rounded-xl bg-iris-50 px-4 py-3">
           <span className="text-ink-faint">הצלחות</span>
-          <div className="font-bold text-violet-800">{stats.success_events}</div>
+          <div className="font-bold text-iris-800">{stats.success_events}</div>
         </div>
-        <div className="rounded-xl bg-sky-50 px-4 py-3">
+        <div className="rounded-xl bg-secondary-50 px-4 py-3">
           <span className="text-ink-faint">סימוני משימות</span>
-          <div className="font-bold text-sky-800">{stats.task_completions}</div>
+          <div className="font-bold text-secondary-800">{stats.task_completions}</div>
         </div>
       </div>
     </div>

@@ -47,7 +47,7 @@ export function RegisterLandingClient() {
 
         <div className="relative z-10 flex flex-col flex-1 px-4 py-8 max-w-lg mx-auto w-full">
           <header className="flex justify-center mb-6">
-            <NuraWellLogo size="md" />
+            <NuraWellLogo size="md" tone="light" />
           </header>
 
           <motion.div
@@ -67,8 +67,8 @@ export function RegisterLandingClient() {
               <span
                 className={
                   hasPhotoBg
-                    ? 'bg-linear-to-l from-emerald-300 via-teal-200 to-amber-200 bg-clip-text text-transparent'
-                    : 'bg-linear-to-l from-emerald-700 via-emerald-600 to-teal-600 bg-clip-text text-transparent'
+                    ? 'bg-linear-to-l from-primary-300 via-secondary-200 to-accent-200 bg-clip-text text-transparent'
+                    : 'bg-linear-to-l from-primary-700 via-primary-600 to-secondary-600 bg-clip-text text-transparent'
                 }
               >
                 ברוכים הבאים ל־
@@ -77,8 +77,8 @@ export function RegisterLandingClient() {
               <span
                 className={
                   hasPhotoBg
-                    ? 'bg-linear-to-l from-emerald-200 via-teal-100 to-amber-100 bg-clip-text text-transparent'
-                    : 'bg-linear-to-l from-emerald-800 via-emerald-700 to-teal-700 bg-clip-text text-transparent'
+                    ? 'bg-linear-to-l from-primary-200 via-secondary-100 to-accent-100 bg-clip-text text-transparent'
+                    : 'bg-linear-to-l from-primary-800 via-primary-700 to-secondary-700 bg-clip-text text-transparent'
                 }
               >
                 NuraWell
@@ -92,20 +92,20 @@ export function RegisterLandingClient() {
             <MentorBubble mentorId="dolev" theme={hasPhotoBg ? 'dark' : 'light'}>
               <p>
                 היי, אני{' '}
-                <strong className={hasPhotoBg ? 'text-emerald-300' : 'text-emerald-700'}>דולב</strong>
+                <strong className={hasPhotoBg ? 'text-primary-300' : 'text-primary-700'}>דולב</strong>
                 , מנהל ההרשמה. אקח מכם כמה פרטים זריזים — בלי שיפוט — ואעביר אתכם לאלמוג, המנטור
                 שילווה אתכם אחרי שנסיים.
               </p>
-              <p className={`mt-3 text-sm leading-relaxed ${hasPhotoBg ? 'text-emerald-50/95' : 'text-slate-600'}`}>
-                <strong className={hasPhotoBg ? 'text-white' : 'text-emerald-800'}>Nura</strong> — אור. הרגע
+              <p className={`mt-3 text-sm leading-relaxed ${hasPhotoBg ? 'text-primary-50/95' : 'text-ink-600'}`}>
+                <strong className={hasPhotoBg ? 'text-on-dark' : 'text-primary-800'}>Nura</strong> — אור. הרגע
                 שהחלטתם לשנות.
                 <br />
-                <strong className={hasPhotoBg ? 'text-white' : 'text-emerald-800'}>Well</strong> — בריאות,
+                <strong className={hasPhotoBg ? 'text-on-dark' : 'text-primary-800'}>Well</strong> — בריאות,
                 איזון, להרגיש טוב. לא דיאטה — חיים טובים יותר.
               </p>
-              <p className={`mt-2 text-sm ${hasPhotoBg ? 'text-emerald-50/90' : 'text-slate-600'}`}>
+              <p className={`mt-2 text-sm ${hasPhotoBg ? 'text-primary-50/90' : 'text-ink-600'}`}>
                 זה בנוי בשבילכם —{' '}
-                <strong className={hasPhotoBg ? 'text-white' : 'text-emerald-800'}>
+                <strong className={hasPhotoBg ? 'text-on-dark' : 'text-primary-800'}>
                   ליווי אישי, לא אפליקציה קרה
                 </strong>
                 .
@@ -117,7 +117,7 @@ export function RegisterLandingClient() {
             <button
               type="button"
               onClick={() => setStartOpen(true)}
-              className="w-full min-h-[52px] rounded-2xl font-black text-lg text-white flex items-center justify-center gap-2 shadow-[0_12px_40px_rgba(16,185,129,0.4)] bg-linear-to-l from-emerald-600 via-emerald-500 to-teal-500 hover:brightness-110 active:scale-[0.98] transition-all focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
+              className="w-full min-h-[52px] rounded-2xl font-black text-lg text-on-dark flex items-center justify-center gap-2 shadow-[0_12px_40px_rgba(16,185,129,0.4)] bg-linear-to-l from-primary-600 via-primary-500 to-secondary-500 hover:brightness-110 active:scale-[0.98] transition-all focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500"
             >
               <Sparkles className="w-5 h-5" aria-hidden />
               בואו נתחיל
@@ -129,8 +129,8 @@ export function RegisterLandingClient() {
               className={[
                 'w-full min-h-[48px] rounded-2xl font-bold flex items-center justify-center gap-2 transition-all',
                 hasPhotoBg
-                  ? 'text-white border border-white/30 bg-background-card/10 backdrop-blur-xl hover:bg-background-card/15'
-                  : 'text-emerald-800 border border-emerald-200 bg-background-card hover:bg-emerald-50 shadow-xs',
+                  ? 'text-on-dark border border-on-dark/30 bg-background-card/10 backdrop-blur-xl hover:bg-background-card/15'
+                  : 'text-primary-800 border border-primary-200 bg-background-card hover:bg-primary-50 shadow-xs',
               ].join(' ')}
             >
               <HelpCircle className="w-5 h-5" aria-hidden />
@@ -138,26 +138,26 @@ export function RegisterLandingClient() {
             </button>
 
             <p
-              className={`text-center text-sm pt-1 ${hasPhotoBg ? 'text-emerald-100/80' : 'text-slate-600'}`}
+              className={`text-center text-sm pt-1 ${hasPhotoBg ? 'text-primary-100/80' : 'text-ink-600'}`}
             >
               כבר רשומים?{' '}
               <Link
                 href="/login"
-                className={`font-bold hover:underline ${hasPhotoBg ? 'text-emerald-300' : 'text-emerald-700'}`}
+                className={`font-bold hover:underline ${hasPhotoBg ? 'text-primary-300' : 'text-primary-700'}`}
               >
                 כניסה
               </Link>
             </p>
 
             <p
-              className={`text-center text-xs leading-relaxed ${hasPhotoBg ? 'text-emerald-100/70' : 'text-slate-500'}`}
+              className={`text-center text-xs leading-relaxed ${hasPhotoBg ? 'text-primary-100/70' : 'text-ink-500'}`}
             >
               בהרשמה יש לאשר במפורש את{' '}
-              <Link href="/terms" className={`font-semibold underline underline-offset-2 ${hasPhotoBg ? 'text-emerald-200' : 'text-emerald-700'}`}>
+              <Link href="/terms" className={`font-semibold underline underline-offset-2 ${hasPhotoBg ? 'text-primary-200' : 'text-primary-700'}`}>
                 תנאי השימוש
               </Link>{' '}
               ואת{' '}
-              <Link href="/privacy" className={`font-semibold underline underline-offset-2 ${hasPhotoBg ? 'text-emerald-200' : 'text-emerald-700'}`}>
+              <Link href="/privacy" className={`font-semibold underline underline-offset-2 ${hasPhotoBg ? 'text-primary-200' : 'text-primary-700'}`}>
                 מדיניות הפרטיות
               </Link>
               , כולל הסכמה למידע בריאותי.

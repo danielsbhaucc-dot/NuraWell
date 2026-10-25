@@ -6,3 +6,5 @@ export { ErrorState } from './ErrorState';
 export { Sheet, Dialog } from './Sheet';
 export { Skeleton, PageSkeleton } from './Skeleton';
 export { cn } from './cn';
+export { GlassCard, Tile, Pill, Chip, SectionHeader, Toast } from './Glass';
+export type { GlassCardProps, TileProps, ChipProps } from './Glass';

@@ -276,10 +276,10 @@ export function AlmogPlanSections() {
 }
 
 const TONE = {
-  emerald: { bar: 'before:from-emerald-500 before:to-teal-300', pill: 'bg-emerald-50 text-emerald-800 ring-emerald-200' },
-  amber: { bar: 'before:from-amber-400 before:to-orange-300', pill: 'bg-amber-50 text-amber-800 ring-amber-200' },
-  rose: { bar: 'before:from-rose-400 before:to-pink-300', pill: 'bg-rose-50 text-rose-800 ring-rose-200' },
-  sky: { bar: 'before:from-sky-400 before:to-cyan-300', pill: 'bg-sky-50 text-sky-800 ring-sky-200' },
+  emerald: { bar: 'before:from-primary-500 before:to-secondary-300', pill: 'bg-primary-50 text-primary-800 ring-primary-200' },
+  amber: { bar: 'before:from-accent-400 before:to-energy-300', pill: 'bg-accent-50 text-accent-800 ring-accent-200' },
+  rose: { bar: 'before:from-coral-400 before:to-coral-300', pill: 'bg-coral-50 text-coral-800 ring-coral-200' },
+  sky: { bar: 'before:from-secondary-400 before:to-secondary-300', pill: 'bg-secondary-50 text-secondary-800 ring-secondary-200' },
 } as const;
 
 /** Same visual language as PlanHabitCard: white card, soft shadow, colored top accent, kicker pill. */
@@ -298,7 +298,7 @@ function PlanCard({
   return (
     <div
       data-task-id={taskId}
-      className={`relative flex scroll-mt-24 flex-col gap-2 overflow-hidden rounded-[24px] bg-glass/85 backdrop-blur-md p-4 pt-5 shadow-[0_10px_28px_rgba(6,78,59,0.08)] ring-1 ring-emerald-900/6 before:absolute before:inset-x-0 before:top-0 before:h-1 before:bg-linear-to-l ${t.bar} data-[highlight=true]:ring-4 data-[highlight=true]:ring-primary-300/70`}
+      className={`relative flex scroll-mt-24 flex-col gap-2 overflow-hidden rounded-[24px] bg-glass/85 backdrop-blur-md p-4 pt-5 shadow-[0_10px_28px_rgba(6,78,59,0.08)] ring-1 ring-primary-900/6 before:absolute before:inset-x-0 before:top-0 before:h-1 before:bg-linear-to-l ${t.bar} data-[highlight=true]:ring-4 data-[highlight=true]:ring-primary-300/70`}
     >
       {kicker ? <span className={`w-fit rounded-full px-2 py-0.5 text-[10px] font-bold ring-1 ${t.pill}`}>{kicker}</span> : null}
       {children}

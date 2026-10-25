@@ -94,11 +94,11 @@ export function HabitProgressCard({ title, emoji, snapshot }: HabitProgressCardP
       style={{
         background: achieved
           ? 'linear-gradient(135deg, rgba(16,185,129,0.18), rgba(52,211,153,0.12))'
-          : 'linear-gradient(180deg, rgba(248,251,246,0.75) 0%, rgba(236,253,245,0.55) 100%)',
+          : 'linear-gradient(180deg, rgba(231,238,220,0.75) 0%, rgba(236,253,245,0.55) 100%)',
         border: achieved
           ? '1px solid rgba(16,185,129,0.45)'
           : '1px solid rgba(16,185,129,0.22)',
-        boxShadow: 'inset 0 1px 0 rgba(248,251,246,0.85)',
+        boxShadow: 'inset 0 1px 0 rgba(231,238,220,0.85)',
       }}
     >
       <div className="flex items-start gap-2">
@@ -107,9 +107,9 @@ export function HabitProgressCard({ title, emoji, snapshot }: HabitProgressCardP
         </span>
         <div className="flex-1 text-start order-2">
           <p className="text-sm font-black text-[#1A1730] leading-snug">{title}</p>
-          <p className="text-[11px] text-emerald-800/75 mt-0.5 font-semibold">
+          <p className="text-[11px] text-primary-800/75 mt-0.5 font-semibold">
             {achieved ? (
-              <span className="inline-flex items-center gap-1 text-emerald-700">
+              <span className="inline-flex items-center gap-1 text-primary-700">
                 <Check className="w-3.5 h-3.5" strokeWidth={3} />
                 הרגל הושג! 🎉
               </span>
@@ -124,8 +124,8 @@ export function HabitProgressCard({ title, emoji, snapshot }: HabitProgressCardP
       </div>
 
       <div className="flex items-center gap-2">
-        <span className="text-[11px] font-black tabular-nums text-emerald-800 shrink-0 inline-flex items-center gap-0.5">
-          <Flame className="w-3.5 h-3.5 text-amber-500" aria-hidden />
+        <span className="text-[11px] font-black tabular-nums text-primary-800 shrink-0 inline-flex items-center gap-0.5">
+          <Flame className="w-3.5 h-3.5 text-accent-500" aria-hidden />
           {streakCurrent}
         </span>
         <div
@@ -176,7 +176,7 @@ export function HabitProgressCard({ title, emoji, snapshot }: HabitProgressCardP
               {HE_WEEKDAYS.map((wd, i) => (
                 <div
                   key={wd}
-                  className="text-[9px] text-emerald-900/55 font-bold tabular-nums leading-none"
+                  className="text-[9px] text-primary-900/55 font-bold tabular-nums leading-none"
                   style={{
                     height: 12,
                     /** מציגים רק כל יום שני כדי לא להעמיס. */
@@ -222,11 +222,11 @@ export function HabitProgressCard({ title, emoji, snapshot }: HabitProgressCardP
       )}
 
       <div className="flex items-center justify-between gap-2 pt-1">
-        <p className="text-[10px] text-emerald-900/55 leading-relaxed flex-1 text-start">
+        <p className="text-[10px] text-primary-900/55 leading-relaxed flex-1 text-start">
           ירוק = בוצע · אדום = פספוס · כתום = היום פתוח · אפור = עתיד/לא רלוונטי.
         </p>
         {useHeatmap && totalDays >= 60 && (
-          <span className="text-[10px] text-emerald-900/55 font-semibold shrink-0">
+          <span className="text-[10px] text-primary-900/55 font-semibold shrink-0">
             {totalDays} ימים אחרונים
           </span>
         )}

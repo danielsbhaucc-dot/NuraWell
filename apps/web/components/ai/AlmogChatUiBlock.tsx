@@ -105,7 +105,7 @@ export function AlmogChatUiBlock({ ui, disabled, getSessionId, onSend }: Props) 
               );
             })}
           </div>
-          {Object.values(status).includes('error') ? <p className="mt-1.5 text-[11.5px] text-red-800">משהו השתבש, אפשר לנסות שוב.</p> : null}
+          {Object.values(status).includes('error') ? <p className="mt-1.5 text-[11.5px] text-coral-800">משהו השתבש, אפשר לנסות שוב.</p> : null}
         </div>
       ) : null}
 
@@ -120,7 +120,7 @@ export function AlmogChatUiBlock({ ui, disabled, getSessionId, onSend }: Props) 
                 <div key={k} className="flex items-center gap-2">
                   <p className="flex-1 text-[13px] leading-snug">{proposalLabel(p)}</p>
                   {st === 'done' || st === 'dup' ? (
-                    <span className="inline-flex shrink-0 items-center gap-1 text-[12px] font-bold text-emerald-800">
+                    <span className="inline-flex shrink-0 items-center gap-1 text-[12px] font-bold text-primary-800">
                       <Check className="h-4 w-4" aria-hidden />
                       {st === 'dup' ? 'כבר בתוכנית' : 'עודכן'}
                     </span>

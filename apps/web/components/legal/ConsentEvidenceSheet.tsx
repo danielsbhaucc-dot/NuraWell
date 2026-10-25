@@ -202,8 +202,8 @@ export function ConsentEvidenceSheet({ open, action, gender, onClose, mode = 'su
     }
   };
 
-  const accent = withdraw ? 'from-rose-500 to-amber-500' : 'from-emerald-600 to-teal-500';
-  const hair = 'border-emerald-900/10 contrast-more:border-slate-700';
+  const accent = withdraw ? 'from-coral-500 to-accent-500' : 'from-primary-600 to-secondary-500';
+  const hair = 'border-primary-900/10 contrast-more:border-ink-700';
 
   return (
     <MotionConfig reducedMotion="user">
@@ -214,51 +214,51 @@ export function ConsentEvidenceSheet({ open, action, gender, onClose, mode = 'su
       zIndex={520}
       aria-labelledby="consent-ev-title"
       dismissOnBackdrop={!busy}
-      backdropClassName="absolute inset-0 bg-emerald-950/45 backdrop-blur-[6px]"
-      panelClassName="w-full max-w-xl mx-auto rounded-t-[28px] sm:rounded-[28px] sm:mb-6 overflow-hidden ring-1 ring-emerald-900/10 shadow-[0_-1px_0_rgba(255,255,255,0.35)_inset,0_2px_6px_rgba(6,40,30,0.08),0_18px_40px_-12px_rgba(6,40,30,0.30),0_40px_90px_-30px_rgba(6,40,30,0.45)]"
+      backdropClassName="absolute inset-0 bg-primary-950/45 backdrop-blur-[6px]"
+      panelClassName="w-full max-w-xl mx-auto rounded-t-[28px] sm:rounded-[28px] sm:mb-6 overflow-hidden ring-1 ring-primary-900/10 shadow-[0_-1px_0_rgba(255,255,255,0.35)_inset,0_2px_6px_rgba(6,40,30,0.08),0_18px_40px_-12px_rgba(6,40,30,0.30),0_40px_90px_-30px_rgba(6,40,30,0.45)]"
     >
       <div
         ref={panel}
         dir="rtl"
         data-testid="consent-evidence-sheet"
-        className="relative max-h-[86dvh] overflow-y-auto overscroll-contain [&[data-capturing]::-webkit-scrollbar]:hidden [&[data-capturing]]:[scrollbar-width:none] bg-[linear-gradient(180deg,rgba(238,243,228,0.96),rgba(231,238,220,0.95)_60%,rgba(243,236,220,0.96))] px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-2.5 text-right font-[family-name:var(--font-assistant,inherit)] text-slate-800 backdrop-blur-2xl backdrop-saturate-150 contrast-more:bg-glass-hi sm:px-6 sm:pt-5"
+        className="relative max-h-[86dvh] overflow-y-auto overscroll-contain [&[data-capturing]::-webkit-scrollbar]:hidden [&[data-capturing]]:[scrollbar-width:none] bg-[linear-gradient(180deg,rgba(238,243,228,0.96),rgba(231,238,220,0.95)_60%,rgba(243,236,220,0.96))] px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-2.5 text-right font-[family-name:var(--font-assistant,inherit)] text-ink-800 backdrop-blur-2xl backdrop-saturate-150 contrast-more:bg-glass-hi sm:px-6 sm:pt-5"
       >
-        <div className="mx-auto mb-4 h-[5px] w-9 rounded-full bg-emerald-950/20 contrast-more:bg-slate-700 sm:hidden" aria-hidden />
+        <div className="mx-auto mb-4 h-[5px] w-9 rounded-full bg-primary-950/20 contrast-more:bg-ink-700 sm:hidden" aria-hidden />
         <div className="flex flex-col items-center px-2 text-center">
-          <span className={`grid h-14 w-14 place-items-center rounded-[18px] bg-gradient-to-br ${accent} text-white shadow-[0_8px_20px_-6px_rgba(4,120,87,0.45),inset_0_1px_0_rgba(255,255,255,0.35)] ring-1 ring-amber-300/50`}>
+          <span className={`grid h-14 w-14 place-items-center rounded-[18px] bg-gradient-to-br ${accent} text-on-dark shadow-[0_8px_20px_-6px_rgba(4,120,87,0.45),inset_0_1px_0_rgba(255,255,255,0.35)] ring-1 ring-accent-300/50`}>
             {withdraw ? <Trash2 className="h-6 w-6" aria-hidden /> : <HeartPulse className="h-6 w-6" aria-hidden />}
           </span>
-          <h2 id="consent-ev-title" className="mt-3 font-[family-name:var(--font-rubik,inherit)] text-[22px] font-bold leading-tight tracking-[-0.01em] text-emerald-950 contrast-more:text-black">
+          <h2 id="consent-ev-title" className="mt-3 font-[family-name:var(--font-rubik,inherit)] text-[22px] font-bold leading-tight tracking-[-0.01em] text-primary-950 contrast-more:text-forest-950">
             {t.title}
           </h2>
-          <p className="mt-1.5 max-w-md text-[15px] leading-relaxed text-slate-600 contrast-more:text-slate-900">{t.intro}</p>
+          <p className="mt-1.5 max-w-md text-[15px] leading-relaxed text-ink-600 contrast-more:text-ink-900">{t.intro}</p>
         </div>
 
         <div className={`mt-5 overflow-hidden rounded-[20px] border ${hair} bg-glass-hi/80 shadow-[0_1px_2px_rgba(6,40,30,0.06)]`}>
           {t.sections.map((s, i) => (
-            <section key={s.heading} className={`relative px-4 py-3.5 ${i > 0 ? 'before:absolute before:left-0 before:right-12 before:top-0 before:h-px before:bg-emerald-900/10 contrast-more:before:bg-slate-700' : ''}`}>
-              <h3 className="mb-1 flex items-center gap-2.5 font-[family-name:var(--font-rubik,inherit)] text-[15px] font-semibold text-emerald-950 contrast-more:text-black">
-                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-gradient-to-br from-amber-200 to-amber-400 text-[12px] font-bold text-amber-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]">{i + 1}</span>
+            <section key={s.heading} className={`relative px-4 py-3.5 ${i > 0 ? 'before:absolute before:left-0 before:right-12 before:top-0 before:h-px before:bg-primary-900/10 contrast-more:before:bg-ink-700' : ''}`}>
+              <h3 className="mb-1 flex items-center gap-2.5 font-[family-name:var(--font-rubik,inherit)] text-[15px] font-semibold text-primary-950 contrast-more:text-forest-950">
+                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-gradient-to-br from-accent-200 to-accent-400 text-[12px] font-bold text-accent-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]">{i + 1}</span>
                 {s.heading}
               </h3>
-              <ul className="space-y-1 pr-[2.6rem] text-[14px] leading-relaxed text-slate-700 contrast-more:text-slate-900">
+              <ul className="space-y-1 pr-[2.6rem] text-[14px] leading-relaxed text-ink-700 contrast-more:text-ink-900">
                 {s.items.map((it) => (
-                  <li key={it} className="list-disc marker:text-amber-600">{it}</li>
+                  <li key={it} className="list-disc marker:text-accent-600">{it}</li>
                 ))}
               </ul>
             </section>
           ))}
         </div>
 
-        <p className="mt-3 flex items-start gap-2 px-3 text-[13px] leading-relaxed text-slate-500 contrast-more:text-slate-900">
-          <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" aria-hidden />
+        <p className="mt-3 flex items-start gap-2 px-3 text-[13px] leading-relaxed text-ink-500 contrast-more:text-ink-900">
+          <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary-600" aria-hidden />
           <span>
             {t.transparency} {t.why}
           </span>
         </p>
 
         <div className={`mt-4 overflow-hidden rounded-[20px] border ${hair} bg-glass-hi/80 shadow-[0_1px_2px_rgba(6,40,30,0.06)]`}>
-          <label className="flex min-h-[52px] cursor-pointer items-start gap-3 px-4 py-3.5 active:bg-emerald-900/[0.04]">
+          <label className="flex min-h-[52px] cursor-pointer items-start gap-3 px-4 py-3.5 active:bg-primary-900/[0.04]">
             <input
               type="checkbox"
               checked={checked}
@@ -268,14 +268,14 @@ export function ConsentEvidenceSheet({ open, action, gender, onClose, mode = 'su
             />
             <span
               aria-hidden
-              className={`mt-0.5 grid h-[26px] w-[26px] shrink-0 place-items-center rounded-full border-[1.5px] transition-all duration-200 motion-reduce:transition-none ${checked ? 'scale-100 border-emerald-600 bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-[0_3px_8px_-2px_rgba(4,120,87,0.5)]' : 'border-emerald-900/30 bg-glass contrast-more:border-slate-800'} peer-focus-visible:ring-2 peer-focus-visible:ring-emerald-400 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-glass-hi`}
+              className={`mt-0.5 grid h-[26px] w-[26px] shrink-0 place-items-center rounded-full border-[1.5px] transition-all duration-200 motion-reduce:transition-none ${checked ? 'scale-100 border-primary-600 bg-gradient-to-br from-primary-500 to-secondary-600 text-on-dark shadow-[0_3px_8px_-2px_rgba(4,120,87,0.5)]' : 'border-primary-900/30 bg-glass contrast-more:border-ink-800'} peer-focus-visible:ring-2 peer-focus-visible:ring-primary-400 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-glass-hi`}
             >
               {checked ? <Check className="h-4 w-4" strokeWidth={3} /> : null}
             </span>
-            <span className="text-[15px] font-semibold leading-relaxed text-emerald-950 contrast-more:text-black">{t.checkboxLabel}</span>
+            <span className="text-[15px] font-semibold leading-relaxed text-primary-950 contrast-more:text-forest-950">{t.checkboxLabel}</span>
           </label>
-          <label className="relative block px-4 pb-4 pt-3.5 before:absolute before:left-0 before:right-4 before:top-0 before:h-px before:bg-emerald-900/10 contrast-more:before:bg-slate-700">
-            <span className="text-[14px] text-slate-600 contrast-more:text-slate-900">{t.typePrompt}</span>
+          <label className="relative block px-4 pb-4 pt-3.5 before:absolute before:left-0 before:right-4 before:top-0 before:h-px before:bg-primary-900/10 contrast-more:before:bg-ink-700">
+            <span className="text-[14px] text-ink-600 contrast-more:text-ink-900">{t.typePrompt}</span>
             <input
               type="text"
               value={typed}
@@ -290,13 +290,13 @@ export function ConsentEvidenceSheet({ open, action, gender, onClose, mode = 'su
               inputMode="text"
               data-testid="consent-typed"
               aria-invalid={typed.length > 2 && !wordOk}
-              className={`mt-2 w-full rounded-[14px] border bg-glass px-4 py-3 text-[17px] font-semibold text-emerald-950 outline-none transition placeholder:font-normal placeholder:text-slate-400 focus:ring-4 motion-reduce:transition-none contrast-more:border-slate-800 ${typed && wordOk ? 'border-emerald-500 focus:ring-emerald-300/50' : 'border-emerald-900/15 focus:border-amber-400 focus:ring-amber-300/40'}`}
+              className={`mt-2 w-full rounded-[14px] border bg-glass px-4 py-3 text-[17px] font-semibold text-primary-950 outline-none transition placeholder:font-normal placeholder:text-ink-400 focus:ring-4 motion-reduce:transition-none contrast-more:border-ink-800 ${typed && wordOk ? 'border-primary-500 focus:ring-primary-300/50' : 'border-primary-900/15 focus:border-accent-400 focus:ring-accent-300/40'}`}
               placeholder={t.expectedWord}
             />
           </label>
         </div>
 
-        {error ? <p role="alert" className="mt-3 rounded-[14px] border border-rose-200 bg-glass-rose px-3.5 py-2.5 text-sm font-semibold text-rose-700">{error}</p> : null}
+        {error ? <p role="alert" className="mt-3 rounded-[14px] border border-coral-200 bg-glass-rose px-3.5 py-2.5 text-sm font-semibold text-coral-700">{error}</p> : null}
 
         <div className="mt-5 flex flex-col gap-2 sm:flex-row-reverse">
           <button
@@ -304,11 +304,11 @@ export function ConsentEvidenceSheet({ open, action, gender, onClose, mode = 'su
             onClick={submit}
             disabled={!ready}
             data-testid="consent-submit"
-            className={`flex min-h-[52px] flex-1 items-center justify-center gap-2 rounded-full bg-gradient-to-l ${accent} px-6 font-[family-name:var(--font-rubik,inherit)] text-[17px] font-semibold text-white shadow-[0_10px_24px_-10px_rgba(4,120,87,0.65),inset_0_1px_0_rgba(255,255,255,0.3)] ring-1 ring-amber-300/40 transition active:scale-[0.98] motion-reduce:transition-none motion-reduce:active:scale-100 disabled:cursor-not-allowed disabled:opacity-45 disabled:shadow-none`}
+            className={`flex min-h-[52px] flex-1 items-center justify-center gap-2 rounded-full bg-gradient-to-l ${accent} px-6 font-[family-name:var(--font-rubik,inherit)] text-[17px] font-semibold text-on-dark shadow-[0_10px_24px_-10px_rgba(4,120,87,0.65),inset_0_1px_0_rgba(255,255,255,0.3)] ring-1 ring-accent-300/40 transition active:scale-[0.98] motion-reduce:transition-none motion-reduce:active:scale-100 disabled:cursor-not-allowed disabled:opacity-45 disabled:shadow-none`}
           >
             {busy ? <Loader2 className="h-5 w-5 animate-spin" aria-label="שומר" /> : t.submitLabel}
           </button>
-          <button type="button" onClick={onClose} disabled={busy} className="min-h-[48px] flex-1 rounded-full px-5 text-[16px] font-semibold text-emerald-800 transition hover:bg-emerald-900/[0.05] active:bg-emerald-900/[0.08] motion-reduce:transition-none contrast-more:underline">
+          <button type="button" onClick={onClose} disabled={busy} className="min-h-[48px] flex-1 rounded-full px-5 text-[16px] font-semibold text-primary-800 transition hover:bg-primary-900/[0.05] active:bg-primary-900/[0.08] motion-reduce:transition-none contrast-more:underline">
             {dismissLabel ?? 'לא עכשיו'}
           </button>
         </div>

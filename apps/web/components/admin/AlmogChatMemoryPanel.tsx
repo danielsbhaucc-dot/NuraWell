@@ -127,11 +127,11 @@ function accessBadgeClass(status: TranscriptAccessStatus | undefined): string {
   switch (status) {
     case 'granted_global':
     case 'granted_session':
-      return 'bg-emerald-100 text-emerald-800';
+      return 'bg-primary-100 text-primary-800';
     case 'pending':
-      return 'bg-amber-100 text-amber-800';
+      return 'bg-accent-100 text-accent-800';
     case 'denied':
-      return 'bg-rose-100 text-rose-800';
+      return 'bg-coral-100 text-coral-800';
     default:
       return 'bg-surface text-ink-soft';
   }
@@ -505,7 +505,7 @@ export function AlmogChatMemoryPanel({
 
   if (error || !data) {
     return (
-      <div className="rounded-xl border border-rose-200 bg-rose-50/80 p-4 text-rose-800">
+      <div className="rounded-xl border border-coral-200 bg-coral-50/80 p-4 text-coral-800">
         {error ?? 'לא נטען'}
       </div>
     );
@@ -513,12 +513,12 @@ export function AlmogChatMemoryPanel({
 
   return (
     <div className="space-y-6">
-      <section className="rounded-2xl border border-indigo-200/80 bg-indigo-50/60 p-4">
+      <section className="rounded-2xl border border-iris-200/80 bg-iris-50/60 p-4">
         <div className="flex items-start gap-2">
-          <Shield className="mt-0.5 h-4 w-4 shrink-0 text-indigo-700" />
-          <div className="text-xs leading-relaxed text-indigo-900">
+          <Shield className="mt-0.5 h-4 w-4 shrink-0 text-iris-700" />
+          <div className="text-xs leading-relaxed text-iris-900">
             <p className="font-semibold">הגנה רב-שכבתית על תמלילים</p>
-            <p className="mt-1 text-indigo-800/90">
+            <p className="mt-1 text-iris-800/90">
               צפייה בתמליל דורשת אישור משתמש, סיבת גישה (נרשמת ב-audit log), והרשאת Ops.
               {data.transcript_global_consent
                 ? ' למשתמש זה יש הסכמה גלובלית פעילה.'
@@ -549,7 +549,7 @@ export function AlmogChatMemoryPanel({
           <ul className="space-y-3">
             {data.periodic_summaries.map((p) => (
               <li key={`${p.type}-${p.period_key}`} className="rounded-xl border border-hairline/80 bg-background-card/60 p-3">
-                <div className="mb-1 text-xs font-medium text-indigo-700">
+                <div className="mb-1 text-xs font-medium text-iris-700">
                   {TYPE_LABELS[p.type] ?? p.type} · {p.period_key} · {p.session_count} שיחות · {fmt(p.updated_at)}
                 </div>
                 <p className="text-sm text-ink-soft">{p.ai_insight}</p>
@@ -588,7 +588,7 @@ export function AlmogChatMemoryPanel({
                     <span
                       className={
                         s.status === 'open'
-                          ? 'rounded-full bg-emerald-100 px-2 py-0.5 text-emerald-800'
+                          ? 'rounded-full bg-primary-100 px-2 py-0.5 text-primary-800'
                           : 'rounded-full bg-surface px-2 py-0.5 text-ink-soft'
                       }
                     >
@@ -631,7 +631,7 @@ export function AlmogChatMemoryPanel({
                         type="button"
                         disabled={busy}
                         onClick={() => void runAction(s.id, 'delete')}
-                        className="inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-rose-50 px-2 py-1 font-medium text-rose-700 disabled:opacity-50"
+                        className="inline-flex items-center gap-1 rounded-lg border border-coral-200 bg-coral-50 px-2 py-1 font-medium text-coral-700 disabled:opacity-50"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                         מחיקה
@@ -640,7 +640,7 @@ export function AlmogChatMemoryPanel({
                     </div>
 
                     {actionMsg ? (
-                      <p className="flex items-center gap-1 text-emerald-700">
+                      <p className="flex items-center gap-1 text-primary-700">
                         <CheckCircle2 className="h-3.5 w-3.5" />
                         {actionMsg}
                       </p>
@@ -665,7 +665,7 @@ export function AlmogChatMemoryPanel({
                     {!hasAccess ? (
                       <div className="flex items-start gap-3 rounded-xl border border-[#E8D5B5] bg-glass-hi/80 p-3">
                         <div className="min-w-0 flex-1">
-                        <div className="mb-2 flex items-center gap-2 font-medium text-amber-900">
+                        <div className="mb-2 flex items-center gap-2 font-medium text-accent-900">
                           {access === 'pending' ? (
                             <Clock className="h-4 w-4 shrink-0" />
                           ) : (
@@ -679,7 +679,7 @@ export function AlmogChatMemoryPanel({
                         </div>
                         {access !== 'pending' ? (
                           <>
-                            <label className="mb-1 block text-amber-900/90">סיבת הבקשה (נשלחת למשתמש)</label>
+                            <label className="mb-1 block text-accent-900/90">סיבת הבקשה (נשלחת למשתמש)</label>
                             <textarea
                               value={requestReason}
                               onChange={(e) => setRequestReason(e.target.value)}
@@ -691,14 +691,14 @@ export function AlmogChatMemoryPanel({
                               type="button"
                               disabled={busy}
                               onClick={() => void requestAccess(s.id)}
-                              className="inline-flex items-center gap-1 rounded-lg bg-amber-700 px-3 py-1.5 font-medium text-[#FFFBF5] disabled:opacity-50"
+                              className="inline-flex items-center gap-1 rounded-lg bg-accent-700 px-3 py-1.5 font-medium text-[#e7eedc] disabled:opacity-50"
                             >
                               <Send className="h-3.5 w-3.5" />
                               שלח בקשת אישור למשתמש
                             </button>
                           </>
                         ) : (
-                          <p className="mb-2 text-amber-900/90">
+                          <p className="mb-2 text-accent-900/90">
                             נשלחה התראה למשתמש. הסטטוס מתעדכן אוטומטית כל 20 שניות.
                           </p>
                         )}
@@ -707,7 +707,7 @@ export function AlmogChatMemoryPanel({
                             type="button"
                             disabled={busy}
                             onClick={() => void cancelAccessRequest(s.id)}
-                            className="mb-2 inline-flex items-center gap-1 rounded-lg border border-rose-300 bg-glass/80 px-3 py-1.5 text-xs font-bold text-rose-700 disabled:opacity-50"
+                            className="mb-2 inline-flex items-center gap-1 rounded-lg border border-coral-300 bg-glass/80 px-3 py-1.5 text-xs font-bold text-coral-700 disabled:opacity-50"
                           >
                             <Ban className="h-3.5 w-3.5" />
                             בטל בקשה (מחק התראה מהמשתמש)
@@ -727,7 +727,7 @@ export function AlmogChatMemoryPanel({
                           </div>
                         ) : null}
                         </div>
-                        <Shield className="mt-0.5 h-5 w-5 shrink-0 text-amber-800/70" aria-hidden />
+                        <Shield className="mt-0.5 h-5 w-5 shrink-0 text-accent-800/70" aria-hidden />
                       </div>
                     ) : (
                       <>
@@ -773,7 +773,7 @@ export function AlmogChatMemoryPanel({
                             type="button"
                             disabled={busy}
                             onClick={() => void sendToUser(s.id)}
-                            className="inline-flex items-center gap-1 rounded-lg border border-indigo-200 bg-indigo-50 px-2 py-1 font-medium text-indigo-800 disabled:opacity-50"
+                            className="inline-flex items-center gap-1 rounded-lg border border-iris-200 bg-iris-50 px-2 py-1 font-medium text-iris-800 disabled:opacity-50"
                           >
                             <Download className="h-3.5 w-3.5" />
                             שלח קישור למשתמש
@@ -796,7 +796,7 @@ export function AlmogChatMemoryPanel({
                           {transcriptLoading ? (
                             <Loader2 className="h-4 w-4 animate-spin text-ink-faint" />
                           ) : transcriptError ? (
-                            <p className="text-rose-600">{transcriptError}</p>
+                            <p className="text-coral-600">{transcriptError}</p>
                           ) : filteredTranscript && filteredTranscript.length > 0 ? (
                             <ul className="max-h-80 space-y-2 overflow-auto rounded-lg bg-surface-sunken p-2">
                               {filteredTranscript.map((t, i) => (
@@ -835,10 +835,10 @@ export function AlmogChatMemoryPanel({
       </section>
 
       {reasonModalSession ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-forest-950/40 p-4">
           <div className="w-full max-w-md rounded-2xl bg-background-card p-5 shadow-xl" dir="rtl">
             <h4 className="mb-2 flex items-center gap-2 font-bold text-ink">
-              <Shield className="h-4 w-4 text-indigo-600" />
+              <Shield className="h-4 w-4 text-iris-600" />
               אישור גישה לתמליל
             </h4>
             <p className="mb-3 text-sm text-ink-soft">
@@ -856,7 +856,7 @@ export function AlmogChatMemoryPanel({
                 type="button"
                 disabled={accessReason.trim().length < 8}
                 onClick={confirmViewTranscript}
-                className="flex-1 rounded-xl bg-indigo-600 py-2 font-bold text-gc disabled:opacity-50"
+                className="flex-1 rounded-xl bg-iris-600 py-2 font-bold text-gc disabled:opacity-50"
               >
                 אשר וטען תמליל
               </button>

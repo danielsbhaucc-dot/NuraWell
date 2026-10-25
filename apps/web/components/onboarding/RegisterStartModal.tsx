@@ -25,34 +25,34 @@ function RegisterStartBody({ onClose }: { onClose: () => void }) {
           לפני שמתחילים — חשוב לי שתדעו: אני בינה מלאכותית. בלי שיפוט, בלי בושה, בלי צורך
           להתנצל על מה שעבר. רק ליווי אמיתי. 🌿
         </p>
-        <p className="mt-2 text-white/80 text-sm">איך נוח לכם להמשיך?</p>
+        <p className="mt-2 text-on-dark/80 text-sm">איך נוח לכם להמשיך?</p>
       </MentorBubble>
 
       <ul className="space-y-3" role="list">
         <li>
           <div
-            className="flex items-center gap-3 rounded-2xl border border-white/10 bg-background-card/5 px-4 py-4 opacity-55 cursor-not-allowed"
+            className="flex items-center gap-3 rounded-2xl border border-on-dark/10 bg-background-card/5 px-4 py-4 opacity-55 cursor-not-allowed"
             aria-disabled="true"
           >
-            <Phone className="w-5 h-5 text-white/50 shrink-0" />
+            <Phone className="w-5 h-5 text-on-dark/50 shrink-0" />
             <span className="flex-1 text-start">
-              <span className="block font-bold text-white/70">שיחה עם דולב בטלפון</span>
-              <span className="text-xs text-white/50">בקרוב — עובדים על זה</span>
+              <span className="block font-bold text-on-dark/70">שיחה עם דולב בטלפון</span>
+              <span className="text-xs text-on-dark/50">בקרוב — עובדים על זה</span>
             </span>
-            <Lock className="w-4 h-4 text-white/40 shrink-0" aria-hidden />
+            <Lock className="w-4 h-4 text-on-dark/40 shrink-0" aria-hidden />
           </div>
         </li>
         <li>
           <div
-            className="flex items-center gap-3 rounded-2xl border border-white/10 bg-background-card/5 px-4 py-4 opacity-55 cursor-not-allowed"
+            className="flex items-center gap-3 rounded-2xl border border-on-dark/10 bg-background-card/5 px-4 py-4 opacity-55 cursor-not-allowed"
             aria-disabled="true"
           >
-            <MessageCircle className="w-5 h-5 text-white/50 shrink-0" />
+            <MessageCircle className="w-5 h-5 text-on-dark/50 shrink-0" />
             <span className="flex-1 text-start">
-              <span className="block font-bold text-white/70">וואטסאפ עם דולב</span>
-              <span className="text-xs text-white/50">בקרוב</span>
+              <span className="block font-bold text-on-dark/70">וואטסאפ עם דולב</span>
+              <span className="text-xs text-on-dark/50">בקרוב</span>
             </span>
-            <Lock className="w-4 h-4 text-white/40 shrink-0" aria-hidden />
+            <Lock className="w-4 h-4 text-on-dark/40 shrink-0" aria-hidden />
           </div>
         </li>
         <li>
@@ -60,14 +60,14 @@ function RegisterStartBody({ onClose }: { onClose: () => void }) {
             href="/register/form"
             prefetch
             onClick={onClose}
-            className="flex items-center gap-3 rounded-2xl border border-emerald-400/60 bg-linear-to-l from-emerald-600/40 to-teal-500/30 px-4 py-4 shadow-lg shadow-emerald-500/20 hover:brightness-110 active:scale-[0.98] transition-all focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-emerald-400"
+            className="flex items-center gap-3 rounded-2xl border border-primary-400/60 bg-linear-to-l from-primary-600/40 to-secondary-500/30 px-4 py-4 shadow-lg shadow-primary-500/20 hover:brightness-110 active:scale-[0.98] transition-all focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-primary-400"
           >
-            <FormInput className="w-5 h-5 text-emerald-300 shrink-0" />
+            <FormInput className="w-5 h-5 text-primary-300 shrink-0" />
             <span className="flex-1 text-start">
-              <span className="block font-bold text-white">טופס קצר באתר</span>
-              <span className="text-xs text-emerald-100/90">כמה דקות — ואני כבר מכיר אתכם</span>
+              <span className="block font-bold text-on-dark">טופס קצר באתר</span>
+              <span className="text-xs text-primary-100/90">כמה דקות — ואני כבר מכיר אתכם</span>
             </span>
-            <span className="text-emerald-300 text-lg" aria-hidden>
+            <span className="text-primary-300 text-lg" aria-hidden>
               →
             </span>
           </Link>
@@ -81,7 +81,7 @@ function MobileStartDrawer({ open, onClose }: RegisterStartModalProps) {
   return (
     <Drawer.Root open={open} onOpenChange={(v) => !v && onClose()} direction="bottom" shouldScaleBackground>
       <Drawer.Portal>
-        <Drawer.Overlay className="fixed inset-0 z-200 bg-black/55 backdrop-blur-[3px]" />
+        <Drawer.Overlay className="fixed inset-0 z-200 bg-forest-950/55 backdrop-blur-[3px]" />
         <Drawer.Content dir="rtl" className={REGISTER_DRAWER_CONTENT_CLASS}>
           <Drawer.Title className="sr-only">איך תרצו להמשיך</Drawer.Title>
           <Drawer.Description className="sr-only">בחירת ערוץ הרשמה</Drawer.Description>
@@ -93,7 +93,7 @@ function MobileStartDrawer({ open, onClose }: RegisterStartModalProps) {
             <button
               type="button"
               onClick={onClose}
-              className="absolute inset-e-4 top-4 w-9 h-9 rounded-xl bg-background-card/10 flex items-center justify-center text-white/70 hover:bg-background-card/20"
+              className="absolute inset-e-4 top-4 w-9 h-9 rounded-xl bg-background-card/10 flex items-center justify-center text-on-dark/70 hover:bg-background-card/20"
               aria-label="סגור"
             >
               <X className="w-5 h-5" />
@@ -124,7 +124,7 @@ function DesktopStartModal({ open, onClose }: RegisterStartModalProps) {
         >
           <button
             type="button"
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            className="absolute inset-0 bg-forest-950/60 backdrop-blur-sm"
             aria-label="סגור"
             onClick={onClose}
           />
@@ -137,7 +137,7 @@ function DesktopStartModal({ open, onClose }: RegisterStartModalProps) {
             <button
               type="button"
               onClick={onClose}
-              className="absolute inset-e-4 top-4 w-9 h-9 rounded-xl bg-background-card/10 flex items-center justify-center text-white/70 hover:bg-background-card/20"
+              className="absolute inset-e-4 top-4 w-9 h-9 rounded-xl bg-background-card/10 flex items-center justify-center text-on-dark/70 hover:bg-background-card/20"
               aria-label="סגור"
             >
               <X className="w-5 h-5" />

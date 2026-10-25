@@ -234,7 +234,7 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
       <div className="crystal-surface rounded-2xl p-5">
         <div className="flex items-center gap-3 mb-2">
           <div className="crystal-pill w-10 h-10 rounded-xl flex items-center justify-center">
-            <Shield className="w-5 h-5 text-emerald-700" />
+            <Shield className="w-5 h-5 text-primary-700" />
           </div>
           <div>
             <h1 className="text-xl font-black text-ink">פרטיות ונתונים</h1>
@@ -243,7 +243,7 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
         </div>
         <p className="text-sm text-ink-soft leading-relaxed mt-3">
           כאן אפשר לייצא עותק של הנתונים השמורים עליך, או לבקש מחיקת חשבון. לשאלות נוספות:{' '}
-          <a href="mailto:privacy@nurawell.ai" className="font-semibold text-emerald-700 underline">
+          <a href="mailto:privacy@nurawell.ai" className="font-semibold text-primary-700 underline">
             privacy@nurawell.ai
           </a>
         </p>
@@ -251,7 +251,7 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
 
       <section className="crystal-surface rounded-2xl p-5 space-y-3">
         <h2 className="font-bold text-ink flex items-center gap-2">
-          <Download className="w-4 h-4 text-emerald-600" />
+          <Download className="w-4 h-4 text-primary-600" />
           ייצוא נתונים (ניידות)
         </h2>
         <p className="text-sm text-ink-soft">
@@ -261,12 +261,12 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
           type="button"
           onClick={() => void handleExport()}
           disabled={exporting}
-          className="w-full min-h-[48px] rounded-xl font-bold text-white bg-linear-to-l from-emerald-600 to-teal-500 disabled:opacity-60 flex items-center justify-center gap-2"
+          className="w-full min-h-[48px] rounded-xl font-bold text-on-dark bg-linear-to-l from-primary-600 to-secondary-500 disabled:opacity-60 flex items-center justify-center gap-2"
         >
           {exporting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-4 h-4" />}
           הורד את הנתונים שלי
         </button>
-        {exportError ? <p className="text-sm font-semibold text-red-600">{exportError}</p> : null}
+        {exportError ? <p className="text-sm font-semibold text-coral-600">{exportError}</p> : null}
       </section>
 
       <HealthConsentSection
@@ -278,7 +278,7 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
 
       <section className="crystal-surface rounded-2xl p-5 space-y-3">
         <h2 className="font-bold text-ink flex items-center gap-2">
-          <Lock className="w-4 h-4 text-indigo-600" />
+          <Lock className="w-4 h-4 text-iris-600" />
           גישת צוות לתמלילי שיחה
         </h2>
         <p className="text-sm text-ink-soft leading-relaxed">
@@ -305,7 +305,7 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
                 </span>
                 ניתן לבטל בכל עת — הצוות יקבל התראה על ביטול. כל גישה נרשמת ביומן audit פנימי.
               </span>
-              <Lock className="mt-0.5 h-5 w-5 shrink-0 text-amber-800/70" aria-hidden />
+              <Lock className="mt-0.5 h-5 w-5 shrink-0 text-accent-800/70" aria-hidden />
             </label>
 
             {transcriptConsent ? (
@@ -313,7 +313,7 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
                 type="button"
                 disabled={transcriptSaving}
                 onClick={() => setRevokeConfirmOpen(true)}
-                className="w-full min-h-[44px] rounded-xl border border-rose-200 bg-glass-rose/80 px-4 py-2 text-sm font-bold text-rose-800 disabled:opacity-50"
+                className="w-full min-h-[44px] rounded-xl border border-coral-200 bg-glass-rose/80 px-4 py-2 text-sm font-bold text-coral-800 disabled:opacity-50"
               >
                 ביטול האישור לגישת צוות
               </button>
@@ -325,31 +325,31 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
 
             {pendingRequests.length > 0 ? (
               <div className="space-y-2">
-                <p className="text-sm font-bold text-amber-900">בקשות ממתינות לאישור</p>
+                <p className="text-sm font-bold text-accent-900">בקשות ממתינות לאישור</p>
                 {pendingRequests.map((req) => (
                   <div
                     key={req.id}
                     className={`flex items-start gap-3 rounded-xl border p-3 ${
                       highlightedRequest === req.id
-                        ? 'border-indigo-300 bg-[#F5F0FF]'
+                        ? 'border-iris-300 bg-[#e7eedc]'
                         : 'border-[#E8D5B5] bg-glass-hi/80'
                     }`}
                   >
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs text-stone-500 mb-1">
+                      <p className="text-xs text-ink-500 mb-1">
                         נשלח {new Date(req.created_at).toLocaleString('he-IL')}
                       </p>
-                      <p className="text-sm text-stone-800 mb-2">{req.reason}</p>
+                      <p className="text-sm text-ink-800 mb-2">{req.reason}</p>
                       {denyDetailId === req.id ? (
                         <div className="mb-2 space-y-2">
-                          <label className="block text-xs font-semibold text-stone-700">
+                          <label className="block text-xs font-semibold text-ink-700">
                             הסבר לדחייה (אופציונלי)
                           </label>
                           <textarea
                             value={denyReason}
                             onChange={(e) => setDenyReason(e.target.value)}
                             rows={2}
-                            className="w-full rounded-lg border border-[#E8D5B5] bg-glass/80 px-2 py-1.5 text-sm text-stone-800"
+                            className="w-full rounded-lg border border-[#E8D5B5] bg-glass/80 px-2 py-1.5 text-sm text-ink-800"
                             placeholder="למשל: עדיף לי לא לשתף את השיחה הזו"
                           />
                           <div className="flex flex-wrap gap-2">
@@ -357,7 +357,7 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
                               type="button"
                               disabled={resolvingId === req.id}
                               onClick={() => void resolveRequest(req.id, false, denyReason)}
-                              className="inline-flex items-center gap-1 rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50"
+                              className="inline-flex items-center gap-1 rounded-lg bg-coral-600 px-3 py-1.5 text-xs font-bold text-on-dark disabled:opacity-50"
                             >
                               שלח דחייה
                             </button>
@@ -367,7 +367,7 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
                                 setDenyDetailId(null);
                                 setDenyReason('');
                               }}
-                              className="rounded-lg border border-stone-300 px-3 py-1.5 text-xs font-semibold text-stone-600"
+                              className="rounded-lg border border-ink-300 px-3 py-1.5 text-xs font-semibold text-ink-600"
                             >
                               ביטול
                             </button>
@@ -382,7 +382,7 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
                               setRequestDialogTarget(req);
                               setRequestDialogOpen(true);
                             }}
-                            className="inline-flex items-center gap-1 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50"
+                            className="inline-flex items-center gap-1 rounded-lg bg-iris-600 px-3 py-1.5 text-xs font-bold text-on-dark disabled:opacity-50"
                           >
                             פרטים ואישור
                           </button>
@@ -390,7 +390,7 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
                             type="button"
                             disabled={resolvingId === req.id}
                             onClick={() => void resolveRequest(req.id, true)}
-                            className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50"
+                            className="inline-flex items-center gap-1 rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-bold text-on-dark disabled:opacity-50"
                           >
                             <CheckCircle2 className="w-3.5 h-3.5" />
                             אשר
@@ -399,7 +399,7 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
                             type="button"
                             disabled={resolvingId === req.id}
                             onClick={() => void resolveRequest(req.id, false)}
-                            className="inline-flex items-center gap-1 rounded-lg border border-rose-300 bg-glass/80 px-3 py-1.5 text-xs font-bold text-rose-700 disabled:opacity-50"
+                            className="inline-flex items-center gap-1 rounded-lg border border-coral-300 bg-glass/80 px-3 py-1.5 text-xs font-bold text-coral-700 disabled:opacity-50"
                           >
                             <XCircle className="w-3.5 h-3.5" />
                             דחה
@@ -411,14 +411,14 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
                               setDenyDetailId(req.id);
                               setDenyReason('');
                             }}
-                            className="inline-flex items-center gap-1 rounded-lg border border-stone-300 bg-glass/80 px-3 py-1.5 text-xs font-bold text-stone-700 disabled:opacity-50"
+                            className="inline-flex items-center gap-1 rounded-lg border border-ink-300 bg-glass/80 px-3 py-1.5 text-xs font-bold text-ink-700 disabled:opacity-50"
                           >
                             דחה עם הסבר
                           </button>
                         </div>
                       )}
                     </div>
-                    <Shield className="mt-0.5 h-5 w-5 shrink-0 text-amber-800/70" aria-hidden />
+                    <Shield className="mt-0.5 h-5 w-5 shrink-0 text-accent-800/70" aria-hidden />
                   </div>
                 ))}
               </div>
@@ -427,12 +427,12 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
         )}
       </section>
 
-      <section className="rounded-2xl p-5 border border-red-200/80 bg-red-50/60">
-        <h2 className="font-bold text-red-900 flex items-center gap-2">
+      <section className="rounded-2xl p-5 border border-coral-200/80 bg-coral-50/60">
+        <h2 className="font-bold text-coral-900 flex items-center gap-2">
           <Trash2 className="w-4 h-4" />
           מחיקת חשבון
         </h2>
-        <p className="text-sm text-red-900/80 mt-2 leading-relaxed">
+        <p className="text-sm text-coral-900/80 mt-2 leading-relaxed">
           פעולה זו <strong>בלתי הפיכה</strong>. יימחקו החשבון, הפרופיל, המסע, השיחות, ההתראות וכל
           הנתונים האישיים, למעט מה שאנו מחויבים לשמור על-פי דין. פרטים ב{' '}
           <Link href="/privacy" className="underline font-semibold">
@@ -447,7 +447,7 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
             setDeleteError(null);
             setDeleteOpen(true);
           }}
-          className="mt-4 w-full min-h-[48px] rounded-xl font-bold text-red-800 border border-red-300 bg-background-card hover:bg-red-50"
+          className="mt-4 w-full min-h-[48px] rounded-xl font-bold text-coral-800 border border-coral-300 bg-background-card hover:bg-coral-50"
         >
           מחיקת החשבון שלי
         </button>
@@ -476,7 +476,7 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
         aria-labelledby="revoke-transcript-title"
         variant="sheet"
         mobileChromePadding
-        backdropClassName="absolute inset-0 bg-slate-900/45"
+        backdropClassName="absolute inset-0 bg-ink-900/45"
         panelClassName="crystal-surface max-w-md rounded-2xl p-5 shadow-2xl sm:rounded-2xl"
       >
         <h3 id="revoke-transcript-title" className="text-lg font-black text-ink">
@@ -491,7 +491,7 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
             type="button"
             onClick={() => void applyTranscriptConsent(false)}
             disabled={transcriptSaving}
-            className="flex-1 min-h-[44px] rounded-xl font-bold text-white bg-rose-600 disabled:opacity-50 flex items-center justify-center gap-2"
+            className="flex-1 min-h-[44px] rounded-xl font-bold text-on-dark bg-coral-600 disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {transcriptSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
             כן, בטל אישור
@@ -514,7 +514,7 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
         aria-labelledby="delete-account-title"
         variant="sheet"
         mobileChromePadding
-        backdropClassName="absolute inset-0 bg-slate-900/45"
+        backdropClassName="absolute inset-0 bg-ink-900/45"
         panelClassName="crystal-surface max-w-md rounded-2xl p-5 shadow-2xl sm:rounded-2xl"
       >
             <h3 id="delete-account-title" className="text-lg font-black text-ink">
@@ -539,13 +539,13 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
                 disabled={deleting}
               />
             </label>
-            {deleteError ? <p className="mt-2 text-sm font-semibold text-red-600">{deleteError}</p> : null}
+            {deleteError ? <p className="mt-2 text-sm font-semibold text-coral-600">{deleteError}</p> : null}
             <div className="mt-5 flex gap-2">
               <button
                 type="button"
                 onClick={() => void handleDelete()}
                 disabled={deleting || !confirmEmail.trim()}
-                className="flex-1 min-h-[44px] rounded-xl font-bold text-white bg-red-600 disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex-1 min-h-[44px] rounded-xl font-bold text-on-dark bg-coral-600 disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
                 {deleting ? 'מוחק…' : 'מחק לצמיתות'}

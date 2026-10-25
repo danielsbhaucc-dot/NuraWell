@@ -1,6 +1,6 @@
 {
  "app/(auth)/login/page.tsx": {
-  "white": 8,
+  "white": 1,
   "rawHex": 4,
   "rawButton": 2
  },
@@ -61,7 +61,7 @@
  },
  "app/legal-v2.css": {
   "white": 1,
-  "rawHex": 64
+  "rawHex": 65
  },
  "app/ops/ceo/dev-forwards/page.tsx": {
   "rawButton": 2
@@ -86,7 +86,6 @@
   "rawButton": 1
  },
  "components/a11y/AccessibilityWidget.tsx": {
-  "white": 11,
   "rawButton": 3
  },
  "components/action-hub/ActionHubProvider.tsx": {
@@ -131,7 +130,6 @@
   "rawButton": 1
  },
  "components/admin/AdminLegalPanel.tsx": {
-  "white": 1,
   "rawButton": 1
  },
  "components/admin/AdminLegalPrecheck.tsx": {
@@ -145,7 +143,6 @@
   "arbitraryColor": 1
  },
  "components/admin/AdminPrivacyCompliancePanel.tsx": {
-  "white": 1,
   "rawHex": 1
  },
  "components/admin/AdminShell.tsx": {
@@ -211,9 +208,6 @@
  "components/admin/hub/AssetSheet.tsx": {
   "rawButton": 1
  },
- "components/admin/hub/AssetThumb.tsx": {
-  "white": 1
- },
  "components/admin/hub/ComplianceTasks.tsx": {
   "rawButton": 2
  },
@@ -227,13 +221,12 @@
   "rawButton": 1
  },
  "components/ai/AIChatWidget.tsx": {
-  "white": 14,
+  "white": 11,
   "rawHex": 31,
   "arbitraryColor": 1,
   "rawButton": 5
  },
  "components/ai/AIFeedbackCard.tsx": {
-  "white": 1,
   "rawHex": 10
  },
  "components/ai/AIOverlaysClient.tsx": {
@@ -248,16 +241,13 @@
   "rawButton": 1
  },
  "components/ai/ChatSessionInbox.tsx": {
-  "white": 6,
+  "white": 2,
   "rawHex": 7,
   "arbitraryColor": 2,
   "rawButton": 2
  },
  "components/ai/EditedBadge.tsx": {
   "rawHex": 6
- },
- "components/ai/MemorySearchIndicator.tsx": {
-  "white": 1
  },
  "components/ai/MentorEmojiReactionBadge.tsx": {
   "rawHex": 3,
@@ -270,7 +260,6 @@
   "rawButton": 1
  },
  "components/ai/SecureVaultBox.tsx": {
-  "white": 1,
   "rawHex": 28,
   "rawButton": 3
  },
@@ -280,15 +269,10 @@
   "rawButton": 1
  },
  "components/ai/SosDialog.tsx": {
-  "white": 6,
   "rawHex": 14,
   "rawButton": 8
  },
- "components/ai/SosMemoryCard.tsx": {
-  "white": 1
- },
  "components/audio/GlassAudioPlayer.tsx": {
-  "white": 3,
   "rawButton": 1
  },
  "components/billing/CurrentPlanCard.tsx": {
@@ -300,43 +284,31 @@
   "arbitraryColor": 30
  },
  "components/challenge/ChallengeCompleteClient.tsx": {
-  "white": 1,
   "rawHex": 3,
   "arbitraryColor": 3
  },
  "components/challenge/ChallengeDashboardClient.tsx": {
-  "white": 3,
   "rawHex": 3,
   "arbitraryColor": 3,
   "rawButton": 1
  },
  "components/challenge/ChallengeEatingWindowClient.tsx": {
-  "white": 2,
   "rawHex": 3,
   "arbitraryColor": 3,
   "rawButton": 1
  },
- "components/challenge/ChallengeEatingWindowTimer.tsx": {
-  "white": 1
- },
  "components/challenge/ChallengeInterviewGlass.tsx": {
-  "white": 4,
   "rawHex": 3,
   "arbitraryColor": 3,
   "rawButton": 1
  },
  "components/challenge/ChallengeIntroExperience.tsx": {
-  "white": 1,
   "rawButton": 2
  },
  "components/challenge/ChallengeShareCard.tsx": {
   "rawButton": 1
  },
- "components/challenge/ChallengeSuccessChart.tsx": {
-  "white": 4
- },
  "components/challenge/ChallengeWaitingExperience.tsx": {
-  "white": 1,
   "rawHex": 2,
   "arbitraryColor": 1,
   "rawButton": 1
@@ -345,27 +317,25 @@
   "rawButton": 1
  },
  "components/coming-soon/ComingSoonExperience.tsx": {
-  "white": 8,
+  "white": 4,
   "rawHex": 49,
   "arbitraryColor": 6,
   "rawButton": 3
  },
  "components/course/AudioPlayer.tsx": {
-  "white": 2,
-  "rawHex": 2,
+  "rawHex": 4,
   "rawButton": 2
  },
  "components/course/CourseDetailClient.tsx": {
-  "white": 17,
-  "rawHex": 39
+  "white": 13,
+  "rawHex": 40
  },
  "components/course/CoursesClientWrapper.tsx": {
-  "white": 4,
-  "rawHex": 26
+  "rawHex": 27
  },
  "components/course/GuideLearningPath.tsx": {
-  "white": 13,
-  "rawHex": 14,
+  "white": 9,
+  "rawHex": 17,
   "rawButton": 2
  },
  "components/course/GuidesAlmogKnowledgePanel.tsx": {
@@ -379,8 +349,8 @@
   "rawButton": 4
  },
  "components/course/LessonImmersivePath.tsx": {
-  "white": 12,
-  "rawHex": 16,
+  "white": 10,
+  "rawHex": 17,
   "rawButton": 4
  },
  "components/course/LessonNav.tsx": {
@@ -410,7 +380,7 @@
   "rawButton": 1
  },
  "components/demo-access/DemoWelcomeClient.tsx": {
-  "white": 4,
+  "white": 1,
   "rawHex": 5,
   "arbitraryColor": 5
  },
@@ -431,13 +401,13 @@
   "rawButton": 1
  },
  "components/home/DolevHeroHeader.tsx": {
-  "white": 32,
+  "white": 20,
   "rawHex": 24,
   "rawButton": 1
  },
  "components/home/HomeClient.tsx": {
-  "white": 14,
-  "rawHex": 26
+  "white": 8,
+  "rawHex": 27
  },
  "components/home/ProgramOrchestratorGate.tsx": {
   "rawHex": 8,
@@ -459,7 +429,6 @@
   "rawButton": 8
  },
  "components/journey/AlmogInstantFeedback.tsx": {
-  "white": 1,
   "rawHex": 12
  },
  "components/journey/AlmogPresence.tsx": {
@@ -467,8 +436,7 @@
   "rawHex": 11
  },
  "components/journey/CommitmentSection.tsx": {
-  "white": 1,
-  "rawHex": 6,
+  "rawHex": 7,
   "rawButton": 3
  },
  "components/journey/DeclinedTasksPageClient.tsx": {
@@ -476,8 +444,8 @@
   "arbitraryColor": 2
  },
  "components/journey/FullscreenVideoPlayer.tsx": {
-  "white": 18,
-  "rawHex": 8,
+  "white": 15,
+  "rawHex": 10,
   "rawButton": 1
  },
  "components/journey/HabitProgressCard.tsx": {
@@ -489,7 +457,8 @@
   "rawHex": 10
  },
  "components/journey/JourneyPage.tsx": {
-  "white": 18,
+  "white": 17,
+  "rawHex": 1,
   "rawButton": 1
  },
  "components/journey/JourneyResultsDrawer.tsx": {
@@ -511,16 +480,13 @@
   "rawButton": 1
  },
  "components/journey/QuestionTtsPlayer.tsx": {
-  "white": 1,
   "rawButton": 2
  },
  "components/journey/QuizSection.tsx": {
-  "white": 1,
   "rawHex": 18,
   "rawButton": 1
  },
  "components/journey/StepLesson.tsx": {
-  "white": 6,
   "rawHex": 7
  },
  "components/journey/StepProgress.tsx": {
@@ -528,16 +494,16 @@
   "rawHex": 4
  },
  "components/journey/SummarySection.tsx": {
-  "white": 24,
+  "white": 18,
   "rawHex": 49,
   "rawButton": 4
  },
  "components/journey/TaskDailySlots.tsx": {
-  "white": 5,
+  "white": 3,
   "rawHex": 4
  },
  "components/journey/TaskHistoryPageClient.tsx": {
-  "white": 2,
+  "white": 1,
   "rawHex": 5,
   "arbitraryColor": 1
  },
@@ -546,8 +512,8 @@
   "arbitraryColor": 1
  },
  "components/journey/VideoSection.tsx": {
-  "white": 4,
-  "rawHex": 10,
+  "white": 2,
+  "rawHex": 12,
   "rawButton": 3
  },
  "components/landing/LandingPageClient.tsx": {
@@ -562,14 +528,11 @@
   "rawHex": 1,
   "rawButton": 2
  },
- "components/legal/PrivacyConsentFields.tsx": {
-  "white": 1
- },
  "components/legal/cookies/CookieNotice.tsx": {
   "rawButton": 5
  },
  "components/legal/cookies/cookie-notice.css": {
-  "white": 12,
+  "white": 4,
   "rawHex": 50
  },
  "components/legal/v2/HeroArt.tsx": {
@@ -578,42 +541,31 @@
  "components/media-manager/AdminMediaManagerLauncher.tsx": {
   "white": 1
  },
- "components/media-manager/CreditBadge.tsx": {
-  "white": 2
- },
  "components/media-manager/FinderFolderCard.tsx": {
   "rawButton": 1
  },
  "components/media-manager/FinderPathBar.tsx": {
-  "white": 4,
   "rawButton": 1
  },
  "components/media-manager/GlassConfirmDialog.tsx": {
-  "white": 1,
   "rawButton": 2
  },
  "components/media-manager/MediaAssetEditPanel.tsx": {
   "rawButton": 1
  },
- "components/media-manager/MediaAssetPreview.tsx": {
-  "white": 4
- },
- "components/media-manager/MediaFinderGrid.tsx": {
-  "white": 1
- },
  "components/media-manager/MediaManager.tsx": {
-  "white": 12,
-  "rawButton": 1
- },
- "components/media-manager/MediaStockSearch.tsx": {
-  "white": 2
- },
- "components/media-manager/MediaUploadZone.tsx": {
   "white": 2,
   "rawButton": 1
  },
+ "components/media-manager/MediaStockSearch.tsx": {
+  "white": 1
+ },
+ "components/media-manager/MediaUploadZone.tsx": {
+  "white": 1,
+  "rawButton": 1
+ },
  "components/media-manager/glass-styles.ts": {
-  "white": 7,
+  "white": 6,
   "rawHex": 4
  },
  "components/mentorship/DynamicMentorWidgetClient.tsx": {
@@ -623,12 +575,10 @@
   "rawHex": 2
  },
  "components/notifications/AlmogReplyModal.tsx": {
-  "white": 2,
   "rawHex": 4,
   "rawButton": 2
  },
  "components/notifications/LiveNotificationToast.tsx": {
-  "white": 2,
   "rawHex": 4,
   "rawButton": 1
  },
@@ -636,11 +586,11 @@
   "rawButton": 3
  },
  "components/notifications/NotificationsBellButton.tsx": {
-  "white": 6,
+  "white": 4,
   "rawHex": 3
  },
  "components/notifications/NotificationsProvider.tsx": {
-  "white": 8,
+  "white": 6,
   "rawHex": 4,
   "rawButton": 1
  },
@@ -648,32 +598,16 @@
   "rawButton": 1
  },
  "components/onboarding/GlassChoiceButton.tsx": {
-  "white": 1,
   "rawButton": 1
  },
- "components/onboarding/MentorBubble.tsx": {
-  "white": 1
- },
  "components/onboarding/OnboardingFormClient.tsx": {
-  "white": 2,
   "rawButton": 2
  },
- "components/onboarding/OnboardingSummaryStep.tsx": {
-  "white": 1
- },
  "components/onboarding/RegisterHowItWorksModal.tsx": {
-  "white": 1,
   "rawButton": 3
- },
- "components/onboarding/RegisterLandingClient.tsx": {
-  "white": 1
  },
  "components/onboarding/RegisterStartModal.tsx": {
-  "white": 2,
   "rawButton": 3
- },
- "components/onboarding/register-modal-styles.ts": {
-  "white": 2
  },
  "components/ops-access/DeviceCheckClient.tsx": {
   "rawHex": 24,
@@ -686,7 +620,6 @@
   "rawButton": 2
  },
  "components/ops-access/SecurityKeysPanel.tsx": {
-  "white": 2,
   "rawHex": 11,
   "arbitraryColor": 11,
   "rawButton": 2
@@ -700,27 +633,22 @@
  "components/plans/PlanProgressRing.tsx": {
   "rawHex": 1
  },
- "components/privacy/RetentionChoicePicker.tsx": {
-  "white": 3
- },
  "components/profile/OnboardingChat.tsx": {
-  "white": 18,
+  "white": 6,
   "rawHex": 13,
   "arbitraryColor": 1,
   "rawButton": 5
  },
  "components/profile/ProfileAvatarUpload.tsx": {
-  "white": 3,
   "rawHex": 10,
   "rawButton": 1
  },
  "components/profile/ProfilePageClient.tsx": {
-  "white": 8,
+  "white": 6,
   "rawHex": 5,
   "rawButton": 3
  },
  "components/profile/ProfileRhythmCard.tsx": {
-  "white": 1,
   "rawHex": 6
  },
  "components/profile/onboarding-fun-experience.tsx": {
@@ -733,7 +661,7 @@
   "arbitraryColor": 4
  },
  "components/progress-report/ProgressReportProvider.tsx": {
-  "white": 5,
+  "white": 3,
   "rawHex": 3,
   "arbitraryColor": 1
  },
@@ -746,7 +674,7 @@
   "arbitraryColor": 2
  },
  "components/settings/PasskeyNudge.tsx": {
-  "white": 5,
+  "white": 1,
   "rawHex": 18,
   "arbitraryColor": 5,
   "rawButton": 2
@@ -756,7 +684,6 @@
   "arbitraryColor": 5
  },
  "components/settings/SecuritySettingsClient.tsx": {
-  "white": 1,
   "rawHex": 3,
   "arbitraryColor": 3,
   "rawButton": 2
@@ -780,20 +707,15 @@
   "arbitraryColor": 3
  },
  "components/shared/CourseCard.tsx": {
-  "white": 12,
-  "rawHex": 67
+  "white": 8,
+  "rawHex": 68
  },
  "components/shared/MobileHeader.tsx": {
   "white": 3,
   "rawHex": 8,
   "rawButton": 1
  },
- "components/shared/NuraWellLogo.tsx": {
-  "white": 2,
-  "rawHex": 6
- },
  "components/shared/PageBackButton.tsx": {
-  "white": 3,
   "rawButton": 1
  },
  "components/shared/Toast.tsx": {
@@ -807,7 +729,6 @@
   "rawButton": 1
  },
  "components/tasks/DayDetailPopup.tsx": {
-  "white": 1,
   "rawHex": 1,
   "rawButton": 2
  },
@@ -820,12 +741,11 @@
   "white": 4
  },
  "lib/ai/sos-dialog-surfaces.ts": {
-  "white": 1,
   "rawHex": 12,
   "arbitraryColor": 1
  },
  "lib/client/chat-inbox-colors.ts": {
-  "white": 10,
+  "white": 9,
   "rawHex": 8
  },
  "lib/client/chat-session-inbox-organize.ts": {
@@ -854,7 +774,6 @@
   "rawHex": 22
  },
  "lib/ui/avatar-fallback-svg.ts": {
-  "white": 1,
-  "rawHex": 2
+  "rawHex": 3
  }
 }

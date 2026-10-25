@@ -281,20 +281,20 @@ export function LessonAudioController({ tracks, videoActive, ttsActive = false, 
           <div
             className="w-[min(19rem,calc(100vw-1.25rem))] overflow-hidden rounded-[22px] p-4"
             style={{
-              background: 'rgba(248,250,252,0.72)',
+              background: 'rgba(231,238,220,0.72)',
               backdropFilter: 'blur(40px) saturate(180%)',
               WebkitBackdropFilter: 'blur(40px) saturate(180%)',
-              border: '0.5px solid rgba(248,251,246,0.65)',
-              boxShadow: '0 20px 50px rgba(6,78,59,0.22), inset 0 1px 0 rgba(248,251,246,0.85)',
+              border: '0.5px solid rgba(231,238,220,0.65)',
+              boxShadow: '0 20px 50px rgba(6,78,59,0.22), inset 0 1px 0 rgba(231,238,220,0.85)',
             }}
           >
             <div className="mb-3 flex items-center justify-between">
-              <span className="flex items-center gap-2 text-[12px] font-bold text-emerald-900">
+              <span className="flex items-center gap-2 text-[12px] font-bold text-primary-900">
                 <span
                   className="flex h-7 w-7 items-center justify-center rounded-[10px]"
                   style={{ background: 'rgba(16,185,129,0.14)', border: '0.5px solid rgba(16,185,129,0.25)' }}
                 >
-                  <Music2 className={`h-3.5 w-3.5 text-emerald-700 ${muted ? '' : 'animate-pulse'}`} />
+                  <Music2 className={`h-3.5 w-3.5 text-primary-700 ${muted ? '' : 'animate-pulse'}`} />
                 </span>
                 מוזיקת רקע
               </span>
@@ -302,18 +302,18 @@ export function LessonAudioController({ tracks, videoActive, ttsActive = false, 
                 type="button"
                 onClick={() => setExpanded(false)}
                 aria-label="סגור"
-                className="inline-flex h-7 w-7 items-center justify-center rounded-full text-emerald-800/70 transition active:scale-95"
+                className="inline-flex h-7 w-7 items-center justify-center rounded-full text-primary-800/70 transition active:scale-95"
                 style={{ background: 'rgba(0,0,0,0.06)' }}
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
 
-            <p className="truncate text-[15px] font-bold text-slate-800">{creditTrackTitle}</p>
+            <p className="truncate text-[15px] font-bold text-ink-800">{creditTrackTitle}</p>
             {creditAuthor && (
-              <p className="mt-1 text-[12px] font-medium text-slate-600">
-                מאת <span className="font-bold text-emerald-900">{creditAuthor}</span>
-                {creditSource ? <span className="text-slate-500"> · {creditSource}</span> : null}
+              <p className="mt-1 text-[12px] font-medium text-ink-600">
+                מאת <span className="font-bold text-primary-900">{creditAuthor}</span>
+                {creditSource ? <span className="text-ink-500"> · {creditSource}</span> : null}
               </p>
             )}
 
@@ -322,14 +322,14 @@ export function LessonAudioController({ tracks, videoActive, ttsActive = false, 
                 type="button"
                 onClick={toggleMute}
                 aria-pressed={muted}
-                className="inline-flex flex-1 items-center justify-center gap-2 rounded-[14px] px-3 py-2.5 text-[13px] font-bold text-emerald-950 transition active:scale-[0.98]"
+                className="inline-flex flex-1 items-center justify-center gap-2 rounded-[14px] px-3 py-2.5 text-[13px] font-bold text-primary-950 transition active:scale-[0.98]"
                 style={{
-                  background: 'rgba(248,251,246,0.82)',
+                  background: 'rgba(231,238,220,0.82)',
                   border: '0.5px solid rgba(16,185,129,0.22)',
-                  boxShadow: '0 2px 8px rgba(6,78,59,0.08), inset 0 1px 0 rgba(248,251,246,0.9)',
+                  boxShadow: '0 2px 8px rgba(6,78,59,0.08), inset 0 1px 0 rgba(231,238,220,0.9)',
                 }}
               >
-                {muted ? <VolumeX className="h-[18px] w-[18px] text-emerald-800" /> : <Volume2 className="h-[18px] w-[18px] text-emerald-800" />}
+                {muted ? <VolumeX className="h-[18px] w-[18px] text-primary-800" /> : <Volume2 className="h-[18px] w-[18px] text-primary-800" />}
                 {muted ? 'הפעל שוב' : 'השתק'}
               </button>
               {creditLink && (
@@ -337,11 +337,11 @@ export function LessonAudioController({ tracks, videoActive, ttsActive = false, 
                   href={creditLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 rounded-[14px] px-3 py-2.5 text-[12px] font-bold text-emerald-900 transition active:scale-[0.98]"
+                  className="inline-flex items-center gap-1 rounded-[14px] px-3 py-2.5 text-[12px] font-bold text-primary-900 transition active:scale-[0.98]"
                   style={{
                     background: 'rgba(209,250,229,0.75)',
                     border: '0.5px solid rgba(16,185,129,0.28)',
-                    boxShadow: 'inset 0 1px 0 rgba(248,251,246,0.7)',
+                    boxShadow: 'inset 0 1px 0 rgba(231,238,220,0.7)',
                   }}
                 >
                   זכויות יוצרים
@@ -359,15 +359,15 @@ export function LessonAudioController({ tracks, videoActive, ttsActive = false, 
               background: 'rgba(248,250,252,0.55)',
               backdropFilter: 'blur(24px) saturate(160%)',
               WebkitBackdropFilter: 'blur(24px) saturate(160%)',
-              border: '0.5px solid rgba(248,251,246,0.72)',
-              boxShadow: '0 8px 28px rgba(6,78,59,0.18), inset 0 1px 0 rgba(248,251,246,0.75)',
+              border: '0.5px solid rgba(231,238,220,0.72)',
+              boxShadow: '0 8px 28px rgba(6,78,59,0.18), inset 0 1px 0 rgba(231,238,220,0.75)',
             }}
           >
             <button
               type="button"
               onClick={() => setExpanded(true)}
               aria-label="פתח בקרת מוזיקת רקע"
-              className="flex h-10 items-center pe-1 ps-2 text-emerald-800/75 transition active:opacity-80"
+              className="flex h-10 items-center pe-1 ps-2 text-primary-800/75 transition active:opacity-80"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
@@ -379,18 +379,18 @@ export function LessonAudioController({ tracks, videoActive, ttsActive = false, 
               className="relative inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition active:scale-95"
               style={{
                 background: muted
-                  ? 'linear-gradient(145deg, rgba(254,226,226,0.9), rgba(248,251,246,0.7))'
-                  : 'linear-gradient(145deg, rgba(209,250,229,0.95), rgba(248,251,246,0.75))',
-                boxShadow: 'inset 0 1px 0 rgba(248,251,246,0.9), 0 2px 10px rgba(6,78,59,0.12)',
+                  ? 'linear-gradient(145deg, rgba(254,226,226,0.9), rgba(231,238,220,0.7))'
+                  : 'linear-gradient(145deg, rgba(209,250,229,0.95), rgba(231,238,220,0.75))',
+                boxShadow: 'inset 0 1px 0 rgba(231,238,220,0.9), 0 2px 10px rgba(6,78,59,0.12)',
               }}
             >
               {muted ? (
-                <VolumeX className="h-5 w-5 text-rose-700" strokeWidth={2.25} />
+                <VolumeX className="h-5 w-5 text-coral-700" strokeWidth={2.25} />
               ) : (
-                <Volume2 className="h-5 w-5 text-emerald-800" strokeWidth={2.25} />
+                <Volume2 className="h-5 w-5 text-primary-800" strokeWidth={2.25} />
               )}
               {needsGesture && !muted && (
-                <span className="absolute inset-s-1 top-1 h-2.5 w-2.5 animate-ping rounded-full bg-amber-400" />
+                <span className="absolute inset-s-1 top-1 h-2.5 w-2.5 animate-ping rounded-full bg-accent-400" />
               )}
             </button>
           </div>

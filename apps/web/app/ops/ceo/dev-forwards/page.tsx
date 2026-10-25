@@ -44,10 +44,10 @@ export default async function DevForwardsPage() {
           {r.approval === 'pending' ? (
             <form action={decide} className="flex gap-2">
               <input type="hidden" name="id" value={r.id} />
-              <button name="approve" value="1" className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold text-gc">אשר לאורי לבנות</button>
+              <button name="approve" value="1" className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-bold text-gc">אשר לאורי לבנות</button>
               <button name="approve" value="0" className="rounded-lg border border-primary-200 px-4 py-2 text-sm font-bold text-primary-800">לא צריך</button>
             </form>
-          ) : r.approval === 'approved' ? <div className="text-xs text-emerald-700">אושר על ידך</div> : null}
+          ) : r.approval === 'approved' ? <div className="text-xs text-primary-700">אושר על ידך</div> : null}
           <div className="text-xs text-primary-700">
             {fmt.format(new Date(r.created_at))} · {STATUS[r.status] ?? r.status}
             {r.issue_url ? (

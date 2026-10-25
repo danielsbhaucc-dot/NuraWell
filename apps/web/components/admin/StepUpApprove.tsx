@@ -80,52 +80,52 @@ export function StepUpApprove({ id, demo }: { id: string; demo?: ApproveInfo }) 
 
   return (
     <main dir="rtl" className="mx-auto grid min-h-[90dvh] w-full max-w-md place-items-center p-4">
-      <section className="w-full rounded-[30px] border border-amber-200/50 bg-[linear-gradient(160deg,rgba(214,238,229,0.92),rgba(236,228,206,0.9))] p-5 shadow-[0_24px_60px_-28px_rgba(6,78,59,0.55)] backdrop-blur-xl" data-testid="stepup-approve">
+      <section className="w-full rounded-[30px] border border-accent-200/50 bg-[linear-gradient(160deg,rgba(214,238,229,0.92),rgba(236,228,206,0.9))] p-5 shadow-[0_24px_60px_-28px_rgba(6,78,59,0.55)] backdrop-blur-xl" data-testid="stepup-approve">
         {state === 'loading' ? <Loader2 className="mx-auto my-10 animate-spin text-ink-faint" />
           : state === 'signin' ? (
             <>
-              <Done icon={<ShieldAlert className="mx-auto text-amber-600" size={38} />} title="צריך להתחבר בטלפון" text="מתחברים לחשבון שלך בטלפון הזה, ואז חוזרים לכאן אוטומטית." />
-              <a href={`/login?redirect=${encodeURIComponent(`/approve/${id}`)}`} className="mt-2 flex min-h-12 items-center justify-center rounded-2xl bg-emerald-800 font-bold text-amber-50">להתחברות</a>
+              <Done icon={<ShieldAlert className="mx-auto text-accent-600" size={38} />} title="צריך להתחבר בטלפון" text="מתחברים לחשבון שלך בטלפון הזה, ואז חוזרים לכאן אוטומטית." />
+              <a href={`/login?redirect=${encodeURIComponent(`/approve/${id}`)}`} className="mt-2 flex min-h-12 items-center justify-center rounded-2xl bg-primary-800 font-bold text-accent-50">להתחברות</a>
             </>
           ) : state === 'gone' ? (
-            <Done icon={<ShieldAlert className="mx-auto text-amber-600" size={38} />} title="הבקשה לא זמינה" text="היא פגה, כבר טופלה, או שהקישור לא שלם. יוצרים קוד חדש במסך השני." />
+            <Done icon={<ShieldAlert className="mx-auto text-accent-600" size={38} />} title="הבקשה לא זמינה" text="היא פגה, כבר טופלה, או שהקישור לא שלם. יוצרים קוד חדש במסך השני." />
           ) : state === 'approved' ? (
-            <Done icon={<CheckCircle2 className="mx-auto text-emerald-600" size={46} />} title="אושר" text="המסך השני ממשיך לבד. אפשר לסגור את הטלפון." />
+            <Done icon={<CheckCircle2 className="mx-auto text-primary-600" size={46} />} title="אושר" text="המסך השני ממשיך לבד. אפשר לסגור את הטלפון." />
           ) : state === 'reported' ? (
-            <Done icon={<ShieldX className="mx-auto text-rose-600" size={46} />} title="הבקשה בוטלה ודווחה" text="אף אחד לא נכנס. רשמנו אירוע אבטחה. אם זה קורה שוב, כדאי להחליף סיסמה." />
+            <Done icon={<ShieldX className="mx-auto text-coral-600" size={46} />} title="הבקשה בוטלה ודווחה" text="אף אחד לא נכנס. רשמנו אירוע אבטחה. אם זה קורה שוב, כדאי להחליף סיסמה." />
           ) : d ? (
             <>
               <div className="flex items-center gap-3">
-                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-emerald-700 to-teal-600 text-amber-100 shadow-lg"><Monitor size={22} /></div>
+                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-primary-700 to-secondary-600 text-accent-100 shadow-lg"><Monitor size={22} /></div>
                 <div className="min-w-0">
-                  <p className="text-[12px] font-bold text-amber-700">מישהו מבקש אישור</p>
+                  <p className="text-[12px] font-bold text-accent-700">מישהו מבקש אישור</p>
                   <h1 className="font-[Rubik] text-lg font-bold leading-snug text-ink">{PURPOSE_HE[d.purpose] ?? 'פעולה רגישה'}</h1>
                 </div>
               </div>
-              <dl className="mt-4 grid gap-1.5 rounded-2xl border border-emerald-900/10 bg-emerald-950/[0.04] p-3 text-[14px]" data-testid="approve-context">
-                <div className="flex items-center gap-2"><Monitor size={15} className="shrink-0 text-emerald-700" /><dt className="sr-only">מכשיר</dt><dd className="text-ink">{d.requester ?? 'דפדפן לא מזוהה'}</dd></div>
-                <div className="flex items-center gap-2"><MapPin size={15} className="shrink-0 text-emerald-700" /><dt className="sr-only">מיקום משוער</dt><dd className="text-ink">{d.city ?? 'מיקום לא ידוע'} <span className="text-ink-faint">(משוער, לפי הרשת)</span></dd></div>
-                <div className="flex items-center gap-2"><Clock size={15} className="shrink-0 text-emerald-700" /><dt className="sr-only">זמן</dt><dd className="text-ink">{fmt(d.created_at)} · שעון ישראל <span className="text-ink-faint">· {left > 0 ? `נשארו ${left} שניות` : 'פג'}</span></dd></div>
+              <dl className="mt-4 grid gap-1.5 rounded-2xl border border-primary-900/10 bg-primary-950/[0.04] p-3 text-[14px]" data-testid="approve-context">
+                <div className="flex items-center gap-2"><Monitor size={15} className="shrink-0 text-primary-700" /><dt className="sr-only">מכשיר</dt><dd className="text-ink">{d.requester ?? 'דפדפן לא מזוהה'}</dd></div>
+                <div className="flex items-center gap-2"><MapPin size={15} className="shrink-0 text-primary-700" /><dt className="sr-only">מיקום משוער</dt><dd className="text-ink">{d.city ?? 'מיקום לא ידוע'} <span className="text-ink-faint">(משוער, לפי הרשת)</span></dd></div>
+                <div className="flex items-center gap-2"><Clock size={15} className="shrink-0 text-primary-700" /><dt className="sr-only">זמן</dt><dd className="text-ink">{fmt(d.created_at)} · שעון ישראל <span className="text-ink-faint">· {left > 0 ? `נשארו ${left} שניות` : 'פג'}</span></dd></div>
               </dl>
               <p className="mt-4 text-[15px] font-bold text-ink">איזה מספר מופיע במסך השני?</p>
               <div className="mt-2 grid grid-cols-3 gap-2" role="radiogroup" aria-label="מספר התאמה">
                 {d.choices.map((c) => (
                   <button key={c} type="button" role="radio" aria-checked={pick === c} onClick={() => setPick(c)} data-testid="match-choice"
-                    className={cn('h-16 rounded-2xl border font-[Rubik] text-3xl font-bold tabular-nums transition', pick === c ? 'border-emerald-700 bg-emerald-800 text-amber-50 shadow-lg' : 'border-emerald-900/15 bg-glass/40 text-emerald-950 hover:bg-glass/70')}>{c}</button>
+                    className={cn('h-16 rounded-2xl border font-[Rubik] text-3xl font-bold tabular-nums transition', pick === c ? 'border-primary-700 bg-primary-800 text-accent-50 shadow-lg' : 'border-primary-900/15 bg-glass/40 text-primary-950 hover:bg-glass/70')}>{c}</button>
                 ))}
               </div>
-              <p className="mt-3 rounded-2xl border border-amber-300/50 bg-amber-500/10 px-3 py-2 text-[13.5px] text-amber-900">מאשרים רק אם אתם מול המסך השני עכשיו וביקשתם את זה בעצמכם. אף אחד מטעמנו לא יבקש מכם לסרוק קוד.</p>
+              <p className="mt-3 rounded-2xl border border-accent-300/50 bg-accent-500/10 px-3 py-2 text-[13.5px] text-accent-900">מאשרים רק אם אתם מול המסך השני עכשיו וביקשתם את זה בעצמכם. אף אחד מטעמנו לא יבקש מכם לסרוק קוד.</p>
               <div className="mt-4 grid gap-2">
                 <button type="button" onClick={() => void act('approve')} disabled={state === 'busy' || !pick || left === 0} data-testid="stepup-approve-btn"
-                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-gradient-to-l from-emerald-700 to-emerald-800 text-base font-bold text-amber-50 shadow-lg disabled:opacity-50">
+                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-gradient-to-l from-primary-700 to-primary-800 text-base font-bold text-accent-50 shadow-lg disabled:opacity-50">
                   {state === 'busy' ? <Loader2 className="animate-spin" size={18} /> : <ScanFace size={18} />}אישור עם Face ID
                 </button>
                 <button type="button" onClick={() => void act('report')} disabled={state === 'busy'} data-testid="stepup-not-me"
-                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-rose-300/60 bg-rose-500/10 text-[15px] font-bold text-rose-800">
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-coral-300/60 bg-coral-500/10 text-[15px] font-bold text-coral-800">
                   <ShieldX size={17} />זה לא אני
                 </button>
               </div>
-              {err ? <p role="alert" className="mt-3 text-sm font-semibold text-rose-700">{err}</p> : null}
+              {err ? <p role="alert" className="mt-3 text-sm font-semibold text-coral-700">{err}</p> : null}
             </>
           ) : null}
       </section>

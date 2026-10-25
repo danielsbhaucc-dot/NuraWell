@@ -94,9 +94,9 @@ export default function AccessibilityPage() {
         <LegalSection num="4" title="מה כבר יישמנו">
           <ul>
             <li><strong>תמיכה מלאה ב-RTL</strong> וממשק בעברית, המותאם לקריאה מימין לשמאל.</li>
-            <li><Keyboard className="inline w-4 h-4 align-middle text-emerald-600" aria-hidden /> <strong>ניווט מקלדת</strong> וקישור &quot;דילוג לתוכן הראשי&quot; בתחילת כל עמוד.</li>
-            <li><MousePointerClick className="inline w-4 h-4 align-middle text-emerald-600" aria-hidden /> <strong>סימון פוקוס ברור</strong> (focus-visible) לכל הרכיבים האינטראקטיביים.</li>
-            <li><Eye className="inline w-4 h-4 align-middle text-emerald-600" aria-hidden /> <strong>ניגודיות צבעים</strong> וטיפוגרפיה קריאה (גופני Rubik ו-Assistant).</li>
+            <li><Keyboard className="inline w-4 h-4 align-middle text-primary-600" aria-hidden /> <strong>ניווט מקלדת</strong> וקישור &quot;דילוג לתוכן הראשי&quot; בתחילת כל עמוד.</li>
+            <li><MousePointerClick className="inline w-4 h-4 align-middle text-primary-600" aria-hidden /> <strong>סימון פוקוס ברור</strong> (focus-visible) לכל הרכיבים האינטראקטיביים.</li>
+            <li><Eye className="inline w-4 h-4 align-middle text-primary-600" aria-hidden /> <strong>ניגודיות צבעים</strong> וטיפוגרפיה קריאה (גופני Rubik ו-Assistant).</li>
             <li><strong>מבנה סמנטי</strong> — כותרות, אזורים (landmarks), תוויות ARIA ו-<code>aria-current</code> בניווט.</li>
             <li><strong>כיבוד העדפת תנועה מופחתת</strong> (prefers-reduced-motion) — אנימציות מתעדנות אוטומטית, ובנוסף אפשרות ידנית בתפריט הנגישות.</li>
             <li><strong>הגדלת תצוגה</strong> — תמיכה ב-zoom עד 500% (WCAG 1.4.4).</li>
@@ -104,7 +104,7 @@ export default function AccessibilityPage() {
             <li><strong>Modals ו-lightbox</strong> — focus trap, <code>role=&quot;dialog&quot;</code>, סגירה ב-Escape (SOS, משימות היום, גלריית תמונות).</li>
             <li><strong>סריקת alt</strong> — תיקון תמונות במסע, מדיה והתראות; רקעים דקורטיביים מסומנים ב-<code>aria-hidden</code>.</li>
             <li><strong>תיאורי תמונה</strong> — ביקורת והשלמת טקסט חלופי (alt) לתמונות בתוכן.</li>
-            <li><SlidersHorizontal className="inline w-4 h-4 align-middle text-emerald-600" aria-hidden /> <strong>שמירת העדפות נגישות</strong> בדפדפן שלך.</li>
+            <li><SlidersHorizontal className="inline w-4 h-4 align-middle text-primary-600" aria-hidden /> <strong>שמירת העדפות נגישות</strong> בדפדפן שלך.</li>
           </ul>
         </LegalSection>
 
@@ -165,7 +165,7 @@ export default function AccessibilityPage() {
 
         <LegalSection num="11" title="רישיון שימוש מוגבל">
           <p>
-            <ScrollText className="inline w-4 h-4 align-middle text-emerald-600" aria-hidden /> אנו
+            <ScrollText className="inline w-4 h-4 align-middle text-primary-600" aria-hidden /> אנו
             מעניקים לך רישיון אישי, מוגבל, לא בלעדי ובלתי ניתן להעברה, לשימוש בשירות למטרותיך הפרטיות בלבד
             ובהתאם ל<Link href="/terms">תנאי השימוש</Link>. חל איסור להעתיק, לשכפל, להפיץ, למכור, לפרסם או
             ליצור יצירות נגזרות מהתוכן ללא אישורנו מראש ובכתב.

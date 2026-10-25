@@ -15,7 +15,7 @@ export function BridgeClient() {
 
   return (
     <div className="flex min-h-[50vh] flex-col items-center justify-center gap-3 px-4" dir="rtl">
-      <Loader2 className="h-10 w-10 animate-spin text-teal-600" aria-hidden />
+      <Loader2 className="h-10 w-10 animate-spin text-secondary-600" aria-hidden />
       <p className="text-ink-soft">רגע…</p>
       <PublicAiPresence compact />
     </div>

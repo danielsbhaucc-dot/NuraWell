@@ -81,16 +81,16 @@ export function TaskLevelProgressCard({
       className="rounded-2xl px-3 py-3 space-y-3"
       style={{
         background:
-          'linear-gradient(180deg, rgba(248,251,246,0.78) 0%, rgba(255,247,237,0.65) 100%)',
+          'linear-gradient(180deg, rgba(231,238,220,0.78) 0%, rgba(231,238,220,0.65) 100%)',
         border: '1px solid rgba(249,115,22,0.25)',
-        boxShadow: 'inset 0 1px 0 rgba(248,251,246,0.85)',
+        boxShadow: 'inset 0 1px 0 rgba(231,238,220,0.85)',
       }}
     >
       <div className="flex items-start gap-2">
         <span className="text-2xl shrink-0">{emoji}</span>
         <div className="flex-1 text-start">
           <p className="text-sm font-black text-[#1A1730]">{taskTitle}</p>
-          <p className="text-[11px] text-orange-900/75 font-semibold mt-0.5">
+          <p className="text-[11px] text-energy-900/75 font-semibold mt-0.5">
             רמה נוכחית: {snapshot.currentLevelLabel ?? '—'}
             {snapshot.recommendedLevelLabel ? (
               <> · יעד: {snapshot.recommendedLevelLabel}</>
@@ -102,8 +102,8 @@ export function TaskLevelProgressCard({
       {/* סולם רמות */}
       {sortedLevels.length > 0 ? (
         <div className="space-y-1.5">
-          <p className="text-[10px] font-bold text-orange-900/70 text-start">סולם קושי</p>
-          <div className="relative h-2 rounded-full bg-orange-100/80 overflow-hidden">
+          <p className="text-[10px] font-bold text-energy-900/70 text-start">סולם קושי</p>
+          <div className="relative h-2 rounded-full bg-energy-100/80 overflow-hidden">
             {sortedLevels.map((lvl) => {
               const pct = maxOrder > 0 ? ((lvl.order + 1) / (maxOrder + 1)) * 100 : 50;
               const isCurrent = lvl.id === snapshot.currentLevelId;
@@ -148,21 +148,21 @@ export function TaskLevelProgressCard({
         </div>
       ) : null}
 
-      <div className="flex flex-wrap gap-3 text-[11px] font-bold text-orange-950/85 justify-end">
+      <div className="flex flex-wrap gap-3 text-[11px] font-bold text-energy-950/85 justify-end">
         <span className="inline-flex items-center gap-1">
-          <Flame className="w-3.5 h-3.5 text-orange-600" />
+          <Flame className="w-3.5 h-3.5 text-energy-600" />
           {snapshot.habitStreakAnyLevel} ימים ברצף
         </span>
         <span className="inline-flex items-center gap-1">
-          <Target className="w-3.5 h-3.5 text-emerald-600" />
+          <Target className="w-3.5 h-3.5 text-primary-600" />
           {snapshot.habitStreakRecommendedLevel} ימים ביעד
         </span>
         {snapshot.daysUntilLevelUpSuggestion > 0 ? (
-          <span className="text-orange-800/70">
+          <span className="text-energy-800/70">
             עוד {snapshot.daysUntilLevelUpSuggestion} ימים להצעת עלייה
           </span>
         ) : snapshot.shouldSuggestLevelUp ? (
-          <span className="inline-flex items-center gap-1 text-emerald-700">
+          <span className="inline-flex items-center gap-1 text-primary-700">
             <ArrowUp className="w-3.5 h-3.5" />
             עולים לרמה הבאה?
           </span>
@@ -170,14 +170,14 @@ export function TaskLevelProgressCard({
       </div>
 
       <div className="flex flex-wrap gap-2 justify-end">
-        <p className="w-full text-[10px] font-semibold text-orange-900/60 text-start mb-1">
+        <p className="w-full text-[10px] font-semibold text-energy-900/60 text-start mb-1">
           משוב על <strong>רמת הקושי</strong> — לא על רגע קשה עכשיו (לזה יש &quot;רגע… קשה לי&quot; בבית)
         </p>
         <button
           type="button"
           disabled={submitting}
           onClick={() => void handleFeedback('too_hard')}
-          className="text-[11px] font-bold px-2.5 py-1.5 rounded-lg bg-red-50 text-red-800 border border-red-200/80 disabled:opacity-50"
+          className="text-[11px] font-bold px-2.5 py-1.5 rounded-lg bg-coral-50 text-coral-800 border border-coral-200/80 disabled:opacity-50"
         >
           הרמה קשה לי
         </button>
@@ -185,7 +185,7 @@ export function TaskLevelProgressCard({
           type="button"
           disabled={submitting}
           onClick={() => void handleFeedback('ok')}
-          className="text-[11px] font-bold px-2.5 py-1.5 rounded-lg bg-background-card/80 text-gray-800 border border-gray-200 disabled:opacity-50"
+          className="text-[11px] font-bold px-2.5 py-1.5 rounded-lg bg-background-card/80 text-ink-800 border border-ink-200 disabled:opacity-50"
         >
           מתאים לי
         </button>
@@ -193,14 +193,14 @@ export function TaskLevelProgressCard({
           type="button"
           disabled={submitting}
           onClick={() => void handleFeedback('too_easy')}
-          className="text-[11px] font-bold px-2.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200/80 disabled:opacity-50"
+          className="text-[11px] font-bold px-2.5 py-1.5 rounded-lg bg-primary-50 text-primary-800 border border-primary-200/80 disabled:opacity-50"
         >
           קל לי
         </button>
       </div>
 
       {localMsg ? (
-        <p className="text-[10px] font-semibold text-emerald-800 text-start flex items-center justify-end gap-1">
+        <p className="text-[10px] font-semibold text-primary-800 text-start flex items-center justify-end gap-1">
           <Check className="w-3 h-3" />
           {localMsg}
         </p>
@@ -209,7 +209,7 @@ export function TaskLevelProgressCard({
         <div className="flex justify-end">
           <Link
             href="/plans"
-            className="text-[11px] font-bold text-emerald-700 underline underline-offset-2"
+            className="text-[11px] font-bold text-primary-700 underline underline-offset-2"
           >
             לצעד המותאם בהתוכנית שלי →
           </Link>

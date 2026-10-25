@@ -60,15 +60,15 @@ export function MiniGame({ items, existingAnswers, onComplete, onResetGame, onTt
       <div className="text-center py-8">
         <AlmogCompletionHero subtitle={copy.gameCompleteSubtitle} />
         <h2 className="text-2xl font-black mb-2" style={{ color: '#1A1730' }}>סיימת את המשחק! 🎮</h2>
-        <p className="text-gray-600 text-lg mb-4 leading-relaxed max-w-sm mx-auto">
-          <strong className="text-emerald-600">{score}</strong> מתוך <strong>{items.length}</strong> פגעת בול — כל הכבוד.
+        <p className="text-ink-600 text-lg mb-4 leading-relaxed max-w-sm mx-auto">
+          <strong className="text-primary-600">{score}</strong> מתוך <strong>{items.length}</strong> פגעת בול — כל הכבוד.
         </p>
 
         <div className="mt-8 flex flex-col gap-3 max-w-sm mx-auto">
           <button
             type="button"
             onClick={() => setResultsOpen(true)}
-            className="w-full py-3.5 rounded-2xl font-bold text-amber-900 flex items-center justify-center gap-2"
+            className="w-full py-3.5 rounded-2xl font-bold text-accent-900 flex items-center justify-center gap-2"
             style={{ background: 'rgba(245,158,11,0.15)', border: '1.5px solid rgba(245,158,11,0.35)' }}
           >
             <ClipboardList className="w-5 h-5" />
@@ -78,7 +78,7 @@ export function MiniGame({ items, existingAnswers, onComplete, onResetGame, onTt
             <button
               type="button"
               onClick={onResetGame}
-              className="w-full py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2 text-gray-600"
+              className="w-full py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2 text-ink-600"
               style={{ background: 'rgba(0,0,0,0.04)', border: '1.5px solid rgba(0,0,0,0.08)' }}
             >
               <RotateCcw className="w-4 h-4" />
@@ -88,7 +88,7 @@ export function MiniGame({ items, existingAnswers, onComplete, onResetGame, onTt
           <button
             type="button"
             onClick={() => onComplete(answers, score)}
-            className="w-full py-4 rounded-2xl font-bold text-lg text-white flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-95"
+            className="w-full py-4 rounded-2xl font-bold text-lg text-on-dark flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-95"
             style={{ background: 'linear-gradient(135deg, #047857, #10b981)', boxShadow: '0 6px 20px rgba(16,185,129,0.3)' }}
           >
             <span>המשך לשלב הבא</span>
@@ -132,10 +132,10 @@ export function MiniGame({ items, existingAnswers, onComplete, onResetGame, onTt
       <div className="text-center">
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-3"
           style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)' }}>
-          <Gamepad2 className="w-4 h-4 text-amber-600" />
-          <span className="text-sm font-bold text-amber-700">{copy.gameLetsCheck}</span>
+          <Gamepad2 className="w-4 h-4 text-accent-600" />
+          <span className="text-sm font-bold text-accent-700">{copy.gameLetsCheck}</span>
         </div>
-        <p className="text-sm text-amber-900/70 font-medium">{currentIdx + 1} מתוך {items.length} · אני איתך</p>
+        <p className="text-sm text-accent-900/70 font-medium">{currentIdx + 1} מתוך {items.length} · אני איתך</p>
         <QuestionTtsPlayer
           className="mt-3"
           audioUrl={item?.tts?.status === 'ready' ? item.tts.url : null}
@@ -164,7 +164,7 @@ export function MiniGame({ items, existingAnswers, onComplete, onResetGame, onTt
           style={{ border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 4px 20px rgba(0,0,0,0.06)' }}
         >
           <div className="px-6 py-5 text-center" style={{ background: 'linear-gradient(145deg, #047857, #059669, #10b981)' }}>
-            <p className="text-lg font-bold leading-relaxed text-white">
+            <p className="text-lg font-bold leading-relaxed text-on-dark">
               &ldquo;{item.statement}&rdquo;
             </p>
           </div>
@@ -207,7 +207,7 @@ export function MiniGame({ items, existingAnswers, onComplete, onResetGame, onTt
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           onClick={handleNext}
-          className="w-full py-4 rounded-2xl font-bold text-lg text-white flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-95"
+          className="w-full py-4 rounded-2xl font-bold text-lg text-on-dark flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-95"
           style={{ background: 'linear-gradient(135deg, #047857, #10b981)', boxShadow: '0 6px 20px rgba(16,185,129,0.3)' }}>
           <span>{currentIdx < items.length - 1 ? 'הבא' : 'סיום המשחק'}</span>
           <ArrowLeft className="w-5 h-5" />

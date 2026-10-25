@@ -843,7 +843,7 @@ export function NotificationsProvider({
             style={{
               border: '1px solid rgba(255,255,255,0.52)',
               boxShadow:
-                '0 -24px 64px rgba(6,78,59,0.14), 0 0 0 1px rgba(255,255,255,0.35) inset, inset 0 1px 0 rgba(248,251,246,0.65)',
+                '0 -24px 64px rgba(6,78,59,0.14), 0 0 0 1px rgba(255,255,255,0.35) inset, inset 0 1px 0 rgba(231,238,220,0.65)',
               background:
                 'linear-gradient(168deg, rgba(248,251,246,0.58) 0%, rgba(236,253,245,0.42) 42%, rgba(255,255,255,0.52) 100%)',
               backdropFilter: 'blur(26px) saturate(1.35)',
@@ -884,10 +884,10 @@ export function NotificationsProvider({
                   {showMarkAll ? (
                     <button
                       type="button"
-                      className="shrink-0 inline-flex items-center gap-1 rounded-full bg-emerald-50/95 px-2.5 py-1.5 text-[11px] font-black text-emerald-900 shadow-md shadow-emerald-950/10 ring-1 ring-emerald-100/80 transition active:scale-[0.97]"
+                      className="shrink-0 inline-flex items-center gap-1 rounded-full bg-primary-50/95 px-2.5 py-1.5 text-[11px] font-black text-primary-900 shadow-md shadow-primary-950/10 ring-1 ring-primary-100/80 transition active:scale-[0.97]"
                       onClick={() => void markAll()}
                     >
-                      <CheckCheck className="h-3.5 w-3.5 text-emerald-700" strokeWidth={2.5} />
+                      <CheckCheck className="h-3.5 w-3.5 text-primary-700" strokeWidth={2.5} />
                       סמן הכל כנקרא
                     </button>
                   ) : (
@@ -897,11 +897,11 @@ export function NotificationsProvider({
                   <div className="min-w-0 flex-1 text-start pe-0.5">
                     <div className="flex items-center justify-end gap-2 flex-wrap">
                       <span className="relative flex h-2.5 w-2.5 shrink-0">
-                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-100/80 opacity-75" />
-                        <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-50 shadow-[0_0_8px_rgba(167,243,208,0.9)]" />
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary-100/80 opacity-75" />
+                        <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-primary-50 shadow-[0_0_8px_rgba(167,243,208,0.9)]" />
                       </span>
                       <h2
-                        className="text-[18px] sm:text-[19px] font-black text-white leading-tight drop-shadow-xs tracking-tight"
+                        className="text-[18px] sm:text-[19px] font-black text-on-dark leading-tight drop-shadow-xs tracking-tight"
                         style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
                       >
                         התראות
@@ -921,8 +921,8 @@ export function NotificationsProvider({
                     className={cn(
                       'rounded-full px-4 py-1.5 text-xs font-black transition',
                       viewMode === 'inbox'
-                        ? 'bg-emerald-50/95 text-emerald-900 shadow-sm'
-                        : 'bg-emerald-950/15 text-white hover:bg-emerald-50/20'
+                        ? 'bg-primary-50/95 text-primary-900 shadow-sm'
+                        : 'bg-primary-950/15 text-on-dark hover:bg-primary-50/20'
                     )}
                   >
                     תיבה
@@ -936,8 +936,8 @@ export function NotificationsProvider({
                     className={cn(
                       'rounded-full px-4 py-1.5 text-xs font-black transition',
                       viewMode === 'archive'
-                        ? 'bg-emerald-50/95 text-emerald-900 shadow-sm'
-                        : 'bg-emerald-950/15 text-white hover:bg-emerald-50/20'
+                        ? 'bg-primary-50/95 text-primary-900 shadow-sm'
+                        : 'bg-primary-950/15 text-on-dark hover:bg-primary-50/20'
                     )}
                   >
                     ארכיון
@@ -961,8 +961,8 @@ export function NotificationsProvider({
                         className={cn(
                           'rounded-full px-3 py-1 text-[11px] font-bold transition',
                           filterKind === k
-                            ? 'bg-emerald-950/25 text-white ring-1 ring-white/40'
-                            : 'bg-emerald-950/10 text-white/90 hover:bg-emerald-50/15'
+                            ? 'bg-primary-950/25 text-on-dark ring-1 ring-on-dark/40'
+                            : 'bg-primary-950/10 text-on-dark/90 hover:bg-primary-50/15'
                         )}
                       >
                         {label}
@@ -973,26 +973,26 @@ export function NotificationsProvider({
               </div>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto bg-linear-to-b from-emerald-50/70 via-teal-50/40 to-slate-100/60 px-3 sm:px-4 pb-10 pt-3 space-y-2.5 scrollbar-hide text-start">
+            <div className="min-h-0 flex-1 overflow-y-auto bg-linear-to-b from-primary-50/70 via-secondary-50/40 to-ink-100/60 px-3 sm:px-4 pb-10 pt-3 space-y-2.5 scrollbar-hide text-start">
               {busy && items.length === 0 && (
-                <div className="flex items-center justify-center py-16 text-teal-800">
+                <div className="flex items-center justify-center py-16 text-secondary-800">
                   <Loader2 className="h-8 w-8 animate-spin opacity-85" />
                 </div>
               )}
               {!busy && listEntries.length === 0 && (
-                <div className="py-14 text-center px-4 rounded-[20px] mx-0.5 border border-emerald-200/50 bg-linear-to-br from-emerald-100/50 to-teal-50/60 backdrop-blur-sm">
-                  <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-linear-to-br from-teal-500/25 to-emerald-500/20 ring-1 ring-emerald-600/15">
+                <div className="py-14 text-center px-4 rounded-[20px] mx-0.5 border border-primary-200/50 bg-linear-to-br from-primary-100/50 to-secondary-50/60 backdrop-blur-sm">
+                  <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-linear-to-br from-secondary-500/25 to-primary-500/20 ring-1 ring-primary-600/15">
                     <span className="text-2xl" aria-hidden>
                       🌿
                     </span>
                   </div>
                   <p
-                    className="text-sm font-black text-emerald-950"
+                    className="text-sm font-black text-primary-950"
                     style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
                   >
                     {viewMode === 'archive' ? 'הארכיון ריק' : 'אין התראות להצגה'}
                   </p>
-                  <p className="text-xs text-emerald-900/65 mt-2 leading-relaxed max-w-xs mx-auto font-medium">
+                  <p className="text-xs text-primary-900/65 mt-2 leading-relaxed max-w-xs mx-auto font-medium">
                     {viewMode === 'archive'
                       ? 'התראות שתעביר לארכיון יופיעו כאן.'
                       : 'תנסה לשנות את הסינון, או תחזור לכאן קצת אחר כך.'}
@@ -1010,12 +1010,12 @@ export function NotificationsProvider({
                       className="flex scroll-mt-3 items-center gap-3 py-2"
                       role="separator"
                     >
-                      <span className="h-px flex-1 bg-linear-to-l from-transparent via-emerald-300/70 to-emerald-300/70" />
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-glass/80 px-3 py-1 text-[11px] font-bold text-emerald-800 ring-1 ring-emerald-200/70 backdrop-blur-sm">
+                      <span className="h-px flex-1 bg-linear-to-l from-transparent via-primary-300/70 to-primary-300/70" />
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-glass/80 px-3 py-1 text-[11px] font-bold text-primary-800 ring-1 ring-primary-200/70 backdrop-blur-sm">
                         <History className="h-3.5 w-3.5" aria-hidden />
                         התראות קודמות
                       </span>
-                      <span className="h-px flex-1 bg-linear-to-r from-transparent via-emerald-300/70 to-emerald-300/70" />
+                      <span className="h-px flex-1 bg-linear-to-r from-transparent via-primary-300/70 to-primary-300/70" />
                     </div>
                   ) : null;
                 if (entry.kind === 'single') {
@@ -1077,9 +1077,9 @@ export function NotificationsProvider({
                     type="button"
                     disabled={loadingMore}
                     onClick={() => void loadMore()}
-                    className="group inline-flex min-h-11 items-center gap-2.5 rounded-full border border-white/70 bg-glass/75 backdrop-blur-md py-2 ps-2 pe-5 text-sm font-bold text-emerald-900 shadow-[0_6px_20px_rgba(4,120,87,0.12)] ring-1 ring-emerald-200/60 backdrop-blur-md transition hover:bg-glass hover:shadow-[0_8px_24px_rgba(4,120,87,0.18)] active:scale-[0.98] disabled:opacity-60"
+                    className="group inline-flex min-h-11 items-center gap-2.5 rounded-full border border-on-dark/70 bg-glass/75 backdrop-blur-md py-2 ps-2 pe-5 text-sm font-bold text-primary-900 shadow-[0_6px_20px_rgba(4,120,87,0.12)] ring-1 ring-primary-200/60 backdrop-blur-md transition hover:bg-glass hover:shadow-[0_8px_24px_rgba(4,120,87,0.18)] active:scale-[0.98] disabled:opacity-60"
                   >
-                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-linear-to-br from-emerald-500 to-teal-500 text-white shadow-sm">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-linear-to-br from-primary-500 to-secondary-500 text-on-dark shadow-sm">
                       {loadingMore ? (
                         <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
                       ) : (

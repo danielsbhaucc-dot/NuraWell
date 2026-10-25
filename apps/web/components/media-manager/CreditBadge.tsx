@@ -31,7 +31,7 @@ export function CreditBadge({ asset, className = '' }: CreditBadgeProps) {
           e.stopPropagation();
           setOpen((v) => !v);
         }}
-        className="flex h-6 w-6 items-center justify-center rounded-full border border-white/60 bg-black/35 text-white backdrop-blur-sm"
+        className="flex h-6 w-6 items-center justify-center rounded-full border border-on-dark/60 bg-forest-950/35 text-on-dark backdrop-blur-sm"
         aria-label="קרדיט ורישיון"
       >
         <Info className="h-3.5 w-3.5" />
@@ -39,30 +39,30 @@ export function CreditBadge({ asset, className = '' }: CreditBadgeProps) {
       {open ? (
         <div
           dir="rtl"
-          className="absolute top-8 left-0 z-60 w-max min-w-36 max-w-60 space-y-1 rounded-xl border border-white/60 p-2.5 text-[11px] leading-relaxed text-slate-800 shadow-xl"
+          className="absolute top-8 left-0 z-60 w-max min-w-36 max-w-60 space-y-1 rounded-xl border border-on-dark/60 p-2.5 text-[11px] leading-relaxed text-ink-800 shadow-xl"
           style={{
-            background: 'rgba(248,251,246,0.9)',
+            background: 'rgba(231,238,220,0.9)',
             backdropFilter: 'blur(14px)',
           }}
           onClick={(e) => e.stopPropagation()}
         >
-          <p className="font-black text-slate-900">
+          <p className="font-black text-ink-900">
             {asset.source === 'pixabay' || asset.source === 'pexels'
               ? providerLabel(asset.source)
               : asset.source === 'suno'
                 ? 'Suno'
                 : 'מקור'}
           </p>
-          {label ? <p className="text-slate-700">{label}</p> : null}
+          {label ? <p className="text-ink-700">{label}</p> : null}
           {asset.credit?.license ? (
-            <p className="text-slate-500">{asset.credit.license}</p>
+            <p className="text-ink-500">{asset.credit.license}</p>
           ) : null}
           {link ? (
             <a
               href={link}
               target="_blank"
               rel="noopener noreferrer"
-              className="block break-all font-semibold text-emerald-800 underline"
+              className="block break-all font-semibold text-primary-800 underline"
               dir="ltr"
             >
               קישור למקור

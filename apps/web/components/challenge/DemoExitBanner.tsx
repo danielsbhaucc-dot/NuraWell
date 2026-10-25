@@ -30,8 +30,8 @@ export function DemoExitBanner() {
 
   return (
     <div className="mb-4 space-y-1">
-      <div className="flex items-center justify-between gap-2 rounded-2xl border border-amber-400/40 bg-amber-500/10 px-4 py-3">
-        <span className="text-sm text-amber-100">מצב דמו</span>
+      <div className="flex items-center justify-between gap-2 rounded-2xl border border-accent-400/40 bg-accent-500/10 px-4 py-3">
+        <span className="text-sm text-accent-100">מצב דמו</span>
         <button
           type="button"
           onClick={handleExitDemo}
@@ -42,7 +42,7 @@ export function DemoExitBanner() {
           {exiting ? 'יוצא...' : 'יציאה'}
         </button>
       </div>
-      {error ? <p className="text-xs text-red-400 px-1">{error}</p> : null}
+      {error ? <p className="text-xs text-coral-400 px-1">{error}</p> : null}
     </div>
   );
 }

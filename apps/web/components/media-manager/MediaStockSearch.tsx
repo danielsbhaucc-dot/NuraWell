@@ -117,7 +117,7 @@ export function MediaStockSearch({ folder, onImported, onError }: MediaStockSear
     <div className="space-y-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
         <div className="min-w-0 flex-1">
-          <label htmlFor="media-stock-search-query" className="mb-1 block text-xs font-bold text-slate-700">
+          <label htmlFor="media-stock-search-query" className="mb-1 block text-xs font-bold text-ink-700">
             חיפוש Pixabay / Pexels
           </label>
           <input
@@ -147,7 +147,7 @@ export function MediaStockSearch({ folder, onImported, onError }: MediaStockSear
           type="button"
           disabled={searchBusy || !query.trim()}
           onClick={() => void runSearch()}
-          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-slate-900/80 px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
+          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-ink-900/80 px-4 py-2 text-sm font-bold text-on-dark disabled:opacity-50"
         >
           {searchBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
           חפש
@@ -156,7 +156,7 @@ export function MediaStockSearch({ folder, onImported, onError }: MediaStockSear
 
       {hits.length > 0 ? (
         <>
-          <StockImageSearchAttribution providers={providers} className="text-xs text-slate-600" />
+          <StockImageSearchAttribution providers={providers} className="text-xs text-ink-600" />
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {hits.map((hit) => (
               (() => {
@@ -169,7 +169,7 @@ export function MediaStockSearch({ folder, onImported, onError }: MediaStockSear
                     disabled={applyBusy}
                     onClick={() => void applyHit(hit)}
                     aria-label={`ייבא תמונה: ${stockPreviewAlt(hit.alt, hit.photographer)}`}
-                    className="group relative overflow-hidden rounded-xl border border-white/50 text-start disabled:opacity-60"
+                    className="group relative overflow-hidden rounded-xl border border-on-dark/50 text-start disabled:opacity-60"
                     style={{ background: 'rgba(255,255,255,0.18)' }}
                   >
                     <img

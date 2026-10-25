@@ -28,23 +28,23 @@ const TONE_STYLES: Record<
   { iconWrap: string; btn: string; Icon: typeof AlertTriangle }
 > = {
   danger: {
-    iconWrap: 'border-red-300/60 bg-red-100/70 text-red-600',
-    btn: 'bg-linear-to-l from-red-600 to-rose-500 shadow-red-500/25',
+    iconWrap: 'border-coral-300/60 bg-coral-100/70 text-coral-600',
+    btn: 'bg-linear-to-l from-coral-600 to-coral-500 shadow-coral-500/25',
     Icon: AlertTriangle,
   },
   warning: {
-    iconWrap: 'border-amber-300/60 bg-amber-100/70 text-amber-700',
-    btn: 'bg-linear-to-l from-amber-600 to-orange-500 shadow-amber-500/25',
+    iconWrap: 'border-accent-300/60 bg-accent-100/70 text-accent-700',
+    btn: 'bg-linear-to-l from-accent-600 to-energy-500 shadow-accent-500/25',
     Icon: AlertTriangle,
   },
   success: {
-    iconWrap: 'border-emerald-300/60 bg-emerald-100/70 text-emerald-700',
-    btn: 'bg-linear-to-l from-emerald-600 to-teal-500 shadow-emerald-500/25',
+    iconWrap: 'border-primary-300/60 bg-primary-100/70 text-primary-700',
+    btn: 'bg-linear-to-l from-primary-600 to-secondary-500 shadow-primary-500/25',
     Icon: CheckCircle2,
   },
   info: {
-    iconWrap: 'border-indigo-300/60 bg-indigo-100/70 text-indigo-700',
-    btn: 'bg-linear-to-l from-indigo-600 to-violet-500 shadow-indigo-500/25',
+    iconWrap: 'border-iris-300/60 bg-iris-100/70 text-iris-700',
+    btn: 'bg-linear-to-l from-iris-600 to-iris-500 shadow-iris-500/25',
     Icon: Info,
   },
 };
@@ -75,7 +75,7 @@ export function ConfirmDialog({
       onClose={() => !busy && onCancel()}
       zIndex={320}
       aria-label={title}
-      backdropClassName="absolute inset-0 cursor-default bg-slate-900/30 backdrop-blur-sm"
+      backdropClassName="absolute inset-0 cursor-default bg-ink-900/30 backdrop-blur-sm"
       panelClassName="max-w-sm overflow-hidden rounded-3xl border border-gc/40 bg-background-card/20 p-5 shadow-[0_20px_60px_-12px_rgba(15,23,42,0.5)] ring-1 ring-inset ring-gc/30 backdrop-blur-2xl backdrop-saturate-150"
     >
       <div className="pointer-events-none absolute inset-x-4 top-0 h-px bg-linear-to-r from-transparent via-background-card/80 to-transparent" />
@@ -122,7 +122,7 @@ export function ConfirmDialog({
             value={input.value}
             placeholder={input.placeholder}
             onChange={(e) => input.onChange(e.target.value)}
-            className="w-full rounded-xl border border-gc/60 bg-background-card/60 px-3 py-2.5 text-base text-ink shadow-inner outline-hidden backdrop-blur-md placeholder:text-ink-faint focus:ring-2 focus:ring-teal-400/60"
+            className="w-full rounded-xl border border-gc/60 bg-background-card/60 px-3 py-2.5 text-base text-ink shadow-inner outline-hidden backdrop-blur-md placeholder:text-ink-faint focus:ring-2 focus:ring-secondary-400/60"
           />
         </form>
       ) : null}

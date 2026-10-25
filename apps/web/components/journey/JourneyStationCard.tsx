@@ -42,11 +42,11 @@ export function JourneyStationCard({ group, index, onSelect }: JourneyStationCar
       className={cn(
         'group relative block w-full overflow-hidden rounded-[28px] text-start',
         'transition-shadow duration-300',
-        'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-400/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[#EDF5F0]'
+        'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary-400/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[#EDF5F0]'
       )}
       style={{
         boxShadow:
-          '0 10px 28px rgba(6, 78, 59, 0.14), 0 2px 8px rgba(15, 23, 42, 0.06), inset 0 1px 0 rgba(248,251,246,0.6)',
+          '0 10px 28px rgba(6, 78, 59, 0.14), 0 2px 8px rgba(15, 23, 42, 0.06), inset 0 1px 0 rgba(231,238,220,0.6)',
       }}
       aria-label={`כניסה לתחנה ${index + 1}: ${group.title}`}
     >
@@ -93,7 +93,7 @@ export function JourneyStationCard({ group, index, onSelect }: JourneyStationCar
 
         <div className="absolute top-3 inset-s-3 z-10 flex items-center gap-2">
           <div
-            className="flex h-10 w-10 items-center justify-center rounded-2xl text-base font-black text-white shadow-lg"
+            className="flex h-10 w-10 items-center justify-center rounded-2xl text-base font-black text-on-dark shadow-lg"
             style={{
               background: 'linear-gradient(135deg, #047857, #10b981)',
               boxShadow: '0 6px 16px rgba(4,120,87,0.45), inset 0 1px 0 rgba(255,255,255,0.35)',
@@ -103,7 +103,7 @@ export function JourneyStationCard({ group, index, onSelect }: JourneyStationCar
           </div>
           {isCompleted ? (
             <div
-              className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-black text-white"
+              className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-black text-on-dark"
               style={{
                 background: 'linear-gradient(135deg, rgba(16,185,129,0.95), rgba(52,211,153,0.95))',
                 boxShadow: '0 4px 12px rgba(16,185,129,0.45)',
@@ -116,7 +116,7 @@ export function JourneyStationCard({ group, index, onSelect }: JourneyStationCar
 
         <div className="absolute top-3 inset-e-3 z-10">
           <div
-            className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold text-white backdrop-blur-md"
+            className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold text-on-dark backdrop-blur-md"
             style={{
               background: 'rgba(255,255,255,0.18)',
               border: '1px solid rgba(255,255,255,0.28)',
@@ -129,13 +129,13 @@ export function JourneyStationCard({ group, index, onSelect }: JourneyStationCar
 
         <div className="absolute bottom-0 inset-e-0 inset-s-0 z-10 p-4 sm:p-5">
           <h3
-            className="mb-1.5 line-clamp-2 text-start text-xl font-black leading-tight text-white drop-shadow-md sm:text-2xl"
+            className="mb-1.5 line-clamp-2 text-start text-xl font-black leading-tight text-on-dark drop-shadow-md sm:text-2xl"
             style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
           >
             {group.title}
           </h3>
           {group.description ? (
-            <p className="mb-3 line-clamp-2 text-start text-[13px] leading-relaxed text-white/85">
+            <p className="mb-3 line-clamp-2 text-start text-[13px] leading-relaxed text-on-dark/85">
               {group.description}
             </p>
           ) : null}
@@ -158,13 +158,13 @@ export function JourneyStationCard({ group, index, onSelect }: JourneyStationCar
                   }}
                 />
               </div>
-              <p className="mt-1.5 text-start text-[11px] font-bold text-white/90">
+              <p className="mt-1.5 text-start text-[11px] font-bold text-on-dark/90">
                 {isEmpty ? 'בקרוב' : `${done}/${total} צעדים · ${pct}%`}
               </p>
             </div>
 
             <div
-              className="glass-pill-dark relative flex items-center gap-1.5 overflow-hidden rounded-2xl px-3.5 py-2 text-xs font-black text-white transition-transform group-hover:scale-105"
+              className="glass-pill-dark relative flex items-center gap-1.5 overflow-hidden rounded-2xl px-3.5 py-2 text-xs font-black text-on-dark transition-transform group-hover:scale-105"
               style={{
                 textShadow: '0 1px 4px rgba(2,44,34,0.55)',
                 fontFamily: "'Rubik','Heebo',sans-serif",
@@ -176,12 +176,12 @@ export function JourneyStationCard({ group, index, onSelect }: JourneyStationCar
                 className="pointer-events-none absolute inset-x-2 top-px h-px"
                 style={{
                   background:
-                    'linear-gradient(90deg, transparent, rgba(248,251,246,0.75), transparent)',
+                    'linear-gradient(90deg, transparent, rgba(231,238,220,0.75), transparent)',
                 }}
               />
               {isCompleted ? (
                 <>
-                  <Sparkles className="h-3.5 w-3.5 text-amber-200" />
+                  <Sparkles className="h-3.5 w-3.5 text-accent-200" />
                   הצג שוב
                 </>
               ) : (

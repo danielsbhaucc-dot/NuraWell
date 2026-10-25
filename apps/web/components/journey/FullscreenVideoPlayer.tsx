@@ -401,7 +401,7 @@ export function FullscreenVideoPlayer({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-300 bg-black flex flex-col"
+      className="fixed inset-0 z-300 bg-forest-950 flex flex-col"
       data-nura-overlay="1"
     >
       <button
@@ -411,7 +411,7 @@ export function FullscreenVideoPlayer({
         className="absolute top-4 left-4 z-310 w-11 h-11 rounded-full flex items-center justify-center"
         style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)' }}
       >
-        <X className="w-5 h-5 text-white" />
+        <X className="w-5 h-5 text-on-dark" />
       </button>
 
       {useHlsImmersive ? (
@@ -463,9 +463,9 @@ export function FullscreenVideoPlayer({
             style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}
           >
             {tapFlash === 'play' ? (
-              <Play className="w-9 h-9 text-white ml-1" fill="white" />
+              <Play className="w-9 h-9 text-on-dark ml-1" fill="#eef4ea" />
             ) : (
-              <Pause className="w-9 h-9 text-white" fill="white" />
+              <Pause className="w-9 h-9 text-on-dark" fill="#eef4ea" />
             )}
           </div>
         </div>
@@ -479,20 +479,20 @@ export function FullscreenVideoPlayer({
           <div
             className="w-full max-w-sm rounded-3xl p-6 text-center transition-all duration-200"
             style={{
-              background: 'linear-gradient(165deg, #F7FBF4 0%, #ecfdf5 100%)',
+              background: 'linear-gradient(165deg, #e7eedc 0%, #ecfdf5 100%)',
               border: '1px solid rgba(16,185,129,0.25)',
             }}
             onClick={e => e.stopPropagation()}
           >
             <p className="text-lg font-black mb-2" style={{ color: '#1A1730' }}>לצאת מהסרטון?</p>
-            <p className="text-sm text-gray-600 mb-6 leading-relaxed">
+            <p className="text-sm text-ink-600 mb-6 leading-relaxed">
               תחזרו למסך &ldquo;המסע שלי&rdquo;. אפשר תמיד להיכנס שוב לצעד ולהמשיך מהמקום שבו עצרתם.
             </p>
             <div className="flex flex-col gap-2.5">
               <button
                 type="button"
                 onClick={onExit}
-                className="w-full py-3.5 rounded-2xl font-bold text-white"
+                className="w-full py-3.5 rounded-2xl font-bold text-on-dark"
                 style={{ background: 'linear-gradient(135deg, #047857, #10b981)' }}
               >
                 כן, חזרה למסע
@@ -500,7 +500,7 @@ export function FullscreenVideoPlayer({
               <button
                 type="button"
                 onClick={() => setExitConfirmOpen(false)}
-                className="w-full py-3.5 rounded-2xl font-bold text-gray-600"
+                className="w-full py-3.5 rounded-2xl font-bold text-ink-600"
                 style={{ background: 'rgba(0,0,0,0.05)', border: '1px solid rgba(0,0,0,0.08)' }}
               >
                 להמשיך לצפות
@@ -523,7 +523,7 @@ export function FullscreenVideoPlayer({
             <motion.div
               className="w-full max-w-md rounded-3xl p-5 sm:p-6"
               style={{
-                background: 'linear-gradient(165deg, rgba(248,251,246,0.72) 0%, rgba(236,253,245,0.55) 100%)',
+                background: 'linear-gradient(165deg, rgba(231,238,220,0.72) 0%, rgba(236,253,245,0.55) 100%)',
                 border: '1px solid rgba(248,251,246,0.55)',
                 boxShadow: '0 24px 60px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.45)',
                 backdropFilter: 'blur(18px)',
@@ -535,9 +535,9 @@ export function FullscreenVideoPlayer({
               transition={{ duration: 0.26, ease: 'easeOut' as const }}
             >
               <motion.div
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full mb-4 text-xs font-bold text-emerald-700"
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full mb-4 text-xs font-bold text-primary-700"
                 style={{
-                  background: 'rgba(248,251,246,0.72)',
+                  background: 'rgba(231,238,220,0.72)',
                   border: '1px solid rgba(16,185,129,0.22)',
                   boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3)',
                 }}
@@ -575,7 +575,7 @@ export function FullscreenVideoPlayer({
                         key={`${activeAttentionStop.id}-${idx}`}
                         type="button"
                         onClick={() => openAttentionFeedback(idx)}
-                        className={`py-3 rounded-2xl font-bold ${idx === 0 ? 'text-white' : 'text-gray-700'}`}
+                        className={`py-3 rounded-2xl font-bold ${idx === 0 ? 'text-on-dark' : 'text-ink-700'}`}
                         style={idx === 0
                           ? {
                               background: 'linear-gradient(135deg, rgba(5,150,105,0.9), rgba(16,185,129,0.92))',
@@ -614,7 +614,7 @@ export function FullscreenVideoPlayer({
                         src={almogAvatarSrc}
                         alt=""
                         aria-hidden
-                        className="h-14 w-14 shrink-0 rounded-2xl object-cover ring-2 ring-white/80 shadow-md"
+                        className="h-14 w-14 shrink-0 rounded-2xl object-cover ring-2 ring-on-dark/80 shadow-md"
                         onError={(e) => {
                           e.currentTarget.onerror = null;
                           e.currentTarget.src = ALMOG_AVATAR_FALLBACK;
@@ -623,7 +623,7 @@ export function FullscreenVideoPlayer({
                       <div className="min-w-0 flex-1 text-right">
                         <div className="mb-2 inline-flex flex-wrap items-center gap-2">
                           <span
-                            className="rounded-full px-2.5 py-1 text-[11px] font-black text-emerald-950"
+                            className="rounded-full px-2.5 py-1 text-[11px] font-black text-primary-950"
                             style={{
                               background: 'linear-gradient(135deg, rgba(16,185,129,0.35), rgba(52,211,153,0.45))',
                               border: '1px solid rgba(248,251,246,0.55)',
@@ -632,21 +632,21 @@ export function FullscreenVideoPlayer({
                           >
                             אלמוג
                           </span>
-                          <span className="text-[11px] font-semibold text-emerald-900/75">משוב אישי</span>
+                          <span className="text-[11px] font-semibold text-primary-900/75">משוב אישי</span>
                         </div>
-                        <p className="text-[13px] leading-relaxed text-emerald-950/90">
+                        <p className="text-[13px] leading-relaxed text-primary-950/90">
                           רגע לפני שממשיכים — זה איך שאני רואה את זה:
                         </p>
                       </div>
                     </div>
-                    <p className="text-base leading-relaxed font-semibold mb-4 text-gray-800">
+                    <p className="text-base leading-relaxed font-semibold mb-4 text-ink-800">
                       {attentionFeedbackText}
                     </p>
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
                       <motion.button
                         type="button"
                         onClick={finishAttentionStop}
-                        className="w-full sm:flex-1 min-h-[50px] px-4 py-3 rounded-2xl font-black text-[15px] text-white"
+                        className="w-full sm:flex-1 min-h-[50px] px-4 py-3 rounded-2xl font-black text-[15px] text-on-dark"
                         style={{
                           background: 'linear-gradient(135deg, #059669, #10b981)',
                           border: '1px solid rgba(255,255,255,0.28)',
@@ -657,7 +657,7 @@ export function FullscreenVideoPlayer({
                         הבנתי, ממשיכים
                       </motion.button>
                       <motion.div
-                        className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold text-emerald-900 w-full sm:w-auto"
+                        className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold text-primary-900 w-full sm:w-auto"
                         style={{
                           background: 'rgba(255,255,255,0.46)',
                           border: '1px solid rgba(255,255,255,0.4)',

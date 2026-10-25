@@ -49,7 +49,7 @@ export function EditedBadge() {
           id={popId}
           role="status"
           className="absolute bottom-full start-0 z-20 mb-1.5 w-max max-w-[220px] rounded-xl px-3 py-2 text-[12px] font-medium leading-snug shadow-lg"
-          style={{ background: '#fffbeb', color: '#064e3b', border: '1px solid #a7f3d0' }}
+          style={{ background: '#e7eedc', color: '#064e3b', border: '1px solid #a7f3d0' }}
         >
           {EDITED_EXPLANATION}
         </span>

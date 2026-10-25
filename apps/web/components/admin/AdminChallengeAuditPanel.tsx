@@ -34,7 +34,7 @@ export function AdminChallengeAuditPanel() {
   if (loading) {
     return (
       <div className="flex justify-center py-8">
-        <Loader2 className="h-7 w-7 animate-spin text-violet-500" />
+        <Loader2 className="h-7 w-7 animate-spin text-iris-500" />
       </div>
     );
   }

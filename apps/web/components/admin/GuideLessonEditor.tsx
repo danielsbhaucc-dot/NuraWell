@@ -73,7 +73,7 @@ export function GuideLessonEditor({
   };
 
   return (
-    <div className="space-y-3 rounded-2xl border border-emerald-100/80 bg-background-card/70 p-4 backdrop-blur-md" dir="rtl">
+    <div className="space-y-3 rounded-2xl border border-primary-100/80 bg-background-card/70 p-4 backdrop-blur-md" dir="rtl">
       <div className="flex flex-wrap items-center gap-2">
         <input
           className="flex-1 min-w-[180px] rounded-xl border border-hairline px-3 py-2 text-sm font-bold"
@@ -93,7 +93,7 @@ export function GuideLessonEditor({
           type="button"
           disabled={saving}
           onClick={() => void save()}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-gc disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-xl bg-primary-600 px-3 py-2 text-xs font-bold text-gc disabled:opacity-50"
         >
           {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
           שמור פרק
@@ -157,7 +157,7 @@ export function GuideLessonEditor({
         </article>
       )}
 
-      {msg ? <p className="text-xs font-bold text-emerald-700">{msg}</p> : null}
+      {msg ? <p className="text-xs font-bold text-primary-700">{msg}</p> : null}
     </div>
   );
 }

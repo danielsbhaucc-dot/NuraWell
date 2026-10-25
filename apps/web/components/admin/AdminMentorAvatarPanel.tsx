@@ -103,7 +103,7 @@ export function AdminMentorAvatarPanel({ mentorId }: AdminMentorAvatarPanelProps
             className="flex flex-wrap items-center gap-2 text-lg font-black text-ink sm:text-xl"
             style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
           >
-            <UserCircle className="h-6 w-6 shrink-0 text-emerald-500" aria-hidden />
+            <UserCircle className="h-6 w-6 shrink-0 text-primary-500" aria-hidden />
             {ready && hasCustom ? `עדכון — ${mentor.name}` : mentor.name}
           </h2>
           <p className="mt-1.5 text-sm text-ink-soft">{mentor.description}</p>
@@ -117,7 +117,7 @@ export function AdminMentorAvatarPanel({ mentorId }: AdminMentorAvatarPanelProps
           ) : null}
         </div>
         <div className="flex shrink-0 justify-center sm:justify-end">
-          <div className="relative h-20 w-20 overflow-hidden rounded-2xl ring-2 ring-emerald-200/80">
+          <div className="relative h-20 w-20 overflow-hidden rounded-2xl ring-2 ring-primary-200/80">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={preview} alt="תצוגה מקדימה של אוatar מנטור" className="h-full w-full object-cover" />
           </div>
@@ -127,7 +127,7 @@ export function AdminMentorAvatarPanel({ mentorId }: AdminMentorAvatarPanelProps
       <OpenMediaManagerButton
         kind="image"
         label="העלאת תמונה"
-        className="mb-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-emerald-300/60 bg-emerald-800/10 px-4 py-3 text-sm font-bold text-emerald-900 sm:w-auto"
+        className="mb-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-primary-300/60 bg-primary-800/10 px-4 py-3 text-sm font-bold text-primary-900 sm:w-auto"
         onPicked={(asset: MediaAsset) => {
           void (async () => {
             if (!asset.object_key || busy) return;
@@ -175,32 +175,32 @@ export function AdminMentorAvatarPanel({ mentorId }: AdminMentorAvatarPanelProps
         }}
         className={[
           'mt-5 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed px-4 py-8 transition-all',
-          dragOver ? 'border-emerald-500 bg-emerald-50/90' : 'border-emerald-200/90 bg-emerald-50/40',
+          dragOver ? 'border-primary-500 bg-primary-50/90' : 'border-primary-200/90 bg-primary-50/40',
         ].join(' ')}
       >
-        <Upload className="h-6 w-6 text-emerald-600" />
+        <Upload className="h-6 w-6 text-primary-600" />
         <p className="text-sm font-bold text-ink">גרור תמונה או לחץ לבחירה</p>
-        {file ? <p className="text-xs text-emerald-800">{file.name}</p> : null}
+        {file ? <p className="text-xs text-primary-800">{file.name}</p> : null}
       </label>
 
       <button
         type="button"
         onClick={() => void onUpload()}
         disabled={!file || busy}
-        className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl bg-linear-to-l from-emerald-600 to-teal-500 px-6 py-3 font-bold text-gc disabled:opacity-45 sm:w-auto sm:self-end"
+        className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl bg-linear-to-l from-primary-600 to-secondary-500 px-6 py-3 font-bold text-gc disabled:opacity-45 sm:w-auto sm:self-end"
       >
         {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <ImageUp className="h-5 w-5" />}
         שמור תמונת {mentor.name}
       </button>
 
       {result?.error ? (
-        <p className="mt-3 text-sm text-red-800 flex gap-2">
+        <p className="mt-3 text-sm text-coral-800 flex gap-2">
           <AlertTriangle className="w-4 h-4 shrink-0" />
           {result.error}
         </p>
       ) : null}
       {result?.ok ? (
-        <p className="mt-3 text-sm text-emerald-900 flex gap-2">
+        <p className="mt-3 text-sm text-primary-900 flex gap-2">
           <CheckCircle2 className="w-4 h-4" />
           נשמר ב-R2
           {result.saved_percent != null ? ` · ${result.saved_percent}% פחות נפח` : null}

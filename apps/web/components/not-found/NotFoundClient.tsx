@@ -127,7 +127,7 @@ export default function NotFoundClient({ isAuthenticated, absoluteOrigin = null 
           style={{ border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 4px 24px rgba(0,0,0,0.06)' }}
         >
           <div className="px-6 py-5" style={{ background: 'linear-gradient(145deg, var(--color-forest-800), var(--color-forest-600) 60%, var(--color-primary-600))' }}>
-            <h1 className="text-2xl font-black text-white">אופס! הדף לא נמצא 🌱</h1>
+            <h1 className="text-2xl font-black text-on-dark">אופס! הדף לא נמצא 🌱</h1>
           </div>
           <div className="p-6 bg-background-card">
             <p className="text-ink-soft text-lg leading-relaxed mb-4">
@@ -140,7 +140,7 @@ export default function NotFoundClient({ isAuthenticated, absoluteOrigin = null 
         <div className="space-y-3">
           <NavAnchor
             href={primary.href}
-            className="flex items-center justify-center gap-2 w-full py-4 rounded-2xl font-bold text-lg text-white transition-all hover:scale-[1.02] active:scale-95"
+            className="flex items-center justify-center gap-2 w-full py-4 rounded-2xl font-bold text-lg text-on-dark transition-all hover:scale-[1.02] active:scale-95"
             style={{
               background: 'linear-gradient(135deg, #047857, #10b981)',
               boxShadow: '0 6px 20px rgba(16,185,129,0.25)',
@@ -187,7 +187,7 @@ export default function NotFoundClient({ isAuthenticated, absoluteOrigin = null 
           className="mt-10 p-4 rounded-2xl"
           style={{ background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.15)' }}
         >
-          <div className="flex items-center justify-center gap-2 text-emerald-700 text-sm font-bold mb-2">
+          <div className="flex items-center justify-center gap-2 text-primary-700 text-sm font-bold mb-2">
             <Leaf className="w-4 h-4" />
             <span>הידעת?</span>
           </div>

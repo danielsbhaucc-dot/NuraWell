@@ -23,9 +23,9 @@ type Verify = { ok: boolean; chain_ok: boolean; file_ok: boolean | null; checks:
 
 const fmt = (iso: string | null | undefined) => (iso ? new Intl.DateTimeFormat('he-IL', { timeZone: 'Asia/Jerusalem', dateStyle: 'short', timeStyle: 'short' }).format(new Date(iso)) : '—');
 const STATUS: Record<Item['status'], { label: string; cls: string }> = {
-  missing_source: { label: 'חסר מקור', cls: 'border-rose-300/70 bg-rose-500/10 text-rose-800' },
-  draft: { label: 'חסרים פרטים', cls: 'border-orange-300/70 bg-orange-500/10 text-orange-800' },
-  verified: { label: 'מתועד', cls: 'border-teal-300/70 bg-teal-500/10 text-teal-800' },
+  missing_source: { label: 'חסר מקור', cls: 'border-coral-300/70 bg-coral-500/10 text-coral-800' },
+  draft: { label: 'חסרים פרטים', cls: 'border-energy-300/70 bg-energy-500/10 text-energy-800' },
+  verified: { label: 'מתועד', cls: 'border-secondary-300/70 bg-secondary-500/10 text-secondary-800' },
 };
 const KIND: Record<string, { label: string; Icon: typeof ImageIcon }> = {
   image: { label: 'תמונה', Icon: ImageIcon }, illustration: { label: 'איור', Icon: Shapes }, icon: { label: 'אייקון', Icon: Shapes },
@@ -96,7 +96,7 @@ function ProvenanceForm({ item, onSaved }: { item: Item; onSaved: () => void }) 
           const v = (p[k] as string | null | undefined) ?? '';
           const required = item.missing.includes(k);
           if (k === 'generator') return (
-            <label key={k} className="block text-xs font-bold text-ink-soft">{label(k)}{required ? <span className="text-rose-600"> *</span> : null}
+            <label key={k} className="block text-xs font-bold text-ink-soft">{label(k)}{required ? <span className="text-coral-600"> *</span> : null}
               <select value={v} onChange={(e) => setP({ ...p, generator: (e.target.value || null) as Provenance['generator'] })} className={cn(opsInputClass, 'mt-1')}>
                 <option value="">בחירה</option>
                 {Object.entries(GENERATORS).map(([id, g]) => <option key={id} value={id}>{g.label}</option>)}
@@ -111,13 +111,13 @@ function ProvenanceForm({ item, onSaved }: { item: Item; onSaved: () => void }) 
             </label>
           );
           if (k === 'prompt' || k === 'notes') return (
-            <label key={k} className="block text-xs font-bold text-ink-soft sm:col-span-2">{label(k)}{required ? <span className="text-rose-600"> *</span> : null}
+            <label key={k} className="block text-xs font-bold text-ink-soft sm:col-span-2">{label(k)}{required ? <span className="text-coral-600"> *</span> : null}
               <textarea value={v} onChange={(e) => setP({ ...p, [k]: e.target.value })} rows={k === 'prompt' ? 4 : 2} className={cn(opsInputClass, 'mt-1 resize-y')} dir="auto" />
             </label>
           );
           const isUrl = /url$/.test(k);
           return (
-            <label key={k} className="block text-xs font-bold text-ink-soft">{label(k)}{required ? <span className="text-rose-600"> *</span> : null}
+            <label key={k} className="block text-xs font-bold text-ink-soft">{label(k)}{required ? <span className="text-coral-600"> *</span> : null}
               <input value={v} onChange={(e) => setP({ ...p, [k]: e.target.value })} type={k === 'created_on' ? 'date' : 'text'} inputMode={isUrl ? 'url' : undefined} dir={isUrl ? 'ltr' : 'auto'} placeholder={isUrl ? 'https://' : undefined} className={cn(opsInputClass, 'mt-1')} />
             </label>
           );
@@ -125,7 +125,7 @@ function ProvenanceForm({ item, onSaved }: { item: Item; onSaved: () => void }) 
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <button type="button" onClick={save} disabled={busy} className={opsGlassBtnPrimaryClass}>{busy ? <Loader2 size={14} className="animate-spin" /> : <ShieldCheck size={14} />}שמירה ותיעוד</button>
-        {msg ? <span role="status" className={cn('text-xs font-bold', msg.ok ? 'text-teal-800' : 'text-rose-700')}>{msg.text}</span> : null}
+        {msg ? <span role="status" className={cn('text-xs font-bold', msg.ok ? 'text-secondary-800' : 'text-coral-700')}>{msg.text}</span> : null}
       </div>
     </div>
   );
@@ -179,11 +179,11 @@ function PendingLicenseCard({ p, onDone }: { p: { key: string; title: string; ac
     } catch { setMsg('ההעלאה נכשלה (תמונה או PDF בלבד)'); } finally { setBusy(false); }
   };
   return (
-    <li className="flex flex-col gap-2 rounded-2xl border border-orange-200/80 bg-orange-50/70 p-3 sm:flex-row sm:items-center sm:justify-between" data-testid="pending-license">
+    <li className="flex flex-col gap-2 rounded-2xl border border-energy-200/80 bg-energy-50/70 p-3 sm:flex-row sm:items-center sm:justify-between" data-testid="pending-license">
       <div className="min-w-0">
-        <p className="text-sm font-bold text-orange-950">{p.kind === 'receipt' ? `🧾 ${p.title}: קבלה לא שויכה` : `🎵 ${p.title}: הרישיון ממתין`}</p>
-        <p className="text-xs text-orange-900/80">{p.action}</p>
-        {msg ? <p role="status" className="mt-1 text-xs font-bold text-teal-800">{msg}</p> : null}
+        <p className="text-sm font-bold text-energy-950">{p.kind === 'receipt' ? `🧾 ${p.title}: קבלה לא שויכה` : `🎵 ${p.title}: הרישיון ממתין`}</p>
+        <p className="text-xs text-energy-900/80">{p.action}</p>
+        {msg ? <p role="status" className="mt-1 text-xs font-bold text-secondary-800">{msg}</p> : null}
       </div>
       {p.kind === 'receipt' ? <a href="#receipts" className={cn(opsGlassBtnPrimaryClass, 'shrink-0')}>לקבלה</a> : <label className={cn(opsGlassBtnPrimaryClass, 'shrink-0 cursor-pointer')}>
         {busy ? <Loader2 size={14} className="animate-spin" /> : <Paperclip size={14} />}העלאת קבלה
@@ -225,7 +225,7 @@ export function ItemCard({ item, open, onToggle, onChanged }: { item: Item; open
       <button type="button" onClick={onToggle} aria-expanded={open} className="flex w-full items-center gap-3 text-right">
         <span className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-2xl border border-gc/50 bg-glass/70 backdrop-blur-md">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          {src ? <img src={src} alt="" loading="lazy" className="h-full w-full object-contain p-1" /> : <K.Icon size={22} className="text-teal-700" aria-hidden />}
+          {src ? <img src={src} alt="" loading="lazy" className="h-full w-full object-contain p-1" /> : <K.Icon size={22} className="text-secondary-700" aria-hidden />}
         </span>
         <span className="min-w-0 flex-1">
           <span className="block truncate text-sm font-bold text-ink">{item.title ?? item.path ?? item.key}</span>
@@ -235,9 +235,9 @@ export function ItemCard({ item, open, onToggle, onChanged }: { item: Item; open
             <Chip className="border-gc/60 text-ink-soft">{SOURCE_LABEL_HE[item.source_type]}</Chip>
             <Chip className="border-gc/60 text-ink-soft">{K.label}</Chip>
             {['ai_image', 'ai_music', 'ai_voice'].includes(item.source_type) ? (item.coverage
-              ? <Chip className="border-teal-300/70 bg-teal-500/10 text-teal-800">✓ נוצר במנוי בתשלום{item.coverage.plan ? ` · ${item.coverage.plan}` : ''}</Chip>
-              : <Chip className="border-orange-300/70 text-orange-800">אין קבלה לתקופה</Chip>) : null}
-            {item.metadata.c2pa ? <Chip className="border-teal-300/70 text-teal-800">C2PA</Chip> : null}
+              ? <Chip className="border-secondary-300/70 bg-secondary-500/10 text-secondary-800">✓ נוצר במנוי בתשלום{item.coverage.plan ? ` · ${item.coverage.plan}` : ''}</Chip>
+              : <Chip className="border-energy-300/70 text-energy-800">אין קבלה לתקופה</Chip>) : null}
+            {item.metadata.c2pa ? <Chip className="border-secondary-300/70 text-secondary-800">C2PA</Chip> : null}
             {!item.present ? <Chip className="border-gc/60 text-ink-faint">הוסר מהאתר</Chip> : null}
           </span>
         </span>
@@ -247,23 +247,23 @@ export function ItemCard({ item, open, onToggle, onChanged }: { item: Item; open
         <div className="mt-4 space-y-4">
           <OpsDivider className="px-0 sm:px-0" />
           <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={() => run('zip')} disabled={!!busy} data-testid="media-need-evidence" className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-amber-600 px-4 text-sm font-bold text-white shadow-lg shadow-amber-900/15 disabled:opacity-50">
+            <button type="button" onClick={() => run('zip')} disabled={!!busy} data-testid="media-need-evidence" className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-accent-600 px-4 text-sm font-bold text-on-dark shadow-lg shadow-accent-900/15 disabled:opacity-50">
               {busy === 'zip' ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}אני צריך ראיה
             </button>
             <button type="button" onClick={() => run('pdf')} disabled={!!busy} className={opsGlassBtnClass}>{busy === 'pdf' ? <Loader2 size={14} className="animate-spin" /> : <FileText size={14} />}PDF בלבד</button>
             <button type="button" onClick={() => run('verify')} disabled={!!busy} className={opsGlassBtnClass}>{busy === 'verify' ? <Loader2 size={14} className="animate-spin" /> : <ShieldCheck size={14} />}בדיקת שלמות</button>
           </div>
-          {stage ? <p role="status" className="flex items-center gap-2 rounded-xl border border-amber-200/70 bg-amber-50/70 px-3 py-2 text-xs font-bold text-amber-900"><Loader2 size={14} className="animate-spin" />{stage}</p> : null}
+          {stage ? <p role="status" className="flex items-center gap-2 rounded-xl border border-accent-200/70 bg-accent-50/70 px-3 py-2 text-xs font-bold text-accent-900"><Loader2 size={14} className="animate-spin" />{stage}</p> : null}
           {made ? (
-            <div role="status" className="rounded-2xl border border-teal-200/70 bg-teal-50/70 px-3 py-2.5 text-xs text-teal-900">
+            <div role="status" className="rounded-2xl border border-secondary-200/70 bg-secondary-50/70 px-3 py-2.5 text-xs text-secondary-900">
               <p className="flex items-center gap-1.5 font-bold"><CheckCircle2 size={14} />התיק הופק והורד: {made.name}</p>
-              {made.sha ? <p className="mt-1 break-all font-mono text-[10px] text-teal-800/80" dir="ltr">SHA-256 {made.sha}</p> : null}
-              <p className="mt-1 text-[11px] text-teal-800/80">ההפקה נרשמה ביומן הגישה. עותק נשמר 7 ימים ואז נמחק, והראיות המקוריות נשמרות לצמיתות, כך שאפשר להפיק שוב בכל רגע.</p>
+              {made.sha ? <p className="mt-1 break-all font-mono text-[10px] text-secondary-800/80" dir="ltr">SHA-256 {made.sha}</p> : null}
+              <p className="mt-1 text-[11px] text-secondary-800/80">ההפקה נרשמה ביומן הגישה. עותק נשמר 7 ימים ואז נמחק, והראיות המקוריות נשמרות לצמיתות, כך שאפשר להפיק שוב בכל רגע.</p>
             </div>
           ) : null}
-          {err ? <p role="alert" className="rounded-xl bg-rose-50 px-3 py-2 text-xs font-bold text-rose-700">{err}</p> : null}
+          {err ? <p role="alert" className="rounded-xl bg-coral-50 px-3 py-2 text-xs font-bold text-coral-700">{err}</p> : null}
           {verify ? (
-            <p className={cn('flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-bold', verify.ok ? 'border-teal-300/70 bg-teal-50/80 text-teal-800' : 'border-rose-300/70 bg-rose-50 text-rose-800')}>
+            <p className={cn('flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-bold', verify.ok ? 'border-secondary-300/70 bg-secondary-50/80 text-secondary-800' : 'border-coral-300/70 bg-coral-50 text-coral-800')}>
               {verify.ok ? <CheckCircle2 size={16} /> : <ShieldAlert size={16} />}
               {verify.ok ? `כל ${verify.checks.length} הרשומות תקינות: שרשרת, חתימה וחותמת זמן${verify.file_ok ? ', והקובץ זהה למקור' : ''}` : 'נמצאו חריגות: ' + verify.checks.flatMap((c) => c.problems).join(', ')} · {fmt(verify.checked_at)}
             </p>
@@ -296,13 +296,13 @@ export function ItemCard({ item, open, onToggle, onChanged }: { item: Item; open
           <details className="group rounded-2xl border border-gc/50 bg-glass/50 backdrop-blur-md p-3">
             <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-bold text-ink">רשומות חתומות ({item.records})<ChevronDown size={16} className="text-ink-faint transition group-open:rotate-180" /></summary>
             {!recs ? <Loader2 className="mx-auto my-3 animate-spin text-ink-faint" /> : (
-              <ol className="mt-3 space-y-1.5 border-r-2 border-teal-200/80 pr-3 text-xs">
+              <ol className="mt-3 space-y-1.5 border-r-2 border-secondary-200/80 pr-3 text-xs">
                 {recs.map((r, i) => (
                   <li key={r.id} className="flex flex-wrap items-center gap-2">
                     <span className="font-bold text-ink">{i + 1}. {EVENT[r.event] ?? r.event}</span>
                     <span className="text-ink-faint">{fmt(r.created_at)}</span>
-                    <Chip className={r.tsa ? 'border-teal-300/70 text-teal-800' : 'border-rose-300/70 text-rose-700'}>{r.tsa ? '✓' : '✗'} חותמת זמן</Chip>
-                    <Chip className={r.ots ? 'border-teal-300/70 text-teal-800' : 'border-gc/60 text-ink-faint'}>{r.ots ? '✓' : '•'} עיגון</Chip>
+                    <Chip className={r.tsa ? 'border-secondary-300/70 text-secondary-800' : 'border-coral-300/70 text-coral-700'}>{r.tsa ? '✓' : '✗'} חותמת זמן</Chip>
+                    <Chip className={r.ots ? 'border-secondary-300/70 text-secondary-800' : 'border-gc/60 text-ink-faint'}>{r.ots ? '✓' : '•'} עיגון</Chip>
                     {r.event === 'license_snapshot' ? <span className="truncate text-ink-faint" dir="ltr">{String(r.summary.url ?? '')}</span> : null}
                   </li>
                 ))}
@@ -351,7 +351,7 @@ export function AdminMediaEvidencePanel() {
   }, [items]);
   const todo = filtered.filter((i) => i.status !== 'verified');
   const done = filtered.filter((i) => i.status === 'verified');
-  const filterBtn = (active: boolean) => cn('rounded-full border px-3 py-1.5 text-xs font-bold transition', active ? 'border-teal-400/70 bg-teal-600 text-white' : 'border-gc/60 bg-glass/50 backdrop-blur-md text-ink-soft hover:bg-glass/80');
+  const filterBtn = (active: boolean) => cn('rounded-full border px-3 py-1.5 text-xs font-bold transition', active ? 'border-secondary-400/70 bg-secondary-600 text-on-dark' : 'border-gc/60 bg-glass/50 backdrop-blur-md text-ink-soft hover:bg-glass/80');
 
   return (
     <div dir="rtl" className="space-y-4" data-testid="media-evidence-panel">
@@ -365,8 +365,8 @@ export function AdminMediaEvidencePanel() {
         </div>
         {scan ? <p role="status" className="mt-2 text-xs font-bold text-ink-soft">{scan}</p> : null}
         <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-          {([['missing_source', counts.missing, 'חסר מקור', 'text-rose-700'], ['draft', counts.draft, 'חסרים פרטים', 'text-orange-700'], ['verified', counts.verified, 'מתועדים', 'text-teal-700']] as const).map(([s, n, l, c]) => (
-            <button key={s} type="button" onClick={() => setStatus(status === s ? 'all' : s)} className={cn('rounded-2xl border px-2 py-3 transition', status === s ? 'border-teal-400/70 bg-glass/80 backdrop-blur-md' : 'border-gc/50 bg-glass/40 backdrop-blur-md hover:bg-glass/70')}>
+          {([['missing_source', counts.missing, 'חסר מקור', 'text-coral-700'], ['draft', counts.draft, 'חסרים פרטים', 'text-energy-700'], ['verified', counts.verified, 'מתועדים', 'text-secondary-700']] as const).map(([s, n, l, c]) => (
+            <button key={s} type="button" onClick={() => setStatus(status === s ? 'all' : s)} className={cn('rounded-2xl border px-2 py-3 transition', status === s ? 'border-secondary-400/70 bg-glass/80 backdrop-blur-md' : 'border-gc/50 bg-glass/40 backdrop-blur-md hover:bg-glass/70')}>
               <span className={cn('block text-2xl font-black', c)}>{items ? n : '·'}</span><span className="text-xs font-bold text-ink-soft">{l}</span>
             </button>
           ))}
@@ -396,17 +396,17 @@ export function AdminMediaEvidencePanel() {
         </section>
       ) : null}
       <ReceiptsSection onChanged={load} />
-      {err ? <p role="alert" className="rounded-xl bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700">{err}</p> : null}
+      {err ? <p role="alert" className="rounded-xl bg-coral-50 px-3 py-2 text-sm font-semibold text-coral-700">{err}</p> : null}
       {!items ? <div className={cn(opsGlassCardClass, 'grid place-items-center p-10')}><Loader2 className="animate-spin text-ink-faint" /></div> : (
         <>
           <section aria-label="צריך את הקלט שלך" className="space-y-2">
-            <h3 className="flex items-center gap-2 px-1 text-sm font-bold text-ink-soft"><span className="grid h-6 w-6 place-items-center rounded-full bg-rose-100 text-xs text-rose-700">{todo.length}</span>צריך את הקלט שלך</h3>
+            <h3 className="flex items-center gap-2 px-1 text-sm font-bold text-ink-soft"><span className="grid h-6 w-6 place-items-center rounded-full bg-coral-100 text-xs text-coral-700">{todo.length}</span>צריך את הקלט שלך</h3>
             {todo.length ? <ul className="space-y-2">{todo.map((i) => <ItemCard key={i.key} item={i} open={open === i.key} onToggle={() => setOpen(open === i.key ? null : i.key)} onChanged={load} />)}</ul> : <p className={cn(opsGlassCardClass, 'p-4 text-center text-sm text-ink-faint')}>אין פריטים פתוחים בסינון הזה 🎉</p>}
           </section>
           <OpsDivider />
           <section aria-label="מתועדים במלואם" className="space-y-2">
             <button type="button" onClick={() => setShowDone(!showDone)} aria-expanded={showDone} className="flex w-full items-center justify-between px-1 text-sm font-bold text-ink-soft">
-              <span className="flex items-center gap-2"><span className="grid h-6 w-6 place-items-center rounded-full bg-teal-100 text-xs text-teal-700">{done.length}</span>מתועדים במלואם</span>
+              <span className="flex items-center gap-2"><span className="grid h-6 w-6 place-items-center rounded-full bg-secondary-100 text-xs text-secondary-700">{done.length}</span>מתועדים במלואם</span>
               <ChevronDown size={16} className={cn('text-ink-faint transition', showDone && 'rotate-180')} />
             </button>
             {showDone || q ? <ul className="space-y-2">{done.map((i) => <ItemCard key={i.key} item={i} open={open === i.key} onToggle={() => setOpen(open === i.key ? null : i.key)} onChanged={load} />)}</ul> : null}

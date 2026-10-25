@@ -260,9 +260,9 @@ export function TodayTasksPopup({
             style={{
               maxHeight: '100%',
               background:
-                'linear-gradient(168deg, rgba(248,251,246,0.78) 0%, rgba(236,253,245,0.62) 52%, rgba(248,251,246,0.72) 100%)',
+                'linear-gradient(168deg, rgba(231,238,220,0.78) 0%, rgba(236,253,245,0.62) 52%, rgba(231,238,220,0.72) 100%)',
               border: '1px solid rgba(167,243,208,0.35)',
-              boxShadow: '0 32px 80px rgba(4,47,36,0.32), inset 0 1px 0 rgba(248,251,246,0.85)',
+              boxShadow: '0 32px 80px rgba(4,47,36,0.32), inset 0 1px 0 rgba(231,238,220,0.85)',
               backdropFilter: 'blur(28px) saturate(1.5)',
               WebkitBackdropFilter: 'blur(28px) saturate(1.5)',
             }}
@@ -270,7 +270,7 @@ export function TodayTasksPopup({
             <button
               type="button"
               onClick={onClose}
-              className="absolute top-3.5 inset-e-3.5 z-20 flex h-8 w-8 items-center justify-center rounded-full text-white/90 hover:text-white transition-colors"
+              className="absolute top-3.5 inset-e-3.5 z-20 flex h-8 w-8 items-center justify-center rounded-full text-on-dark/90 hover:text-on-dark transition-colors"
               style={{
                 background: 'rgba(255,255,255,0.18)',
                 border: '1px solid rgba(255,255,255,0.28)',
@@ -316,23 +316,23 @@ export function TodayTasksPopup({
                   />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[10px] font-bold tracking-wide text-emerald-100/85">
+                  <p className="text-[10px] font-bold tracking-wide text-primary-100/85">
                     אלמוג · המנטור שלך
                   </p>
                   <h2
                     id={titleId}
-                    className="text-lg font-black text-white leading-tight mt-0.5"
+                    className="text-lg font-black text-on-dark leading-tight mt-0.5"
                     style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
                   >
                     {headerTitle}
                   </h2>
-                  <p className="text-xs font-semibold text-emerald-50/90 mt-1">{headerMeta}</p>
+                  <p className="text-xs font-semibold text-primary-50/90 mt-1">{headerMeta}</p>
                 </div>
               </div>
 
               {pendingCount + doneCount > 0 ? (
                 <div className="relative mt-3.5">
-                  <div className="flex justify-between text-[10px] font-bold text-emerald-50/85 mb-1.5">
+                  <div className="flex justify-between text-[10px] font-bold text-primary-50/85 mb-1.5">
                     <span>התקדמות היום</span>
                     <span>
                       {doneCount}/{pendingCount + doneCount}
@@ -366,16 +366,16 @@ export function TodayTasksPopup({
                 <div
                   className="rounded-2xl p-4 text-start"
                   style={{
-                    background: '#F7FBF4',
+                    background: '#e7eedc',
                     border: '1px solid rgba(167,243,208,0.55)',
                     boxShadow: '0 6px 20px rgba(6,78,59,0.06)',
                   }}
                 >
                   <div className="flex items-center gap-2 mb-1">
-                    <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <p className="text-sm font-black text-emerald-900">המסע מחכה לך</p>
+                    <Sparkles className="w-4 h-4 text-primary-600 shrink-0" />
+                    <p className="text-sm font-black text-primary-900">המסע מחכה לך</p>
                   </div>
-                  <p className="text-xs text-emerald-800/85 leading-relaxed mb-3">
+                  <p className="text-xs text-primary-800/85 leading-relaxed mb-3">
                     {name
                       ? `${name}, עוד לא לקחנו משימות. בוא נתחיל ביחד כשמתאים לך.`
                       : 'עוד לא לקחנו משימות. בוא נתחיל ביחד כשמתאים לך.'}
@@ -383,7 +383,7 @@ export function TodayTasksPopup({
                   <button
                     type="button"
                     onClick={openChatGeneral}
-                    className="w-full flex items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-black text-white"
+                    className="w-full flex items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-black text-on-dark"
                     style={{
                       background: 'linear-gradient(145deg, #047857, #10b981)',
                       boxShadow: '0 6px 18px rgba(4,120,87,0.22)',
@@ -406,7 +406,7 @@ export function TodayTasksPopup({
                       background: 'rgba(248,251,246,0.55)',
                       border: '1px solid rgba(167,243,208,0.4)',
                       boxShadow:
-                        '0 4px 14px rgba(6,78,59,0.05), inset 0 1px 0 rgba(248,251,246,0.65)',
+                        '0 4px 14px rgba(6,78,59,0.05), inset 0 1px 0 rgba(231,238,220,0.65)',
                     }}
                   >
                     <button
@@ -428,10 +428,10 @@ export function TodayTasksPopup({
                           ✨
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-black text-emerald-950 leading-snug">
+                          <p className="text-sm font-black text-primary-950 leading-snug">
                             {task.title}
                           </p>
-                          <p className="text-[10px] font-medium text-emerald-800/70 mt-0.5">
+                          <p className="text-[10px] font-medium text-primary-800/70 mt-0.5">
                             מאלמוג · פתוח
                             {(task.similarCount ?? 1) > 1
                               ? ` · ${task.similarCount} ניסוחים דומים אוחדו`
@@ -455,7 +455,7 @@ export function TodayTasksPopup({
                           type="button"
                           disabled={busy}
                           onClick={() => void handleMarkAlmog(task)}
-                          className="flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-[11px] font-black text-white disabled:opacity-60"
+                          className="flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-[11px] font-black text-on-dark disabled:opacity-60"
                           style={{
                             background: 'linear-gradient(145deg, #047857, #10b981)',
                           }}
@@ -470,9 +470,9 @@ export function TodayTasksPopup({
                         <button
                           type="button"
                           onClick={() => openChatForAlmog(task)}
-                          className="flex items-center justify-center gap-1.5 rounded-xl bg-glass/85 backdrop-blur-md py-2.5 text-[11px] font-black text-emerald-800 shadow-[0_1px_3px_rgba(4,47,36,0.08)] ring-1 ring-emerald-200 transition hover:bg-emerald-50 active:scale-[0.98]"
+                          className="flex items-center justify-center gap-1.5 rounded-xl bg-glass/85 backdrop-blur-md py-2.5 text-[11px] font-black text-primary-800 shadow-[0_1px_3px_rgba(4,47,36,0.08)] ring-1 ring-primary-200 transition hover:bg-primary-50 active:scale-[0.98]"
                         >
-                          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-linear-to-br from-teal-500 to-emerald-500 text-white">
+                          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-linear-to-br from-secondary-500 to-primary-500 text-on-dark">
                             <MessageCircle className="h-3 w-3" aria-hidden />
                           </span>
                           לדבר על זה עם אלמוג
@@ -500,14 +500,14 @@ export function TodayTasksPopup({
                     className="w-full text-start rounded-2xl p-3.5"
                     style={{
                       background: isFeatured
-                        ? 'linear-gradient(170deg, rgba(248,251,246,0.72) 0%, rgba(255,251,235,0.58) 100%)'
+                        ? 'linear-gradient(170deg, rgba(231,238,220,0.72) 0%, rgba(255,251,235,0.58) 100%)'
                         : 'rgba(248,251,246,0.55)',
                       border: isFeatured
                         ? '1px solid rgba(245,158,11,0.38)'
                         : '1px solid rgba(167,243,208,0.4)',
                       boxShadow: isFeatured
-                        ? '0 10px 24px rgba(245,158,11,0.1), inset 0 1px 0 rgba(248,251,246,0.75)'
-                        : '0 4px 14px rgba(6,78,59,0.05), inset 0 1px 0 rgba(248,251,246,0.65)',
+                        ? '0 10px 24px rgba(245,158,11,0.1), inset 0 1px 0 rgba(231,238,220,0.75)'
+                        : '0 4px 14px rgba(6,78,59,0.05), inset 0 1px 0 rgba(231,238,220,0.65)',
                       backdropFilter: 'blur(12px)',
                       WebkitBackdropFilter: 'blur(12px)',
                     }}
@@ -536,7 +536,7 @@ export function TodayTasksPopup({
                         <div className="min-w-0 flex-1">
                           {isFeatured ? (
                             <span
-                              className="inline-block text-[9px] font-bold text-amber-900 mb-1 px-2 py-0.5 rounded-full"
+                              className="inline-block text-[9px] font-bold text-accent-900 mb-1 px-2 py-0.5 rounded-full"
                               style={{
                                 background: 'rgba(254,240,138,0.85)',
                                 border: '1px solid rgba(245,158,11,0.3)',
@@ -545,15 +545,15 @@ export function TodayTasksPopup({
                               מומלץ עכשיו
                             </span>
                           ) : null}
-                          <p className="text-sm font-black text-emerald-950 leading-snug">
+                          <p className="text-sm font-black text-primary-950 leading-snug">
                             {task.title}
                           </p>
-                          <p className="text-[10px] font-medium text-emerald-800/70 mt-0.5">
+                          <p className="text-[10px] font-medium text-primary-800/70 mt-0.5">
                             {task.stepTitle} · צעד {task.stepNumber}
                           </p>
                           {timeHint ? (
                             <span
-                              className="inline-block text-[10px] font-bold mt-2 px-2.5 py-0.5 rounded-full text-emerald-900"
+                              className="inline-block text-[10px] font-bold mt-2 px-2.5 py-0.5 rounded-full text-primary-900"
                               style={{
                                 background: isFeatured
                                   ? 'rgba(254,240,138,0.55)'
@@ -582,7 +582,7 @@ export function TodayTasksPopup({
                           type="button"
                           disabled={busy}
                           onClick={() => void handleMarkJourney(task)}
-                          className="flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-[11px] font-black text-white disabled:opacity-60"
+                          className="flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-[11px] font-black text-on-dark disabled:opacity-60"
                           style={{
                             background: 'linear-gradient(145deg, #047857, #10b981)',
                           }}
@@ -597,9 +597,9 @@ export function TodayTasksPopup({
                         <button
                           type="button"
                           onClick={() => openChatForJourney(task)}
-                          className="flex items-center justify-center gap-1.5 rounded-xl bg-glass/85 backdrop-blur-md py-2.5 text-[11px] font-black text-emerald-800 shadow-[0_1px_3px_rgba(4,47,36,0.08)] ring-1 ring-emerald-200 transition hover:bg-emerald-50 active:scale-[0.98]"
+                          className="flex items-center justify-center gap-1.5 rounded-xl bg-glass/85 backdrop-blur-md py-2.5 text-[11px] font-black text-primary-800 shadow-[0_1px_3px_rgba(4,47,36,0.08)] ring-1 ring-primary-200 transition hover:bg-primary-50 active:scale-[0.98]"
                         >
-                          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-linear-to-br from-teal-500 to-emerald-500 text-white">
+                          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-linear-to-br from-secondary-500 to-primary-500 text-on-dark">
                             <MessageCircle className="h-3 w-3" aria-hidden />
                           </span>
                           לדבר על זה עם אלמוג
@@ -614,7 +614,7 @@ export function TodayTasksPopup({
 
               {doneTasks.length > 0 ? (
                 <>
-                  <p className="text-[10px] font-bold text-emerald-800/50 px-1 pt-1">
+                  <p className="text-[10px] font-bold text-primary-800/50 px-1 pt-1">
                     כבר סגרת היום
                   </p>
                   {doneTasks.map((task) => (
@@ -622,7 +622,7 @@ export function TodayTasksPopup({
                       key={`done-${task.id}`}
                       className="rounded-2xl p-3.5"
                       style={{
-                        background: 'rgba(248,251,246,0.85)',
+                        background: 'rgba(231,238,220,0.85)',
                         border: '1px solid rgba(167,243,208,0.4)',
                       }}
                     >
@@ -637,11 +637,11 @@ export function TodayTasksPopup({
                           {task.emoji}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-black text-emerald-900/75 leading-snug line-through decoration-emerald-600/30">
+                          <p className="text-sm font-black text-primary-900/75 leading-snug line-through decoration-primary-600/30">
                             {task.title}
                           </p>
                           <span
-                            className="text-[10px] font-bold px-2 py-0.5 rounded-full text-emerald-800 inline-flex items-center gap-1 mt-1"
+                            className="text-[10px] font-bold px-2 py-0.5 rounded-full text-primary-800 inline-flex items-center gap-1 mt-1"
                             style={{
                               background: 'rgba(167,243,208,0.5)',
                               border: '1px solid rgba(110,231,183,0.4)',
@@ -672,7 +672,7 @@ export function TodayTasksPopup({
                   <button
                     type="button"
                     onClick={onMarkDone}
-                    className="flex flex-col items-center justify-center gap-1 rounded-2xl py-3.5 text-[11px] font-black text-white"
+                    className="flex flex-col items-center justify-center gap-1 rounded-2xl py-3.5 text-[11px] font-black text-on-dark"
                     style={{
                       background: 'linear-gradient(145deg, #047857, #10b981)',
                       boxShadow: '0 8px 22px rgba(4,120,87,0.28)',
@@ -684,7 +684,7 @@ export function TodayTasksPopup({
                   <button
                     type="button"
                     onClick={openChatGeneral}
-                    className="flex flex-col items-center justify-center gap-1 rounded-2xl py-3.5 text-[11px] font-black text-white"
+                    className="flex flex-col items-center justify-center gap-1 rounded-2xl py-3.5 text-[11px] font-black text-on-dark"
                     style={{
                       background: 'linear-gradient(145deg, #0f766e, #14b8a6)',
                       boxShadow: '0 8px 22px rgba(15,118,110,0.25)',
@@ -698,7 +698,7 @@ export function TodayTasksPopup({
                 <button
                   type="button"
                   onClick={openChatGeneral}
-                  className="w-full flex items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-black text-white"
+                  className="w-full flex items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-black text-on-dark"
                   style={{
                     background: 'linear-gradient(145deg, #047857, #10b981)',
                     boxShadow: '0 8px 22px rgba(4,120,87,0.25)',
@@ -708,7 +708,7 @@ export function TodayTasksPopup({
                   ספר לאלמוג איך מרגיש
                 </button>
               )}
-              <p className="text-center text-[11px] font-medium text-emerald-800/65 leading-relaxed">
+              <p className="text-center text-[11px] font-medium text-primary-800/65 leading-relaxed">
                 {pendingCount > 0
                   ? 'לחיצה על משימה פותחת סימון מהיר — או מעבר לצ׳אט אם בא לך'
                   : 'יום מצוין. מחר נמשיך 🌱'}

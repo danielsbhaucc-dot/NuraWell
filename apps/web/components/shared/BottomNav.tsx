@@ -48,10 +48,10 @@ export function BottomNav() {
       <div
         className="absolute inset-0"
         style={{
-          background: 'linear-gradient(180deg, rgba(248,251,246,0.66) 0%, rgba(248,251,246,0.94) 100%)',
+          background: 'linear-gradient(180deg, rgba(231,238,220,0.66) 0%, rgba(231,238,220,0.94) 100%)',
           backdropFilter: 'blur(26px) saturate(190%)',
           WebkitBackdropFilter: 'blur(26px) saturate(190%)',
-          borderTop: '1px solid rgba(248,251,246,0.9)',
+          borderTop: '1px solid rgba(231,238,220,0.9)',
           boxShadow: '0 -12px 40px rgba(6,78,59,0.12)',
         }}
       />
@@ -92,7 +92,7 @@ export function BottomNav() {
               className="pointer-events-none absolute inset-x-0 top-0 h-1/2"
               style={{ background: 'radial-gradient(120% 90% at 50% 0%, rgba(255,255,255,0.45), transparent 60%)' }}
             />
-            <Sparkles className="relative h-6 w-6 text-white drop-shadow-sm" strokeWidth={2.2} />
+            <Sparkles className="relative h-6 w-6 text-on-dark drop-shadow-sm" strokeWidth={2.2} />
           </motion.button>
         </div>
 

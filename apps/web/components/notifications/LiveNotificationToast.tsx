@@ -122,16 +122,16 @@ export function LiveNotificationToast({
         'pointer-events-auto group relative w-full rounded-2xl',
         'cursor-pointer select-none border text-right',
         isPlatform
-          ? 'border-indigo-200/70 bg-linear-to-br from-indigo-50 via-background-card to-violet-50 shadow-[0_10px_28px_rgba(67,56,202,0.14)]'
-          : 'border-emerald-200/60 bg-linear-to-br from-emerald-50 via-background-card to-teal-50 shadow-[0_10px_28px_rgba(6,78,59,0.14)]',
-        'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500/60'
+          ? 'border-iris-200/70 bg-linear-to-br from-iris-50 via-background-card to-iris-50 shadow-[0_10px_28px_rgba(67,56,202,0.14)]'
+          : 'border-primary-200/60 bg-linear-to-br from-primary-50 via-background-card to-secondary-50 shadow-[0_10px_28px_rgba(6,78,59,0.14)]',
+        'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary-500/60'
       )}
     >
       <div className="flex items-start gap-3 px-3.5 py-3 sm:px-4">
         {/* Avatar */}
         <div className="relative shrink-0">
           <div
-            className="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-full ring-2 ring-white/80 shadow-md"
+            className="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-full ring-2 ring-on-dark/80 shadow-md"
             style={{
               background: isPlatform
                 ? 'linear-gradient(140deg,#6366f1 0%,#4f46e5 100%)'
@@ -139,7 +139,7 @@ export function LiveNotificationToast({
             }}
           >
             {isPlatform ? (
-              <Shield className="h-5 w-5 text-white" strokeWidth={2.2} />
+              <Shield className="h-5 w-5 text-on-dark" strokeWidth={2.2} />
             ) : (
               <>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -156,8 +156,8 @@ export function LiveNotificationToast({
           </div>
           {!isPlatform ? (
             <span className="absolute -bottom-0.5 -inset-e-0.5 flex h-3 w-3" aria-hidden>
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-80" />
-              <span className="relative inline-flex h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-white shadow-xs" />
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary-400 opacity-80" />
+              <span className="relative inline-flex h-3 w-3 rounded-full bg-primary-500 ring-2 ring-on-dark shadow-xs" />
             </span>
           ) : null}
         </div>
@@ -168,7 +168,7 @@ export function LiveNotificationToast({
             <h3
               className={cn(
                 'truncate text-[13.5px] font-black leading-tight',
-                isPlatform ? 'text-indigo-950' : 'text-emerald-950',
+                isPlatform ? 'text-iris-950' : 'text-primary-950',
               )}
               style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
             >
@@ -178,7 +178,7 @@ export function LiveNotificationToast({
               type="button"
               onClick={handleDismiss}
               aria-label="סגור התראה"
-              className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-emerald-100/60 text-emerald-900/70 transition hover:bg-emerald-200/80 hover:text-emerald-900 active:scale-95"
+              className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-primary-100/60 text-primary-900/70 transition hover:bg-primary-200/80 hover:text-primary-900 active:scale-95"
             >
               <X className="h-3.5 w-3.5" strokeWidth={2.4} />
             </button>
@@ -186,13 +186,13 @@ export function LiveNotificationToast({
           <p
             className={cn(
               'mt-0.5 line-clamp-3 text-[13px] font-medium leading-snug',
-              isPlatform ? 'text-indigo-900/85' : 'text-emerald-900/85',
+              isPlatform ? 'text-iris-900/85' : 'text-primary-900/85',
             )}
             style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
           >
             {n.body}
           </p>
-          <div className="mt-1.5 flex items-center gap-1.5 text-[10.5px] font-bold text-emerald-700/75">
+          <div className="mt-1.5 flex items-center gap-1.5 text-[10.5px] font-bold text-primary-700/75">
             <span>{mentorLabel}</span>
             <span aria-hidden>•</span>
             <span>עכשיו</span>
@@ -202,7 +202,7 @@ export function LiveNotificationToast({
 
       {/* progress bar — מסמן כמה זמן נשאר */}
       <motion.div
-        className="absolute bottom-0 inset-s-0 h-[2.5px] bg-linear-to-l from-emerald-500 via-emerald-400 to-teal-300"
+        className="absolute bottom-0 inset-s-0 h-[2.5px] bg-linear-to-l from-primary-500 via-primary-400 to-secondary-300"
         initial={{ width: '100%' }}
         animate={{ width: '0%' }}
         transition={{ duration: TOAST_AUTO_DISMISS_MS / 1000, ease: 'linear' as const }}

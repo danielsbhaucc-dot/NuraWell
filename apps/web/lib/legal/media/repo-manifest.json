@@ -223,8 +223,8 @@
   "path": "apps/web/components/ai/SecureVaultBox.tsx",
   "title": "SecureVaultBox · SVG 2",
   "mime": "image/svg+xml",
-  "sha256": "f61a2e82daaab04097568b65bdf205923468cd8d000c66d7519a51ee32bc4b0d",
-  "content_b64": "PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmIiBzdHJva2VXaWR0aD0iMyIgc3Ryb2tlTGluZWNhcD0icm91bmQiPjxwYXRoIGQ9Ik01IDEyLjVsNC41IDQuNUwxOSA3LjUiIC8+PC9zdmc+",
+  "sha256": "26e5a57dfec4b43ade36590d0208d97b65631385992092f299067e380f6cc332",
+  "content_b64": "PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZWVmNGVhIiBzdHJva2VXaWR0aD0iMyIgc3Ryb2tlTGluZWNhcD0icm91bmQiPjxwYXRoIGQ9Ik01IDEyLjVsNC41IDQuNUwxOSA3LjUiIC8+PC9zdmc+",
   "usages": [
    "components/ai/SecureVaultBox.tsx",
    "components/ai/AIChatWidget.tsx",
@@ -333,8 +333,8 @@
   "path": "apps/web/components/legal/v2/HeroArt.tsx",
   "title": "HeroArt · SVG 1",
   "mime": "image/svg+xml",
-  "sha256": "56ba37e5216666691c9009fa58d54c9cd60e55a1404a572f860996b1aa7a190e",
-  "content_b64": "PHN2ZyB2aWV3Qm94PSIwIDAgNDYwIDQ2MCIgY2xhc3NOYW1lPXtjbGFzc05hbWV9IGFyaWEtaGlkZGVuIGZvY3VzYWJsZT0iZmFsc2UiPgogICAgICA8ZGVmcz4KICAgICAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImxkZy1nb2xkIiB4MT0iMCIgeTE9IjAiIHgyPSIxIiB5Mj0iMSI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wQ29sb3I9IiNmNmUyYTgiIC8+PHN0b3Agb2Zmc2V0PSIuNDUiIHN0b3BDb2xvcj0iI2M5YTQ1YyIgLz48c3RvcCBvZmZzZXQ9Ii43IiBzdG9wQ29sb3I9IiNmYmU3YjAiIC8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wQ29sb3I9IiM5YzdhMzUiIC8+PC9saW5lYXJHcmFkaWVudD4KICAgICAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImxkZy1lbSIgeDE9IjAiIHkxPSIwIiB4Mj0iMSIgeTI9IjEiPjxzdG9wIG9mZnNldD0iMCIgc3RvcENvbG9yPSIjNmVlN2I3IiAvPjxzdG9wIG9mZnNldD0iLjUiIHN0b3BDb2xvcj0iIzEwYjk4MSIgLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3BDb2xvcj0iIzBkOTQ4OCIgLz48L2xpbmVhckdyYWRpZW50PgogICAgICAgIDxsaW5lYXJHcmFkaWVudCBpZD0ibGRnLWdsYXNzIiB4MT0iMCIgeTE9IjAiIHgyPSIuMyIgeTI9IjEiPjxzdG9wIG9mZnNldD0iMCIgc3RvcENvbG9yPSIjZjVmYWYyIiBzdG9wT3BhY2l0eT0iLjg1IiAvPjxzdG9wIG9mZnNldD0iLjUiIHN0b3BDb2xvcj0iI2E3ZjNkMCIgc3RvcE9wYWNpdHk9Ii4zNSIgLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3BDb2xvcj0iIzVlZWFkNCIgc3RvcE9wYWNpdHk9Ii4yNSIgLz48L2xpbmVhckdyYWRpZW50PgogICAgICAgIDxyYWRpYWxHcmFkaWVudCBpZD0ibGRnLW9lIiBjeD0iLjM1IiBjeT0iLjMiPjxzdG9wIG9mZnNldD0iMCIgc3RvcENvbG9yPSIjZWNmZGY1IiAvPjxzdG9wIG9mZnNldD0iLjQiIHN0b3BDb2xvcj0iIzM0ZDM5OSIgLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3BDb2xvcj0iIzA2NWY0NiIgLz48L3JhZGlhbEdyYWRpZW50PgogICAgICAgIDxyYWRpYWxHcmFkaWVudCBpZD0ibGRnLW9hIiBjeD0iLjM1IiBjeT0iLjMiPjxzdG9wIG9mZnNldD0iMCIgc3RvcENvbG9yPSIjZmZmYmViIiAvPjxzdG9wIG9mZnNldD0iLjQiIHN0b3BDb2xvcj0iI2ZiYmYyNCIgLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3BDb2xvcj0iI2MyNDEwYyIgLz48L3JhZGlhbEdyYWRpZW50PgogICAgICAgIDxyYWRpYWxHcmFkaWVudCBpZD0ibGRnLW90IiBjeD0iLjM1IiBjeT0iLjMiPjxzdG9wIG9mZnNldD0iMCIgc3RvcENvbG9yPSIjZjBmZGZhIiAvPjxzdG9wIG9mZnNldD0iLjQ1IiBzdG9wQ29sb3I9IiMyZGQ0YmYiIC8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wQ29sb3I9IiMxMTVlNTkiIC8+PC9yYWRpYWxHcmFkaWVudD4KICAgICAgICA8ZmlsdGVyIGlkPSJsZGctYmx1ciI+PGZlR2F1c3NpYW5CbHVyIHN0ZERldmlhdGlvbj0iMTQiIC8+PC9maWx0ZXI+CiAgICAgICAgPGZpbHRlciBpZD0ibGRnLXNoIj48ZmVEcm9wU2hhZG93IGR4PSIwIiBkeT0iMTgiIHN0ZERldmlhdGlvbj0iMTYiIGZsb29kQ29sb3I9IiMwMjJjMjIiIGZsb29kT3BhY2l0eT0iLjQ1IiAvPjwvZmlsdGVyPgogICAgICA8L2RlZnM+CiAgICAgIDxjaXJjbGUgY3g9IjIzMCIgY3k9IjI0MCIgcj0iMTcwIiBmaWxsPSJ1cmwoI2xkZy1lbSkiIG9wYWNpdHk9Ii4zNSIgZmlsdGVyPSJ1cmwoI2xkZy1ibHVyKSIgLz4KICAgICAgPGVsbGlwc2UgY3g9IjIzMCIgY3k9IjI1MCIgcng9IjIwMCIgcnk9IjcwIiBmaWxsPSJub25lIiBzdHJva2U9InVybCgjbGRnLWdvbGQpIiBzdHJva2VXaWR0aD0iMi41IiB0cmFuc2Zvcm09InJvdGF0ZSgtMTggMjMwIDI1MCkiIG9wYWNpdHk9Ii45IiAvPgogICAgICA8Y2lyY2xlIGN4PSIyMzAiIGN5PSIyNTAiIHI9IjE3NSIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ1cmwoI2xkZy1nb2xkKSIgc3Ryb2tlV2lkdGg9IjEiIHN0cm9rZURhc2hhcnJheT0iMiAxMCIgb3BhY2l0eT0iLjciIC8+CiAgICAgIDxnIGZpbHRlcj0idXJsKCNsZGctc2gpIj4KICAgICAgICA8cGF0aCBkPSJNMjMwIDcwIEwzNDAgMTEyIFYyMTAgQzM0MCAzMDAgMjkwIDM1MiAyMzAgMzgyIEMxNzAgMzUyIDEyMCAzMDAgMTIwIDIxMCBWMTEyIFoiIGZpbGw9InVybCgjbGRnLWdsYXNzKSIgc3Ryb2tlPSJ1cmwoI2xkZy1nb2xkKSIgc3Ryb2tlV2lkdGg9IjYiIHN0cm9rZUxpbmVqb2luPSJyb3VuZCIgLz4KICAgICAgICA8cGF0aCBkPSJNMjMwIDk2IEwzMTggMTMwIFYyMTAgQzMxOCAyODQgMjc4IDMyOCAyMzAgMzU0IEMxODIgMzI4IDE0MiAyODQgMTQyIDIxMCBWMTMwIFoiIGZpbGw9InVybCgjbGRnLWVtKSIgb3BhY2l0eT0iLjU1IiAvPgogICAgICAgIDxwYXRoIGQ9Ik0xNTAgMTM1IEwyMzAgMTA0IEwyMzAgMzQwIEMxOTAgMzE2IDE1MCAyODAgMTUwIDIxMFoiIGZpbGw9IiNmNWZhZjIiIG9wYWNpdHk9Ii4yOCIgLz4KICAgICAgICA8cGF0aCBkPSJNMjA4IDIwMiB2LTE4IGEyMiAyMiAwIDAgMSA0NCAwIHYxOCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ1cmwoI2xkZy1nb2xkKSIgc3Ryb2tlV2lkdGg9IjEwIiAvPgogICAgICAgIDxyZWN0IHg9IjE5NiIgeT0iMjAwIiB3aWR0aD0iNjgiIGhlaWdodD0iNTgiIHJ4PSIxNCIgZmlsbD0idXJsKCNsZGctZ29sZCkiIC8+CiAgICAgICAgPGNpcmNsZSBjeD0iMjMwIiBjeT0iMjI0IiByPSI3IiBmaWxsPSIjMDY0ZTNiIiAvPjxyZWN0IHg9IjIyNyIgeT0iMjI2IiB3aWR0aD0iNiIgaGVpZ2h0PSIxOCIgcng9IjMiIGZpbGw9IiMwNjRlM2IiIC8+CiAgICAgIDwvZz4KICAgICAgPGVsbGlwc2UgY3g9IjE5MCIgY3k9IjE0MCIgcng9IjMwIiByeT0iOSIgZmlsbD0iI2Y1ZmFmMiIgb3BhY2l0eT0iLjciIHRyYW5zZm9ybT0icm90YXRlKC0zMCAxOTAgMTQwKSIgLz4KICAgICAgPGNpcmNsZSBjbGFzc05hbWU9ImxkLW9yYiIgY3g9Ijg4IiBjeT0iMTQwIiByPSIzMCIgZmlsbD0idXJsKCNsZGctb2EpIiAvPgogICAgICA8Y2lyY2xlIGNsYXNzTmFtZT0ibGQtb3JiIGxkLW9yYi0yIiBjeD0iMzc4IiBjeT0iMzIwIiByPSIzOCIgZmlsbD0idXJsKCNsZGctb3QpIiAvPgogICAgICA8Y2lyY2xlIGNsYXNzTmFtZT0ibGQtb3JiIiBjeD0iMzcyIiBjeT0iOTgiIHI9IjE4IiBmaWxsPSJ1cmwoI2xkZy1vZSkiIC8+CiAgICAgIDxjaXJjbGUgY3g9Ijk2IiBjeT0iMzUwIiByPSIxNCIgZmlsbD0idXJsKCNsZGctZ29sZCkiIC8+CiAgICAgIDxwYXRoIGQ9Ik02MCAyNTAgbDYgLTE0IGw2IDE0IGwxNCA2IGwtMTQgNiBsLTYgMTQgbC02IC0xNCBsLTE0IC02eiIgZmlsbD0idXJsKCNsZGctZ29sZCkiIC8+CiAgICAgIDxwYXRoIGQ9Ik00MDAgMjAwIGw0IC0xMCBsNCAxMCBsMTAgNCBsLTEwIDQgbC00IDEwIGwtNCAtMTAgbC0xMCAtNHoiIGZpbGw9InVybCgjbGRnLWdvbGQpIiAvPgogICAgPC9zdmc+",
+  "sha256": "2fe60c2846197251f6132ab84b32e101b9a50f4d4b7bdf250e3a46bc7d2a738d",
+  "content_b64": "PHN2ZyB2aWV3Qm94PSIwIDAgNDYwIDQ2MCIgY2xhc3NOYW1lPXtjbGFzc05hbWV9IGFyaWEtaGlkZGVuIGZvY3VzYWJsZT0iZmFsc2UiPgogICAgICA8ZGVmcz4KICAgICAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImxkZy1nb2xkIiB4MT0iMCIgeTE9IjAiIHgyPSIxIiB5Mj0iMSI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wQ29sb3I9IiNmNmUyYTgiIC8+PHN0b3Agb2Zmc2V0PSIuNDUiIHN0b3BDb2xvcj0iI2M5YTQ1YyIgLz48c3RvcCBvZmZzZXQ9Ii43IiBzdG9wQ29sb3I9IiNmYmU3YjAiIC8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wQ29sb3I9IiM5YzdhMzUiIC8+PC9saW5lYXJHcmFkaWVudD4KICAgICAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImxkZy1lbSIgeDE9IjAiIHkxPSIwIiB4Mj0iMSIgeTI9IjEiPjxzdG9wIG9mZnNldD0iMCIgc3RvcENvbG9yPSIjNmVlN2I3IiAvPjxzdG9wIG9mZnNldD0iLjUiIHN0b3BDb2xvcj0iIzEwYjk4MSIgLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3BDb2xvcj0iIzBkOTQ4OCIgLz48L2xpbmVhckdyYWRpZW50PgogICAgICAgIDxsaW5lYXJHcmFkaWVudCBpZD0ibGRnLWdsYXNzIiB4MT0iMCIgeTE9IjAiIHgyPSIuMyIgeTI9IjEiPjxzdG9wIG9mZnNldD0iMCIgc3RvcENvbG9yPSIjZTdlZWRjIiBzdG9wT3BhY2l0eT0iLjg1IiAvPjxzdG9wIG9mZnNldD0iLjUiIHN0b3BDb2xvcj0iI2E3ZjNkMCIgc3RvcE9wYWNpdHk9Ii4zNSIgLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3BDb2xvcj0iIzVlZWFkNCIgc3RvcE9wYWNpdHk9Ii4yNSIgLz48L2xpbmVhckdyYWRpZW50PgogICAgICAgIDxyYWRpYWxHcmFkaWVudCBpZD0ibGRnLW9lIiBjeD0iLjM1IiBjeT0iLjMiPjxzdG9wIG9mZnNldD0iMCIgc3RvcENvbG9yPSIjZWNmZGY1IiAvPjxzdG9wIG9mZnNldD0iLjQiIHN0b3BDb2xvcj0iIzM0ZDM5OSIgLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3BDb2xvcj0iIzA2NWY0NiIgLz48L3JhZGlhbEdyYWRpZW50PgogICAgICAgIDxyYWRpYWxHcmFkaWVudCBpZD0ibGRnLW9hIiBjeD0iLjM1IiBjeT0iLjMiPjxzdG9wIG9mZnNldD0iMCIgc3RvcENvbG9yPSIjZTdlZWRjIiAvPjxzdG9wIG9mZnNldD0iLjQiIHN0b3BDb2xvcj0iI2ZiYmYyNCIgLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3BDb2xvcj0iI2MyNDEwYyIgLz48L3JhZGlhbEdyYWRpZW50PgogICAgICAgIDxyYWRpYWxHcmFkaWVudCBpZD0ibGRnLW90IiBjeD0iLjM1IiBjeT0iLjMiPjxzdG9wIG9mZnNldD0iMCIgc3RvcENvbG9yPSIjZTdlZWRjIiAvPjxzdG9wIG9mZnNldD0iLjQ1IiBzdG9wQ29sb3I9IiMyZGQ0YmYiIC8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wQ29sb3I9IiMxMTVlNTkiIC8+PC9yYWRpYWxHcmFkaWVudD4KICAgICAgICA8ZmlsdGVyIGlkPSJsZGctYmx1ciI+PGZlR2F1c3NpYW5CbHVyIHN0ZERldmlhdGlvbj0iMTQiIC8+PC9maWx0ZXI+CiAgICAgICAgPGZpbHRlciBpZD0ibGRnLXNoIj48ZmVEcm9wU2hhZG93IGR4PSIwIiBkeT0iMTgiIHN0ZERldmlhdGlvbj0iMTYiIGZsb29kQ29sb3I9IiMwMjJjMjIiIGZsb29kT3BhY2l0eT0iLjQ1IiAvPjwvZmlsdGVyPgogICAgICA8L2RlZnM+CiAgICAgIDxjaXJjbGUgY3g9IjIzMCIgY3k9IjI0MCIgcj0iMTcwIiBmaWxsPSJ1cmwoI2xkZy1lbSkiIG9wYWNpdHk9Ii4zNSIgZmlsdGVyPSJ1cmwoI2xkZy1ibHVyKSIgLz4KICAgICAgPGVsbGlwc2UgY3g9IjIzMCIgY3k9IjI1MCIgcng9IjIwMCIgcnk9IjcwIiBmaWxsPSJub25lIiBzdHJva2U9InVybCgjbGRnLWdvbGQpIiBzdHJva2VXaWR0aD0iMi41IiB0cmFuc2Zvcm09InJvdGF0ZSgtMTggMjMwIDI1MCkiIG9wYWNpdHk9Ii45IiAvPgogICAgICA8Y2lyY2xlIGN4PSIyMzAiIGN5PSIyNTAiIHI9IjE3NSIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ1cmwoI2xkZy1nb2xkKSIgc3Ryb2tlV2lkdGg9IjEiIHN0cm9rZURhc2hhcnJheT0iMiAxMCIgb3BhY2l0eT0iLjciIC8+CiAgICAgIDxnIGZpbHRlcj0idXJsKCNsZGctc2gpIj4KICAgICAgICA8cGF0aCBkPSJNMjMwIDcwIEwzNDAgMTEyIFYyMTAgQzM0MCAzMDAgMjkwIDM1MiAyMzAgMzgyIEMxNzAgMzUyIDEyMCAzMDAgMTIwIDIxMCBWMTEyIFoiIGZpbGw9InVybCgjbGRnLWdsYXNzKSIgc3Ryb2tlPSJ1cmwoI2xkZy1nb2xkKSIgc3Ryb2tlV2lkdGg9IjYiIHN0cm9rZUxpbmVqb2luPSJyb3VuZCIgLz4KICAgICAgICA8cGF0aCBkPSJNMjMwIDk2IEwzMTggMTMwIFYyMTAgQzMxOCAyODQgMjc4IDMyOCAyMzAgMzU0IEMxODIgMzI4IDE0MiAyODQgMTQyIDIxMCBWMTMwIFoiIGZpbGw9InVybCgjbGRnLWVtKSIgb3BhY2l0eT0iLjU1IiAvPgogICAgICAgIDxwYXRoIGQ9Ik0xNTAgMTM1IEwyMzAgMTA0IEwyMzAgMzQwIEMxOTAgMzE2IDE1MCAyODAgMTUwIDIxMFoiIGZpbGw9IiNlZWY0ZWEiIG9wYWNpdHk9Ii4yOCIgLz4KICAgICAgICA8cGF0aCBkPSJNMjA4IDIwMiB2LTE4IGEyMiAyMiAwIDAgMSA0NCAwIHYxOCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ1cmwoI2xkZy1nb2xkKSIgc3Ryb2tlV2lkdGg9IjEwIiAvPgogICAgICAgIDxyZWN0IHg9IjE5NiIgeT0iMjAwIiB3aWR0aD0iNjgiIGhlaWdodD0iNTgiIHJ4PSIxNCIgZmlsbD0idXJsKCNsZGctZ29sZCkiIC8+CiAgICAgICAgPGNpcmNsZSBjeD0iMjMwIiBjeT0iMjI0IiByPSI3IiBmaWxsPSIjMDY0ZTNiIiAvPjxyZWN0IHg9IjIyNyIgeT0iMjI2IiB3aWR0aD0iNiIgaGVpZ2h0PSIxOCIgcng9IjMiIGZpbGw9IiMwNjRlM2IiIC8+CiAgICAgIDwvZz4KICAgICAgPGVsbGlwc2UgY3g9IjE5MCIgY3k9IjE0MCIgcng9IjMwIiByeT0iOSIgZmlsbD0iI2VlZjRlYSIgb3BhY2l0eT0iLjciIHRyYW5zZm9ybT0icm90YXRlKC0zMCAxOTAgMTQwKSIgLz4KICAgICAgPGNpcmNsZSBjbGFzc05hbWU9ImxkLW9yYiIgY3g9Ijg4IiBjeT0iMTQwIiByPSIzMCIgZmlsbD0idXJsKCNsZGctb2EpIiAvPgogICAgICA8Y2lyY2xlIGNsYXNzTmFtZT0ibGQtb3JiIGxkLW9yYi0yIiBjeD0iMzc4IiBjeT0iMzIwIiByPSIzOCIgZmlsbD0idXJsKCNsZGctb3QpIiAvPgogICAgICA8Y2lyY2xlIGNsYXNzTmFtZT0ibGQtb3JiIiBjeD0iMzcyIiBjeT0iOTgiIHI9IjE4IiBmaWxsPSJ1cmwoI2xkZy1vZSkiIC8+CiAgICAgIDxjaXJjbGUgY3g9Ijk2IiBjeT0iMzUwIiByPSIxNCIgZmlsbD0idXJsKCNsZGctZ29sZCkiIC8+CiAgICAgIDxwYXRoIGQ9Ik02MCAyNTAgbDYgLTE0IGw2IDE0IGwxNCA2IGwtMTQgNiBsLTYgMTQgbC02IC0xNCBsLTE0IC02eiIgZmlsbD0idXJsKCNsZGctZ29sZCkiIC8+CiAgICAgIDxwYXRoIGQ9Ik00MDAgMjAwIGw0IC0xMCBsNCAxMCBsMTAgNCBsLTEwIDQgbC00IDEwIGwtNCAtMTAgbC0xMCAtNHoiIGZpbGw9InVybCgjbGRnLWdvbGQpIiAvPgogICAgPC9zdmc+",
   "usages": [
    "components/legal/v2/HeroArt.tsx",
    "components/legal/v2/LdChrome.tsx"
@@ -430,12 +430,12 @@
    "subject": "התוכנית שלי כתוכנית כתובה וחיה של אלמוג (#104)"
   },
   "last_commit": {
-   "sha": "57b21ed8a1cdbbb984570d3ba85de1ead9979b3a",
-   "date": "2026-10-20T19:38:53+03:00",
-   "author": "danielsbhaucc-dot",
-   "subject": "עיצוב: בלי משטחים לבנים — זכוכית ירוק-שמנת בכל המערכת (#246)"
+   "sha": "a814cc5c4eb59a2bfe373616c92be70792c8e440",
+   "date": "2026-10-25T19:33:39+02:00",
+   "author": "Daniel Rahman",
+   "subject": "design: restore dark-glass auth surfaces, token-driven dark input variant, re-audit bulk swap"
   },
-  "commits": 5
+  "commits": 7
  },
  {
   "asset_key": "inline:apps/web/components/plans/PlanMap.tsx#0",
@@ -512,39 +512,10 @@
    "subject": "Post-login Face ID offer sheet + privacy biometric line (#242)"
   },
   "last_commit": {
-   "sha": "d7093232d716d5bb2fcb643eb31379baa493981c",
-   "date": "2026-10-20T18:39:46+03:00",
-   "author": "danielsbhaucc-dot",
-   "subject": "Post-login Face ID offer sheet + privacy biometric line (#242)"
-  },
-  "commits": 1
- },
- {
-  "asset_key": "inline:apps/web/components/shared/NuraWellLogo.tsx#0",
-  "origin": "inline",
-  "kind": "illustration",
-  "path": "apps/web/components/shared/NuraWellLogo.tsx",
-  "title": "NuraWellLogo · SVG 1",
-  "mime": "image/svg+xml",
-  "sha256": "c218371da4f8668557110df809b44de4b97c97dc8a9d04341944d70cf9e71bea",
-  "content_b64": "PHN2ZwogICAgICAgICAgd2lkdGg9e2ljb25TaXplfQogICAgICAgICAgaGVpZ2h0PXtNYXRoLnJvdW5kKGljb25TaXplICogMC44NSl9CiAgICAgICAgICB2aWV3Qm94PSIwIDAgNzIgNjAiCiAgICAgICAgICBmaWxsPSJub25lIgogICAgICAgICAgYXJpYS1oaWRkZW49InRydWUiCiAgICAgICAgPgogICAgICAgICAgey8qIEhlYXJ0IGZpbGwgKi99CiAgICAgICAgICA8cGF0aAogICAgICAgICAgICBkPSJNMzYgNTJDMzYgNTIgOCAzNCA4IDE4QzggMTAgMTQgNCAyMiA0QzI3IDQgMzEuNSA2LjUgMzYgMTFDNDAuNSA2LjUgNDUgNCA1MCA0QzU4IDQgNjQgMTAgNjQgMThDNjQgMzQgMzYgNTIgMzYgNTJaIgogICAgICAgICAgICBmaWxsPSJ1cmwoI2hmTG9nbykiCiAgICAgICAgICAgIG9wYWNpdHk9IjAuMTgiCiAgICAgICAgICAvPgogICAgICAgICAgey8qIEhlYXJ0IG91dGxpbmUgKi99CiAgICAgICAgICA8cGF0aAogICAgICAgICAgICBkPSJNMzYgNTJDMzYgNTIgOCAzNCA4IDE4QzggMTAgMTQgNCAyMiA0QzI3IDQgMzEuNSA2LjUgMzYgMTFDNDAuNSA2LjUgNDUgNCA1MCA0QzU4IDQgNjQgMTAgNjQgMThDNjQgMzQgMzYgNTIgMzYgNTJaIgogICAgICAgICAgICBzdHJva2U9InVybCgjaHNMb2dvKSIKICAgICAgICAgICAgc3Ryb2tlV2lkdGg9IjEuNSIKICAgICAgICAgICAgZmlsbD0ibm9uZSIKICAgICAgICAgIC8+CiAgICAgICAgICB7LyogSGVhcnRiZWF0IGxpbmUgKi99CiAgICAgICAgICA8cG9seWxpbmUKICAgICAgICAgICAgcG9pbnRzPSIyLDMwIDEyLDMwIDE3LDE2IDIyLDQ0IDI4LDI0IDM0LDMwIDM4LDMwIDQ0LDEwIDUwLDM4IDU2LDMwIDcwLDMwIgogICAgICAgICAgICBzdHJva2U9IiMxNEZGRUMiCiAgICAgICAgICAgIHN0cm9rZVdpZHRoPSIyLjIiCiAgICAgICAgICAgIGZpbGw9Im5vbmUiCiAgICAgICAgICAgIHN0cm9rZUxpbmVjYXA9InJvdW5kIgogICAgICAgICAgICBzdHJva2VMaW5lam9pbj0icm91bmQiCiAgICAgICAgICAgIHN0eWxlPXthbmltYXRlID8geyBhbmltYXRpb246ICdiZWF0IDEuNnMgZWFzZS1pbi1vdXQgaW5maW5pdGUnIH0gOiB7fX0KICAgICAgICAgIC8+CiAgICAgICAgICA8ZGVmcz4KICAgICAgICAgICAgPGxpbmVhckdyYWRpZW50IGlkPSJoZkxvZ28iIHgxPSIzNiIgeTE9IjQiIHgyPSIzNiIgeTI9IjUyIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+CiAgICAgICAgICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcENvbG9yPSIjMTRGRkVDIiAvPgogICAgICAgICAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcENvbG9yPSIjMEQ3Mzc3IiAvPgogICAgICAgICAgICA8L2xpbmVhckdyYWRpZW50PgogICAgICAgICAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImhzTG9nbyIgeDE9IjM2IiB5MT0iNCIgeDI9IjM2IiB5Mj0iNTIiIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIj4KICAgICAgICAgICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdG9wQ29sb3I9IiMxNEZGRUMiIC8+CiAgICAgICAgICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wQ29sb3I9InJnYmEoMTMsMTE1LDExOSwwLjUpIiAvPgogICAgICAgICAgICA8L2xpbmVhckdyYWRpZW50PgogICAgICAgICAgPC9kZWZzPgogICAgICAgIDwvc3ZnPg==",
-  "usages": [
-   "components/shared/NuraWellLogo.tsx",
-   "/login",
-   "components/landing/LandingPageClient.tsx",
-   "components/onboarding/RegisterLandingClient.tsx"
-  ],
-  "first_commit": {
-   "sha": "99a2bb25d332b7737c6ede5c300212cfc700b967",
-   "date": "2026-05-07T20:26:43+03:00",
+   "sha": "a814cc5c4eb59a2bfe373616c92be70792c8e440",
+   "date": "2026-10-25T19:33:39+02:00",
    "author": "Daniel Rahman",
-   "subject": "Force sync local code to GitHub"
-  },
-  "last_commit": {
-   "sha": "2bacf4c526960c8b236090e962db6ab1975b81e2",
-   "date": "2026-06-21T00:11:11+03:00",
-   "author": "Daniel Rahman",
-   "subject": "feat: privacy compliance (Amendment 13), accessibility tooling, and AI data notices."
+   "subject": "design: restore dark-glass auth surfaces, token-driven dark input variant, re-audit bulk swap"
   },
   "commits": 3
  },
@@ -1079,6 +1050,7 @@
   "sha256": "a2b1ba14061537d3c4a2cf5582a2f6a26b5d3f10d75e7b8094de5a5343824f96",
   "content_b64": null,
   "usages": [
+   "app/landing-v2/landing-html.ts",
    "components/legal/cookies/CookieNotice.tsx",
    "components/legal/cookies/cookie-notice.css"
   ],
@@ -1336,9 +1308,19 @@
   "usages": [
    "app/landing-v2/landing-html.ts"
   ],
-  "first_commit": null,
-  "last_commit": null,
-  "commits": 0,
+  "first_commit": {
+   "sha": "451393e8fcd75a23df490a1defc733be712fe329",
+   "date": "2026-10-21T21:47:16+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "landing-v2 round 5: Hebrew font, periods, seed toss, replay, desktop transitions, proofread (#298)"
+  },
+  "last_commit": {
+   "sha": "451393e8fcd75a23df490a1defc733be712fe329",
+   "date": "2026-10-21T21:47:16+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "landing-v2 round 5: Hebrew font, periods, seed toss, replay, desktop transitions, proofread (#298)"
+  },
+  "commits": 1,
   "font_family": "secular"
  },
  {
@@ -1354,9 +1336,19 @@
   "usages": [
    "app/landing-v2/landing-html.ts"
   ],
-  "first_commit": null,
-  "last_commit": null,
-  "commits": 0,
+  "first_commit": {
+   "sha": "451393e8fcd75a23df490a1defc733be712fe329",
+   "date": "2026-10-21T21:47:16+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "landing-v2 round 5: Hebrew font, periods, seed toss, replay, desktop transitions, proofread (#298)"
+  },
+  "last_commit": {
+   "sha": "451393e8fcd75a23df490a1defc733be712fe329",
+   "date": "2026-10-21T21:47:16+03:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "landing-v2 round 5: Hebrew font, periods, seed toss, replay, desktop transitions, proofread (#298)"
+  },
+  "commits": 1,
   "font_family": "secular"
  },
  {

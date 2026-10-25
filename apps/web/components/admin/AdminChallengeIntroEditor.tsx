@@ -62,7 +62,7 @@ export function AdminChallengeIntroEditor() {
   if (loading) {
     return (
       <div className="flex justify-center py-10">
-        <Loader2 className="h-8 w-8 animate-spin text-violet-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-iris-500" />
       </div>
     );
   }
@@ -106,7 +106,7 @@ export function AdminChallengeIntroEditor() {
         type="button"
         disabled={saving}
         onClick={saveLines}
-        className="mt-4 inline-flex items-center gap-1 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-gc"
+        className="mt-4 inline-flex items-center gap-1 rounded-xl bg-primary-600 px-4 py-2 text-sm font-semibold text-gc"
       >
         {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
         שמור שורות
@@ -126,7 +126,7 @@ export function AdminChallengeIntroEditor() {
         type="button"
         disabled={syncing || !ttsText.trim()}
         onClick={syncTts}
-        className="mt-3 inline-flex items-center gap-1 rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-gc disabled:opacity-50"
+        className="mt-3 inline-flex items-center gap-1 rounded-xl bg-iris-600 px-4 py-2 text-sm font-semibold text-gc disabled:opacity-50"
       >
         {syncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mic className="h-4 w-4" />}
         {syncing ? 'מתחבר ל-ElevenLabs...' : 'יצירת תמלול'}

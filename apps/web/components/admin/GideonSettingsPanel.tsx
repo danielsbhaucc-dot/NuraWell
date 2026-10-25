@@ -38,7 +38,7 @@ export function GideonSettingsPanel() {
   const numField = (label: string, k: 'cost_ratio_threshold' | 'cost_min_delta_usd' | 'cost_per_user_min_delta_usd' | 'cost_max_single_user_share', step: number, hint: string) => (
     <label className="text-sm">
       <span className="block font-semibold text-ink">{label}</span>
-      <input type="number" step={step} className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1" value={s[k]} onChange={(e) => set({ [k]: Number(e.target.value) } as Partial<GideonSettings>)} />
+      <input type="number" step={step} className="mt-1 w-full rounded-lg border border-ink-300 px-2 py-1" value={s[k]} onChange={(e) => set({ [k]: Number(e.target.value) } as Partial<GideonSettings>)} />
       <span className="block text-xs text-ink-faint">{hint}</span>
     </label>
   );
@@ -84,17 +84,17 @@ export function GideonSettingsPanel() {
 
       <section className={card}>
         <h2 className="mb-2 text-base font-bold text-ink">עדכונים ונושאים</h2>
-        <label className="flex items-center gap-2 py-1 text-sm"><input type="checkbox" className="h-4 w-4 accent-emerald-600" checked={s.digest_enabled} onChange={(e) => set({ digest_enabled: e.target.checked })} /> לשלוח עדכונים בטלגרם</label>
+        <label className="flex items-center gap-2 py-1 text-sm"><input type="checkbox" className="h-4 w-4 accent-primary-600" checked={s.digest_enabled} onChange={(e) => set({ digest_enabled: e.target.checked })} /> לשלוח עדכונים בטלגרם</label>
         <label className="mt-1 block text-sm">
           <span className="font-semibold text-ink">שעת העדכון (שעון ישראל)</span>
-          <select className="mt-1 block rounded-lg border border-slate-300 px-2 py-1" value={s.digest_hour} onChange={(e) => set({ digest_hour: Number(e.target.value) })}>
+          <select className="mt-1 block rounded-lg border border-ink-300 px-2 py-1" value={s.digest_hour} onChange={(e) => set({ digest_hour: Number(e.target.value) })}>
             {Array.from({ length: 24 }, (_, h) => <option key={h} value={h}>{String(h).padStart(2, '0')}:00</option>)}
           </select>
         </label>
         <div className="mt-2 grid grid-cols-2 gap-1">
           {TOPICS.map(([k, label]) => (
             <label key={k} className="flex items-center gap-2 py-1 text-sm">
-              <input type="checkbox" className="h-4 w-4 accent-emerald-600" checked={s.alert_topics[k]} onChange={(e) => set({ alert_topics: { ...s.alert_topics, [k]: e.target.checked } })} /> {label}
+              <input type="checkbox" className="h-4 w-4 accent-primary-600" checked={s.alert_topics[k]} onChange={(e) => set({ alert_topics: { ...s.alert_topics, [k]: e.target.checked } })} /> {label}
             </label>
           ))}
         </div>
@@ -103,18 +103,18 @@ export function GideonSettingsPanel() {
       <section className={card}>
         <h2 className="mb-1 text-base font-bold text-ink">נמענים</h2>
         <p className="mb-2 text-xs text-ink-faint">מקבלים עדכונים והתראות בלבד. מתן פקודות לגדעון נשאר רק לצ&apos;אטים המורשים בהגדרות השרת.</p>
-        <ul className="mb-2 divide-y divide-slate-100">
+        <ul className="mb-2 divide-y divide-ink-100">
           {s.recipients.length === 0 ? <li className="py-1 text-sm text-ink-faint">אין נמענים נוספים</li> : null}
           {s.recipients.map((r) => (
             <li key={r.chat_id} className="flex items-center justify-between py-1.5 text-sm">
               <span><span className="font-semibold">{r.label || 'ללא שם'}</span> <span dir="ltr" className="font-mono text-ink-faint">{r.chat_id}</span></span>
-              <button type="button" aria-label={`הסר ${r.label || r.chat_id}`} onClick={() => set({ recipients: s.recipients.filter((x) => x.chat_id !== r.chat_id) })} className="rounded-lg p-1.5 text-red-600 hover:bg-red-50"><Trash2 className="h-4 w-4" /></button>
+              <button type="button" aria-label={`הסר ${r.label || r.chat_id}`} onClick={() => set({ recipients: s.recipients.filter((x) => x.chat_id !== r.chat_id) })} className="rounded-lg p-1.5 text-coral-600 hover:bg-coral-50"><Trash2 className="h-4 w-4" /></button>
             </li>
           ))}
         </ul>
         <div className="flex gap-2">
-          <input dir="ltr" placeholder="Chat ID" className="w-36 rounded-lg border border-slate-300 px-2 py-1 text-sm" value={newR.chat_id} onChange={(e) => setNewR({ ...newR, chat_id: e.target.value })} />
-          <input placeholder="שם (לא חובה)" className="flex-1 rounded-lg border border-slate-300 px-2 py-1 text-sm" value={newR.label} onChange={(e) => setNewR({ ...newR, label: e.target.value })} />
+          <input dir="ltr" placeholder="Chat ID" className="w-36 rounded-lg border border-ink-300 px-2 py-1 text-sm" value={newR.chat_id} onChange={(e) => setNewR({ ...newR, chat_id: e.target.value })} />
+          <input placeholder="שם (לא חובה)" className="flex-1 rounded-lg border border-ink-300 px-2 py-1 text-sm" value={newR.label} onChange={(e) => setNewR({ ...newR, label: e.target.value })} />
           <button type="button" onClick={addRecipient} className="inline-flex items-center gap-1 rounded-lg bg-surface px-3 py-1 text-sm font-semibold hover:bg-hairline"><Plus className="h-4 w-4" /> הוספה</button>
         </div>
       </section>
@@ -129,9 +129,9 @@ export function GideonSettingsPanel() {
           <div key={k} className="mb-2">
             <span className="block text-sm font-semibold text-ink">{label} <span dir="ltr" className="font-mono text-xs text-ink-faint">{hint ?? '(מהגדרות השרת / לא מוגדר)'}</span></span>
             <div className="mt-1 flex gap-2">
-              <input type="password" autoComplete="new-password" dir="ltr" placeholder="ערך חדש" className="flex-1 rounded-lg border border-slate-300 px-2 py-1 text-sm" value={val} onChange={(e) => { setVal(e.target.value); setState({ kind: 'idle' }); }} />
+              <input type="password" autoComplete="new-password" dir="ltr" placeholder="ערך חדש" className="flex-1 rounded-lg border border-ink-300 px-2 py-1 text-sm" value={val} onChange={(e) => { setVal(e.target.value); setState({ kind: 'idle' }); }} />
               {hint ? (
-                <label className="flex items-center gap-1 text-xs text-red-700"><input type="checkbox" checked={clear[k]} onChange={(e) => setClear({ ...clear, [k]: e.target.checked })} /> מחק</label>
+                <label className="flex items-center gap-1 text-xs text-coral-700"><input type="checkbox" checked={clear[k]} onChange={(e) => setClear({ ...clear, [k]: e.target.checked })} /> מחק</label>
               ) : null}
             </div>
           </div>
@@ -140,11 +140,11 @@ export function GideonSettingsPanel() {
       </section>
 
       <div className="flex items-center gap-3">
-        <button type="button" onClick={save} disabled={state.kind === 'saving'} className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-gc hover:bg-emerald-700 disabled:opacity-60">
+        <button type="button" onClick={save} disabled={state.kind === 'saving'} className="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-gc hover:bg-primary-700 disabled:opacity-60">
           {state.kind === 'saving' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} שמירה
         </button>
-        {state.kind === 'saved' ? <span className="text-sm text-emerald-700">נשמר</span> : null}
-        {state.kind === 'error' ? <span className="text-sm text-red-600">{state.msg}</span> : null}
+        {state.kind === 'saved' ? <span className="text-sm text-primary-700">נשמר</span> : null}
+        {state.kind === 'error' ? <span className="text-sm text-coral-600">{state.msg}</span> : null}
       </div>
     </div>
   );

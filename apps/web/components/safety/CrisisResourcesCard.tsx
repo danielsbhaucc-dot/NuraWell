@@ -7,7 +7,7 @@ export function CrisisResourcesCard() {
     <section
       role="alert"
       aria-label="עזרה מיידית"
-      className="mx-1 my-2 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-start text-rose-950 shadow-xs"
+      className="mx-1 my-2 rounded-2xl border border-coral-200 bg-coral-50 p-4 text-start text-coral-950 shadow-xs"
     >
       <p className="text-sm font-bold">לא צריך להתמודד עם זה לבד. יש מי שזמין עכשיו:</p>
       <ul className="mt-2 space-y-1.5 text-sm">
@@ -24,7 +24,7 @@ export function CrisisResourcesCard() {
           <a className="font-bold underline" href={`tel:${r.policeEmergency.phone}`}>משטרה – {r.policeEmergency.phone}</a> · {r.policeEmergency.description}
         </li>
       </ul>
-      <p className="mt-2 text-xs text-rose-900/80">
+      <p className="mt-2 text-xs text-coral-900/80">
         בקשיים סביב אכילה (הקאות, צום, משלשלים) כדאי לפנות גם לרופא המשפחה או לקופת החולים — יש מרפאות ייעודיות להפרעות אכילה.
       </p>
     </section>

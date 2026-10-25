@@ -73,7 +73,7 @@ export function AdminAccessibilityPanel() {
         ) : null}
 
         {error ? (
-          <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">
+          <p className="mt-4 rounded-xl border border-coral-200 bg-coral-50 px-3 py-2 text-sm text-coral-800" role="alert">
             {error}
           </p>
         ) : null}
@@ -106,7 +106,7 @@ export function AdminAccessibilityPanel() {
                   disabled={busyId === sample.id}
                   onClick={() => void generateAndSave(sample.id)}
                   className={cn(
-                    'inline-flex items-center gap-1 rounded-xl bg-emerald-800/85 px-3 py-2 text-xs font-bold text-gc disabled:opacity-50',
+                    'inline-flex items-center gap-1 rounded-xl bg-primary-800/85 px-3 py-2 text-xs font-bold text-gc disabled:opacity-50',
                   )}
                 >
                   {busyId === sample.id ? (
@@ -122,7 +122,7 @@ export function AdminAccessibilityPanel() {
         </div>
       ) : null}
 
-      <div className="rounded-2xl border border-teal-200/60 bg-teal-50/70 px-4 py-3 text-xs leading-relaxed text-teal-950">
+      <div className="rounded-2xl border border-secondary-200/60 bg-secondary-50/70 px-4 py-3 text-xs leading-relaxed text-secondary-950">
         <p className="font-bold">טיפ</p>
         <p className="mt-1">
           בעריכת מדיה בודדת ניתן גם ליצור alt ולערוך לפני שמירה. מומלץ לבדוק alt אוטומטי לפני פרסום.
@@ -146,7 +146,7 @@ function StatCard({
       className={cn(
         'rounded-xl border px-3 py-3',
         tone === 'warn'
-          ? 'border-amber-200/80 bg-amber-50/80'
+          ? 'border-accent-200/80 bg-accent-50/80'
           : 'border-hairline/70 bg-background-card/70',
       )}
     >

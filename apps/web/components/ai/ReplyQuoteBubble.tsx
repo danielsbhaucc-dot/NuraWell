@@ -38,14 +38,14 @@ export function ReplyQuoteBubble({
       }}
     >
       <span className="flex">
-        <span aria-hidden className="w-[3px] shrink-0 bg-gradient-to-b from-amber-300 to-emerald-300" />
+        <span aria-hidden className="w-[3px] shrink-0 bg-gradient-to-b from-accent-300 to-primary-300" />
         <span className="min-w-0 flex-1 px-2.5 py-1.5">
-          <span className="flex items-center gap-1 text-[11px] font-bold text-amber-200">
+          <span className="flex items-center gap-1 text-[11px] font-bold text-accent-200">
             <CornerUpLeft className="h-3 w-3" aria-hidden />
             {author}
           </span>
           <span
-            className={`mt-0.5 line-clamp-2 whitespace-pre-wrap text-[13px] leading-snug ${deleted ? 'italic text-emerald-100/60' : 'text-emerald-50/90'}`}
+            className={`mt-0.5 line-clamp-2 whitespace-pre-wrap text-[13px] leading-snug ${deleted ? 'italic text-primary-100/60' : 'text-primary-50/90'}`}
           >
             {body}
           </span>

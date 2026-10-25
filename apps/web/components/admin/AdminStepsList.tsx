@@ -91,7 +91,7 @@ export function AdminStepsList({ steps: initialSteps, showIntro = true }: AdminS
         ) : null}
         <Link
           href={`${opsBase}/steps/new`}
-          className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-linear-to-l from-emerald-600 to-teal-500 px-5 py-3 text-sm font-bold text-gc shadow-lg shadow-emerald-500/25 transition-all hover:brightness-110 active:scale-[0.98] sm:w-auto sm:min-w-0 sm:self-end sm:py-2.5"
+          className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-linear-to-l from-primary-600 to-secondary-500 px-5 py-3 text-sm font-bold text-gc shadow-lg shadow-primary-500/25 transition-all hover:brightness-110 active:scale-[0.98] sm:w-auto sm:min-w-0 sm:self-end sm:py-2.5"
         >
           <Plus className="h-4 w-4" />
           <span>צעד חדש</span>
@@ -106,7 +106,7 @@ export function AdminStepsList({ steps: initialSteps, showIntro = true }: AdminS
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.05 }}
-            className="flex flex-col gap-3 rounded-2xl border border-gc/40 bg-background-card/45 p-4 shadow-[0_8px_28px_rgba(15,23,42,0.08)] backdrop-blur-xl transition-all sm:flex-row sm:items-center sm:gap-4 sm:hover:border-emerald-400/35 hover:bg-background-card/55 sm:hover:shadow-[0_10px_36px_rgba(16,185,129,0.12)]"
+            className="flex flex-col gap-3 rounded-2xl border border-gc/40 bg-background-card/45 p-4 shadow-[0_8px_28px_rgba(15,23,42,0.08)] backdrop-blur-xl transition-all sm:flex-row sm:items-center sm:gap-4 sm:hover:border-primary-400/35 hover:bg-background-card/55 sm:hover:shadow-[0_10px_36px_rgba(16,185,129,0.12)]"
             style={{
               opacity: isDeleting === step.id ? 0.5 : 1,
             }}
@@ -134,12 +134,12 @@ export function AdminStepsList({ steps: initialSteps, showIntro = true }: AdminS
                   {step.title}
                 </h3>
                 {step.is_published ? (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">פורסם</span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary-100 text-primary-700">פורסם</span>
                 ) : (
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-surface text-ink-faint">טיוטה</span>
                 )}
                 {step.journey_stations?.title ? (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-violet-100 text-violet-800">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-iris-100 text-iris-800">
                     תחנה: {step.journey_stations.title}
                   </span>
                 ) : null}
@@ -147,32 +147,32 @@ export function AdminStepsList({ steps: initialSteps, showIntro = true }: AdminS
               {/* Content badges */}
               <div className="flex items-center gap-1.5 flex-wrap">
                 {step.video_provider && (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-600">
+                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-secondary-50 text-secondary-600">
                     <Video className="w-3 h-3" /> סרטון
                   </span>
                 )}
                 {step.quiz_questions.length > 0 && (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600">
+                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-primary-50 text-primary-600">
                     <HelpCircle className="w-3 h-3" /> {step.quiz_questions.length} שאלות
                   </span>
                 )}
                 {step.game_items.length > 0 && (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-600">
+                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-accent-50 text-accent-600">
                     <Gamepad2 className="w-3 h-3" /> {step.game_items.length} פריטי משחק
                   </span>
                 )}
                 {step.commitment && (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-pink-50 text-pink-600">
+                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-coral-50 text-coral-600">
                     <Heart className="w-3 h-3" /> התחייבות
                   </span>
                 )}
                 {step.researches.length > 0 && (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-purple-50 text-purple-600">
+                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-iris-50 text-iris-600">
                     <FileText className="w-3 h-3" /> {step.researches.length} מחקרים
                   </span>
                 )}
                 {attentionStopsCount > 0 && (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-cyan-50 text-cyan-700">
+                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-secondary-50 text-secondary-700">
                     <Brain className="w-3 h-3" /> {attentionStopsCount} נקודות קשב
                   </span>
                 )}
@@ -202,7 +202,7 @@ export function AdminStepsList({ steps: initialSteps, showIntro = true }: AdminS
                 type="button"
                 onClick={() => handleDelete(step.id)}
                 title="מחק"
-                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl text-ink-faint transition-colors hover:bg-red-50 hover:text-red-500 active:bg-red-100/80"
+                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl text-ink-faint transition-colors hover:bg-coral-50 hover:text-coral-500 active:bg-coral-100/80"
               >
                 <Trash2 className="h-4.5 w-4.5" />
               </button>
@@ -217,12 +217,12 @@ export function AdminStepsList({ steps: initialSteps, showIntro = true }: AdminS
       {/* Empty state */}
       {steps.length === 0 && (
         <div className="text-center py-20">
-          <CheckCircle2 className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+          <CheckCircle2 className="w-12 h-12 text-ink-300 mx-auto mb-4" />
           <h3 className="text-xl font-black mb-2" style={{ color: '#1A1730' }}>אין צעדים עדיין</h3>
           <p className="text-sm text-ink-faint mb-6">צרו את הצעד הראשון במסע</p>
           <Link
             href={`${opsBase}/steps/new`}
-            className="inline-flex min-h-11 w-full max-w-xs items-center justify-center gap-2 rounded-xl bg-linear-to-l from-emerald-600 to-teal-500 px-6 py-3 font-bold text-gc shadow-lg shadow-emerald-500/25 active:scale-[0.98] sm:w-auto"
+            className="inline-flex min-h-11 w-full max-w-xs items-center justify-center gap-2 rounded-xl bg-linear-to-l from-primary-600 to-secondary-500 px-6 py-3 font-bold text-gc shadow-lg shadow-primary-500/25 active:scale-[0.98] sm:w-auto"
           >
             <Plus className="h-4 w-4" /> צעד חדש
           </Link>

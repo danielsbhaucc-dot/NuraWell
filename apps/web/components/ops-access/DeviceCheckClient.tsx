@@ -15,12 +15,12 @@ async function post(body: Record<string, unknown>) {
 
 /** Gideon's identity: monogram avatar + live "online" ring. No external asset. */
 export function GideonAvatar({ state }: { state: Phase }) {
-  const tone = state === 'approved' ? 'from-emerald-400 to-teal-600' : state === 'denied' ? 'from-violet-500 to-fuchsia-700' : state === 'error' || state === 'expired' ? 'from-amber-400 to-orange-600' : 'from-[#1d5c46] to-[#0f3d2e]';
+  const tone = state === 'approved' ? 'from-primary-400 to-secondary-600' : state === 'denied' ? 'from-iris-500 to-iris-700' : state === 'error' || state === 'expired' ? 'from-accent-400 to-energy-600' : 'from-[#1d5c46] to-[#0f3d2e]';
   return (
     <div className="relative">
       <div className={cn('grid h-16 w-16 place-items-center rounded-[22px] bg-gradient-to-br font-display text-3xl font-black text-[#f6f1e7] shadow-[0_10px_30px_-8px_rgba(15,61,46,0.55)] transition-colors duration-500', tone)} aria-hidden>ג</div>
       <span className="absolute -bottom-1 -start-1 grid h-7 w-7 place-items-center rounded-full bg-gc shadow ring-2 ring-gc">
-        {state === 'approved' ? <ShieldCheck className="h-4 w-4 text-emerald-600" /> : state === 'denied' ? <ShieldAlert className="h-4 w-4 text-violet-600" /> : <span className={cn('h-2.5 w-2.5 rounded-full', state === 'waiting' || state === 'starting' ? 'animate-pulse bg-emerald-500' : 'bg-amber-500')} />}
+        {state === 'approved' ? <ShieldCheck className="h-4 w-4 text-primary-600" /> : state === 'denied' ? <ShieldAlert className="h-4 w-4 text-iris-600" /> : <span className={cn('h-2.5 w-2.5 rounded-full', state === 'waiting' || state === 'starting' ? 'animate-pulse bg-primary-500' : 'bg-accent-500')} />}
       </span>
     </div>
   );
@@ -28,7 +28,7 @@ export function GideonAvatar({ state }: { state: Phase }) {
 
 const Bubble = ({ children, tone = 'plain' }: { children: React.ReactNode; tone?: 'plain' | 'ok' | 'warn' | 'bad' }) => (
   <div className={cn('animate-in fade-in slide-in-from-bottom-1 rounded-3xl rounded-ss-md px-4 py-3 text-[15px] leading-7 duration-300',
-    tone === 'ok' ? 'bg-emerald-50 text-emerald-900' : tone === 'warn' ? 'bg-amber-50 text-amber-900' : tone === 'bad' ? 'bg-rose-50 text-rose-900' : 'bg-[#f6f1e7] text-ink')}>{children}</div>
+    tone === 'ok' ? 'bg-primary-50 text-primary-900' : tone === 'warn' ? 'bg-accent-50 text-accent-900' : tone === 'bad' ? 'bg-coral-50 text-coral-900' : 'bg-[#f6f1e7] text-ink')}>{children}</div>
 );
 
 function useCountdown(until: number | null) {
@@ -125,8 +125,8 @@ export function DeviceCheckClient({ initialError }: { initialError: string | nul
 
   return (
     <div dir="rtl" className="relative flex min-h-[100dvh] items-center justify-center overflow-hidden bg-gradient-to-b from-[#eef4ef] via-[#f7f3ea] to-[#efe8da] px-4 py-8">
-      <div className="pointer-events-none absolute -top-24 end-[-4rem] h-72 w-72 rounded-full bg-emerald-300/30 blur-3xl" />
-      <div className="pointer-events-none absolute bottom-[-6rem] start-[-4rem] h-72 w-72 rounded-full bg-amber-200/40 blur-3xl" />
+      <div className="pointer-events-none absolute -top-24 end-[-4rem] h-72 w-72 rounded-full bg-primary-300/30 blur-3xl" />
+      <div className="pointer-events-none absolute bottom-[-6rem] start-[-4rem] h-72 w-72 rounded-full bg-accent-200/40 blur-3xl" />
 
       <main className="relative w-full max-w-md md:max-w-lg">
         <div className="rounded-[32px] border border-gc/70 bg-gc/70 p-5 shadow-[0_20px_60px_-20px_rgba(15,61,46,0.35)] backdrop-blur-2xl sm:p-7">
@@ -147,8 +147,8 @@ export function DeviceCheckClient({ initialError }: { initialError: string | nul
                 <Bubble>
                   <span className="flex items-start gap-2"><Send className="mt-1 h-4 w-4 shrink-0 text-[#0b6b4b]" /><span>שלחתי לך עכשיו בקשה <b>בטלגרם</b>. לחיצה על ״אשר כניסה״ (עם Face ID אם הגדרת) וזהו. הדף הזה יתקדם לבד.</span></span>
                 </Bubble>
-                <div className="flex items-center justify-between rounded-2xl bg-gc/80 px-4 py-2.5 text-sm text-ink-soft ring-1 ring-black/5">
-                  <span className="inline-flex items-center gap-2"><span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" />ממתין לאישור שלך</span>
+                <div className="flex items-center justify-between rounded-2xl bg-gc/80 px-4 py-2.5 text-sm text-ink-soft ring-1 ring-forest-950/5">
+                  <span className="inline-flex items-center gap-2"><span className="h-2 w-2 animate-pulse rounded-full bg-primary-500" />ממתין לאישור שלך</span>
                   {left ? <span dir="ltr" className="font-mono tabular-nums text-ink-faint">{left}</span> : null}
                 </div>
               </>
@@ -161,8 +161,8 @@ export function DeviceCheckClient({ initialError }: { initialError: string | nul
                 <input id="dc-code" dir="ltr" autoFocus autoComplete="one-time-code" inputMode={mode === 'email' ? 'numeric' : 'text'} value={code}
                   onChange={(e) => setCode(mode === 'email' ? e.target.value.replace(/\D/g, '') : e.target.value)} onKeyDown={(e) => e.key === 'Enter' && code && void submit()}
                   maxLength={mode === 'email' ? 6 : 11} placeholder={mode === 'email' ? '••••••' : 'XXXXX-XXXXX'}
-                  className="w-full rounded-2xl border border-hairline bg-gc px-4 py-3.5 text-center font-mono text-2xl tracking-[0.35em] outline-none transition focus:border-[#0b6b4b] focus:ring-4 focus:ring-emerald-100" />
-                <button type="button" disabled={!!busy || !code} onClick={submit} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#0f3d2e] py-3.5 font-bold text-[#f6f1e7] shadow-lg shadow-emerald-900/20 transition active:scale-[0.99] disabled:opacity-50">
+                  className="w-full rounded-2xl border border-hairline bg-gc px-4 py-3.5 text-center font-mono text-2xl tracking-[0.35em] outline-none transition focus:border-[#0b6b4b] focus:ring-4 focus:ring-primary-100" />
+                <button type="button" disabled={!!busy || !code} onClick={submit} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#0f3d2e] py-3.5 font-bold text-[#f6f1e7] shadow-lg shadow-primary-900/20 transition active:scale-[0.99] disabled:opacity-50">
                   {busy === 'code' ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}אשר את המכשיר
                 </button>
               </div>
@@ -176,38 +176,38 @@ export function DeviceCheckClient({ initialError }: { initialError: string | nul
             {phase === 'error' && <Bubble tone="warn">{err ?? 'לא הצלחתי להמשיך.'} <button type="button" onClick={start} className="font-bold text-[#0b6b4b] underline underline-offset-4">לנסות שוב</button></Bubble>}
 
             {info && phase === 'waiting' && <p className="px-1 text-sm text-[#0b6b4b]">{info}</p>}
-            {err && phase === 'waiting' && <p className="px-1 text-sm font-medium text-rose-700" role="alert">{err}</p>}
+            {err && phase === 'waiting' && <p className="px-1 text-sm font-medium text-coral-700" role="alert">{err}</p>}
           </div>
 
           {(phase === 'waiting' || phase === 'expired' || phase === 'error') && (
             <>
               <p className="mb-2 mt-6 px-1 text-xs font-semibold text-ink-faint">אין לך טלגרם בהישג יד?</p>
-              <button type="button" onClick={tapKey} disabled={!!busy || phase !== 'waiting'} className="mb-2 flex w-full items-center justify-center gap-2.5 rounded-2xl bg-[#0f3d2e] py-3.5 font-bold text-[#f6f1e7] shadow-lg shadow-emerald-900/20 transition active:scale-[0.99] disabled:opacity-50">
+              <button type="button" onClick={tapKey} disabled={!!busy || phase !== 'waiting'} className="mb-2 flex w-full items-center justify-center gap-2.5 rounded-2xl bg-[#0f3d2e] py-3.5 font-bold text-[#f6f1e7] shadow-lg shadow-primary-900/20 transition active:scale-[0.99] disabled:opacity-50">
                 {busy === 'key' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Usb className="h-4 w-4" />}נגיעה במפתח האבטחה
               </button>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                <button type="button" onClick={sendEmail} disabled={!!busy || phase !== 'waiting'} className={cn('flex items-center gap-2.5 rounded-2xl bg-gc/80 px-4 py-3 text-start text-sm font-semibold text-ink-soft ring-1 ring-black/5 transition hover:bg-gc disabled:opacity-50', mode === 'email' && 'ring-2 ring-[#0b6b4b]')}>
+                <button type="button" onClick={sendEmail} disabled={!!busy || phase !== 'waiting'} className={cn('flex items-center gap-2.5 rounded-2xl bg-gc/80 px-4 py-3 text-start text-sm font-semibold text-ink-soft ring-1 ring-forest-950/5 transition hover:bg-gc disabled:opacity-50', mode === 'email' && 'ring-2 ring-[#0b6b4b]')}>
                   {busy === 'email' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4 text-[#0b6b4b]" />}קוד למייל
                 </button>
-                <button type="button" disabled={phase !== 'waiting'} onClick={() => { setMode('recovery'); setCode(''); setInfo(null); setErr(null); }} className={cn('flex items-center gap-2.5 rounded-2xl bg-gc/80 px-4 py-3 text-start text-sm font-semibold text-ink-soft ring-1 ring-black/5 transition hover:bg-gc disabled:opacity-50', mode === 'recovery' && 'ring-2 ring-[#0b6b4b]')}>
+                <button type="button" disabled={phase !== 'waiting'} onClick={() => { setMode('recovery'); setCode(''); setInfo(null); setErr(null); }} className={cn('flex items-center gap-2.5 rounded-2xl bg-gc/80 px-4 py-3 text-start text-sm font-semibold text-ink-soft ring-1 ring-forest-950/5 transition hover:bg-gc disabled:opacity-50', mode === 'recovery' && 'ring-2 ring-[#0b6b4b]')}>
                   <KeyRound className="h-4 w-4 text-[#0b6b4b]" />קוד שחזור
                 </button>
-                <button type="button" disabled={phase !== 'waiting'} onClick={() => { setMode('wait'); setErr(null); }} className={cn('flex items-center gap-2.5 rounded-2xl bg-gc/80 px-4 py-3 text-start text-sm font-semibold text-ink-soft ring-1 ring-black/5 transition hover:bg-gc disabled:opacity-50', mode === 'wait' && 'ring-2 ring-[#0b6b4b]')}>
+                <button type="button" disabled={phase !== 'waiting'} onClick={() => { setMode('wait'); setErr(null); }} className={cn('flex items-center gap-2.5 rounded-2xl bg-gc/80 px-4 py-3 text-start text-sm font-semibold text-ink-soft ring-1 ring-forest-950/5 transition hover:bg-gc disabled:opacity-50', mode === 'wait' && 'ring-2 ring-[#0b6b4b]')}>
                   <Smartphone className="h-4 w-4 text-[#0b6b4b]" />טלגרם / מכשיר מאושר
                 </button>
               </div>
 
-              <div className="mt-6 border-t border-black/5 pt-4">
+              <div className="mt-6 border-t border-forest-950/5 pt-4">
                 {!confirmDeny ? (
-                  <button type="button" onClick={() => setConfirmDeny(true)} className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-rose-200 bg-rose-50 py-3 font-bold text-rose-700 transition hover:bg-rose-100">
+                  <button type="button" onClick={() => setConfirmDeny(true)} className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-coral-200 bg-coral-50 py-3 font-bold text-coral-700 transition hover:bg-coral-100">
                     <ShieldAlert className="h-5 w-5" />זה לא אני
                   </button>
                 ) : (
-                  <div className="rounded-2xl bg-rose-50 p-3 ring-1 ring-rose-200">
-                    <p className="mb-2 text-sm text-rose-900">לחסום את הכניסה הזו ולנתק את כל החיבורים לחשבון בכל המכשירים?</p>
+                  <div className="rounded-2xl bg-coral-50 p-3 ring-1 ring-coral-200">
+                    <p className="mb-2 text-sm text-coral-900">לחסום את הכניסה הזו ולנתק את כל החיבורים לחשבון בכל המכשירים?</p>
                     <div className="flex gap-2">
-                      <button type="button" onClick={denySelf} disabled={busy === 'deny'} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-rose-600 py-2.5 text-sm font-bold text-gc">{busy === 'deny' ? <Loader2 className="h-4 w-4 animate-spin" /> : null}כן, לחסום</button>
-                      <button type="button" onClick={() => setConfirmDeny(false)} className="flex-1 rounded-xl bg-gc py-2.5 text-sm font-semibold text-ink-soft ring-1 ring-black/10">ביטול</button>
+                      <button type="button" onClick={denySelf} disabled={busy === 'deny'} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-coral-600 py-2.5 text-sm font-bold text-gc">{busy === 'deny' ? <Loader2 className="h-4 w-4 animate-spin" /> : null}כן, לחסום</button>
+                      <button type="button" onClick={() => setConfirmDeny(false)} className="flex-1 rounded-xl bg-gc py-2.5 text-sm font-semibold text-ink-soft ring-1 ring-forest-950/10">ביטול</button>
                     </div>
                   </div>
                 )}

@@ -62,14 +62,14 @@ export const FUN_HEADER_BG =
 
 export const FUN_ASSISTANT_BUBBLE: BubbleStyle = {
   background: 'linear-gradient(152deg, #1a4039 0%, #265a50 50%, #2f6759 100%)',
-  color: '#f7fdfb',
+  color: '#eef4ea',
   border: '1px solid rgba(201, 169, 98, 0.22)',
   boxShadow: '0 10px 28px rgba(26, 64, 57, 0.38), inset 0 1px 0 rgba(255, 248, 235, 0.09)',
 };
 
 export const FUN_USER_BUBBLE: BubbleStyle = {
   background: 'rgba(255, 248, 235, 0.07)',
-  color: '#f1f5f9',
+  color: '#eef4ea',
   border: '1px solid rgba(201, 169, 98, 0.16)',
 };
 
@@ -210,7 +210,7 @@ export function FunPathSelectHero({ onSelect }: { onSelect: () => void }) {
         <FunFloatingAmbience />
         <div className="relative z-10">
           <div className="mb-3 flex items-center justify-between gap-2">
-            <span className="inline-flex items-center gap-1 rounded-full bg-background-card/20 px-2.5 py-1 text-[10px] font-black text-white backdrop-blur-sm">
+            <span className="inline-flex items-center gap-1 rounded-full bg-background-card/20 px-2.5 py-1 text-[10px] font-black text-on-dark backdrop-blur-sm">
               <Sparkles className="h-3 w-3" />
               הכי כיף
             </span>
@@ -222,11 +222,11 @@ export function FunPathSelectHero({ onSelect }: { onSelect: () => void }) {
               🎉
             </motion.span>
           </div>
-          <p className="text-[20px] font-black leading-tight text-white">מסלול הכייפי</p>
-          <p className="mt-1.5 text-[13px] font-semibold leading-relaxed text-white/90">
+          <p className="text-[20px] font-black leading-tight text-on-dark">מסלול הכייפי</p>
+          <p className="mt-1.5 text-[13px] font-semibold leading-relaxed text-on-dark/90">
             אלמוג בלי פילטרים (כמעט) — בדיחות, פאנץ&apos; ושאלות שלא ציפית להן
           </p>
-          <p className="mt-3 text-[11px] font-bold text-stone-200/80">
+          <p className="mt-3 text-[11px] font-bold text-ink-200/80">
             לחץ ותקבל קונפטי. ברצינות.
           </p>
         </div>
@@ -257,10 +257,10 @@ export function QuickPathSelectCard({ onSelect }: { onSelect: () => void }) {
           boxShadow: '0 12px 32px rgba(7, 20, 31, 0.45)',
         }}
       >
-        <Zap className="h-6 w-6 text-emerald-200/90 shrink-0" />
+        <Zap className="h-6 w-6 text-primary-200/90 shrink-0" />
         <span className="text-start">
-          <span className="block text-white font-black text-sm">מסלול מהיר</span>
-          <span className="block text-slate-300/90 text-xs mt-0.5">ישיר, רציני, בלי בדיחות</span>
+          <span className="block text-on-dark font-black text-sm">מסלול מהיר</span>
+          <span className="block text-ink-300/90 text-xs mt-0.5">ישיר, רציני, בלי בדיחות</span>
         </span>
       </div>
     </motion.button>
@@ -285,7 +285,7 @@ export function FunTypingLine() {
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -4 }}
         transition={{ duration: 0.25 }}
-        className="text-[11px] font-bold text-stone-200/85 px-0.5"
+        className="text-[11px] font-bold text-ink-200/85 px-0.5"
       >
         {FUN_TYPING_LINES[idx]}
       </motion.span>
