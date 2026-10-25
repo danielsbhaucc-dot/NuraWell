@@ -14,6 +14,7 @@ const RETENTION_DAYS = 30;
 const NAME = /^nurawell-db-(\d{8}T\d{6}Z)\.dump\.age$/;
 const Body = z.discriminatedUnion('action', [
   z.object({ action: z.literal('presign'), name: z.string().regex(NAME) }),
+  z.object({ action: z.literal('latest') }),
   z.object({ action: z.literal('finalize'), name: z.string().regex(NAME), sha256: z.string().regex(/^[0-9a-f]{64}$/), size: z.number().int().positive() }),
 ]);
 
@@ -44,6 +45,25 @@ export async function POST(request: Request) {
 
   const { GetObjectCommand, ListObjectsV2Command, DeleteObjectCommand } = await import('@aws-sdk/client-s3');
   const c = await legalR2Client();
+
+  if (b.action === 'latest') {
+    // Restore drills: stream the newest backup. It is age-encrypted, so the bytes are useless
+    // without the offline identity key; the bearer secret still gates access.
+    let newest: string | null = null;
+    let tok: string | undefined;
+    do {
+      const l = await c.send(new ListObjectsV2Command({ Bucket: bucket, Prefix: PREFIX, ContinuationToken: tok }));
+      for (const o of l.Contents ?? []) {
+        const k = (o.Key ?? '').slice(PREFIX.length);
+        if (NAME.test(k) && (!newest || k > newest)) newest = k;
+      }
+      tok = l.IsTruncated ? l.NextContinuationToken : undefined;
+    } while (tok);
+    if (!newest) return NextResponse.json({ error: 'none' }, { status: 404 });
+    const o = await c.send(new GetObjectCommand({ Bucket: bucket, Key: PREFIX + newest }));
+    const stream = (o.Body as { transformToWebStream: () => ReadableStream }).transformToWebStream();
+    return new Response(stream, { headers: { 'Content-Type': 'application/octet-stream', 'Cache-Control': 'no-store', 'X-Backup-Name': newest } });
+  }
   const obj = await c.send(new GetObjectCommand({ Bucket: bucket, Key: PREFIX + b.name }));
   if (Number(obj.ContentLength) !== b.size) return NextResponse.json({ error: 'size_mismatch' }, { status: 422 });
   const h = createHash('sha256');
