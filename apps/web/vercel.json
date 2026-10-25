@@ -25,6 +25,10 @@
     {
       "path": "/api/v1/legal/ots-upgrade",
       "schedule": "47 4 * * *"
+    },
+    {
+      "path": "/api/v1/ai/cron/log-retention",
+      "schedule": "23 1 * * *"
     }
   ]
 }

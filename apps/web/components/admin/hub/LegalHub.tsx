@@ -16,6 +16,7 @@ import { StepUpSettings } from '@/components/admin/StepUpSettings';
 import { AssetThumb, type Thumb } from './AssetThumb';
 import { HubSearch } from './HubSearch';
 import { SecurityDocs } from './SecurityDocs';
+import { LogsSection } from './LogsSection';
 import { ComplianceTasks } from './ComplianceTasks';
 import { AssetSheet } from './AssetSheet';
 import { fuzzyScore, normalize, expand } from '@/lib/legal/hub/search-core';
@@ -93,7 +94,7 @@ export function LegalHub({ initialTab = 'overview' }: { initialTab?: HubTab }) {
           : tab === 'media' ? <MediaGrid data={data} onOpen={openAsset} />
           : tab === 'receipts' ? <ReceiptsSection onChanged={load} defaultOpen />
           : tab === 'consent' ? <AdminLegalPanel />
-          : tab === 'security' ? <div className="space-y-4"><ComplianceTasks /><Divider variant="section" label="תיק אבטחה ופרטיות" /><SecurityDocs /></div>
+          : tab === 'security' ? <div className="space-y-4"><ComplianceTasks /><Divider variant="section" label="תיק אבטחה ופרטיות" /><SecurityDocs /><Divider variant="section" label="יומנים" /><LogsSection /></div>
           : tab === 'evidence' ? <div className="space-y-4"><EvidenceIntro /><Divider variant="section" label="סיסמאות" /><AdminLegalPasswords /><Divider variant="section" label="מדריך" /><AdminLegalGuide /></div>
           : <div className="space-y-4"><AdminKeyBackup /><Divider variant="section" label="הצפנת מפתחות בענן" /><AdminKmsWrap /><Divider variant="section" label="דרכי אימות" /><StepUpSettings /></div>}
       </div>
