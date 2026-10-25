@@ -13,6 +13,18 @@ export const VENDORS = {
   openai: { label: 'OpenAI · ChatGPT', generators: ['gpt_image'] },
   elevenlabs: { label: 'ElevenLabs', generators: ['elevenlabs'] },
   apple: { label: 'Apple (App Store)', generators: [] },
+  // Platform / infrastructure vendors (cost ledger only — no media generators).
+  openrouter: { label: 'OpenRouter (AI)', generators: [] },
+  deepseek: { label: 'DeepSeek (AI)', generators: [] },
+  anthropic: { label: 'Anthropic (AI)', generators: [] },
+  vercel: { label: 'Vercel', generators: [] },
+  supabase: { label: 'Supabase', generators: [] },
+  google_cloud: { label: 'Google Cloud', generators: [] },
+  upstash: { label: 'Upstash', generators: [] },
+  cloudflare: { label: 'Cloudflare', generators: [] },
+  resend: { label: 'Resend (אימייל)', generators: [] },
+  bunny: { label: 'Bunny (וידאו)', generators: [] },
+  domain: { label: 'דומיינים', generators: [] },
   unknown: { label: 'לא זוהה', generators: [] },
 } as const satisfies Record<string, { label: string; generators: GeneratorId[] }>;
 export type VendorId = keyof typeof VENDORS;
@@ -20,6 +32,8 @@ export type VendorId = keyof typeof VENDORS;
 /** Body keyword wins over sender (App Store / Stripe / Google Play bill for many vendors). */
 export function detectVendor(from: string, subject: string, text: string): VendorId {
   const hay = `${subject}\n${text}`.slice(0, 20000);
+  const infra = detectInfraVendor(from, hay);
+  if (infra) return infra;
   if (/\bsuno\b/i.test(hay) || /@(?:[\w-]+\.)?suno\.(?:com|ai)\b/i.test(from)) return 'suno';
   if (/super\s*grok|\bgrok\b|x\.ai\b|\bxai\b/i.test(hay) || /@(?:[\w-]+\.)?x\.ai\b/i.test(from)) return 'xai';
   if (/x\s*premium|premium\+|twitter blue/i.test(hay) || /@(?:[\w-]+\.)?(?:x|twitter)\.com\b/i.test(from)) return 'x_premium';
@@ -28,6 +42,41 @@ export function detectVendor(from: string, subject: string, text: string): Vendo
   if (/google\s*one|gemini|ai\s*premium|google ai (?:pro|ultra)/i.test(hay) || /@google\.com\b/i.test(from)) return 'google';
   if (/@(?:[\w-]+\.)?apple\.com\b/i.test(from)) return 'apple';
   return 'unknown';
+}
+
+/** Platform vendors are identified by their own sending domain (or Google Cloud's billing wording). */
+export function detectInfraVendor(from: string, hay: string): VendorId | null {
+  const f = from.toLowerCase();
+  const dom = (d: string) => new RegExp(`@(?:[\\w-]+\\.)*${d.replace(/\./g, '\\.')}$`).test(f);
+  if (dom('openrouter.ai')) return 'openrouter';
+  if (dom('deepseek.com')) return 'deepseek';
+  if (dom('anthropic.com')) return 'anthropic';
+  if (dom('vercel.com')) return 'vercel';
+  if (dom('supabase.com') || dom('supabase.io')) return 'supabase';
+  if (dom('upstash.com')) return 'upstash';
+  if (dom('cloudflare.com')) return /registrar|domain|דומיין/i.test(hay) ? 'domain' : 'cloudflare';
+  if (dom('resend.com') || dom('resend.dev')) return 'resend';
+  if (dom('bunny.net')) return 'bunny';
+  if (dom('namecheap.com') || dom('porkbun.com') || dom('godaddy.com') || dom('gandi.net')) return 'domain';
+  if (/@google\.com$/.test(f) && /google cloud|cloud platform|cloud billing|\bGCP\b|billing account \w{6}-\w{6}-\w{6}/i.test(hay)) return 'google_cloud';
+  return null;
+}
+
+/** Vendor's own invoice/receipt number → stable dedupe key (a re-forwarded copy has a different .eml hash). */
+export function parseInvoiceRef(vendor: string, subject: string, text: string): string | null {
+  const hay = `${subject}\n${text.slice(0, 20000)}`;
+  const pats = [/receipt\s*\[#([\w-]{4,40})\]/i, /\b(IN-\d{5,12})\b/, /invoice\s*(?:number|no\.?|#)\s*[:#]?\s*([A-Z0-9][\w-]{4,40})/i, /receipt\s*(?:number|no\.?|#)\s*[:#]?\s*([A-Z0-9][\w-]{4,40})/i, /סימוכין\s+([A-Z][\w -]{3,30}?)(?=\s+ב-|\)|$)/m, /מספר הזמנה:\s*([A-Z]{2,4}\.[\d.-]{8,40})/];
+  for (const re of pats) { const m = re.exec(hay); if (m) return `${vendor}:${m[1]!.trim().replace(/\s+/g, '-').toUpperCase()}`; }
+  return null;
+}
+
+/** VAT line if the receipt states one (מע"מ / VAT / Tax). */
+export function parseVat(input: string): number | null {
+  const t = normalizeReceiptText(input);
+  const m = /(?:מע"מ|VAT|Tax)\b[^\n\d]{0,30}?(?:₪|\$|€|£|USD|ILS|EUR)?\s?(\d{1,5}(?:[.,]\d{2})?)/i.exec(t);
+  if (!m) return null;
+  const n = Number(m[1]!.replace(',', '.'));
+  return Number.isFinite(n) ? n : null;
 }
 
 const CUR: Array<[RegExp, string]> = [[/₪|ILS|ש"ח|שח\b/, 'ILS'], [/\$|USD/, 'USD'], [/€|EUR/, 'EUR'], [/£|GBP/, 'GBP']];

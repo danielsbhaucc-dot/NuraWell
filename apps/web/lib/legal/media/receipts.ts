@@ -9,8 +9,9 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { sha256Hex } from '../evidence-crypto';
 import { appendMediaEvidence } from './record';
 import { loadMediaBlob, storeMediaBlob } from './store';
+import { normalizeReceiptCost } from '@/lib/admin/cost-normalize';
 import {
-  VENDORS, detectVendor, forwarderAllowed, extractGmailConfirmation, isGmailForwardingConfirmation, parseAmount, parsePeriod, parsePlan,
+  VENDORS, detectVendor, parseInvoiceRef, parseVat, forwarderAllowed, extractGmailConfirmation, isGmailForwardingConfirmation, parseAmount, parsePeriod, parsePlan,
 } from './receipts-core';
 
 export function allowedForwarders(): string[] {
@@ -87,19 +88,27 @@ export async function ingestReceipt(admin: SupabaseClient, input: IngestReceiptI
   const receiptDate = date && !isNaN(+date) ? date.toISOString().slice(0, 10) : null;
   const period = parsePeriod(annualHint ? `${text}\nannual` : text, receiptDate);
   const trust = isConfirm ? 'review' : vendorDkim && fwdOk ? 'verified' : 'review';
+  // Same invoice re-sent / re-forwarded (new .eml bytes) → the vendor's own invoice number dedupes it.
+  const dedupeKey = isConfirm ? null : parseInvoiceRef(vendor, subject, text);
+  if (dedupeKey) {
+    const { data: same } = await admin.from('media_receipts').select('id').eq('dedupe_key', dedupeKey).maybeSingle();
+    if (same) return { ok: true as const, id: (same as { id: string }).id, duplicate: true };
+  }
+  const vatAmount = isConfirm ? null : parseVat(text);
   const row = {
     source: isConfirm ? 'gmail_confirmation' : input.source, vendor, plan, amount, currency, receipt_date: receiptDate,
     period_start: period.start, period_end: period.end, subject, original_from: from.slice(0, 200), forwarder_ok: fwdOk,
-    dkim: { results: auth.dkim, dmarc: auth.dmarc, vendor_dkim_pass: vendorDkim }, spf: auth.spf, trust, eml_sha: eml.sha256, attachments: atts,
+    dkim: { results: auth.dkim, dmarc: auth.dmarc, vendor_dkim_pass: vendorDkim }, spf: auth.spf, trust, eml_sha: eml.sha256, attachments: atts, dedupe_key: dedupeKey,
     ...(isConfirm ? (() => { const g = extractGmailConfirmation({ subject, text: mail.text ?? '', html: mail.html ?? '', raw: input.raw.toString('latin1') }); return { confirmation_code: g.code, confirmation_link: g.link }; })() : { confirmation_code: null, confirmation_link: null }),
   };
   const parsedBy = aiUsed ? 'rules+ai' : 'rules';
   const { data: ins, error } = await admin.from('media_receipts').insert(row).select('id').single();
-  if (error?.code === '23505') { const { data: d2 } = await admin.from('media_receipts').select('id').eq('eml_sha', eml.sha256).maybeSingle(); if (d2) return { ok: true as const, id: (d2 as { id: string }).id, duplicate: true }; }
+  if (error?.code === '23505') { const { data: d2 } = await admin.from('media_receipts').select('id').eq('eml_sha', eml.sha256).maybeSingle(); if (d2) return { ok: true as const, id: (d2 as { id: string }).id, duplicate: true }; if (dedupeKey) { const { data: d3 } = await admin.from('media_receipts').select('id').eq('dedupe_key', dedupeKey).maybeSingle(); if (d3) return { ok: true as const, id: (d3 as { id: string }).id, duplicate: true }; } }
   if (error) return { ok: false as const, error: error.message };
   const id = (ins as { id: string }).id;
   const rec = await appendMediaEvidence(admin, `receipt:${id}`, 'receipt', { ...row, message_id: headers['message-id'] ?? null, parsed_by: parsedBy, received_at: new Date().toISOString(), envelope_from_hash: input.envelopeFrom ? sha256Hex(input.envelopeFrom.toLowerCase()) : null, actor_id: input.actorId ?? null });
   if (rec.ok) await admin.from('media_receipts').update({ record_hash: rec.recordHash }).eq('id', id);
+  if (!isConfirm) await normalizeReceiptCost(admin, { id, vendor, amount, currency, receipt_date: receiptDate, vat: vatAmount }).catch(() => null);
   const link = await linkReceipt(admin, id).catch(() => ({ linked: 0, unmatched: true }));
   if (!isConfirm && fwdOk && input.source === 'email') await resolveGmailConfirmations(admin).catch(() => 0);
   return { ok: true as const, id, vendor, trust, duplicate: false, ...link };
@@ -133,7 +142,7 @@ export async function aiParseFallback(admin: SupabaseClient, masked: string): Pr
     const res = await meteredFetch(fetch, { userId: null, feature: RECEIPTS_AI_FEATURE })('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST', signal: AbortSignal.timeout(15_000), headers: { Authorization: `Bearer ${key}`, 'content-type': 'application/json' },
       body: JSON.stringify({ model: process.env.MEDIA_PROVENANCE_AI_MODEL?.trim() || 'google/gemini-2.5-flash-lite', temperature: 0, max_tokens: 120, response_format: { type: 'json_object' }, usage: { include: true },
-        messages: [{ role: 'system', content: 'Extract from this subscription receipt excerpt. JSON only: {"vendor": one of suno|xai|x_premium|google|openai|elevenlabs|apple|unknown, "plan": string|null, "amount": number|null, "currency": "USD"|"ILS"|"EUR"|"GBP"|null, "annual": boolean}' }, { role: 'user', content: masked }] }),
+        messages: [{ role: 'system', content: 'Extract from this subscription receipt excerpt. JSON only: {"vendor": one of suno|xai|x_premium|google|openai|elevenlabs|apple|openrouter|deepseek|anthropic|vercel|supabase|google_cloud|upstash|cloudflare|resend|bunny|domain|unknown, "plan": string|null, "amount": number|null, "currency": "USD"|"ILS"|"EUR"|"GBP"|null, "annual": boolean}' }, { role: 'user', content: masked }] }),
     });
     if (!res.ok) return null;
     const j = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
