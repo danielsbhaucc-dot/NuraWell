@@ -1,4 +1,6 @@
 import { decProfileResult } from '@/lib/crypto/pii-fields';
+import { sealRow } from '@/lib/security/field-crypto';
+import { rowKeyFor } from '@/lib/security/field-registry';
 import { ALMOG_NUTRITION_SAFETY_RULES } from './safety/nutrition-safety';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -233,7 +235,17 @@ export async function buildAdaptiveNextStep(params: {
     // cache per user per day (same step + pace) so the card's AI text costs one call/day
     await admin
       .from('journey_next_step_cache')
-      .upsert({ user_id: userId, date_key: dateKey, step_id: step.id, pace, recommendation, model: ADAPTIVE_MODEL }, { onConflict: 'user_id,date_key' })
+      .upsert(
+        await sealRow('journey_next_step_cache', userId, rowKeyFor('journey_next_step_cache', { user_id: userId, date_key: dateKey }), {
+          user_id: userId,
+          date_key: dateKey,
+          step_id: step.id,
+          pace,
+          recommendation,
+          model: ADAPTIVE_MODEL,
+        }),
+        { onConflict: 'user_id,date_key' },
+      )
       .then(() => null, () => null);
     return { recommendation, used_fallback: false, model: ADAPTIVE_MODEL };
   } catch (error) {

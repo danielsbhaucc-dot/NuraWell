@@ -11,7 +11,7 @@
  * (none of the registered tables are read through embeds today; stage 5 guard enforces it).
  * The browser client is never wrapped: the browser never gets ciphertext keys.
  */
-import { encryptedTable } from '@/lib/security/field-registry';
+import { encryptedTable, keyColumns } from '@/lib/security/field-registry';
 // field-crypto (node:crypto, KMS key) is loaded lazily, only when a response really holds enc:v2 values.
 const FIELD_PREFIX_MARK = 'enc:v2:';
 
@@ -49,7 +49,7 @@ export function planSelect(table: string, select: string | null): { select: stri
   if (items.some((i) => i === '*')) return { select, added: [] };
   if (AGG.test(select)) return { select, added: [] };
   const have = new Set(items.map(returnedKey).filter(Boolean) as string[]);
-  const added = [...new Set([spec.userCol, spec.rowCol])].filter((c) => !have.has(c));
+  const added = keyColumns(spec).filter((c) => !have.has(c));
   if (!added.length) return { select, added };
   return { select: [...items, ...added].join(','), added };
 }
