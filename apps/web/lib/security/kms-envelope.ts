@@ -97,7 +97,7 @@ async function kmsCall(op, token, cfg, name, data) {
   });
   if (!r.ok) throw new Error('kms_' + op + '_' + r.status);
   const j = await r.json();
-  return op === 'encrypt' ? j.ciphertext : j.plaintext;
+  return op === 'encrypt' ? { v: j.ciphertext, p: true } : { v: j.plaintext, p: j.usedPrimary === true };
 }
 `;
 
@@ -117,7 +117,7 @@ const flag = new Int32Array(sab);
   try {
     const t = await googleToken(oidc, cfg);
     const out = {};
-    for (const it of items) out[it.name] = await kmsCall(op, t, cfg, it.name, it.data);
+    for (const it of items) { const r = await kmsCall(op, t, cfg, it.name, it.data); out[it.name] = r.v; out[it.name + '#primary'] = r.p ? '1' : '0'; }
     port.postMessage({ ok: true, out });
   } catch (e) { port.postMessage({ ok: false, error: String(e && e.message || e).slice(0, 80) }); }
   Atomics.store(flag, 0, 1); Atomics.notify(flag, 0);
@@ -142,7 +142,7 @@ export type EnvelopeStatus = {
   state: 'idle' | 'ok' | 'fallback' | 'failed' | 'skipped';
   at: string | null;
   error: string | null;
-  keys: { name: EnvelopeKeyName; wrapped: boolean; plain: boolean; match: boolean | null; source: 'plain' | 'kms' | 'none' }[];
+  keys: { name: EnvelopeKeyName; wrapped: boolean; plain: boolean; match: boolean | null; source: 'plain' | 'kms' | 'none'; usedPrimary: boolean | null }[];
 };
 
 let status: EnvelopeStatus = { mode: 'off', state: 'idle', at: null, error: null, keys: [] };
@@ -167,7 +167,7 @@ export function ensureKmsKeysSync(env: NodeJS.ProcessEnv = process.env): void {
 
   for (const n of ENVELOPE_KEY_NAMES) if (!originalPlain.has(n)) originalPlain.set(n, env[n]?.trim() || undefined);
   const items: Item[] = ENVELOPE_KEY_NAMES.filter((n) => env[wrappedVar(n)]?.trim()).map((n) => ({ name: n, data: env[wrappedVar(n)]!.trim() }));
-  const base = ENVELOPE_KEY_NAMES.map((n) => ({ name: n, wrapped: !!env[wrappedVar(n)]?.trim(), plain: !!originalPlain.get(n), match: null as boolean | null, source: (originalPlain.get(n) ? 'plain' : 'none') as 'plain' | 'kms' | 'none' }));
+  const base = ENVELOPE_KEY_NAMES.map((n) => ({ name: n, wrapped: !!env[wrappedVar(n)]?.trim(), plain: !!originalPlain.get(n), match: null as boolean | null, source: (originalPlain.get(n) ? 'plain' : 'none') as 'plain' | 'kms' | 'none', usedPrimary: null as boolean | null }));
   if (!items.length) { status = { mode, state: 'skipped', at: new Date().toISOString(), error: null, keys: base }; return; }
 
   const oidc = vercelOidcTokenSync(env);
@@ -184,8 +184,10 @@ export function ensureKmsKeysSync(env: NodeJS.ProcessEnv = process.env): void {
     const val = Buffer.from(b64, 'base64').toString('utf8');
     const plain = originalPlain.get(k.name);
     const match = plain ? fingerprint(plain) === fingerprint(val) : null;
-    if (mode === 'enforce' || !plain) { env[k.name] = val; return { ...k, match, source: 'kms' as const }; }
-    return { ...k, match };
+    const pf = out?.[`${k.name}#primary`];
+    const usedPrimary = pf === '1' ? true : pf === '0' ? false : null;
+    if (mode === 'enforce' || !plain) { env[k.name] = val; return { ...k, match, usedPrimary, source: 'kms' as const }; }
+    return { ...k, match, usedPrimary };
   });
 
   const missing = keys.some((k) => k.wrapped && k.source !== 'kms' && mode === 'enforce');
@@ -194,7 +196,11 @@ export function ensureKmsKeysSync(env: NodeJS.ProcessEnv = process.env): void {
   if (status.state === 'failed' && mode === 'enforce') throw new Error('kms_keys_unavailable');
 }
 
-/** Async wrap for the admin route: returns base64 ciphertexts (safe to store/display) + fingerprints. */
+/**
+ * Server-only wrap (called by the machine-authenticated internal route for the rotation job).
+ * Returns base64 ciphertexts + fingerprints. NEVER send the result to a browser: the admin UI only
+ * triggers the rotation job, which writes the ciphertexts straight into Vercel env.
+ */
 export function wrapKeysSync(names: readonly EnvelopeKeyName[], env: NodeJS.ProcessEnv = process.env) {
   const oidc = vercelOidcTokenSync(env);
   if (!oidc) throw new Error('no_oidc_token');
@@ -209,9 +215,44 @@ export function wrapKeysSync(names: readonly EnvelopeKeyName[], env: NodeJS.Proc
   if (!items.length) throw new Error('no_keys');
   const ct = runner('encrypt', oidc, kmsConfig(env), items);
   // Round-trip check before handing anything back.
-  const back = runner('decrypt', oidc, kmsConfig(env), Object.entries(ct).map(([name, data]) => ({ name, data })));
-  return Object.keys(ct).map((n) => {
+  const back = runner('decrypt', oidc, kmsConfig(env), Object.entries(ct).filter(([name]) => !name.includes('#')).map(([name, data]) => ({ name, data })));
+  return Object.keys(ct).filter((n) => !n.includes('#')).map((n) => {
     const ok = fingerprint(Buffer.from(back[n] ?? '', 'base64').toString('utf8')) === fps[n];
     return { name: n as EnvelopeKeyName, envVar: wrappedVar(n as EnvelopeKeyName), ciphertext: ct[n], fingerprint: fps[n], roundTrip: ok };
   });
+}
+
+/**
+ * Short-lived Google ID token (audience = rotation job URL) for the production deployment's
+ * `vercel-kms` identity, via Vercel OIDC -> STS -> iamcredentials.generateIdToken. Used only to
+ * invoke the IAM-protected rotation job; it grants no KMS access by itself.
+ */
+export async function googleIdTokenForAudience(audience: string, env: NodeJS.ProcessEnv = process.env, fetchFn: typeof fetch = fetch): Promise<string> {
+  const oidc = vercelOidcTokenSync(env);
+  if (!oidc) throw new Error('no_oidc_token');
+  const cfg = kmsConfig(env);
+  let iss = '';
+  try { iss = (JSON.parse(Buffer.from(oidc.split('.')[1] ?? '', 'base64url').toString()) as { iss?: string }).iss ?? ''; } catch { /* ignore */ }
+  const provider = iss.replace(/\/$/, '') === 'https://oidc.vercel.com' ? 'vercel-global' : 'vercel-team';
+  const sts = await fetchFn('https://sts.googleapis.com/v1/token', {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      grantType: 'urn:ietf:params:oauth:grant-type:token-exchange',
+      audience: `//iam.googleapis.com/projects/${cfg.projectNumber}/locations/global/workloadIdentityPools/${cfg.pool}/providers/${provider}`,
+      scope: 'https://www.googleapis.com/auth/cloud-platform',
+      requestedTokenType: 'urn:ietf:params:oauth:token-type:access_token',
+      subjectTokenType: 'urn:ietf:params:oauth:token-type:jwt',
+      subjectToken: oidc,
+    }),
+  });
+  if (!sts.ok) throw new Error(`sts_${sts.status}`);
+  const fed = ((await sts.json()) as { access_token?: string }).access_token;
+  const r = await fetchFn(`https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/${cfg.serviceAccount}:generateIdToken`, {
+    method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${fed}` },
+    body: JSON.stringify({ audience, includeEmail: true }),
+  });
+  if (!r.ok) throw new Error(`idtoken_${r.status}`);
+  const t = ((await r.json()) as { token?: string }).token;
+  if (!t) throw new Error('idtoken_empty');
+  return t;
 }
