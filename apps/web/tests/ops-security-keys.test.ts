@@ -38,3 +38,18 @@ describe('ops key route gates', () => {
     expect(d).toMatch(/if \(a\.action === 'recovery'\) await alertOwnerSecurity/);
   });
 });
+
+describe('logs CSV + auth trail', () => {
+  it('CSV export never includes the investigation field (raw IP / session)', async () => {
+    const { toCsv } = await import('@/lib/logs/query');
+    const csv = toCsv([{ id: '1', at: 't', type: 'admin', actor: 'a', action: 'GET', target: '/x', result: 'GET', ip: '1.2.x.x', country: 'IL', detail: '', inv: { user: 'u-secret', session: 's-secret', ipRaw: '9.9.9.9' } }]);
+    expect(csv).not.toMatch(/inv|u-secret|s-secret|9\.9\.9\.9/);
+  });
+  it('session trail migration records every new session, service-role only, never breaks sign-in', () => {
+    const m = readFileSync(new URL('../../../supabase/migrations/000189_auth_session_trail.sql', import.meta.url), 'utf8');
+    expect(m).toMatch(/after insert on auth\.sessions/);
+    expect(m).toMatch(/revoke all on public\.auth_session_trail from public, anon, authenticated/);
+    expect(m).toMatch(/exception when others then null/);
+    expect(m).toMatch(/'auth_session_trail','created_at',730,'access'/);
+  });
+});
