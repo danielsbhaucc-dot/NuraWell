@@ -151,11 +151,9 @@ export default async function JourneyRoute() {
   const initialExpandedKey = pickInitialStationGroupKey(groups, progressList);
 
   const profileFullName = profile?.full_name?.trim();
-  const metaFullName =
-    typeof user.user_metadata?.full_name === 'string' ? user.user_metadata.full_name.trim() : '';
+  // name comes only from the encrypted profile; auth user_metadata is never read for it
   const fullName =
     (profileFullName && profileFullName.length > 0 ? profileFullName : null) ??
-    (metaFullName.length > 0 ? metaFullName : null) ??
     user.email?.split('@')[0] ??
     'משתמש';
   const firstName = firstNameFromFull(fullName) || 'משתמש';

@@ -62,7 +62,6 @@ export async function GET(request: Request) {
 
     const fullName =
       profile?.full_name?.trim() ||
-      (typeof user.user_metadata?.full_name === 'string' ? user.user_metadata.full_name : '') ||
       user.email?.split('@')[0] ||
       'משתמש';
     const firstName = firstNameFromFull(fullName) || 'משתמש';
