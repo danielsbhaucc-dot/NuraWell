@@ -235,12 +235,6 @@ export const ENCRYPTED_TABLES = {
 
 /** Registered but not yet safe to encrypt: a DB object reads/constrains the plaintext. Writes/backfill skip these. */
 export const BLOCKED: Readonly<Record<string, string>> = {
-  'profiles.gender': "CHECK enum constraint \u2014 drop and validate in app first",
-  'profiles.activity_level': "CHECK enum constraint",
-  'profiles.main_goal': "CHECK enum constraint",
-  'profiles.main_obstacle': "CHECK enum constraint",
-  'profiles.weakest_time_of_day': "CHECK enum constraint",
-  'profiles.phone': "shares CHECK with preferred_channel (constraint name only) \u2014 verify",
   'almog_assignments.title': "SQL dedupe trigger + task_dup_candidates/merge_task_assignments compare titles in SQL",
   'almog_assignments.history': "merge_task_assignments/task_dup_candidates read it in SQL",
   'almog_assignments.metadata': "merge_task_assignments/task_dup_candidates read it in SQL",
