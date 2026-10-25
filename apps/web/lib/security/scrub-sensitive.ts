@@ -25,7 +25,7 @@ export function scrubSensitive(input: string | null | undefined): string {
 /** Postgres/PostgREST errors echo row values in "Failing row contains (...)" / "Key (...)=(...)". */
 export function scrubDbEcho(input: string): string {
   return input
-    .replace(/Failing row contains \(.*?\)(?=\.|$)/gs, 'Failing row contains ([redacted])')
+    .replace(/Failing row contains \([\s\S]*?\)(?=\.|$)/g, 'Failing row contains ([redacted])')
     .replace(/(Key \([^)]*\)=)\([^)]*\)/g, '$1([redacted])');
 }
 
