@@ -261,7 +261,7 @@ async function runMasterCron() {
 
         const safeTranscript = redactTranscriptForExternalAi(transcript);
         // Do not send personal transcripts to DeepSeek (CN data residency). OpenRouter + redaction only.
-        const completion = await withAiUser(userId, () =>
+        const completion = await withAiUser(userId, 'notify:master', () =>
           openrouter.chat.completions.create({
             model: process.env.OPENROUTER_ANALYSIS_MODEL?.trim() || 'openai/gpt-4o-mini',
             temperature: 0.2,

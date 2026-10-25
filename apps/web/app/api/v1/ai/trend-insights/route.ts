@@ -15,7 +15,7 @@ export async function GET(request: Request) {
     if (!auth.ok) return auth.response;
 
     const { supabase, user } = auth;
-    enterAiUsage({ userId: user.id });
+    enterAiUsage({ feature: 'trend_insights', userId: user.id });
     const { stats, insight, used_fallback, model } = await buildTrendInsight({
       supabase,
       userId: user.id,

@@ -105,7 +105,7 @@ export async function runGuideCompanionForUser(
     if (result.revoked) closed++;
   }
 
-  const llmResult = await withAiUser(userId, async () => runGuideCompanionLlm({
+  const llmResult = await withAiUser(userId, 'cron:guide-companion', async () => runGuideCompanionLlm({
     firstName,
     gender: profile.gender,
     struggles,

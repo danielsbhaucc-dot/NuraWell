@@ -251,7 +251,7 @@ export async function sendTaskCompletionCelebration(
   const systemPrompt =
     outcome === 'attempt_failed' ? CELEBRATION_SYSTEM_ATTEMPT_FAILED : CELEBRATION_SYSTEM_COMPLETED;
 
-  const body = await withAiUser(userId, () => completeEmpathyNotifyBody({
+  const body = await withAiUser(userId, 'notify:task-celebration', () => completeEmpathyNotifyBody({
     label: outcome === 'attempt_failed' ? 'task_attempt_support' : 'task_completion_celebration',
     temperature: 0.75,
     maxTokens: ALMOG_NOTIFY_MAX_OUTPUT_TOKENS,

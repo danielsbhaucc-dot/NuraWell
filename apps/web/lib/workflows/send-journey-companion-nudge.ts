@@ -159,7 +159,7 @@ export async function sendJourneyCompanionNudge(
     .filter(Boolean)
     .join('\n\n');
 
-  const body = await withAiUser(userId, () => completeEmpathyNotifyBody({
+  const body = await withAiUser(userId, 'workflow:journey-nudge', () => completeEmpathyNotifyBody({
     label: 'almog_journey_companion',
     recipientFirstName: firstName,
     recipientGender: genderFromInstruction(genderInstruction),

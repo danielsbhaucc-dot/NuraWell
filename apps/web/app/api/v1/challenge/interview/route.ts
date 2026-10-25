@@ -79,7 +79,7 @@ export async function POST(request: Request) {
   const firstName = (profile?.full_name as string | null)?.trim().split(/\s+/)[0] ?? 'שלום';
   const gender = (profile?.gender as 'male' | 'female' | null) ?? null;
 
-  enterAiUsage({ userId: auth.user.id });
+  enterAiUsage({ feature: 'challenge_interview', userId: auth.user.id });
   const result = await runChallengeInterviewTurn({ messages, firstName, gender });
 
   const transcript = [

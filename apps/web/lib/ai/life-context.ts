@@ -412,7 +412,7 @@ export async function sendLifeContextTouch(
     `${buildSlotDaypartPromptBlock(slot)}\n${formatLifeContextNotifyBlock(lc)}`
   )}`;
 
-  const body = await withAiUser(userId, () => completeEmpathyNotifyBody({
+  const body = await withAiUser(userId, 'notify:life-context', () => completeEmpathyNotifyBody({
     label: 'almog_life_context',
     temperature: 0.86,
     presencePenalty: 0.5,

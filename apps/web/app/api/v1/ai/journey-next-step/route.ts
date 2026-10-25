@@ -18,7 +18,7 @@ export async function GET(request: Request) {
     const { supabase, user } = auth;
     const admin = createAdminClient();
 
-    enterAiUsage({ userId: user.id });
+    enterAiUsage({ feature: 'journey_next_step', userId: user.id });
     const { recommendation, used_fallback, model } = await buildAdaptiveNextStep({
       supabase,
       admin,

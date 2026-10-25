@@ -145,7 +145,7 @@ export async function POST(request: Request) {
     };
 
     if (!parsed.data.persist) {
-      enterAiUsage({ userId: user.id });
+      enterAiUsage({ feature: 'onboarding_chat', userId: user.id });
       result = await runOnboardingChatTurn({
         messages,
         path,

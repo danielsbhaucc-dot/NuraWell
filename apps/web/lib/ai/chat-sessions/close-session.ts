@@ -60,7 +60,7 @@ export async function closeChatSession(
   const turns = await fetchChatSessionTranscript(supabase, params);
   const existingTitle = sanitizeChatSessionTitle(normalized.title);
   // one structured LLM call (summary + facts + title if missing); none at all for trivial chats
-  const digest = await withAiUser(params.userId, () =>
+  const digest = await withAiUser(params.userId, 'chat_session_close', () =>
     buildCloseDigest(turns, { needTitle: !existingTitle, liveFile: normalized.live_conversation_file })
   );
   const { summary, facts } = digest;
@@ -141,7 +141,7 @@ export async function closeChatSession(
       .eq('id', params.userId)
       .maybeSingle().then(decProfileResult(params.userId));
     const prevRollup = (prof?.ai_context as { chat_summary?: string } | null)?.chat_summary;
-    await withAiUser(params.userId, () => rollupUserChatContext(supabase, {
+    await withAiUser(params.userId, 'chat_session_close', () => rollupUserChatContext(supabase, {
       userId: params.userId,
       sessionSummary: summary,
       sessionClosedAt: now,

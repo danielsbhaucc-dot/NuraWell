@@ -209,7 +209,7 @@ export async function sendPassivePresenceNotification(
 
   const systemPrompt = buildPassivePresenceSystemPrompt(promptInput);
 
-  const body = await withAiUser(userId, () => completeEmpathyNotifyBody({
+  const body = await withAiUser(userId, 'notify:passive-presence', () => completeEmpathyNotifyBody({
     label: 'passive_presence',
     temperature: 0.82,
     presencePenalty: 0.45,

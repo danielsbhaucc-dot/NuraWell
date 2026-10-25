@@ -67,7 +67,7 @@ export async function generateCronOpsNotificationBody(
     .filter(Boolean)
     .join('\n');
 
-  return withAiUser(params.userId, () => completeEmpathyNotifyBody({
+  return withAiUser(params.userId, 'notify:cron-ops', () => completeEmpathyNotifyBody({
     label: `cron_ops_${params.action}`,
     temperature: 0.8,
     presencePenalty: 0.45,

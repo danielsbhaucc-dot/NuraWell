@@ -51,7 +51,7 @@ export async function ingestChatTurnIntoMemoryDossier(params: {
   const habitContext =
     params.habitTitles?.length ? params.habitTitles.slice(0, 6).join(', ') : '';
 
-  const patch = await withAiUser(params.userId, () => extractMemoryDossierPatch({
+  const patch = await withAiUser(params.userId, 'memory_dossier', () => extractMemoryDossierPatch({
     userMessage: params.userMessage,
     assistantMessage: params.assistantMessage,
     existingDossier: existing,

@@ -166,7 +166,7 @@ export async function runMemoryConsolidationBatch(
         continue;
       }
 
-      const llmResult = await withAiUser(userId, () => consolidateMemoryWithLlm({
+      const llmResult = await withAiUser(userId, 'memory_consolidation', () => consolidateMemoryWithLlm({
         insights,
         pendingLogs: userLogs,
       }));
