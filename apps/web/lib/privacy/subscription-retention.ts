@@ -9,33 +9,14 @@ import { LEGAL_POLICY_VERSION } from './constants';
  * Users who never chose are treated as keep_24m (existing users before 2026-10-25).
  * A newer active subscription cancels any pending deletion automatically (only the latest row counts).
  */
-export const RETENTION_CHOICES = ['delete_now', 'keep_24m'] as const;
-export type RetentionChoice = (typeof RETENTION_CHOICES)[number];
-export const DEFAULT_RETENTION_CHOICE: RetentionChoice = 'keep_24m';
+export {
+  RETENTION_CHOICES, DEFAULT_RETENTION_CHOICE, KEEP_MONTHS, REMINDER_DAYS_BEFORE,
+  isRetentionChoice, addMonthsUtc, computePurgeAt, decideRetentionAction,
+} from '@saas/billing';
+export type { RetentionChoice, RetentionAction } from '@saas/billing';
+import { isRetentionChoice, computePurgeAt, decideRetentionAction, type RetentionChoice } from '@saas/billing';
 /** Text version of the choice wording shown to users. Bump when the wording changes. */
 export const RETENTION_CHOICE_VERSION = '2026-10-25';
-export const KEEP_MONTHS = 24;
-export const REMINDER_DAYS_BEFORE = 30;
-const DAY = 86_400_000;
-
-export function isRetentionChoice(v: unknown): v is RetentionChoice {
-  return typeof v === 'string' && (RETENTION_CHOICES as readonly string[]).includes(v);
-}
-
-export function addMonthsUtc(d: Date, months: number): Date {
-  const r = new Date(d.getTime());
-  const day = r.getUTCDate();
-  r.setUTCDate(1);
-  r.setUTCMonth(r.getUTCMonth() + months);
-  const last = new Date(Date.UTC(r.getUTCFullYear(), r.getUTCMonth() + 1, 0)).getUTCDate();
-  r.setUTCDate(Math.min(day, last));
-  return r;
-}
-
-/** When the data is deleted for a given choice and end time. Pure. */
-export function computePurgeAt(choice: RetentionChoice | null | undefined, endedAt: Date): Date {
-  return (choice ?? DEFAULT_RETENTION_CHOICE) === 'delete_now' ? new Date(endedAt.getTime()) : addMonthsUtc(endedAt, KEEP_MONTHS);
-}
 
 export type RetentionCandidate = {
   user_id: string;
@@ -45,16 +26,6 @@ export type RetentionCandidate = {
   role: string | null;
   reminder_sent: boolean;
 };
-
-export type RetentionAction = 'purge' | 'remind' | 'none';
-
-/** What to do tonight for one candidate. Pure — unit-tested. */
-export function decideRetentionAction(c: Pick<RetentionCandidate, 'ended_at' | 'choice' | 'reminder_sent'>, now: Date): RetentionAction {
-  const purgeAt = computePurgeAt(c.choice, new Date(c.ended_at));
-  if (now.getTime() >= purgeAt.getTime()) return 'purge';
-  if (c.choice === 'keep_24m' && !c.reminder_sent && now.getTime() >= purgeAt.getTime() - REMINDER_DAYS_BEFORE * DAY) return 'remind';
-  return 'none';
-}
 
 /** Records the choice as a consent (legal evidence, 7 years via consent_history) and caches it on the profile. */
 export async function recordRetentionChoice(
