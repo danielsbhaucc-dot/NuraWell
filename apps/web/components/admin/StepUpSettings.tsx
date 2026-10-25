@@ -1,5 +1,6 @@
 'use client';
 
+import { sanitizeSvg } from '@/lib/sanitize-lesson-html';
 import { useEffect, useState } from 'react';
 import { CheckCircle2, KeyRound, Loader2, Smartphone } from 'lucide-react';
 import { opsGlassBtnClass, opsGlassBtnPrimaryClass, opsGlassCardClass, opsInputClass } from '@/components/admin/OpsPanel';
@@ -43,7 +44,7 @@ export function StepUpSettings() {
       {m && !m.totp && step !== 'scan' ? <button type="button" onClick={() => setStep('verify')} className={cn(opsGlassBtnClass, 'mt-3')}>הוספת אפליקציית קודים</button> : null}
       {step === 'scan' && qr ? (
         <div className="mt-3 grid gap-3 rounded-2xl border border-amber-300/50 bg-amber-500/5 p-3 sm:grid-cols-[180px_1fr]">
-          <div className="mx-auto h-44 w-44 rounded-2xl bg-amber-50/50 p-2 [&_svg]:h-full [&_svg]:w-full" dangerouslySetInnerHTML={{ __html: qr.svg ?? '' }} />
+          <div className="mx-auto h-44 w-44 rounded-2xl bg-amber-50/50 p-2 [&_svg]:h-full [&_svg]:w-full" dangerouslySetInnerHTML={{ __html: sanitizeSvg(qr.svg) }} />
           <div>
             <p className="text-sm text-slate-700">1. פותחים אפליקציית קודים (למשל Google Authenticator) וסורקים.<br />2. מקלידים את 6 הספרות שמופיעות.</p>
             <p className="mt-1 text-[11px] text-slate-500">אין מצלמה? מקלידים ידנית: <span dir="ltr" className="select-all font-mono">{qr.secret}</span></p>
