@@ -47,7 +47,7 @@ export async function synthesizeUserStrategy(
   const groupedText = groupInsightsForPrompt(insights);
 
   try {
-    const strategy = await withAiUser(userId, () => synthesizeStrategyWithLlm(groupedText));
+    const strategy = await withAiUser(userId, 'mentorship_strategy', () => synthesizeStrategyWithLlm(groupedText));
     await upsertUserMentorshipStrategy(admin, userId, strategy, options?.now);
 
     return {

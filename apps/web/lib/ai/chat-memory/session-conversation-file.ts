@@ -18,7 +18,7 @@ export async function updateSessionLiveConversationFile(
   }
 ): Promise<string | null> {
   const updated =
-    (await withAiUser(params.userId, () => summarizeConversationTurn({
+    (await withAiUser(params.userId, 'chat_turn_summary', () => summarizeConversationTurn({
       previousFile: params.previousFile,
       userMessage: params.userMessage,
       assistantMessage: params.assistantMessage,

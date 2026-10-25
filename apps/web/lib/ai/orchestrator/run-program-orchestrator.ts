@@ -253,7 +253,7 @@ export async function orchestrateProgramForUser(
     // nothing concrete to shrink (no open task today) → no pivot card
     return { ...base, skippedReason: 'pivot_no_target' };
   }
-  const proposal = await withAiUser(profile.id, () => buildProgramProposal({
+  const proposal = await withAiUser(profile.id, 'program_orchestrator', () => buildProgramProposal({
     decision,
     firstName,
     aiCtx,

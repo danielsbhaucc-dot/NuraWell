@@ -86,7 +86,7 @@ export async function runInsightExtraction(params: {
     .limit(30).then(decTableResult('user_insights', userId));
 
   // 3) חילוץ.
-  const extraction = await withAiUser(userId, () => extractInsights({
+  const extraction = await withAiUser(userId, 'insight_extraction', () => extractInsights({
     transcript,
     existingInsights: (existing ?? []) as { category: string; insight_text: string }[],
   }));

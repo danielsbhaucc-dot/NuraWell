@@ -76,7 +76,7 @@ export async function POST(request: Request) {
     const sessionId = crypto.randomUUID();
     const contextId = payload.step_id ?? payload.lesson_id;
 
-    enterAiUsage({ userId: user.id });
+    enterAiUsage({ feature: 'lesson_feedback', userId: user.id });
     const { contextString, raw: userCtx } = await buildUserContext(supabase, user.id);
     const coachingBlock = buildCoachingStylePromptBlock(userCtx.aiContext);
     const systemPrompt = [LESSON_FEEDBACK_PROMPT, coachingBlock, contextString]
