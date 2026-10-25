@@ -41,7 +41,7 @@ export function QcScreen() {
     <main dir="rtl" className="mx-auto max-w-5xl space-y-5 p-4 sm:p-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-black text-[#0f3d2e]">בקרת איכות</h1>
+          <h1 className="text-2xl font-black text-primary-900">בקרת איכות</h1>
           <p className="text-sm text-slate-600">בדיקות אוטומטיות לפי המוצר שנבחר. כל בדיקה רצה בנפרד, כך שבדיקה תקועה לא מפילה את המסך.</p>
         </div>
         <div className="flex items-center gap-2">
@@ -92,7 +92,7 @@ export function QcScreen() {
                   <li key={r.id} className={cn(opsGlassCardClass, "p-4")}>
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <h2 className="font-bold text-[#0f3d2e]">{r.label}</h2>
+                        <h2 className="font-bold text-primary-900">{r.label}</h2>
                         <p className="text-xs text-slate-500">{r.description}</p>
                       </div>
                       <span className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-bold ${T.cls}`}><T.icon size={14} />{T.label}</span>
