@@ -116,7 +116,12 @@ export async function POST(request: Request) {
     if (!a.approve) await killSwitch(db, `ops:${uid}`, 'ops login denied in Ops').catch(() => undefined);
     return json({ ok: true });
   }
-  if (a.action === 'revoke') return json({ ok: await revokeDevice(db, uid, a.id, `ops:${uid}`) });
+  if (a.action === 'revoke') {
+    const ok = await revokeDevice(db, uid, a.id, `ops:${uid}`);
+    // remote revoke also ends every session of this admin (the revoked device can't hold on to a live session)
+    if (ok) await db.rpc('ops_revoke_user_sessions', { p_user: uid }).then(() => null, () => null);
+    return json({ ok });
+  }
   // regenerate_codes: step-up (approved device / security key / fresh login), old codes revoked, shown once, alert.
   const { data: sess } = await auth.supabase.auth.getSession();
   if (!(await hasSensitiveStepUp({ accessToken: sess.session?.access_token, userId: uid, req: request }))) {

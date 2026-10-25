@@ -5,7 +5,7 @@ import { confirmDialog } from '@/components/shared/dialogs';
 import { StepUpDialog } from '@/components/admin/StepUpDialog';
 import { emergencyCardHtml, emergencyCardText } from '@/lib/ops/emergency-card';
 
-type Device = { id: string; label: string; via: string; created_at: string; last_seen_at: string };
+type Device = { id: string; label: string; via: string; created_at: string; last_seen_at: string; browser?: string | null; last_ip_masked?: string | null; last_country?: string | null; passkey?: boolean };
 const fmt = (s: string) => new Intl.DateTimeFormat('he-IL', { timeZone: 'Asia/Jerusalem', day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(s));
 const VIA: Record<string, string> = { bootstrap: 'הפעלה ראשונה', approval: 'אישור', handoff: 'מעבר מהאתר' };
 
@@ -98,7 +98,7 @@ export function OpsDevicesPanel() {
         <ul className="divide-y divide-slate-100">
           {devices.map((d) => (
             <li key={d.id} className="flex items-center justify-between gap-3 px-4 py-3 text-sm">
-              <div><div className="font-medium">{d.label || 'מכשיר'}</div><div className="text-xs text-slate-500">{VIA[d.via] ?? d.via} · נראה לאחרונה {fmt(d.last_seen_at)}</div></div>
+              <div><div className="font-medium">{d.label || 'מכשיר'}</div><div className="text-xs text-slate-500">{VIA[d.via] ?? d.via} · נראה לאחרונה {fmt(d.last_seen_at)}{d.last_country ? ` · ${d.last_country}` : ''}{d.last_ip_masked ? ` · ${d.last_ip_masked}` : ''}{d.passkey ? ' · פאסקי' : ''}</div></div>
               <button type="button" onClick={async () => { if (await confirmDialog({ title: 'לבטל את המכשיר?', message: 'הוא יצטרך אישור מחדש.', danger: true, confirmLabel: 'בטל מכשיר' })) { await post({ action: 'revoke', id: d.id }); void load(); } }} className="rounded-xl px-3 py-1.5 text-red-700 hover:bg-red-50">בטל</button>
             </li>
           ))}

@@ -1,5 +1,6 @@
 'use client';
 
+import { piiFetch } from '@/lib/platform/access/pii-fetch';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Loader2,
@@ -239,7 +240,7 @@ export function AlmogChatMemoryPanel({
           sessionId,
           reason,
         });
-        const res = await fetch(
+        const res = await piiFetch(
           `/api/v1/admin/users/${userId}/chat-memory?${params.toString()}`,
           { credentials: 'include', cache: 'no-store' },
         );
@@ -384,7 +385,7 @@ export function AlmogChatMemoryPanel({
       return;
     }
     const params = new URLSearchParams({ sessionId, reason, format });
-    const res = await fetch(
+    const res = await piiFetch(
       `/api/v1/admin/users/${userId}/chat-memory?${params.toString()}`,
       { credentials: 'include', cache: 'no-store' },
     );

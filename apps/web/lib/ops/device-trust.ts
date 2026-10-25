@@ -229,8 +229,9 @@ export async function redeemRecoveryCode(db: SupabaseClient, r: LoginRequest, co
 
 /* ───────────── devices list / revoke ───────────── */
 export async function listDevices(db: SupabaseClient, userId: string) {
-  const { data } = await db.from('ops_trusted_devices').select('id, label, via, created_at, last_seen_at').eq('user_id', userId).is('revoked_at', null).is('parent_id', null).order('last_seen_at', { ascending: false });
-  return (data ?? []) as { id: string; label: string; via: string; created_at: string; last_seen_at: string }[];
+  const { data } = await db.from('ops_trusted_devices').select('id, label, via, created_at, last_seen_at, browser, last_ip_masked, last_country, credential_id').eq('user_id', userId).is('revoked_at', null).is('parent_id', null).order('last_seen_at', { ascending: false });
+  return ((data ?? []) as { id: string; label: string; via: string; created_at: string; last_seen_at: string; browser: string | null; last_ip_masked: string | null; last_country: string | null; credential_id: string | null }[])
+    .map(({ credential_id, ...d }) => ({ ...d, passkey: Boolean(credential_id) }));
 }
 export async function revokeDevice(db: SupabaseClient, userId: string, id: string, actor: string): Promise<boolean> {
   const { data } = await db.from('ops_trusted_devices').update({ revoked_at: new Date().toISOString() }).eq('id', id).eq('user_id', userId).is('revoked_at', null).select('id');
@@ -306,4 +307,13 @@ export async function redeemEmailLink(db: SupabaseClient, userId: string, token:
   const r = await loadEmailRow(db, id);
   if (!r || !emailOpen(r) || !r.email_token_hash || !safeEq(r.email_token_hash, sha(secret))) return { ok: false, error: 'הקישור פג או כבר נוצל.' };
   return approveViaEmail(db, r, 'email_link');
+}
+
+/** Pre-login check (hidden admin): is this a live enrolled device cookie, regardless of who is signed in? */
+export async function liveDeviceCookie(db: SupabaseClient, cookie: string | null | undefined): Promise<boolean> {
+  const p = parseCookieValue(cookie);
+  if (!p) return false;
+  const { data } = await db.from('ops_trusted_devices').select('user_id').eq('id', p.id).maybeSingle();
+  const uid = (data as { user_id: string } | null)?.user_id;
+  return uid ? (await trustedDeviceId(db, uid, cookie)) !== null : false;
 }
