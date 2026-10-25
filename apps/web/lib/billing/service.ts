@@ -30,9 +30,9 @@ export async function applyBillingEvents(admin: SupabaseClient, provider: string
     }
     if (!existing) continue;
     const patch: Record<string, unknown> = { updated_at: nowIso };
-    if (ev.kind === 'activated' || ev.kind === 'renewed') Object.assign(patch, { status: 'active', current_period_end: ev.currentPeriodEnd ?? null, cancel_at_period_end: false });
+    if (ev.kind === 'activated' || ev.kind === 'renewed') Object.assign(patch, { status: 'active', current_period_end: ev.currentPeriodEnd ?? null, cancel_at_period_end: false, ended_at: null });
     if (ev.kind === 'canceled') Object.assign(patch, { status: 'canceled', cancel_at_period_end: true, canceled_at: nowIso });
-    if (ev.kind === 'expired') Object.assign(patch, { status: 'expired' });
+    if (ev.kind === 'expired') Object.assign(patch, { status: 'expired', ended_at: nowIso });
     if (ev.kind === 'payment_failed') Object.assign(patch, { status: 'past_due' });
     await admin.from('subscriptions').update(patch).eq('id', existing.id);
   }

@@ -13,8 +13,8 @@ export async function runBillingRetention(admin: SupabaseClient, now = new Date(
   const nowIso = now.toISOString();
   const out = { expired: 0, trial_notices: 0, expiring_notices: 0 };
 
-  const { data: lapsedTrials } = await admin.from('subscriptions').update({ status: 'expired', updated_at: nowIso }).eq('status', 'trialing').lt('trial_ends_at', nowIso).select('id');
-  const { data: lapsedCanceled } = await admin.from('subscriptions').update({ status: 'expired', updated_at: nowIso }).eq('status', 'canceled').lt('current_period_end', nowIso).select('id');
+  const { data: lapsedTrials } = await admin.from('subscriptions').update({ status: 'expired', updated_at: nowIso, ended_at: nowIso }).eq('status', 'trialing').lt('trial_ends_at', nowIso).select('id');
+  const { data: lapsedCanceled } = await admin.from('subscriptions').update({ status: 'expired', updated_at: nowIso, ended_at: nowIso }).eq('status', 'canceled').lt('current_period_end', nowIso).select('id');
   out.expired = (lapsedTrials?.length ?? 0) + (lapsedCanceled?.length ?? 0);
 
   const notices: { kind: 'trial_ending_notice' | 'expiring_notice'; rows: { id: string; user_id: string }[]; title: string; body: string }[] = [];
