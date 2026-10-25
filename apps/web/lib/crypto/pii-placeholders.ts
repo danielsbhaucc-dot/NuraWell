@@ -14,3 +14,9 @@ export function restorePiiPlaceholders(text: string, firstName: string | null): 
   out = out.replace(/ +([.,!?;:])/g, '$1');
   return out;
 }
+
+/** First name from a profiles.full_name value; never returns ciphertext (enc:...) as a name. */
+export function firstNameFromFullName(fullName: unknown): string | null {
+  if (typeof fullName !== 'string' || fullName.startsWith('enc:')) return null;
+  return fullName.trim().split(/\s+/)[0] || null;
+}
