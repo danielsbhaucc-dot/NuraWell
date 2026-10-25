@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { authorizeDbBackupRequest } from '@/lib/api/authorize-db-backup';
 import { legalBucket, legalR2Client } from '@/lib/legal/evidence-storage';
-import { createR2PutPresignedUrl } from '@/lib/storage/r2-presign';
+import { createR2GetPresignedUrl, createR2PutPresignedUrl } from '@/lib/storage/r2-presign';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -14,6 +14,7 @@ const RETENTION_DAYS = 30;
 const NAME = /^nurawell-db-(\d{8}T\d{6}Z)\.dump\.age$/;
 const Body = z.discriminatedUnion('action', [
   z.object({ action: z.literal('presign'), name: z.string().regex(NAME) }),
+  z.object({ action: z.literal('presign_latest_get') }),
   z.object({ action: z.literal('finalize'), name: z.string().regex(NAME), sha256: z.string().regex(/^[0-9a-f]{64}$/), size: z.number().int().positive() }),
 ]);
 
@@ -44,6 +45,19 @@ export async function POST(request: Request) {
 
   const { GetObjectCommand, ListObjectsV2Command, DeleteObjectCommand } = await import('@aws-sdk/client-s3');
   const c = await legalR2Client();
+
+  if (b.action === 'presign_latest_get') {
+    // Restore drill: newest encrypted (age) dump + its hash. Ciphertext only; the age key never touches the app.
+    let latest: string | null = null; let tk: string | undefined;
+    do {
+      const l = await c.send(new ListObjectsV2Command({ Bucket: bucket, Prefix: PREFIX, ContinuationToken: tk }));
+      for (const o of l.Contents ?? []) { const n = (o.Key ?? '').slice(PREFIX.length); if (NAME.test(n) && (!latest || n > latest)) latest = n; }
+      tk = l.IsTruncated ? l.NextContinuationToken : undefined;
+    } while (tk);
+    if (!latest) return NextResponse.json({ error: 'none' }, { status: 404 });
+    const mk = (key: string) => createR2GetPresignedUrl({ bucket, key, expiresSeconds: 300, jurisdiction });
+    return NextResponse.json({ name: latest, url: mk(PREFIX + latest), sha_url: mk(`${PREFIX}${latest}.sha256`) }, { headers: { 'Cache-Control': 'no-store' } });
+  }
   const obj = await c.send(new GetObjectCommand({ Bucket: bucket, Key: PREFIX + b.name }));
   if (Number(obj.ContentLength) !== b.size) return NextResponse.json({ error: 'size_mismatch' }, { status: 422 });
   const h = createHash('sha256');

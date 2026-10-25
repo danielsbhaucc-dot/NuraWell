@@ -39,7 +39,13 @@ function amzDates(now = new Date()): { shortDate: string; longDate: string } {
   };
 }
 
+/** Short-lived GET URL (restore drills read encrypted backups only). */
+export function createR2GetPresignedUrl(params: { bucket: string; key: string; expiresSeconds?: number; jurisdiction?: string | null }): string {
+  return createR2PutPresignedUrl({ ...params, method: 'GET' });
+}
+
 export function createR2PutPresignedUrl(params: {
+  method?: 'PUT' | 'GET';
   bucket: string;
   key: string;
   expiresSeconds?: number;
@@ -70,7 +76,7 @@ export function createR2PutPresignedUrl(params: {
     .join('&');
 
   const canonicalRequest = [
-    'PUT',
+    params.method ?? 'PUT',
     canonicalUri,
     canonicalQuery,
     `host:${host}\n`,
