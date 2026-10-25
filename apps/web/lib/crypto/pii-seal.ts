@@ -5,7 +5,7 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { isEncrypted } from './pii';
 import { AI_CONTEXT_ENC_KEYS, encryptProfilePatch, encryptTableRow, TABLE_ENC_TEXT, type EncTextTable } from './pii-fields';
-import { restorePiiPlaceholders } from './pii-placeholders';
+import { firstNameFromFullName, restorePiiPlaceholders } from './pii-placeholders';
 import { healthConsentStatus, patchHasHealthFields, stripHealthFields } from '@/lib/privacy/health-consent';
 import { scrubHealthJson, isHealthText } from '@/lib/privacy/health-memory';
 
@@ -24,7 +24,7 @@ async function firstName(userId: string): Promise<string | null> {
   const c = nameCache.get(userId);
   if (c && Date.now() - c.at < 60_000) return c.v;
   const { data } = await createAdminClient().from('profiles').select('full_name').eq('id', userId).maybeSingle();
-  const v = String((data as { full_name?: string | null } | null)?.full_name ?? '').trim().split(/\s+/)[0] || null;
+  const v = firstNameFromFullName((data as { full_name?: string | null } | null)?.full_name);
   nameCache.set(userId, { v, at: Date.now() });
   return v;
 }
