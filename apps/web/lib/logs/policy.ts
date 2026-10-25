@@ -27,6 +27,7 @@ export const LOG_POLICY: PolicyRow[] = [
   { table: 'admin_audit_log', tsCol: 'created_at', days: 730, klass: 'access', label: 'יומן גישת מנהלים' },
   { table: 'ops_security_events', tsCol: 'created_at', days: 730, klass: 'access', label: 'אירועי אבטחה' },
   { table: 'security_incidents', tsCol: 'created_at', days: 730, klass: 'access', label: 'אירועי חדירה וטיפול' },
+  { table: 'auth_session_trail', tsCol: 'created_at', days: 730, klass: 'access', label: 'רישום חיבורים (כל כניסה)' },
   { table: 'ceo_audit_log', tsCol: 'created_at', days: 730, klass: 'access', label: 'יומן פעולות גדעון' },
   { table: 'challenge_admin_audit_log', tsCol: 'created_at', days: 730, klass: 'access', label: 'יומן ניהול אתגרים' },
   { table: 'chat_transcript_admin_audit_log', tsCol: 'created_at', days: 730, klass: 'access', label: 'יומן צפייה בשיחות' },

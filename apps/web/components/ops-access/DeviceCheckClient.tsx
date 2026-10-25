@@ -1,7 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { KeyRound, Loader2, Mail, Send, ShieldAlert, ShieldCheck, Smartphone } from 'lucide-react';
+import { KeyRound, Loader2, Mail, Send, ShieldAlert, ShieldCheck, Smartphone, Usb } from 'lucide-react';
+import { startAuthentication } from '@simplewebauthn/browser';
 import { cn } from '@/lib/cn';
 
 type Mode = 'wait' | 'email' | 'recovery';
@@ -91,6 +92,21 @@ export function DeviceCheckClient({ initialError }: { initialError: string | nul
     else setErr(r.j.error ?? 'הקוד לא תקין.');
   };
 
+  const tapKey = async () => {
+    setBusy('key'); setErr(null); setInfo(null);
+    try {
+      const k = (b: Record<string, unknown>) => fetch('/api/v1/ops/device/key', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(b), credentials: 'include' }).then(async (r) => ({ ok: r.ok, j: (await r.json().catch(() => ({}))) as { error?: string; options?: unknown } }));
+      const o = await k({ action: 'login_options' });
+      if (!o.ok || !o.j.options) { setErr(o.j.error ?? 'לא הצלחתי להתחיל.'); return; }
+      setInfo('עכשיו נוגעים במפתח…');
+      const resp = await startAuthentication({ optionsJSON: o.j.options as never });
+      const v = await k({ action: 'login_verify', response: resp });
+      if (v.ok) go(); else setErr(v.j.error ?? 'המפתח לא אומת.');
+    } catch (e) {
+      setErr((e as { name?: string }).name === 'NotAllowedError' ? 'הפעולה בוטלה או שעבר הזמן. נסו שוב.' : 'לא הצלחתי לקרוא את המפתח.');
+    } finally { setBusy(null); setInfo(null); }
+  };
+
   const sendEmail = async () => {
     setBusy('email'); setErr(null);
     const r = await post({ action: 'email' });
@@ -166,6 +182,9 @@ export function DeviceCheckClient({ initialError }: { initialError: string | nul
           {(phase === 'waiting' || phase === 'expired' || phase === 'error') && (
             <>
               <p className="mb-2 mt-6 px-1 text-xs font-semibold text-slate-500">אין לך טלגרם בהישג יד?</p>
+              <button type="button" onClick={tapKey} disabled={!!busy || phase !== 'waiting'} className="mb-2 flex w-full items-center justify-center gap-2.5 rounded-2xl bg-[#0f3d2e] py-3.5 font-bold text-[#f6f1e7] shadow-lg shadow-emerald-900/20 transition active:scale-[0.99] disabled:opacity-50">
+                {busy === 'key' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Usb className="h-4 w-4" />}נגיעה במפתח האבטחה
+              </button>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                 <button type="button" onClick={sendEmail} disabled={!!busy || phase !== 'waiting'} className={cn('flex items-center gap-2.5 rounded-2xl bg-gc/80 px-4 py-3 text-start text-sm font-semibold text-slate-700 ring-1 ring-black/5 transition hover:bg-gc disabled:opacity-50', mode === 'email' && 'ring-2 ring-[#0b6b4b]')}>
                   {busy === 'email' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4 text-[#0b6b4b]" />}קוד למייל

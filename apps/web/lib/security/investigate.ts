@@ -52,7 +52,7 @@ export async function investigate(db: SupabaseClient, input: InvestigateInput) {
   }
   const linked = sessions.filter((s) => (user && s.user_id === user) || (ip && s.ip === ip));
 
-  const [{ data: prof }, auditQ, sigQ, { data: known }, { data: incidents }, authQ] = await Promise.all([
+  const [{ data: prof }, auditQ, sigQ, { data: known }, { data: incidents }, authQ, trailQ] = await Promise.all([
     user ? db.from('profiles').select('role').eq('id', user).maybeSingle() : Promise.resolve({ data: null }),
     user ? db.from('admin_audit_log').select('created_at, method, path, ip, detail').eq('actor_id', user).gte('created_at', start.toISOString()).order('created_at', { ascending: true }).limit(1000)
       : ip ? db.from('admin_audit_log').select('created_at, method, path, ip, detail, actor_id').eq('ip', ip).gte('created_at', start.toISOString()).order('created_at', { ascending: true }).limit(1000) : Promise.resolve({ data: [] }),
@@ -60,6 +60,7 @@ export async function investigate(db: SupabaseClient, input: InvestigateInput) {
     h ? db.from('ops_known_places').select('ip_hash, created_at, via').eq('ip_hash', h).maybeSingle() : Promise.resolve({ data: null }),
     db.from('security_incidents').select('id, created_at, opened_via, status, actions').or([user ? `subject_user.eq.${user}` : '', h ? `ip_hash.eq.${h}` : ''].filter(Boolean).join(',') || 'id.is.null').order('created_at', { ascending: false }).limit(10),
     (user || ip) ? db.rpc('ops_auth_events', { p_user: user, p_ip: ip, p_start: start.toISOString(), p_end: end.toISOString() }) : Promise.resolve({ data: [] }),
+    (user || ip) ? db.rpc('ops_session_trail', { p_user: user, p_ip: ip, p_start: start.toISOString(), p_end: end.toISOString() }) : Promise.resolve({ data: [] }),
   ]);
   type A = { created_at: string; method: string; path: string; ip: string | null; detail: Record<string, unknown> | null };
   const auditAll = ((auditQ as { data: A[] | null }).data ?? []);
@@ -96,6 +97,10 @@ export async function investigate(db: SupabaseClient, input: InvestigateInput) {
   for (const s of sig) if (failKinds.has(s.kind)) timeline.push({ ts: s.created_at, kind: 'fail', title: s.kind === 'login_fail' ? 'ניסיון התחברות שנכשל' : 'ניסיון גישה לניהול שנדחה', detail: s.path ?? undefined, country: s.country });
   if (firstOk) timeline.push({ ts: firstOk.created_at, kind: 'success', title: 'נראה לראשונה מהכתובת הזו (הצלחה)', country: firstOk.country });
   for (const s of linked) timeline.push({ ts: s.created_at, kind: 'session', title: `נפתח חיבור: ${s.methods.map(methodHe).join(' + ') || 'שיטה לא ידועה'}${s.aal === 'aal2' ? ' · דו-שלבי' : ''}`, detail: s.user_agent ?? undefined, ip: s.ip });
+  // Server-side trail of every session ever opened (survives logout/revoke/expiry; see migration 000189).
+  type T = { ts: string; session_id: string; aal: string | null; ip: string | null; user_agent: string | null };
+  const liveIds = new Set(linked.map((s) => s.id));
+  for (const t of ((trailQ as { data: T[] | null }).data ?? [])) if (!liveIds.has(t.session_id)) timeline.push({ ts: t.ts, kind: 'session', title: `נפתח חיבור (כבר לא פעיל)${t.aal === 'aal2' ? ' · דו-שלבי' : ''}`, detail: t.user_agent ?? undefined, ip: t.ip });
   for (const e of authEvents) timeline.push({ ts: e.ts, kind: 'auth', title: `אירוע התחברות: ${e.action}`, detail: e.provider ?? undefined, ip: e.ip });
   // collapse routes: one row per distinct path per hour
   const seen = new Set<string>();
@@ -113,7 +118,7 @@ export async function investigate(db: SupabaseClient, input: InvestigateInput) {
     exports: exports.slice(-40).map((a) => ({ ts: a.created_at, path: a.path })),
     incidents: incidents ?? [],
     gaps: [
-      ...(authEvents.length ? [] : ['יומן ההתחברויות המובנה של ספק ההזדהות לא נשמר במסד, לכן ניסיונות סיסמה כושלים נספרים רק מאז שהוספנו רישום משלנו.']),
+      ...(authEvents.length ? [] : ['יומן ההתחברויות המובנה של ספק ההזדהות לא נשמר במסד. כל חיבור חדש נרשם אצלנו בצד השרת, וניסיונות סיסמה כושלים נספרים מדף הכניסה, כך שניסיון שעוקף את דף הכניסה לא ייספר.']),
       ...(audit.some((a) => a.detail?.session) ? [] : ['פעולות ישנות נרשמו בלי מזהה חיבור; החל מעכשיו כל פעולת ניהול נרשמת עם מזהה החיבור.']),
     ],
   };

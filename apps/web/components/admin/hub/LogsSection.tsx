@@ -1,10 +1,11 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { ChevronLeft, ChevronRight, Database, Download, Eye, EyeOff, Loader2, RotateCw, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Database, Download, Eye, EyeOff, Loader2, RotateCw, Search, ShieldAlert } from 'lucide-react';
+import { IncidentSheet } from './IncidentSheet';
 import { opsGlassCardClass } from '@/components/admin/OpsPanel';
 import { cn } from '@/lib/cn';
-import { LOG_TYPE_HE, type LogRow, type LogType } from '@/lib/logs/query';
+import { LOG_TYPE_HE, type LogInv, type LogRow, type LogType } from '@/lib/logs/query';
 
 type StorageType = { table: string; label: string; klass: 'operational' | 'access' | 'legal'; klass_he: string; retention_he: string; bytes: number; rows: number };
 type Storage = { db_bytes: number; limit_bytes: number; level: 'ok' | 'warn' | 'critical'; last_run: { created_at: string; dry_run: boolean } | null; types: StorageType[] };
@@ -72,6 +73,7 @@ export function LogsSection() {
   const [data, setData] = useState<Page | null>(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState(false);
+  const [investigating, setInvestigating] = useState<LogInv | null>(null);
 
   const params = useCallback((extra: Record<string, string> = {}) => {
     const p = new URLSearchParams({ type, page: String(page), ...extra });
@@ -140,6 +142,12 @@ export function LogsSection() {
                     </span>
                     <span className="flex flex-wrap gap-2 text-[11px] text-slate-500" dir="ltr">
                       {r.actor ? <span>{r.actor}</span> : null}{r.ip ? <span>{r.ip}</span> : null}{r.country ? <span>{r.country}</span> : null}
+                      {r.inv && (r.inv.user || r.inv.session || r.inv.ipHash) ? (
+                        <button type="button" onClick={() => setInvestigating(r.inv!)} data-testid="log-investigate" dir="rtl"
+                          className="inline-flex min-h-8 items-center gap-1 rounded-lg border border-violet-300/60 bg-violet-500/10 px-2 text-[11.5px] font-semibold text-violet-800">
+                          <ShieldAlert size={12} />חקירה וחסימה
+                        </button>
+                      ) : null}
                     </span>
                   </li>
                 ))}
@@ -153,6 +161,7 @@ export function LogsSection() {
           </div>
         ) : null}
       </div>
+      {investigating ? <IncidentSheet inv={investigating} onClose={() => setInvestigating(null)} /> : null}
     </div>
   );
 }
