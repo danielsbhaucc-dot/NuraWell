@@ -8,7 +8,7 @@ import {
   openRequestsFor, PENDING_COOKIE, redeemEmailCode, redeemRecoveryCode, regenerateRecoveryCodes, requestForPendingCookie,
   revokeDevice, startLoginRequest, unusedCodeCount,
 } from '@/lib/ops/device-trust';
-import { sendLoginEmail, sendTelegramLoginCard } from '@/lib/ops/device-notify';
+import { alertOwnerSecurity, sendLoginEmail, sendTelegramLoginCard } from '@/lib/ops/device-notify';
 import { killSwitch } from '@/lib/ceo/security';
 
 export const runtime = 'nodejs';
@@ -98,6 +98,7 @@ export async function POST(request: Request) {
     if (a.action === 'email') return json({ ok: await sendLoginEmail(db, r) });
     const out = a.action === 'recovery' ? await redeemRecoveryCode(db, r, a.code) : await redeemEmailCode(db, r.id, a.code);
     if (!out.ok) return json({ error: out.error, locked: out.locked ?? false }, out.locked ? 429 : 400);
+    if (a.action === 'recovery') await alertOwnerSecurity(db, uid, `🔑 נעשה שימוש בקוד גיבוי כדי לאשר מכשיר חדש ל-Ops (${deviceLabel(request.headers.get('user-agent'))}). אם זה לא אתם, נעלו את המערכת ממסך היומנים.`, 'NuraWell: נעשה שימוש בקוד גיבוי').catch(() => undefined);
     const res = json({ ok: true });
     res.cookies.set(DEVICE_COOKIE, out.cookie, cookieOpts(DEVICE_MAX_AGE_S));
     res.cookies.set(PENDING_COOKIE, '', cookieOpts(0));
