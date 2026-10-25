@@ -107,7 +107,7 @@ export function SiteSettingsForm() {
     <div className="space-y-6">
       <div className="rounded-2xl border border-gc/35 bg-background-card/40 p-5 shadow-lg backdrop-blur-xl sm:p-6">
         <p className="flex items-center gap-2 text-sm font-bold text-ink">
-          <Globe className="h-4 w-4 text-emerald-700" aria-hidden />
+          <Globe className="h-4 w-4 text-primary-700" aria-hidden />
           כתובת האתר הציבורי
         </p>
         <p className="mt-2 text-sm leading-relaxed text-ink-soft">
@@ -125,9 +125,9 @@ export function SiteSettingsForm() {
         )}
       </div>
 
-      <div className="rounded-2xl border border-amber-400/35 bg-amber-50/50 p-5 shadow-md backdrop-blur-xl sm:p-6">
-        <p className="text-sm font-bold text-amber-950">שלב מעבר — הפניה ל־NuraWell</p>
-        <p className="mt-2 text-sm text-amber-950/90">
+      <div className="rounded-2xl border border-accent-400/35 bg-accent-50/50 p-5 shadow-md backdrop-blur-xl sm:p-6">
+        <p className="text-sm font-bold text-accent-950">שלב מעבר — הפניה ל־NuraWell</p>
+        <p className="mt-2 text-sm text-accent-950/90">
           לחיצה אחת מעדכנת את כתובת ההפניות ל־<strong className="font-semibold">{PRESET_PROD}</strong> ומעתיקה תזכורת לניקוי
           ההגדרה כשתסיים עם השלב.
         </p>
@@ -135,7 +135,7 @@ export function SiteSettingsForm() {
           type="button"
           disabled={busy}
           onClick={() => void previewProdPreset()}
-          className="mt-4 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-amber-600 px-6 py-3 font-bold text-gc shadow-lg transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+          className="mt-4 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-accent-600 px-6 py-3 font-bold text-gc shadow-lg transition hover:bg-accent-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
         >
           {busy ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden /> : <Sparkles className="h-5 w-5" aria-hidden />}
           בדוק מה ישתנה
@@ -155,7 +155,7 @@ export function SiteSettingsForm() {
                 type="button"
                 disabled={busy || !preview.live}
                 onClick={() => void applyProdPreset()}
-                className="min-h-11 rounded-xl bg-emerald-700 px-4 font-bold text-gc disabled:opacity-40"
+                className="min-h-11 rounded-xl bg-primary-700 px-4 font-bold text-gc disabled:opacity-40"
               >
                 אשר ושמור
               </button>
@@ -167,15 +167,15 @@ export function SiteSettingsForm() {
         )}
       </div>
 
-      <div className="rounded-xl border border-slate-300/60 bg-surface-sunken/80 p-4 text-sm text-ink-soft">
+      <div className="rounded-xl border border-ink-300/60 bg-surface-sunken/80 p-4 text-sm text-ink-soft">
         <p className="font-semibold text-ink">טקסט התזכורת (להעתקה ידנית)</p>
         <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap rounded-lg bg-background-card/90 p-3 text-xs leading-relaxed text-ink">
           {REMINDER_TEXT}
         </pre>
       </div>
 
-      {message && <p className="text-sm font-medium text-emerald-800">{message}</p>}
-      {error && <p className="text-sm font-medium text-red-700">{error}</p>}
+      {message && <p className="text-sm font-medium text-primary-800">{message}</p>}
+      {error && <p className="text-sm font-medium text-coral-700">{error}</p>}
     </div>
   );
 }

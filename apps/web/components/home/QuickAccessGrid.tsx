@@ -167,15 +167,15 @@ function TileFace({
         aria-hidden
         className="pointer-events-none absolute inset-x-1 top-px h-px"
         style={{
-          background: 'linear-gradient(90deg, transparent, rgba(248,251,246,0.65), transparent)',
+          background: 'linear-gradient(90deg, transparent, rgba(231,238,220,0.65), transparent)',
         }}
       />
       <span className="text-[14px] leading-none" aria-hidden>
         {tile.emoji}
       </span>
-      <Icon className="h-3.5 w-3.5 text-white/90" strokeWidth={2.4} aria-hidden />
+      <Icon className="h-3.5 w-3.5 text-on-dark/90" strokeWidth={2.4} aria-hidden />
       <span
-        className="text-center text-[10px] font-black leading-tight text-white"
+        className="text-center text-[10px] font-black leading-tight text-on-dark"
         style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
       >
         {tile.label}

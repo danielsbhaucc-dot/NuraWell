@@ -43,13 +43,13 @@ export function SosButton({ focusTasks = [], firstName = '', gender = '' }: SosB
         type="button"
         onClick={openDialog}
         dir="rtl"
-        className="touch-manipulation relative flex w-full items-center gap-3.5 p-4 text-start transition active:scale-[0.99] outline-hidden focus-visible:ring-2 focus-visible:ring-violet-400/35"
+        className="touch-manipulation relative flex w-full items-center gap-3.5 p-4 text-start transition active:scale-[0.99] outline-hidden focus-visible:ring-2 focus-visible:ring-iris-400/35"
         style={{
           borderRadius: '22px',
-          background: 'linear-gradient(165deg, #F7FBF4 0%, #faf7f4 55%, #f3f0ff 100%)',
+          background: 'linear-gradient(165deg, #e7eedc 0%, #e7eedc 55%, #e7eedc 100%)',
           border: '1px solid rgba(148, 130, 180, 0.18)',
           boxShadow:
-            'inset 0 1px 0 rgba(248,251,246,0.95), 0 8px 28px rgba(55, 45, 75, 0.07)',
+            'inset 0 1px 0 rgba(231,238,220,0.95), 0 8px 28px rgba(55, 45, 75, 0.07)',
         }}
       >
         <span
@@ -59,11 +59,11 @@ export function SosButton({ focusTasks = [], firstName = '', gender = '' }: SosB
             boxShadow: '0 6px 18px rgba(124, 58, 237, 0.28), inset 0 1px 0 rgba(255,255,255,0.25)',
           }}
         >
-          <HandHeart className="h-6 w-6 text-white" strokeWidth={2.2} />
+          <HandHeart className="h-6 w-6 text-on-dark" strokeWidth={2.2} />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-[15px] font-black text-slate-800">רגע, קשה לי עכשיו</span>
-          <span className="mt-1 block text-xs font-semibold leading-5 text-slate-600">
+          <span className="block text-[15px] font-black text-ink-800">רגע, קשה לי עכשיו</span>
+          <span className="mt-1 block text-xs font-semibold leading-5 text-ink-600">
             {pendingCount > 0
               ? `אלמוג כאן — ${pendingCount} משימות פתוחות על הראש`
               : 'אלמוג כאן לרגע קצר, לפני שהרגע בורח.'}

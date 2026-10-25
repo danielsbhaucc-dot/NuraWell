@@ -47,7 +47,7 @@ export function TaskChecklist({ tasks, completedTaskIds, lessonId, onTaskToggle 
         <div className="flex items-center gap-2.5">
           <div className="w-9 h-9 rounded-xl flex items-center justify-center"
             style={{ background: 'linear-gradient(145deg, #f59e0b, #f97316)', boxShadow: '0 4px 12px rgba(249,115,22,0.35)' }}>
-            <ClipboardList className=" text-white" />
+            <ClipboardList className=" text-on-dark" />
           </div>
           <div>
             <h3 className="font-black text-base leading-tight" style={{ color: '#1A1730' }}>משימות הפרק</h3>
@@ -89,7 +89,7 @@ export function TaskChecklist({ tasks, completedTaskIds, lessonId, onTaskToggle 
                 <AnimatePresence mode="wait" initial={false}>
                   {isDone ? (
                     <motion.div key="done" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} transition={{ type: 'spring', stiffness: 500, damping: 25 }}>
-                      <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                      <CheckCircle2 className="w-5 h-5 text-primary-500" />
                     </motion.div>
                   ) : (
                     <motion.div key="empty" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}>
@@ -117,7 +117,7 @@ export function TaskChecklist({ tasks, completedTaskIds, lessonId, onTaskToggle 
 
       {/* Error */}
       {error && (
-        <div className="flex items-center gap-2 mt-3 text-red-500 text-xs">
+        <div className="flex items-center gap-2 mt-3 text-coral-500 text-xs">
           <AlertCircle className="w-4 h-4 flex-shrink-0" />
           <span>{error}</span>
         </div>

@@ -280,10 +280,10 @@ export function AdminDemoAccessPanel() {
   return (
     <div className="space-y-6">
       {error ? (
-        <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
+        <p className="rounded-xl bg-coral-50 px-4 py-3 text-sm text-coral-700">{error}</p>
       ) : null}
 
-      <section className="rounded-3xl border border-teal-200/60 bg-linear-to-br from-teal-50/80 via-gc to-amber-50/50 p-5 shadow-xs sm:p-6">
+      <section className="rounded-3xl border border-secondary-200/60 bg-linear-to-br from-secondary-50/80 via-gc to-accent-50/50 p-5 shadow-xs sm:p-6">
         <h2 className="text-lg font-black text-ink">פתיחת גישת דמו</h2>
         <p className="mt-1 text-sm text-ink-soft">
           לינק + סיבה + שם אורח (אופציונלי) + סיסמה זמנית (אופציונלי). האורח רואה את נתוני משתמש היעד
@@ -402,19 +402,19 @@ export function AdminDemoAccessPanel() {
           type="button"
           disabled={busy === 'create' || !targetUserId || reason.trim().length < 2}
           onClick={createLink}
-          className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-teal-700 px-5 py-2.5 text-sm font-bold text-gc disabled:opacity-50 sm:w-auto"
+          className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-secondary-700 px-5 py-2.5 text-sm font-bold text-gc disabled:opacity-50 sm:w-auto"
         >
           {busy === 'create' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />}
           צור קישור גישה
         </button>
 
         {createdUrl ? (
-          <div className="mt-4 flex flex-wrap items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50/80 px-3 py-3">
-            <code className="min-w-0 flex-1 break-all text-xs text-emerald-950">{createdUrl}</code>
+          <div className="mt-4 flex flex-wrap items-center gap-2 rounded-2xl border border-primary-200 bg-primary-50/80 px-3 py-3">
+            <code className="min-w-0 flex-1 break-all text-xs text-primary-950">{createdUrl}</code>
             <button
               type="button"
               onClick={() => copyUrl(createdUrl)}
-              className="inline-flex items-center gap-1 rounded-xl bg-emerald-700 px-3 py-2 text-xs font-bold text-gc"
+              className="inline-flex items-center gap-1 rounded-xl bg-primary-700 px-3 py-2 text-xs font-bold text-gc"
             >
               {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
               {copied ? 'הועתק' : 'העתק'}
@@ -479,7 +479,7 @@ export function AdminDemoAccessPanel() {
                       type="button"
                       disabled={!!busy}
                       onClick={() => patchLink(link.id, 'disconnect_sessions')}
-                      className="inline-flex items-center gap-1 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900"
+                      className="inline-flex items-center gap-1 rounded-xl border border-accent-200 bg-accent-50 px-3 py-2 text-xs font-semibold text-accent-900"
                     >
                       {busy === `disconnect_sessions-${link.id}` ? (
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -492,7 +492,7 @@ export function AdminDemoAccessPanel() {
                       type="button"
                       disabled={!!busy || revoked}
                       onClick={() => patchLink(link.id, 'revoke')}
-                      className="inline-flex items-center gap-1 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-800 disabled:opacity-50"
+                      className="inline-flex items-center gap-1 rounded-xl border border-coral-200 bg-coral-50 px-3 py-2 text-xs font-semibold text-coral-800 disabled:opacity-50"
                     >
                       {busy === `revoke-${link.id}` ? (
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />

@@ -66,7 +66,7 @@ export function AlmogLessonFeedback({
 
   return (
     <AlmogInstantFeedback isCorrect={isCorrect} tone={tone}>
-      <p className="text-sm leading-relaxed text-gray-800">{text ?? fallback}</p>
+      <p className="text-sm leading-relaxed text-ink-800">{text ?? fallback}</p>
     </AlmogInstantFeedback>
   );
 }

@@ -193,9 +193,9 @@ export function LessonImmersivePath({
             variant="immersive"
           />
           <div className="flex-1 min-w-0">
-            <div className="mb-1 flex items-center justify-between text-[11px] font-bold text-white/60">
+            <div className="mb-1 flex items-center justify-between text-[11px] font-bold text-on-dark/60">
               <span className="inline-flex items-center gap-1 truncate">
-                <Sparkles className="h-3 w-3 shrink-0 text-emerald-300" />
+                <Sparkles className="h-3 w-3 shrink-0 text-primary-300" />
                 {lessonImmersiveModeLabel()}
               </span>
               <span className="shrink-0">{slideIdx + 1} / {totalSlides}</span>
@@ -252,7 +252,7 @@ export function LessonImmersivePath({
             'flex items-center gap-1.5 rounded-xl px-4 py-3 text-sm font-bold backdrop-blur-md transition',
             slideIdx === 0 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-background-card/15',
           )}
-          style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.22)', color: '#fff' }}
+          style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.22)', color: '#eef4ea' }}
         >
           <ChevronRight className="h-4 w-4" />
           הקודם
@@ -266,7 +266,7 @@ export function LessonImmersivePath({
               onClick={() => goTo(i)}
               className={cn(
                 'rounded-full transition-all',
-                i === slideIdx ? 'h-2 w-5 bg-emerald-400' : 'h-2 w-2 bg-background-card/35 hover:bg-background-card/55',
+                i === slideIdx ? 'h-2 w-5 bg-primary-400' : 'h-2 w-2 bg-background-card/35 hover:bg-background-card/55',
               )}
               aria-label={`שקף ${i + 1}`}
             />
@@ -277,7 +277,7 @@ export function LessonImmersivePath({
           <button
             type="button"
             onClick={goNext}
-            className="flex items-center gap-1.5 rounded-xl px-4 py-3 text-sm font-bold text-white transition hover:brightness-110"
+            className="flex items-center gap-1.5 rounded-xl px-4 py-3 text-sm font-bold text-on-dark transition hover:brightness-110"
             style={{
               background: 'linear-gradient(135deg, #047857, #14b8a6)',
               boxShadow: '0 8px 24px rgba(20,184,166,0.35)',
@@ -291,7 +291,7 @@ export function LessonImmersivePath({
             type="button"
             onClick={onToggleComplete}
             disabled={isTogglingComplete}
-            className="flex items-center gap-1.5 rounded-xl px-4 py-3 text-sm font-bold text-white transition hover:brightness-110 disabled:opacity-60"
+            className="flex items-center gap-1.5 rounded-xl px-4 py-3 text-sm font-bold text-on-dark transition hover:brightness-110 disabled:opacity-60"
             style={{
               background: 'linear-gradient(135deg, #047857, #14b8a6)',
               boxShadow: '0 8px 24px rgba(20,184,166,0.35)',
@@ -347,18 +347,18 @@ function LessonSlideContent({
           <GuideImmersiveAlmogHero size={92} />
         </div>
         <h2
-          className="mb-3 text-3xl font-black leading-snug text-white wrap-break-word whitespace-normal px-1"
+          className="mb-3 text-3xl font-black leading-snug text-on-dark wrap-break-word whitespace-normal px-1"
           style={{ textShadow: '0 4px 24px rgba(0,0,0,0.5)' }}
         >
           {lesson.title}
         </h2>
         {lesson.description ? (
-          <p className="mb-5 text-sm leading-relaxed text-white/75">{lesson.description}</p>
+          <p className="mb-5 text-sm leading-relaxed text-on-dark/75">{lesson.description}</p>
         ) : null}
         {lesson.duration_minutes ? (
-          <p className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm text-white/80 backdrop-blur-md"
+          <p className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm text-on-dark/80 backdrop-blur-md"
             style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.25)' }}>
-            <Clock className="h-4 w-4 text-emerald-200" />
+            <Clock className="h-4 w-4 text-primary-200" />
             {lesson.duration_minutes} דקות
           </p>
         ) : null}
@@ -372,13 +372,13 @@ function LessonSlideContent({
             lessonCompleted: progress.is_completed,
             source: 'lesson_page',
           })}
-          className="mt-5 inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold text-white/90 backdrop-blur-md transition hover:bg-background-card/15"
+          className="mt-5 inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold text-on-dark/90 backdrop-blur-md transition hover:bg-background-card/15"
           style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.28)' }}
         >
-          <MessageCircle className="h-3.5 w-3.5 text-emerald-200" />
+          <MessageCircle className="h-3.5 w-3.5 text-primary-200" />
           {lessonAlmogCta(gender)}
         </button>
-        <p className="mt-6 text-xs font-semibold text-white/50">{lessonPathIntroHint(gender)}</p>
+        <p className="mt-6 text-xs font-semibold text-on-dark/50">{lessonPathIntroHint(gender)}</p>
       </div>,
     );
   }
@@ -387,8 +387,8 @@ function LessonSlideContent({
     return wrap(
       <div className="guide-immersive-slide-card max-h-[55vh] overflow-y-auto rounded-3xl p-6">
         {slide.heading ? (
-          <h3 className="mb-3 flex items-center gap-2 text-xl font-black text-white">
-            <AlignLeft className="h-5 w-5 text-emerald-300" />
+          <h3 className="mb-3 flex items-center gap-2 text-xl font-black text-on-dark">
+            <AlignLeft className="h-5 w-5 text-primary-300" />
             {slide.heading}
           </h3>
         ) : null}
@@ -434,7 +434,7 @@ function LessonSlideContent({
     const linkCount = lesson.external_links.length;
     return wrap(
       <div className="guide-immersive-slide-card rounded-3xl p-5">
-        <h3 className={cn('text-lg font-black text-white', linkCount <= 2 ? 'mb-2' : 'mb-3')}>
+        <h3 className={cn('text-lg font-black text-on-dark', linkCount <= 2 ? 'mb-2' : 'mb-3')}>
           קישורים נוספים
         </h3>
         <div className="space-y-2">
@@ -444,10 +444,10 @@ function LessonSlideContent({
               href={link.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 rounded-xl p-3 text-sm font-semibold text-white transition hover:bg-background-card/10"
+              className="flex items-center gap-2 rounded-xl p-3 text-sm font-semibold text-on-dark transition hover:bg-background-card/10"
               style={{ border: '1px solid rgba(255,255,255,0.2)' }}
             >
-              <ExternalLinkIcon className="h-4 w-4 text-emerald-300" />
+              <ExternalLinkIcon className="h-4 w-4 text-primary-300" />
               {link.label}
             </a>
           ))}
@@ -499,12 +499,12 @@ function LessonSlideContent({
             boxShadow: '0 12px 32px rgba(20,184,166,0.35)',
           }}
         >
-          <CheckCircle2 className="h-8 w-8 text-white" />
+          <CheckCircle2 className="h-8 w-8 text-on-dark" />
         </motion.div>
-        <h2 className="mb-2 text-2xl font-black text-white">
+        <h2 className="mb-2 text-2xl font-black text-on-dark">
           {progress.is_completed ? 'כל הכבוד! סיימת את הפרק' : 'סיימת את מסע הפרק'}
         </h2>
-        <p className="mb-5 text-sm text-white/70">
+        <p className="mb-5 text-sm text-on-dark/70">
           {progress.is_completed ? 'אפשר להמשיך לפרק הבא או לחזור למדריך.' : 'סמן השלמה ותמשיך הלאה.'}
         </p>
         <div className="flex flex-col gap-2">
@@ -513,7 +513,7 @@ function LessonSlideContent({
               type="button"
               onClick={onToggleComplete}
               disabled={isTogglingComplete}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-3.5 text-base font-black text-white disabled:opacity-60"
+              className="inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-3.5 text-base font-black text-on-dark disabled:opacity-60"
               style={{
                 background: 'linear-gradient(135deg, #047857, #14b8a6)',
                 boxShadow: '0 10px 30px rgba(20,184,166,0.35)',
@@ -526,25 +526,25 @@ function LessonSlideContent({
           {nextLesson ? (
             <Link
               href={`/lessons/${nextLesson.id}`}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-3.5 text-base font-black text-white"
+              className="inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-3.5 text-base font-black text-on-dark"
               style={{
                 background: 'linear-gradient(135deg, #047857, #14b8a6)',
                 boxShadow: '0 10px 30px rgba(20,184,166,0.35)',
               }}
             >
-              <Play className="h-5 w-5" fill="white" />
+              <Play className="h-5 w-5" fill="#eef4ea" />
               הפרק הבא
             </Link>
           ) : null}
           <Link
             href={`/guides/${lesson.course_id}`}
-            className="inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-3.5 text-sm font-bold text-white"
+            className="inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-3.5 text-sm font-bold text-on-dark"
             style={{ background: 'rgba(255,255,255,0.14)', border: '1px solid rgba(255,255,255,0.3)' }}
           >
             חזרה למדריך
           </Link>
           {prevLesson ? (
-            <Link href={`/lessons/${prevLesson.id}`} className="text-xs font-semibold text-white/50 hover:text-white/75">
+            <Link href={`/lessons/${prevLesson.id}`} className="text-xs font-semibold text-on-dark/50 hover:text-on-dark/75">
               ← {prevLesson.title}
             </Link>
           ) : null}

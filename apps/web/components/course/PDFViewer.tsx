@@ -23,15 +23,15 @@ export function PDFViewer({ url, title, fileName }: PDFViewerProps) {
         <div className="flex items-center gap-2 min-w-0">
           <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
             style={{ background: 'rgba(239,68,68,0.2)', border: '1px solid rgba(239,68,68,0.3)' }}>
-            <FileText className="w-4 h-4 text-red-400" />
+            <FileText className="w-4 h-4 text-coral-400" />
           </div>
-          <p className="text-white text-sm font-semibold line-clamp-1">{displayName}</p>
+          <p className="text-on-dark text-sm font-semibold line-clamp-1">{displayName}</p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           <a
             href={url}
             download={fileName || 'document.pdf'}
-            className="w-8 h-8 rounded-xl flex items-center justify-center text-ink-faint hover:text-white transition-colors"
+            className="w-8 h-8 rounded-xl flex items-center justify-center text-ink-faint hover:text-on-dark transition-colors"
             style={{ background: 'rgba(255,255,255,0.08)' }}
             aria-label="הורד PDF"
           >
@@ -41,7 +41,7 @@ export function PDFViewer({ url, title, fileName }: PDFViewerProps) {
             href={url}
             target="_blank"
             rel="noopener noreferrer"
-            className="w-8 h-8 rounded-xl flex items-center justify-center text-ink-faint hover:text-white transition-colors"
+            className="w-8 h-8 rounded-xl flex items-center justify-center text-ink-faint hover:text-on-dark transition-colors"
             style={{ background: 'rgba(255,255,255,0.08)' }}
             aria-label="פתח בחלון חדש"
           >
@@ -56,7 +56,7 @@ export function PDFViewer({ url, title, fileName }: PDFViewerProps) {
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 z-10">
             <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
               style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.25)' }}>
-              <FileText className="w-8 h-8 text-red-400" />
+              <FileText className="w-8 h-8 text-coral-400" />
             </div>
             <p className="text-ink-faint text-sm">טוען מסמך...</p>
           </div>

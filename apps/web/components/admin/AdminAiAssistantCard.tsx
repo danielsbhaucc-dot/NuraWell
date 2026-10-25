@@ -73,21 +73,21 @@ export function AdminAiAssistantCard({ opsHref }: AdminAiAssistantCardProps) {
       dir="rtl"
       className="relative overflow-hidden rounded-3xl border border-gc/55 bg-background-card/35 px-4 py-3.5 shadow-[0_14px_40px_rgba(99,102,241,0.10)] backdrop-blur-2xl"
     >
-      <div className="pointer-events-none absolute -inset-e-10 -top-12 h-32 w-32 rounded-full bg-violet-400/20 blur-3xl" />
-      <div className="pointer-events-none absolute -inset-s-8 -bottom-12 h-32 w-32 rounded-full bg-emerald-400/20 blur-3xl" />
+      <div className="pointer-events-none absolute -inset-e-10 -top-12 h-32 w-32 rounded-full bg-iris-400/20 blur-3xl" />
+      <div className="pointer-events-none absolute -inset-s-8 -bottom-12 h-32 w-32 rounded-full bg-primary-400/20 blur-3xl" />
       <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-start gap-3 text-start">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-violet-600 to-emerald-500 text-gc shadow-lg">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-iris-600 to-primary-500 text-gc shadow-lg">
             <Icon className="h-5 w-5" />
           </span>
           <div className="min-w-0">
-            <p className="font-display text-base font-black text-slate-950">{copy.title}</p>
+            <p className="font-display text-base font-black text-ink-950">{copy.title}</p>
             <p className="mt-1 text-sm leading-relaxed text-ink-soft">{copy.body}</p>
           </div>
         </div>
         <Link prefetch={false}
           href={opsHref(copy.href)}
-          className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-2xl border border-violet-300/45 bg-violet-500/15 px-4 py-2 text-sm font-black text-violet-950 transition hover:bg-violet-500/20"
+          className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-2xl border border-iris-300/45 bg-iris-500/15 px-4 py-2 text-sm font-black text-iris-950 transition hover:bg-iris-500/20"
         >
           <Sparkles className="h-4 w-4" />
           {copy.cta}

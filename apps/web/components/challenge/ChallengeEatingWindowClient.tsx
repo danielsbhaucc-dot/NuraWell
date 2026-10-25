@@ -48,29 +48,29 @@ export function ChallengeEatingWindowClient() {
   if (loading || !config) {
     return (
       <div className="flex min-h-dvh items-center justify-center bg-[#05010f]">
-        <Loader2 className="h-10 w-10 animate-spin text-emerald-400" />
+        <Loader2 className="h-10 w-10 animate-spin text-primary-400" />
       </div>
     );
   }
 
   if (step === 'lesson' && lesson) {
     return (
-      <div className="min-h-dvh bg-[#05010f] px-4 py-8 text-white" dir="rtl">
+      <div className="min-h-dvh bg-[#05010f] px-4 py-8 text-on-dark" dir="rtl">
         <div className="mx-auto max-w-lg">
           <DemoExitBanner />
-          <p className="text-xs font-semibold uppercase tracking-wider text-emerald-400/80">
+          <p className="text-xs font-semibold uppercase tracking-wider text-primary-400/80">
             שיעור קצר לפני ההגדרה
           </p>
           <h1 className="mt-2 font-display text-2xl font-black">{lesson.title}</h1>
 
           <div
-            className="prose prose-invert prose-sm mt-6 max-w-none leading-relaxed text-white/80 prose-p:my-3 prose-strong:text-emerald-200"
+            className="prose prose-invert prose-sm mt-6 max-w-none leading-relaxed text-on-dark/80 prose-p:my-3 prose-strong:text-primary-200"
             // skipcq: JS-0440 -- HTML is sanitized (allowlist) on save and on render
             dangerouslySetInnerHTML={{ __html: sanitizeLessonHtml(lesson.body_html) }}
           />
 
           {lesson.video_url ? (
-            <div className="mt-6 overflow-hidden rounded-2xl border border-white/10">
+            <div className="mt-6 overflow-hidden rounded-2xl border border-on-dark/10">
               <iframe
                 title={lesson.title}
                 src={lesson.video_url}
@@ -83,7 +83,7 @@ export function ChallengeEatingWindowClient() {
           <button
             type="button"
             onClick={() => setStep('confirm')}
-            className="mt-8 w-full rounded-2xl bg-emerald-500 py-4 font-bold"
+            className="mt-8 w-full rounded-2xl bg-primary-500 py-4 font-bold"
           >
             הבנתי — בואו נגדיר את החלון שלי
           </button>
@@ -93,14 +93,14 @@ export function ChallengeEatingWindowClient() {
   }
 
   return (
-    <div className="min-h-dvh bg-[#05010f] px-4 py-8 text-white" dir="rtl">
+    <div className="min-h-dvh bg-[#05010f] px-4 py-8 text-on-dark" dir="rtl">
       <div className="mx-auto max-w-lg">
         <DemoExitBanner />
         {lesson ? (
           <button
             type="button"
             onClick={() => setStep('lesson')}
-            className="mb-4 inline-flex items-center gap-1 text-sm text-white/50 hover:text-white/80"
+            className="mb-4 inline-flex items-center gap-1 text-sm text-on-dark/50 hover:text-on-dark/80"
           >
             <ChevronLeft className="h-4 w-4" />
             חזרה לשיעור
@@ -108,25 +108,25 @@ export function ChallengeEatingWindowClient() {
         ) : null}
 
         <h1 className="font-display text-2xl font-black">חלון האכילה שלך</h1>
-        <p className="mt-2 text-white/60">12:12 — מותאם אישית לפי השעות שהגדרת בהרשמה.</p>
+        <p className="mt-2 text-on-dark/60">12:12 — מותאם אישית לפי השעות שהגדרת בהרשמה.</p>
 
-        <div className="mt-8 space-y-4 rounded-3xl border border-white/10 bg-background-card/5 p-6">
+        <div className="mt-8 space-y-4 rounded-3xl border border-on-dark/10 bg-background-card/5 p-6">
           <div className="flex justify-between text-lg">
-            <span className="text-white/50">פתיחה</span>
+            <span className="text-on-dark/50">פתיחה</span>
             <span className="font-bold tabular-nums">{config.start}</span>
           </div>
           <div className="flex justify-between text-lg">
-            <span className="text-white/50">סגירה</span>
+            <span className="text-on-dark/50">סגירה</span>
             <span className="font-bold tabular-nums">{config.end}</span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-white/40">ארוחה אחרונה מומלצת</span>
-            <span className="tabular-nums text-emerald-300">{config.last_meal_recommended}</span>
+            <span className="text-on-dark/40">ארוחה אחרונה מומלצת</span>
+            <span className="tabular-nums text-primary-300">{config.last_meal_recommended}</span>
           </div>
         </div>
 
         {suggestions.map((s) => (
-          <p key={s} className="mt-4 rounded-xl bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+          <p key={s} className="mt-4 rounded-xl bg-accent-500/10 px-4 py-3 text-sm text-accent-100">
             {s}
           </p>
         ))}
@@ -135,7 +135,7 @@ export function ChallengeEatingWindowClient() {
           type="button"
           disabled={saving}
           onClick={save}
-          className="mt-8 w-full rounded-2xl bg-emerald-500 py-4 font-bold disabled:opacity-60"
+          className="mt-8 w-full rounded-2xl bg-primary-500 py-4 font-bold disabled:opacity-60"
         >
           {saving ? 'שומר...' : 'אישור — בואו נתחיל!'}
         </button>

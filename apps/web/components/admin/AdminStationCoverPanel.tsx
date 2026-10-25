@@ -134,13 +134,13 @@ export function AdminStationCoverPanel({
       ) : null}
 
       {error ? (
-        <p className="mx-4 mb-3 inline-flex items-start gap-2 rounded-xl border border-red-200/80 bg-red-500/10 px-3 py-2 text-sm text-red-900">
+        <p className="mx-4 mb-3 inline-flex items-start gap-2 rounded-xl border border-coral-200/80 bg-coral-500/10 px-3 py-2 text-sm text-coral-900">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
           {error}
         </p>
       ) : null}
       {success ? (
-        <p className="mx-4 mb-3 inline-flex items-center gap-2 rounded-xl border border-emerald-200/80 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-900">
+        <p className="mx-4 mb-3 inline-flex items-center gap-2 rounded-xl border border-primary-200/80 bg-primary-500/10 px-3 py-2 text-sm text-primary-900">
           <CheckCircle2 className="h-4 w-4" />
           {success}
         </p>
@@ -237,7 +237,7 @@ function CoverPreview({
             type="button"
             onClick={onRemove}
             disabled={removeBusy}
-            className={`${opsGlassBtnDangerClass} text-gc border-gc/30 bg-black/20 hover:bg-black/30`}
+            className={`${opsGlassBtnDangerClass} text-gc border-gc/30 bg-forest-950/20 hover:bg-forest-950/30`}
           >
             {removeBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
             הסר תמונה

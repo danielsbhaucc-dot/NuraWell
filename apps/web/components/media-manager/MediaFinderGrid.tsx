@@ -46,14 +46,14 @@ export function MediaFinderGrid({
             onClick={() => onSelectFile(item)}
             className={cn(
               'group flex w-full flex-col items-center gap-2 rounded-2xl p-2 text-center transition',
-              'hover:bg-background-card/30 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-400/50',
-              selectedId === item.id && 'bg-background-card/35 ring-2 ring-emerald-400/55'
+              'hover:bg-background-card/30 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary-400/50',
+              selectedId === item.id && 'bg-background-card/35 ring-2 ring-primary-400/55'
             )}
           >
-            <div className="relative w-full overflow-hidden rounded-xl border border-white/40 bg-background-card/20 shadow-xs transition group-hover:border-emerald-300/50">
+            <div className="relative w-full overflow-hidden rounded-xl border border-on-dark/40 bg-background-card/20 shadow-xs transition group-hover:border-primary-300/50">
               <AssetThumb asset={item} />
             </div>
-            <span className="line-clamp-2 w-full px-1 text-[11px] font-bold leading-tight text-slate-800">
+            <span className="line-clamp-2 w-full px-1 text-[11px] font-bold leading-tight text-ink-800">
               {item.title ?? 'ללא שם'}
             </span>
           </button>
@@ -82,21 +82,21 @@ function AssetThumb({ asset }: { asset: MediaAsset }) {
   }
   if (asset.kind === 'audio') {
     return (
-      <div className="flex aspect-square items-center justify-center bg-emerald-900/15">
-        <Music className="h-9 w-9 text-emerald-800/70" />
+      <div className="flex aspect-square items-center justify-center bg-primary-900/15">
+        <Music className="h-9 w-9 text-primary-800/70" />
       </div>
     );
   }
   if (asset.kind === 'video') {
     return (
       <div className="flex aspect-square items-center justify-center">
-        <Film className="h-9 w-9 text-violet-800/70" />
+        <Film className="h-9 w-9 text-iris-800/70" />
       </div>
     );
   }
   return (
     <div className="flex aspect-square items-center justify-center">
-      <FileText className="h-9 w-9 text-slate-600" />
+      <FileText className="h-9 w-9 text-ink-600" />
     </div>
   );
 }

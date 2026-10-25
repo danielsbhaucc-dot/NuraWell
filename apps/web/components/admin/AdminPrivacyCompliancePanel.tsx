@@ -19,10 +19,10 @@ const fmt = (iso: string | null | undefined) =>
   iso ? new Intl.DateTimeFormat('he-IL', { timeZone: 'Asia/Jerusalem', day: 'numeric', month: 'numeric', year: 'numeric' }).format(new Date(iso)) : '—';
 
 const STATE: Record<ItemState, { label: string; cls: string; Icon: typeof Circle }> = {
-  done: { label: 'הושלם', cls: 'border-emerald-300/60 bg-emerald-500/15 text-emerald-800', Icon: CheckCircle2 },
-  partial: { label: 'בתהליך', cls: 'border-amber-300/60 bg-amber-400/15 text-amber-800', Icon: Clock },
+  done: { label: 'הושלם', cls: 'border-primary-300/60 bg-primary-500/15 text-primary-800', Icon: CheckCircle2 },
+  partial: { label: 'בתהליך', cls: 'border-accent-300/60 bg-accent-400/15 text-accent-800', Icon: Clock },
   open: { label: 'פתוח', cls: 'border-gc/60 bg-background-card/40 text-ink-soft', Icon: Circle },
-  overdue: { label: 'דורש טיפול', cls: 'border-rose-300/60 bg-rose-500/10 text-rose-800', Icon: AlertTriangle },
+  overdue: { label: 'דורש טיפול', cls: 'border-coral-300/60 bg-coral-500/10 text-coral-800', Icon: AlertTriangle },
 };
 
 function Badge({ s }: { s: ItemState }) {
@@ -32,12 +32,12 @@ function Badge({ s }: { s: ItemState }) {
 
 function Toggle({ checked, label, busy, onChange }: { checked: boolean; label: string; busy: boolean; onChange: (v: boolean) => void }) {
   return (
-    <label className={cn('flex min-h-11 cursor-pointer items-center gap-3 rounded-2xl border px-3 py-2 text-sm transition', checked ? 'border-emerald-300/60 bg-emerald-500/10' : 'border-gc/50 bg-background-card/30 hover:bg-background-card/50')}>
+    <label className={cn('flex min-h-11 cursor-pointer items-center gap-3 rounded-2xl border px-3 py-2 text-sm transition', checked ? 'border-primary-300/60 bg-primary-500/10' : 'border-gc/50 bg-background-card/30 hover:bg-background-card/50')}>
       <input type="checkbox" className="peer sr-only" checked={checked} disabled={busy} onChange={(e) => onChange(e.target.checked)} />
-      <span aria-hidden className={cn('grid size-5 shrink-0 place-items-center rounded-md border transition peer-focus-visible:ring-2 peer-focus-visible:ring-emerald-400/50', checked ? 'border-emerald-500 bg-emerald-500 text-background-card' : 'border-slate-300 bg-background-card/60')}>
+      <span aria-hidden className={cn('grid size-5 shrink-0 place-items-center rounded-md border transition peer-focus-visible:ring-2 peer-focus-visible:ring-primary-400/50', checked ? 'border-primary-500 bg-primary-500 text-background-card' : 'border-ink-300 bg-background-card/60')}>
         {busy ? <Loader2 size={12} className="animate-spin" /> : checked ? '✓' : null}
       </span>
-      <span className={cn('font-semibold', checked ? 'text-emerald-900' : 'text-ink')}>{label}</span>
+      <span className={cn('font-semibold', checked ? 'text-primary-900' : 'text-ink')}>{label}</span>
     </label>
   );
 }
@@ -55,8 +55,8 @@ function ItemCard({ n, item, data, rows, busy, set }: { n: number; item: Complia
   const pid = `pc-${item.key}`;
   return (
     <div className={cn('transition-colors', open && 'bg-background-card/30')}>
-      <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-controls={pid} className="flex min-h-14 w-full items-center gap-3 px-4 py-3.5 text-start transition hover:bg-background-card/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-400/50 sm:px-5">
-        <span className={cn('grid size-8 shrink-0 place-items-center rounded-xl font-display text-xs font-black shadow-sm', state === 'done' ? 'bg-emerald-500/15 text-emerald-700' : 'bg-gradient-to-br from-emerald-500 to-teal-600 text-background-card shadow-emerald-600/30')}>{String(n).padStart(2, '0')}</span>
+      <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-controls={pid} className="flex min-h-14 w-full items-center gap-3 px-4 py-3.5 text-start transition hover:bg-background-card/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-400/50 sm:px-5">
+        <span className={cn('grid size-8 shrink-0 place-items-center rounded-xl font-display text-xs font-black shadow-sm', state === 'done' ? 'bg-primary-500/15 text-primary-700' : 'bg-gradient-to-br from-primary-500 to-secondary-600 text-background-card shadow-primary-600/30')}>{String(n).padStart(2, '0')}</span>
         <span className="min-w-0 flex-1">
           <span className={cn('block font-display text-[15px] font-bold leading-snug', state === 'done' ? 'text-ink-soft' : 'text-ink')}>{item.title}</span>
           {due ? <span className="mt-0.5 block text-[11px] font-semibold text-ink-faint">{due}</span> : null}
@@ -66,9 +66,9 @@ function ItemCard({ n, item, data, rows, busy, set }: { n: number; item: Complia
       </button>
       {open ? (
         <div id={pid} className="space-y-4 px-4 pb-5 pt-1 sm:px-5 sm:ps-16">
-          <div className="rounded-2xl border border-amber-300/40 bg-amber-50/40 px-3.5 py-3"><p className="text-[11px] font-black tracking-wide text-amber-700">למה זה חשוב</p><p className="mt-1 text-sm leading-relaxed text-ink-soft">{item.why}</p></div>
-          <p className="text-[11px] font-black tracking-wide text-emerald-700">איך עושים</p>
-          <ol className="-mt-2 list-decimal space-y-1.5 ps-5 text-sm leading-relaxed text-ink-soft marker:font-bold marker:text-emerald-600">{item.how.map((h) => <li key={h}>{h}</li>)}</ol>
+          <div className="rounded-2xl border border-accent-300/40 bg-accent-50/40 px-3.5 py-3"><p className="text-[11px] font-black tracking-wide text-accent-700">למה זה חשוב</p><p className="mt-1 text-sm leading-relaxed text-ink-soft">{item.why}</p></div>
+          <p className="text-[11px] font-black tracking-wide text-primary-700">איך עושים</p>
+          <ol className="-mt-2 list-decimal space-y-1.5 ps-5 text-sm leading-relaxed text-ink-soft marker:font-bold marker:text-primary-600">{item.how.map((h) => <li key={h}>{h}</li>)}</ol>
 
           {item.auto === 'thresholds' ? (
             <div className="grid gap-2 sm:grid-cols-2">
@@ -77,13 +77,13 @@ function ItemCard({ n, item, data, rows, busy, set }: { n: number; item: Complia
                 return (
                   <div key={t.at} className="rounded-2xl border border-gc/50 bg-background-card/30 p-3">
                     <div className="flex items-center justify-between text-xs font-bold text-ink-soft"><span className="inline-flex items-center gap-1"><Users size={13} />{t.l}</span><span dir="ltr">{u.toLocaleString('he-IL')} / {t.at.toLocaleString('he-IL')}</span></div>
-                    <div className="mt-2 h-2 overflow-hidden rounded-full bg-hairline/60"><div className={cn('h-full rounded-full', u >= t.at ? 'bg-rose-500' : 'bg-emerald-500/80')} style={{ width: `${Math.max(pct, 1.5)}%` }} /></div>
+                    <div className="mt-2 h-2 overflow-hidden rounded-full bg-hairline/60"><div className={cn('h-full rounded-full', u >= t.at ? 'bg-coral-500' : 'bg-primary-500/80')} style={{ width: `${Math.max(pct, 1.5)}%` }} /></div>
                   </div>
                 );
               })}
             </div>
           ) : null}
-          {item.auto === 'access_log' ? <p className="rounded-2xl border border-emerald-300/50 bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-900">{data.facts.auditEvents30d.toLocaleString('he-IL')} פעולות נרשמו ב־30 הימים האחרונים</p> : null}
+          {item.auto === 'access_log' ? <p className="rounded-2xl border border-primary-300/50 bg-primary-500/10 px-3 py-2 text-xs font-semibold text-primary-900">{data.facts.auditEvents30d.toLocaleString('he-IL')} פעולות נרשמו ב־30 הימים האחרונים</p> : null}
           {item.auto === 'backup_drill' ? (
             <div className="rounded-2xl border border-gc/50 bg-background-card/30 px-3 py-2 text-xs leading-relaxed text-ink-soft">
               {data.facts.drill ? (
@@ -102,7 +102,7 @@ function ItemCard({ n, item, data, rows, busy, set }: { n: number; item: Complia
                 return (
                   <div key={k} className="flex items-center gap-1">
                     <div className="flex-1"><Toggle checked={rowDone(item, rows.get(k))} busy={busy === k} label={s.label} onChange={(v) => set(k, v)} /></div>
-                    {s.href ? <a href={s.href} target="_blank" rel="noopener noreferrer" className="grid size-11 shrink-0 place-items-center rounded-2xl text-ink-faint hover:bg-background-card/50 hover:text-emerald-700" aria-label={`פתיחת ההסכם של ${s.label}`}><ExternalLink size={16} /></a> : null}
+                    {s.href ? <a href={s.href} target="_blank" rel="noopener noreferrer" className="grid size-11 shrink-0 place-items-center rounded-2xl text-ink-faint hover:bg-background-card/50 hover:text-primary-700" aria-label={`פתיחת ההסכם של ${s.label}`}><ExternalLink size={16} /></a> : null}
                   </div>
                 );
               })}
@@ -185,24 +185,24 @@ export function AdminPrivacyCompliancePanel() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 pb-10">
-      <div className="sticky top-2 z-20 -mx-1 rounded-3xl border border-white/60 bg-background-card/70 p-2.5 shadow-lg shadow-slate-900/5 backdrop-blur-xl">
+      <div className="sticky top-2 z-20 -mx-1 rounded-3xl border border-on-dark/60 bg-background-card/70 p-2.5 shadow-lg shadow-ink-900/5 backdrop-blur-xl">
         <label className="relative block">
           <span className="sr-only">חיפוש במשימות ובמסמכים</span>
           <Search size={16} aria-hidden className="pointer-events-none absolute start-3.5 top-1/2 -translate-y-1/2 text-ink-faint" />
-          <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="חיפוש משימה או מסמך…" className="h-11 w-full rounded-2xl border border-gc/50 bg-background-card/80 pe-10 ps-10 text-sm font-semibold text-ink placeholder:text-ink-faint focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/30 [&::-webkit-search-cancel-button]:hidden" />
+          <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="חיפוש משימה או מסמך…" className="h-11 w-full rounded-2xl border border-gc/50 bg-background-card/80 pe-10 ps-10 text-sm font-semibold text-ink placeholder:text-ink-faint focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-400/30 [&::-webkit-search-cancel-button]:hidden" />
           {q ? <button type="button" onClick={() => setQ('')} aria-label="ניקוי החיפוש" className="absolute end-1.5 top-1/2 grid size-8 -translate-y-1/2 place-items-center rounded-xl text-ink-faint hover:bg-surface"><X size={15} /></button> : null}
         </label>
         <div role="radiogroup" aria-label="סינון לפי סטטוס" className="mt-2 flex gap-1.5 overflow-x-auto">
           {FILTERS.map((f) => (
-            <button key={f.k} type="button" role="radio" aria-checked={filter === f.k} onClick={() => setFilter(f.k)} className={cn('h-9 shrink-0 rounded-full border px-3.5 text-xs font-bold transition', filter === f.k ? 'border-emerald-500 bg-gradient-to-br from-emerald-500 to-teal-600 text-background-card shadow-md shadow-emerald-600/25' : 'border-gc/50 bg-background-card/60 text-ink-soft hover:bg-background-card')}>{f.l}</button>
+            <button key={f.k} type="button" role="radio" aria-checked={filter === f.k} onClick={() => setFilter(f.k)} className={cn('h-9 shrink-0 rounded-full border px-3.5 text-xs font-bold transition', filter === f.k ? 'border-primary-500 bg-gradient-to-br from-primary-500 to-secondary-600 text-background-card shadow-md shadow-primary-600/25' : 'border-gc/50 bg-background-card/60 text-ink-soft hover:bg-background-card')}>{f.l}</button>
           ))}
           {searching ? <span className="ms-auto self-center whitespace-nowrap ps-2 text-[11px] font-semibold text-ink-faint">{total} תוצאות</span> : null}
         </div>
       </div>
-      <Group n={1} open={searching ? false : openSec.has(1)} hidden={searching} onToggle={toggleSec} chips={<span className="rounded-full border border-emerald-300/60 bg-emerald-500/15 px-2 py-0.5 text-[11px] font-black text-emerald-800" dir="ltr">{done}/{states.length}</span>} title="סיכום התקדמות" sub="הסטטוס נשמר ומתעדכן אוטומטית. כל סימון נרשם ביומן הפעולות">
+      <Group n={1} open={searching ? false : openSec.has(1)} hidden={searching} onToggle={toggleSec} chips={<span className="rounded-full border border-primary-300/60 bg-primary-500/15 px-2 py-0.5 text-[11px] font-black text-primary-800" dir="ltr">{done}/{states.length}</span>} title="סיכום התקדמות" sub="הסטטוס נשמר ומתעדכן אוטומטית. כל סימון נרשם ביומן הפעולות">
         <div className={cn(opsGlassCardClass, 'space-y-4')}>
           <div className="flex items-center gap-4">
-            <div className="relative grid size-20 shrink-0 place-items-center rounded-full shadow-lg shadow-emerald-600/15" style={{ background: `conic-gradient(#10b981 ${(done / states.length) * 360}deg, rgba(148,163,184,.22) 0)` }}>
+            <div className="relative grid size-20 shrink-0 place-items-center rounded-full shadow-lg shadow-primary-600/15" style={{ background: `conic-gradient(#10b981 ${(done / states.length) * 360}deg, rgba(148,163,184,.22) 0)` }}>
               <div className="grid size-[62px] place-items-center rounded-full bg-background-card"><span className="font-display text-lg font-black text-ink" dir="ltr">{done}/{states.length}</span></div>
             </div>
             <div className="min-w-0 flex-1">
@@ -219,7 +219,7 @@ export function AdminPrivacyCompliancePanel() {
           </div>
         </div>
       </Group>
-      {error ? <p role="alert" className="rounded-2xl border border-rose-300/50 bg-rose-500/10 px-3 py-2 text-sm font-semibold text-rose-800">{error}</p> : null}
+      {error ? <p role="alert" className="rounded-2xl border border-coral-300/50 bg-coral-500/10 px-3 py-2 text-sm font-semibold text-coral-800">{error}</p> : null}
 
       <Group n={2} open={secOpen(2, ownerF.length)} hidden={searching && !ownerF.length} onToggle={toggleSec} chips={chipsFor(owner)} title="המשימות שלך" sub="מה שרק בעל המאגר יכול לעשות. לחיצה על שורה פותחת הסבר">
         <div className={cn(opsGlassCardClass, 'divide-y divide-gc/40 overflow-hidden p-0 sm:p-0')}>
@@ -240,8 +240,8 @@ export function AdminPrivacyCompliancePanel() {
               const pct = Math.min(100, (u / t.at) * 100);
               return (
                 <div key={t.at} className={cn(opsGlassCardClass, 'space-y-3')}>
-                  <div className="flex items-start justify-between gap-2"><span className="inline-flex items-center gap-1.5 text-sm font-bold text-ink"><Users size={15} className="text-emerald-600" />{t.l}</span><Badge s={u >= t.at ? 'overdue' : 'done'} /></div>
-                  <div className="h-2.5 overflow-hidden rounded-full bg-hairline/60"><div className={cn('h-full rounded-full', u >= t.at ? 'bg-rose-500' : 'bg-emerald-500/80')} style={{ width: `${Math.max(pct, 1.5)}%` }} /></div>
+                  <div className="flex items-start justify-between gap-2"><span className="inline-flex items-center gap-1.5 text-sm font-bold text-ink"><Users size={15} className="text-primary-600" />{t.l}</span><Badge s={u >= t.at ? 'overdue' : 'done'} /></div>
+                  <div className="h-2.5 overflow-hidden rounded-full bg-hairline/60"><div className={cn('h-full rounded-full', u >= t.at ? 'bg-coral-500' : 'bg-primary-500/80')} style={{ width: `${Math.max(pct, 1.5)}%` }} /></div>
                   <p className="text-xs font-semibold text-ink-faint" dir="ltr" style={{ textAlign: 'end' }}>{u.toLocaleString('he-IL')} / {t.at.toLocaleString('he-IL')}</p>
                 </div>
               );
@@ -255,7 +255,7 @@ export function AdminPrivacyCompliancePanel() {
           {docsF.map((d) => (
             <div key={d.slug} className={cn(opsGlassCardClass, 'flex flex-col gap-3 p-3.5 sm:p-4')}>
               <div className="flex items-start gap-2.5">
-                <span className={cn('grid size-9 shrink-0 place-items-center rounded-xl', d.sensitive ? 'bg-amber-400/15 text-amber-700' : 'bg-emerald-500/10 text-emerald-700')}>{d.sensitive ? <Lock size={16} /> : <FileText size={16} />}</span>
+                <span className={cn('grid size-9 shrink-0 place-items-center rounded-xl', d.sensitive ? 'bg-accent-400/15 text-accent-700' : 'bg-primary-500/10 text-primary-700')}>{d.sensitive ? <Lock size={16} /> : <FileText size={16} />}</span>
                 <div className="min-w-0 flex-1"><p className="font-display text-[11px] font-black text-ink-faint" dir="ltr" style={{ textAlign: 'start' }}>{d.slug.slice(0, 2)}</p><p className="text-sm font-bold leading-snug text-ink">{d.title}</p></div>
               </div>
               <div className="mt-auto flex gap-2">
@@ -269,7 +269,7 @@ export function AdminPrivacyCompliancePanel() {
       </Group>
       {searching && total === 0 ? (
         <div className={cn(opsGlassCardClass, 'flex flex-col items-center gap-3 py-12 text-center')}>
-          <span className="grid size-14 place-items-center rounded-2xl bg-emerald-500/10 ring-1 ring-emerald-500/20 text-emerald-700 shadow-inner"><SearchX size={24} /></span>
+          <span className="grid size-14 place-items-center rounded-2xl bg-primary-500/10 ring-1 ring-primary-500/20 text-primary-700 shadow-inner"><SearchX size={24} /></span>
           <p className="font-display text-base font-black text-ink">לא מצאתי כלום</p>
           <p className="max-w-xs text-xs leading-relaxed text-ink-faint">נסה מילה אחרת או סינון אחר.</p>
           <button type="button" onClick={() => { setQ(''); setFilter('all'); }} className={opsGlassBtnClass}>ניקוי החיפוש</button>
@@ -290,8 +290,8 @@ function Group({ n, title, sub, open, hidden, onToggle, chips, children }: { n: 
   if (hidden) return null;
   return (
     <section className="space-y-4" aria-labelledby={`pg-${n}`}>
-      <button type="button" onClick={() => onToggle(n)} aria-expanded={open} aria-controls={`pgb-${n}`} className="group flex w-full items-center gap-3 rounded-2xl text-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/50">
-        <span className="grid size-10 shrink-0 place-items-center rounded-2xl border border-amber-300/60 bg-gradient-to-br from-amber-200/70 to-amber-400/40 font-display text-sm font-black text-amber-900 shadow-sm shadow-amber-500/20">{String(n).padStart(2, '0')}</span>
+      <button type="button" onClick={() => onToggle(n)} aria-expanded={open} aria-controls={`pgb-${n}`} className="group flex w-full items-center gap-3 rounded-2xl text-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400/50">
+        <span className="grid size-10 shrink-0 place-items-center rounded-2xl border border-accent-300/60 bg-gradient-to-br from-accent-200/70 to-accent-400/40 font-display text-sm font-black text-accent-900 shadow-sm shadow-accent-500/20">{String(n).padStart(2, '0')}</span>
         <span className="min-w-0 flex-1">
           <span id={`pg-${n}`} className="block font-display text-base font-black text-ink sm:text-lg">{title}</span>
           <span className="block text-xs leading-relaxed text-ink-faint">{sub}</span>

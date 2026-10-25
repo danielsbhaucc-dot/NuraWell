@@ -41,7 +41,7 @@ export default async function Page() {
                 <span>{t.priority === 'high' ? '🔴 ' : ''}{t.title}{t.due_date ? ` · עד ${t.due_date}` : ''}</span>
                 <form action={taskAction} className="flex gap-1">
                   <input type="hidden" name="id" value={t.id} />
-                  <button name="kind" value="done" className="rounded-lg bg-emerald-700 px-2 py-1 text-xs text-gc">✅ בוצע</button>
+                  <button name="kind" value="done" className="rounded-lg bg-primary-700 px-2 py-1 text-xs text-gc">✅ בוצע</button>
                   <button name="kind" value="day" className="rounded-lg border px-2 py-1 text-xs">מחר</button>
                   <button name="kind" value="week" className="rounded-lg border px-2 py-1 text-xs">שבוע</button>
                 </form>

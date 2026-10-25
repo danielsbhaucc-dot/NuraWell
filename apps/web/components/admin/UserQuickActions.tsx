@@ -22,14 +22,14 @@ export function UserQuickActions({ userId }: { userId: string | null }) {
         <span>השהיית התראות ל-</span>
         <input type="number" min={0} max={60} value={days} onChange={(e) => setDays(Number(e.target.value))} className="w-16 rounded-lg border px-2 py-1" />
         <span>ימים</span>
-        <button className="rounded-xl bg-slate-900 px-3 py-1.5 text-gc" onClick={() => call({ action: 'pause', days }, days ? `ההתראות הושהו ל-${days} ימים` : 'ההתראות חודשו')}>
+        <button className="rounded-xl bg-ink-900 px-3 py-1.5 text-gc" onClick={() => call({ action: 'pause', days }, days ? `ההתראות הושהו ל-${days} ימים` : 'ההתראות חודשו')}>
           {days ? 'השהה' : 'חדש התראות'}
         </button>
       </div>
       <div className="space-y-2">
         <input placeholder="כותרת התראה" value={title} onChange={(e) => setTitle(e.target.value)} className="w-full rounded-lg border px-2 py-1.5" />
         <textarea placeholder="תוכן (בקול של אלמוג)" value={body} onChange={(e) => setBody(e.target.value)} className="w-full rounded-lg border px-2 py-1.5" rows={2} />
-        <button disabled={title.length < 2 || body.length < 2} className="rounded-xl bg-emerald-700 px-3 py-1.5 text-gc disabled:opacity-50" onClick={() => call({ action: 'notify', title, body }, 'ההתראה נשלחה')}>
+        <button disabled={title.length < 2 || body.length < 2} className="rounded-xl bg-primary-700 px-3 py-1.5 text-gc disabled:opacity-50" onClick={() => call({ action: 'notify', title, body }, 'ההתראה נשלחה')}>
           שליחת התראה
         </button>
       </div>

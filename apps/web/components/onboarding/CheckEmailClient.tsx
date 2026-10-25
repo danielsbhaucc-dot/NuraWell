@@ -123,59 +123,59 @@ export function CheckEmailClient({
   return (
     <section className="onboarding-page-inner max-w-md w-full text-center">
       <section
-        className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-emerald-500/20 flex items-center justify-center"
+        className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-primary-500/20 flex items-center justify-center"
         aria-hidden
       >
-        <Mail className="w-8 h-8 text-emerald-300" />
+        <Mail className="w-8 h-8 text-primary-300" />
       </section>
       <h1
-        className="text-2xl font-black text-white mb-3"
+        className="text-2xl font-black text-on-dark mb-3"
         style={{ fontFamily: 'Rubik, Heebo, sans-serif' }}
       >
         {copy.title}
       </h1>
-      <p className="text-emerald-50/85 text-[15px] leading-relaxed mb-1">
+      <p className="text-primary-50/85 text-[15px] leading-relaxed mb-1">
         {copy.lead}
         {email ? (
           <>
             <br />
-            <span className="text-emerald-200/90 text-sm" dir="ltr">
+            <span className="text-primary-200/90 text-sm" dir="ltr">
               {email}
             </span>
           </>
         ) : null}
       </p>
-      <p className="text-white/45 text-xs mb-6">{copy.autoHint}</p>
+      <p className="text-on-dark/45 text-xs mb-6">{copy.autoHint}</p>
 
       <section className="onboarding-panel-dark rounded-2xl p-5 text-right mb-4">
-        <p className="text-sm font-bold text-emerald-100 mb-3 text-center">{copy.codePrompt}</p>
+        <p className="text-sm font-bold text-primary-100 mb-3 text-center">{copy.codePrompt}</p>
         <VerificationCodeInput value={code} onChange={setCode} disabled={verifying} />
         <button
           type="button"
           onClick={() => void verifyCode()}
           disabled={code.length !== VERIFICATION_CODE_LENGTH || verifying || !email}
-          className="mt-4 w-full rounded-xl bg-emerald-600 py-3 font-bold text-white disabled:opacity-40 flex items-center justify-center gap-2"
+          className="mt-4 w-full rounded-xl bg-primary-600 py-3 font-bold text-on-dark disabled:opacity-40 flex items-center justify-center gap-2"
         >
           {verifying ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
           {copy.verifyButton}
         </button>
       </section>
 
-      {message ? <p className="text-amber-200 text-sm mb-2">{message}</p> : null}
-      {success ? <p className="text-emerald-300 text-sm mb-2">{success}</p> : null}
+      {message ? <p className="text-accent-200 text-sm mb-2">{message}</p> : null}
+      {success ? <p className="text-primary-300 text-sm mb-2">{success}</p> : null}
 
       <button
         type="button"
         onClick={() => void resendEmail()}
         disabled={resending || !email}
-        className="text-sm text-emerald-300/90 font-semibold hover:underline disabled:opacity-50"
+        className="text-sm text-primary-300/90 font-semibold hover:underline disabled:opacity-50"
       >
         {resending ? copy.resending : copy.resend}
       </button>
 
-      <p className="text-white/50 text-sm mt-8">
+      <p className="text-on-dark/50 text-sm mt-8">
         {copy.alreadyVerified}{' '}
-        <Link href="/login" className="text-emerald-300 font-bold hover:underline">
+        <Link href="/login" className="text-primary-300 font-bold hover:underline">
           כניסה
         </Link>
       </p>

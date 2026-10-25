@@ -66,7 +66,7 @@ export function TaskLevelProgressStepPanel({
   if (loading) {
     return (
       <div className="px-3 pb-3 flex justify-center py-4">
-        <Loader2 className="h-5 w-5 animate-spin text-orange-500" aria-label="טוען מעקב רמות" />
+        <Loader2 className="h-5 w-5 animate-spin text-energy-500" aria-label="טוען מעקב רמות" />
       </div>
     );
   }

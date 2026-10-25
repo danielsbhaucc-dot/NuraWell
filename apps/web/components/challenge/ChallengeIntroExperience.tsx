@@ -74,20 +74,20 @@ export function ChallengeIntroExperience({
   return (
     <div className="relative">
       {isDemo ? (
-        <div className="fixed inset-e-0 inset-s-0 top-0 z-50 border-b border-amber-400/30 bg-amber-500/15 px-4 py-2">
+        <div className="fixed inset-e-0 inset-s-0 top-0 z-50 border-b border-accent-400/30 bg-accent-500/15 px-4 py-2">
           <div className="flex items-center justify-between gap-2">
-            <span className="text-sm text-amber-100">מצב דמו — פתיחת אתגר</span>
+            <span className="text-sm text-accent-100">מצב דמו — פתיחת אתגר</span>
             <button
               type="button"
               disabled={demoExiting}
               onClick={handleExitDemo}
-              className="inline-flex items-center gap-1 rounded-xl bg-background-card/10 px-3 py-1.5 text-xs font-semibold text-amber-100 disabled:opacity-60"
+              className="inline-flex items-center gap-1 rounded-xl bg-background-card/10 px-3 py-1.5 text-xs font-semibold text-accent-100 disabled:opacity-60"
             >
               <LogOut className="h-3.5 w-3.5" />
               {demoExiting ? 'יוצא...' : 'יציאה'}
             </button>
           </div>
-          {demoExitError ? <p className="mt-1 text-xs text-red-400">{demoExitError}</p> : null}
+          {demoExitError ? <p className="mt-1 text-xs text-coral-400">{demoExitError}</p> : null}
         </div>
       ) : null}
 
@@ -95,7 +95,7 @@ export function ChallengeIntroExperience({
         <button
           type="button"
           onClick={() => setMuted((m) => !m)}
-          className="fixed inset-e-4 top-16 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-md"
+          className="fixed inset-e-4 top-16 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-forest-950/50 text-on-dark backdrop-blur-md"
           aria-label={muted ? 'הפעל תמלול' : 'השתק תמלול'}
         >
           {muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
@@ -104,12 +104,12 @@ export function ChallengeIntroExperience({
 
       {showLines ? (
         <div className="fixed inset-e-0 inset-s-0 top-12 z-40 max-h-[40vh] overflow-y-auto px-4 sm:top-4">
-          <div className="mx-auto max-w-md space-y-2 rounded-2xl border border-white/10 bg-black/50 p-4 backdrop-blur-md">
+          <div className="mx-auto max-w-md space-y-2 rounded-2xl border border-on-dark/10 bg-forest-950/50 p-4 backdrop-blur-md">
             {(renderedLines.length ? renderedLines : [fallbackLine]).map((line, i) => (
               <p
                 key={i}
                 className={`text-sm leading-relaxed ${
-                  introLines[i]?.emphasis ? 'font-bold text-emerald-300' : 'text-white/85'
+                  introLines[i]?.emphasis ? 'font-bold text-primary-300' : 'text-on-dark/85'
                 }`}
               >
                 {line}
@@ -129,7 +129,7 @@ export function ChallengeIntroExperience({
         <button
           type="button"
           onClick={onIntroFinished}
-          className="rounded-2xl bg-emerald-500 px-8 py-3 font-bold text-white shadow-lg shadow-emerald-600/30"
+          className="rounded-2xl bg-primary-500 px-8 py-3 font-bold text-on-dark shadow-lg shadow-primary-600/30"
         >
           המשך להגדרת חלון אכילה
         </button>

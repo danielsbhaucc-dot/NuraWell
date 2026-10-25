@@ -26,16 +26,16 @@ export async function PatternInsightsCard({ userId, max = 2, compact = false }: 
   if (rows.length === 0) return null;
 
   return (
-    <section dir="rtl" aria-label="דברים שאלמוג שם לב אליהם" className="rounded-2xl bg-glass/80 backdrop-blur-md p-4 shadow-sm ring-1 ring-emerald-900/10">
-      <h2 className="mb-2 flex items-center gap-2 text-sm font-bold text-emerald-950">
+    <section dir="rtl" aria-label="דברים שאלמוג שם לב אליהם" className="rounded-2xl bg-glass/80 backdrop-blur-md p-4 shadow-sm ring-1 ring-primary-900/10">
+      <h2 className="mb-2 flex items-center gap-2 text-sm font-bold text-primary-950">
         <span aria-hidden>🌱</span> אלמוג שם לב
       </h2>
       <ul className="space-y-2.5">
         {rows.map((r) => (
-          <li key={r.id} className="text-[14px] leading-relaxed text-emerald-950/90">
+          <li key={r.id} className="text-[14px] leading-relaxed text-primary-950/90">
             <p>{r.metadata!.user_line}</p>
             {!compact && r.metadata!.tip ? (
-              <p className="mt-0.5 text-[13px] text-emerald-800/80">
+              <p className="mt-0.5 text-[13px] text-primary-800/80">
                 <span className="font-semibold">צעד קטן: </span>
                 {r.metadata!.tip}
               </p>

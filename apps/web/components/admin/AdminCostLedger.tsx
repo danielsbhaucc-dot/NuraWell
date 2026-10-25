@@ -12,8 +12,8 @@ const CAT_LABEL: Record<string, string> = { ai: 'AI', infra: 'תשתית', tools
 
 function Kpi({ icon: Icon, label, value, sub }: { icon: typeof Wallet; label: string; value: string; sub?: string }) {
   return (
-    <div className="rounded-2xl border border-gc/60 bg-linear-to-br from-emerald-50/80 to-background-card/60 p-4 shadow-sm backdrop-blur-xl">
-      <div className="flex items-center gap-2 text-xs font-bold text-emerald-700"><Icon className="h-4 w-4" aria-hidden />{label}</div>
+    <div className="rounded-2xl border border-gc/60 bg-linear-to-br from-primary-50/80 to-background-card/60 p-4 shadow-sm backdrop-blur-xl">
+      <div className="flex items-center gap-2 text-xs font-bold text-primary-700"><Icon className="h-4 w-4" aria-hidden />{label}</div>
       <div className="mt-1 text-2xl font-black text-ink" dir="ltr">{value}</div>
       {sub ? <div className="mt-1 text-xs text-ink-faint">{sub}</div> : null}
     </div>
@@ -45,7 +45,7 @@ export function AdminCostLedger() {
   }
   if (error && !data) {
     return (
-      <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-800">
+      <div className="rounded-xl border border-coral-200 bg-coral-50 px-3 py-2 text-sm font-medium text-coral-800">
         {error} <button type="button" onClick={() => void load()} className="underline">רענון</button>
       </div>
     );
@@ -58,7 +58,7 @@ export function AdminCostLedger() {
   return (
     <section dir="rtl" className="space-y-4" aria-labelledby="ledger-title">
       <div className="flex items-center justify-between gap-2">
-        <h2 id="ledger-title" className="flex items-center gap-2 text-lg font-black text-ink"><Wallet className="h-5 w-5 text-emerald-600" aria-hidden />עלות כוללת חודשית — קבלות + שימוש</h2>
+        <h2 id="ledger-title" className="flex items-center gap-2 text-lg font-black text-ink"><Wallet className="h-5 w-5 text-primary-600" aria-hidden />עלות כוללת חודשית — קבלות + שימוש</h2>
         <button type="button" onClick={() => void load()} disabled={loading} className="inline-flex items-center gap-1 rounded-xl border border-gc/60 bg-background-card/60 px-3 py-1.5 text-xs font-bold text-ink-soft hover:bg-background-card disabled:opacity-50">
           <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} aria-hidden />רענון
         </button>
@@ -74,7 +74,7 @@ export function AdminCostLedger() {
       {flags.length ? (
         <ul className="space-y-1.5">
           {flags.map((f, i) => (
-            <li key={i} className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+            <li key={i} className="flex items-start gap-2 rounded-xl border border-accent-200 bg-accent-50 px-3 py-2 text-sm text-accent-900">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden /><span><b>{f.kind} · {f.label}:</b> {f.message}</span>
             </li>
           ))}
@@ -90,7 +90,7 @@ export function AdminCostLedger() {
               <div key={m.month} className="flex items-center gap-2 text-xs">
                 <span className="w-14 shrink-0 font-bold text-ink-soft">{monthLabel(m.month)}</span>
                 <div className="h-3 flex-1 overflow-hidden rounded-full bg-surface">
-                  <div className={`h-full rounded-full ${m.partial ? 'bg-emerald-300' : 'bg-emerald-500'}`} style={{ width: `${(v / maxMonth) * 100}%` }} />
+                  <div className={`h-full rounded-full ${m.partial ? 'bg-primary-300' : 'bg-primary-500'}`} style={{ width: `${(v / maxMonth) * 100}%` }} />
                 </div>
                 <span className="w-36 shrink-0 text-left font-bold text-ink" dir="ltr">{ils(m.totalIls)}{m.partial ? ` → ${ils(data.projectedCurrentIls, 0)}` : ''}</span>
                 <span className="hidden w-28 shrink-0 text-ink-faint sm:block">{m.activeUsers} פעילים · {ils(m.perActiveMedianIls)}</span>
@@ -131,10 +131,10 @@ export function AdminCostLedger() {
                 <span className="font-bold" dir="ltr">{r.amount == null ? 'ללא סכום' : `${r.amount} ${r.currency ?? ''}`}</span>
                 {r.ils != null && r.currency !== 'ILS' ? <span className="text-xs text-ink-faint" dir="ltr">≈ {ils(r.ils)}</span> : null}
                 {r.vatIls ? <span className="text-xs text-ink-faint">מע״מ {ils(r.vatIls)}</span> : null}
-                {r.trust !== 'verified' ? <span className="rounded-full bg-amber-100 px-2 text-xs text-amber-800">{r.trust === 'rejected' ? 'נדחתה' : 'לבדיקה'}</span> : null}
+                {r.trust !== 'verified' ? <span className="rounded-full bg-accent-100 px-2 text-xs text-accent-800">{r.trust === 'rejected' ? 'נדחתה' : 'לבדיקה'}</span> : null}
                 <span className="ms-auto flex flex-wrap gap-2">
                   {r.files.map((f) => (
-                    <a key={f.i} href={`/api/v1/admin/costs/receipt-file?id=${r.id}&i=${f.i}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 hover:underline">
+                    <a key={f.i} href={`/api/v1/admin/costs/receipt-file?id=${r.id}&i=${f.i}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs font-bold text-primary-700 hover:underline">
                       <FileText className="h-3.5 w-3.5" aria-hidden />{f.name}
                     </a>
                   ))}

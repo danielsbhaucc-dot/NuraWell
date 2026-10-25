@@ -22,8 +22,8 @@ export function PageBackButton({
 }) {
   const tone =
     variant === 'onDark'
-      ? 'bg-white/15 text-white ring-white/25 hover:bg-white/25'
-      : 'bg-glass/85 backdrop-blur-md text-emerald-900 ring-emerald-900/10 hover:bg-glass shadow-[0_1px_3px_rgba(4,47,36,0.08)]';
+      ? 'bg-on-dark/15 text-on-dark ring-on-dark/25 hover:bg-on-dark/25'
+      : 'bg-glass/85 backdrop-blur-md text-primary-900 ring-primary-900/10 hover:bg-glass shadow-[0_1px_3px_rgba(4,47,36,0.08)]';
   const cls = `inline-flex h-9 shrink-0 items-center gap-1 rounded-full ps-2 pe-3.5 text-xs font-bold ring-1 backdrop-blur-md transition active:scale-95 ${tone} ${className}`;
   const content = (
     <>

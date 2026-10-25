@@ -15,13 +15,13 @@ const toneStyles: Record<
     okBar: 'linear-gradient(135deg, #047857 0%, #10b981 100%)',
     okAccent: '#ecfdf5',
     badBar: 'linear-gradient(135deg, #b45309 0%, #f59e0b 100%)',
-    badAccent: '#fffbeb',
+    badAccent: '#e7eedc',
   },
   game: {
     okBar: 'linear-gradient(135deg, #047857 0%, #10b981 100%)',
     okAccent: '#ecfdf5',
     badBar: 'linear-gradient(135deg, #c2410c 0%, #ea580c 100%)',
-    badAccent: '#fff7ed',
+    badAccent: '#e7eedc',
   },
 };
 
@@ -54,7 +54,7 @@ export function AlmogInstantFeedback({
         <img
           src={avatarUrl}
           alt="אלמוג"
-          className="h-11 w-11 shrink-0 rounded-2xl border-2 border-white/90 object-cover shadow-md"
+          className="h-11 w-11 shrink-0 rounded-2xl border-2 border-on-dark/90 object-cover shadow-md"
           onError={(e) => {
             e.currentTarget.onerror = null;
             e.currentTarget.src = ALMOG_AVATAR_FALLBACK;
@@ -62,22 +62,22 @@ export function AlmogInstantFeedback({
         />
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-end gap-2">
-            <p className="text-[15px] font-black text-white" style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}>
+            <p className="text-[15px] font-black text-on-dark" style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}>
               אלמוג
             </p>
             {isCorrect ? (
-              <CheckCircle2 className="h-5 w-5 shrink-0 text-white/95" strokeWidth={2.5} />
+              <CheckCircle2 className="h-5 w-5 shrink-0 text-on-dark/95" strokeWidth={2.5} />
             ) : (
-              <XCircle className="h-5 w-5 shrink-0 text-white/95" strokeWidth={2.5} />
+              <XCircle className="h-5 w-5 shrink-0 text-on-dark/95" strokeWidth={2.5} />
             )}
           </div>
-          <p className="mt-0.5 text-xs font-bold text-white/95">
+          <p className="mt-0.5 text-xs font-bold text-on-dark/95">
             {isCorrect ? 'מעולה — נפלת בול על זה.' : 'לא נורא — בוא נבין את זה רגע.'}
           </p>
         </div>
       </div>
       <div
-        className="border-t border-black/5 px-4 py-3.5 text-sm leading-relaxed text-gray-700"
+        className="border-t border-forest-950/5 px-4 py-3.5 text-sm leading-relaxed text-ink-700"
         style={{ background: isCorrect ? t.okAccent : t.badAccent }}
       >
         {children}

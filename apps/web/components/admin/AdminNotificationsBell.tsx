@@ -146,7 +146,7 @@ export function AdminNotificationsBell({ opsHref }: AdminNotificationsBellProps)
         <div className="inline-flex items-center gap-1.5">
           {unreadCount > 0 ? (
             <span
-              className="min-w-[1.35rem] rounded-full bg-rose-500 px-1.5 py-0.5 text-center text-[10px] font-black leading-none text-gc shadow-xs ring-2 ring-[#FFFBF5]"
+              className="min-w-[1.35rem] rounded-full bg-coral-500 px-1.5 py-0.5 text-center text-[10px] font-black leading-none text-gc shadow-xs ring-2 ring-[#e7eedc]"
               aria-hidden
             >
               {formatUnreadBadgeCount(unreadCount)}
@@ -155,7 +155,7 @@ export function AdminNotificationsBell({ opsHref }: AdminNotificationsBellProps)
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
-            className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-2xl border border-gc/55 bg-background-card/45 text-emerald-900 shadow-xs backdrop-blur-md transition-colors hover:bg-background-card/70"
+            className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-2xl border border-gc/55 bg-background-card/45 text-primary-900 shadow-xs backdrop-blur-md transition-colors hover:bg-background-card/70"
             aria-label={formatUnreadBellAriaLabel(unreadCount)}
             aria-expanded={open}
           >
@@ -168,14 +168,14 @@ export function AdminNotificationsBell({ opsHref }: AdminNotificationsBellProps)
             className="absolute inset-s-0 top-[calc(100%+0.5rem)] z-50 w-[min(20rem,calc(100vw-1.25rem))] max-w-[calc(100vw-1.25rem)] overflow-hidden rounded-2xl border border-gc/60 bg-glass/95 shadow-2xl backdrop-blur-xl sm:w-88"
             dir="rtl"
           >
-            <div className="flex items-center justify-between border-b border-stone-200/80 bg-glass-hi/80 px-3 py-2.5">
-              <h3 className="text-sm font-bold text-stone-800">התראות</h3>
+            <div className="flex items-center justify-between border-b border-ink-200/80 bg-glass-hi/80 px-3 py-2.5">
+              <h3 className="text-sm font-bold text-ink-800">התראות</h3>
               <div className="flex items-center gap-1">
                 {unreadCount > 0 ? (
                   <button
                     type="button"
                     onClick={() => void markAllRead()}
-                    className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold text-emerald-800 hover:bg-emerald-50"
+                    className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold text-primary-800 hover:bg-primary-50"
                     title="סמן הכל כנקרא"
                   >
                     <CheckCheck className="h-3.5 w-3.5" />
@@ -185,7 +185,7 @@ export function AdminNotificationsBell({ opsHref }: AdminNotificationsBellProps)
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
-                  className="rounded-lg p-1 text-stone-500 hover:bg-stone-100"
+                  className="rounded-lg p-1 text-ink-500 hover:bg-ink-100"
                   aria-label="סגור"
                 >
                   <X className="h-4 w-4" />
@@ -196,12 +196,12 @@ export function AdminNotificationsBell({ opsHref }: AdminNotificationsBellProps)
             <div className="max-h-[min(24rem,60vh)] overflow-y-auto overflow-x-hidden">
               {loading && notifications.length === 0 ? (
                 <div className="flex justify-center py-8">
-                  <Loader2 className="h-5 w-5 animate-spin text-stone-400" />
+                  <Loader2 className="h-5 w-5 animate-spin text-ink-400" />
                 </div>
               ) : notifications.length === 0 ? (
-                <p className="px-4 py-8 text-center text-sm text-stone-500">אין התראות</p>
+                <p className="px-4 py-8 text-center text-sm text-ink-500">אין התראות</p>
               ) : (
-                <ul className="divide-y divide-stone-200/70">
+                <ul className="divide-y divide-ink-200/70">
                   {notifications.map((n) => {
                     const href = n.action_url?.startsWith('/') ? opsHref(n.action_url) : null;
                     const inner = (
@@ -214,19 +214,19 @@ export function AdminNotificationsBell({ opsHref }: AdminNotificationsBellProps)
                             <p
                               className={cn(
                                 'text-sm leading-snug wrap-break-word',
-                                n.is_read ? 'font-medium text-stone-700' : 'font-bold text-stone-900',
+                                n.is_read ? 'font-medium text-ink-700' : 'font-bold text-ink-900',
                               )}
                             >
                               {n.title}
                             </p>
-                            <p className="mt-0.5 wrap-break-word text-xs leading-relaxed text-stone-600">
+                            <p className="mt-0.5 wrap-break-word text-xs leading-relaxed text-ink-600">
                               {n.body}
                             </p>
-                            <p className="mt-1 text-[10px] text-stone-400">{fmtTime(n.created_at)}</p>
+                            <p className="mt-1 text-[10px] text-ink-400">{fmtTime(n.created_at)}</p>
                           </div>
                         </div>
                         {!n.is_read ? (
-                          <span className="mt-1 inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                          <span className="mt-1 inline-block h-1.5 w-1.5 rounded-full bg-primary-500" />
                         ) : null}
                       </>
                     );

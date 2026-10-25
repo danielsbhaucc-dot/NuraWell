@@ -47,7 +47,7 @@ export function HealthConsentSection({
   return (
     <section className="crystal-surface rounded-2xl p-5 space-y-3" aria-labelledby="health-consent-h">
       <h2 id="health-consent-h" className="font-bold text-ink flex items-center gap-2">
-        <HeartPulse className="w-4 h-4 text-rose-500" aria-hidden />
+        <HeartPulse className="w-4 h-4 text-coral-500" aria-hidden />
         הסכמה למידע בריאותי
       </h2>
       <p className="text-sm text-ink-soft leading-relaxed">
@@ -56,7 +56,7 @@ export function HealthConsentSection({
       </p>
 
       {loadError ? (
-        <p className="text-sm font-semibold text-red-600">לא הצלחנו לטעון את מצב ההסכמה. נסה לרענן.</p>
+        <p className="text-sm font-semibold text-coral-600">לא הצלחנו לטעון את מצב ההסכמה. נסה לרענן.</p>
       ) : !state ? (
         <div className="flex justify-center py-3">
           <Loader2 className="w-5 h-5 animate-spin text-ink-faint" aria-label="טוען" />
@@ -77,8 +77,8 @@ export function HealthConsentSection({
             aria-checked={active}
             aria-labelledby="health-consent-label"
             onClick={() => openConsentSheet({ action: active ? 'withdraw' : 'grant', source: 'settings_privacy' })}
-            className={`relative h-8 w-14 shrink-0 rounded-full transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 ${
-              active ? 'bg-emerald-600' : 'bg-slate-300'
+            className={`relative h-8 w-14 shrink-0 rounded-full transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 ${
+              active ? 'bg-primary-600' : 'bg-ink-300'
             }`}
           >
             <span
@@ -89,9 +89,9 @@ export function HealthConsentSection({
         </div>
       )}
 
-      <p className="text-xs text-emerald-900/80 font-medium">{ex.line}</p>
+      <p className="text-xs text-primary-900/80 font-medium">{ex.line}</p>
 
-      <div className="rounded-xl border border-emerald-900/10 bg-glass/50 backdrop-blur-sm">
+      <div className="rounded-xl border border-primary-900/10 bg-glass/50 backdrop-blur-sm">
         <h3 className="m-0">
           <button
             type="button"
@@ -99,14 +99,14 @@ export function HealthConsentSection({
             aria-expanded={open}
             aria-controls="health-consent-how"
             onClick={() => setOpen((v) => !v)}
-            className="flex w-full items-center justify-between gap-2 rounded-xl px-3 py-2.5 text-sm font-bold text-emerald-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-600"
+            className="flex w-full items-center justify-between gap-2 rounded-xl px-3 py-2.5 text-sm font-bold text-primary-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary-600"
           >
             {ex.title}
             <ChevronDown aria-hidden className={`h-4 w-4 transition-transform ${open ? 'rotate-180' : ''}`} />
           </button>
         </h3>
         <div id="health-consent-how" role="region" aria-labelledby="health-consent-how-btn" hidden={!open}>
-          <ul className="space-y-2 px-4 pb-3 text-sm leading-relaxed text-ink-soft list-disc marker:text-emerald-700 pr-5">
+          <ul className="space-y-2 px-4 pb-3 text-sm leading-relaxed text-ink-soft list-disc marker:text-primary-700 pr-5">
             {ex.bullets.map((b) => (
               <li key={b}>{b}</li>
             ))}

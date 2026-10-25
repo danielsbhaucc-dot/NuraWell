@@ -604,8 +604,8 @@ export function SosDialog({
       zIndex={200}
       aria-labelledby={titleId}
       aria-describedby={subtitleId}
-      backdropClassName="absolute inset-0 bg-slate-950/55 backdrop-blur-md"
-      panelClassName="touch-manipulation w-full max-w-md flex flex-col overflow-hidden rounded-[28px] border border-emerald-500/25 text-start shadow-2xl max-h-[min(80dvh,600px)]"
+      backdropClassName="absolute inset-0 bg-ink-950/55 backdrop-blur-md"
+      panelClassName="touch-manipulation w-full max-w-md flex flex-col overflow-hidden rounded-[28px] border border-primary-500/25 text-start shadow-2xl max-h-[min(80dvh,600px)]"
       panelStyle={{
         maxHeight: 'min(80dvh, 600px)',
         height: 'auto',
@@ -627,7 +627,7 @@ export function SosDialog({
             <button
               type="button"
               onClick={closeDialog}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-white ring-1 ring-white/25 backdrop-blur-sm transition hover:bg-white/25 active:scale-95"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-on-dark/15 text-on-dark ring-1 ring-on-dark/25 backdrop-blur-sm transition hover:bg-on-dark/25 active:scale-95"
               aria-label="סגירה"
             >
               <X className="h-4 w-4" aria-hidden />
@@ -647,8 +647,8 @@ export function SosDialog({
               animate={{ opacity: 1, x: 0 }}
               transition={{ type: 'spring', stiffness: 380, damping: 30, delay: 0.08 }}
             >
-              <p id={titleId} className="text-lg font-black text-white">{title}</p>
-              <p id={subtitleId} className="mt-1 text-xs font-semibold leading-5 text-emerald-50/90">{subtitle}</p>
+              <p id={titleId} className="text-lg font-black text-on-dark">{title}</p>
+              <p id={subtitleId} className="mt-1 text-xs font-semibold leading-5 text-primary-50/90">{subtitle}</p>
             </motion.div>
           </div>
         </div>
@@ -678,27 +678,27 @@ export function SosDialog({
                   : outcomeSaved}
               </p>
               {guardianOptedIn === false && !guardianSaved ? (
-                  <div className={`${sosSurface('white')} px-4 py-3 text-start text-xs leading-6 text-slate-800`}>
+                  <div className={`${sosSurface('glass')} px-4 py-3 text-start text-xs leading-6 text-ink-800`}>
                   <p className="font-black">רוצה שאלמוג יגיע לפני הרגע הבא?</p>
-                  <p className="mt-1 text-slate-600">
+                  <p className="mt-1 text-ink-600">
                     תזכורת עדינה לפני חלונות שקשים לך — רק אם תרצה, בלי לחץ.
                   </p>
                   <button
                     type="button"
                     disabled={guardianSaving}
                     onClick={() => void enableGuardianProactive()}
-                    className="mt-3 w-full rounded-xl bg-emerald-600 px-3 py-2.5 text-sm font-bold text-white disabled:opacity-70"
+                    className="mt-3 w-full rounded-xl bg-primary-600 px-3 py-2.5 text-sm font-bold text-on-dark disabled:opacity-70"
                   >
                     {guardianSaving ? 'שומר…' : 'כן, תזכיר לי בעדינות'}
                   </button>
                 </div>
               ) : guardianSaved ? (
-                <p className="text-xs font-semibold text-slate-600">הפעלנו — אפשר לכבות בהגדרות מאלמוג.</p>
+                <p className="text-xs font-semibold text-ink-600">הפעלנו — אפשר לכבות בהגדרות מאלמוג.</p>
               ) : null}
               <button
                 type="button"
                 onClick={openChatFromSos}
-                className={`${sosSurface('sky')} flex w-full items-center justify-center gap-2 px-4 py-3 text-sm font-bold text-slate-800`}
+                className={`${sosSurface('sky')} flex w-full items-center justify-center gap-2 px-4 py-3 text-sm font-bold text-ink-800`}
               >
                 <MessageCircle className="h-4 w-4" />
                 לדבר עם אלמוג
@@ -706,7 +706,7 @@ export function SosDialog({
               <button
                 type="button"
                 onClick={closeDialog}
-                className="w-full rounded-2xl px-4 py-3 text-sm font-black text-white shadow-lg"
+                className="w-full rounded-2xl px-4 py-3 text-sm font-black text-on-dark shadow-lg"
                 style={{
                   background: 'linear-gradient(135deg, #047857, #10b981)',
                   boxShadow: '0 6px 20px rgba(16,185,129,0.25)',
@@ -739,8 +739,8 @@ export function SosDialog({
                               }`}
                             >
                               <span className={SOS_MUTED}>{task.stepTitle ?? 'מהמסע'}</span>
-                              <span className="flex items-center gap-2 text-sm font-black text-slate-900">
-                                {active ? <Check className="h-4 w-4 text-sky-600" /> : null}
+                              <span className="flex items-center gap-2 text-sm font-black text-ink-900">
+                                {active ? <Check className="h-4 w-4 text-secondary-600" /> : null}
                                 <span>{task.emoji ?? '✅'}</span>
                                 {task.title}
                               </span>
@@ -762,7 +762,7 @@ export function SosDialog({
                         type="button"
                         onClick={speakTaskTitle}
                         disabled={!gateTask?.title || taskTitleTtsLoading}
-                        className="shrink-0 rounded-xl border border-emerald-200 bg-emerald-50 p-2 text-emerald-800 transition hover:bg-emerald-100 disabled:opacity-60"
+                        className="shrink-0 rounded-xl border border-primary-200 bg-primary-50 p-2 text-primary-800 transition hover:bg-primary-100 disabled:opacity-60"
                         aria-label="הקרא את המשימה"
                       >
                         {taskTitleTtsLoading ? (
@@ -780,7 +780,7 @@ export function SosDialog({
                         setTaskHardConfirmed(true);
                         setPhase('intake');
                       }}
-                      className="rounded-2xl px-4 py-3 text-sm font-black text-white"
+                      className="rounded-2xl px-4 py-3 text-sm font-black text-on-dark"
                       style={{
                         background: 'linear-gradient(135deg, #047857, #10b981)',
                         boxShadow: '0 6px 16px rgba(16,185,129,0.22)',
@@ -829,8 +829,8 @@ export function SosDialog({
                           <span className={SOS_MUTED}>
                             {task.stepTitle ?? 'מהמסע'}
                           </span>
-                          <span className="flex items-center gap-2 text-sm font-black text-slate-900">
-                            {active ? <Check className="h-4 w-4 text-emerald-600" /> : null}
+                          <span className="flex items-center gap-2 text-sm font-black text-ink-900">
+                            {active ? <Check className="h-4 w-4 text-primary-600" /> : null}
                             <span className="text-lg">{task.emoji ?? '✅'}</span>
                             {task.title}
                           </span>
@@ -845,19 +845,19 @@ export function SosDialog({
                       className={`flex w-full items-center justify-between px-4 py-3 text-right text-xs font-bold transition active:scale-[0.99] ${
                         selectedTask === null
                           ? SOS_INTAKE_TASK_ACTIVE
-                          : 'rounded-2xl border border-dashed border-slate-300 bg-slate-50/90 text-slate-600 hover:border-emerald-300 hover:bg-emerald-50/60 hover:text-emerald-900'
+                          : 'rounded-2xl border border-dashed border-ink-300 bg-ink-50/90 text-ink-600 hover:border-primary-300 hover:bg-primary-50/60 hover:text-primary-900'
                       }`}
                     >
-                      <span className={selectedTask === null ? 'text-emerald-700' : SOS_MUTED}>
+                      <span className={selectedTask === null ? 'text-primary-700' : SOS_MUTED}>
                         {selectedTask === null ? 'נבחר' : 'אפשרות נוספת'}
                       </span>
                       <span
                         className={`flex items-center gap-2 ${
-                          selectedTask === null ? 'text-emerald-950' : 'text-slate-700'
+                          selectedTask === null ? 'text-primary-950' : 'text-ink-700'
                         }`}
                       >
                         {selectedTask === null ? (
-                          <Check className="h-4 w-4 text-emerald-600" aria-hidden />
+                          <Check className="h-4 w-4 text-primary-600" aria-hidden />
                         ) : (
                           <span className="text-base leading-none" aria-hidden>
                             💭
@@ -886,7 +886,7 @@ export function SosDialog({
                       : 'למשל: היה יום עמוס ואני מול המקרר'
                   }
                 />
-                <span className="mt-1 block text-[11px] font-semibold text-slate-500">אלמוג יקרא את זה ויתאים את ההצעה — עכשיו בוחרים מה הכי קרוב לרגע.</span>
+                <span className="mt-1 block text-[11px] font-semibold text-ink-500">אלמוג יקרא את זה ויתאים את ההצעה — עכשיו בוחרים מה הכי קרוב לרגע.</span>
               </label>
 
               <p className={SOS_LABEL}>
@@ -905,7 +905,7 @@ export function SosDialog({
                     <span className={SOS_TRIGGER_HELPER}>{trigger.helper}</span>
                     <span className="flex items-center gap-2.5">
                       {loadingTrigger === trigger.id && (
-                        <Loader2 className="h-4 w-4 animate-spin text-white/90" />
+                        <Loader2 className="h-4 w-4 animate-spin text-on-dark/90" />
                       )}
                       <span className="text-xl leading-none">{trigger.emoji}</span>
                       <span className={SOS_TRIGGER_LABEL}>{trigger.label}</span>
@@ -920,13 +920,13 @@ export function SosDialog({
           ) : (
             <div className="space-y-4">
               {response.context.focus_task_title ? (
-                <div className={`${sosSurface('sky')} px-4 py-3 text-xs font-bold text-slate-800`}>
+                <div className={`${sosSurface('sky')} px-4 py-3 text-xs font-bold text-ink-800`}>
                   ההצעה הבאה מותאמת ל{' '}
-                  <span className="text-sm text-slate-900">
+                  <span className="text-sm text-ink-900">
                     {response.context.focus_task_emoji ?? '✅'} {response.context.focus_task_title}
                   </span>
                   {response.context.step_title ? (
-                    <span className="mt-1 block font-semibold text-slate-600">
+                    <span className="mt-1 block font-semibold text-ink-600">
                       מתוך {response.context.step_title}
                     </span>
                   ) : null}
@@ -934,11 +934,11 @@ export function SosDialog({
               ) : null}
 
               {response.memory_hint ? (
-                <p className="text-xs font-semibold leading-6 text-slate-600">{response.memory_hint}</p>
+                <p className="text-xs font-semibold leading-6 text-ink-600">{response.memory_hint}</p>
               ) : null}
 
               <div
-                className="relative overflow-hidden rounded-3xl p-4 text-white shadow-lg"
+                className="relative overflow-hidden rounded-3xl p-4 text-on-dark shadow-lg"
                 style={{
                   background: 'linear-gradient(145deg, #047857, #059669, #10b981)',
                   boxShadow: '0 8px 24px rgba(4,120,87,0.22)',
@@ -961,7 +961,7 @@ export function SosDialog({
                     type="button"
                     onClick={speakInterventionMessage}
                     disabled={isSosTtsLoading(response.intervention.message, 'intervention_message')}
-                    className="shrink-0 rounded-xl bg-background-card/15 p-2 text-white/90 transition hover:bg-background-card/25 disabled:opacity-60"
+                    className="shrink-0 rounded-xl bg-background-card/15 p-2 text-on-dark/90 transition hover:bg-background-card/25 disabled:opacity-60"
                     aria-label="הקרא את ההודעה"
                   >
                     {isSosTtsLoading(response.intervention.message, 'intervention_message') ? (
@@ -975,12 +975,12 @@ export function SosDialog({
 
               <div className={`${sosSurface('amber')} relative overflow-hidden p-4`}>
                 <div className="mb-2 flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-amber-600" />
+                  <Sparkles className="h-4 w-4 text-accent-600" />
                   <p className={SOS_LABEL}>הצעד שלך עכשיו</p>
                 </div>
-                <p className="text-base font-black text-slate-900">{response.intervention.label}</p>
-                <p className="mt-2 text-sm leading-7 text-slate-800">{response.intervention.micro_step}</p>
-                <p className="mt-2 text-[10px] font-semibold text-slate-500">
+                <p className="text-base font-black text-ink-900">{response.intervention.label}</p>
+                <p className="mt-2 text-sm leading-7 text-ink-800">{response.intervention.micro_step}</p>
+                <p className="mt-2 text-[10px] font-semibold text-ink-500">
                   {FRICTION_META[response.intervention.category].emoji}{' '}
                   {FRICTION_META[response.intervention.category].labelHe}
                   {taskHardConfirmed ? ' · המשימה המקורית מוקפאת זמנית' : ''}
@@ -992,7 +992,7 @@ export function SosDialog({
                   type="button"
                   disabled={easeCreating}
                   onClick={() => void createEaseTaskFromSos()}
-                  className="flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-black text-white disabled:opacity-70"
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-black text-on-dark disabled:opacity-70"
                   style={{
                     background: 'linear-gradient(135deg, #0d9488, #14b8a6)',
                     boxShadow: '0 6px 18px rgba(13,148,136,0.25)',
@@ -1003,15 +1003,15 @@ export function SosDialog({
               ) : null}
 
               {easeCreated ? (
-                <div className={`${sosSurface('sky')} px-4 py-3 text-xs leading-6 text-slate-800`}>
+                <div className={`${sosSurface('sky')} px-4 py-3 text-xs leading-6 text-ink-800`}>
                   <p className="font-black">נוסף למשימות שלך ✓</p>
-                  <p className="mt-1 text-slate-600">
+                  <p className="mt-1 text-ink-600">
                     המשימה המקורית מוקפאת. כשתסיים את הצעד הקל — נחזיר אותה בהדרגה.
                   </p>
                   <button
                     type="button"
                     onClick={openUnfreezeChat}
-                    className="mt-2 inline-flex items-center gap-1 text-[11px] font-bold text-sky-800"
+                    className="mt-2 inline-flex items-center gap-1 text-[11px] font-bold text-secondary-800"
                   >
                     <Snowflake className="h-3.5 w-3.5" />
                     חוזרים למשימה המקורית?
@@ -1019,16 +1019,16 @@ export function SosDialog({
                 </div>
               ) : null}
 
-              {error ? <p className="text-xs font-semibold text-amber-700">{error}</p> : null}
+              {error ? <p className="text-xs font-semibold text-accent-700">{error}</p> : null}
 
               {response.follow_up_scheduled ? (
-                <p className="text-[11px] font-semibold text-slate-600">
+                <p className="text-[11px] font-semibold text-ink-600">
                   אשמור עליך — אבדוק בעדינות איך היה, רק כשזה מתאים.
                 </p>
               ) : null}
 
               {response.care_focus_active ? (
-                <p className="text-[11px] font-semibold leading-5 text-slate-600">
+                <p className="text-[11px] font-semibold leading-5 text-ink-600">
                   הורדתי זמנית תזכורות אחרות — כדי שתוכל להתרכז רק ברגע הזה.
                 </p>
               ) : null}
@@ -1039,7 +1039,7 @@ export function SosDialog({
                   type="button"
                   disabled={outcomeSaving || pivoting}
                   onClick={() => void handleOutcome(true)}
-                  className="rounded-2xl px-4 py-3 text-sm font-black text-white shadow-lg disabled:opacity-70"
+                  className="rounded-2xl px-4 py-3 text-sm font-black text-on-dark shadow-lg disabled:opacity-70"
                   style={{
                     background: 'linear-gradient(135deg, #047857, #10b981)',
                     boxShadow: '0 6px 20px rgba(16,185,129,0.22)',
@@ -1051,7 +1051,7 @@ export function SosDialog({
                   type="button"
                   disabled={outcomeSaving || pivoting}
                   onClick={() => void handleOutcome(false)}
-                  className={`${sosSurface('rose')} px-4 py-3 text-sm font-bold text-slate-800 disabled:opacity-70`}
+                  className={`${sosSurface('rose')} px-4 py-3 text-sm font-bold text-ink-800 disabled:opacity-70`}
                 >
                   {pivoting ? 'מציע גישה אחרת…' : 'עדיין קשה — ננסה אחרת'}
                 </button>
@@ -1061,7 +1061,7 @@ export function SosDialog({
                 <button
                   type="button"
                   onClick={openChatFromSos}
-                  className={`${sosSurface('white')} flex items-center justify-center gap-2 px-3 py-2.5 text-xs font-bold text-slate-800`}
+                  className={`${sosSurface('glass')} flex items-center justify-center gap-2 px-3 py-2.5 text-xs font-bold text-ink-800`}
                 >
                   <MessageCircle className="h-3.5 w-3.5" />
                   לדבר עם אלמוג
@@ -1071,7 +1071,7 @@ export function SosDialog({
                     type="button"
                     disabled={taskMarking}
                     onClick={openTaskDoneFromSos}
-                    className={`${sosSurface('white')} px-3 py-2.5 text-xs font-bold text-slate-800 disabled:opacity-70`}
+                    className={`${sosSurface('glass')} px-3 py-2.5 text-xs font-bold text-ink-800 disabled:opacity-70`}
                   >
                     {taskMarking ? 'מסמן…' : 'סימנתי — עשיתי 🎯'}
                   </button>

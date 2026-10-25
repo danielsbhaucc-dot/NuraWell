@@ -15,15 +15,15 @@ type Page = { rows: LogRow[]; total: number; page: number; pageSize: number };
 const TYPES = Object.keys(LOG_TYPE_HE) as LogType[];
 const mb = (b: number) => (b >= 1048576 ? `${(b / 1048576).toFixed(1)}MB` : `${Math.max(1, Math.round(b / 1024))}KB`);
 const when = (iso: string) => new Date(iso).toLocaleString('he-IL', { timeZone: 'Asia/Jerusalem', day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' });
-const LEVEL_CLS = { ok: 'bg-emerald-500', warn: 'bg-amber-500', critical: 'bg-rose-500' } as const;
-const CLASS_CHIP = { operational: 'border-teal-300/60 bg-teal-500/10 text-teal-800', access: 'border-indigo-300/60 bg-indigo-500/10 text-indigo-800', legal: 'border-amber-300/70 bg-amber-500/15 text-amber-800' } as const;
-const input = 'min-w-0 rounded-xl border border-hairline/80 bg-glass/70 px-3 py-2 text-[13px] text-ink outline-none focus:border-teal-400';
+const LEVEL_CLS = { ok: 'bg-primary-500', warn: 'bg-accent-500', critical: 'bg-coral-500' } as const;
+const CLASS_CHIP = { operational: 'border-secondary-300/60 bg-secondary-500/10 text-secondary-800', access: 'border-iris-300/60 bg-iris-500/10 text-iris-800', legal: 'border-accent-300/70 bg-accent-500/15 text-accent-800' } as const;
+const input = 'min-w-0 rounded-xl border border-hairline/80 bg-glass/70 px-3 py-2 text-[13px] text-ink outline-none focus:border-secondary-400';
 
 function ErrorCard({ text, onRetry }: { text: string; onRetry: () => void }) {
   return (
-    <div role="alert" className="flex items-center justify-between gap-3 rounded-2xl border border-rose-300/60 bg-rose-500/10 px-4 py-3 text-sm font-semibold text-rose-800">
+    <div role="alert" className="flex items-center justify-between gap-3 rounded-2xl border border-coral-300/60 bg-coral-500/10 px-4 py-3 text-sm font-semibold text-coral-800">
       {text}
-      <button type="button" onClick={onRetry} className="inline-flex items-center gap-1 rounded-xl border border-rose-400/40 px-3 py-1.5 text-[13px]"><RotateCw size={14} />לנסות שוב</button>
+      <button type="button" onClick={onRetry} className="inline-flex items-center gap-1 rounded-xl border border-coral-400/40 px-3 py-1.5 text-[13px]"><RotateCw size={14} />לנסות שוב</button>
     </div>
   );
 }
@@ -40,7 +40,7 @@ function StoragePanel() {
   const pct = Math.min(100, (s.db_bytes / s.limit_bytes) * 100);
   return (
     <div className={cn(opsGlassCardClass, 'space-y-3 p-4')} data-testid="logs-storage">
-      <div className="flex items-center gap-2 text-sm font-bold text-ink"><Database size={16} className="text-teal-600" />נפח מסד הנתונים</div>
+      <div className="flex items-center gap-2 text-sm font-bold text-ink"><Database size={16} className="text-secondary-600" />נפח מסד הנתונים</div>
       <div>
         <div className="flex justify-between text-[13px] text-ink-soft"><span>{mb(s.db_bytes)} מתוך {mb(s.limit_bytes)} (חינמי)</span><span>{pct.toFixed(1)}%</span></div>
         <div className="mt-1 h-2 overflow-hidden rounded-full bg-hairline/70"><div className={cn('h-full rounded-full', LEVEL_CLS[s.level])} style={{ width: `${Math.max(pct, 1)}%` }} /></div>
@@ -60,7 +60,7 @@ function StoragePanel() {
           <span className="font-semibold text-ink-soft">{ACCOUNT_RETENTION_ROW.label}</span>
           <span className="flex flex-wrap items-center gap-2 text-ink-faint">
             <span>{ACCOUNT_RETENTION_ROW.note_he}</span>
-            <span className="rounded-full border border-sky-300/60 bg-sky-500/10 px-2 py-0.5 text-[11px] font-semibold text-sky-800">שמירה: {ACCOUNT_RETENTION_ROW.retention_he}</span>
+            <span className="rounded-full border border-secondary-300/60 bg-secondary-500/10 px-2 py-0.5 text-[11px] font-semibold text-secondary-800">שמירה: {ACCOUNT_RETENTION_ROW.retention_he}</span>
           </span>
         </li>
       </ul>
@@ -114,7 +114,7 @@ export function LogsSection() {
         <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="סוג יומן">
           {TYPES.map((t) => (
             <button key={t} type="button" role="tab" aria-selected={type === t} onClick={() => reset(() => { setType(t); setResult(''); })}
-              className={cn('rounded-full border px-3 py-1 text-[12px] font-semibold', type === t ? 'border-teal-400 bg-teal-500/15 text-teal-800' : 'border-hairline/80 text-ink-soft')}>{LOG_TYPE_HE[t]}</button>
+              className={cn('rounded-full border px-3 py-1 text-[12px] font-semibold', type === t ? 'border-secondary-400 bg-secondary-500/15 text-secondary-800' : 'border-hairline/80 text-ink-soft')}>{LOG_TYPE_HE[t]}</button>
           ))}
         </div>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
@@ -128,7 +128,7 @@ export function LogsSection() {
           <button type="button" onClick={() => setReveal((v) => !v)} aria-pressed={reveal} className="inline-flex items-center gap-1 rounded-xl border border-hairline/80 px-3 py-1.5 text-[12px] font-semibold text-ink-soft">
             {reveal ? <EyeOff size={14} /> : <Eye size={14} />}{reveal ? 'הסתר פרטים אישיים' : 'הצג פרטים מלאים (נרשם ביומן)'}
           </button>
-          <a href={`/api/v1/ops/legal/logs/export?${params({ page: '1' })}`} className="inline-flex items-center gap-1 rounded-xl border border-teal-400/50 bg-teal-500/10 px-3 py-1.5 text-[12px] font-semibold text-teal-800" download>
+          <a href={`/api/v1/ops/legal/logs/export?${params({ page: '1' })}`} className="inline-flex items-center gap-1 rounded-xl border border-secondary-400/50 bg-secondary-500/10 px-3 py-1.5 text-[12px] font-semibold text-secondary-800" download>
             <Download size={14} />ייצוא CSV
           </a>
         </div>
@@ -152,7 +152,7 @@ export function LogsSection() {
                       {r.actor ? <span>{r.actor}</span> : null}{r.ip ? <span>{r.ip}</span> : null}{r.country ? <span>{r.country}</span> : null}
                       {r.inv && (r.inv.user || r.inv.session || r.inv.ipHash) ? (
                         <button type="button" onClick={() => setInvestigating(r.inv!)} data-testid="log-investigate" dir="rtl"
-                          className="inline-flex min-h-8 items-center gap-1 rounded-lg border border-violet-300/60 bg-violet-500/10 px-2 text-[11.5px] font-semibold text-violet-800">
+                          className="inline-flex min-h-8 items-center gap-1 rounded-lg border border-iris-300/60 bg-iris-500/10 px-2 text-[11.5px] font-semibold text-iris-800">
                           <ShieldAlert size={12} />חקירה וחסימה
                         </button>
                       ) : null}

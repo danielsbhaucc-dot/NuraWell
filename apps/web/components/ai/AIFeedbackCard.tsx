@@ -28,18 +28,18 @@ const variantStyles: Record<
   emerald: {
     border: '1px solid rgba(16,185,129,0.28)',
     shadow: '0 12px 40px rgba(6,78,59,0.1)',
-    cardBg: 'linear-gradient(180deg, #F7FBF4 0%, #f0fdf9 100%)',
+    cardBg: 'linear-gradient(180deg, #e7eedc 0%, #e7eedc 100%)',
     headerBar: 'linear-gradient(135deg, #064e3b 0%, #047857 55%, #10b981 100%)',
-    title: 'text-white',
-    subtitle: 'text-emerald-100/95',
+    title: 'text-on-dark',
+    subtitle: 'text-primary-100/95',
   },
   amber: {
     border: '1px solid rgba(245,158,11,0.35)',
     shadow: '0 12px 40px rgba(120,53,15,0.1)',
-    cardBg: 'linear-gradient(180deg, #F7FBF4 0%, #fffbeb 100%)',
+    cardBg: 'linear-gradient(180deg, #e7eedc 0%, #e7eedc 100%)',
     headerBar: 'linear-gradient(135deg, #78350f 0%, #b45309 50%, #f59e0b 100%)',
-    title: 'text-white',
-    subtitle: 'text-amber-100/95',
+    title: 'text-on-dark',
+    subtitle: 'text-accent-100/95',
   },
 };
 
@@ -76,7 +76,7 @@ export function AIFeedbackCard({
         <img
           src={avatarSrc}
           alt="אלמוג"
-          className="h-11 w-11 shrink-0 rounded-2xl border-2 border-white/85 object-cover shadow-lg"
+          className="h-11 w-11 shrink-0 rounded-2xl border-2 border-on-dark/85 object-cover shadow-lg"
           onError={(e) => {
             e.currentTarget.onerror = null;
             e.currentTarget.src = ALMOG_AVATAR_FALLBACK;
@@ -99,20 +99,20 @@ export function AIFeedbackCard({
 
       <div className="px-4 py-4">
         {loading ? (
-          <div className="inline-flex items-center gap-2 text-gray-600">
+          <div className="inline-flex items-center gap-2 text-ink-600">
             <span className="text-sm font-semibold">אלמוג מקליד</span>
             <span className="inline-flex items-end gap-1 align-middle">
-              <span className="h-2.5 w-2.5 rounded-full bg-emerald-500/80 animate-bounce" />
-              <span className="h-2.5 w-2.5 rounded-full bg-emerald-500/70 animate-bounce" style={{ animationDelay: '120ms' }} />
-              <span className="h-2.5 w-2.5 rounded-full bg-emerald-500/60 animate-bounce" style={{ animationDelay: '240ms' }} />
+              <span className="h-2.5 w-2.5 rounded-full bg-primary-500/80 animate-bounce" />
+              <span className="h-2.5 w-2.5 rounded-full bg-primary-500/70 animate-bounce" style={{ animationDelay: '120ms' }} />
+              <span className="h-2.5 w-2.5 rounded-full bg-primary-500/60 animate-bounce" style={{ animationDelay: '240ms' }} />
             </span>
           </div>
         ) : error ? (
-          <p className="text-sm leading-relaxed text-gray-600">
+          <p className="text-sm leading-relaxed text-ink-600">
             לא הצלחתי להביא את המשוב המלא כרגע, אבל אני עדיין איתך. ממשיכים צעד קטן קדימה.
           </p>
         ) : text ? (
-          <p className="text-sm leading-relaxed text-gray-800">{text}</p>
+          <p className="text-sm leading-relaxed text-ink-800">{text}</p>
         ) : null}
 
         {action ? <div className="mt-4 flex flex-col gap-2">{action}</div> : null}

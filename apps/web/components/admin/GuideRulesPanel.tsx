@@ -46,7 +46,7 @@ export function GuideRulesPanel() {
 
   const Toggle = ({ label, hint, checked, onChange }: { label: string; hint?: string; checked: boolean; onChange: (v: boolean) => void }) => (
     <label className="flex cursor-pointer items-start gap-3 py-1.5">
-      <input type="checkbox" className="mt-1 h-4 w-4 accent-emerald-600" checked={checked} onChange={(e) => onChange(e.target.checked)} />
+      <input type="checkbox" className="mt-1 h-4 w-4 accent-primary-600" checked={checked} onChange={(e) => onChange(e.target.checked)} />
       <span>
         <span className="block text-sm font-semibold text-ink">{label}</span>
         {hint ? <span className="block text-xs text-ink-faint">{hint}</span> : null}
@@ -67,23 +67,23 @@ export function GuideRulesPanel() {
       <div className="mt-2 grid grid-cols-2 gap-3">
         <label className="text-sm">
           <span className="block font-semibold text-ink">מקסימום מדריכים פעילים</span>
-          <input type="number" min={1} max={20} className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1" value={rules.max_active_guides} onChange={(e) => set({ max_active_guides: Number(e.target.value) || 1 })} />
+          <input type="number" min={1} max={20} className="mt-1 w-full rounded-lg border border-ink-300 px-2 py-1" value={rules.max_active_guides} onChange={(e) => set({ max_active_guides: Number(e.target.value) || 1 })} />
         </label>
         <label className="text-sm">
           <span className="block font-semibold text-ink">שעות המתנה בין פתיחות</span>
-          <input type="number" min={0} max={720} className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1" value={rules.cooldown_hours} onChange={(e) => set({ cooldown_hours: Number(e.target.value) || 0 })} />
+          <input type="number" min={0} max={720} className="mt-1 w-full rounded-lg border border-ink-300 px-2 py-1" value={rules.cooldown_hours} onChange={(e) => set({ cooldown_hours: Number(e.target.value) || 0 })} />
         </label>
       </div>
       <label className="mt-3 block text-sm">
         <span className="block font-semibold text-ink">לא לפתוח כשההודעה כוללת (מופרד בפסיקים)</span>
-        <input className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1" value={phrases} onChange={(e) => { setPhrases(e.target.value); setState('idle'); }} />
+        <input className="mt-1 w-full rounded-lg border border-ink-300 px-2 py-1" value={phrases} onChange={(e) => { setPhrases(e.target.value); setState('idle'); }} />
       </label>
       <div className="mt-3 flex items-center gap-3">
-        <button type="button" onClick={save} disabled={state === 'saving'} className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-gc hover:bg-emerald-700 disabled:opacity-60">
+        <button type="button" onClick={save} disabled={state === 'saving'} className="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-gc hover:bg-primary-700 disabled:opacity-60">
           {state === 'saving' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} שמירה
         </button>
-        {state === 'saved' ? <span className="text-sm text-emerald-700">נשמר</span> : null}
-        {state === 'error' ? <span className="text-sm text-red-600">השמירה נכשלה</span> : null}
+        {state === 'saved' ? <span className="text-sm text-primary-700">נשמר</span> : null}
+        {state === 'error' ? <span className="text-sm text-coral-600">השמירה נכשלה</span> : null}
       </div>
     </section>
   );

@@ -59,7 +59,7 @@ export function VideoPlayer({ provider, externalId, externalUrl, title }: VideoP
       <div className="video-container flex items-center justify-center"
         style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(239,68,68,0.2)' }}>
         <div className="text-center">
-          <AlertCircle className="w-10 h-10 text-red-400 mx-auto mb-2" />
+          <AlertCircle className="w-10 h-10 text-coral-400 mx-auto mb-2" />
           <p className="text-ink-faint text-sm">שגיאה בטעינת הווידאו</p>
         </div>
       </div>

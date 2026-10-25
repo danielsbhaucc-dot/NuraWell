@@ -19,7 +19,7 @@ export function SecurityDocs() {
       .then((d: { docs: Doc[] }) => setDocs(d.docs))
       .catch(() => setErr(true));
   }, []);
-  if (err) return <p role="alert" className="rounded-2xl border border-rose-300/60 bg-rose-500/10 px-4 py-3 text-sm font-semibold text-rose-800">לא הצלחנו לטעון את המסמכים.</p>;
+  if (err) return <p role="alert" className="rounded-2xl border border-coral-300/60 bg-coral-500/10 px-4 py-3 text-sm font-semibold text-coral-800">לא הצלחנו לטעון את המסמכים.</p>;
   if (!docs) return <Loader2 className="mx-auto animate-spin text-ink-faint" />;
   return (
     <div className="space-y-2" data-testid="security-docs">

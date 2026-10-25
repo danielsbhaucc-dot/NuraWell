@@ -87,7 +87,7 @@ export function ActionHubProvider({ children }: { children: ReactNode }) {
 
       <Drawer.Root open={menuOpen} onOpenChange={setMenuOpen} direction="bottom" shouldScaleBackground>
         <Drawer.Portal container={overlayRoot ?? undefined}>
-          <Drawer.Overlay data-nura-overlay="1" className="fixed inset-0 z-210 bg-emerald-950/35 backdrop-blur-xs" />
+          <Drawer.Overlay data-nura-overlay="1" className="fixed inset-0 z-210 bg-primary-950/35 backdrop-blur-xs" />
           <Drawer.Content
             dir="rtl"
             data-nura-overlay="1"
@@ -127,18 +127,18 @@ export function ActionHubProvider({ children }: { children: ReactNode }) {
               <button
                 type="button"
                 onClick={openUpdateTasks}
-                className="w-full text-start rounded-[22px] p-px transition active:scale-[0.99] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-emerald-500/60"
+                className="w-full text-start rounded-[22px] p-px transition active:scale-[0.99] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-primary-500/60"
                 style={{
-                  background: 'linear-gradient(135deg, rgba(16,185,129,0.55), rgba(52,211,153,0.35), rgba(248,251,246,0.65))',
+                  background: 'linear-gradient(135deg, rgba(16,185,129,0.55), rgba(52,211,153,0.35), rgba(231,238,220,0.65))',
                   boxShadow: '0 12px 36px rgba(6,78,59,0.1)',
                 }}
               >
                 <div
                   className="flex items-center gap-4 rounded-[21px] px-4 py-4 flex-row-reverse"
                   style={{
-                    background: 'linear-gradient(180deg, rgba(248,251,246,0.72) 0%, rgba(236,253,245,0.45) 100%)',
-                    border: '1px solid rgba(248,251,246,0.65)',
-                    boxShadow: 'inset 0 1px 0 rgba(248,251,246,0.85)',
+                    background: 'linear-gradient(180deg, rgba(231,238,220,0.72) 0%, rgba(236,253,245,0.45) 100%)',
+                    border: '1px solid rgba(231,238,220,0.65)',
+                    boxShadow: 'inset 0 1px 0 rgba(231,238,220,0.85)',
                   }}
                 >
                   <div
@@ -148,11 +148,11 @@ export function ActionHubProvider({ children }: { children: ReactNode }) {
                       boxShadow: '0 8px 22px rgba(4,120,87,0.28), inset 0 1px 0 rgba(255,255,255,0.25)',
                     }}
                   >
-                    <ClipboardCheck className="h-7 w-7 text-white" strokeWidth={2.2} />
+                    <ClipboardCheck className="h-7 w-7 text-on-dark" strokeWidth={2.2} />
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="font-black text-[15px] text-[#1A1730] leading-snug">עדכון משימות</p>
-                    <p className="text-[12px] text-emerald-900/75 font-semibold mt-1 leading-relaxed">
+                    <p className="text-[12px] text-primary-900/75 font-semibold mt-1 leading-relaxed">
                       {loading
                         ? 'רגע, טוען…'
                         : acceptedCount > 0
@@ -160,25 +160,25 @@ export function ActionHubProvider({ children }: { children: ReactNode }) {
                           : 'פה תסמן לי מה שעשית מהמשימות שלקחנו במסע'}
                     </p>
                   </div>
-                  <ChevronLeft className="h-5 w-5 text-emerald-800/35 shrink-0" aria-hidden />
+                  <ChevronLeft className="h-5 w-5 text-primary-800/35 shrink-0" aria-hidden />
                 </div>
               </button>
 
               <button
                 type="button"
                 onClick={openPlans}
-                className="w-full text-start rounded-[22px] p-px transition active:scale-[0.99] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-teal-500/60"
+                className="w-full text-start rounded-[22px] p-px transition active:scale-[0.99] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-secondary-500/60"
                 style={{
-                  background: 'linear-gradient(135deg, rgba(13,148,136,0.5), rgba(45,212,191,0.35), rgba(248,251,246,0.65))',
+                  background: 'linear-gradient(135deg, rgba(13,148,136,0.5), rgba(45,212,191,0.35), rgba(231,238,220,0.65))',
                   boxShadow: '0 12px 36px rgba(13,148,136,0.1)',
                 }}
               >
                 <div
                   className="flex items-center gap-4 rounded-[21px] px-4 py-4 flex-row-reverse"
                   style={{
-                    background: 'linear-gradient(180deg, rgba(248,251,246,0.72) 0%, rgba(240,253,250,0.45) 100%)',
-                    border: '1px solid rgba(248,251,246,0.65)',
-                    boxShadow: 'inset 0 1px 0 rgba(248,251,246,0.85)',
+                    background: 'linear-gradient(180deg, rgba(231,238,220,0.72) 0%, rgba(240,253,250,0.45) 100%)',
+                    border: '1px solid rgba(231,238,220,0.65)',
+                    boxShadow: 'inset 0 1px 0 rgba(231,238,220,0.85)',
                   }}
                 >
                   <div
@@ -188,11 +188,11 @@ export function ActionHubProvider({ children }: { children: ReactNode }) {
                       boxShadow: '0 8px 22px rgba(15,118,110,0.28), inset 0 1px 0 rgba(255,255,255,0.25)',
                     }}
                   >
-                    <ListChecks className="h-7 w-7 text-white" strokeWidth={2.2} />
+                    <ListChecks className="h-7 w-7 text-on-dark" strokeWidth={2.2} />
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="font-black text-[15px] text-[#1A1730] leading-snug">התוכנית שלי</p>
-                    <p className="text-[12px] text-teal-900/75 font-semibold mt-1 leading-relaxed">
+                    <p className="text-[12px] text-secondary-900/75 font-semibold mt-1 leading-relaxed">
                       {loading
                         ? 'רגע, טוען…'
                         : plansCount > 0
@@ -200,25 +200,25 @@ export function ActionHubProvider({ children }: { children: ReactNode }) {
                           : 'צעדים מותאמים, תזכורות ומעקב אישי'}
                     </p>
                   </div>
-                  <ChevronLeft className="h-5 w-5 text-teal-800/35 shrink-0" aria-hidden />
+                  <ChevronLeft className="h-5 w-5 text-secondary-800/35 shrink-0" aria-hidden />
                 </div>
               </button>
 
               <button
                 type="button"
                 onClick={openHistory}
-                className="w-full text-start rounded-[22px] p-px transition active:scale-[0.99] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-sky-400/50"
+                className="w-full text-start rounded-[22px] p-px transition active:scale-[0.99] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-secondary-400/50"
                 style={{
-                  background: 'linear-gradient(135deg, rgba(56,189,248,0.4), rgba(167,243,208,0.35), rgba(248,251,246,0.6))',
+                  background: 'linear-gradient(135deg, rgba(56,189,248,0.4), rgba(167,243,208,0.35), rgba(231,238,220,0.6))',
                   boxShadow: '0 12px 36px rgba(14,116,144,0.08)',
                 }}
               >
                 <div
                   className="flex items-center gap-4 rounded-[21px] px-4 py-4 flex-row-reverse"
                   style={{
-                    background: 'linear-gradient(180deg, rgba(248,251,246,0.76) 0%, rgba(240,249,255,0.45) 100%)',
-                    border: '1px solid rgba(248,251,246,0.65)',
-                    boxShadow: 'inset 0 1px 0 rgba(248,251,246,0.88)',
+                    background: 'linear-gradient(180deg, rgba(231,238,220,0.76) 0%, rgba(240,249,255,0.45) 100%)',
+                    border: '1px solid rgba(231,238,220,0.65)',
+                    boxShadow: 'inset 0 1px 0 rgba(231,238,220,0.88)',
                   }}
                 >
                   <div
@@ -228,33 +228,33 @@ export function ActionHubProvider({ children }: { children: ReactNode }) {
                       boxShadow: '0 8px 22px rgba(3,105,161,0.22), inset 0 1px 0 rgba(255,255,255,0.2)',
                     }}
                   >
-                    <History className="h-7 w-7 text-white" strokeWidth={2.2} />
+                    <History className="h-7 w-7 text-on-dark" strokeWidth={2.2} />
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="font-black text-[15px] text-[#1A1730] leading-snug">היסטוריית משימות</p>
-                    <p className="text-[12px] text-sky-900/75 font-semibold mt-1 leading-relaxed">
+                    <p className="text-[12px] text-secondary-900/75 font-semibold mt-1 leading-relaxed">
                       כל הביצועים לפי תאריך וסלוט — 60 יום אחרונים
                     </p>
                   </div>
-                  <ChevronLeft className="h-5 w-5 text-sky-800/35 shrink-0" aria-hidden />
+                  <ChevronLeft className="h-5 w-5 text-secondary-800/35 shrink-0" aria-hidden />
                 </div>
               </button>
 
               <button
                 type="button"
                 onClick={openDeclined}
-                className="w-full text-start rounded-[22px] p-px transition active:scale-[0.99] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-rose-400/50"
+                className="w-full text-start rounded-[22px] p-px transition active:scale-[0.99] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-coral-400/50"
                 style={{
-                  background: 'linear-gradient(135deg, rgba(251,113,133,0.45), rgba(254,215,170,0.35), rgba(248,251,246,0.6))',
+                  background: 'linear-gradient(135deg, rgba(251,113,133,0.45), rgba(254,215,170,0.35), rgba(231,238,220,0.6))',
                   boxShadow: '0 12px 36px rgba(190,24,93,0.08)',
                 }}
               >
                 <div
                   className="flex items-center gap-4 rounded-[21px] px-4 py-4 flex-row-reverse"
                   style={{
-                    background: 'linear-gradient(180deg, rgba(248,251,246,0.76) 0%, rgba(255,241,242,0.42) 100%)',
-                    border: '1px solid rgba(248,251,246,0.65)',
-                    boxShadow: 'inset 0 1px 0 rgba(248,251,246,0.88)',
+                    background: 'linear-gradient(180deg, rgba(231,238,220,0.76) 0%, rgba(255,241,242,0.42) 100%)',
+                    border: '1px solid rgba(231,238,220,0.65)',
+                    boxShadow: 'inset 0 1px 0 rgba(231,238,220,0.88)',
                   }}
                 >
                   <div
@@ -264,13 +264,13 @@ export function ActionHubProvider({ children }: { children: ReactNode }) {
                       boxShadow: '0 8px 22px rgba(190,18,60,0.22), inset 0 1px 0 rgba(255,255,255,0.2)',
                     }}
                   >
-                    <UserX className="h-7 w-7 text-white" strokeWidth={2.2} />
+                    <UserX className="h-7 w-7 text-on-dark" strokeWidth={2.2} />
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="font-black text-[15px] text-[#1A1730] leading-snug">
                       משימות שלא לקחתי על עצמי
                     </p>
-                    <p className="text-[12px] text-rose-900/75 font-semibold mt-1 leading-relaxed">
+                    <p className="text-[12px] text-coral-900/75 font-semibold mt-1 leading-relaxed">
                       {loading
                         ? 'טוען…'
                         : rejectedCount > 0
@@ -278,7 +278,7 @@ export function ActionHubProvider({ children }: { children: ReactNode }) {
                           : 'עדיין אין — אפשר לחזור לסיכום צעד ולעדכן'}
                     </p>
                   </div>
-                  <ChevronLeft className="h-5 w-5 text-rose-800/35 shrink-0" aria-hidden />
+                  <ChevronLeft className="h-5 w-5 text-coral-800/35 shrink-0" aria-hidden />
                 </div>
               </button>
             </div>

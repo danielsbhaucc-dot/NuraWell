@@ -113,7 +113,7 @@ export function AdminChallengePanel() {
   return (
     <div className="space-y-6">
       {error ? (
-        <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
+        <p className="rounded-xl bg-coral-50 px-4 py-3 text-sm text-coral-700">{error}</p>
       ) : null}
 
       <div className="rounded-3xl border border-hairline/60 bg-background-card/70 p-5 shadow-xs backdrop-blur-md sm:p-6">
@@ -128,7 +128,7 @@ export function AdminChallengePanel() {
               disabled={toggleLoading}
               onClick={toggleChallenge}
               className={`rounded-xl px-4 py-2 text-sm font-semibold disabled:opacity-60 ${
-                challengeEnabled ? 'bg-emerald-100 text-emerald-800' : 'bg-hairline text-ink-soft'
+                challengeEnabled ? 'bg-primary-100 text-primary-800' : 'bg-hairline text-ink-soft'
               }`}
             >
               {toggleLoading ? (
@@ -154,9 +154,9 @@ export function AdminChallengePanel() {
       <AdminChallengeEatingWindowEditor />
       <AdminChallengeTasksEditor />
 
-      <div className="rounded-3xl border border-violet-200/60 bg-background-card/70 p-5 shadow-xs backdrop-blur-md sm:p-6">
+      <div className="rounded-3xl border border-iris-200/60 bg-background-card/70 p-5 shadow-xs backdrop-blur-md sm:p-6">
         <div className="mb-4 flex items-center gap-2">
-          <FlaskConical className="h-5 w-5 text-violet-600" />
+          <FlaskConical className="h-5 w-5 text-iris-600" />
           <h2 className="text-lg font-bold text-ink">דמו אתגר — מנהל בלבד</h2>
         </div>
         <p className="mb-5 text-sm leading-relaxed text-ink-soft">
@@ -169,9 +169,9 @@ export function AdminChallengePanel() {
           type="button"
           disabled={loading !== null}
           onClick={() => startDemo(FULL_EXPERIENCE.key)}
-          className="mb-4 flex w-full flex-col items-start rounded-2xl border-2 border-violet-400 bg-linear-to-br from-violet-100 to-background-card p-5 text-start transition hover:border-violet-500 hover:shadow-md disabled:opacity-60"
+          className="mb-4 flex w-full flex-col items-start rounded-2xl border-2 border-iris-400 bg-linear-to-br from-iris-100 to-background-card p-5 text-start transition hover:border-iris-500 hover:shadow-md disabled:opacity-60"
         >
-          <span className="flex items-center gap-2 text-base font-black text-violet-950">
+          <span className="flex items-center gap-2 text-base font-black text-iris-950">
             {loading === 'full-0' ? (
               <Loader2 className="h-5 w-5 animate-spin" />
             ) : (
@@ -193,9 +193,9 @@ export function AdminChallengePanel() {
                 type="button"
                 disabled={loading !== null}
                 onClick={() => startDemo(s.key, s.day)}
-                className="flex min-h-22 flex-col items-start rounded-2xl border border-violet-200/80 bg-linear-to-br from-violet-50 to-background-card p-4 text-start transition hover:border-violet-400 hover:shadow-md disabled:opacity-60"
+                className="flex min-h-22 flex-col items-start rounded-2xl border border-iris-200/80 bg-linear-to-br from-iris-50 to-background-card p-4 text-start transition hover:border-iris-400 hover:shadow-md disabled:opacity-60"
               >
-                <span className="flex items-center gap-2 font-bold text-violet-900">
+                <span className="flex items-center gap-2 font-bold text-iris-900">
                   {loading === key ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
@@ -210,12 +210,12 @@ export function AdminChallengePanel() {
         </div>
 
         {lastUrl ? (
-          <div className="mt-4 flex flex-wrap items-center gap-2 rounded-xl bg-emerald-50 px-4 py-3">
+          <div className="mt-4 flex flex-wrap items-center gap-2 rounded-xl bg-primary-50 px-4 py-3">
             <a
               href={lastUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-sm font-semibold text-emerald-800 underline"
+              className="inline-flex items-center gap-1 text-sm font-semibold text-primary-800 underline"
             >
               פתח שוב את קישור הדמו
               <ExternalLink className="h-3.5 w-3.5" />

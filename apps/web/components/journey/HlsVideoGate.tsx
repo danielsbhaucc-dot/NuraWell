@@ -13,7 +13,7 @@ export const HlsVideoGate = forwardRef<HTMLVideoElement, HlsVideoProps>(function
   if (!mounted) {
     return (
       <div className={props.className} style={props.style}>
-        <div className="absolute inset-0 h-full w-full object-contain bg-black">
+        <div className="absolute inset-0 h-full w-full object-contain bg-forest-950">
           <div className="absolute inset-0 flex items-center justify-center">
             <div
               className="h-16 w-16 animate-pulse rounded-full"

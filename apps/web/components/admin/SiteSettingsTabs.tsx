@@ -47,7 +47,7 @@ export function SiteSettingsTabs() {
               className={cn(
                 'inline-flex min-h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl px-3.5 py-2 text-sm font-bold transition-all',
                 active
-                  ? 'bg-linear-to-l from-sky-500 to-cyan-600 text-gc shadow-md shadow-sky-500/25'
+                  ? 'bg-linear-to-l from-secondary-500 to-secondary-600 text-gc shadow-md shadow-secondary-500/25'
                   : 'text-ink-soft hover:bg-background-card/50 hover:text-ink',
               )}
             >

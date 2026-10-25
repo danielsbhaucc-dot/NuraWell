@@ -43,21 +43,21 @@ export function TranscriptAccessCountdown({ accessUntil, className }: Transcript
 
   const barClass =
     tone === 'expired'
-      ? 'from-rose-500 to-rose-600'
+      ? 'from-coral-500 to-coral-600'
       : tone === 'critical'
-        ? 'from-orange-500 to-rose-500'
+        ? 'from-energy-500 to-coral-500'
         : tone === 'warning'
-          ? 'from-amber-400 to-orange-500'
-          : 'from-emerald-400 to-teal-500';
+          ? 'from-accent-400 to-energy-500'
+          : 'from-primary-400 to-secondary-500';
 
   const boxClass =
     tone === 'expired'
-      ? 'border-rose-300 bg-rose-50/90 text-rose-900'
+      ? 'border-coral-300 bg-coral-50/90 text-coral-900'
       : tone === 'critical'
-        ? 'border-orange-300 bg-orange-50/90 text-orange-950'
+        ? 'border-energy-300 bg-energy-50/90 text-energy-950'
         : tone === 'warning'
-          ? 'border-amber-300 bg-amber-50/90 text-amber-950'
-          : 'border-emerald-300 bg-emerald-50/90 text-emerald-950';
+          ? 'border-accent-300 bg-accent-50/90 text-accent-950'
+          : 'border-primary-300 bg-primary-50/90 text-primary-950';
 
   let endLabel = '—';
   try {
@@ -76,7 +76,7 @@ export function TranscriptAccessCountdown({ accessUntil, className }: Transcript
         <span>⏱️ גישה לתמליל</span>
         <span className="font-mono text-sm tabular-nums">{fmtRemaining(remainingMs)}</span>
       </div>
-      <div className="mb-2 h-2.5 overflow-hidden rounded-full bg-black/10">
+      <div className="mb-2 h-2.5 overflow-hidden rounded-full bg-forest-950/10">
         <div
           className={cn('h-full rounded-full bg-linear-to-l transition-all duration-1000', barClass)}
           style={{ width: `${100 - pct}%` }}

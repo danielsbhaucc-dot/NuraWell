@@ -86,52 +86,52 @@ const DAY_STATUS: Record<
 > = {
   done: {
     label: 'הושלם',
-    dot: 'bg-emerald-500',
+    dot: 'bg-primary-500',
     bg: 'rgba(209,250,229,0.75)',
-    text: 'text-emerald-900',
-    border: 'border-emerald-300/60',
+    text: 'text-primary-900',
+    border: 'border-primary-300/60',
   },
   in_progress: {
     label: 'בתהליך',
-    dot: 'bg-sky-400',
+    dot: 'bg-secondary-400',
     bg: 'rgba(224,242,254,0.8)',
-    text: 'text-sky-900',
-    border: 'border-sky-300/60',
+    text: 'text-secondary-900',
+    border: 'border-secondary-300/60',
   },
   partial: {
     label: 'חלקי',
-    dot: 'bg-amber-500',
+    dot: 'bg-accent-500',
     bg: 'rgba(254,243,199,0.8)',
-    text: 'text-amber-900',
-    border: 'border-amber-300/60',
+    text: 'text-accent-900',
+    border: 'border-accent-300/60',
   },
   pending: {
     label: 'פתוח',
-    dot: 'bg-sky-300',
+    dot: 'bg-secondary-300',
     bg: 'rgba(224,242,254,0.55)',
-    text: 'text-sky-800',
-    border: 'border-sky-200/50',
+    text: 'text-secondary-800',
+    border: 'border-secondary-200/50',
   },
   missed: {
     label: 'פספוס',
-    dot: 'bg-rose-300/90',
+    dot: 'bg-coral-300/90',
     bg: 'rgba(255,228,230,0.55)',
-    text: 'text-rose-800/90',
-    border: 'border-rose-200/50',
+    text: 'text-coral-800/90',
+    border: 'border-coral-200/50',
   },
   off: {
     label: 'לא פעיל',
-    dot: 'bg-slate-200/80',
+    dot: 'bg-ink-200/80',
     bg: 'rgba(241,245,249,0.5)',
-    text: 'text-slate-400',
-    border: 'border-slate-200/40',
+    text: 'text-ink-400',
+    border: 'border-ink-200/40',
   },
   before_accept: {
     label: 'לפני קבלה',
-    dot: 'bg-slate-100',
+    dot: 'bg-ink-100',
     bg: 'rgba(248,250,252,0.4)',
-    text: 'text-slate-300',
-    border: 'border-slate-100/40',
+    text: 'text-ink-300',
+    border: 'border-ink-100/40',
   },
 };
 
@@ -189,12 +189,12 @@ function aggregateDayStatus(days: TaskHistoryDay[]): AggStatus {
 }
 
 const AGG_DOT: Record<AggStatus, string> = {
-  done: 'bg-emerald-500',
-  partial: 'bg-amber-500',
-  in_progress: 'bg-sky-400',
-  pending: 'bg-sky-300',
-  missed: 'bg-rose-300/85',
-  off: 'bg-slate-200/70',
+  done: 'bg-primary-500',
+  partial: 'bg-accent-500',
+  in_progress: 'bg-secondary-400',
+  pending: 'bg-secondary-300',
+  missed: 'bg-coral-300/85',
+  off: 'bg-ink-200/70',
 };
 
 /* ── Section header — matches ProgressPageClient style ──────────── */
@@ -335,7 +335,7 @@ function PeriodTimeline({
 
   return (
     <div className="rounded-2xl p-3" style={{ background: 'rgba(220,252,231,0.45)', border: '1px solid rgba(167,243,208,0.45)' }}>
-      <p className="text-[10px] font-bold text-emerald-900/75 mb-2 text-start">
+      <p className="text-[10px] font-bold text-primary-900/75 mb-2 text-start">
         ציר זמן · {dateKeys.length} ימים
       </p>
       <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-hide">
@@ -351,24 +351,24 @@ function PeriodTimeline({
               type="button"
               onClick={() => onSelectDay(dateKey)}
               className={`flex min-w-[38px] flex-col items-center gap-0.5 px-1 py-1.5 rounded-xl transition active:scale-95 no-tap-highlight touch-manipulation shrink-0 ${
-                isActive ? 'bg-emerald-100/90 ring-1 ring-emerald-400/60' : 'hover:bg-emerald-50/70'
+                isActive ? 'bg-primary-100/90 ring-1 ring-primary-400/60' : 'hover:bg-primary-50/70'
               }`}
             >
-              <span className={`h-3 w-3 rounded-full ${AGG_DOT[agg]} ${isToday ? 'ring-2 ring-sky-300/70' : ''}`} />
-              <span className="text-[9px] font-bold text-emerald-900/80">{dateKey.slice(8)}</span>
+              <span className={`h-3 w-3 rounded-full ${AGG_DOT[agg]} ${isToday ? 'ring-2 ring-secondary-300/70' : ''}`} />
+              <span className="text-[9px] font-bold text-primary-900/80">{dateKey.slice(8)}</span>
               {totalExec > 0 ? (
-                <span className="text-[8px] font-black text-emerald-800">{totalExec}</span>
+                <span className="text-[8px] font-black text-primary-800">{totalExec}</span>
               ) : null}
             </button>
           );
         })}
       </div>
-      <div className="flex flex-wrap gap-2 justify-end mt-2 text-[9px] font-semibold text-emerald-900/70">
-        <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-emerald-500" />הושלם</span>
-        <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-amber-500" />חלקי</span>
-        <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-sky-400" />בתהליך</span>
-        <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-sky-300" />פתוח</span>
-        <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-rose-300/85" />פספוס</span>
+      <div className="flex flex-wrap gap-2 justify-end mt-2 text-[9px] font-semibold text-primary-900/70">
+        <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-primary-500" />הושלם</span>
+        <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-accent-500" />חלקי</span>
+        <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-secondary-400" />בתהליך</span>
+        <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-secondary-300" />פתוח</span>
+        <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-coral-300/85" />פספוס</span>
       </div>
     </div>
   );
@@ -404,12 +404,12 @@ function DayRow({ day, todayKey }: { day: TaskHistoryDay; todayKey: string }) {
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
           {day.was_due && day.expected_slots > 1 ? (
-            <span className="text-[10px] font-bold text-emerald-900/75">
+            <span className="text-[10px] font-bold text-primary-900/75">
               {day.done_slots}/{day.expected_slots}
             </span>
           ) : null}
           {hasExec ? (
-            <ChevronDown className={`w-3.5 h-3.5 text-emerald-800/60 transition-transform ${open ? 'rotate-180' : ''}`} />
+            <ChevronDown className={`w-3.5 h-3.5 text-primary-800/60 transition-transform ${open ? 'rotate-180' : ''}`} />
           ) : null}
         </div>
       </button>
@@ -426,11 +426,11 @@ function DayRow({ day, todayKey }: { day: TaskHistoryDay; todayKey: string }) {
             <ul className="mt-2 space-y-1.5 pt-2" style={{ borderTop: '1px solid rgba(167,243,208,0.4)' }}>
               {day.executions.map((ex, i) => (
                 <li key={`${ex.slot}-${ex.completed_at}-${i}`} className="flex items-center justify-between gap-2 text-[11px]">
-                  <span className="font-bold text-emerald-800 flex items-center gap-1">
+                  <span className="font-bold text-primary-800 flex items-center gap-1">
                     <CheckCircle2 className="w-3 h-3 shrink-0" />
                     {slotLabel(ex.slot as JourneyTaskSlot)}
                   </span>
-                  <span className="text-emerald-900/70 font-medium tabular-nums">
+                  <span className="text-primary-900/70 font-medium tabular-nums">
                     {formatTimeOnly(ex.completed_at)}
                   </span>
                 </li>
@@ -499,29 +499,29 @@ function TaskCard({
           <div className="min-w-0 flex-1">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
-                <p className="text-sm font-black text-emerald-950 leading-snug line-clamp-2">
+                <p className="text-sm font-black text-primary-950 leading-snug line-clamp-2">
                   {task.task_title}
                 </p>
-                <p className="text-[10px] font-semibold text-emerald-900/65 mt-0.5 flex items-center gap-1 flex-wrap justify-end">
+                <p className="text-[10px] font-semibold text-primary-900/65 mt-0.5 flex items-center gap-1 flex-wrap justify-end">
                   <MapPin className="w-3 h-3 shrink-0" />
                   {task.step_number > 0 ? `צעד ${task.step_number}: ${task.step_title}` : task.step_title}
                 </p>
               </div>
               <ChevronDown
-                className={`w-4 h-4 text-emerald-800/60 shrink-0 mt-1 transition-transform ${expanded ? 'rotate-180' : ''}`}
+                className={`w-4 h-4 text-primary-800/60 shrink-0 mt-1 transition-transform ${expanded ? 'rotate-180' : ''}`}
               />
             </div>
 
             <div className="flex flex-wrap gap-1.5 mt-2 justify-end">
               <span
-                className="text-[10px] font-bold px-2 py-0.5 rounded-full text-emerald-900"
+                className="text-[10px] font-bold px-2 py-0.5 rounded-full text-primary-900"
                 style={{ background: 'rgba(167,243,208,0.55)', border: '1px solid rgba(110,231,183,0.4)' }}
               >
                 {task.schedule_label}
               </span>
               {task.schedule === 'one_time' && task.execution_done ? (
                 <span
-                  className="text-[10px] font-bold px-2 py-0.5 rounded-full text-teal-900"
+                  className="text-[10px] font-bold px-2 py-0.5 rounded-full text-secondary-900"
                   style={{ background: 'rgba(153,246,228,0.55)', border: '1px solid rgba(94,234,212,0.45)' }}
                 >
                   בוצע ✓
@@ -529,7 +529,7 @@ function TaskCard({
               ) : null}
               {task.current_streak > 0 ? (
                 <span
-                  className="text-[10px] font-bold px-2 py-0.5 rounded-full text-orange-900 inline-flex items-center gap-0.5"
+                  className="text-[10px] font-bold px-2 py-0.5 rounded-full text-energy-900 inline-flex items-center gap-0.5"
                   style={{ background: 'rgba(254,215,170,0.55)', border: '1px solid rgba(251,191,36,0.45)' }}
                 >
                   <Flame className="w-3 h-3" />
@@ -549,7 +549,7 @@ function TaskCard({
 
         {encouragement ? (
           <p
-            className="text-[11px] font-semibold text-emerald-900/85 mt-2.5 text-start rounded-xl px-3 py-2"
+            className="text-[11px] font-semibold text-primary-900/85 mt-2.5 text-start rounded-xl px-3 py-2"
             style={{ background: 'rgba(236,253,245,0.7)', border: '1px solid rgba(167,243,208,0.4)' }}
           >
             {encouragement}
@@ -586,7 +586,7 @@ function TaskCard({
 
               {task.task_description ? (
                 <p
-                  className="text-xs text-emerald-900/75 leading-relaxed rounded-xl px-3 py-2"
+                  className="text-xs text-primary-900/75 leading-relaxed rounded-xl px-3 py-2"
                   style={{ background: 'rgba(220,252,231,0.45)', border: '1px solid rgba(167,243,208,0.4)' }}
                 >
                   {task.task_description}
@@ -595,7 +595,7 @@ function TaskCard({
 
               {visibleDays.length > 0 ? (
                 <div>
-                  <p className="text-[10px] font-bold text-emerald-900/70 mb-2">יומן לפי יום</p>
+                  <p className="text-[10px] font-bold text-primary-900/70 mb-2">יומן לפי יום</p>
                   <div className="space-y-2 max-h-[min(50vh,360px)] overflow-y-auto ps-0.5">
                     {visibleDays.map((day) => (
                       <DayRow key={day.date_key} day={day} todayKey={todayKey} />
@@ -604,7 +604,7 @@ function TaskCard({
                 </div>
               ) : (
                 <p
-                  className="text-xs text-emerald-900/70 text-center py-3 rounded-xl"
+                  className="text-xs text-primary-900/70 text-center py-3 rounded-xl"
                   style={{ background: 'rgba(220,252,231,0.45)', border: '1px solid rgba(167,243,208,0.35)' }}
                 >
                   אין ביצועים מתועדים בתקופה זו
@@ -624,10 +624,10 @@ function MetaRow({ icon, label, value }: { icon: React.ReactNode; label: string;
       className="flex items-center justify-between gap-2 text-xs rounded-xl px-3 py-2"
       style={{ background: 'rgba(236,253,245,0.55)', border: '1px solid rgba(167,243,208,0.35)' }}
     >
-      <span className="font-bold tabular-nums text-emerald-900">{value}</span>
-      <span className="flex items-center gap-1.5 text-emerald-900/75 font-semibold">
+      <span className="font-bold tabular-nums text-primary-900">{value}</span>
+      <span className="flex items-center gap-1.5 text-primary-900/75 font-semibold">
         {label}
-        <span className="text-emerald-700">{icon}</span>
+        <span className="text-primary-700">{icon}</span>
       </span>
     </div>
   );
@@ -636,10 +636,10 @@ function MetaRow({ icon, label, value }: { icon: React.ReactNode; label: string;
 function StatCell({ label, value, accent }: { label: string; value: string; accent: 'emerald' | 'amber' | 'rose' }) {
   const bg: Record<string, string> = { emerald: 'rgba(209,250,229,0.65)', amber: 'rgba(254,243,199,0.65)', rose: 'rgba(255,228,230,0.55)' };
   const border: Record<string, string> = { emerald: 'rgba(110,231,183,0.4)', amber: 'rgba(251,191,36,0.4)', rose: 'rgba(251,113,133,0.35)' };
-  const text: Record<string, string> = { emerald: 'text-emerald-900', amber: 'text-amber-900', rose: 'text-rose-800/90' };
+  const text: Record<string, string> = { emerald: 'text-primary-900', amber: 'text-accent-900', rose: 'text-coral-800/90' };
   return (
     <div className="rounded-xl px-1.5 py-2 text-center" style={{ background: bg[accent], border: `1px solid ${border[accent]}` }}>
-      <p className="text-[9px] font-bold text-emerald-900/60">{label}</p>
+      <p className="text-[9px] font-bold text-primary-900/60">{label}</p>
       <p className={`text-sm font-black ${text[accent]}`}>{value}</p>
     </div>
   );
@@ -823,7 +823,7 @@ export function TaskHistoryClient({
             </div>
             <div className="min-w-0 flex-1 text-start">
               <p
-                className="text-[15px] font-black text-white leading-tight"
+                className="text-[15px] font-black text-on-dark leading-tight"
                 style={{ fontFamily: hebrewFont }}
               >
                 {historyPageGreeting(firstName)}
@@ -836,20 +836,20 @@ export function TaskHistoryClient({
                       greeting.tone === 'festive'
                         ? '#FFD97D'
                         : greeting.tone === 'solemn'
-                          ? 'rgba(248,251,246,0.78)'
-                          : 'rgba(248,251,246,0.92)',
+                          ? 'rgba(231,238,220,0.78)'
+                          : 'rgba(231,238,220,0.92)',
                     fontStyle: greeting.tone === 'solemn' ? 'italic' : 'normal',
                   }}
                 >
                   {greeting.occasionGreeting}
                 </p>
               ) : (
-                <p className="mt-1 text-xs font-semibold text-white/80">
+                <p className="mt-1 text-xs font-semibold text-on-dark/80">
                   {greeting.timeGreeting.replace(/,$/, '')}
                 </p>
               )}
               <h1
-                className="mt-2 text-2xl font-black text-white tracking-tight wrap-break-word leading-snug"
+                className="mt-2 text-2xl font-black text-on-dark tracking-tight wrap-break-word leading-snug"
                 style={{ fontFamily: hebrewFont }}
               >
                 היסטוריית משימות
@@ -902,7 +902,7 @@ export function TaskHistoryClient({
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3, duration: 0.3 }}
-              className="mt-3 rounded-2xl px-4 py-3 text-start text-sm font-bold text-teal-900"
+              className="mt-3 rounded-2xl px-4 py-3 text-start text-sm font-bold text-secondary-900"
               style={{
                 background: 'linear-gradient(135deg, rgba(167,243,208,0.7), rgba(110,231,183,0.5))',
                 border: '1px solid rgba(52,211,153,0.4)',
@@ -943,7 +943,7 @@ export function TaskHistoryClient({
                     disabled={loading}
                     onClick={() => void loadRange(tab.id)}
                     className={`shrink-0 min-w-[52px] px-3 py-2 rounded-xl text-xs font-black transition disabled:opacity-60 ${
-                      active ? 'text-emerald-950 shadow-md' : 'text-emerald-900/75'
+                      active ? 'text-primary-950 shadow-md' : 'text-primary-900/75'
                     }`}
                     style={
                       active
@@ -963,12 +963,12 @@ export function TaskHistoryClient({
                 );
               })}
               {loading ? (
-                <span className="flex items-center px-2 text-emerald-700">
+                <span className="flex items-center px-2 text-primary-700">
                   <Loader2 className="w-4 h-4 animate-spin" />
                 </span>
               ) : null}
             </div>
-            <p className="text-[10px] font-semibold text-emerald-900/70 text-center mt-2 px-1 flex items-center justify-center gap-1.5">
+            <p className="text-[10px] font-semibold text-primary-900/70 text-center mt-2 px-1 flex items-center justify-center gap-1.5">
               <span>
                 {meta.label}
                 {meta.range !== 'day' ? ` · ${meta.from} — ${meta.to}` : ''}
@@ -980,9 +980,9 @@ export function TaskHistoryClient({
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.8 }}
-                    className="inline-flex items-center gap-1 text-emerald-700"
+                    className="inline-flex items-center gap-1 text-primary-700"
                   >
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary-500 animate-pulse" />
                     לייב
                   </motion.span>
                 ) : justSynced ? (
@@ -991,9 +991,9 @@ export function TaskHistoryClient({
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.8 }}
-                    className="inline-flex items-center gap-1 text-emerald-700"
+                    className="inline-flex items-center gap-1 text-primary-700"
                   >
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary-500" />
                     סונכרן
                   </motion.span>
                 ) : null}
@@ -1004,7 +1004,7 @@ export function TaskHistoryClient({
 
         {error ? (
           <div
-            className="rounded-2xl px-4 py-3 text-sm font-medium text-center text-rose-900"
+            className="rounded-2xl px-4 py-3 text-sm font-medium text-center text-coral-900"
             style={{ background: 'rgba(255,228,230,0.7)', border: '1px solid rgba(251,113,133,0.35)' }}
           >
             {error}
@@ -1031,17 +1031,17 @@ export function TaskHistoryClient({
             <div className="rounded-[22px] text-center py-14 px-4" style={glassCard}>
               <div className="text-5xl mb-3">📋</div>
               <h3
-                className="text-lg font-black text-emerald-950 mb-2"
+                className="text-lg font-black text-primary-950 mb-2"
                 style={{ fontFamily: hebrewFont }}
               >
                 עדיין אין משימות מקובלות
               </h3>
-              <p className="text-emerald-900/70 text-sm mb-6 leading-relaxed">
+              <p className="text-primary-900/70 text-sm mb-6 leading-relaxed">
                 במסע, לחץ &quot;מקובל עליי&quot; על משימה — וההיסטוריה תופיע כאן אוטומטית
               </p>
               <Link
                 href="/journey"
-                className="inline-flex items-center justify-center px-6 py-3 rounded-2xl font-bold text-emerald-950"
+                className="inline-flex items-center justify-center px-6 py-3 rounded-2xl font-bold text-primary-950"
                 style={{
                   background: 'linear-gradient(135deg, rgba(167,243,208,0.9), rgba(110,231,183,0.8))',
                   boxShadow: '0 8px 24px rgba(16,185,129,0.25)',
@@ -1075,8 +1075,8 @@ export function TaskHistoryClient({
             <HistorySectionDivider tone="teal" title="לא מקובל" />
             <div className="rounded-[22px] p-4" style={glassCard}>
               <div className="flex items-center gap-2 mb-3">
-                <XCircle className="w-4 h-4 text-rose-600/80" />
-                <h3 className="text-sm font-black text-emerald-950">לא מקובל ({rejected.length})</h3>
+                <XCircle className="w-4 h-4 text-coral-600/80" />
+                <h3 className="text-sm font-black text-primary-950">לא מקובל ({rejected.length})</h3>
               </div>
               <ul className="space-y-2">
                 {rejected.map((r) => (
@@ -1085,12 +1085,12 @@ export function TaskHistoryClient({
                     className="flex items-center justify-between gap-2 text-xs pb-2 last:border-0"
                     style={{ borderBottom: '1px solid rgba(167,243,208,0.3)' }}
                   >
-                    <span className="text-emerald-900/60 shrink-0 tabular-nums">
+                    <span className="text-primary-900/60 shrink-0 tabular-nums">
                       {r.rejected_at ? formatDateTime(r.rejected_at) : '—'}
                     </span>
-                    <span className="font-medium text-emerald-950 text-start min-w-0 line-clamp-1">
+                    <span className="font-medium text-primary-950 text-start min-w-0 line-clamp-1">
                       {r.task_title}
-                      <span className="text-emerald-900/55 font-normal">
+                      <span className="text-primary-900/55 font-normal">
                         {' '}
                         · {r.source === 'almog' ? 'מאלמוג' : `צעד ${r.step_number}`}
                       </span>

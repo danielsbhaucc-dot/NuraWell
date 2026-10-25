@@ -203,9 +203,9 @@ export function TaskHistoryPageClient() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-24 text-emerald-800">
+      <div className="flex flex-col items-center justify-center py-24 text-primary-800">
         <Loader2 className="h-9 w-9 animate-spin" />
-        <p className="mt-3 text-sm font-semibold text-emerald-900/75">טוען היסטוריה…</p>
+        <p className="mt-3 text-sm font-semibold text-primary-900/75">טוען היסטוריה…</p>
       </div>
     );
   }
@@ -213,11 +213,11 @@ export function TaskHistoryPageClient() {
   if (error) {
     return (
       <div className="max-w-lg mx-auto px-4 py-8 text-center">
-        <p className="text-sm text-red-700 font-semibold">{error}</p>
+        <p className="text-sm text-coral-700 font-semibold">{error}</p>
         <button
           type="button"
           onClick={() => void load()}
-          className="mt-4 text-sm font-bold text-emerald-700 underline"
+          className="mt-4 text-sm font-bold text-primary-700 underline"
         >
           ננסה שוב
         </button>
@@ -235,15 +235,15 @@ export function TaskHistoryPageClient() {
             border: '1px solid rgba(16,185,129,0.25)',
           }}
         >
-          <History className="h-8 w-8 text-emerald-700" strokeWidth={2} />
+          <History className="h-8 w-8 text-primary-700" strokeWidth={2} />
         </div>
         <p className="text-[15px] font-black text-[#1A1730]">אין עדיין היסטוריה לסמן</p>
-        <p className="text-sm text-gray-600 leading-relaxed">
+        <p className="text-sm text-ink-600 leading-relaxed">
           ברגע שתסמן ביצוע של משימה יומית או חוזרת — היא תופיע כאן עם תאריך ושעה.
         </p>
         <Link
           href="/journey"
-          className="inline-flex items-center gap-2 rounded-2xl px-5 py-3 font-bold text-white text-sm"
+          className="inline-flex items-center gap-2 rounded-2xl px-5 py-3 font-bold text-on-dark text-sm"
           style={{
             background: 'linear-gradient(135deg, #047857, #10b981)',
             boxShadow: '0 6px 20px rgba(16,185,129,0.28)',
@@ -279,11 +279,11 @@ export function TaskHistoryPageClient() {
             className="pointer-events-none absolute inset-x-3 top-px h-px"
             style={{
               background:
-                'linear-gradient(90deg, transparent, rgba(248,251,246,0.75), transparent)',
+                'linear-gradient(90deg, transparent, rgba(231,238,220,0.75), transparent)',
             }}
           />
-          <p className="relative text-[10px] font-bold text-emerald-900/75">סך ביצועים (60 יום)</p>
-          <p className="relative text-2xl font-black text-emerald-900 tabular-nums">{summary.total}</p>
+          <p className="relative text-[10px] font-bold text-primary-900/75">סך ביצועים (60 יום)</p>
+          <p className="relative text-2xl font-black text-primary-900 tabular-nums">{summary.total}</p>
         </div>
         <div className="glass-surface relative overflow-hidden rounded-2xl p-3 text-start">
           <span
@@ -291,16 +291,16 @@ export function TaskHistoryPageClient() {
             className="pointer-events-none absolute inset-x-3 top-px h-px"
             style={{
               background:
-                'linear-gradient(90deg, transparent, rgba(248,251,246,0.75), transparent)',
+                'linear-gradient(90deg, transparent, rgba(231,238,220,0.75), transparent)',
             }}
           />
-          <p className="relative text-[10px] font-bold text-sky-900/75">ימים פעילים (שבוע)</p>
-          <p className="relative text-2xl font-black text-sky-900 tabular-nums">{summary.daysActive}/7</p>
+          <p className="relative text-[10px] font-bold text-secondary-900/75">ימים פעילים (שבוע)</p>
+          <p className="relative text-2xl font-black text-secondary-900 tabular-nums">{summary.daysActive}/7</p>
         </div>
         {ssotCounts && ssotCounts.unified.rejected > 0 ? (
           <div className="glass-surface relative overflow-hidden rounded-2xl p-3 text-start col-span-2">
-            <p className="relative text-[10px] font-bold text-rose-900/70">נדחו (מסע + אלמוג)</p>
-            <p className="relative text-xl font-black text-rose-900 tabular-nums">
+            <p className="relative text-[10px] font-bold text-coral-900/70">נדחו (מסע + אלמוג)</p>
+            <p className="relative text-xl font-black text-coral-900 tabular-nums">
               {ssotCounts.unified.rejected}
             </p>
           </div>
@@ -318,13 +318,13 @@ export function TaskHistoryPageClient() {
             className="pointer-events-none absolute inset-x-4 top-px h-px"
             style={{
               background:
-                'linear-gradient(90deg, transparent, rgba(248,251,246,0.8), transparent)',
+                'linear-gradient(90deg, transparent, rgba(231,238,220,0.8), transparent)',
             }}
           />
           <div className="relative flex items-center justify-center gap-2">
-            <Sparkles className="h-4 w-4 text-amber-500 shrink-0" />
+            <Sparkles className="h-4 w-4 text-accent-500 shrink-0" />
             <p
-              className="text-sm font-black text-emerald-950 text-center"
+              className="text-sm font-black text-primary-950 text-center"
               style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
             >
               משימות הכי פעילות שלך
@@ -335,7 +335,7 @@ export function TaskHistoryPageClient() {
               <li
                 key={`${row.meta?.taskId ?? idx}-${idx}`}
                 dir="rtl"
-                className="glass-inset flex items-center gap-2 rounded-xl px-2.5 py-1.5 text-[12px] font-semibold text-emerald-900 justify-between"
+                className="glass-inset flex items-center gap-2 rounded-xl px-2.5 py-1.5 text-[12px] font-semibold text-primary-900 justify-between"
               >
                 <span className="text-base shrink-0" aria-hidden>
                   {row.meta?.taskEmoji ?? '✅'}
@@ -343,7 +343,7 @@ export function TaskHistoryPageClient() {
                 <span className="truncate text-start flex-1">
                   {row.meta ? row.meta.taskTitle : 'משימה'}
                 </span>
-                <span className="tabular-nums text-emerald-700 shrink-0">×{row.count}</span>
+                <span className="tabular-nums text-primary-700 shrink-0">×{row.count}</span>
               </li>
             ))}
           </ul>
@@ -363,13 +363,13 @@ export function TaskHistoryPageClient() {
               className="pointer-events-none absolute inset-x-4 top-px h-px"
               style={{
                 background:
-                  'linear-gradient(90deg, transparent, rgba(248,251,246,0.8), transparent)',
+                  'linear-gradient(90deg, transparent, rgba(231,238,220,0.8), transparent)',
               }}
             />
             <div className="relative flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
-                <CalendarDays className="h-4 w-4 text-emerald-700" />
-                <p className="text-sm font-black text-emerald-950">
+                <CalendarDays className="h-4 w-4 text-primary-700" />
+                <p className="text-sm font-black text-primary-950">
                   {g.weekday ? `יום ${g.weekday} ` : ''}
                   {g.dateLabel}
                 </p>
@@ -379,7 +379,7 @@ export function TaskHistoryPageClient() {
                 style={{
                   background:
                     'linear-gradient(135deg, rgba(16,185,129,0.95), rgba(52,211,153,0.85))',
-                  color: '#fff',
+                  color: '#eef4ea',
                   boxShadow:
                     'inset 0 1px 0 rgba(255,255,255,0.35), 0 2px 8px rgba(6,78,59,0.18)',
                 }}
@@ -409,11 +409,11 @@ export function TaskHistoryPageClient() {
                         ✨
                       </span>
                       <div className="min-w-0 flex-1 text-start">
-                        <p className="text-[13px] font-bold text-emerald-950 truncate">
+                        <p className="text-[13px] font-bold text-primary-950 truncate">
                           {item.almog.title}
                         </p>
                         {item.almog.reason ? (
-                          <p className="text-[10px] font-semibold text-emerald-800/75 truncate">
+                          <p className="text-[10px] font-semibold text-primary-800/75 truncate">
                             {item.almog.reason}
                           </p>
                         ) : null}
@@ -426,7 +426,7 @@ export function TaskHistoryPageClient() {
                         <Sparkles className="h-3 w-3" />
                         <span>מאלמוג</span>
                       </span>
-                      <span className="text-[10px] font-semibold text-emerald-900/65 tabular-nums shrink-0">
+                      <span className="text-[10px] font-semibold text-primary-900/65 tabular-nums shrink-0">
                         {time}
                       </span>
                     </li>
@@ -443,24 +443,24 @@ export function TaskHistoryPageClient() {
                       {item.meta?.taskEmoji ?? '✅'}
                     </span>
                     <div className="min-w-0 flex-1 text-start">
-                      <p className="text-[13px] font-bold text-emerald-950 truncate">
+                      <p className="text-[13px] font-bold text-primary-950 truncate">
                         {item.meta?.taskTitle ?? 'משימה'}
                       </p>
                       {item.meta ? (
-                        <p className="text-[10px] font-semibold text-emerald-800/75 truncate">
+                        <p className="text-[10px] font-semibold text-primary-800/75 truncate">
                           צעד {item.meta.stepNumber}: {item.meta.stepTitle}
                         </p>
                       ) : null}
                     </div>
                     {/* ──── תגית סלוט: זכוכית iOS אמיתית ──── */}
                     <span
-                      className="glass-pill relative overflow-hidden text-[10px] font-bold tracking-wide text-emerald-900 rounded-full px-2.5 py-1 flex items-center gap-1 shrink-0"
+                      className="glass-pill relative overflow-hidden text-[10px] font-bold tracking-wide text-primary-900 rounded-full px-2.5 py-1 flex items-center gap-1 shrink-0"
                       title={`סלוט: ${slotLabel(item.execution.slot as JourneyTaskSlot)}`}
                     >
                       <span aria-hidden>{slotEmoji(item.execution.slot as JourneyTaskSlot)}</span>
                       <span>{slotLabel(item.execution.slot as JourneyTaskSlot)}</span>
                     </span>
-                    <span className="text-[10px] font-semibold text-emerald-900/65 tabular-nums shrink-0">
+                    <span className="text-[10px] font-semibold text-primary-900/65 tabular-nums shrink-0">
                       {time}
                     </span>
                   </li>

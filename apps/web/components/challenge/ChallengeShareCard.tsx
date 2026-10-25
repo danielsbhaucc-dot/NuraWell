@@ -38,27 +38,27 @@ export function ChallengeShareCard({ firstName, summary }: Props) {
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      className="mt-8 overflow-hidden rounded-3xl border border-amber-400/30 bg-linear-to-br from-amber-500/15 to-emerald-500/10 p-6 text-center"
+      className="mt-8 overflow-hidden rounded-3xl border border-accent-400/30 bg-linear-to-br from-accent-500/15 to-primary-500/10 p-6 text-center"
     >
-      <p className="text-xs font-semibold uppercase tracking-wider text-amber-300/80">תעודת סיום</p>
+      <p className="text-xs font-semibold uppercase tracking-wider text-accent-300/80">תעודת סיום</p>
       <p className="mt-2 font-display text-xl font-black">{firstName}</p>
-      <p className="mt-1 text-sm text-white/60">אתגר 14 יום — Reset</p>
+      <p className="mt-1 text-sm text-on-dark/60">אתגר 14 יום — Reset</p>
       <div className="mt-4 flex justify-center gap-6 text-center">
         <div>
-          <div className="font-display text-2xl font-black text-emerald-300">{summary.days_active}</div>
-          <div className="text-[10px] text-white/40">ימים</div>
+          <div className="font-display text-2xl font-black text-primary-300">{summary.days_active}</div>
+          <div className="text-[10px] text-on-dark/40">ימים</div>
         </div>
         <div>
-          <div className="font-display text-2xl font-black text-emerald-300">
+          <div className="font-display text-2xl font-black text-primary-300">
             {summary.total_task_completions}
           </div>
-          <div className="text-[10px] text-white/40">משימות</div>
+          <div className="text-[10px] text-on-dark/40">משימות</div>
         </div>
         <div>
-          <div className="font-display text-2xl font-black text-emerald-300">
+          <div className="font-display text-2xl font-black text-primary-300">
             {summary.total_success_events}
           </div>
-          <div className="text-[10px] text-white/40">הצלחות</div>
+          <div className="text-[10px] text-on-dark/40">הצלחות</div>
         </div>
       </div>
       <button

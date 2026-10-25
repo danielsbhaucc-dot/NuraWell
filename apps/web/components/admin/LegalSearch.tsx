@@ -31,11 +31,11 @@ export function LegalSearch() {
           {hits.length ? hits.map((h) => (
             <li key={`${h.type}:${h.id}`} className="rounded-2xl px-3 py-2 hover:bg-surface-sunken">
               <a href={h.href} className="block">
-                <span className={cn('me-2 rounded-full px-2 py-0.5 text-[10px] font-bold', h.type === 'receipt' ? 'bg-sky-100 text-sky-900' : h.type === 'media' ? 'bg-teal-100 text-teal-900' : 'bg-surface text-ink-soft')}>{TYPE_HE[h.type]}</span>
+                <span className={cn('me-2 rounded-full px-2 py-0.5 text-[10px] font-bold', h.type === 'receipt' ? 'bg-secondary-100 text-secondary-900' : h.type === 'media' ? 'bg-secondary-100 text-secondary-900' : 'bg-surface text-ink-soft')}>{TYPE_HE[h.type]}</span>
                 <span className="text-sm font-bold text-ink">{h.title}</span>
                 {h.sub ? <span className="block text-xs text-ink-faint">{h.sub}</span> : null}
               </a>
-              {h.links.length ? <p className="mt-1 flex flex-wrap gap-1.5 text-xs">שייך ל: {h.links.map((l) => <a key={l.href + l.label} href={l.href} className="rounded-full bg-surface px-2 py-0.5 font-bold text-teal-800">{l.label}</a>)}</p> : null}
+              {h.links.length ? <p className="mt-1 flex flex-wrap gap-1.5 text-xs">שייך ל: {h.links.map((l) => <a key={l.href + l.label} href={l.href} className="rounded-full bg-surface px-2 py-0.5 font-bold text-secondary-800">{l.label}</a>)}</p> : null}
             </li>
           )) : <li className="px-3 py-2 text-sm text-ink-faint">לא נמצא כלום</li>}
         </ul>

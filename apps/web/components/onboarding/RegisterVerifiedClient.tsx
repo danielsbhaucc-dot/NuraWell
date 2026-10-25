@@ -21,28 +21,28 @@ export function RegisterVerifiedClient({ gender }: RegisterVerifiedClientProps) 
       <PostVerifyEffects />
       <section className="onboarding-page-inner max-w-md w-full text-center">
         <section
-          className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-emerald-500/25 flex items-center justify-center ring-2 ring-emerald-400/40"
+          className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-primary-500/25 flex items-center justify-center ring-2 ring-primary-400/40"
           aria-hidden
         >
-          <CheckCircle2 className="w-10 h-10 text-emerald-300" />
+          <CheckCircle2 className="w-10 h-10 text-primary-300" />
         </section>
         <h1
-          className="text-2xl font-black text-white mb-3"
+          className="text-2xl font-black text-on-dark mb-3"
           style={{ fontFamily: 'Rubik, Heebo, sans-serif' }}
         >
           האימייל אומת בהצלחה!
         </h1>
-        <p className="text-emerald-50/90 text-[15px] leading-relaxed mb-6">
+        <p className="text-primary-50/90 text-[15px] leading-relaxed mb-6">
           מעולה — החשבון פעיל. {gc.sendsYouEmail} עם סיכום מה שמילאת בהרשמה (אם עדיין לא קיבלת —{' '}
           {gc.checkSpam} גם בתיקיית ספאם).
         </p>
         <Link
           href="/home"
-          className="inline-flex items-center justify-center w-full max-w-xs mx-auto rounded-2xl bg-linear-to-l from-emerald-600 to-teal-500 px-6 py-3.5 text-white font-bold text-[15px] shadow-lg shadow-emerald-500/25 hover:brightness-110 transition-all"
+          className="inline-flex items-center justify-center w-full max-w-xs mx-auto rounded-2xl bg-linear-to-l from-primary-600 to-secondary-500 px-6 py-3.5 text-on-dark font-bold text-[15px] shadow-lg shadow-primary-500/25 hover:brightness-110 transition-all"
         >
           המשך לאפליקציה
         </Link>
-        <p className="text-white/45 text-xs mt-6">
+        <p className="text-on-dark/45 text-xs mt-6">
           בהתחברות הראשונה דולב {gc.willShowYou} את הנתונים שוב בצורה אישית.
         </p>
       </section>

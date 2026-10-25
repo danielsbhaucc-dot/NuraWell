@@ -49,7 +49,7 @@ const sourceLabel: Record<DayExecRow['source'], string> = {
  * Popup ידידותי שמראה את כל המשימות שבוצעו ביום מסוים.
  *
  * עיצוב:
- *  - שכבת glass עם רקע ירוק-קרם, ללא #FFF.
+ *  - שכבת glass עם רקע ירוק-קרם, ללא #e7eedc.
  *  - כרטיס פר-משימה: אמוג'י, שם, צעד, סלוט (בוקר/ארוחה/...) ושעה.
  *  - אם אין רשומות + זה היום → "היום עוד פתוח לפנינו" (עידוד, לא פספוס).
  *  - אם אין רשומות + זה בעבר → טקסט עדין "לא תועד ביצוע" — לא דרמטי.
@@ -131,7 +131,7 @@ export function DayDetailPopup({ open, dateKey, todayKey, rows, onClose }: Props
                 'linear-gradient(168deg, rgba(236,253,245,0.9) 0%, rgba(220,252,231,0.82) 48%, rgba(254,252,232,0.82) 100%)',
               border: '1px solid rgba(248,251,246,0.55)',
               boxShadow:
-                '0 36px 90px rgba(6,78,59,0.4), 0 0 0 1px rgba(167,243,208,0.45), inset 0 1px 1px rgba(248,251,246,0.95)',
+                '0 36px 90px rgba(6,78,59,0.4), 0 0 0 1px rgba(167,243,208,0.45), inset 0 1px 1px rgba(231,238,220,0.95)',
               backdropFilter: 'blur(36px) saturate(1.45)',
               WebkitBackdropFilter: 'blur(36px) saturate(1.45)',
             }}
@@ -139,7 +139,7 @@ export function DayDetailPopup({ open, dateKey, todayKey, rows, onClose }: Props
             <button
               type="button"
               onClick={onClose}
-              className="absolute top-3 inset-e-3 z-10 flex h-8 w-8 items-center justify-center rounded-full text-emerald-900/80 hover:text-emerald-900"
+              className="absolute top-3 inset-e-3 z-10 flex h-8 w-8 items-center justify-center rounded-full text-primary-900/80 hover:text-primary-900"
               style={{
                 background: 'rgba(220,252,231,0.6)',
                 border: '1px solid rgba(167,243,208,0.6)',
@@ -157,14 +157,14 @@ export function DayDetailPopup({ open, dateKey, todayKey, rows, onClose }: Props
                 borderBottom: '1px solid rgba(167,243,208,0.45)',
               }}
             >
-              <p className="text-[11px] font-bold text-emerald-900/75 mb-0.5">פירוט יום</p>
+              <p className="text-[11px] font-bold text-primary-900/75 mb-0.5">פירוט יום</p>
               <h2
-                className="text-lg font-black text-emerald-950"
+                className="text-lg font-black text-primary-950"
                 style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
               >
                 {formatHebrewRelativeFromDateKey(dateKey, todayKey)}
               </h2>
-              <p className="text-[11px] text-emerald-900/75 font-semibold tabular-nums mt-0.5">
+              <p className="text-[11px] text-primary-900/75 font-semibold tabular-nums mt-0.5">
                 {dateKey}
               </p>
             </div>
@@ -182,33 +182,33 @@ export function DayDetailPopup({ open, dateKey, todayKey, rows, onClose }: Props
                   {isFuture ? (
                     <>
                       <div className="flex items-center gap-2 justify-end mb-1">
-                        <p className="text-sm font-black text-emerald-900">
+                        <p className="text-sm font-black text-primary-900">
                           יום עתידי
                         </p>
-                        <Sparkles className="w-4 h-4 text-emerald-700" />
+                        <Sparkles className="w-4 h-4 text-primary-700" />
                       </div>
-                      <p className="text-xs text-emerald-900/80 leading-relaxed">
+                      <p className="text-xs text-primary-900/80 leading-relaxed">
                         עוד לא הגענו לכאן — נמשיך צעד אחד בכל פעם.
                       </p>
                     </>
                   ) : isToday ? (
                     <>
                       <div className="flex items-center gap-2 justify-end mb-1">
-                        <p className="text-sm font-black text-emerald-900">
+                        <p className="text-sm font-black text-primary-900">
                           היום עוד פתוח
                         </p>
-                        <Sunrise className="w-4 h-4 text-amber-600" />
+                        <Sunrise className="w-4 h-4 text-accent-600" />
                       </div>
-                      <p className="text-xs text-emerald-900/80 leading-relaxed">
+                      <p className="text-xs text-primary-900/80 leading-relaxed">
                         אפשר לסמן ביצוע מהמסע — בכל שלב במהלך היום.
                       </p>
                     </>
                   ) : (
                     <>
-                      <p className="text-sm font-black text-emerald-900 mb-1">
+                      <p className="text-sm font-black text-primary-900 mb-1">
                         לא תועד ביצוע ביום זה
                       </p>
-                      <p className="text-xs text-emerald-900/80 leading-relaxed">
+                      <p className="text-xs text-primary-900/80 leading-relaxed">
                         זה לא משנה את הכיוון — מחר הזדמנות חדשה.
                       </p>
                     </>
@@ -239,10 +239,10 @@ export function DayDetailPopup({ open, dateKey, todayKey, rows, onClose }: Props
                         {row.task_emoji}
                       </div>
                       <div className="min-w-0 flex-1 text-start">
-                        <p className="text-sm font-black text-emerald-950 leading-snug line-clamp-2">
+                        <p className="text-sm font-black text-primary-950 leading-snug line-clamp-2">
                           {row.task_title}
                         </p>
-                        <p className="text-[10px] font-semibold text-emerald-900/70 mt-0.5 flex items-center gap-1 justify-end flex-wrap">
+                        <p className="text-[10px] font-semibold text-primary-900/70 mt-0.5 flex items-center gap-1 justify-end flex-wrap">
                           <span>
                             צעד {row.step_number}
                             {row.step_title ? `: ${row.step_title}` : ''}
@@ -251,7 +251,7 @@ export function DayDetailPopup({ open, dateKey, todayKey, rows, onClose }: Props
                         </p>
                         <div className="flex flex-wrap gap-1.5 justify-end mt-2">
                           <span
-                            className="text-[10px] font-bold px-2 py-0.5 rounded-full text-emerald-900 inline-flex items-center gap-1"
+                            className="text-[10px] font-bold px-2 py-0.5 rounded-full text-primary-900 inline-flex items-center gap-1"
                             style={{
                               background: 'rgba(167,243,208,0.55)',
                               border: '1px solid rgba(110,231,183,0.45)',
@@ -261,7 +261,7 @@ export function DayDetailPopup({ open, dateKey, todayKey, rows, onClose }: Props
                             {slotLabel(row.slot as JourneyTaskSlot)}
                           </span>
                           <span
-                            className="text-[10px] font-bold px-2 py-0.5 rounded-full text-emerald-900/85 tabular-nums"
+                            className="text-[10px] font-bold px-2 py-0.5 rounded-full text-primary-900/85 tabular-nums"
                             style={{
                               background: 'rgba(254,252,232,0.7)',
                               border: '1px solid rgba(254,240,138,0.55)',
@@ -271,7 +271,7 @@ export function DayDetailPopup({ open, dateKey, todayKey, rows, onClose }: Props
                           </span>
                           {row.source !== 'manual' ? (
                             <span
-                              className="text-[10px] font-bold px-2 py-0.5 rounded-full text-violet-900"
+                              className="text-[10px] font-bold px-2 py-0.5 rounded-full text-iris-900"
                               style={{
                                 background: 'rgba(237,233,254,0.7)',
                                 border: '1px solid rgba(196,181,253,0.55)',
@@ -290,7 +290,7 @@ export function DayDetailPopup({ open, dateKey, todayKey, rows, onClose }: Props
 
             {sortedRows.length > 0 ? (
               <div
-                className="px-4 py-3 text-center text-[11px] font-semibold text-emerald-900/85 shrink-0"
+                className="px-4 py-3 text-center text-[11px] font-semibold text-primary-900/85 shrink-0"
                 style={{
                   background:
                     'linear-gradient(180deg, rgba(204,251,241,0.4) 0%, rgba(220,252,231,0.55) 100%)',

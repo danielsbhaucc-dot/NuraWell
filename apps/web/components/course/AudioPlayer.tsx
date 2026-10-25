@@ -90,7 +90,7 @@ export function AudioPlayer({ src, title, duration }: AudioPlayerProps) {
 
         <div dir="rtl" className="flex items-center gap-3 mb-4">
           <div className="lesson-audio-player__icon-wrap">
-            <Headphones className="w-5 h-5 text-emerald-700" />
+            <Headphones className="w-5 h-5 text-primary-700" />
           </div>
           {title && (
             <p className="text-[15px] font-black text-ink line-clamp-2 leading-snug flex-1">
@@ -136,9 +136,9 @@ export function AudioPlayer({ src, title, duration }: AudioPlayerProps) {
             aria-label={isPlaying ? 'השהה' : 'נגן'}
           >
             {isPlaying ? (
-              <Pause className="w-7 h-7" fill="white" />
+              <Pause className="w-7 h-7" fill="#eef4ea" />
             ) : (
-              <Play className="w-7 h-7 translate-x-px" fill="white" />
+              <Play className="w-7 h-7 translate-x-px" fill="#eef4ea" />
             )}
           </button>
 

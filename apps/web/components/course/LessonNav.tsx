@@ -30,7 +30,7 @@ export function LessonNav({
         {prevLesson ? (
           <Link
             href={`/lessons/${prevLesson.id}`}
-            className="flex items-center gap-2 flex-1 min-w-0 py-2.5 px-3 rounded-2xl transition-all hover:bg-emerald-50 active:scale-98 group"
+            className="flex items-center gap-2 flex-1 min-w-0 py-2.5 px-3 rounded-2xl transition-all hover:bg-primary-50 active:scale-98 group"
             style={{ border: '1px solid rgba(6,78,59,0.1)' }}
           >
             <ChevronRight className="w-4 h-4 flex-shrink-0 transition-colors" style={{ color: '#9896B8' }} />
@@ -59,7 +59,7 @@ export function LessonNav({
                     boxShadow: '0 6px 18px rgba(16,185,129,0.22)',
                   }
                 : {
-                    background: 'rgba(248,251,246,0.72)',
+                    background: 'rgba(231,238,220,0.72)',
                     border: '2px solid rgba(20,184,166,0.35)',
                     boxShadow: '0 4px 14px rgba(6,78,59,0.08)',
                   }
@@ -79,7 +79,7 @@ export function LessonNav({
         {nextLesson ? (
           <Link
             href={`/lessons/${nextLesson.id}`}
-            className="flex items-center gap-2 flex-1 min-w-0 py-2.5 px-3 rounded-2xl transition-all hover:bg-emerald-50 active:scale-98 group text-end"
+            className="flex items-center gap-2 flex-1 min-w-0 py-2.5 px-3 rounded-2xl transition-all hover:bg-primary-50 active:scale-98 group text-end"
             style={{ border: '1px solid rgba(6,78,59,0.1)' }}
           >
             <div className="min-w-0 flex-1">

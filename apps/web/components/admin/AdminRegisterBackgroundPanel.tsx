@@ -72,7 +72,7 @@ export function AdminRegisterBackgroundPanel() {
   return (
     <section className="rounded-3xl border border-gc/50 bg-background-card/45 p-4 backdrop-blur-xl sm:p-5" dir="rtl">
       <div className="flex items-center gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-sky-500 to-cyan-600 text-gc shadow-md shadow-sky-600/25">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-secondary-500 to-secondary-600 text-gc shadow-md shadow-secondary-600/25">
           <ImageIcon className="h-5 w-5" aria-hidden />
         </span>
         <div>
@@ -102,7 +102,7 @@ export function AdminRegisterBackgroundPanel() {
               onSelect: (a) => void applyAsset(a),
             })
           }
-          className="rounded-xl bg-emerald-800/85 px-4 py-2 text-sm font-bold text-gc disabled:opacity-50"
+          className="rounded-xl bg-primary-800/85 px-4 py-2 text-sm font-bold text-gc disabled:opacity-50"
         >
           {applyBusy ? <Loader2 className="inline h-4 w-4 animate-spin" /> : null} העלאת תמונה
         </button>
@@ -110,7 +110,7 @@ export function AdminRegisterBackgroundPanel() {
           <button
             type="button"
             onClick={() => setConfirmRemove(true)}
-            className="rounded-xl border border-red-300/60 bg-red-500/10 px-3 py-2 text-sm font-bold text-red-900"
+            className="rounded-xl border border-coral-300/60 bg-coral-500/10 px-3 py-2 text-sm font-bold text-coral-900"
           >
             הסר
           </button>
@@ -118,12 +118,12 @@ export function AdminRegisterBackgroundPanel() {
       </div>
 
       {error ? (
-        <p className="mt-3 flex items-center gap-2 text-sm text-red-800">
+        <p className="mt-3 flex items-center gap-2 text-sm text-coral-800">
           <AlertTriangle className="h-4 w-4" /> {error}
         </p>
       ) : null}
       {success ? (
-        <p className="mt-3 flex items-center gap-2 text-sm text-emerald-800">
+        <p className="mt-3 flex items-center gap-2 text-sm text-primary-800">
           <CheckCircle2 className="h-4 w-4" /> {success}
         </p>
       ) : null}

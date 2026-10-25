@@ -164,14 +164,14 @@ export function MediaUploadZone({
   return (
     <div className="space-y-3">
       {draftRestored ? (
-        <div className="flex items-center justify-between gap-2 rounded-xl border border-amber-300/50 bg-amber-200/15 px-3 py-2 backdrop-blur-sm">
-          <span className="text-xs font-semibold text-amber-900">
+        <div className="flex items-center justify-between gap-2 rounded-xl border border-accent-300/50 bg-accent-200/15 px-3 py-2 backdrop-blur-sm">
+          <span className="text-xs font-semibold text-accent-900">
             שחזרנו את הפרטים שמילאת קודם (כותרת/מקור/קרדיט). בחר קובץ והעלה.
           </span>
           <button
             type="button"
             onClick={resetDraft}
-            className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-amber-300/60 bg-background-card/20 px-2.5 py-1 text-[11px] font-bold text-amber-900"
+            className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-accent-300/60 bg-background-card/20 px-2.5 py-1 text-[11px] font-bold text-accent-900"
           >
             <RotateCcw className="h-3.5 w-3.5" />
             התחל מחדש
@@ -180,7 +180,7 @@ export function MediaUploadZone({
       ) : null}
 
       <div>
-        <label htmlFor={titleFieldId} className="mb-1 block text-xs font-bold text-slate-700">
+        <label htmlFor={titleFieldId} className="mb-1 block text-xs font-bold text-ink-700">
           כותרת (אופציונלי)
         </label>
         <input
@@ -191,11 +191,11 @@ export function MediaUploadZone({
         />
       </div>
 
-      <div className="rounded-2xl border border-white/40 p-3" style={{ background: 'rgba(255,255,255,0.1)' }}>
-        <p className="mb-2 text-xs font-black text-slate-700">מקור וקרדיט</p>
+      <div className="rounded-2xl border border-on-dark/40 p-3" style={{ background: 'rgba(255,255,255,0.1)' }}>
+        <p className="mb-2 text-xs font-black text-ink-700">מקור וקרדיט</p>
         <div className="grid gap-2 sm:grid-cols-3">
           <div>
-            <label htmlFor={sourceFieldId} className="mb-1 block text-xs font-bold text-slate-700">
+            <label htmlFor={sourceFieldId} className="mb-1 block text-xs font-bold text-ink-700">
               מקור
             </label>
             <select
@@ -212,7 +212,7 @@ export function MediaUploadZone({
             </select>
           </div>
           <div>
-            <label htmlFor={authorFieldId} className="mb-1 block text-xs font-bold text-slate-700">
+            <label htmlFor={authorFieldId} className="mb-1 block text-xs font-bold text-ink-700">
               יוצר / אמן
             </label>
             <input
@@ -223,7 +223,7 @@ export function MediaUploadZone({
             />
           </div>
           <div>
-            <label htmlFor={licenseFieldId} className="mb-1 block text-xs font-bold text-slate-700">
+            <label htmlFor={licenseFieldId} className="mb-1 block text-xs font-bold text-ink-700">
               רישיון
             </label>
             <input
@@ -235,7 +235,7 @@ export function MediaUploadZone({
           </div>
         </div>
         <div className="mt-2">
-          <label htmlFor={linkFieldId} className="mb-1 block text-xs font-bold text-slate-700">
+          <label htmlFor={linkFieldId} className="mb-1 block text-xs font-bold text-ink-700">
             קישור למקור (לא חובה)
           </label>
           <input
@@ -249,7 +249,7 @@ export function MediaUploadZone({
           />
         </div>
         {source !== 'upload' ? (
-          <p className="mt-1.5 text-[10px] leading-relaxed text-slate-500">
+          <p className="mt-1.5 text-[10px] leading-relaxed text-ink-500">
             ודאו עמידה בתנאי הרישיון של המקור. הקרדיט יישמר ויוצג למשתמשים בעת הצורך.
           </p>
         ) : null}
@@ -266,17 +266,17 @@ export function MediaUploadZone({
           setDragOver(false);
           void processFiles(e.dataTransfer.files);
         }}
-        className={`relative rounded-2xl p-6 text-center transition ${dragOver ? 'ring-2 ring-emerald-400/70' : ''}`}
+        className={`relative rounded-2xl p-6 text-center transition ${dragOver ? 'ring-2 ring-primary-400/70' : ''}`}
         style={glassCardStyle}
       >
-        <CloudUpload className="mx-auto h-10 w-10 text-emerald-700/80" />
-        <p className="mt-2 text-sm font-bold text-slate-800">גרור קבצים לכאן</p>
-        <p className="mt-1 text-xs text-slate-600">או</p>
+        <CloudUpload className="mx-auto h-10 w-10 text-primary-700/80" />
+        <p className="mt-2 text-sm font-bold text-ink-800">גרור קבצים לכאן</p>
+        <p className="mt-1 text-xs text-ink-600">או</p>
         <button
           type="button"
           disabled={busy}
           onClick={() => fileRef.current?.click()}
-          className="mt-3 inline-flex items-center gap-2 rounded-xl bg-emerald-800/85 px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
+          className="mt-3 inline-flex items-center gap-2 rounded-xl bg-primary-800/85 px-4 py-2 text-sm font-bold text-on-dark disabled:opacity-50"
         >
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
           בחר קבצים
@@ -293,7 +293,7 @@ export function MediaUploadZone({
 
       {busy || progress.phase !== 'idle' ? (
         <div className="space-y-1">
-          <div className="flex justify-between text-xs font-semibold text-slate-700">
+          <div className="flex justify-between text-xs font-semibold text-ink-700">
             <span>{progress.message ?? progress.phase}</span>
             <span>{progress.percent}%</span>
           </div>

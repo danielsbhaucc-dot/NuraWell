@@ -95,15 +95,15 @@ export function ProfileRhythmCard({
       className="crystal-surface rounded-2xl overflow-hidden"
     >
       <div className="px-5 pt-4 pb-2 flex items-center justify-between gap-2">
-        <h3 className="font-bold text-slate-900 flex items-center gap-2">
-          <Clock className="w-4 h-4 text-emerald-600" />
+        <h3 className="font-bold text-ink-900 flex items-center gap-2">
+          <Clock className="w-4 h-4 text-primary-600" />
           קצב היום שלי
         </h3>
         {!editing ? (
           <button
             type="button"
             onClick={() => setEditing(true)}
-            className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 px-2 py-1 rounded-lg hover:bg-emerald-50"
+            className="inline-flex items-center gap-1 text-xs font-bold text-primary-700 px-2 py-1 rounded-lg hover:bg-primary-50"
           >
             <Pencil className="w-3.5 h-3.5" />
             עריכה
@@ -116,7 +116,7 @@ export function ProfileRhythmCard({
               setEditing(false);
               setError(null);
             }}
-            className="inline-flex items-center gap-1 text-xs font-bold text-slate-500 px-2 py-1 rounded-lg hover:bg-slate-50"
+            className="inline-flex items-center gap-1 text-xs font-bold text-ink-500 px-2 py-1 rounded-lg hover:bg-ink-50"
           >
             <X className="w-3.5 h-3.5" />
             ביטול
@@ -127,48 +127,48 @@ export function ProfileRhythmCard({
 
       {!editing ? (
         <div className="px-5 py-3 space-y-2.5 text-sm">
-          <p className="text-slate-600">
-            <Sun className="w-3.5 h-3.5 inline me-1 text-amber-500" />
+          <p className="text-ink-600">
+            <Sun className="w-3.5 h-3.5 inline me-1 text-accent-500" />
             {formatSleepDisplayLabeled(initial)}
           </p>
-          <p className="text-slate-600 leading-relaxed">
-            <UtensilsCrossed className="w-3.5 h-3.5 inline me-1 text-emerald-600" />
+          <p className="text-ink-600 leading-relaxed">
+            <UtensilsCrossed className="w-3.5 h-3.5 inline me-1 text-primary-600" />
             {mealsSummary}
           </p>
-          <p className="text-[11px] text-slate-500 leading-relaxed">
+          <p className="text-[11px] text-ink-500 leading-relaxed">
             ארוחות עיקריות וגדולות — משימות במסע מסתנכרנות לפי הזמנים האלה.
           </p>
         </div>
       ) : (
         <div className="px-5 py-4 space-y-4">
-          <p className="text-xs text-slate-600 leading-relaxed">
+          <p className="text-xs text-ink-600 leading-relaxed">
             כאן מגדירים את <strong>ארוחות העיקריות והגדולות</strong> שלך — לא נשנושים קטנים.
             המשימות במסע יתאימו את עצמן לזמנים האלה.
           </p>
 
           <div className="grid grid-cols-2 gap-3">
             <label className="block text-start">
-              <span className="text-xs font-bold text-slate-700">שעת השכמה</span>
+              <span className="text-xs font-bold text-ink-700">שעת השכמה</span>
               <input
                 type="time"
                 value={wakeUp}
                 onChange={(e) => setWakeUp(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-emerald-200 px-3 py-2 text-sm"
+                className="mt-1 w-full rounded-xl border border-primary-200 px-3 py-2 text-sm"
               />
             </label>
             <label className="block text-start">
-              <span className="text-xs font-bold text-slate-700">שעת שינה</span>
+              <span className="text-xs font-bold text-ink-700">שעת שינה</span>
               <input
                 type="time"
                 value={sleep}
                 onChange={(e) => setSleep(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-emerald-200 px-3 py-2 text-sm"
+                className="mt-1 w-full rounded-xl border border-primary-200 px-3 py-2 text-sm"
               />
             </label>
           </div>
 
           <div>
-            <span className="text-xs font-bold text-slate-700">כמה ארוחות עיקריות ביום?</span>
+            <span className="text-xs font-bold text-ink-700">כמה ארוחות עיקריות ביום?</span>
             <div className="flex gap-2 mt-2 flex-wrap">
               {[0, 1, 2, 3, 4].map((n) => (
                 <button
@@ -178,7 +178,7 @@ export function ProfileRhythmCard({
                   className="rounded-full px-3 py-1 text-xs font-bold"
                   style={{
                     background: mealCount === n ? '#10b981' : '#ecfdf5',
-                    color: mealCount === n ? '#fff' : '#065f46',
+                    color: mealCount === n ? '#e7eedc' : '#065f46',
                     border: '1px solid rgba(16,185,129,0.35)',
                   }}
                 >
@@ -194,10 +194,10 @@ export function ProfileRhythmCard({
                 const slot = t ? classifyMealSlot(t) : null;
                 return (
                   <label key={i} className="block text-start">
-                    <span className="text-xs font-bold text-slate-700">
+                    <span className="text-xs font-bold text-ink-700">
                       ארוחה עיקרית {i + 1}
                       {slot ? (
-                        <span className="font-normal text-slate-500 ms-1">· {mealSlotLabel(slot)}</span>
+                        <span className="font-normal text-ink-500 ms-1">· {mealSlotLabel(slot)}</span>
                       ) : null}
                     </span>
                     <input
@@ -208,7 +208,7 @@ export function ProfileRhythmCard({
                         next[i] = e.target.value;
                         setMealTimes(next);
                       }}
-                      className="mt-1 w-full rounded-xl border border-emerald-200 px-3 py-2 text-sm"
+                      className="mt-1 w-full rounded-xl border border-primary-200 px-3 py-2 text-sm"
                     />
                   </label>
                 );
@@ -216,13 +216,13 @@ export function ProfileRhythmCard({
             </div>
           ) : null}
 
-          {error ? <p className="text-xs text-red-600 font-semibold">{error}</p> : null}
+          {error ? <p className="text-xs text-coral-600 font-semibold">{error}</p> : null}
 
           <button
             type="button"
             disabled={saving}
             onClick={() => void save()}
-            className="w-full flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-black text-white disabled:opacity-60"
+            className="w-full flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-black text-on-dark disabled:opacity-60"
             style={{ background: 'linear-gradient(145deg, #047857, #10b981)' }}
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Moon className="w-4 h-4" />}

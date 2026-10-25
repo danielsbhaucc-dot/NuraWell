@@ -85,10 +85,10 @@ export function ImageGallery({ images }: ImageGalleryProps) {
                 sizes="(max-width: 768px) 50vw, 33vw"
               />
               <div
-                className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center"
+                className="absolute inset-0 bg-forest-950/0 group-hover:bg-forest-950/20 transition-all flex items-center justify-center"
                 aria-hidden
               >
-                <ZoomIn className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                <ZoomIn className="w-8 h-8 text-on-dark opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
             </motion.button>
           );
@@ -148,7 +148,7 @@ export function ImageGallery({ images }: ImageGalleryProps) {
                 type="button"
                 onClick={closeLightbox}
                 aria-label="סגור"
-                className="absolute -top-4 -left-4 w-10 h-10 rounded-full flex items-center justify-center text-white"
+                className="absolute -top-4 -left-4 w-10 h-10 rounded-full flex items-center justify-center text-on-dark"
                 style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)' }}
               >
                 <X className="w-5 h-5" aria-hidden />
@@ -163,7 +163,7 @@ export function ImageGallery({ images }: ImageGalleryProps) {
                     className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center"
                     style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)' }}
                   >
-                    <ChevronLeft className="w-5 h-5 text-white" aria-hidden />
+                    <ChevronLeft className="w-5 h-5 text-on-dark" aria-hidden />
                   </button>
                   <button
                     type="button"
@@ -172,7 +172,7 @@ export function ImageGallery({ images }: ImageGalleryProps) {
                     className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center"
                     style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)' }}
                   >
-                    <ChevronRight className="w-5 h-5 text-white" aria-hidden />
+                    <ChevronRight className="w-5 h-5 text-on-dark" aria-hidden />
                   </button>
                 </>
               ) : null}
