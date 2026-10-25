@@ -1,0 +1,8 @@
+{
+  "name": "@saas/billing",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Product-agnostic billing, subscriptions, entitlements and retention-choice core. No product-specific imports; config is injected.",
+  "main": "src/index.ts",
+  "types": "src/index.ts"
+}
