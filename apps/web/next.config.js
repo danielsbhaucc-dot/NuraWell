@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  transpilePackages: ['@saas/billing', '@platform/iam'],
+  transpilePackages: ['@saas/billing', '@platform/iam', '@platform/qc'],
   /** Native / heavy deps must not be bundled into Route Handlers (avoids 503 on Vercel). */
   serverExternalPackages: ['@aws-sdk/client-s3', 'web-push', 'sharp', 'isomorphic-dompurify', 'jsdom'],
   outputFileTracingIncludes: { '/api/v1/ops/legal/**': ['./lib/legal/fonts/**', './lib/legal/templates/**'] },

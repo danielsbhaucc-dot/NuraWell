@@ -144,6 +144,10 @@ describe('migration seed mirrors the TS catalog', () => {
   });
   it('same modules', () => {
     const mseed = sql.slice(sql.indexOf('-- MODULES-SEED-BEGIN'), sql.indexOf('-- MODULES-SEED-END'));
-    for (const m of MODULES) expect(mseed).toMatch(new RegExp(`\\('${m.id}', '[^']+', ${m.core}, '\\{${m.dependsOn.join(',')}\\}'\\)`));
+    const later = readFileSync(path.resolve(__dirname, '../../../supabase/migrations/000192_product_id_tagging.sql'), 'utf8');
+    for (const m of MODULES) {
+      if (m.id === 'qc') { expect(later).toContain("values ('qc', 'בקרת איכות', false, array['logs'])"); continue; }
+      expect(mseed).toMatch(new RegExp(`\\('${m.id}', '[^']+', ${m.core}, '\\{${m.dependsOn.join(',')}\\}'\\)`));
+    }
   });
 });

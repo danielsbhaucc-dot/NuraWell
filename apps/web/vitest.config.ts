@@ -7,6 +7,7 @@ export default defineConfig({
       '@': path.resolve(__dirname, '.'),
       '@saas/billing': path.resolve(__dirname, '../../packages/billing/src/index.ts'),
       '@platform/iam': path.resolve(__dirname, '../../packages/@platform/iam/src/index.ts'),
+      '@platform/qc': path.resolve(__dirname, '../../packages/@platform/qc/src/index.ts'),
       'server-only': path.resolve(__dirname, 'tests/mocks/server-only.ts'),
     },
   },
