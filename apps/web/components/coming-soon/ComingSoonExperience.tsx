@@ -13,7 +13,7 @@ const FEATURES = [
   { icon: ShieldCheck, title: 'שקט וביטחון', desc: 'פחות לחץ, יותר בהירות. בריאות נפש וגוף שמרגישים בכל יום.' },
 ];
 
-const CONFETTI_COLORS = ['#34d399', '#10b981', '#a3e635', '#5eead4', '#bbf7d0', '#cfe9dc', '#22d3ee'];
+const CONFETTI_COLORS = ['#34d399', '#10b981', '#a3e635', '#5eead4', '#bbf7d0', '#F7FBF4', '#22d3ee'];
 
 type Phase = 'intro' | 'lyrics' | 'loop';
 
@@ -387,7 +387,7 @@ export function ComingSoonExperience({
     <main
       id="main-content"
       dir="rtl"
-      className="fixed inset-0 z-0 overflow-hidden bg-forest-950 text-on-dark"
+      className="fixed inset-0 z-0 overflow-hidden bg-black text-white"
       style={{ fontFamily: 'Rubik, Heebo, system-ui, sans-serif' }}
     >
       {/* subtle dark vignette only — clean black canvas */}
@@ -407,7 +407,7 @@ export function ComingSoonExperience({
           <button
             type="button"
             onClick={toggleMute}
-            className="flex h-11 w-11 items-center justify-center rounded-full border border-on-dark/15 bg-background-card/5 backdrop-blur-md transition hover:bg-background-card/15"
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-background-card/5 backdrop-blur-md transition hover:bg-background-card/15"
             aria-label={muted ? 'בטל השתקה' : 'השתק'}
           >
             {muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
@@ -416,7 +416,7 @@ export function ComingSoonExperience({
             <button
               type="button"
               onClick={goToLoop}
-              className="rounded-full border border-on-dark/15 bg-background-card/5 px-4 py-2 text-sm font-semibold text-on-dark/75 backdrop-blur-md transition hover:bg-background-card/15"
+              className="rounded-full border border-white/15 bg-background-card/5 px-4 py-2 text-sm font-semibold text-white/75 backdrop-blur-md transition hover:bg-background-card/15"
             >
               דלג ←
             </button>
@@ -428,7 +428,7 @@ export function ComingSoonExperience({
         <div className="absolute bottom-0 inset-e-0 inset-s-0 z-30 h-1.5 bg-background-card/10">
           <div
             ref={progressBarRef}
-            className="h-full bg-linear-to-l from-primary-400 via-secondary-300 to-primary-300 shadow-[0_0_18px_rgba(52,211,153,0.9)]"
+            className="h-full bg-linear-to-l from-emerald-400 via-teal-300 to-lime-300 shadow-[0_0_18px_rgba(52,211,153,0.9)]"
             style={{ width: '0%' }}
           />
         </div>
@@ -461,7 +461,7 @@ export function ComingSoonExperience({
                   initial={{ y: 20, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.2, duration: 0.6 }}
-                  className="mb-6 flex h-24 w-24 items-center justify-center rounded-3xl bg-linear-to-br from-primary-400 via-secondary-500 to-primary-400 text-5xl font-black text-[#04231a] shadow-[0_0_60px_rgba(52,211,153,0.6)] sm:h-28 sm:w-28"
+                  className="mb-6 flex h-24 w-24 items-center justify-center rounded-3xl bg-linear-to-br from-emerald-400 via-teal-500 to-lime-400 text-5xl font-black text-[#04231a] shadow-[0_0_60px_rgba(52,211,153,0.6)] sm:h-28 sm:w-28"
                 >
                   N
                 </motion.div>
@@ -477,7 +477,7 @@ export function ComingSoonExperience({
                   initial={{ y: 16, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.46, duration: 0.6 }}
-                  className="mt-3 text-lg font-light tracking-[0.32em] text-primary-100/60 sm:text-2xl"
+                  className="mt-3 text-lg font-light tracking-[0.32em] text-emerald-100/60 sm:text-2xl"
                 >
                   ב ק ר ו ב
                 </motion.p>
@@ -489,7 +489,7 @@ export function ComingSoonExperience({
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.97 }}
                   onClick={startExperience}
-                  className="cs-cta group mt-10 flex items-center gap-3 rounded-full bg-linear-to-l from-primary-500 via-secondary-500 to-primary-400 px-9 py-4 text-lg font-black text-[#04231a] shadow-[0_0_40px_rgba(52,211,153,0.55)]"
+                  className="cs-cta group mt-10 flex items-center gap-3 rounded-full bg-linear-to-l from-emerald-500 via-teal-500 to-lime-400 px-9 py-4 text-lg font-black text-[#04231a] shadow-[0_0_40px_rgba(52,211,153,0.55)]"
                 >
                   <Play className="h-6 w-6 fill-[#04231a]" />
                   {songUrl ? 'התחל את החוויה' : 'כניסה'}
@@ -498,7 +498,7 @@ export function ComingSoonExperience({
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 1, duration: 0.5 }}
-                  className="mt-5 text-sm text-primary-100/45"
+                  className="mt-5 text-sm text-emerald-100/45"
                 >
                   {songUrl ? 'מומלץ לחוות עם קול 🔊' : 'השיר טרם הוגדר בלוח הבקרה'}
                 </motion.p>
@@ -544,7 +544,7 @@ export function ComingSoonExperience({
                               initial={{ scale: 0, rotate: -20 }}
                               animate={{ scale: 1, rotate: -8 }}
                               transition={{ type: 'spring', stiffness: 300, delay: 0.1 }}
-                              className="mt-3 rounded-full bg-primary-300 px-6 py-1.5 text-2xl font-black text-[#04231a] shadow-[0_0_36px_rgba(163,230,53,0.95)] sm:text-3xl"
+                              className="mt-3 rounded-full bg-lime-300 px-6 py-1.5 text-2xl font-black text-[#04231a] shadow-[0_0_36px_rgba(163,230,53,0.95)] sm:text-3xl"
                             >
                               {current.tag}
                             </motion.span>
@@ -588,7 +588,7 @@ export function ComingSoonExperience({
             >
               <span className="cs-revolution-dot" />
               <span className="cs-revolution-text">המהפכה מתחילה</span>
-              <Sparkles className="h-4 w-4 text-primary-300" />
+              <Sparkles className="h-4 w-4 text-lime-300" />
             </motion.div>
 
             <motion.h1
@@ -603,7 +603,7 @@ export function ComingSoonExperience({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.46, duration: 0.7 }}
-              className="mt-3 text-lg font-light tracking-[0.18em] text-primary-100/65 sm:text-2xl"
+              className="mt-3 text-lg font-light tracking-[0.18em] text-emerald-100/65 sm:text-2xl"
             >
               הדרך החכמה לחיים בריאים
             </motion.p>
@@ -642,11 +642,11 @@ export function ComingSoonExperience({
                     transition={{ duration: 0.55, delay: 0.05 * i }}
                     className="cs-glass-card flex flex-col items-center gap-3 px-5 py-6 text-center sm:items-start sm:text-start"
                   >
-                    <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-linear-to-br from-primary-400/90 to-secondary-500/90 text-[#04231a] shadow-[0_0_24px_rgba(45,212,191,0.45)]">
+                    <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-linear-to-br from-emerald-400/90 to-teal-500/90 text-[#04231a] shadow-[0_0_24px_rgba(45,212,191,0.45)]">
                       <Icon className="h-6 w-6" />
                     </span>
-                    <h3 className="text-lg font-black text-on-dark sm:text-xl">{f.title}</h3>
-                    <p className="text-sm leading-relaxed text-primary-50/75 sm:text-[15px]">{f.desc}</p>
+                    <h3 className="text-lg font-black text-white sm:text-xl">{f.title}</h3>
+                    <p className="text-sm leading-relaxed text-emerald-50/75 sm:text-[15px]">{f.desc}</p>
                   </motion.div>
                 );
               })}
@@ -660,14 +660,14 @@ export function ComingSoonExperience({
               transition={{ duration: 0.6 }}
               className="cs-glass-card mt-12 flex w-full max-w-2xl flex-col items-center gap-4 px-6 py-9 sm:mt-16"
             >
-              <span className="flex items-center gap-2 rounded-full bg-primary-300/90 px-4 py-1.5 text-sm font-black text-[#04231a] shadow-[0_0_28px_rgba(163,230,53,0.55)]">
+              <span className="flex items-center gap-2 rounded-full bg-lime-300/90 px-4 py-1.5 text-sm font-black text-[#04231a] shadow-[0_0_28px_rgba(163,230,53,0.55)]">
                 <Sparkles className="h-4 w-4" />
                 בקרוב מאוד
               </span>
               <p className="cs-headline text-balance text-2xl leading-snug sm:text-4xl">
                 המסע שישנה לך את החיים — כבר ממש כאן.
               </p>
-              <p className="max-w-md text-balance text-sm leading-relaxed text-primary-50/70 sm:text-base">
+              <p className="max-w-md text-balance text-sm leading-relaxed text-emerald-50/70 sm:text-base">
                 בלי דיאטות, בלי ספירת קלוריות, בלי הרעבה. רק אתה, מנטור AI שמבין אותך, ודרך חדשה להרגיש טוב בגוף ובנפש.
               </p>
 
@@ -675,7 +675,7 @@ export function ComingSoonExperience({
                 <button
                   type="button"
                   onClick={replay}
-                  className="mt-2 flex items-center gap-2 rounded-full border border-on-dark/15 bg-background-card/5 px-6 py-3 text-sm font-bold text-on-dark/85 backdrop-blur-md transition hover:bg-background-card/15"
+                  className="mt-2 flex items-center gap-2 rounded-full border border-white/15 bg-background-card/5 px-6 py-3 text-sm font-bold text-white/85 backdrop-blur-md transition hover:bg-background-card/15"
                 >
                   <Repeat className="h-4 w-4" />
                   צפה שוב בפתיח
@@ -683,7 +683,7 @@ export function ComingSoonExperience({
               )}
             </motion.div>
 
-            {songTitle && <p className="mt-8 text-xs text-primary-100/30">♪ {songTitle}</p>}
+            {songTitle && <p className="mt-8 text-xs text-emerald-100/30">♪ {songTitle}</p>}
           </div>
         </div>
       )}
@@ -804,7 +804,7 @@ export function ComingSoonExperience({
           pointer-events: none; user-select: none;
         }
         .cs-quote-text {
-          font-weight: 700; color: #eef4ea;
+          font-weight: 700; color: #f0fdf4;
           letter-spacing: 0.005em;
           text-shadow: 0 2px 18px rgba(0,0,0,0.5);
         }
@@ -815,7 +815,7 @@ export function ComingSoonExperience({
           text-shadow: 0 0 24px rgba(163,230,53,0.25);
         }
         .cs-headline {
-          font-weight: 900; color: #eef4ea;
+          font-weight: 900; color: #ffffff;
           letter-spacing: -0.01em;
           text-shadow: 0 2px 22px rgba(0,0,0,0.5);
         }

@@ -1,4 +1,5 @@
 'use client';
+import { AuthBackdrop } from './AuthBackdrop';
 
 import { PageBackButton } from '@/components/shared/PageBackButton';
 import { useMemo, useState, useTransition } from 'react';
@@ -289,7 +290,8 @@ export function OnboardingFormClient() {
   return (
     <>
       <ToastContainer toasts={toast.toasts} onDismiss={toast.dismiss} />
-      <main id="main-content" className="onboarding-shell-dark px-4 py-6 pb-28">
+      <main id="main-content" className="onboarding-shell-dark relative px-4 pb-28 pt-[max(1.5rem,env(safe-area-inset-top))]">
+        <AuthBackdrop />
         <div className="onboarding-page-inner max-w-lg mx-auto w-full">
           <div className="flex items-center justify-between mb-4">
             <PageBackButton href="/register" />

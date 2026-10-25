@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Mail, Loader2 } from 'lucide-react';
+import { NuraWellLogo } from '@/components/shared/NuraWellLogo';
 import { createClient } from '@/lib/supabase/client';
 import { VerificationCodeInput, VERIFICATION_CODE_LENGTH } from './VerificationCodeInput';
 import { checkEmailCopy } from '@/lib/onboarding/check-email-copy';
@@ -16,19 +17,14 @@ type CheckEmailClientProps = {
   gender: OnboardingGender | '';
 };
 
-export function CheckEmailClient({
-  email,
-  hasAuthError,
-  firstName,
-  gender,
-}: CheckEmailClientProps) {
+export function CheckEmailClient({ email, hasAuthError, firstName, gender }: CheckEmailClientProps) {
   const router = useRouter();
   const copy = checkEmailCopy(gender, firstName);
   const [code, setCode] = useState('');
   const [verifying, setVerifying] = useState(false);
   const [resending, setResending] = useState(false);
   const [message, setMessage] = useState<string | null>(
-    hasAuthError ? 'הקישור לא תקף או שפג תוקף — נסו קוד מהמייל או שליחה מחדש.' : null
+    hasAuthError ? 'הקישור לא תקף או שפג תוקף — נסו קוד מהמייל או שליחה מחדש.' : null,
   );
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -122,63 +118,65 @@ export function CheckEmailClient({
 
   return (
     <section className="onboarding-page-inner max-w-md w-full text-center">
-      <section
-        className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-primary-500/20 flex items-center justify-center"
-        aria-hidden
-      >
-        <Mail className="w-8 h-8 text-primary-300" />
-      </section>
-      <h1
-        className="text-2xl font-black text-on-dark mb-3"
-        style={{ fontFamily: 'Rubik, Heebo, sans-serif' }}
-      >
-        {copy.title}
-      </h1>
-      <p className="text-primary-50/85 text-[15px] leading-relaxed mb-1">
-        {copy.lead}
-        {email ? (
-          <>
-            <br />
-            <span className="text-primary-200/90 text-sm" dir="ltr">
-              {email}
-            </span>
-          </>
-        ) : null}
-      </p>
-      <p className="text-on-dark/45 text-xs mb-6">{copy.autoHint}</p>
+      <header className="flex justify-center mb-5">
+        <NuraWellLogo size="lg" tone="dark" />
+      </header>
+      <div className="onboarding-hero-card-photo rounded-3xl px-2 py-6 sm:p-6 shadow-[0_16px_48px_rgba(0,0,0,0.28)]">
+        <section
+          className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-primary-500/20 flex items-center justify-center"
+          aria-hidden
+        >
+          <Mail className="w-8 h-8 text-primary-300" />
+        </section>
+        <h1 className="text-2xl font-black text-on-dark mb-3" style={{ fontFamily: 'Rubik, Heebo, sans-serif' }}>
+          {copy.title}
+        </h1>
+        <p className="text-primary-50/85 text-[15px] leading-relaxed mb-1">
+          {copy.lead}
+          {email ? (
+            <>
+              <br />
+              <span className="text-primary-200/90 text-sm" dir="ltr">
+                {email}
+              </span>
+            </>
+          ) : null}
+        </p>
+        <p className="text-on-dark/45 text-xs mb-6">{copy.autoHint}</p>
 
-      <section className="onboarding-panel-dark rounded-2xl p-5 text-right mb-4">
-        <p className="text-sm font-bold text-primary-100 mb-3 text-center">{copy.codePrompt}</p>
-        <VerificationCodeInput value={code} onChange={setCode} disabled={verifying} />
+        <section className="onboarding-panel-dark rounded-2xl px-0 py-5 sm:p-5 text-right mb-4">
+          <p className="text-sm font-bold text-primary-100 mb-3 text-center">{copy.codePrompt}</p>
+          <VerificationCodeInput value={code} onChange={setCode} disabled={verifying} />
+          <button
+            type="button"
+            onClick={() => void verifyCode()}
+            disabled={code.length !== VERIFICATION_CODE_LENGTH || verifying || !email}
+            className="mt-4 w-full rounded-2xl py-3.5 font-bold text-on-dark bg-linear-135 from-primary-700 to-primary-500 shadow-[0_8px_24px_rgba(16,185,129,0.4)] disabled:opacity-40 flex items-center justify-center gap-2"
+          >
+            {verifying ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+            {copy.verifyButton}
+          </button>
+        </section>
+
+        {message ? <p className="text-accent-200 text-sm mb-2">{message}</p> : null}
+        {success ? <p className="text-primary-300 text-sm mb-2">{success}</p> : null}
+
         <button
           type="button"
-          onClick={() => void verifyCode()}
-          disabled={code.length !== VERIFICATION_CODE_LENGTH || verifying || !email}
-          className="mt-4 w-full rounded-xl bg-primary-600 py-3 font-bold text-on-dark disabled:opacity-40 flex items-center justify-center gap-2"
+          onClick={() => void resendEmail()}
+          disabled={resending || !email}
+          className="text-sm text-primary-300/90 font-semibold hover:underline disabled:opacity-50"
         >
-          {verifying ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-          {copy.verifyButton}
+          {resending ? copy.resending : copy.resend}
         </button>
-      </section>
 
-      {message ? <p className="text-accent-200 text-sm mb-2">{message}</p> : null}
-      {success ? <p className="text-primary-300 text-sm mb-2">{success}</p> : null}
-
-      <button
-        type="button"
-        onClick={() => void resendEmail()}
-        disabled={resending || !email}
-        className="text-sm text-primary-300/90 font-semibold hover:underline disabled:opacity-50"
-      >
-        {resending ? copy.resending : copy.resend}
-      </button>
-
-      <p className="text-on-dark/50 text-sm mt-8">
-        {copy.alreadyVerified}{' '}
-        <Link href="/login" className="text-primary-300 font-bold hover:underline">
-          כניסה
-        </Link>
-      </p>
+        <p className="text-on-dark/50 text-sm mt-8">
+          {copy.alreadyVerified}{' '}
+          <Link href="/login" className="text-primary-300 font-bold hover:underline">
+            כניסה
+          </Link>
+        </p>
+      </div>
     </section>
   );
 }

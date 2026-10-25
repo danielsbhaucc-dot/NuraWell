@@ -81,31 +81,31 @@ function GlassAudioPlayer({ src, title }: { src: string; title: string | null })
   const pct = duration > 0 ? (current / duration) * 100 : 0;
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-primary-300/30 bg-linear-to-br from-primary-500/10 via-secondary-500/5 to-transparent p-4 shadow-[inset_0_1px_0_rgba(241,244,234,0.4)] backdrop-blur-xl">
-      <div className="pointer-events-none absolute -inset-s-10 -top-10 h-32 w-32 rounded-full bg-primary-400/20 blur-3xl" />
+    <div className="relative overflow-hidden rounded-2xl border border-emerald-300/30 bg-linear-to-br from-emerald-500/10 via-teal-500/5 to-transparent p-4 shadow-[inset_0_1px_0_rgba(241,244,234,0.4)] backdrop-blur-xl">
+      <div className="pointer-events-none absolute -inset-s-10 -top-10 h-32 w-32 rounded-full bg-emerald-400/20 blur-3xl" />
       <audio ref={audioRef} src={src} preload="metadata" />
       <div className="relative flex items-center gap-3">
         <button
           type="button"
           onClick={toggle}
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-primary-500 to-secondary-600 text-gc shadow-lg shadow-primary-600/40 transition active:scale-95"
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-emerald-500 to-teal-600 text-gc shadow-lg shadow-emerald-600/40 transition active:scale-95"
           aria-label={playing ? 'השהה' : 'נגן'}
         >
           {playing ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 translate-x-px fill-gc" />}
         </button>
         <div className="min-w-0 flex-1">
-          <p className="flex items-center gap-1.5 truncate text-sm font-bold text-ink">
-            <Music4 className="h-3.5 w-3.5 shrink-0 text-primary-600" />
+          <p className="flex items-center gap-1.5 truncate text-sm font-bold text-slate-800">
+            <Music4 className="h-3.5 w-3.5 shrink-0 text-emerald-600" />
             {title || 'שיר נבחר'}
           </p>
           <div className="mt-2 flex items-center gap-2">
-            <span className="w-9 text-end text-[11px] font-semibold tabular-nums text-ink-faint">
+            <span className="w-9 text-end text-[11px] font-semibold tabular-nums text-slate-500">
               {formatTime(current)}
             </span>
             <div className="relative flex-1">
-              <div className="h-1.5 w-full overflow-hidden rounded-full bg-ink-300/50">
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-300/50">
                 <div
-                  className="h-full rounded-full bg-linear-to-l from-primary-500 to-secondary-400"
+                  className="h-full rounded-full bg-linear-to-l from-emerald-500 to-teal-400"
                   style={{ width: `${pct}%` }}
                 />
               </div>
@@ -120,7 +120,7 @@ function GlassAudioPlayer({ src, title }: { src: string; title: string | null })
                 aria-label="מיקום בשיר"
               />
             </div>
-            <span className="w-9 text-[11px] font-semibold tabular-nums text-ink-faint">
+            <span className="w-9 text-[11px] font-semibold tabular-nums text-slate-500">
               {formatTime(duration)}
             </span>
           </div>
@@ -210,14 +210,14 @@ function AdminComingSoonSongSection() {
       className="relative overflow-hidden rounded-3xl border border-gc/40 bg-background-card/40 p-5 backdrop-blur-xl"
       dir="rtl"
     >
-      <div className="pointer-events-none absolute -inset-e-16 -top-16 h-40 w-40 rounded-full bg-primary-400/20 blur-3xl" />
+      <div className="pointer-events-none absolute -inset-e-16 -top-16 h-40 w-40 rounded-full bg-emerald-400/20 blur-3xl" />
       <div className="relative flex items-center gap-3">
-        <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-linear-to-br from-primary-500 to-secondary-600 text-gc shadow-md">
+        <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-linear-to-br from-emerald-500 to-teal-600 text-gc shadow-md">
           <Music4 className="h-5 w-5" />
         </span>
         <div>
-          <h2 className="text-lg font-black text-ink">שיר עמוד &quot;בקרוב&quot;</h2>
-          <p className="text-sm text-ink-soft">
+          <h2 className="text-lg font-black text-slate-800">שיר עמוד &quot;בקרוב&quot;</h2>
+          <p className="text-sm text-slate-600">
             בחר את שיר ה־30 שניות (מספריית המדיה → אודיו). הוא ינוגן בעמוד עם מילות שיר מסונכרנות.
           </p>
         </div>
@@ -227,13 +227,13 @@ function AdminComingSoonSongSection() {
         {songUrl ? (
           <GlassAudioPlayer src={songUrl} title={songTitle} />
         ) : (
-          <div className="flex items-center justify-center rounded-2xl border border-dashed border-ink-300/70 bg-background-card/30 px-4 py-8 text-sm text-ink-faint">
+          <div className="flex items-center justify-center rounded-2xl border border-dashed border-slate-300/70 bg-background-card/30 px-4 py-8 text-sm text-slate-500">
             עדיין לא נבחר שיר.
           </div>
         )}
       </div>
 
-      <p className="relative mt-3 flex items-center gap-1.5 text-xs text-primary-800/80">
+      <p className="relative mt-3 flex items-center gap-1.5 text-xs text-emerald-800/80">
         <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
         כל קובץ אודיו שמועלה דרך ספריית המדיה נדחס אוטומטית ל-MP3 קליל (עד 25MB) — מהיר לטעינה ולנגינה.
       </p>
@@ -250,7 +250,7 @@ function AdminComingSoonSongSection() {
               onSelect: (a) => void applyAsset(a),
             })
           }
-          className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-linear-to-l from-primary-600 to-secondary-600 px-4 py-2 text-sm font-bold text-gc shadow-lg shadow-primary-600/30 transition hover:from-primary-700 hover:to-secondary-700 disabled:opacity-50"
+          className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-linear-to-l from-emerald-600 to-teal-600 px-4 py-2 text-sm font-bold text-gc shadow-lg shadow-emerald-600/30 transition hover:from-emerald-700 hover:to-teal-700 disabled:opacity-50"
         >
           {applyBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Music4 className="h-4 w-4" />}
           {songUrl ? 'החלף שיר' : 'בחר שיר'}
@@ -260,7 +260,7 @@ function AdminComingSoonSongSection() {
           href="/coming-soon"
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-primary-300/60 bg-background-card/40 px-4 py-2 text-sm font-bold text-primary-900 transition hover:bg-background-card/70"
+          className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-emerald-300/60 bg-background-card/40 px-4 py-2 text-sm font-bold text-emerald-900 transition hover:bg-background-card/70"
         >
           <ExternalLink className="h-4 w-4" />
           תצוגה מקדימה
@@ -270,7 +270,7 @@ function AdminComingSoonSongSection() {
           <button
             type="button"
             onClick={() => setConfirmRemove(true)}
-            className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-coral-300/60 bg-coral-500/10 px-3 py-2 text-sm font-bold text-coral-900"
+            className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-red-300/60 bg-red-500/10 px-3 py-2 text-sm font-bold text-red-900"
           >
             <Trash2 className="h-4 w-4" />
             הסר
@@ -281,12 +281,12 @@ function AdminComingSoonSongSection() {
       {songUrl ? <AdminComingSoonLyricsEditor songUrl={songUrl} /> : null}
 
       {error ? (
-        <p className="relative mt-3 flex items-center gap-2 text-sm text-coral-800">
+        <p className="relative mt-3 flex items-center gap-2 text-sm text-red-800">
           <AlertTriangle className="h-4 w-4" /> {error}
         </p>
       ) : null}
       {success ? (
-        <p className="relative mt-3 flex items-center gap-2 text-sm text-primary-800">
+        <p className="relative mt-3 flex items-center gap-2 text-sm text-emerald-800">
           <CheckCircle2 className="h-4 w-4" /> {success}
         </p>
       ) : null}
@@ -310,7 +310,7 @@ export function AdminComingSoonPanel() {
   return (
     <div className="space-y-4" dir="rtl">
       <div
-        className="flex gap-1 overflow-x-auto rounded-xl border border-primary-200/40 bg-primary-50/30 p-1"
+        className="flex gap-1 overflow-x-auto rounded-xl border border-emerald-200/40 bg-emerald-50/30 p-1"
         role="tablist"
         aria-label="תת-טאבים — מסך בקרוב"
       >
@@ -326,8 +326,8 @@ export function AdminComingSoonPanel() {
               className={cn(
                 'inline-flex min-h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-bold transition-all',
                 active
-                  ? 'bg-background-card text-primary-900 shadow-xs'
-                  : 'text-primary-800/70 hover:bg-background-card/60 hover:text-primary-900',
+                  ? 'bg-background-card text-emerald-900 shadow-xs'
+                  : 'text-emerald-800/70 hover:bg-background-card/60 hover:text-emerald-900',
               )}
             >
               <Icon className="h-3.5 w-3.5" aria-hidden />
