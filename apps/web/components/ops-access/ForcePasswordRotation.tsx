@@ -1,10 +1,9 @@
 'use client';
 
-import { opsInputClass } from '@/components/admin/OpsPanel';
-import { cn } from '@/lib/cn';
+import { Button } from '@/components/ui';
 
 import { useState } from 'react';
-import { Eye, EyeOff, KeyRound, Loader2, ShieldAlert } from 'lucide-react';
+import { Eye, EyeOff, KeyRound, ShieldAlert } from 'lucide-react';
 
 const MIN = 12;
 const classes = (p: string) => [/[a-z]/, /[A-Z]/, /[0-9]/, /[^A-Za-z0-9]/].filter((r) => r.test(p)).length;
@@ -37,39 +36,39 @@ export function ForcePasswordRotation() {
   };
 
   return (
-    <main dir="rtl" className="flex min-h-dvh items-center justify-center bg-linear-to-b from-[#0f3d2e] to-[#082219] p-4">
-      <form onSubmit={submit} className="w-full max-w-md space-y-4 rounded-3xl bg-[#fbf6e6] p-6 shadow-2xl">
+    <main dir="rtl" className="flex min-h-dvh items-center justify-center bg-linear-to-b from-primary-900 to-primary-950 p-4">
+      <form onSubmit={submit} className="w-full max-w-md space-y-4 rounded-3xl bg-primary-50/5 p-6 shadow-2xl ring-1 ring-primary-100/15 backdrop-blur-2xl">
         <div className="flex items-center gap-3">
-          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 text-amber-700"><ShieldAlert /></span>
+          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-400/15 text-amber-200 ring-1 ring-amber-300/30"><ShieldAlert /></span>
           <div>
-            <h1 className="text-xl font-black text-[#0f3d2e]">הגדרת סיסמה חדשה</h1>
-            <p className="text-sm text-slate-600">בוצעה שבירת זכוכית. לפני כל פעולה בפאנל צריך סיסמה חדשה.</p>
+            <h1 className="text-xl font-black text-primary-50">הגדרת סיסמה חדשה</h1>
+            <p className="text-sm text-primary-100/80">בוצעה שבירת זכוכית. לפני כל פעולה בפאנל צריך סיסמה חדשה.</p>
           </div>
         </div>
-        <label className="block text-sm font-semibold text-[#0f3d2e]">קוד גיבוי (אחד מ-10 הקודים החדשים)
+        <label className="block text-sm font-semibold text-primary-50">קוד גיבוי (אחד מ-10 הקודים החדשים)
           <input dir="ltr" autoComplete="one-time-code" value={code} onChange={(e) => setCode(e.target.value)} placeholder="XXXXX-XXXXX"
-            className={cn(opsInputClass, "mt-1 block min-h-12 w-full text-center font-mono text-lg tracking-widest")} />
+            className="mt-1 block min-h-12 w-full rounded-2xl border border-primary-100/20 bg-primary-950/40 px-4 text-primary-50 outline-hidden backdrop-blur-md transition placeholder:text-primary-100/40 focus:border-primary-300/50 focus:ring-2 focus:ring-primary-400/40 text-center font-mono text-lg tracking-widest" />
         </label>
-        <label className="block text-sm font-semibold text-[#0f3d2e]">סיסמה חדשה
+        <label className="block text-sm font-semibold text-primary-50">סיסמה חדשה
           <div className="relative mt-1">
             <input dir="ltr" type={show ? 'text' : 'password'} autoComplete="new-password" value={pw} onChange={(e) => setPw(e.target.value)}
-              className={cn(opsInputClass, "block min-h-12 w-full pe-12")} />
-            <button type="button" onClick={() => setShow((s) => !s)} aria-label={show ? 'הסתר סיסמה' : 'הצג סיסמה'} className="absolute inset-y-0 end-0 flex w-12 items-center justify-center text-slate-500">
+              className="block min-h-12 w-full rounded-2xl border border-primary-100/20 bg-primary-950/40 px-4 text-primary-50 outline-hidden backdrop-blur-md transition placeholder:text-primary-100/40 focus:border-primary-300/50 focus:ring-2 focus:ring-primary-400/40 pe-12" />
+            <button type="button" onClick={() => setShow((s) => !s)} aria-label={show ? 'הסתר סיסמה' : 'הצג סיסמה'} className="absolute inset-y-0 end-0 flex w-12 items-center justify-center text-primary-100/70 hover:text-primary-50">
               {show ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
           </div>
-          <span className={`mt-1 block text-xs ${strong ? 'text-emerald-700' : 'text-slate-500'}`}>לפחות {MIN} תווים, משלבת שלושה סוגים: אותיות קטנות, גדולות, ספרות, סימנים.</span>
+          <span className={`mt-1 block text-xs ${strong ? 'text-primary-300' : 'text-primary-100/60'}`}>לפחות {MIN} תווים, משלבת שלושה סוגים: אותיות קטנות, גדולות, ספרות, סימנים.</span>
         </label>
-        <label className="block text-sm font-semibold text-[#0f3d2e]">אימות סיסמה
+        <label className="block text-sm font-semibold text-primary-50">אימות סיסמה
           <input dir="ltr" type={show ? 'text' : 'password'} autoComplete="new-password" value={pw2} onChange={(e) => setPw2(e.target.value)}
-            className={cn(opsInputClass, "mt-1 block min-h-12 w-full")} />
-          {pw2 && pw !== pw2 && <span className="mt-1 block text-xs text-rose-700">הסיסמאות לא תואמות.</span>}
+            className="mt-1 block min-h-12 w-full rounded-2xl border border-primary-100/20 bg-primary-950/40 px-4 text-primary-50 outline-hidden backdrop-blur-md transition placeholder:text-primary-100/40 focus:border-primary-300/50 focus:ring-2 focus:ring-primary-400/40" />
+          {pw2 && pw !== pw2 && <span className="mt-1 block text-xs text-rose-200">הסיסמאות לא תואמות.</span>}
         </label>
-        {err && <p role="alert" className="rounded-2xl bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">{err}</p>}
-        {done && <p role="status" className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">הסיסמה הוחלפה. טוען את הפאנל…</p>}
-        <button type="submit" disabled={!can} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[#0f3d2e] font-bold text-[#f6f1e7] disabled:opacity-50">
-          {busy ? <Loader2 className="animate-spin" size={18} /> : <KeyRound size={18} />} שמירת סיסמה חדשה
-        </button>
+        {err && <p role="alert" className="rounded-2xl bg-rose-500/15 px-4 py-3 text-sm font-semibold text-rose-100 ring-1 ring-rose-300/30">{err}</p>}
+        {done && <p role="status" className="rounded-2xl bg-primary-400/15 px-4 py-3 text-sm font-semibold text-primary-100 ring-1 ring-primary-300/30">הסיסמה הוחלפה. טוען את הפאנל…</p>}
+        <Button type="submit" size="lg" disabled={!can} loading={busy} className="w-full gap-2 rounded-2xl font-bold">
+          {!busy && <KeyRound size={18} />} שמירת סיסמה חדשה
+        </Button>
       </form>
     </main>
   );
