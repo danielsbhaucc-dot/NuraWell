@@ -34,6 +34,8 @@ const FEATURE_BUTTON_SCOPE = /^components\/(?!ui\/)|^app\//;
 function walk(d, out = []) {
   for (const e of fs.readdirSync(d, { withFileTypes: true })) {
     if (e.name === 'node_modules' || e.name.startsWith('.')) continue;
+    // Coming-soon screen is frozen by owner decision: never lint/codemod it.
+    if (/coming-?soon/i.test(e.name)) continue;
     const p = path.join(d, e.name);
     if (e.isDirectory()) walk(p, out);
     else if (/\.(tsx?|css|mjs)$/.test(e.name) && !/\.test\./.test(e.name)) out.push(p);
