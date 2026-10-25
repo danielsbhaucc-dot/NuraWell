@@ -33,7 +33,7 @@ export const PLAIN_SENTINELS: ReadonlySet<string> = new Set(['chat_card_confirm'
 
 /** האם ערך טקסט צריך הצפנה (לא ריק, לא מוצפן, לא סמן טכני). */
 export function needsTextEncryption(v: unknown): v is string {
-  return typeof v === 'string' && v !== '' && !isEncrypted(v) && !PLAIN_SENTINELS.has(v);
+  return typeof v === 'string' && v !== '' && !isEncrypted(v) && !String(v).startsWith('enc:v2:') && !PLAIN_SENTINELS.has(v);
 }
 
 function encText(v: unknown, userId: string): unknown {

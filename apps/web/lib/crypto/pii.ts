@@ -31,6 +31,8 @@ export function isEncrypted(v: unknown): v is string {
 }
 
 export function encryptString(plain: string, userId: string): string {
+  // never wrap a per-user field-envelope value (enc:v2) in the legacy key
+  if (plain.startsWith('enc:v2:')) return plain;
   const iv = randomBytes(12);
   const c = createCipheriv('aes-256-gcm', key(), iv);
   c.setAAD(Buffer.from(userId));
@@ -51,7 +53,7 @@ export function decryptString(value: string, userId: string): string {
 /** מצפין ערך JSON כלשהו למחרוזת (נשמרת כ-jsonb string). null/undefined נשארים. */
 export function encryptJson(value: unknown, userId: string): string | null | undefined {
   if (value === null || value === undefined) return value as null | undefined;
-  if (isEncrypted(value)) return value;
+  if (isEncrypted(value) || (typeof value === 'string' && value.startsWith('enc:v2:'))) return value;
   return encryptString(JSON.stringify(value), userId);
 }
 

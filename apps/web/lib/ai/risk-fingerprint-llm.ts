@@ -257,9 +257,9 @@ export async function persistRiskFingerprint(
     ...fingerprint,
   };
 
-  const { error } = await admin.from('user_memory_dossier').upsert({
-    user_id: userId,
-    risk_signals: encryptJson(riskSignals, userId),
-  });
+  const { sealRow } = await import('@/lib/security/field-crypto');
+  const { error } = await admin.from('user_memory_dossier').upsert(
+    await sealRow('user_memory_dossier', userId, userId, { user_id: userId, risk_signals: riskSignals })
+  );
   if (error) throw new Error(error.message);
 }

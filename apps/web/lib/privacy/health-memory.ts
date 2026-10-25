@@ -108,7 +108,8 @@ export async function scrubHealthFromMemory(
       personal_context: encryptJson(scrubHealthJson(decryptJson(d.personal_context, userId)) ?? {}, userId),
       psychology: encryptJson(scrubHealthJson(decryptJson(d.psychology, userId)) ?? {}, userId),
     };
-    const { error } = await admin.from('user_memory_dossier').update(patch).eq('user_id', userId);
+    const { sealRow } = await import('@/lib/security/field-crypto');
+    const { error } = await admin.from('user_memory_dossier').update(await sealRow('user_memory_dossier', userId, userId, patch)).eq('user_id', userId);
     if (error) throw new Error(error.message);
     res.dossier = true;
   }

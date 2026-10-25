@@ -800,10 +800,20 @@ async function runMasterCron() {
   if (process.env.PII_BACKFILL_IN_MASTER?.trim() !== '0') {
     try {
       const { backfillDerivedPii } = await import('@/lib/crypto/backfill-derived');
-      console.log('[cron/master] pii_backfill', JSON.stringify(await backfillDerivedPii(admin as never, 45_000)));
+      const { createRawAdminClient } = await import('@/lib/supabase/admin');
+      // raw client: must see stored ciphertext, never the wrapper's decrypted view (else enc:v2 would be re-sealed as v1)
+      console.log('[cron/master] pii_backfill', JSON.stringify(await backfillDerivedPii(createRawAdminClient() as never, 45_000)));
     } catch (e) {
       errors.push(`pii_backfill: ${e instanceof Error ? e.message : String(e)}`);
     }
+  }
+
+  // --- Field envelope (enc:v2) backfill for tables listed in FIELD_V2_BACKFILL_TABLES (code constant, staged)
+  try {
+    const { backfillFieldV2 } = await import('@/lib/security/field-backfill');
+    console.log('[cron/master] field_v2_backfill', JSON.stringify(await backfillFieldV2(30_000)));
+  } catch (e) {
+    errors.push(`field_v2_backfill: ${e instanceof Error ? e.message : String(e)}`);
   }
 
   // --- Nightly memory chain (session close → rollups → behaviour patterns) in its own invocation
