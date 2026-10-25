@@ -16,7 +16,7 @@ import { decryptValue, encryptValue, isV2 } from '@/lib/security/field-crypto';
 import { encryptedTable, isBlocked, keyColumns, rowKeyOf } from '@/lib/security/field-registry';
 
 /** staged rollout list — a table is added only after its blocker-fix PR is merged and verified on prod */
-export const FIELD_V2_BACKFILL_TABLES: readonly string[] = ['user_memory_dossier'];
+export const FIELD_V2_BACKFILL_TABLES: readonly string[] = ['user_memory_dossier', 'profiles', 'user_memories', 'journey_next_step_cache'];
 
 const canon = (v: unknown) => createHash('sha256').update(JSON.stringify(v ?? null)).digest('hex');
 
