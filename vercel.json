@@ -7,5 +7,19 @@
       "main": true,
       "*": false
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/v1/ops/db-backup/run",
+      "schedule": "30 0 * * *"
+    },
+    {
+      "path": "/api/v1/ai/cron/log-retention",
+      "schedule": "23 1 * * *"
+    },
+    {
+      "path": "/api/v1/ops/secmon/run",
+      "schedule": "10 3 * * *"
+    }
+  ]
 }

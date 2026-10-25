@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Scan every commit about to be pushed. Blocks the push if a secret is found.
+command -v gitleaks >/dev/null 2>&1 || { echo "warning: gitleaks not installed — pre-push secret check skipped" >&2; exit 0; }
+z=0000000000000000000000000000000000000000
+while read -r _lref lsha _rref rsha; do
+  [ "$lsha" = "$z" ] && continue
+  if [ "$rsha" = "$z" ]; then range="$lsha --not --remotes"; else range="$rsha..$lsha"; fi
+  gitleaks git --redact --no-banner -c .gitleaks.toml --log-opts="$range" || { echo "✋ gitleaks: secret in commits being pushed ($range). Rewrite them before pushing and rotate the secret."; exit 1; }
+done
