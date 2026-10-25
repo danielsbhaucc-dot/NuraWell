@@ -48,6 +48,9 @@ export async function GET(request: Request) {
   // codeql[js/request-forgery]: safeTarget is constrained to an explicit allowlist of stock image origins.
   const res = await fetch(safeTarget.toString(), {
     next: { revalidate: 0 },
+    // never follow redirects: an allowlisted host redirecting elsewhere would turn this into SSRF
+    redirect: 'manual',
+    signal: AbortSignal.timeout(15_000),
     headers: {
       Accept: 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
       'User-Agent': 'NuraWellMediaManager/1.0 (+https://nurawell.ai)',
@@ -57,17 +60,25 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'לא הצלחנו להוריד את התמונה' }, { status: 502 });
   }
 
-  const contentType = res.headers.get('content-type') || 'image/jpeg';
-  if (!contentType.startsWith('image/')) {
+  const contentType = (res.headers.get('content-type') || 'image/jpeg').toLowerCase();
+  // raster images only: SVG served from our origin could run script
+  if (!/^image\/(jpeg|png|webp|avif|gif)\b/.test(contentType)) {
     return NextResponse.json({ error: 'הקובץ שהורד אינו תמונה' }, { status: 400 });
   }
 
+  const MAX_BYTES = 20 * 1024 * 1024;
+  if (Number(res.headers.get('content-length') || 0) > MAX_BYTES) {
+    return NextResponse.json({ error: 'too large' }, { status: 413 });
+  }
   const buf = await res.arrayBuffer();
+  if (buf.byteLength > MAX_BYTES) return NextResponse.json({ error: 'too large' }, { status: 413 });
   return new NextResponse(buf, {
     status: 200,
     headers: {
       'Content-Type': contentType,
       'Cache-Control': 'private, no-store',
+      'X-Content-Type-Options': 'nosniff',
+      'Content-Security-Policy': "default-src 'none'; sandbox",
     },
   });
 }
