@@ -12,7 +12,7 @@ export default async function OpsLegalPage({ searchParams }: { searchParams: Pro
     <div className="space-y-5 sm:space-y-6">
       <OpsPageHeader icon={Scale} eyebrow="משפטי" title="מרכז זכויות וראיות" tone="emerald"
         description="מדיה, קבלות, הסכמות ותיקי ראיות במקום אחד. רק מה שצריך אותך מופיע למעלה." />
-      <LegalTabs initialTab={(['overview', 'media', 'receipts', 'consent', 'evidence', 'keys'] as const).find((t) => t === tab) ?? 'overview'} />
+      <LegalTabs initialTab={(['overview', 'media', 'receipts', 'consent', 'evidence', 'keys', 'security'] as const).find((t) => t === tab) ?? 'overview'} />
     </div>
   );
 }

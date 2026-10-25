@@ -853,9 +853,9 @@ async function runMasterCron() {
       .from('error_events')
       .delete()
       .lt('created_at', new Date(Date.now() - 30 * 86_400_000).toISOString());
-    // לוג משלוחים — 90 יום; רשומות אבטחה — 180 יום (לפי מדיניות הפרטיות §9)
+    // לוג משלוחים — 90 יום; רשומות אבטחה — 24 חודשים (תקנות אבטחת מידע 2017, תקנה 10)
     await admin.from('delivery_log').delete().lt('created_at', new Date(Date.now() - 90 * 86_400_000).toISOString());
-    await admin.from('admin_audit_log').delete().eq('method', 'SECURITY').lt('created_at', new Date(Date.now() - 180 * 86_400_000).toISOString());
+    await admin.from('admin_audit_log').delete().eq('method', 'SECURITY').lt('created_at', new Date(Date.now() - 730 * 86_400_000).toISOString());
     // מזעור נתונים: תור חילוץ ההתחייבויות שכבר עובד — 7 ימים
     await admin
       .from('pending_almog_commitment_jobs')

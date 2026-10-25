@@ -13,7 +13,7 @@
 | webauthn_challenges, ops_handoff_tokens | יום אחרי פקיעה |
 | ops_login_requests, demo_access_sessions, error_events, gideon_outbox | 30 יום |
 | IP ב-admin_audit_log | מוסר אחרי 30 יום |
-| admin_audit_log, ops_security_events | 365 יום |
+| admin_audit_log, ops_security_events | 24 חודשים (מיגרציה 000177) |
 | chat_perf_timings | 90 יום |
 | pending_almog_commitment_jobs, pending_chat_logs (מעובדים) | 7 ימים |
 | notifications שנקראו | 180 יום |

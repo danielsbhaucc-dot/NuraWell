@@ -1,5 +1,6 @@
 'use client';
 
+import { sanitizeSvg } from '@/lib/sanitize-lesson-html';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { browserSupportsWebAuthn, startAuthentication } from '@simplewebauthn/browser';
 import { CheckCircle2, Fingerprint, KeyRound, Loader2, ShieldCheck, Smartphone, X } from 'lucide-react';
@@ -108,7 +109,7 @@ export function StepUpDialog({ open, purpose, reason, onClose, onVerified, varia
               <div className="text-center">
                 <p className="mb-3 text-sm text-slate-700">{variant === 'login' ? 'סורקים במצלמה של טלפון שכבר מחובר לחשבון, ומאשרים שם עם Face ID. המסך הזה ייכנס לבד.' : 'סורקים במצלמה של הטלפון שלך ומאשרים שם עם Face ID. המסך הזה ימשיך לבד.'}</p>
                 <div className="mx-auto grid h-52 w-52 place-items-center rounded-[26px] border border-amber-300/50 bg-amber-50/40 p-3 shadow-inner" data-testid="stepup-qr">
-                  {qr ? <div className="h-full w-full [&_svg]:h-full [&_svg]:w-full" dangerouslySetInnerHTML={{ __html: qr.svg }} /> : <Loader2 className="animate-spin text-slate-400" />}
+                  {qr ? <div className="h-full w-full [&_svg]:h-full [&_svg]:w-full" dangerouslySetInnerHTML={{ __html: sanitizeSvg(qr.svg) }} /> : <Loader2 className="animate-spin text-slate-400" />}
                 </div>
                 {qr?.match ? (
                   <div className="mx-auto mt-3 flex w-fit items-center gap-3 rounded-2xl border border-emerald-700/25 bg-emerald-900/[0.06] px-4 py-2" data-testid="stepup-match">

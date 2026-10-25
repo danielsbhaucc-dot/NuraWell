@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, CheckCircle2, ChevronLeft, FileArchive, Images, Inbox, KeyRound, LayoutGrid, Loader2, Receipt, Search, Sparkles, UserCheck, X } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, ChevronLeft, FileArchive, Images, Inbox, KeyRound, LayoutGrid, Loader2, Receipt, Search, ShieldCheck, Sparkles, UserCheck, X } from 'lucide-react';
 import { opsGlassBtnClass, opsGlassCardClass } from '@/components/admin/OpsPanel';
 import { cn } from '@/lib/cn';
 import { Divider } from './Divider';
@@ -15,10 +15,11 @@ import { ReceiptsSection } from '@/components/admin/MediaReceiptsSection';
 import { StepUpSettings } from '@/components/admin/StepUpSettings';
 import { AssetThumb, type Thumb } from './AssetThumb';
 import { HubSearch } from './HubSearch';
+import { SecurityDocs } from './SecurityDocs';
 import { AssetSheet } from './AssetSheet';
 import { fuzzyScore, normalize, expand } from '@/lib/legal/hub/search-core';
 
-export type HubTab = 'overview' | 'media' | 'receipts' | 'consent' | 'evidence' | 'keys';
+export type HubTab = 'overview' | 'media' | 'receipts' | 'consent' | 'evidence' | 'keys' | 'security';
 export type HubAsset = { key: string; title: string | null; kind: string; status: string; mime: string | null; thumb: Thumb; updated_at: string; created_on: string | null; source_type: string;
   receipt: 'confirmed' | 'auto' | 'suggested' | 'missing' | null; match: { receipt_id: string; confidence: number; reasons: string[]; vendor: string; plan: string | null; amount: number | null; currency: string | null; receipt_date: string | null } | null };
 type InboxItem = { id: string; kind: 'match' | 'missing_source' | 'missing_receipt' | 'receipt_review' | 'forwarding'; title: string; why: string; action: string; asset_key?: string; receipt_id?: string; confidence?: number };
@@ -27,6 +28,7 @@ export type HubData = { inbox: InboxItem[]; stats: { assets: number; verified: n
 const TABS: Array<{ id: HubTab; label: string; Icon: typeof Inbox }> = [
   { id: 'overview', label: 'סקירה', Icon: LayoutGrid }, { id: 'media', label: 'מדיה', Icon: Images }, { id: 'receipts', label: 'קבלות ומנויים', Icon: Receipt },
   { id: 'consent', label: 'הסכמות משתמשים', Icon: UserCheck }, { id: 'evidence', label: 'תיקי ראיות', Icon: FileArchive }, { id: 'keys', label: 'גיבוי מפתחות', Icon: KeyRound },
+  { id: 'security', label: 'אבטחה ופרטיות', Icon: ShieldCheck },
 ];
 const KIND_HE: Record<string, string> = { audio: 'שיר', image: 'תמונה', illustration: 'איור', icon: 'אייקון', video: 'סרטון', font: 'גופן', file: 'קובץ' };
 export const kindHe = (k: string) => KIND_HE[k] ?? 'קובץ';
@@ -90,6 +92,7 @@ export function LegalHub({ initialTab = 'overview' }: { initialTab?: HubTab }) {
           : tab === 'media' ? <MediaGrid data={data} onOpen={openAsset} />
           : tab === 'receipts' ? <ReceiptsSection onChanged={load} defaultOpen />
           : tab === 'consent' ? <AdminLegalPanel />
+          : tab === 'security' ? <SecurityDocs />
           : tab === 'evidence' ? <div className="space-y-4"><EvidenceIntro /><Divider variant="section" label="סיסמאות" /><AdminLegalPasswords /><Divider variant="section" label="מדריך" /><AdminLegalGuide /></div>
           : <div className="space-y-4"><AdminKeyBackup /><Divider variant="section" label="הצפנת מפתחות בענן" /><AdminKmsWrap /><Divider variant="section" label="דרכי אימות" /><StepUpSettings /></div>}
       </div>
