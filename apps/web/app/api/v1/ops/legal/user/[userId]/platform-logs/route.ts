@@ -1,3 +1,4 @@
+import { requirePiiGrant } from '@/lib/platform/access/pii-access';
 import { NextResponse } from 'next/server';
 import { strToU8 } from 'fflate';
 import { z } from 'zod';
@@ -30,6 +31,8 @@ export async function POST(request: Request, ctx: { params: Promise<{ userId: st
   if (!(await hasSensitiveStepUp({ accessToken: sess.session?.access_token, userId: auth.user.id, req: request })))
     return NextResponse.json({ error: 'stepup_required', stepUp: true }, { status: 403, headers: { 'Cache-Control': 'no-store' } });
   const { userId } = await ctx.params;
+  const piiDenied = await requirePiiGrant((await import('@/lib/supabase/admin')).createAdminClient(), request, { productId: 'nurawell', actorId: auth.user.id, subjectId: userId, resource: 'ops.legal.platform_logs' });
+  if (piiDenied) return piiDenied;
   const evidenceId = new URL(request.url).searchParams.get('evidence') ?? '';
   if (!z.string().uuid().safeParse(userId).success || !z.string().uuid().safeParse(evidenceId).success) return NextResponse.json({ error: 'bad_id' }, { status: 400 });
   const admin = createAdminClient();

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { confirmDialog } from '@/components/shared/dialogs';
+import { Badge, Banner, Button, Card } from '@/components/ui';
 import { StepUpDialog } from '@/components/admin/StepUpDialog';
 import { emergencyCardHtml, emergencyCardText } from '@/lib/ops/emergency-card';
 
@@ -68,44 +69,62 @@ export function OpsDevicesPanel() {
   };
   const regenLabel = busy ? 'יוצר קודים…' : 'יצירת 10 קודי גיבוי';
 
+  const revoke = async (d: Device) => {
+    if (!(await confirmDialog({ title: 'לבטל את המכשיר?', message: 'החיבורים של המכשיר הזה יתנתקו מיד, והוא יצטרך רישום מחדש. מכשירים אחרים לא יושפעו.', danger: true, confirmLabel: 'ביטול המכשיר' }))) return;
+    const j = await post({ action: 'revoke', id: d.id });
+    if (!j.ok) setErr(j.error ?? 'הביטול נכשל. נסו שוב.');
+    void load();
+  };
+  const revokeAll = async () => {
+    if (!(await confirmDialog({ title: 'לנתק את כל החיבורים?', message: 'כל החיבורים בכל המכשירים יתנתקו, כולל זה. המכשירים יישארו רשומים.', danger: true, confirmLabel: 'ניתוק הכול' }))) return;
+    const j = await post({ action: 'revoke_all' });
+    if (!j.ok) setErr(j.error ?? 'הניתוק נכשל. נסו שוב.');
+  };
+
   return (
     <section className="space-y-4">
       {banner && !codes && (
-        <div className="rounded-3xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
-          <b>{unused === 0 ? 'אין לך קודי גיבוי פעילים.' : 'שמור קודי גיבוי.'}</b> אם תאבד גישה לטלגרם ולמייל, קוד גיבוי יכניס אותך ממכשיר חדש.
-          <button type="button" onClick={regen} disabled={busy} className="mt-3 block min-h-11 rounded-2xl bg-[#0f3d2e] px-4 py-2 font-semibold text-[#f6f1e7] disabled:opacity-60">{regenLabel}</button>
-        </div>
+        <Banner tone="warn" icon="🔑" title={unused === 0 ? 'אין קודי גיבוי פעילים.' : 'כדאי לשמור קודי גיבוי.'}
+          action={<Button size="sm" variant="dark" onClick={regen} loading={busy}>{regenLabel}</Button>}>
+          אם הגישה לטלגרם ולמייל תאבד, קוד גיבוי יאפשר כניסה ממכשיר חדש.
+        </Banner>
       )}
-      {err && <p role="alert" className="rounded-2xl bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">{err}</p>}
+      {err && <Banner tone="danger" title={err} />}
       <StepUpDialog open={stepUp} purpose="ops.sensitive" reason="יצירת 10 קודי גיבוי" onClose={() => setStepUp(false)} onVerified={() => { setStepUp(false); void generate(); }} />
       {codes && (
-        <div className="rounded-3xl border border-[#c9a227] bg-[#fbf6e6] p-4">
-          <p className="mb-2 text-sm font-semibold text-[#0f3d2e]">הקודים מוצגים פעם אחת בלבד. כל הקודים הקודמים בוטלו. הדפיסו או הורידו את כרטיס החירום עכשיו.</p>
-          <ol dir="ltr" className="grid grid-cols-2 gap-2 font-mono text-base">{codes.map((c) => <li key={c} className="rounded-xl bg-gc px-3 py-2 text-center shadow-sm">{c}</li>)}</ol>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <button type="button" onClick={print} className="rounded-2xl border border-slate-200 bg-gc px-4 py-2 text-sm">הדפסת כרטיס חירום</button>
-            <button type="button" onClick={download} className="rounded-2xl border border-slate-200 bg-gc px-4 py-2 text-sm">הורדה</button>
-            <button type="button" onClick={() => navigator.clipboard?.writeText(codes.join('\n'))} className="rounded-2xl border border-slate-200 bg-gc px-4 py-2 text-sm">העתק</button>
-            <button type="button" onClick={() => setCodes(null)} className="rounded-2xl bg-[#0f3d2e] px-4 py-2 text-sm font-semibold text-[#f6f1e7]">שמרתי</button>
+        <Card tone="dark" accent className="space-y-3">
+          <p className="text-sm font-semibold text-on-dark">הקודים מוצגים פעם אחת בלבד. כל הקודים הקודמים בוטלו. הדפיסו או הורידו את כרטיס החירום עכשיו.</p>
+          <ol dir="ltr" className="grid grid-cols-2 gap-2 font-mono text-base">{codes.map((c) => <li key={c} className="rounded-xl bg-forest-950/40 px-3 py-2 text-center text-on-dark ring-1 ring-glow/15">{c}</li>)}</ol>
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="secondary" onClick={print}>הדפסת כרטיס חירום</Button>
+            <Button size="sm" variant="secondary" onClick={download}>הורדה</Button>
+            <Button size="sm" variant="secondary" onClick={() => navigator.clipboard?.writeText(codes.join('\n'))}>העתקה</Button>
+            <Button size="sm" variant="primary" onClick={() => setCodes(null)}>שמרנו</Button>
           </div>
-        </div>
+        </Card>
       )}
-      <div className="overflow-hidden rounded-3xl border border-black/5 bg-gc shadow-[0_4px_20px_rgba(15,61,46,0.06)]">
-        <div className="flex items-center justify-between px-4 py-3">
-          <h2 className="font-bold text-[#0f3d2e]">מכשירים מאושרים</h2>
-          <span className="text-xs text-slate-500">קודי שחזור זמינים: {unused}</span>
+      <Card tone="dark" className="space-y-1 p-0">
+        <div className="flex items-center justify-between px-4 pt-4">
+          <h2 className="font-display text-[17px] font-extrabold text-on-dark">מכשירים מאושרים</h2>
+          <span className="text-xs text-on-dark-soft">קודי שחזור זמינים: {unused}</span>
         </div>
-        <ul className="divide-y divide-slate-100">
+        <ul className="divide-y divide-glow/10">
           {devices.map((d) => (
             <li key={d.id} className="flex items-center justify-between gap-3 px-4 py-3 text-sm">
-              <div><div className="font-medium">{d.label || 'מכשיר'}</div><div className="text-xs text-slate-500">{VIA[d.via] ?? d.via} · נראה לאחרונה {fmt(d.last_seen_at)}{d.last_country ? ` · ${d.last_country}` : ''}{d.last_ip_masked ? ` · ${d.last_ip_masked}` : ''}{d.passkey ? ' · פאסקי' : ''}</div></div>
-              <button type="button" onClick={async () => { if (await confirmDialog({ title: 'לבטל את המכשיר?', message: 'הוא יצטרך אישור מחדש.', danger: true, confirmLabel: 'בטל מכשיר' })) { await post({ action: 'revoke', id: d.id }); void load(); } }} className="rounded-xl px-3 py-1.5 text-red-700 hover:bg-red-50">בטל</button>
+              <div className="min-w-0">
+                <div className="truncate font-bold text-on-dark">{d.browser || d.label || 'מכשיר'}{d.passkey ? <Badge tone="brand" className="ms-2">מפתח גישה</Badge> : null}</div>
+                <div className="truncate text-xs text-on-dark-soft">{VIA[d.via] ?? d.via} · נראה לאחרונה {fmt(d.last_seen_at)}{d.last_country ? ` · ${d.last_country}` : ''}{d.last_ip_masked ? ` · ${d.last_ip_masked}` : ''}</div>
+              </div>
+              <Button size="sm" variant="danger" onClick={() => void revoke(d)}>ביטול</Button>
             </li>
           ))}
-          {!devices.length && <li className="px-4 py-3 text-sm text-slate-500">אין מכשירים.</li>}
+          {!devices.length && <li className="px-4 py-3 text-sm text-on-dark-soft">אין מכשירים.</li>}
         </ul>
-        <div className="border-t border-slate-100 px-4 py-3"><button type="button" onClick={regen} className="text-sm font-semibold text-[#0b6b4b]" disabled={busy}>{regenLabel}</button></div>
-      </div>
+        <div className="flex flex-wrap gap-2 border-t border-glow/10 px-4 py-3">
+          <Button size="sm" variant="secondary" onClick={regen} loading={busy}>{regenLabel}</Button>
+          <Button size="sm" variant="secondary" onClick={() => void revokeAll()}>ניתוק כל החיבורים</Button>
+        </div>
+      </Card>
     </section>
   );
 }
@@ -131,13 +150,13 @@ export function OpsPendingLoginAlert() {
     setReqs((x) => x.slice(1));
   };
   return (
-    <div dir="rtl" role="alertdialog" className="fixed inset-x-3 bottom-4 z-[60] mx-auto max-w-md rounded-3xl border border-black/5 bg-gc p-4 shadow-[0_12px_40px_rgba(15,61,46,0.18)]">
-      <p className="font-bold text-[#0f3d2e]">🔐 ניסיון כניסה ממכשיר חדש</p>
-      <p className="mt-1 text-sm text-slate-600">{r.label} · {r.location} · {fmt(r.created_at)}</p>
+    <Card tone="dark" dir="rtl" role="alertdialog" className="fixed inset-x-3 bottom-4 z-[60] mx-auto max-w-md">
+      <p className="font-bold text-on-dark">🔐 ניסיון כניסה ממכשיר חדש</p>
+      <p className="mt-1 text-sm text-on-dark-soft">{r.label} · {r.location} · {fmt(r.created_at)}</p>
       <div className="mt-3 flex gap-2">
-        <button type="button" onClick={() => decide(true)} className="flex-1 rounded-2xl bg-[#0f3d2e] py-2.5 font-semibold text-[#f6f1e7]">אשר כניסה</button>
-        <button type="button" onClick={() => decide(false)} className="flex-1 rounded-2xl border border-red-200 py-2.5 font-semibold text-red-700">זה לא אני</button>
+        <Button variant="primary" className="flex-1" onClick={() => void decide(true)}>אישור כניסה</Button>
+        <Button variant="danger" className="flex-1" onClick={() => void decide(false)}>זה לא אנחנו</Button>
       </div>
-    </div>
+    </Card>
   );
 }

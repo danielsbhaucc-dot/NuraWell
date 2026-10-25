@@ -1,3 +1,4 @@
+import { requirePiiGrant } from '@/lib/platform/access/pii-access';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireApiAdmin } from '@/lib/api/route-guards';
@@ -20,6 +21,8 @@ export async function GET(request: Request, ctx: { params: Promise<{ userId: str
   const auth = await requireApiAdmin(request);
   if (!auth.ok) return auth.response;
   const { userId } = await ctx.params;
+  const piiDenied = await requirePiiGrant((await import('@/lib/supabase/admin')).createAdminClient(), request, { productId: 'nurawell', actorId: auth.user.id, subjectId: userId, resource: 'ops.legal.precheck' });
+  if (piiDenied) return piiDenied;
   if (!z.string().uuid().safeParse(userId).success) return NextResponse.json({ error: 'bad_id' }, { status: 400 });
   const admin = createAdminClient();
   const pc = await runPreExportCheck(admin, userId);
@@ -34,6 +37,8 @@ export async function POST(request: Request, ctx: { params: Promise<{ userId: st
   const auth = await requireApiAdmin(request);
   if (!auth.ok) return auth.response;
   const { userId } = await ctx.params;
+  const piiDenied = await requirePiiGrant((await import('@/lib/supabase/admin')).createAdminClient(), request, { productId: 'nurawell', actorId: auth.user.id, subjectId: userId, resource: 'ops.legal.precheck_fix' });
+  if (piiDenied) return piiDenied;
   if (!z.string().uuid().safeParse(userId).success) return NextResponse.json({ error: 'bad_id' }, { status: 400 });
   const b = Body.safeParse(await request.json().catch(() => null));
   if (!b.success) return NextResponse.json({ error: 'bad_body' }, { status: 400 });

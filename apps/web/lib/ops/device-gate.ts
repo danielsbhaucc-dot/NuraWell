@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { canBootstrap, cookieOpts, createTrustedDevice, DEVICE_COOKIE, DEVICE_MAX_AGE_S, deviceLabel, isTrustedDevice } from './device-trust';
+import { canBootstrap, cookieOpts, createTrustedDevice, DEVICE_COOKIE, DEVICE_MAX_AGE_S, deviceLabel, parseCookieValue, trustedDeviceId } from './device-trust';
+import { bindAdminSession, refreshDeviceFromRequest } from './admin-session';
 
 export const DEVICE_CHECK_PATHS = ['/device-check'];
 export const isDeviceCheckPath = (p: string) => DEVICE_CHECK_PATHS.includes(p.replace(/\/$/, ''));
@@ -19,11 +20,19 @@ export function sessionIdFromJwt(token: string | null | undefined): string | nul
 export type GateResult = { ok: true; setCookie?: { name: string; value: string; opts: ReturnType<typeof cookieOpts> } } | { ok: false };
 
 /** Is this admin request from a trusted Ops device? (bootstrap: pre-rollout session → first device) */
-export async function opsDeviceGate(db: SupabaseClient, userId: string, cookie: string | null | undefined, accessToken: string | null | undefined, ua: string | null, opts: { allowBootstrap?: boolean } = {}): Promise<GateResult> {
+export async function opsDeviceGate(db: SupabaseClient, userId: string, cookie: string | null | undefined, accessToken: string | null | undefined, ua: string | null, opts: { allowBootstrap?: boolean; headers?: Headers } = {}): Promise<GateResult> {
   if (process.env.OPS_DEVICE_GATE === 'off' && process.env.NODE_ENV !== 'production') return { ok: true };
-  if (await isTrustedDevice(db, userId, cookie)) return { ok: true };
+  const deviceId = await trustedDeviceId(db, userId, cookie);
+  if (deviceId) {
+    // per-device session binding: a session revoked with its device (or replayed from another device) is refused here
+    if (!(await bindAdminSession(db, userId, deviceId, accessToken))) return { ok: false };
+    if (opts.headers) await refreshDeviceFromRequest(db, userId, deviceId, opts.headers);
+    return { ok: true };
+  }
   if (opts.allowBootstrap && (await canBootstrap(db, userId, sessionIdFromJwt(accessToken)))) {
     const value = await createTrustedDevice(db, userId, deviceLabel(ua), 'bootstrap');
+    const id = parseCookieValue(value)?.id;
+    if (!id || !(await bindAdminSession(db, userId, id, accessToken))) return { ok: false };
     await db.from('ops_security_state').upsert({ user_id: userId, codes_pending_display: true, updated_at: new Date().toISOString() });
     return { ok: true, setCookie: { name: DEVICE_COOKIE, value, opts: cookieOpts(DEVICE_MAX_AGE_S) } };
   }

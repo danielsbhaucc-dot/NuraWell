@@ -1,3 +1,4 @@
+import { revokeAllAdminSessions, revokeDeviceSessions } from '@/lib/ops/admin-session';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireApiAdmin } from '@/lib/api/route-guards';
@@ -6,7 +7,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import {
   approxLocation, consumeApproved, cookieOpts, decideRequest, DEVICE_COOKIE, DEVICE_MAX_AGE_S, deviceLabel, listDevices,
   openRequestsFor, PENDING_COOKIE, redeemEmailCode, redeemRecoveryCode, regenerateRecoveryCodes, requestForPendingCookie,
-  revokeDevice, startLoginRequest, unusedCodeCount,
+  audit, revokeDevice, startLoginRequest, unusedCodeCount,
 } from '@/lib/ops/device-trust';
 import { alertOwnerSecurity, sendLoginEmail, sendTelegramLoginCard } from '@/lib/ops/device-notify';
 import { killSwitch } from '@/lib/ceo/security';
@@ -60,6 +61,7 @@ const Body = z.discriminatedUnion('action', [
   z.object({ action: z.literal('deny_self') }),
   z.object({ action: z.literal('decide'), id: z.string().uuid(), approve: z.boolean() }),
   z.object({ action: z.literal('revoke'), id: z.string().uuid() }),
+  z.object({ action: z.literal('revoke_all') }),
   z.object({ action: z.literal('regenerate_codes') }),
 ]);
 const PENDING_ACTIONS = new Set(['start', 'email', 'email_code', 'recovery', 'deny_self']);
@@ -118,9 +120,14 @@ export async function POST(request: Request) {
   }
   if (a.action === 'revoke') {
     const ok = await revokeDevice(db, uid, a.id, `ops:${uid}`);
-    // remote revoke also ends every session of this admin (the revoked device can't hold on to a live session)
-    if (ok) await db.rpc('ops_revoke_user_sessions', { p_user: uid }).then(() => null, () => null);
+    // per-device: only the sessions bound to this device (and its handoff children) end, immediately
+    if (ok) await revokeDeviceSessions(db, a.id);
     return json({ ok });
+  }
+  if (a.action === 'revoke_all') {
+    const n = await revokeAllAdminSessions(db, uid);
+    await audit(db, uid, 'ops_sessions_revoked_all', { sessions: n });
+    return json({ ok: true, sessions: n });
   }
   // regenerate_codes: step-up (approved device / security key / fresh login), old codes revoked, shown once, alert.
   const { data: sess } = await auth.supabase.auth.getSession();

@@ -70,7 +70,7 @@ export function AdminLegalPanel() {
 
   const verify = async () => {
     if (!sel) return; setBusy('verify');
-    try { const r = await fetch(`/api/v1/ops/legal/user/${sel}/verify`, { method: 'POST' }); setChecks(await r.json()); } catch { setErr('הבדיקה נכשלה'); } finally { setBusy(null); }
+    try { const r = await piiFetch(`/api/v1/ops/legal/user/${sel}/verify`, { method: 'POST' }); setChecks(await r.json()); } catch { setErr('הבדיקה נכשלה'); } finally { setBusy(null); }
   };
   const download = async (fmtKind: 'zip' | 'pdf') => {
     if (!sel) return; setBusy(fmtKind === 'zip' ? 'export' : 'pdf');
@@ -78,7 +78,7 @@ export function AdminLegalPanel() {
       const qs = new URLSearchParams();
       if (fmtKind === 'pdf') qs.set('format', 'pdf');
       if (pre && pre.critical > 0) { qs.set('override', '1'); qs.set('override_reason', ovrReason.trim()); }
-      const r = await fetch(`/api/v1/ops/legal/user/${sel}/export${qs.size ? `?${qs}` : ''}`);
+      const r = await piiFetch(`/api/v1/ops/legal/user/${sel}/export${qs.size ? `?${qs}` : ''}`);
       if (await exportStepUp.needsStepUp(r, () => void download(fmtKind))) return;
       if (r.status === 409) { setErr('ההפקה חסומה: יש כשלים חמורים פתוחים בבדיקה שלפני ההפקה.'); return; }
       if (!r.ok) throw new Error();
@@ -94,7 +94,7 @@ export function AdminLegalPanel() {
   const pullLogs = async (eventId: string) => {
     if (!sel) return; setBusy(`logs:${eventId}`);
     try {
-      const r = await fetch(`/api/v1/ops/legal/user/${sel}/platform-logs?evidence=${eventId}`, { method: 'POST' });
+      const r = await piiFetch(`/api/v1/ops/legal/user/${sel}/platform-logs?evidence=${eventId}`, { method: 'POST' });
       if (r.status === 403 && ((await r.clone().json().catch(() => ({}))) as { stepUp?: boolean }).stepUp) { setLogsStepUp(eventId); return; }
       if (!r.ok) throw new Error();
       const blob = await r.blob();

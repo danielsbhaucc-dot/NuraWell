@@ -6,6 +6,7 @@ import { allowedChatIds } from '@/lib/ceo/channel';
 import type { Update } from '@/lib/ceo/webhook';
 import { opsCanonicalHostname } from '@/lib/ops-host';
 import { audit, revokeDevice } from './device-trust';
+import { revokeDeviceSessions } from './admin-session';
 import { ownerAdminIds } from './device-notify';
 import { decideMatch, issueEnrollmentLink } from './enrollment';
 
@@ -56,8 +57,8 @@ export async function handleEnrollUpdate(db: SupabaseClient, channel: CeoChannel
   if (dr) {
     const [owner] = await ownerAdminIds(db);
     const ok = owner ? await revokeDevice(db, owner, dr[1], 'telegram') : false;
-    if (ok && owner) { await db.rpc('ops_revoke_user_sessions', { p_user: owner }).then(() => null, () => null); await audit(db, owner, 'ops_device_revoked_tg', { device: dr[1] }); }
-    await ack(ok ? '🗑️ המכשיר בוטל וכל החיבורים נותקו.' : 'לא מצאתי מכשיר פעיל כזה.');
+    if (ok && owner) { await revokeDeviceSessions(db, dr[1]).catch(() => 0); await audit(db, owner, 'ops_device_revoked_tg', { device: dr[1] }); }
+    await ack(ok ? '🗑️ המכשיר בוטל והחיבורים שלו נותקו.' : 'לא מצאתי מכשיר פעיל כזה.');
     return { enroll: 'revoke', ok };
   }
   return null;
