@@ -48,6 +48,8 @@ export async function resetLadder(page: Page) {
 /** The health-data consent sheet can open over /plans for the test account; close it (no consent given). */
 export async function closeConsentSheet(page: Page) {
   const sheet = page.getByTestId('consent-evidence-sheet');
+  // the sheet opens a few seconds after navigation for an account without health consent; wait for it, never consent
+  await sheet.waitFor({ state: 'visible', timeout: 6_000 }).catch(() => {});
   if (await sheet.isVisible().catch(() => false)) {
     await page.keyboard.press('Escape');
     if (await sheet.isVisible().catch(() => false)) {
