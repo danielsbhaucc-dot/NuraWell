@@ -1,3 +1,4 @@
+import { nameMatches } from '@/lib/security/name-match';
 import { NextResponse } from 'next/server';
 import { requireApiAdmin } from '@/lib/api/route-guards';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -33,7 +34,8 @@ export async function GET(request: Request) {
   const [mLike, rLike, prof, ev, ce, sem, fuz] = await Promise.all([
     orLike ? db.from('media_provenance_assets').select(mSel).or(orLike).eq('present', true).limit(60) : range ? db.from('media_provenance_assets').select(mSel).eq('present', true).limit(500) : Promise.resolve({ data: [] }),
     orLike ? db.from('media_receipts').select(rSel).or(orLike).limit(40) : range ? db.from('media_receipts').select(rSel).gte('receipt_date', range.from).lte('receipt_date', range.to).limit(100) : Promise.resolve({ data: [] }),
-    db.from('profiles').select('id, full_name').ilike('full_name', like).limit(10),
+    // full_name is encrypted at rest (enc:v2): match in app after the read path decrypts, never ilike on ciphertext
+    db.from('profiles').select('id, full_name').not('full_name', 'is', null).limit(5000).then((r) => ({ ...r, data: ((r.data ?? []) as Array<{ id: string; full_name: string | null }>).filter((x) => nameMatches(x.full_name, q)).slice(0, 10) })),
     hex ? db.from('media_evidence').select('asset_key, event, record_hash, created_at').like('record_hash', `${q}%`).limit(10) : Promise.resolve({ data: [] }),
     hex ? db.from('consent_evidence').select('user_id, action, record_hash, created_at').like('record_hash', `${q}%`).limit(10) : Promise.resolve({ data: [] }),
     semP, fuzP,
