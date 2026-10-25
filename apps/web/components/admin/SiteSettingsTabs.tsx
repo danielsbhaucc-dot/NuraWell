@@ -78,7 +78,11 @@ export function SiteSettingsTabs() {
         {contentOpen ? (
           <div className="p-1 sm:p-2">
             {tab === 'general' ? <SiteSettingsForm /> : null}
-            {tab === 'coming-soon' ? <AdminComingSoonPanel /> : null}
+            {tab === 'coming-soon' ? (
+              <div data-cs-legacy>
+                <AdminComingSoonPanel />
+              </div>
+            ) : null}
             {tab === 'register' ? <AdminRegisterBackgroundPanel /> : null}
             {tab === 'login' ? <AdminLoginBackgroundPanel /> : null}
             {tab === 'chat' ? <AdminChatBackgroundPanel /> : null}

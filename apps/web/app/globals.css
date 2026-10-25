@@ -1,4 +1,6 @@
 @import 'tailwindcss';
+/* Coming-soon freeze: main's palette/tokens scoped to the coming-soon root only. */
+@import './coming-soon-legacy.css';
 
 @custom-variant dark (&:is(.dark *));
 
