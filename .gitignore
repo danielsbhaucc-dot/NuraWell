@@ -43,6 +43,8 @@ playwright/.cache/
 # Logs
 *.log
 logs/
+!apps/web/lib/logs/
+!apps/web/app/api/v1/ops/legal/logs/
 
 # Misc
 *.tmp
