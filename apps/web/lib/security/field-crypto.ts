@@ -22,7 +22,7 @@ import {
   unwrapDataKey,
   type WrappedDek,
 } from '@/lib/security/field-envelope';
-import { encryptedTable, isBlocked, type FieldKind } from '@/lib/security/field-registry';
+import { encryptedTable, isBlocked, keyColumns, rowKeyOf, type FieldKind } from '@/lib/security/field-registry';
 
 export const FIELD_KEK_VERSION = 1;
 
@@ -169,9 +169,9 @@ export async function decryptRow<T extends Record<string, unknown>>(table: strin
   const cols = Object.keys(spec.columns).filter((c) => c in row && (isV2(row[c]) || (Array.isArray(row[c]) && (row[c] as unknown[]).some(isV2))));
   if (!cols.length) return row;
   const userId = row[spec.userCol];
-  const rowId = row[spec.rowCol];
+  const rowId = rowKeyOf(spec, row);
   if (typeof userId !== 'string' || typeof rowId !== 'string') {
-    throw new FieldDecryptError(`${table}: select must include ${spec.userCol} and ${spec.rowCol} to read encrypted columns`);
+    throw new FieldDecryptError(`${table}: select must include ${keyColumns(spec).join(', ')} to read encrypted columns`);
   }
   const out: Record<string, unknown> = { ...row };
   for (const c of cols) out[c] = await decryptValue(table, c, userId, rowId, row[c]);

@@ -17,6 +17,10 @@ export type EncryptedTable = {
   userCol: string;
   /** primary key column bound into the AAD. */
   rowCol: string;
+  /** composite primary key: these columns (in order) form the row key bound into the AAD, joined with '|'. */
+  rowCols?: readonly string[];
+  /** optimistic-concurrency columns for the backfill (default ['updated_at']). */
+  guardCols?: readonly string[];
   columns: Record<string, FieldKind>;
 };
 
@@ -133,7 +137,7 @@ export const ENCRYPTED_TABLES = {
     signal_text: 'text',
     granted_reason: 'text',
   } },
-  journey_next_step_cache: { userCol: 'user_id', rowCol: 'user_id', columns: {
+  journey_next_step_cache: { userCol: 'user_id', rowCol: 'user_id', rowCols: ['user_id', 'date_key'], guardCols: ['step_id', 'pace', 'model', 'created_at'], columns: {
     recommendation: 'json',
   } },
   journey_progress: { userCol: 'user_id', rowCol: 'id', columns: {
@@ -231,7 +235,6 @@ export const ENCRYPTED_TABLES = {
 
 /** Registered but not yet safe to encrypt: a DB object reads/constrains the plaintext. Writes/backfill skip these. */
 export const BLOCKED: Readonly<Record<string, string>> = {
-  'journey_next_step_cache.recommendation': 'primary key is (user_id, date_key); row binding needs a composite row key first',
   'profiles.gender': "CHECK enum constraint \u2014 drop and validate in app first",
   'profiles.activity_level': "CHECK enum constraint",
   'profiles.main_goal': "CHECK enum constraint",
@@ -269,6 +272,36 @@ export const OUT_OF_REGISTRY: Readonly<Record<string, string>> = {
 
 export function encryptedTable(table: string): EncryptedTable | undefined {
   return (ENCRYPTED_TABLES as Record<string, EncryptedTable>)[table];
+}
+
+/** Columns that identify a row (owner + row key columns), deduplicated. */
+export function keyColumns(spec: EncryptedTable): string[] {
+  return [...new Set([spec.userCol, ...(spec.rowCols ?? [spec.rowCol])])];
+}
+
+/** Row key bound into the AAD: the single primary key, or the composite key columns joined with '|'. Null if missing. */
+export function rowKeyOf(spec: EncryptedTable, row: Record<string, unknown>): string | null {
+  if (!spec.rowCols) {
+    const v = row[spec.rowCol];
+    return typeof v === 'string' && v ? v : null;
+  }
+  const parts: string[] = [];
+  for (const c of spec.rowCols) {
+    const v = row[c];
+    if ((typeof v !== 'string' && typeof v !== 'number') || v === '') return null;
+    const s = String(v);
+    if (s.includes('|')) return null;
+    parts.push(s);
+  }
+  return parts.join('|');
+}
+
+/** Row key for a table by name (throws when the table is not registered or the key is incomplete). */
+export function rowKeyFor(table: string, row: Record<string, unknown>): string {
+  const spec = encryptedTable(table);
+  const k = spec ? rowKeyOf(spec, row) : null;
+  if (!k) throw new Error(`${table}: incomplete row key`);
+  return k;
 }
 
 export function isBlocked(table: string, column: string): boolean {
