@@ -16,7 +16,7 @@
 | חיוב | billing_events | S2 | user_id→NULL במחיקה | — |
 | אדמין/אבטחה | admin_audit_log, ops_security_events, error_events | S1 | IP מוסר אחרי 30 יום; מחיקה אחרי 365 | — |
 | עמוד ציבורי | site_settings | S0 | מיגרציה 000176: עמודת demo_default_target_user_id חסומה ל-anon/authenticated | תוקן |
-| ספקים חיצוניים | ספקי AI, Upstash, R2 (גיבויים מוצפנים age), Vercel, Supabase | — | שם מלא מוסר בקליטה; PII shield רק במודלים עם `requiresPiiShield`, אחרים מקבלים שם פרטי | להחיל shield על כל המודלים (החלטת מוצר) |
+| ספקים חיצוניים | ספקי AI, Upstash, R2 (גיבויים מוצפנים age), Vercel, Supabase | — | כל קריאה לספק AI עוברת במסנן המזהים המרכזי (שם/טלפון/מייל/ת"ז → פסאודונים), בכל המודלים; נאכף בבדיקת CI | — |
 
 ## פערי טקסט גלוי (יעד להצפנת מעטפה — מחכה לאישור דניאל)
 user_memory_dossier · pending_almog_commitment_jobs · profiles.ai_context · periodic_summaries.ai_insight · הערות/תשובות journey · notifications.body / scheduled_reminders · הערות בקשות תמלול · ai_interaction_edits (תוכן) · 2 שורות legacy ב-ai_interactions.

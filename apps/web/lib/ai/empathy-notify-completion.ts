@@ -1,3 +1,4 @@
+import { meteredFetch } from '@/lib/ai/usage-meter';
 import { createAiProvider } from '@/lib/ai/provider-factory';
 import { createOpenAI } from '@ai-sdk/openai';
 import { generateText, type ModelMessage } from 'ai';
@@ -99,8 +100,10 @@ const routePrimaryToDeepInfra: typeof fetch = async (input, init) => {
       /* גוף שאינו JSON — משאירים כמו שהוא */
     }
   }
-  return fetch(input, init);
+  // central outbound PII guard + metering (standing rule: nothing identifying reaches a provider)
+  return meteredNotifyFetch(input, init);
 };
+const meteredNotifyFetch = meteredFetch();
 
 /** OpenRouter עם ניתוב מועדף ל-DeepInfra — רק למודל הנוטיפיקציות הראשי. */
 const openrouterPrimaryAi = createAiProvider({ apiKey: process.env.OPENROUTER_API_KEY ?? '', fetch: routePrimaryToDeepInfra });
