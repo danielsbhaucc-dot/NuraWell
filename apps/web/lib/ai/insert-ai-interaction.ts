@@ -16,7 +16,7 @@ export type AiInteractionInsert = {
 };
 
 export { restorePiiPlaceholders } from '@/lib/crypto/pii-placeholders';
-import { restorePiiPlaceholders } from '@/lib/crypto/pii-placeholders';
+import { firstNameFromFullName, restorePiiPlaceholders } from '@/lib/crypto/pii-placeholders';
 
 export async function insertAiInteraction(
   supabase: ApiRouteSupabaseResult['supabase'],
@@ -25,7 +25,7 @@ export async function insertAiInteraction(
   let content = payload.content;
   if (payload.role === 'assistant' && content.includes('[')) {
     const { data } = await supabase.from('profiles').select('full_name').eq('id', payload.user_id).maybeSingle();
-    const first = String((data as { full_name?: string | null } | null)?.full_name ?? '').trim().split(/\s+/)[0] || null;
+    const first = firstNameFromFullName((data as { full_name?: string | null } | null)?.full_name);
     content = restorePiiPlaceholders(content, first);
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
