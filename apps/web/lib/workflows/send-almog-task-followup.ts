@@ -84,7 +84,7 @@ ${styleBlock}
 ${cooldownBlock ?? ''}
 קונטקסט: ${formatStateForPrompt(state)}`;
 
-  const body = await withAiUser(userId, () => completeEmpathyNotifyBody({
+  const body = await withAiUser(userId, 'workflow:task-followup', () => completeEmpathyNotifyBody({
     label: 'task_followup',
     temperature: 0.78,
     presencePenalty: 0.45,

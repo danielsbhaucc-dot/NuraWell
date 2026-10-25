@@ -217,7 +217,7 @@ export async function generateAndStoreChatPeriodicSummary(
   }
 
   const firstName = await fetchFirstName(admin, params.userId);
-  const aiInsight = await withAiUser(params.userId, () => generateChatSummaryInsight({
+  const aiInsight = await withAiUser(params.userId, 'chat_periodic_summary', () => generateChatSummaryInsight({
     type: params.type,
     periodKey: params.periodKey,
     firstName,

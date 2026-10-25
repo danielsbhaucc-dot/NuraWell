@@ -207,7 +207,7 @@ export async function runNightlyTaskMerge(
     }
     let decisions: MergeDecision[] = [];
     try {
-      decisions = foldOneTimeByBehavior(sanitizeDecisions(await withAiUser(row.user_id, () => decide(row.tasks)), row.tasks), row.tasks);
+      decisions = foldOneTimeByBehavior(sanitizeDecisions(await withAiUser(row.user_id, 'almog_task_merge', () => decide(row.tasks)), row.tasks), row.tasks);
     } catch (e) {
       summary.errors.push(String(e).slice(0, 200));
       delete fingerprints[row.user_id]; // retry tomorrow

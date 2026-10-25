@@ -70,7 +70,7 @@ export async function ingestUserMessageIntoVectorMemory(params: {
 
   const facts =
     params.preExtractedFacts ??
-    (await withAiUser(params.userId, () => extractMemoryFactsFromUserMessage(params.userMessage))).facts;
+    (await withAiUser(params.userId, 'memory_ingest', () => extractMemoryFactsFromUserMessage(params.userMessage))).facts;
   if (!facts.length) {
     return { facts_extracted: 0, upserts: [] };
   }
@@ -129,7 +129,7 @@ export async function ingestUserMessageIntoVectorMemory(params: {
     if (best && hitMetaText(best)) {
       const prevMeta = hitMemoryMeta(best);
       const prevText = hitMetaText(best)!;
-      const mergedText = await withAiUser(params.userId, () => mergeTwoUserMemoryLines(prevText, fact.text));
+      const mergedText = await withAiUser(params.userId, 'memory_ingest', () => mergeTwoUserMemoryLines(prevText, fact.text));
       const mergedVec = await embedTextForRag(mergedText);
       const mergedLevel = Math.max(hitMetaMemoryLevel(best), fact.level) as 2 | 3 | 4;
 
@@ -212,7 +212,7 @@ export async function previewVectorMemoryIngest(params: {
   userMessage: string;
 }): Promise<VectorMemoryPreviewResult> {
   if (!isUpstashVectorConfigured()) {
-    const extraction = await withAiUser(params.userId, () => extractMemoryFactsFromUserMessage(params.userMessage));
+    const extraction = await withAiUser(params.userId, 'memory_ingest', () => extractMemoryFactsFromUserMessage(params.userMessage));
     return {
       extraction,
       per_fact: [],
@@ -220,7 +220,7 @@ export async function previewVectorMemoryIngest(params: {
     };
   }
 
-  const extraction = await withAiUser(params.userId, () => extractMemoryFactsFromUserMessage(params.userMessage));
+  const extraction = await withAiUser(params.userId, 'memory_ingest', () => extractMemoryFactsFromUserMessage(params.userMessage));
   const per_fact: Array<{
     fact: import('./extract-memory-facts').ExtractedMemoryFact;
     top_similar: Array<{ id: string; score: number; text: string | null; would_merge: boolean }>;

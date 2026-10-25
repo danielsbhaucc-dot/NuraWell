@@ -372,7 +372,7 @@ ${dailyBlock ? `${dailyBlock}\n` : ''}${cooldownBlock ? `${cooldownBlock}\n` : '
     return { body: '', inserted: null };
   }
 
-  const body = await withAiUser(payload.userId, () => completeEmpathyNotifyBody({
+  const body = await withAiUser(payload.userId, 'workflow:onboarding-check-in', () => completeEmpathyNotifyBody({
     label: 'almog_personalized_check_in',
     temperature: 0.82,
     presencePenalty: 0.45,

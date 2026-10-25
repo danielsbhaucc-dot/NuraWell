@@ -68,7 +68,7 @@ export async function GET(request: Request) {
     const firstName = firstNameFromFull(fullName) || 'משתמש';
 
     const admin = createAdminClient();
-    enterAiUsage({ userId: user.id });
+    enterAiUsage({ feature: 'dashboard_brief', userId: user.id });
     const { brief, used_fallback, model } = await buildDashboardBrief({
       supabase,
       admin,

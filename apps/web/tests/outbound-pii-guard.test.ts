@@ -114,7 +114,7 @@ describe('per-user scope (withAiUser) inside a cron context', () => {
     _setPiiSeedLoader(async (id) => (id === UID ? { full_name: 'נועה ברקוביץ' } : { full_name: 'אבי לוי' }));
     const { sent, base } = capture(() => new Response(JSON.stringify({ choices: [{ message: { content: '[[USER_FIRST_NAME]] ✓' } }] })));
     await withAiUsage({ feature: 'notify:master' }, () =>
-      withAiUser(UID, async () => {
+      withAiUser(UID, 'test', async () => {
         const r = await meteredFetch(base)(URL_, { method: 'POST', body: JSON.stringify({ model: 'x', messages: [{ role: 'user', content: 'נועה ברקוביץ ונועה' }] }) });
         seen.push((await r.json()).choices[0].message.content);
       })

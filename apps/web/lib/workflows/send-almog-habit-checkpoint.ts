@@ -501,7 +501,7 @@ export async function sendAlmogHabitCheckpointNotification(
    * שתפס את כל הכשלים וירד ל-template סטטי `buildHabitCheckpointFallbackBody`.
    * הסרנו אותו כדי לאלץ ריצה אמינה מקצה לקצה.
    */
-  const body = await withAiUser(payload.userId, () => completeEmpathyNotifyBody({
+  const body = await withAiUser(payload.userId, 'workflow:habit-checkpoint', () => completeEmpathyNotifyBody({
     label: 'habit_checkpoint',
     temperature: 0.85,
     presencePenalty: 0.5,
