@@ -62,7 +62,7 @@ export function SecurityKeysPanel() {
     <section dir="rtl" className="overflow-hidden rounded-3xl border border-black/5 bg-gc shadow-[0_4px_20px_rgba(15,61,46,0.06)]">
       <StepUpDialog open={!!stepUp} purpose="ops.sensitive" reason="ניהול מפתחות אבטחה" onClose={() => setStepUp(null)} onVerified={() => { const f = stepUp; setStepUp(null); f?.(); }} />
       <div className="flex items-start gap-3 bg-gradient-to-l from-[#0f3d2e] to-[#14523d] px-5 py-4 text-[#f6f1e7]">
-        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-surface-elevated/10 ring-1 ring-white/20"><Usb className="h-5 w-5" /></span>
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-white/10 ring-1 ring-white/20"><Usb className="h-5 w-5" /></span>
         <div>
           <h2 className="font-bold">מפתחות אבטחה פיזיים</h2>
           <p className="mt-0.5 text-xs text-[#f6f1e7]/80">נגיעה במפתח מאשרת כניסה ממכשיר חדש. אם המפתח לא זמין, אפשר להשתמש בקוד גיבוי חד-פעמי.</p>

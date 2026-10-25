@@ -27,7 +27,7 @@ export function LegalSearch() {
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="חיפוש: שיר, קבלה, ספק, רישיון, משתמש או hash" className="w-full bg-transparent text-sm outline-none placeholder:text-ink-faint" data-testid="legal-search" />
       </label>
       {hits ? (
-        <ul className="mt-2 max-h-96 space-y-1.5 overflow-auto rounded-3xl border border-gc/50 bg-surface-elevated/85 p-2 shadow-lg backdrop-blur-2xl" aria-live="polite">
+        <ul className="mt-2 max-h-96 space-y-1.5 overflow-auto rounded-3xl border border-gc/50 bg-glass/85 p-2 shadow-lg backdrop-blur-2xl" aria-live="polite">
           {hits.length ? hits.map((h) => (
             <li key={`${h.type}:${h.id}`} className="rounded-2xl px-3 py-2 hover:bg-surface-sunken">
               <a href={h.href} className="block">

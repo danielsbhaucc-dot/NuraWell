@@ -7149,26 +7149,39 @@ body.overflow-hidden { overflow: hidden; }
 /* Admin input fields */
 .input-field {
   width: 100%;
-  min-height: 46px;
-  padding: 11px 14px;
-  border-radius: 14px;
-  border: 1px solid var(--color-hairline);
-  background: var(--color-surface-sunken);
-  box-shadow: inset 0 1.5px 3px rgba(4,20,14,0.07);
-  font-size: 15px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1.5px solid rgba(4,20,14,0.08);
+  background: var(--color-background-card);
+  font-size: 14px;
   color: var(--color-ink);
   outline: none;
-  transition: border-color .25s var(--ease-spring), box-shadow .25s var(--ease-spring), background-color .25s var(--ease-spring);
+  transition: all 0.2s;
   font-family: 'Heebo', sans-serif;
 }
-.input-field:hover { border-color: color-mix(in srgb, var(--color-primary-500) 35%, var(--color-hairline)); }
 .input-field:focus {
-  border-color: var(--color-primary-600);
-  background: var(--color-surface-elevated);
-  box-shadow: inset 0 1px 2px rgba(4,20,14,0.05), 0 0 0 4px rgba(52,211,153,0.22);
+  border-color: rgba(16,185,129,0.5);
+  box-shadow: 0 0 0 3px rgba(16,185,129,0.1);
 }
 .input-field::placeholder {
   color: var(--color-ink-faint);
+}
+/* Dark-glass contexts (login/register photo shell, forest surfaces): translucent dark wells, light text. */
+.onboarding-shell-dark .input-field,
+.surface-dark .input-field {
+  background: color-mix(in srgb, var(--color-forest-950) 42%, transparent);
+  border-color: color-mix(in srgb, var(--color-on-dark) 18%, transparent);
+  color: var(--color-on-dark);
+  box-shadow: inset 0 1px 2px rgba(4,20,14,0.35);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.onboarding-shell-dark .input-field::placeholder,
+.surface-dark .input-field::placeholder { color: color-mix(in srgb, var(--color-on-dark-soft) 80%, transparent); }
+.onboarding-shell-dark .input-field:focus,
+.surface-dark .input-field:focus {
+  border-color: color-mix(in srgb, var(--color-glow) 70%, transparent);
+  box-shadow: inset 0 1px 2px rgba(4,20,14,0.35), 0 0 0 3px rgba(52,211,153,0.25);
 }
 
 .header-grid-pattern {
