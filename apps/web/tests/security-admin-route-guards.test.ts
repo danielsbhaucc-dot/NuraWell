@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 /** CI guard: every admin/ops API route must go through a server-side admin (or machine-secret) guard. */
 const ROOTS = ['app/api/v1/admin', 'app/api/v1/ops'];
-const GUARDS = /requireOpsApiAdmin\(|requireApiAdmin\(|authorizeCronRequest\(|authorizeDbBackupRequest\(/;
+const GUARDS = /requireOpsApiAdmin\(|requireApiAdmin\(|requireIrAdmin\(|authorizeCronRequest\(|authorizeDbBackupRequest\(/;
 
 function routes(dir: string): string[] {
   return readdirSync(dir).flatMap((n) => {
@@ -21,6 +21,7 @@ describe('admin API guard coverage', () => {
   });
   it('requireApiAdmin writes the access log for every method', () => {
     const src = readFileSync(join(__dirname, '..', 'lib/api/route-guards.ts'), 'utf8');
-    expect(src).toMatch(/await auditAdminApiAccess\(request, user\.id\)/);
+    expect(src).toMatch(/await auditAdminApiAccess\(request, user\.id(, accessToken)?\)/);
+    expect(readFileSync(join(__dirname, '..', 'lib/security/http.ts'), 'utf8')).toMatch(/await requireApiAdmin\(request\)/);
   });
 });
