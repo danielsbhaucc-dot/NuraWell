@@ -11,7 +11,8 @@
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "db:generate": "supabase gen types typescript --project-id \"$SUPABASE_PROJECT_ID\" --schema public > packages/shared/types/database.ts",
     "db:migrate": "supabase migration up",
-    "db:reset": "supabase db reset"
+    "db:reset": "supabase db reset",
+    "prepare": "git config core.hooksPath .githooks 2>/dev/null || true"
   },
   "workspaces": [
     "apps/*",

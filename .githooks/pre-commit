@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Local secret-push guard (CI re-checks every PR and every push to main). Install: npm install (sets core.hooksPath).
+if command -v gitleaks >/dev/null 2>&1; then
+  gitleaks git --staged --redact --no-banner -c .gitleaks.toml || { echo "✋ gitleaks: secret in staged changes. Remove it (git reset / edit) and rotate it if it was real."; exit 1; }
+else
+  echo "warning: gitleaks not installed — local secret check skipped (CI will still block). https://github.com/gitleaks/gitleaks#installing" >&2
+fi

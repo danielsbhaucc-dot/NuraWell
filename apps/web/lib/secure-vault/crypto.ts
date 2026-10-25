@@ -23,7 +23,7 @@ export function encryptVault(plain: string, userId: string) {
 }
 
 export function decryptVault(row: { ciphertext: string; iv: string; tag: string }, userId: string): string {
-  const d = createDecipheriv('aes-256-gcm', key(), Buffer.from(row.iv, 'base64'));
+  const d = createDecipheriv('aes-256-gcm', key(), Buffer.from(row.iv, 'base64'), { authTagLength: 16 });
   d.setAAD(Buffer.from(userId));
   d.setAuthTag(Buffer.from(row.tag, 'base64'));
   return Buffer.concat([d.update(Buffer.from(row.ciphertext, 'base64')), d.final()]).toString('utf8');
