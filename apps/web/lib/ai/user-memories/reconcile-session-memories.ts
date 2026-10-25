@@ -1,3 +1,4 @@
+import { normalizeMemoryText } from './memory-text';
 import { createHealthMemoryGate } from '@/lib/privacy/health-memory';
 import { sealTableRow } from '@/lib/crypto/pii-seal';
 import { isStorableMemoryText } from '../safety/memory-text-guard';
@@ -91,7 +92,8 @@ async function upsertMemoryRow(params: {
   prevMeta?: UserMemoryVectorMetadata | null;
 }): Promise<void> {
   const now = new Date().toISOString();
-  const text = params.memoryText.replace(/\s+/g, ' ').trim().slice(0, 600);
+  const text = normalizeMemoryText(params.memoryText);
+  if (!text) return;
 
   if (isUpstashVectorConfigured()) {
     const meta: UserMemoryVectorMetadata = {

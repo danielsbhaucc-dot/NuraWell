@@ -258,7 +258,6 @@ export const BLOCKED: Readonly<Record<string, string>> = {
   'notifications.metadata': "unique dedupe index on metadata->>checkpoint_date \u2014 split technical keys out first",
   'task_events.metadata': "mirror_jte_to_task_events/merge_task_assignments SQL",
   'task_events.reason': "merge_task_assignments SQL",
-  'user_memories.memory_text': "CHECK char_length<=4000 \u2014 ciphertext is longer; relax constraint first",
 };
 
 /** Personal tables intentionally outside the per-user registry (no owner column), with the reason. */
