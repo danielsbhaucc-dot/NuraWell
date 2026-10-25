@@ -1,9 +1,8 @@
-import { auditAdminRequest } from '@/lib/api/require-ops-api-admin';
+import { auditAdminRequest, requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import { decProfileResult } from '@/lib/crypto/pii-fields';
 import { NextResponse } from 'next/server';
 
 import { createAdminClient } from '../../../../../lib/supabase/admin';
-import { requireApiSession } from '../../../../../lib/api/route-guards';
 import { consumeMultiRateLimits, rateLimitResponse } from '../../../../../lib/api/rate-limit';
 import {
   fetchTrueLastActiveByUser,
@@ -59,7 +58,7 @@ function deriveSlotFromJerusalemHour(now: Date): 'morning' | 'midday' | 'evening
  * הרשאה: admin בלבד (profiles.role).
  */
 export async function GET(request: Request) {
-  const auth = await requireApiSession(request);
+  const auth = await requireOpsApiAdmin(request);
   if (!auth.ok) return auth.response;
 
   const rl = await consumeMultiRateLimits(auth.user.id, 'admin-api', [
