@@ -157,11 +157,12 @@ describe('Telegram commands', () => {
     await handleEnrollUpdate(db as never, c as never, { message: { chat: { id: 42 } as never, text: 'מכשיר חדש' } }, '42');
     expect(String((c.send.mock.calls[0] as unknown[])[1])).toMatch(/https:\/\/ops\.example\.test\/k\/[A-Za-z0-9_-]{43}/);
   });
-  it('owner revoke tap revokes the device and kills sessions', async () => {
+  it('owner revoke tap kills only that device sessions', async () => {
     const db = fakeDb(); const c = ch2();
     await handleEnrollUpdate(db as never, c as never, { callback_query: { id: 'q', data: `ceo:dr:${ID}`, message: { chat: { id: 42 } as never, message_id: 1 } } }, '42');
     expect(dt.revoke).toHaveBeenCalled();
-    expect(db.calls.some((x) => x.table === 'rpc:ops_revoke_user_sessions')).toBe(true);
+    expect(db.calls.some((x) => x.table === 'rpc:ops_revoke_device_sessions')).toBe(true);
+    expect(db.calls.some((x) => x.table === 'rpc:ops_revoke_user_sessions')).toBe(false);
   });
   it('unrelated text passes through', async () => {
     expect(await handleEnrollUpdate(fakeDb() as never, ch2() as never, { message: { chat: { id: 42 } as never, text: 'שלום' } }, '42')).toBeNull();

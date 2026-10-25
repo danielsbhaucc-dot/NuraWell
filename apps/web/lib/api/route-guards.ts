@@ -96,7 +96,7 @@ async function requireApiAdminInner(request: Request, opts: { skipDeviceGate?: b
     const { opsDeviceGate } = await import('@/lib/ops/device-gate');
     const { DEVICE_COOKIE } = await import('@/lib/ops/device-trust');
     const { createAdminClient } = await import('@/lib/supabase/admin');
-    const gate = await opsDeviceGate(createAdminClient(), user.id, readCookie(request, DEVICE_COOKIE), accessToken, request.headers.get('user-agent'));
+    const gate = await opsDeviceGate(createAdminClient(), user.id, readCookie(request, DEVICE_COOKIE), accessToken, request.headers.get('user-agent'), { headers: request.headers });
     if (!gate.ok) {
       return { ok: false, response: NextResponse.json({ error: 'נדרש אישור מכשיר', code: 'device_unverified' }, { status: 403 }) };
     }

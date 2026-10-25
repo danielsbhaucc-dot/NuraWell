@@ -177,7 +177,7 @@ export function AlmogChatMemoryPanel({
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/v1/admin/users/${userId}/chat-memory`, {
+      const res = await piiFetch(`/api/v1/admin/users/${userId}/chat-memory`, {
         credentials: 'include',
         cache: 'no-store',
       });
@@ -303,7 +303,7 @@ export function AlmogChatMemoryPanel({
     setActingId(sessionId);
     setTranscriptError(null);
     try {
-      const res = await fetch(`/api/v1/admin/users/${userId}/chat-memory`, {
+      const res = await piiFetch(`/api/v1/admin/users/${userId}/chat-memory`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -353,7 +353,7 @@ export function AlmogChatMemoryPanel({
     setActingId(sessionId);
     setTranscriptError(null);
     try {
-      const res = await fetch(`/api/v1/admin/users/${userId}/chat-memory`, {
+      const res = await piiFetch(`/api/v1/admin/users/${userId}/chat-memory`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -425,7 +425,7 @@ export function AlmogChatMemoryPanel({
     }
     setActingId(sessionId);
     try {
-      const res = await fetch(`/api/v1/admin/users/${userId}/chat-memory`, {
+      const res = await piiFetch(`/api/v1/admin/users/${userId}/chat-memory`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -475,7 +475,7 @@ export function AlmogChatMemoryPanel({
     setConfirmPopup(null);
     setActingId(sessionId);
     try {
-      const res = await fetch(`/api/v1/admin/users/${userId}/chat-memory`, {
+      const res = await piiFetch(`/api/v1/admin/users/${userId}/chat-memory`, {
         method: action === 'delete' ? 'DELETE' : 'PATCH',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },

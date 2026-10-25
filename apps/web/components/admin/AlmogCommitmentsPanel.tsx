@@ -1,5 +1,6 @@
 'use client';
 
+import { piiFetch } from '@/lib/platform/access/pii-fetch';
 import { useCallback, useEffect, useState } from 'react';
 import {
   AlertTriangle,
@@ -143,7 +144,7 @@ export function AlmogCommitmentsPanel({ userId }: { userId: string }) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/v1/admin/users/${userId}/almog`, {
+      const res = await piiFetch(`/api/v1/admin/users/${userId}/almog`, {
         credentials: 'include',
         cache: 'no-store',
       });

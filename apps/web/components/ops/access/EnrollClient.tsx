@@ -65,18 +65,18 @@ export function EnrollClient({ token }: { token: string }) {
     } catch { setErr('יצירת הפאסקי בוטלה. נסו שוב.'); } finally { setBusy(false); }
   }, []);
 
-  if (step === 'done') return <main dir="rtl" className="mx-auto max-w-md p-6"><Banner tone="success" title="המכשיר נרשם">אפשר להתחבר כרגיל מהמכשיר הזה.</Banner></main>;
-  if (step === 'opening') return <main dir="rtl" className="mx-auto max-w-md p-6"><LoadingState /></main>;
-  if (step === 'gone') return <main dir="rtl" className="mx-auto max-w-md p-6"><Card><CardTitle>הדף לא נמצא</CardTitle>{err ? <Banner tone="warn" title={err} /> : null}</Card></main>;
+  if (step === 'done') return <main dir="rtl" className="min-h-dvh bg-linear-to-b from-forest-950 via-forest-900 to-forest-800 px-4 py-10"><div className="mx-auto max-w-md"><Banner onDark tone="success" title="המכשיר נרשם">אפשר להתחבר כרגיל מהמכשיר הזה.</Banner></div></main>;
+  if (step === 'opening') return <main dir="rtl" className="min-h-dvh bg-linear-to-b from-forest-950 via-forest-900 to-forest-800 px-4 py-10"><div className="mx-auto max-w-md"><LoadingState /></div></main>;
+  if (step === 'gone') return <main dir="rtl" className="min-h-dvh bg-linear-to-b from-forest-950 via-forest-900 to-forest-800 px-4 py-10"><div className="mx-auto max-w-md"><Card tone="dark"><CardTitle className="text-on-dark">הדף לא נמצא</CardTitle>{err ? <Banner onDark tone="warn" title={err} /> : null}</Card></div></main>;
 
   return (
-    <main dir="rtl" className="mx-auto max-w-md p-6">
-      <Card className="space-y-4">
-        <CardTitle>רישום מכשיר</CardTitle>
-        {err ? <Banner tone="danger" title={err} /> : null}
+    <main dir="rtl" className="min-h-dvh bg-linear-to-b from-forest-950 via-forest-900 to-forest-800 px-4 py-10"><div className="mx-auto max-w-md">
+      <Card tone="dark" accent className="space-y-4">
+        <CardTitle className="text-on-dark">רישום מכשיר</CardTitle>
+        {err ? <Banner onDark tone="danger" title={err} /> : null}
         {step === 'factor' ? (
           <div className="space-y-3">
-            <p className="text-sm text-ink-soft">הזינו סיסמה ואמתו עם גורם חזק שכבר רשום אצלכם.</p>
+            <p className="text-sm text-on-dark-soft">הזינו סיסמה ואמתו עם גורם חזק שכבר רשום אצלכם.</p>
             <Input type="email" autoComplete="username" placeholder="אימייל" value={email} onChange={(e) => setEmail(e.target.value)} dir="ltr" />
             <Input type="password" autoComplete="current-password" placeholder="סיסמה" value={password} onChange={(e) => setPassword(e.target.value)} dir="ltr" />
             <Button variant="primary" loading={busy} disabled={!email || !password} onClick={() => void submitFactor('passkey')} className="w-full">אמתו עם פאסקי או מפתח אבטחה</Button>
@@ -86,18 +86,18 @@ export function EnrollClient({ token }: { token: string }) {
         ) : null}
         {step === 'match' ? (
           <div className="space-y-3 text-center">
-            <p className="text-sm text-ink-soft">שלחנו בקשת אישור לטלגרם. לחצו שם על המספר הזה:</p>
-            <p className="text-5xl font-bold text-ink tabular-nums" aria-live="polite">{num}</p>
-            <p className="text-xs text-ink-soft">תוקף שתי דקות. מספר שגוי יבטל את הבקשה.</p>
+            <p className="text-sm text-on-dark-soft">שלחנו בקשת אישור לטלגרם. לחצו שם על המספר הזה:</p>
+            <p className="text-5xl font-bold text-on-dark tabular-nums" aria-live="polite">{num}</p>
+            <p className="text-xs text-on-dark-soft">תוקף שתי דקות. מספר שגוי יבטל את הבקשה.</p>
           </div>
         ) : null}
         {step === 'register' ? (
           <div className="space-y-3">
-            <Banner tone="success" title="אושר. נשאר רק ליצור פאסקי למכשיר הזה." />
+            <Banner onDark tone="success" title="אושר. נשאר רק ליצור פאסקי למכשיר הזה." />
             <Button variant="primary" loading={busy} onClick={() => void register()} className="w-full">צרו פאסקי וסיימו</Button>
           </div>
         ) : null}
       </Card>
-    </main>
+    </div></main>
   );
 }
