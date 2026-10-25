@@ -39,7 +39,8 @@ export async function ingestReceipt(admin: SupabaseClient, input: IngestReceiptI
   const subject = (mail.subject ?? '').slice(0, 300);
   const text = (mail.text ?? (mail.html ?? '').replace(/<[^>]+>/g, ' ')).replace(/[ \t]+/g, ' ').slice(0, 50000);
   const headers: Record<string, string> = {};
-  for (const h of mail.headers ?? []) headers[h.key.toLowerCase()] = String(h.value).slice(0, 500);
+  // First occurrence wins (postal-mime ≥3 semantics): forwarding hops are prepended, so a sender-supplied duplicate further down can't override them.
+  for (const h of mail.headers ?? []) { const k = h.key.toLowerCase(); if (!(k in headers)) headers[k] = String(h.value).slice(0, 500); }
 
   const emlSha = sha256Hex(input.raw);
   const { data: dup } = await admin.from('media_receipts').select('id').eq('eml_sha', emlSha).maybeSingle();
