@@ -88,16 +88,40 @@ export async function sendLoginEmail(db: SupabaseClient, r: Req): Promise<boolea
 }
 
 /** Generic security alert to owner: Telegram + email, bypassing quiet hours. */
-export async function alertOwnerSecurity(db: SupabaseClient, userId: string | null, text: string, subject: string): Promise<void> {
+export type AlertDelivery = { telegram: number; email: number; emailIds: string[] };
+type AlertOpts = { buttons?: import('@/lib/ceo/channel').CeoButton[][]; emailLink?: { href: string; label: string }; purpose?: string };
+
+/** Admin owner accounts (profiles.role = 'admin'): system alerts with no specific user go to them. */
+export async function ownerAdminIds(db: SupabaseClient): Promise<string[]> {
+  const { data } = await db.from('profiles').select('id').eq('role', 'admin').limit(5);
+  return ((data ?? []) as { id: string }[]).map((r) => r.id);
+}
+
+/**
+ * Security alert to the owner: Telegram (every allowed private chat) AND email.
+ * userId null = a system alert (new IP, storage, auto-block): email goes to every admin owner.
+ * Before 2026-10 a null userId silently skipped email, so log/storage alerts reached Telegram only.
+ */
+export async function alertOwnerSecurity(db: SupabaseClient, userId: string | null, text: string, subject: string, opts: AlertOpts = {}): Promise<AlertDelivery> {
+  const out: AlertDelivery = { telegram: 0, email: 0, emailIds: [] };
   const ch = createTelegramChannel();
-  for (const id of allowedChatIds()) await ch.send(id, text, undefined, { kind: 'reply' }).catch(() => {});
-  if (!userId) return;
-  const { data } = await db.auth.admin.getUserById(userId);
-  const to = data.user?.email;
-  if (!to) return;
-  await sendResendEmail({
-    to, from: GIDEON_EMAIL_FROM, subject,
-    html: renderEmailLayout({ preheader: subject, eyebrow: 'אבטחה', heading: subject, bodyHtml: emailParagraph(escapeHtml(text).replace(/\n/g, '<br>')), assetOrigin: publicAppBaseNoSlashSync() || 'https://nurawell.vercel.app' } as never),
-    text,
-  }).catch(() => undefined);
+  for (const id of allowedChatIds()) {
+    try { await ch.send(id, text, opts.buttons, { kind: 'reply' }); out.telegram++; } catch { /* next chat */ }
+  }
+  const ids = userId ? [userId] : await ownerAdminIds(db).catch(() => [] as string[]);
+  const sent = new Set<string>();
+  for (const uid of ids) {
+    const { data } = await db.auth.admin.getUserById(uid);
+    const to = data.user?.email;
+    if (!to || sent.has(to)) continue;
+    sent.add(to);
+    const link = opts.emailLink ? `<p style="margin:18px 0"><a href="${escapeHtml(opts.emailLink.href)}" style="font-weight:700">${escapeHtml(opts.emailLink.label)}</a></p>` : '';
+    const r = await sendResendEmail({
+      to, from: GIDEON_EMAIL_FROM, subject, purpose: opts.purpose ?? 'security_alert',
+      html: renderEmailLayout({ preheader: subject, eyebrow: 'אבטחה', heading: subject, bodyHtml: emailParagraph(escapeHtml(text).replace(/\n/g, '<br>')) + link, assetOrigin: publicAppBaseNoSlashSync() || 'https://nurawell.vercel.app' } as never),
+      text: opts.emailLink ? `${text}\n\n${opts.emailLink.label}: ${opts.emailLink.href}` : text,
+    }).catch(() => null);
+    if (r?.ok) { out.email++; if (r.id) out.emailIds.push(r.id); }
+  }
+  return out;
 }
