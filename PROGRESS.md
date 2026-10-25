@@ -54,3 +54,8 @@ Times are Israel time (IST, UTC+2).
 
 ## #351 e2e: retention spec closes consent prompt — OPEN, CI pending
 - The backfill had not run on prod at 17:5x IST: profiles 0/4 v2 names, user_memories 0/501, journey cache 0/9. It runs from the master cron. I did not wait for it.
+
+## 18:15 IST session (new worker)
+- #351 and #349: all GitHub checks green. Merge blocked only by the required "Vercel" status, which has not posted yet. Vercel preview builds are queued (Hobby, one build at a time; #342's status took about 1 hour). No admin override used.
+- Backfill root cause, findings so far: master is triggered only by QStash at 05:00 IST. The field-backfill code was added to master after today's 05:00 run, so master never ran it. The dedicated Vercel cron (11:40 UTC) left no trace, and there is no runtime-log access. Only 1 DEK exists (created by a live writer). Also, one table error aborted all the later tables.
+- PR #354 (branch sec4-backfill-observe): isolates each table and adds a counts-only run log `field_backfill_runs`. Migration 000195 is claimed and APPLIED on prod (additive, RLS on, no client grants). Next scheduled runs: master 05:00 IST and the Vercel cron 13:40 IST on Oct 26. Check `select * from field_backfill_runs` after those times.
