@@ -122,18 +122,14 @@ export async function runSubscriptionRetention(
   return out;
 }
 
-/** Admin / future payment webhook: mark the user's latest subscription as ended (or reactivate it). */
+/** Admin override: end (or reactivate) the user's latest subscription through the @saas/billing state machine. */
 export async function setSubscriptionEnded(
   admin: SupabaseClient,
   userId: string,
   endedAt: Date | null
 ): Promise<{ ok: true; subscription_id: string } | { ok: false; error: string }> {
-  const { data: sub } = await admin.from('subscriptions').select('id').eq('user_id', userId).order('created_at', { ascending: false }).limit(1).maybeSingle();
-  if (!sub) return { ok: false, error: 'no_subscription' };
-  const patch = endedAt
-    ? { status: 'expired', ended_at: endedAt.toISOString(), updated_at: new Date().toISOString() }
-    : { status: 'active', ended_at: null, cancel_at_period_end: false, updated_at: new Date().toISOString() };
-  const { error } = await admin.from('subscriptions').update(patch).eq('id', sub.id);
-  if (error) return { ok: false, error: error.message };
-  return { ok: true, subscription_id: sub.id as string };
+  const { applyBillingEvent } = await import('@/lib/billing/subscription-service');
+  const r = await applyBillingEvent(admin, { userId, event: endedAt ? 'admin_end' : 'admin_reactivate', now: endedAt ?? new Date(), source: 'admin' });
+  if (r.ok) return { ok: true, subscription_id: r.subscription_id };
+  return { ok: false, error: r.error };
 }

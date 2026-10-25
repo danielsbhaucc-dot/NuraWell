@@ -3,6 +3,8 @@ import { authorizeCronRequest } from '@/lib/api/authorize-cron';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { runLogRetentionJob } from '@/lib/logs/retention-job';
 import { runSubscriptionRetention } from '@/lib/privacy/subscription-retention';
+import { runDunning } from '@/lib/billing/subscription-service';
+import { billingPlatformEnabled } from '@/lib/billing/platform';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -20,6 +22,15 @@ export async function POST(request: Request) {
     const dryRun = new URL(request.url).searchParams.get('dry') === '1';
     const admin = createAdminClient();
     const out = await runLogRetentionJob(admin, { dryRun });
+    // Dunning first (an exhausted retry ends the subscription, which starts retention). Dark unless the billing flag is on.
+    let dunning: unknown = { skipped: dryRun ? 'dry_run' : 'flag_off' };
+    if (!dryRun && billingPlatformEnabled()) {
+      try {
+        dunning = await runDunning(admin);
+      } catch (e) {
+        dunning = { error: e instanceof Error ? e.message.slice(0, 120) : 'error' };
+      }
+    }
     // Personal data after the subscription ended (user's own choice). Counts only.
     let subscription_retention: unknown = null;
     try {
@@ -27,8 +38,8 @@ export async function POST(request: Request) {
     } catch (e) {
       subscription_retention = { error: e instanceof Error ? e.message.slice(0, 120) : 'error' };
     }
-    console.log('[cron/log-retention]', JSON.stringify({ deleted: out.deleted, db_bytes: out.db_bytes, alert: out.alert, subscription_retention }));
-    return NextResponse.json({ ok: true, ...out, subscription_retention });
+    console.log('[cron/log-retention]', JSON.stringify({ deleted: out.deleted, db_bytes: out.db_bytes, alert: out.alert, dunning, subscription_retention }));
+    return NextResponse.json({ ok: true, ...out, dunning, subscription_retention });
   } catch (e) {
     console.error('[cron/log-retention] failed', e instanceof Error ? e.message : 'error');
     return NextResponse.json({ ok: false, error: 'retention_failed' }, { status: 500 });
