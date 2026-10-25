@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { CheckCircle2, ChevronDown, Download, FileText, Film, Image as ImageIcon, Loader2, Music, Paperclip, RefreshCw, Search, ShieldAlert, ShieldCheck, Type as FontIcon, Shapes, X } from 'lucide-react';
 import { OpsDivider, opsGlassBtnClass, opsGlassBtnPrimaryClass, opsGlassCardClass, opsInputClass } from '@/components/admin/OpsPanel';
 import { cn } from '@/lib/cn';
+import { StepUpDialog } from '@/components/admin/StepUpDialog';
 import { ReceiptsSection } from './MediaReceiptsSection';
 import { FIELD_LABEL_HE, GENERATORS, SOURCE_LABEL_HE, SOURCE_TYPES, type Provenance, type SourceType } from '@/lib/legal/media/labels';
 
@@ -57,8 +58,10 @@ function thumbSrc(i: Item) {
   return i.has_file ? `/api/v1/ops/legal/media/item/file?key=${encodeURIComponent(i.key)}` : null;
 }
 
+class StepUpNeeded extends Error {}
 async function download(url: string, fallback: string) {
   const r = await fetch(url);
+  if (r.status === 403 && ((await r.clone().json().catch(() => ({}))) as { stepUp?: boolean }).stepUp) throw new StepUpNeeded();
   if (!r.ok) throw new Error();
   const blob = await r.blob();
   const name = decodeURIComponent(r.headers.get('x-export-file') ?? '') || /filename="([^"]+)"/.exec(r.headers.get('content-disposition') ?? '')?.[1] || fallback;
@@ -207,6 +210,7 @@ export function ItemCard({ item, open, onToggle, onChanged }: { item: Item; open
   }, [item.key]);
   useEffect(() => { if (open && !recs) loadRecs(); }, [open, recs, loadRecs]);
   const q = encodeURIComponent(item.key);
+  const [stepUpKind, setStepUpKind] = useState<'zip' | 'pdf' | 'verify' | null>(null);
   const run = async (kind: 'zip' | 'pdf' | 'verify') => {
     setBusy(kind); setErr(null);
     try {
@@ -217,11 +221,15 @@ export function ItemCard({ item, open, onToggle, onChanged }: { item: Item; open
         const t = setInterval(() => { n = Math.min(n + 1, steps.length - 1); setStage(steps[n]!); }, 1400);
         try { setMade(await download(`/api/v1/ops/legal/media/item/export?key=${q}${kind === 'pdf' ? '&format=pdf' : ''}`, `media-evidence.${kind}`)); } finally { clearInterval(t); setStage(null); }
       }
-    } catch { setErr(kind === 'verify' ? 'הבדיקה נכשלה' : 'הפקת התיק נכשלה'); } finally { setBusy(null); }
+    } catch (e) {
+      if (e instanceof StepUpNeeded) { setStepUpKind(kind); return; }
+      setErr(kind === 'verify' ? 'הבדיקה נכשלה' : 'הפקת התיק נכשלה');
+    } finally { setBusy(null); }
   };
   const changed = () => { setRecs(null); onChanged(); };
   return (
     <li className={cn(opsGlassCardClass, 'p-3 sm:p-4', !item.present && 'opacity-70')} data-testid="media-evidence-item">
+      <StepUpDialog open={!!stepUpKind} purpose="ops.sensitive" reason="הפקת תיק ראיות" onClose={() => setStepUpKind(null)} onVerified={() => { const k = stepUpKind; setStepUpKind(null); if (k) void run(k); }} />
       <button type="button" onClick={onToggle} aria-expanded={open} className="flex w-full items-center gap-3 text-right">
         <span className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-2xl border border-gc/50 bg-glass/70 backdrop-blur-md">
           {/* eslint-disable-next-line @next/next/no-img-element */}

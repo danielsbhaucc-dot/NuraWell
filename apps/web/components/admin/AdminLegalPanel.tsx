@@ -6,6 +6,7 @@ import { OpsDivider, opsGlassBtnClass, opsGlassCardClass } from '@/components/ad
 import { cn } from '@/lib/cn';
 import { Divider } from '@/components/admin/hub/Divider';
 import { StepUpDialog } from '@/components/admin/StepUpDialog';
+import { useStepUpRetry } from '@/components/admin/useStepUpRetry';
 import { AdminLegalPrecheck, type PreCheckState } from '@/components/admin/AdminLegalPrecheck';
 
 type UserRow = { user_id: string; name: string | null; email: string | null; events: number; last_action: string; last_at: string };
@@ -39,6 +40,7 @@ export function AdminLegalPanel() {
   const [loading, setLoading] = useState(false);
   const [checks, setChecks] = useState<{ ok: boolean; checked_at: string; checks: Check[] } | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const exportStepUp = useStepUpRetry('הפקת תיק ראיות');
   const [open, setOpen] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [, setPwTick] = useState(0);
@@ -76,6 +78,7 @@ export function AdminLegalPanel() {
       if (fmtKind === 'pdf') qs.set('format', 'pdf');
       if (pre && pre.critical > 0) { qs.set('override', '1'); qs.set('override_reason', ovrReason.trim()); }
       const r = await fetch(`/api/v1/ops/legal/user/${sel}/export${qs.size ? `?${qs}` : ''}`);
+      if (await exportStepUp.needsStepUp(r, () => void download(fmtKind))) return;
       if (r.status === 409) { setErr('ההפקה חסומה: יש כשלים חמורים פתוחים בבדיקה שלפני ההפקה.'); return; }
       if (!r.ok) throw new Error();
       const blob = await r.blob();
@@ -106,6 +109,7 @@ export function AdminLegalPanel() {
 
   return (
     <div dir="rtl" className="grid gap-5 lg:grid-cols-[320px_1fr]">
+      {exportStepUp.dialog}
       <section className={cn(opsGlassCardClass, 'p-4')} aria-label="משתמשים">
         <h2 className="mb-3 flex items-center gap-2 font-bold text-slate-900"><span className="grid h-6 w-6 place-items-center rounded-full bg-amber-100 text-xs text-amber-700">1</span>משתמשים עם תיעוד</h2>
         <label className="relative block">
