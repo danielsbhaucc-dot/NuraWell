@@ -58,3 +58,34 @@ export async function closeConsentSheet(page: Page) {
     await sheet.waitFor({ state: 'hidden', timeout: 5_000 }).catch(() => {});
   }
 }
+
+/**
+ * Click the ladder confirm button and wait for the level API to answer, so the next step never races a
+ * stale dialog or an in-flight request. Fails with the server's reason if the change was refused.
+ */
+export async function confirmLevel(page: Page, direction: 'easier' | 'harder') {
+  const resP = page.waitForResponse(
+    (r) => r.url().includes('/api/v1/tasks/level') && r.request().method() === 'POST',
+    { timeout: 30_000 },
+  );
+  const dialogBtn = page.getByRole('button', { name: 'אישור' });
+  await dialogBtn.click();
+  const res = await resP;
+  const body = await res.json().catch(() => ({}));
+  expect(res.status(), `level ${direction}: ${JSON.stringify(body)}`).toBe(200);
+  await expect(dialogBtn).toHaveCount(0, { timeout: 10_000 });
+}
+
+/**
+ * Deterministic start state for the shared role=test account: main task back at level 0 (both directions),
+ * so every spec starts from the same ladder position regardless of the previous spec or an aborted run.
+ */
+export async function resetLadderToZero(page: Page) {
+  for (let i = 0; i < 8; i++) {
+    const plan = await (await page.request.get('/api/v1/tasks/plan')).json();
+    const t = plan?.tasks?.[0];
+    if (!t || t.currentLevel === 0) return;
+    const direction = t.currentLevel < 0 ? 'harder' : 'easier';
+    await page.request.post('/api/v1/tasks/level', { data: { assignmentId: t.id, direction, reason: 'e2e reset' } });
+  }
+}
