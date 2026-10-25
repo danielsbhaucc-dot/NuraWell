@@ -97,3 +97,17 @@ describe('verdict', () => {
     expect(verdictFor({ ...base, sessionMethods: ['password', 'totp'], aal: 'aal2', knownPlace: true }).level).toBe('low');
   });
 });
+
+describe('loosening actions need a recovery code', () => {
+  it('route schema requires code for unblock/unban/lockdown_end', async () => {
+    const fs = await import('node:fs');
+    const src = fs.readFileSync(new URL('../app/api/v1/ops/security/route.ts', import.meta.url), 'utf8');
+    for (const op of ['unblock', 'unban', 'lockdown_end']) expect(src).toMatch(new RegExp(`literal\\('${op}'\\)[^\\n]*code: z\\.string\\(\\)`));
+    expect(src).toMatch(/b\.op === 'unblock' \|\| b\.op === 'unban' \|\| b\.op === 'lockdown_end'/);
+  });
+  it('telegram handler exposes no loosening action', async () => {
+    const fs = await import('node:fs');
+    const src = fs.readFileSync(new URL('../lib/security/tg-actions.ts', import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+    expect(src).not.toMatch(/unban|unblock\(|endLockdown/);
+  });
+});

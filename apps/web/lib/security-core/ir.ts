@@ -12,7 +12,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
  * Product-agnostic core (no app imports). The product wiring calls configureIr() once with its IP hasher and
  * recovery-code settings. Tables / RPCs are the shared control-plane schema from migration 000185.
  */
-export type IrConfig = { hashIp: (ip: string) => string | null; normalizeCode: (c: string) => string; recoveryMaxFails: number; recoveryLockMin: number; recoveryCodeLength: number; factorTables: string[] };
+export type IrConfig = { hashIp: (ip: string) => string | null; normalizeCode: (c: string) => string; recoveryMaxFails: number; recoveryLockMin: number; recoveryCodeLength: number; factorTables: string[]; onRecoveryCodeUsed?: (db: SupabaseClient, actor: Actor, purpose: string) => Promise<void> };
 let cfg: IrConfig | null = null;
 export function configureIr(c: IrConfig) { cfg = c; }
 function conf(): IrConfig { if (!cfg) throw new Error('security-core: configureIr() not called'); return cfg; }
@@ -193,6 +193,7 @@ export async function verifyRecoveryCode(db: SupabaseClient, actor: Actor, code:
   }
   await db.from('ops_security_state').upsert({ user_id: uid, recovery_failures: 0, recovery_locked_until: null, updated_at: new Date().toISOString() });
   await irAudit(db, actor, 'recovery_code_used', { purpose });
+  if (conf().onRecoveryCodeUsed) await conf().onRecoveryCodeUsed!(db, actor, purpose).catch(() => undefined);
   return { ok: true };
 }
 

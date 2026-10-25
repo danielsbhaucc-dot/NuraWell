@@ -14,9 +14,9 @@ const body = z.discriminatedUnion('op', [
   z.object({ op: z.literal('revoke_session'), session: uuid, incident: inc }),
   z.object({ op: z.literal('sign_out_all'), user: uuid, incident: inc }),
   z.object({ op: z.literal('block_ip'), ip: z.string().max(64).optional(), ipHash: z.string().regex(/^[0-9a-f]{32}$/).optional(), minutes: z.number().int().min(5).max(525_600).nullable(), note: z.string().max(200).optional(), incident: inc }),
-  z.object({ op: z.literal('unblock'), ipHash: z.string().regex(/^[0-9a-f]{32}$/).optional(), cidr: z.string().max(64).optional() }),
+  z.object({ op: z.literal('unblock'), ipHash: z.string().regex(/^[0-9a-f]{32}$/).optional(), cidr: z.string().max(64).optional(), code: z.string().min(8).max(24) }),
   z.object({ op: z.literal('ban'), user: uuid, hours: z.number().int().min(1).max(8760).nullable(), incident: inc }),
-  z.object({ op: z.literal('unban'), user: uuid }),
+  z.object({ op: z.literal('unban'), user: uuid, code: z.string().min(8).max(24) }),
   z.object({ op: z.literal('force_reset'), user: uuid, incident: inc }),
   z.object({ op: z.literal('lockdown_start'), allowHours: z.number().int().min(1).max(24).nullable() }),
   z.object({ op: z.literal('lockdown_end'), code: z.string().min(8).max(24) }),
@@ -47,18 +47,21 @@ export async function POST(request: Request) {
   const b = parsed.data;
   const { db, actor } = g;
   let r;
+  // Loosening actions (unblock, unban, lift lockdown) need a recovery code on top of step-up. Never reachable from Telegram.
+  if (b.op === 'unblock' || b.op === 'unban' || b.op === 'lockdown_end') {
+    const v = await verifyRecoveryCode(db, actor, b.code, b.op);
+    if (!v.ok) return fail(v.locked ? 429 : 403, v.error, { code: 'recovery_code' });
+  }
   switch (b.op) {
     case 'revoke_session': r = await revokeSession(db, actor, b.session, b.incident); break;
     case 'sign_out_all': r = await signOutAll(db, actor, b.user, b.incident); break;
     case 'block_ip': r = await blockIp(db, actor, { ip: b.ip, ipHash: b.ipHash, minutes: b.minutes, note: b.note }, b.incident); break;
-    case 'unblock': r = await unblock(db, actor, b); break;
+    case 'unblock': r = await unblock(db, actor, { ipHash: b.ipHash, cidr: b.cidr }); break;
     case 'ban': r = await banUser(db, actor, b.user, b.hours, b.incident); break;
     case 'unban': r = await unbanUser(db, actor, b.user); break;
     case 'force_reset': r = await forceReset(db, actor, b.user, b.incident); break;
     case 'lockdown_start': r = await startLockdown(db, actor, b.allowHours); break;
     case 'lockdown_end': {
-      const v = await verifyRecoveryCode(db, actor, b.code, 'lockdown_end');
-      if (!v.ok) return fail(v.locked ? 429 : 403, v.error, { code: 'recovery_code' });
       r = await endLockdown(db, actor, 'ops+recovery_code');
       break;
     }
