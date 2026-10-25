@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Check, ChevronDown, Layers, Loader2, RefreshCw, ShieldCheck } from 'lucide-react';
+import { Button } from '@/components/ui';
 
 type P = { id: string; name: string };
 type State = { status: 'loading' } | { status: 'error' } | { status: 'ready'; products: P[]; founder: boolean; selected: string };
@@ -61,9 +62,9 @@ export function ProductSwitcher() {
   }
   if (s.status === 'error') {
     return (
-      <button type="button" onClick={load} className="inline-flex min-h-10 items-center gap-1.5 rounded-full bg-rose-50 px-3 text-xs font-bold text-rose-700 ring-1 ring-rose-200">
+      <Button type="button" variant="danger" size="sm" onClick={load} className="gap-1.5 rounded-full text-xs">
         <RefreshCw size={14} /> שגיאה בטעינת מוצרים
-      </button>
+      </Button>
     );
   }
   const items: P[] = s.founder ? [...s.products, { id: ALL, name: 'כל המוצרים' }] : s.products;
