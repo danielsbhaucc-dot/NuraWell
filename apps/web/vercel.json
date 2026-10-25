@@ -15,6 +15,10 @@
   },
   "crons": [
     {
+      "path": "/api/v1/ai/cron/field-backfill",
+      "schedule": "40 11 * * *"
+    },
+    {
       "path": "/api/v1/legal/anchor",
       "schedule": "17 2 * * *"
     },
