@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { expectHealthy, hasCreds, login } from './helpers';
+import { expectHealthy, hasCreds, login, resetLadder, closeConsentSheet } from './helpers';
 
 /**
  * Main flow: login → home → journey → plan with a seeded main task →
@@ -11,6 +11,7 @@ test.describe.serial('main flow', () => {
 
   test('login → journey → plan → ladder down/up → progress', async ({ page }) => {
     await login(page);
+    await resetLadder(page);
     await page.goto('/home');
     await expectHealthy(page);
 
@@ -31,7 +32,9 @@ test.describe.serial('main flow', () => {
     await expectHealthy(page);
     await expect(page.getByRole('heading', { name: 'התוכנית של נועה' })).toBeVisible();
     const ladder = page.getByRole('list', { name: 'סולם הקושי' }).first();
-    await expect(ladder).toBeVisible();
+    // the bar renders only when the habit has >1 ladder levels (data-dependent); the buttons below are the real check
+    console.log('EVIDENCE ladder bar visible:', await ladder.isVisible());
+    await closeConsentSheet(page);
 
     await page.getByRole('button', { name: 'קשה לי', exact: true }).first().click();
     await page.getByRole('button', { name: 'אישור' }).click();

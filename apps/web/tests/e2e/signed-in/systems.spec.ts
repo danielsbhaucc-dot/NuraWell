@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { hasCreds, login } from './helpers';
+import { hasCreds, login, resetLadder } from './helpers';
 
 /**
  * Root-level functional checks against the deployed app with the role=test account.
@@ -11,6 +11,7 @@ test.describe.serial('systems (prod, test account)', () => {
 
   test('tasks, ladder, events/streak, chat plan context + level tool, SOS', async ({ page }) => {
     await login(page);
+    await resetLadder(page);
     const api = page.request;
 
     // tasks: plan
