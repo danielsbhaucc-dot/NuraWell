@@ -1,5 +1,5 @@
 /**
- * Platform guardrails — STRICT (severity "error"), enforced in CI (web-test.yml → `npm run depcruise`).
+ * Platform guardrails — STRICT (severity "error"), enforced in CI via the `pretest` script of apps/web (web-test.yml runs `npm run test`).
  * Run locally: npm run depcruise -w apps/web
  * See docs/architecture/MODULARITY_AUDIT.he.md.
  */
@@ -27,7 +27,7 @@ module.exports = {
   options: {
     doNotFollow: { path: 'node_modules' },
     exclude: { path: '(node_modules|\\.next|/tests?/|\\.test\\.)' },
-    tsConfig: { fileName: 'apps/web/tsconfig.json' },
+    tsConfig: { fileName: 'tsconfig.depcruise.json' },
     tsPreCompilationDeps: true,
   },
 };
