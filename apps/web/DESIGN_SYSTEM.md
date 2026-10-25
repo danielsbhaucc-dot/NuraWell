@@ -1,0 +1,66 @@
+# NuraWell Design System · מערכת העיצוב
+
+> **הכלל:** כל רכיב חדש נראה כאילו עוצב יחד עם דף הנחיתה והמסכים הקיימים. שוויון לדף הנחיתה הוא המינימום. **אין לבן.**
+> **Rule:** every new component must look designed together with the landing page and existing product screens. Parity with the landing page is the minimum, not the goal. **No white.**
+
+## 1. Canonical references (do not redesign)
+These screens ARE the style. New work copies them, it does not reinvent them:
+- Landing page (`app/landing-v2`): deep forest hero, glass cards, emerald→teal glow.
+- Your Plan habit cards (`components/plans/PlanHabitCard.tsx`, `AlmogPlanSections.tsx`): glass card, 24px radius, 4px accent top bar, soft forest shadow.
+- Almog next-step card (`components/journey/JourneyNextStepCard.tsx`): gradient CTA, Almog chip header.
+- Cookie notice dark-forest theme (`components/legal/cookies`).
+
+## 2. Tokens (`app/globals.css` `@theme`) — the ONLY place colors live
+| Purpose | Token (Tailwind) |
+|---|---|
+| App canvas | `bg-canvas` |
+| Card material | `bg-surface/85 backdrop-blur-md` |
+| Raised sheet / popover | `bg-surface-elevated` |
+| Wells, inputs, tiles inside a card | `bg-surface-sunken` |
+| 1px borders | `ring-hairline` / `border-hairline` |
+| Dark signature (hero bands, admin chrome, auth) | `forest-950 … forest-600` |
+| Text | `text-ink`, `text-ink-soft`, `text-ink-faint` (AA on surface) |
+| Text on dark / on brand buttons | `text-on-dark`, `text-on-dark-soft` (pearl, never `#fff`) |
+| Glow accents | `glow`, `glow-teal`, `primary-*`, `secondary-*` |
+| Shadows | `shadow-float`, `shadow-lift`, `shadow-btn` |
+| Motion easing | `ease-(--ease-spring)` |
+
+Banned: `#fff`, `#ffffff`, `white`, `bg-white`, `rgb(255,255,255)`, `*-white` utilities, yellow→green gradients, flat cream or mint fills, raw hex outside `globals.css`.
+
+## 3. Primitives (`components/ui`, import from `@/components/ui`)
+- `Button` — `primary` (emerald→teal gradient CTA), `secondary` (glass), `soft` (tinted in-card pill), `ghost`, `danger`, `dark` (forest, for admin/auth). Sizes `sm | md | lg`, `loading`.
+- `Surface` / `Card` — tones `glass | elevated | sunken | dark`, `accent` adds the signature top bar. `CardTitle`.
+- `Input` — sunken well with an emerald focus halo.
+- `Sheet` / `Dialog` — native `<dialog>` (no alert/confirm/prompt), elevated glass, forest scrim.
+- `Banner` (`info | success | warn | danger`), `Badge` (`brand | soft | warm | dark`), `ListRow` (admin tables/lists).
+- `EmptyState`, `ErrorState`, `LoadingState`, `Skeleton`, `PageSkeleton`.
+
+Feature code must not hand-style `<button>`; use `Button`. A missing variant goes into `components/ui` first, then gets used.
+
+## 4. Signature patterns
+1. **Layered glass:** translucent surface + `backdrop-blur` over the sage canvas or a forest band, a hairline ring, and a soft forest-tinted shadow. Never an opaque light box.
+2. **Accent bar:** a 4px emerald→teal top bar marks the primary card of a section.
+3. **Forest depth:** important moments (auth, admin chrome, hero, CTA) sit on deep forest with pearl text and an emerald glow.
+4. **Typography:** Rubik display (800–900) for titles, Heebo body; 17px card titles, 13px body in cards, 11px kickers in bold color.
+5. **Radius scale:** 24px cards, 16px buttons and inputs, 12px tiles, full for chips.
+6. **Motion:** 200–400ms with spring easing and `active:scale-[0.98]`. Always add `motion-reduce:` fallbacks.
+7. **RTL-native:** logical props (`ps-`, `me-`, `start`), arrows point left for "forward", `dir="rtl"`.
+8. **Mobile-first:** design at 390px first. Do not touch the mobile dividers.
+9. **Copy:** Hebrew, gender-neutral plural, no slash-gender forms.
+
+## 5. Enforcement
+- `npm run lint:design` (`scripts/design-lint.mjs`) runs in CI ("Web tests") and inside `npm run test` (`tests/design-lint.test.ts`). It fails on new white, raw hex, arbitrary Tailwind colors or raw styled `<button>`. Existing debt is frozen in `scripts/design-lint-baseline.json` and may only shrink; after you remove debt, run `node scripts/design-lint.mjs --update`.
+- Exception: put `// design-lint-allow: <reason>` on the line above. Reviewers must accept the reason.
+
+## 6. Design parity review (mandatory for every UI PR)
+Before shipping, compare each new or changed screen with **the landing page** and **the closest existing product screen**. Attach a side-by-side (mobile 390px + desktop) to the PR.
+- [ ] Tokens only. No white, no raw hex, no banned gradients.
+- [ ] Shared primitives, no hand-styled buttons, cards or inputs.
+- [ ] Typography and radius scale per §4.
+- [ ] Spacing rhythm matches neighboring screens.
+- [ ] Motion is purposeful and honors reduced-motion.
+- [ ] RTL composition correct.
+- [ ] Mobile 390px checked first.
+- [ ] Contrast at WCAG AA.
+- [ ] "Would this impress someone who has seen Apple, Linear or Stripe?"
+- [ ] New creative ideas beyond the canonical style ship as a **sketch for approval first**, not as code.

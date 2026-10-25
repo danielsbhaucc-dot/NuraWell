@@ -1,0 +1,30 @@
+name: Design parity
+
+# Seconds-long check (no install, no build): UI-touching PRs must attach screenshots
+# or declare `no-ui`, per apps/web/DESIGN_SYSTEM.md §6.
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  parity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Require screenshots on UI PRs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+          BODY: ${{ github.event.pull_request.body }}
+        run: |
+          files=$(gh api "repos/$REPO/pulls/$PR/files" --paginate -q '.[].filename')
+          if ! echo "$files" | grep -qE '^apps/web/(app|components)/.*\.(tsx|css)$|\.css$'; then echo "No UI files changed."; exit 0; fi
+          if echo "$BODY" | grep -qiE '(!\[[^]]*\]\(|<img |\.png|\.jpg|\.webp|user-attachments)'; then echo "Screenshots attached ✓"; exit 0; fi
+          if echo "$BODY" | grep -qiE '\bno-ui\b'; then echo "Declared no-ui"; exit 0; fi
+          echo "::error::UI files changed but the PR body has no screenshots. Attach side-by-side (new | landing | closest screen), mobile 390 + desktop, or write no-ui. See apps/web/DESIGN_SYSTEM.md §6."
+          exit 1
