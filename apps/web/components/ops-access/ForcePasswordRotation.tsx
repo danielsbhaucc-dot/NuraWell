@@ -1,5 +1,8 @@
 'use client';
 
+import { opsInputClass } from '@/components/admin/OpsPanel';
+import { cn } from '@/lib/cn';
+
 import { useState } from 'react';
 import { Eye, EyeOff, KeyRound, Loader2, ShieldAlert } from 'lucide-react';
 
@@ -45,12 +48,12 @@ export function ForcePasswordRotation() {
         </div>
         <label className="block text-sm font-semibold text-[#0f3d2e]">קוד גיבוי (אחד מ-10 הקודים החדשים)
           <input dir="ltr" autoComplete="one-time-code" value={code} onChange={(e) => setCode(e.target.value)} placeholder="XXXXX-XXXXX"
-            className="mt-1 block min-h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-center font-mono text-lg tracking-widest" />
+            className={cn(opsInputClass, "mt-1 block min-h-12 w-full text-center font-mono text-lg tracking-widest")} />
         </label>
         <label className="block text-sm font-semibold text-[#0f3d2e]">סיסמה חדשה
           <div className="relative mt-1">
             <input dir="ltr" type={show ? 'text' : 'password'} autoComplete="new-password" value={pw} onChange={(e) => setPw(e.target.value)}
-              className="block min-h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 pe-12" />
+              className={cn(opsInputClass, "block min-h-12 w-full pe-12")} />
             <button type="button" onClick={() => setShow((s) => !s)} aria-label={show ? 'הסתר סיסמה' : 'הצג סיסמה'} className="absolute inset-y-0 end-0 flex w-12 items-center justify-center text-slate-500">
               {show ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
@@ -59,7 +62,7 @@ export function ForcePasswordRotation() {
         </label>
         <label className="block text-sm font-semibold text-[#0f3d2e]">אימות סיסמה
           <input dir="ltr" type={show ? 'text' : 'password'} autoComplete="new-password" value={pw2} onChange={(e) => setPw2(e.target.value)}
-            className="mt-1 block min-h-12 w-full rounded-2xl border border-slate-200 bg-white px-4" />
+            className={cn(opsInputClass, "mt-1 block min-h-12 w-full")} />
           {pw2 && pw !== pw2 && <span className="mt-1 block text-xs text-rose-700">הסיסמאות לא תואמות.</span>}
         </label>
         {err && <p role="alert" className="rounded-2xl bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">{err}</p>}
