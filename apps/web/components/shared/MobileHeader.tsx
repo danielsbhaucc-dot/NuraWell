@@ -11,7 +11,7 @@ import { APP_HOME_PATH } from '../../lib/navigation/app-home-path';
 
 interface MobileHeaderProps {
   user: User;
-  /** שם מלא מהפרופיל (מקור אמת) — עדיף על user_metadata */
+  /** שם מלא מהפרופיל המוצפן (המקור היחיד; user_metadata לא נקרא) */
   profileFullName?: string | null;
 }
 
@@ -26,7 +26,7 @@ const menuItems = [
 export function MobileHeader({ user, profileFullName }: MobileHeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
-  const fullName = String(profileFullName || user.user_metadata?.full_name || '').trim();
+  const fullName = String(profileFullName || '').trim();
   const firstName = fullName.split(/\s+/)[0] || '';
 
   const handleSignOut = async () => {

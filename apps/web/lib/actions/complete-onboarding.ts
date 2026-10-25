@@ -224,8 +224,8 @@ export async function completeOnboarding(
     email: data.email,
     password: data.password,
     email_confirm: false,
+    // the name lives only in the encrypted profile (profiles.full_name); never copy it into auth metadata
     user_metadata: {
-      full_name: data.full_name,
       username: data.email.split('@')[0],
     },
   });
