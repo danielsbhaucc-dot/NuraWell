@@ -60,7 +60,7 @@ export function PlanHabitCard({ habit, canStepDown, canStepUp, highlighted }: { 
               <dt className="text-[11px] font-bold text-glow">הצעד הבא</dt>
               <dd className="mt-0.5 text-[13px] font-semibold leading-snug text-on-dark">{habit.nextStep ?? 'שומרים על מה שבנינו'}</dd>
             </div>
-            <div className="relative overflow-hidden rounded-xl bg-surface-elevated px-3 py-2.5 shadow-float ring-1 ring-hairline before:absolute before:inset-x-0 before:top-0 before:h-0.5 before:bg-gradient-to-l before:from-amber-400 before:to-orange-400">
+            <div className="relative overflow-hidden rounded-xl bg-glass px-3 py-2.5 shadow-float ring-1 ring-hairline before:absolute before:inset-x-0 before:top-0 before:h-0.5 before:bg-gradient-to-l before:from-amber-400 before:to-orange-400">
               <dt className="text-[11px] font-bold text-amber-800">ביום קשה</dt>
               <dd className="mt-0.5 text-[13px] font-semibold leading-snug text-ink">{habit.fallbackStep ?? 'גם חצי צעד נחשב'}</dd>
             </div>

@@ -158,7 +158,7 @@ export function SecuritySettingsClient() {
         <div aria-hidden className="absolute -left-10 -top-10 h-40 w-40 rounded-full bg-amber-300/30 blur-3xl" />
         <div aria-hidden className="absolute -bottom-12 right-6 h-36 w-36 rounded-full bg-teal-200/30 blur-3xl" />
         <div className="relative flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-surface-elevated/15 ring-1 ring-amber-200/60 backdrop-blur">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-amber-200/60 backdrop-blur">
             <ShieldCheck className="h-6 w-6 text-amber-200" aria-hidden />
           </div>
           <div>

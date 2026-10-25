@@ -1,12 +1,16 @@
 {
  "app/(auth)/login/page.tsx": {
-  "white": 4,
+  "white": 8,
   "rawHex": 4,
   "rawButton": 2
  },
  "app/(dashboard)/journey/declined/page.tsx": {
   "rawHex": 1,
   "arbitraryColor": 1
+ },
+ "app/(dashboard)/loading.tsx": {
+  "white": 6,
+  "rawHex": 11
  },
  "app/(dashboard)/plans/page.tsx": {
   "rawHex": 3,
@@ -682,7 +686,7 @@
   "rawButton": 2
  },
  "components/ops-access/SecurityKeysPanel.tsx": {
-  "white": 1,
+  "white": 2,
   "rawHex": 11,
   "arbitraryColor": 11,
   "rawButton": 2
@@ -742,7 +746,7 @@
   "arbitraryColor": 2
  },
  "components/settings/PasskeyNudge.tsx": {
-  "white": 4,
+  "white": 5,
   "rawHex": 18,
   "arbitraryColor": 5,
   "rawButton": 2
@@ -752,6 +756,7 @@
   "arbitraryColor": 5
  },
  "components/settings/SecuritySettingsClient.tsx": {
+  "white": 1,
   "rawHex": 3,
   "arbitraryColor": 3,
   "rawButton": 2

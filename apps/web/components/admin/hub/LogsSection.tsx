@@ -17,7 +17,7 @@ const mb = (b: number) => (b >= 1048576 ? `${(b / 1048576).toFixed(1)}MB` : `${M
 const when = (iso: string) => new Date(iso).toLocaleString('he-IL', { timeZone: 'Asia/Jerusalem', day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' });
 const LEVEL_CLS = { ok: 'bg-emerald-500', warn: 'bg-amber-500', critical: 'bg-rose-500' } as const;
 const CLASS_CHIP = { operational: 'border-teal-300/60 bg-teal-500/10 text-teal-800', access: 'border-indigo-300/60 bg-indigo-500/10 text-indigo-800', legal: 'border-amber-300/70 bg-amber-500/15 text-amber-800' } as const;
-const input = 'min-w-0 rounded-xl border border-hairline/80 bg-surface-elevated/70 px-3 py-2 text-[13px] text-ink outline-none focus:border-teal-400';
+const input = 'min-w-0 rounded-xl border border-hairline/80 bg-glass/70 px-3 py-2 text-[13px] text-ink outline-none focus:border-teal-400';
 
 function ErrorCard({ text, onRetry }: { text: string; onRetry: () => void }) {
   return (
