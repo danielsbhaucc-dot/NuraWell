@@ -67,6 +67,34 @@
 
   --color-cream: #f5faf2;
 
+  /* ── Signature semantic tokens (DESIGN_SYSTEM.md). Feature code uses ONLY these, never raw hex/white. ── */
+  /* Canvas & materials (light-leaning glass over a sage canvas) */
+  --color-canvas: #e9eee3;            /* app background */
+  --color-surface: #e4ebdc;           /* default card material (use with /85 + backdrop-blur) */
+  --color-surface-elevated: #edf1e6;  /* raised sheet / popover */
+  --color-surface-sunken: #dde5d4;    /* wells, inputs, tiles inside cards */
+  --color-hairline: #c9d6c3;          /* 1px borders */
+  /* Deep forest (dark-leaning signature: hero bands, primary buttons, admin chrome) */
+  --color-forest-950: #04140e;
+  --color-forest-900: #072219;
+  --color-forest-800: #0b3326;
+  --color-forest-700: #0f4634;
+  --color-forest-600: #155c44;
+  /* Ink */
+  --color-ink: #10261c;
+  --color-ink-soft: #3b5547;
+  --color-ink-faint: #5d7568;          /* AA on surface */
+  /* On-dark text: warm pearl, not #fff (AA ≥ 12:1 on forest-800) */
+  --color-on-dark: #eef4ea;
+  --color-on-dark-soft: #b9cdbf;
+  /* Accent glow (emerald → teal only; never yellow→green) */
+  --color-glow: #34d399;
+  --color-glow-teal: #2dd4bf;
+  --shadow-float: 0 1px 0 rgba(238,244,234,0.45) inset, 0 12px 32px -8px rgba(4,20,14,0.22), 0 2px 6px rgba(4,20,14,0.08);
+  --shadow-lift: 0 18px 48px -12px rgba(4,20,14,0.35);
+  --shadow-btn: 0 1px 0 rgba(238,244,234,0.18) inset, 0 8px 20px -6px rgba(7,34,25,0.55);
+  --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
+
   --color-brand-700: #0b6b4b;
 
   --color-background: #f3f8f0;
@@ -101,7 +129,7 @@
   --shadow-glow-secondary: 0 4px 20px rgba(20, 184, 166, 0.12);
   --shadow-glow-accent: 0 4px 20px rgba(245, 158, 11, 0.12);
   --shadow-card: 0 4px 24px -4px rgba(0, 0, 0, 0.08);
-  --shadow-inner-glow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  --shadow-inner-glow: inset 0 1px 0 rgba(238, 244, 234, 0.5);
 
   --animate-fade-in: fadeIn 0.5s ease-out;
   --animate-fade-in-up: fadeInUp 0.5s ease-out;

@@ -1,5 +1,6 @@
 export { Button } from './Button';
-export { Card, CardTitle } from './Card';
+export { Card, CardTitle, Surface } from './Card';
+export { Input, Banner, Badge, ListRow, LoadingState } from './Primitives';
 export { EmptyState } from './EmptyState';
 export { ErrorState } from './ErrorState';
 export { Sheet, Dialog } from './Sheet';
