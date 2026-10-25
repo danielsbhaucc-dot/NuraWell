@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { fakeDb } from './helpers/access-fake-db';
 vi.mock('server-only', () => ({}));
-import { bindAdminSession, revokeAllAdminSessions, revokeDeviceSessions, touchDeviceMeta, META_THROTTLE_MS } from '@/lib/ops/admin-session';
+import { bindAdminSession, FRESH_LOGIN_MS, loginAgeMs, revokeAllAdminSessions, revokeDeviceSessions, touchDeviceMeta, META_THROTTLE_MS } from '@/lib/ops/admin-session';
 import { acknowledgeFinding } from '@/lib/platform/access/audit-ack';
 
 const U = '00000000-0000-0000-0000-0000000000aa';
@@ -43,34 +43,88 @@ describe('PII gate: every per-user personal-data admin route is gated server-sid
   }
 });
 
-describe('bindAdminSession (per-device sessions)', () => {
-  it('fails closed without a session id', async () => {
-    expect(await bindAdminSession(fakeDb() as never, U, D, 'garbage')).toBe(false);
+describe('bindAdminSession: fail closed, no trust-on-first-use', () => {
+  const NOW = Date.parse('2026-10-25T17:00:00Z');
+  const t = (loginAgoMs: number | null, method = 'password') => jwt({ session_id: SID, ...(loginAgoMs === null ? {} : { amr: [{ method, timestamp: Math.floor((NOW - loginAgoMs) / 1000) }] }) });
+  const bindRpc = () => true;
+  it('no session id → reauth', async () => {
+    expect(await bindAdminSession(fakeDb() as never, U, D, 'garbage', NOW)).toBe('reauth');
   });
-  it('fails closed on RPC error', async () => {
-    const db = { rpc: async () => ({ data: null, error: { message: 'x' } }) };
-    expect(await bindAdminSession(db as never, U, D, tok)).toBe(false);
+  it('binding lookup error → denied', async () => {
+    const db = { from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null, error: { message: 'x' } }) }) }) }), rpc: async () => ({ data: true, error: null }) };
+    expect(await bindAdminSession(db as never, U, D, t(0), NOW)).toBe('denied');
   });
-  it('accepts the bound device', async () => {
-    const db = fakeDb({ rpc: { ops_bind_admin_session: () => true } });
-    expect(await bindAdminSession(db as never, U, D, tok)).toBe(true);
+  it('UNBOUND pre-existing session (old login) is rejected and never bound — a stolen old cookie cannot bind itself', async () => {
+    const db = fakeDb({ rpc: { ops_bind_admin_session: bindRpc } });
+    expect(await bindAdminSession(db as never, U, D, t(3 * 86_400_000), NOW)).toBe('reauth');
+    expect(db.calls.some((c) => c.table === 'rpc:ops_bind_admin_session')).toBe(false);
+  });
+  it('UNBOUND session just past the fresh-login window → reauth', async () => {
+    const db = fakeDb({ rpc: { ops_bind_admin_session: bindRpc } });
+    expect(await bindAdminSession(db as never, U, D, t(FRESH_LOGIN_MS + 1000), NOW)).toBe('reauth');
+    expect(db.calls.some((c) => c.table === 'rpc:ops_bind_admin_session')).toBe(false);
+  });
+  it('UNBOUND session without an amr claim → reauth', async () => {
+    const db = fakeDb({ rpc: { ops_bind_admin_session: bindRpc } });
+    expect(await bindAdminSession(db as never, U, D, t(null), NOW)).toBe('reauth');
+  });
+  it('fresh full login from an enrolled device → bound to that device', async () => {
+    const db = fakeDb({ rpc: { ops_bind_admin_session: bindRpc } });
+    expect(await bindAdminSession(db as never, U, D, t(30_000), NOW)).toBe('ok');
     expect(db.calls.find((c) => c.table === 'rpc:ops_bind_admin_session')!.args[0]).toEqual({ p_user: U, p_session: SID, p_device: D });
   });
-  it('rejects a session bound to another device', async () => {
-    const db = fakeDb({ rpc: { ops_bind_admin_session: () => false }, results: {
+  it('fresh session but bind RPC refuses (raced from another device) → denied', async () => {
+    const db = fakeDb({ rpc: { ops_bind_admin_session: () => false } });
+    expect(await bindAdminSession(db as never, U, D, t(30_000), NOW)).toBe('denied');
+  });
+  it('bound session from its own device → ok (no re-login needed later)', async () => {
+    const db = fakeDb({ results: { ops_admin_sessions: [{ device_id: D, user_id: U, revoked_at: null }] } });
+    expect(await bindAdminSession(db as never, U, D, t(5 * 86_400_000), NOW)).toBe('ok');
+  });
+  it('bound session replayed from another device → denied', async () => {
+    const db = fakeDb({ results: {
       ops_admin_sessions: [{ device_id: D2, user_id: U, revoked_at: null }],
       ops_trusted_devices: [[{ id: D2, parent_id: null, revoked_at: null }, { id: D, parent_id: null, revoked_at: null }]] } });
-    expect(await bindAdminSession(db as never, U, D, tok)).toBe(false);
+    expect(await bindAdminSession(db as never, U, D, t(0), NOW)).toBe('denied');
   });
-  it('rejects a revoked binding', async () => {
-    const db = fakeDb({ rpc: { ops_bind_admin_session: () => false }, results: { ops_admin_sessions: [{ device_id: D, user_id: U, revoked_at: 'x' }] } });
-    expect(await bindAdminSession(db as never, U, D, tok)).toBe(false);
+  it('revoked binding → reauth (even with a fresh-looking token, never re-bound)', async () => {
+    const db = fakeDb({ rpc: { ops_bind_admin_session: bindRpc }, results: { ops_admin_sessions: [{ device_id: D, user_id: U, revoked_at: 'x' }] } });
+    expect(await bindAdminSession(db as never, U, D, t(0), NOW)).toBe('reauth');
+    expect(db.calls.some((c) => c.table === 'rpc:ops_bind_admin_session')).toBe(false);
   });
-  it('accepts the live handoff child of the bound device', async () => {
-    const db = fakeDb({ rpc: { ops_bind_admin_session: () => false }, results: {
+  it('live handoff child of the bound device → ok', async () => {
+    const db = fakeDb({ results: {
       ops_admin_sessions: [{ device_id: D, user_id: U, revoked_at: null }],
       ops_trusted_devices: [[{ id: D, parent_id: null, revoked_at: null }, { id: D2, parent_id: D, revoked_at: null }]] } });
-    expect(await bindAdminSession(db as never, U, D2, tok)).toBe(true);
+    expect(await bindAdminSession(db as never, U, D2, t(0), NOW)).toBe('ok');
+  });
+  it('loginAgeMs ignores token_refresh/anonymous and future timestamps', () => {
+    expect(loginAgeMs(jwt({ amr: [{ method: 'token_refresh', timestamp: NOW / 1000 }] }), NOW)).toBeNull();
+    expect(loginAgeMs(jwt({ amr: [{ method: 'password', timestamp: NOW / 1000 + 3600 }] }), NOW)).toBeNull();
+    expect(loginAgeMs(jwt({ amr: [{ method: 'otp', timestamp: NOW / 1000 - 60 }] }), NOW)).toBe(60_000);
+  });
+});
+
+describe('opsDeviceGate: unbound session → reauth; lockout-safe', () => {
+  it('trusted device + stale unbound session → {ok:false, reauth:true}; fresh login → ok', async () => {
+    vi.resetModules();
+    vi.doMock('@/lib/ops/device-trust', async (orig) => ({ ...(await orig<object>()), trustedDeviceId: async () => D }));
+    const { opsDeviceGate } = await import('@/lib/ops/device-gate');
+    const stale = jwt({ session_id: SID, amr: [{ method: 'password', timestamp: Math.floor(Date.now() / 1000) - 86_400 }] });
+    const fresh = jwt({ session_id: SID, amr: [{ method: 'password', timestamp: Math.floor(Date.now() / 1000) - 10 }] });
+    expect(await opsDeviceGate(fakeDb({ rpc: { ops_bind_admin_session: () => true } }) as never, U, 'c', stale, null)).toEqual({ ok: false, reauth: true });
+    expect(await opsDeviceGate(fakeDb({ rpc: { ops_bind_admin_session: () => true } }) as never, U, 'c', fresh, null)).toEqual({ ok: true });
+    vi.doUnmock('@/lib/ops/device-trust');
+  });
+  it('proxy ends the session and route guards answer reauth_required', () => {
+    const proxy = readFileSync(join(process.cwd(), 'proxy.ts'), 'utf8');
+    expect(proxy).toMatch(/gate\.reauth\)[\s\S]{0,200}signOut\(\{ scope: 'local' \}\)/);
+    const guards = readFileSync(join(process.cwd(), 'lib/api/route-guards.ts'), 'utf8');
+    expect(guards).toMatch(/gate\.reauth[\s\S]{0,200}reauth_required/);
+  });
+  it('bootstrap never adopts an old session', () => {
+    const src = readFileSync(join(process.cwd(), 'lib/ops/device-gate.ts'), 'utf8');
+    expect(src).toMatch(/allowBootstrap && isFreshLogin\(accessToken\) && \(await canBootstrap/);
   });
 });
 
