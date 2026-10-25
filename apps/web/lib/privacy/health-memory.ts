@@ -117,12 +117,18 @@ export async function scrubHealthFromMemory(
   // profiles.ai_context
   const { data: prof, error: pErr } = await admin.from('profiles').select('ai_context').eq('id', userId).maybeSingle();
   if (pErr) throw new Error(pErr.message);
-  const ctx = (prof as { ai_context?: unknown } | null)?.ai_context;
+  let ctx = (prof as { ai_context?: unknown } | null)?.ai_context;
+  const wasV2 = typeof ctx === 'string' && ctx.startsWith('enc:v2:');
+  if (wasV2) {
+    const { decryptValue } = await import('@/lib/security/field-crypto');
+    ctx = await decryptValue('profiles', 'ai_context', userId, userId, ctx);
+  }
   if (ctx && typeof ctx === 'object') {
     const clean = scrubHealthJson(decryptAiContext(ctx, userId)) ?? {};
+    const { encryptValue } = await import('@/lib/security/field-crypto');
     const { error } = await admin
       .from('profiles')
-      .update({ ai_context: encryptAiContext(clean, userId) })
+      .update({ ai_context: wasV2 ? await encryptValue('profiles', 'ai_context', userId, userId, clean) : encryptAiContext(clean, userId) })
       .eq('id', userId);
     if (error) throw new Error(error.message);
     res.aiContext = true;

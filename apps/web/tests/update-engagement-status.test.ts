@@ -1,4 +1,11 @@
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
+import { decProfileResult } from '@/lib/crypto/pii-fields';
+import { useMemDekStore } from './helpers/mem-dek';
+
+beforeAll(() => {
+  process.env.PII_ENCRYPTION_KEY ||= Buffer.alloc(32, 7).toString('base64');
+  useMemDekStore();
+});
 
 import { updateEngagementStatuses } from '../lib/churn/update-engagement-status';
 
@@ -56,7 +63,7 @@ describe('updateEngagementStatuses — reactivation reset', () => {
     expect(result.reactivated).toBe(1);
     expect(updates).toHaveLength(1);
 
-    const patch = updates[0]!.patch;
+    const patch = (await decProfileResult(updates[0]!.id)({ data: updates[0]!.patch })).data as Record<string, unknown>;
     expect(patch.engagement_status).toBe('active');
 
     const reng = (patch.ai_context as { reengagement: Record<string, unknown> })
@@ -91,7 +98,8 @@ describe('updateEngagementStatuses — reactivation reset', () => {
     });
 
     expect(result.reactivated).toBe(1);
-    const reng = (updates[0]!.patch.ai_context as {
+    const opened = (await decProfileResult(updates[0]!.id)({ data: updates[0]!.patch })).data as Record<string, unknown>;
+    const reng = (opened.ai_context as {
       reengagement: Record<string, unknown>;
     }).reengagement;
     expect(reng.breakup_sent_at).toBeUndefined();

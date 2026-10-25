@@ -50,12 +50,12 @@ describe('pii fields', () => {
     expect(decryptMeasurementRow(p).weight_kg).toBe(81.2);
   });
 
-  it('decrypts query results (single + list)', () => {
+  it('decrypts query results (single + list)', async () => {
     const enc = encryptProfilePatch({ current_weight_kg: 70 }, U);
-    expect(decProfileResult(U)({ data: enc, error: null }).data).toEqual({ current_weight_kg: 70 });
+    expect((await decProfileResult(U)({ data: enc, error: null })).data).toEqual({ current_weight_kg: 70 });
     const rows = [{ user_id: U, content: encryptChatContent('שלום', U) }];
     expect(decInteractionResult()({ data: rows, error: null }).data).toEqual([{ user_id: U, content: 'שלום' }]);
-    expect(decProfileResult(U)({ data: null, error: null }).data).toBeNull();
+    expect((await decProfileResult(U)({ data: null, error: null })).data).toBeNull();
   });
 
   it('restores name placeholders in app code (DB trigger cannot see ciphertext)', () => {
