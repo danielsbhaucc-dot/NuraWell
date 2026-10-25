@@ -39,7 +39,9 @@ Times are Israel time (IST, UTC+2).
 - The v1-encrypted profile columns plus ai_context are now written as enc:v2. Readers decrypt v2 and fall back to v1.
 - All CI green. Prod READY. Prod signed-in e2e: 17/17 passed (main now has 17 tests). 1 prod profile row already holds v2 values.
 
-## #340 backfill list (+profiles, user_memories, journey_next_step_cache) — OPEN, waiting on Vercel preview (queue)
+## #340 backfill list (+profiles, user_memories, journey_next_step_cache) — MERGED 93d7b21
+- All CI green, no admin override. Prod READY.
+- Prod e2e: 17 passed, 1 failed, 1 not run. The failure was billing-retention.spec (from #345): the health-consent prompt covers /settings/privacy because the test account has no health_data consent. It is unrelated to #340. Fixed in #351. The full suite with #351's spec against this prod: **19/19 passed**.
 - Fixed readers that a backfill would break: the legal search (ilike), CEO list_users, almog_quality_sample (embed), and admin kickoff-status (full_name embed). Each now reads top-level and decrypts.
 
 ## #342 full_name: profile only, no user_metadata — OPEN, waiting on Vercel
@@ -48,3 +50,5 @@ Times are Israel time (IST, UTC+2).
 - Read-only prod count: 4 users; 2 have a name in metadata. Both match the plaintext profile name, and 0 have a v2 profile copy, so the strip would affect **0 rows** today. It would cover 2 after the profiles backfill. Applying it needs Daniel's OK.
 
 ## #349 almog d1: schedule enum app-side + migration 000190 (claimed) — OPEN, migration not applied
+
+## #351 e2e: retention spec closes consent prompt — OPEN, CI pending
