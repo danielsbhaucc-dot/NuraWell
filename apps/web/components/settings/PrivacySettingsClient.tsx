@@ -15,6 +15,7 @@ import type { ProfileGender } from '@/lib/privacy/gender-hebrew';
 import { signOutClient } from '@/lib/auth/sign-out-client';
 import { LegalLinksRow } from '@/components/legal/LegalLinksRow';
 import { HealthConsentSection } from '@/components/settings/HealthConsentSection';
+import { RetentionChoiceSection } from '@/components/settings/RetentionChoiceSection';
 
 type PrivacySettingsClientProps = {
   email: string;
@@ -272,6 +273,8 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
         gender={gender}
         onToast={(msg, kind) => (kind === 'success' ? toast.success(msg) : toast.error(msg))}
       />
+
+      <RetentionChoiceSection onToast={(msg, kind) => (kind === 'success' ? toast.success(msg) : toast.error(msg))} />
 
       <section className="crystal-surface rounded-2xl p-5 space-y-3">
         <h2 className="font-bold text-slate-900 flex items-center gap-2">
