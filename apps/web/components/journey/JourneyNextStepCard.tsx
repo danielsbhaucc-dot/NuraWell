@@ -53,7 +53,7 @@ export function JourneyNextStepCard({ initial = null }: { initial?: AdaptiveNext
       <div
         dir="rtl"
         className="glass-surface relative mb-5 overflow-hidden p-4"
-        style={{ borderRadius: '22px', background: '#e7eedc' }}
+        style={{ borderRadius: '22px', background: '#cfe9dc' }}
       >
         <div className="h-3 w-32 rounded-full bg-primary-200/60 animate-pulse mb-3" />
         <div className="h-3 w-full rounded-full bg-primary-100/70 animate-pulse mb-2" />
@@ -73,7 +73,7 @@ export function JourneyNextStepCard({ initial = null }: { initial?: AdaptiveNext
       className="glass-surface relative mb-5 overflow-hidden p-4"
       style={{
         borderRadius: '22px',
-        background: '#e7eedc', // theme token: cream
+        background: '#cfe9dc', // theme token: cream
         border: '1px solid rgba(16,185,129,0.28)',
         boxShadow:
           '0 10px 28px rgba(4,120,87,0.14), inset 0 1px 0 rgba(248,251,246,0.55)',
@@ -83,7 +83,7 @@ export function JourneyNextStepCard({ initial = null }: { initial?: AdaptiveNext
         aria-hidden
         className="pointer-events-none absolute inset-x-4 top-px h-px"
         style={{
-          background: 'linear-gradient(90deg, transparent, rgba(231,238,220,0.85), transparent)',
+          background: 'linear-gradient(90deg, transparent, rgba(207,233,220,0.85), transparent)',
         }}
       />
 

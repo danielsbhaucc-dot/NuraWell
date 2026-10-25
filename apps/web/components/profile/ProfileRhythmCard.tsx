@@ -178,7 +178,7 @@ export function ProfileRhythmCard({
                   className="rounded-full px-3 py-1 text-xs font-bold"
                   style={{
                     background: mealCount === n ? '#10b981' : '#ecfdf5',
-                    color: mealCount === n ? '#e7eedc' : '#065f46',
+                    color: mealCount === n ? '#cfe9dc' : '#065f46',
                     border: '1px solid rgba(16,185,129,0.35)',
                   }}
                 >

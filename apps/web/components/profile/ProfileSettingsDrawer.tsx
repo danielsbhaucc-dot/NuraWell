@@ -58,7 +58,7 @@ export function ProfileSettingsDrawer({ open, onOpenChange }: Props) {
           data-nura-overlay="1"
           className="fixed inset-x-0 bottom-0 z-61 mx-auto flex w-full max-w-md max-h-[85vh] flex-col rounded-t-3xl outline-hidden"
           style={{
-            background: 'linear-gradient(180deg, rgba(231,238,220,0.97) 0%, rgba(236,253,245,0.95) 100%)',
+            background: 'linear-gradient(180deg, rgba(207,233,220,0.97) 0%, rgba(236,253,245,0.95) 100%)',
             boxShadow: '0 -20px 60px rgba(4,120,87,0.15)',
           }}
         >

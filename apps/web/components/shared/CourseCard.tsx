@@ -149,7 +149,7 @@ export function CourseCard({ course, progress, isEnrolled, accentIndex = 0 }: Co
                 style={{ borderRadius: '14px', width: '100%', height: '100%' }}
               />
             ) : (
-              <BookOpen className="w-6 h-6" style={{ color: 'rgba(231,238,220,0.9)' }} />
+              <BookOpen className="w-6 h-6" style={{ color: 'rgba(207,233,220,0.9)' }} />
             )}
           </div>
 
@@ -199,7 +199,7 @@ export function CourseCard({ course, progress, isEnrolled, accentIndex = 0 }: Co
 
         {/* ── White Footer ── */}
         <div style={{
-          background: 'rgba(231,238,220,0.97)',
+          background: 'rgba(207,233,220,0.97)',
           padding: isEnrolled ? '10px 16px 14px' : '12px 16px',
           borderTop: '1px solid rgba(6,78,59,0.06)',
         }}>

@@ -390,7 +390,7 @@ export function StepLesson({ step, initialProgress, userId, userGender = null, a
           marginTop: '-14px',
           position: 'relative',
           zIndex: 3,
-          background: 'linear-gradient(180deg, #ecfdf5 0%, #e7eedc 35%, #e8f5ef 100%)',
+          background: 'linear-gradient(180deg, #ecfdf5 0%, #cfe9dc 35%, #e8f5ef 100%)',
         }}
       >
         <motion.div

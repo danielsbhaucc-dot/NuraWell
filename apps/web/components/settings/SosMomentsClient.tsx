@@ -125,7 +125,7 @@ function outcomeBadge(outcome: string, gender: OnboardingGender | ''): OutcomeBa
   }
   return {
     label: 'נסגר',
-    bg: 'linear-gradient(135deg, #e7eedc, #e2e8f0)',
+    bg: 'linear-gradient(135deg, #cfe9dc, #e2e8f0)',
     text: '#475569',
     border: 'rgba(100,116,139,0.25)',
   };
@@ -404,7 +404,7 @@ export function SosMomentsClient({ firstName, gender = '' }: SosMomentsClientPro
   const visibleEventDays = paginate(groupedEvents, eventsPage, EVENT_DAYS_PAGE_SIZE);
 
   return (
-    <div className="touch-manipulation min-h-screen bg-linear-to-b from-primary-50 via-[#e7eedc] to-[#e7eedc]">
+    <div className="touch-manipulation min-h-screen bg-linear-to-b from-primary-50 via-[#cfe9dc] to-[#cfe9dc]">
       <div
         className="relative overflow-hidden px-4 pb-10 pt-4"
         style={{ background: HEADER_GRADIENT }}

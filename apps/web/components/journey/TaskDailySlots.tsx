@@ -481,7 +481,7 @@ export function TaskDailySlots({
         className="pointer-events-none absolute inset-x-3 top-px h-px"
         style={{
           background:
-            'linear-gradient(90deg, transparent, rgba(231,238,220,0.8), transparent)',
+            'linear-gradient(90deg, transparent, rgba(207,233,220,0.8), transparent)',
         }}
       />
       <div className="relative flex items-center justify-between">

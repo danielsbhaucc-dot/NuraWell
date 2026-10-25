@@ -41,7 +41,7 @@ export function CreditBadge({ asset, className = '' }: CreditBadgeProps) {
           dir="rtl"
           className="absolute top-8 left-0 z-60 w-max min-w-36 max-w-60 space-y-1 rounded-xl border border-on-dark/60 p-2.5 text-[11px] leading-relaxed text-ink-800 shadow-xl"
           style={{
-            background: 'rgba(231,238,220,0.9)',
+            background: 'rgba(207,233,220,0.9)',
             backdropFilter: 'blur(14px)',
           }}
           onClick={(e) => e.stopPropagation()}

@@ -221,7 +221,7 @@ export function ConsentEvidenceSheet({ open, action, gender, onClose, mode = 'su
         ref={panel}
         dir="rtl"
         data-testid="consent-evidence-sheet"
-        className="relative max-h-[86dvh] overflow-y-auto overscroll-contain [&[data-capturing]::-webkit-scrollbar]:hidden [&[data-capturing]]:[scrollbar-width:none] bg-[linear-gradient(180deg,rgba(238,243,228,0.96),rgba(231,238,220,0.95)_60%,rgba(243,236,220,0.96))] px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-2.5 text-right font-[family-name:var(--font-assistant,inherit)] text-ink-800 backdrop-blur-2xl backdrop-saturate-150 contrast-more:bg-glass-hi sm:px-6 sm:pt-5"
+        className="relative max-h-[86dvh] overflow-y-auto overscroll-contain [&[data-capturing]::-webkit-scrollbar]:hidden [&[data-capturing]]:[scrollbar-width:none] bg-[linear-gradient(180deg,rgba(238,243,228,0.96),rgba(207,233,220,0.95)_60%,rgba(243,236,220,0.96))] px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-2.5 text-right font-[family-name:var(--font-assistant,inherit)] text-ink-800 backdrop-blur-2xl backdrop-saturate-150 contrast-more:bg-glass-hi sm:px-6 sm:pt-5"
       >
         <div className="mx-auto mb-4 h-[5px] w-9 rounded-full bg-primary-950/20 contrast-more:bg-ink-700 sm:hidden" aria-hidden />
         <div className="flex flex-col items-center px-2 text-center">

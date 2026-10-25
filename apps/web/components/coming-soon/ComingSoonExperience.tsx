@@ -13,7 +13,7 @@ const FEATURES = [
   { icon: ShieldCheck, title: 'שקט וביטחון', desc: 'פחות לחץ, יותר בהירות. בריאות נפש וגוף שמרגישים בכל יום.' },
 ];
 
-const CONFETTI_COLORS = ['#34d399', '#10b981', '#a3e635', '#5eead4', '#bbf7d0', '#e7eedc', '#22d3ee'];
+const CONFETTI_COLORS = ['#34d399', '#10b981', '#a3e635', '#5eead4', '#bbf7d0', '#cfe9dc', '#22d3ee'];
 
 type Phase = 'intro' | 'lyrics' | 'loop';
 

@@ -77,7 +77,7 @@ export function TranscriptAccessRequestDialog({
       backdropClassName="absolute inset-0 bg-ink-900/45 backdrop-blur-sm"
       panelClassName="crystal-surface max-w-md overflow-hidden rounded-2xl p-0 shadow-2xl sm:rounded-2xl"
     >
-      <div className="border-b border-[#E8D5B5] bg-linear-to-l from-[#e7eedc] to-[#e7eedc] px-5 py-4">
+      <div className="border-b border-[#E8D5B5] bg-linear-to-l from-[#cfe9dc] to-[#cfe9dc] px-5 py-4">
         <div className="flex items-start gap-3">
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-iris-200 bg-iris-50 text-iris-700">
             <Lock className="h-5 w-5" />

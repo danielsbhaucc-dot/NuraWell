@@ -2,8 +2,8 @@
 .ld[data-theme='c3'] {
   --bg: #eef5ea; --fg: #1a2e23; --mut: #43594b; --ac: #047857;
   --gold: #c9a45c; --gold-ink: #7a5b1e; --gold-l: #e9cf8f;
-  --gl: rgba(231,238,220,0.62); --row: rgba(231,238,220,0.72);
-  --bd: rgba(201, 164, 92, 0.42); --hl: rgba(231,238,220,0.95); --sh: rgba(6, 78, 59, 0.22);
+  --gl: rgba(207,233,220,0.62); --row: rgba(207,233,220,0.72);
+  --bd: rgba(201, 164, 92, 0.42); --hl: rgba(207,233,220,0.95); --sh: rgba(6, 78, 59, 0.22);
   --chip: rgba(16, 185, 129, 0.09);
   --gap: 72px; --r-xl: 36px; --r-l: 28px; --r-m: 20px;
   --f-display: var(--font-rubik), 'Rubik', system-ui, sans-serif;
@@ -51,8 +51,8 @@
 .ld-orb { animation: ld-fl 5s ease-in-out infinite; } .ld-orb-2 { animation-duration: 6.5s; animation-direction: reverse; }
 @keyframes ld-fl { 50% { transform: translateY(-10px); } }
 .ld-stat { border-radius: var(--r-xl); padding: 40px 32px; display: flex; flex-direction: column; justify-content: space-between; gap: 20px; position: relative; overflow: hidden;
-  background: linear-gradient(160deg, #fef3c7, #fbbf24 55%, #f97316); color: #3b2207; border: 1.5px solid var(--gold-l); box-shadow: inset 0 1px 0 #e7eedc, 0 40px 70px -40px #c2410c; }
-.ld-stat::before { content: ''; position: absolute; width: 220px; height: 220px; border-radius: 50%; top: -80px; left: -80px; background: radial-gradient(#e7eedc, transparent 70%); }
+  background: linear-gradient(160deg, #fef3c7, #fbbf24 55%, #f97316); color: #3b2207; border: 1.5px solid var(--gold-l); box-shadow: inset 0 1px 0 #cfe9dc, 0 40px 70px -40px #c2410c; }
+.ld-stat::before { content: ''; position: absolute; width: 220px; height: 220px; border-radius: 50%; top: -80px; left: -80px; background: radial-gradient(#cfe9dc, transparent 70%); }
 .ld-stat-big { font-family: var(--f-display); font-size: 96px; font-weight: 900; line-height: .9; position: relative; }
 .ld-stat strong { display: block; font-family: var(--f-display); font-size: 20px; } .ld-stat small { font-size: 15px; }
 
@@ -79,14 +79,14 @@
 /* Summary cards */
 .ld-cards { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
 .ld-cards[data-count='4'], .ld-cards[data-count='2'] { grid-template-columns: repeat(2, 1fr); }
-.ld-card { display: flex; gap: 16px; align-items: flex-start; padding: 26px; border-radius: var(--r-l); border: 1.5px solid rgba(201,164,92,.5); box-shadow: inset 0 1px 0 rgba(231,238,220,.9), 0 24px 50px -34px var(--sh); transition: transform .3s; }
+.ld-card { display: flex; gap: 16px; align-items: flex-start; padding: 26px; border-radius: var(--r-l); border: 1.5px solid rgba(201,164,92,.5); box-shadow: inset 0 1px 0 rgba(207,233,220,.9), 0 24px 50px -34px var(--sh); transition: transform .3s; }
 .ld-card:hover { transform: translateY(-3px); }
 .ld-card strong { display: block; font-family: var(--f-display); font-size: 18px; font-weight: 700; margin-bottom: 4px; }
 .ld-card-txt { display: block; font-size: 15.5px; color: #34503f; line-height: 1.6; }
 .t-em.ld-card { background: linear-gradient(165deg, rgba(236,253,245,.95), rgba(167,243,208,.5)); }
-.t-amb.ld-card { background: linear-gradient(165deg, rgba(231,238,220,.95), rgba(253,230,138,.55)); }
-.t-teal.ld-card { background: linear-gradient(165deg, rgba(231,238,220,.95), rgba(153,246,228,.5)); }
-.ld-ib { flex: 0 0 auto; width: 52px; height: 52px; border-radius: 17px; display: grid; place-items: center; color: #047857; background: rgba(231,238,220,.8); box-shadow: inset 0 0 0 1.5px var(--gold-l), 0 10px 20px -12px #064e3b66; }
+.t-amb.ld-card { background: linear-gradient(165deg, rgba(207,233,220,.95), rgba(253,230,138,.55)); }
+.t-teal.ld-card { background: linear-gradient(165deg, rgba(207,233,220,.95), rgba(153,246,228,.5)); }
+.ld-ib { flex: 0 0 auto; width: 52px; height: 52px; border-radius: 17px; display: grid; place-items: center; color: #047857; background: rgba(207,233,220,.8); box-shadow: inset 0 0 0 1.5px var(--gold-l), 0 10px 20px -12px #064e3b66; }
 .ld-ib svg { width: 24px; height: 24px; }
 
 /* Accordions */
@@ -112,8 +112,8 @@
 .ld-prose strong { color: #10291c; }
 .ld-group > .ld-callout:first-child { margin-top: var(--gap); }
 .ld-callout, .ld .ld-callout { display: flex; gap: 16px; align-items: flex-start; border-radius: var(--r-m); padding: 20px 22px; margin: 0 0 18px; background: linear-gradient(165deg, rgba(236,253,245,.9), rgba(204,251,241,.55)); border: 1px solid var(--bd); border-inline-start: 4px solid #10b981; }
-.ld .ld-callout--warn { background: linear-gradient(165deg, rgba(231,238,220,.95), rgba(254,243,199,.7)); border-inline-start-color: #d97706; }
-.ld .ld-callout--danger { background: linear-gradient(165deg, rgba(231,238,220,.95), rgba(254,226,214,.7)); border-inline-start-color: #c2410c; }
+.ld .ld-callout--warn { background: linear-gradient(165deg, rgba(207,233,220,.95), rgba(254,243,199,.7)); border-inline-start-color: #d97706; }
+.ld .ld-callout--danger { background: linear-gradient(165deg, rgba(207,233,220,.95), rgba(254,226,214,.7)); border-inline-start-color: #c2410c; }
 .ld-callout--danger .ld-ib { color: #c2410c; } .ld-callout--warn .ld-ib { color: #b45309; }
 .ld-callout-body { flex: 1; min-width: 0; }
 
@@ -132,7 +132,7 @@
 
 /* Safety emergency numbers */
 .ld .legal-emergency-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin: 18px 0; }
-.ld .legal-emergency-item { border-radius: var(--r-m); padding: 18px; text-align: center; background: linear-gradient(165deg, rgba(231,238,220,.95), rgba(253,230,138,.5)); border: 1.5px solid rgba(201,164,92,.5); }
+.ld .legal-emergency-item { border-radius: var(--r-m); padding: 18px; text-align: center; background: linear-gradient(165deg, rgba(207,233,220,.95), rgba(253,230,138,.5)); border: 1.5px solid rgba(201,164,92,.5); }
 .ld .legal-emergency-item .num { font-family: var(--f-display); font-size: 28px; font-weight: 900; color: #9a3412; direction: ltr; }
 .ld .legal-emergency-item .label { font-size: 14px; color: #3b2207; }
 
@@ -186,3 +186,36 @@
   .ld a[href^='http']::after, .ld a[href^='mailto']::after { content: ' (' attr(href) ')'; font-size: 9pt; }
 }
 .ld .ld-wink{max-width:560px;margin-top:12px;font-size:15px;color:#fdf3d6;background:rgba(255,255,255,.08);border:1px dashed rgba(232,181,74,.65)}
+
+/* ── Dark forest glass (canonical public style = landing). Screen only; print keeps the light override above. ── */
+@media screen {
+  .ld[data-theme='c3'] {
+    --bg: var(--color-night); --fg: var(--color-night-ink); --mut: var(--color-on-dark-soft); --ac: var(--color-teal-soft);
+    --gold: var(--color-gold); --gold-ink: var(--color-amber-soft); --gold-l: var(--color-gold);
+    --gl: rgba(16, 38, 30, 0.62); --row: rgba(18, 44, 34, 0.7);
+    --bd: rgba(232, 198, 106, 0.26); --hl: rgba(207, 233, 220, 0.08); --sh: rgba(0, 0, 0, 0.55);
+    --chip: rgba(127, 240, 222, 0.1);
+  }
+  .ld::before { background: radial-gradient(45% 40% at 85% 0, rgba(31, 194, 176, 0.22), transparent 70%), radial-gradient(40% 35% at 0 40%, rgba(243, 164, 59, 0.14), transparent 70%), radial-gradient(45% 45% at 100% 90%, rgba(15, 138, 104, 0.25), transparent 70%), linear-gradient(180deg, var(--color-night), var(--color-night-2) 50%, var(--color-night-3)); }
+  .ld-brand-txt { background-image: linear-gradient(90deg, var(--color-mint-ink), var(--color-gold)); }
+  .ld-docs a[aria-current='page'], .ld-toc a[aria-current='location'] { background: linear-gradient(135deg, var(--color-amber-glow), var(--color-gold)); color: var(--color-on-amber); }
+  .ld-toc a[aria-current='location'] .ld-toc-n { color: var(--color-on-amber-soft); }
+  .ld-hero { background: radial-gradient(80% 90% at 15% 85%, rgba(31, 194, 176, 0.35), transparent 60%), linear-gradient(150deg, var(--color-night-hero-1), var(--color-night-hero-2) 55%, var(--color-night-hero-3)); border-color: rgba(232, 198, 106, 0.45); box-shadow: inset 0 1px 0 rgba(207, 233, 220, 0.08), 0 40px 80px -40px var(--color-shadow-deep); }
+  .ld-stat { background: linear-gradient(160deg, var(--color-amber-soft), var(--color-amber-glow) 55%, var(--color-ember)); color: var(--color-on-amber); box-shadow: inset 0 1px 0 rgba(207, 233, 220, 0.25), 0 40px 70px -40px var(--color-ember-deep); }
+  .ld-stat::before { background: radial-gradient(rgba(255, 217, 176, 0.5), transparent 70%); }
+  .ld-quote .ld-shine, .ld-sec .ld-shine { background-image: linear-gradient(100deg, var(--color-gold), var(--color-gold-hi) 40%, var(--color-amber-soft) 60%, var(--color-gold)); }
+  .ld-card { border-color: rgba(232, 198, 106, 0.3); box-shadow: inset 0 1px 0 rgba(207, 233, 220, 0.07), 0 24px 50px -34px var(--color-shadow-deep); }
+  .ld-card-txt { color: var(--color-on-dark-soft); }
+  .t-em.ld-card { background: linear-gradient(165deg, rgba(15, 138, 104, 0.28), rgba(16, 38, 30, 0.6)); }
+  .t-amb.ld-card { background: linear-gradient(165deg, rgba(243, 164, 59, 0.2), rgba(16, 38, 30, 0.6)); }
+  .t-teal.ld-card { background: linear-gradient(165deg, rgba(31, 194, 176, 0.22), rgba(16, 38, 30, 0.6)); }
+  .ld-ib { color: var(--color-teal-soft); background: rgba(4, 20, 14, 0.55); box-shadow: inset 0 0 0 1.5px rgba(232, 198, 106, 0.5), 0 10px 20px -12px var(--color-shadow-deep); }
+  .ld-acc[open] .ld-chev { background: var(--color-gold); color: var(--color-on-amber); }
+  .ld-prose strong { color: var(--color-night-ink-hi); }
+  .ld-callout, .ld .ld-callout { background: linear-gradient(165deg, rgba(31, 194, 176, 0.16), rgba(16, 38, 30, 0.55)); border-inline-start-color: var(--color-teal-glow); }
+  .ld .ld-callout--warn { background: linear-gradient(165deg, rgba(243, 164, 59, 0.18), rgba(16, 38, 30, 0.55)); border-inline-start-color: var(--color-amber-glow); }
+  .ld .ld-callout--danger { background: linear-gradient(165deg, rgba(255, 123, 92, 0.18), rgba(16, 38, 30, 0.55)); border-inline-start-color: var(--color-coral-glow); }
+  .ld-callout--danger .ld-ib { color: var(--color-coral-soft); } .ld-callout--warn .ld-ib { color: var(--color-amber-soft); }
+  .ld .legal-emergency-item { background: linear-gradient(165deg, rgba(243, 164, 59, 0.2), rgba(16, 38, 30, 0.6)); border-color: rgba(232, 198, 106, 0.4); }
+  .ld .legal-emergency-item .num { color: var(--color-amber-soft); } .ld .legal-emergency-item .label { color: var(--color-night-ink); }
+}

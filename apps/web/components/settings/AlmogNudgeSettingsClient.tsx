@@ -205,7 +205,7 @@ export function AlmogNudgeSettingsClient({
   }
 
   return (
-    <div className="min-h-screen bg-linear-to-b from-[#e7eedc] via-[#e7eedc] to-background-card">
+    <div className="min-h-screen bg-linear-to-b from-[#cfe9dc] via-[#cfe9dc] to-background-card">
       <div className="container-mobile py-6 pb-10 space-y-5">
         <motion.div
           initial={{ opacity: 0, y: -6 }}

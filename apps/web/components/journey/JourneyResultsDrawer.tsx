@@ -48,7 +48,7 @@ export function JourneyResultsDrawer({
           data-nura-overlay="1"
           className="fixed bottom-0 left-0 right-0 z-190 mx-auto flex max-h-[min(90dvh,920px)] h-auto w-full max-w-md flex-col rounded-t-[26px] outline-hidden shadow-[0_-12px_48px_rgba(0,0,0,0.2)] sm:max-h-[85vh]"
           style={{
-            background: 'linear-gradient(180deg, #ecfdf5 0%, #e7eedc 40%, #e7eedc 100%)',
+            background: 'linear-gradient(180deg, #ecfdf5 0%, #cfe9dc 40%, #cfe9dc 100%)',
           }}
         >
           <Drawer.Title className="sr-only">{title}</Drawer.Title>

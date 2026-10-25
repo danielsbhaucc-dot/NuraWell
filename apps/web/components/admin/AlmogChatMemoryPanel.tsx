@@ -691,7 +691,7 @@ export function AlmogChatMemoryPanel({
                               type="button"
                               disabled={busy}
                               onClick={() => void requestAccess(s.id)}
-                              className="inline-flex items-center gap-1 rounded-lg bg-accent-700 px-3 py-1.5 font-medium text-[#e7eedc] disabled:opacity-50"
+                              className="inline-flex items-center gap-1 rounded-lg bg-accent-700 px-3 py-1.5 font-medium text-[#cfe9dc] disabled:opacity-50"
                             >
                               <Send className="h-3.5 w-3.5" />
                               שלח בקשת אישור למשתמש

@@ -78,10 +78,6 @@
  "app/ops/guides/[id]/page.tsx": {
   "rawButton": 2
  },
- "app/pricing/page.tsx": {
-  "rawHex": 3,
-  "arbitraryColor": 3
- },
  "components/a11y/AccessibilityRestoreWidget.tsx": {
   "rawButton": 1
  },
@@ -278,10 +274,6 @@
  "components/billing/CurrentPlanCard.tsx": {
   "rawHex": 6,
   "arbitraryColor": 6
- },
- "components/billing/PlansGrid.tsx": {
-  "rawHex": 30,
-  "arbitraryColor": 30
  },
  "components/challenge/ChallengeCompleteClient.tsx": {
   "rawHex": 3,
