@@ -14,7 +14,7 @@ export function WebPushEnableCard() {
         התראות למכשיר
       </p>
       {!webPush.configured ? (
-        <p className="text-xs text-slate-500">דורש WEB_PUSH_VAPID_* בשרת.</p>
+        <p className="text-xs text-ink-faint">דורש WEB_PUSH_VAPID_* בשרת.</p>
       ) : (
         <button
           type="button"

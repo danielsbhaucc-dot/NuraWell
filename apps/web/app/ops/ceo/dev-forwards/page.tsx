@@ -31,7 +31,7 @@ export default async function DevForwardsPage() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-2">
-        <h1 className="px-1 font-display text-[1.75rem] font-black leading-tight tracking-tight text-slate-900">🛠️ הועבר לאורי</h1>
+        <h1 className="px-1 font-display text-[1.75rem] font-black leading-tight tracking-tight text-ink">🛠️ הועבר לאורי</h1>
         <a href="/ops/ceo" className="rounded-xl bg-primary-100/40 px-3 py-1.5 text-sm font-semibold text-primary-900">חזרה ל{CEO_NAME}</a>
       </div>
       <p className="text-sm text-primary-800/80">

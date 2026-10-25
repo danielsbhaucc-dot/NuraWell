@@ -51,28 +51,28 @@ export function AdminChallengeStatsPanel() {
   ];
 
   return (
-    <div className="rounded-3xl border border-slate-200/60 bg-background-card/70 p-5 shadow-xs backdrop-blur-md sm:p-6">
-      <h2 className="mb-4 text-lg font-bold text-slate-900">אנליטיקס אתגר</h2>
+    <div className="rounded-3xl border border-hairline/60 bg-background-card/70 p-5 shadow-xs backdrop-blur-md sm:p-6">
+      <h2 className="mb-4 text-lg font-bold text-ink">אנליטיקס אתגר</h2>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {cards.map(({ label, value, icon: Icon, color }) => (
-          <div key={label} className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4">
+          <div key={label} className="rounded-2xl border border-hairline/60 bg-surface-sunken/80 p-4">
             <Icon className={`mb-2 h-5 w-5 ${color}`} />
-            <div className="font-display text-2xl font-black text-slate-900">{value}</div>
-            <div className="text-xs text-slate-500">{label}</div>
+            <div className="font-display text-2xl font-black text-ink">{value}</div>
+            <div className="text-xs text-ink-faint">{label}</div>
           </div>
         ))}
       </div>
       <div className="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
         <div className="rounded-xl bg-emerald-50 px-4 py-3">
-          <span className="text-slate-500">אחוז סיום</span>
+          <span className="text-ink-faint">אחוז סיום</span>
           <div className="font-bold text-emerald-800">{stats.completion_rate_pct}%</div>
         </div>
         <div className="rounded-xl bg-violet-50 px-4 py-3">
-          <span className="text-slate-500">הצלחות</span>
+          <span className="text-ink-faint">הצלחות</span>
           <div className="font-bold text-violet-800">{stats.success_events}</div>
         </div>
         <div className="rounded-xl bg-sky-50 px-4 py-3">
-          <span className="text-slate-500">סימוני משימות</span>
+          <span className="text-ink-faint">סימוני משימות</span>
           <div className="font-bold text-sky-800">{stats.task_completions}</div>
         </div>
       </div>

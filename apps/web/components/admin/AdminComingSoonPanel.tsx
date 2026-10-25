@@ -94,12 +94,12 @@ function GlassAudioPlayer({ src, title }: { src: string; title: string | null })
           {playing ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 translate-x-px fill-gc" />}
         </button>
         <div className="min-w-0 flex-1">
-          <p className="flex items-center gap-1.5 truncate text-sm font-bold text-slate-800">
+          <p className="flex items-center gap-1.5 truncate text-sm font-bold text-ink">
             <Music4 className="h-3.5 w-3.5 shrink-0 text-emerald-600" />
             {title || 'שיר נבחר'}
           </p>
           <div className="mt-2 flex items-center gap-2">
-            <span className="w-9 text-end text-[11px] font-semibold tabular-nums text-slate-500">
+            <span className="w-9 text-end text-[11px] font-semibold tabular-nums text-ink-faint">
               {formatTime(current)}
             </span>
             <div className="relative flex-1">
@@ -120,7 +120,7 @@ function GlassAudioPlayer({ src, title }: { src: string; title: string | null })
                 aria-label="מיקום בשיר"
               />
             </div>
-            <span className="w-9 text-[11px] font-semibold tabular-nums text-slate-500">
+            <span className="w-9 text-[11px] font-semibold tabular-nums text-ink-faint">
               {formatTime(duration)}
             </span>
           </div>
@@ -216,8 +216,8 @@ function AdminComingSoonSongSection() {
           <Music4 className="h-5 w-5" />
         </span>
         <div>
-          <h2 className="text-lg font-black text-slate-800">שיר עמוד &quot;בקרוב&quot;</h2>
-          <p className="text-sm text-slate-600">
+          <h2 className="text-lg font-black text-ink">שיר עמוד &quot;בקרוב&quot;</h2>
+          <p className="text-sm text-ink-soft">
             בחר את שיר ה־30 שניות (מספריית המדיה → אודיו). הוא ינוגן בעמוד עם מילות שיר מסונכרנות.
           </p>
         </div>
@@ -227,7 +227,7 @@ function AdminComingSoonSongSection() {
         {songUrl ? (
           <GlassAudioPlayer src={songUrl} title={songTitle} />
         ) : (
-          <div className="flex items-center justify-center rounded-2xl border border-dashed border-slate-300/70 bg-background-card/30 px-4 py-8 text-sm text-slate-500">
+          <div className="flex items-center justify-center rounded-2xl border border-dashed border-slate-300/70 bg-background-card/30 px-4 py-8 text-sm text-ink-faint">
             עדיין לא נבחר שיר.
           </div>
         )}

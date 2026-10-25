@@ -170,7 +170,7 @@ export function AdminComingSoonRevolutionEditor() {
 
       <div className="mt-5 rounded-2xl border border-violet-200/50 bg-violet-50/40 px-4 py-3">
         <p className="text-xs font-bold text-violet-900/70">תצוגה מקדימה</p>
-        <p className="mt-1 min-h-10 text-base font-semibold leading-relaxed text-slate-800">
+        <p className="mt-1 min-h-10 text-base font-semibold leading-relaxed text-ink">
           {renderEmphasisPreview(lines[previewIdx] ?? '')}
         </p>
         <div className="mt-2 flex flex-wrap gap-1">
@@ -183,7 +183,7 @@ export function AdminComingSoonRevolutionEditor() {
                 'h-7 min-w-7 rounded-lg px-2 text-xs font-bold transition',
                 previewIdx === i
                   ? 'bg-violet-600 text-gc'
-                  : 'bg-background-card/70 text-slate-600 hover:bg-background-card',
+                  : 'bg-background-card/70 text-ink-soft hover:bg-background-card',
               )}
             >
               {i + 1}
@@ -199,13 +199,13 @@ export function AdminComingSoonRevolutionEditor() {
             className="rounded-2xl border border-gc/60 bg-background-card/50 p-3 backdrop-blur-sm"
           >
             <div className="mb-2 flex items-center justify-between gap-2">
-              <span className="text-xs font-black text-slate-500">משפט {idx + 1}</span>
+              <span className="text-xs font-black text-ink-faint">משפט {idx + 1}</span>
               <div className="flex items-center gap-1">
                 <button
                   type="button"
                   disabled={idx === 0}
                   onClick={() => moveLine(idx, -1)}
-                  className="rounded-lg border border-slate-200/80 bg-background-card/70 p-1.5 text-slate-600 transition hover:bg-background-card disabled:opacity-30"
+                  className="rounded-lg border border-hairline/80 bg-background-card/70 p-1.5 text-ink-soft transition hover:bg-background-card disabled:opacity-30"
                   aria-label="הזז למעלה"
                 >
                   <ArrowUp className="h-3.5 w-3.5" />
@@ -214,7 +214,7 @@ export function AdminComingSoonRevolutionEditor() {
                   type="button"
                   disabled={idx === lines.length - 1}
                   onClick={() => moveLine(idx, 1)}
-                  className="rounded-lg border border-slate-200/80 bg-background-card/70 p-1.5 text-slate-600 transition hover:bg-background-card disabled:opacity-30"
+                  className="rounded-lg border border-hairline/80 bg-background-card/70 p-1.5 text-ink-soft transition hover:bg-background-card disabled:opacity-30"
                   aria-label="הזז למטה"
                 >
                   <ArrowDown className="h-3.5 w-3.5" />
@@ -265,7 +265,7 @@ export function AdminComingSoonRevolutionEditor() {
           type="button"
           disabled={busy}
           onClick={() => void resetDefaults()}
-          className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-slate-300/70 bg-background-card/40 px-3 py-2 text-sm font-bold text-slate-700 transition hover:bg-background-card/70 disabled:opacity-50"
+          className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-slate-300/70 bg-background-card/40 px-3 py-2 text-sm font-bold text-ink-soft transition hover:bg-background-card/70 disabled:opacity-50"
         >
           <RotateCcw className="h-4 w-4" />
           איפוס לברירת מחדל

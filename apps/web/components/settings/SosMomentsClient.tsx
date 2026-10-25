@@ -181,7 +181,7 @@ function ListPagination({
 
   return (
     <nav
-      className="flex items-center justify-between gap-2 rounded-2xl border border-slate-200/70 bg-background-card/70 px-3 py-2.5"
+      className="flex items-center justify-between gap-2 rounded-2xl border border-hairline/70 bg-background-card/70 px-3 py-2.5"
       aria-label={label}
     >
       <button
@@ -194,7 +194,7 @@ function ListPagination({
         <ChevronRight className="h-3.5 w-3.5" />
         הקודם
       </button>
-      <span className="text-xs font-semibold text-slate-600">
+      <span className="text-xs font-semibold text-ink-soft">
         עמוד {page + 1} מתוך {total}
       </span>
       <button
@@ -476,10 +476,10 @@ export function SosMomentsClient({ firstName, gender = '' }: SosMomentsClientPro
         ) : events.length === 0 && memory.length === 0 ? (
           <div dir="rtl" className="glass-surface-home rounded-[22px] px-5 py-10 text-center">
             <MomentsHeroAvatar size={80} />
-            <p className="mt-2 text-base font-bold text-slate-900" style={HEBREW_HEAD}>
+            <p className="mt-2 text-base font-bold text-ink" style={HEBREW_HEAD}>
               {firstName}, עדיין אין כאן רגעים שמורים
             </p>
-            <p className="mt-2 text-sm leading-relaxed text-slate-600">
+            <p className="mt-2 text-sm leading-relaxed text-ink-soft">
               כשיהיה רגע קשה — {gc.press} על &quot;רגע, קשה לי עכשיו&quot; מהבית. אני אהיה שם, ומה שיעזור יופיע כאן.
             </p>
             <Link
@@ -498,10 +498,10 @@ export function SosMomentsClient({ firstName, gender = '' }: SosMomentsClientPro
             {helpedMemory.length > 0 ? (
               <section dir="rtl" className="glass-surface-home space-y-4 rounded-[22px] p-5">
                 <div className="text-center">
-                  <h2 className="text-lg font-black text-slate-900" style={HEBREW_HEAD}>
+                  <h2 className="text-lg font-black text-ink" style={HEBREW_HEAD}>
                     מה עזר לך
                   </h2>
-                  <p className="mt-1 text-xs text-slate-600">אלה הדברים שעבדו לך</p>
+                  <p className="mt-1 text-xs text-ink-soft">אלה הדברים שעבדו לך</p>
                 </div>
                 <ul className="space-y-0">
                   {visibleHelped.map((m, i) => {
@@ -510,13 +510,13 @@ export function SosMomentsClient({ firstName, gender = '' }: SosMomentsClientPro
                       <li key={`h-${m.strategy}-${m.created_at}-${globalIndex}`}>
                         {i > 0 ? <MomentsColorDivider index={globalIndex} /> : null}
                         <div
-                          className={`rounded-2xl border px-4 py-3 text-sm text-slate-800 ${MEMORY_CARD_STYLES[globalIndex % MEMORY_CARD_STYLES.length]}`}
+                          className={`rounded-2xl border px-4 py-3 text-sm text-ink ${MEMORY_CARD_STYLES[globalIndex % MEMORY_CARD_STYLES.length]}`}
                         >
                           <p className="font-bold leading-snug wrap-break-word">{m.strategy}</p>
                           {m.task_title ? (
-                            <p className="mt-1 text-xs text-slate-600 wrap-break-word">בקשר ל: {m.task_title}</p>
+                            <p className="mt-1 text-xs text-ink-soft wrap-break-word">בקשר ל: {m.task_title}</p>
                           ) : null}
-                          <p className="mt-1.5 text-[11px] text-slate-500">
+                          <p className="mt-1.5 text-[11px] text-ink-faint">
                             {formatHebrewRelative(m.created_at)}
                           </p>
                         </div>
@@ -590,10 +590,10 @@ export function SosMomentsClient({ firstName, gender = '' }: SosMomentsClientPro
             {groupedEvents.length > 0 ? (
               <section dir="rtl" className="glass-surface-home space-y-4 rounded-[22px] p-5">
                 <div className="px-1 text-center">
-                  <h2 className="text-lg font-black text-slate-900" style={HEBREW_HEAD}>
+                  <h2 className="text-lg font-black text-ink" style={HEBREW_HEAD}>
                     מתי זה קרה
                   </h2>
-                  <p className="mt-1 text-xs text-slate-600">
+                  <p className="mt-1 text-xs text-ink-soft">
                     {groupedEvents.length} ימים · {events.length} רגעים
                   </p>
                 </div>
@@ -628,12 +628,12 @@ export function SosMomentsClient({ firstName, gender = '' }: SosMomentsClientPro
                                 </span>
                               </div>
                               {ev.task_title ? (
-                                <p className="mt-2 text-sm font-bold leading-snug text-slate-900">
+                                <p className="mt-2 text-sm font-bold leading-snug text-ink">
                                   {ev.task_title}
                                 </p>
                               ) : null}
                               {humanTrigger ? (
-                                <p className="mt-1.5 text-xs leading-5 text-slate-600">{humanTrigger}</p>
+                                <p className="mt-1.5 text-xs leading-5 text-ink-soft">{humanTrigger}</p>
                               ) : null}
                             </article>
                           </div>

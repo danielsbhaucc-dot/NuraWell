@@ -17,11 +17,11 @@ export const opsGlassCardClass =
   'relative overflow-hidden rounded-3xl border border-gc/50 bg-background-card/45 p-4 shadow-[0_12px_40px_rgba(15,23,42,0.1)] backdrop-blur-2xl sm:p-6';
 
 export const opsInputClass =
-  'w-full rounded-xl border border-gc/55 bg-background-card/35 px-3 py-2.5 text-sm font-medium text-slate-900 outline-hidden backdrop-blur-md transition placeholder:text-slate-400 focus:border-emerald-300/60 focus:ring-2 focus:ring-emerald-400/30';
+  'w-full rounded-xl border border-gc/55 bg-background-card/35 px-3 py-2.5 text-sm font-medium text-ink outline-hidden backdrop-blur-md transition placeholder:text-ink-faint focus:border-emerald-300/60 focus:ring-2 focus:ring-emerald-400/30';
 
 /** כפתור זכוכית שקוף — לפעולות משניות */
 export const opsGlassBtnClass =
-  'inline-flex items-center justify-center gap-1.5 rounded-xl border border-gc/55 bg-background-card/30 px-3.5 py-2 text-xs font-bold text-slate-800 shadow-xs backdrop-blur-md transition hover:border-emerald-300/50 hover:bg-background-card/50 active:scale-[0.99] disabled:opacity-50';
+  'inline-flex items-center justify-center gap-1.5 rounded-xl border border-gc/55 bg-background-card/30 px-3.5 py-2 text-xs font-bold text-ink shadow-xs backdrop-blur-md transition hover:border-emerald-300/50 hover:bg-background-card/50 active:scale-[0.99] disabled:opacity-50';
 
 /** כפתור זכוכית מודגש — לפעולה ראשית */
 export const opsGlassBtnPrimaryClass =
@@ -58,8 +58,8 @@ export function OpsPanelHeader({
           <Icon className="h-5 w-5" aria-hidden />
         </span>
         <div className="min-w-0">
-          <h2 className="font-display text-lg font-black leading-tight text-slate-900">{title}</h2>
-          {description ? <p className="mt-1 text-sm leading-relaxed text-slate-600">{description}</p> : null}
+          <h2 className="font-display text-lg font-black leading-tight text-ink">{title}</h2>
+          {description ? <p className="mt-1 text-sm leading-relaxed text-ink-soft">{description}</p> : null}
         </div>
       </div>
       {actions ? <div className="flex shrink-0 flex-wrap gap-2">{actions}</div> : null}

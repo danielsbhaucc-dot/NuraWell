@@ -155,19 +155,19 @@ export function AdminShell({
             amber:
               'bg-amber-400/15 font-bold text-amber-950',
           }[color]
-        : 'text-slate-700 hover:bg-black/4 hover:text-slate-900',
+        : 'text-ink-soft hover:bg-black/4 hover:text-ink',
     );
 
   const bottomNavClass = (active: boolean) =>
     cn(
       'flex min-h-13 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-2xl px-1 py-2 text-[10px] font-semibold transition-colors sm:text-[11px]',
-      active ? 'text-emerald-800' : 'text-slate-500',
+      active ? 'text-emerald-800' : 'text-ink-faint',
     );
 
   return (
     <MediaManagerProvider>
     <div
-      className="min-h-dvh bg-gc-canvas font-sans text-slate-900 antialiased touch-manipulation"
+      className="min-h-dvh bg-gc-canvas font-sans text-ink antialiased touch-manipulation"
       dir="rtl"
     >
       <OpsSessionGuard />
@@ -206,7 +206,7 @@ export function AdminShell({
               </div>
               <span
                 className={cn(
-                  'min-w-0 truncate font-display text-xl font-black tracking-tight text-slate-900',
+                  'min-w-0 truncate font-display text-xl font-black tracking-tight text-ink',
                   sidebarCollapsed && 'lg:hidden',
                 )}
               >
@@ -217,7 +217,7 @@ export function AdminShell({
               <button
                 type="button"
                 onClick={() => setSidebarCollapsed((c) => !c)}
-                className="hidden min-h-10 min-w-10 items-center justify-center rounded-xl border border-gc/50 bg-background-card/40 text-slate-700 shadow-xs backdrop-blur-md transition-colors hover:bg-background-card/70 lg:inline-flex"
+                className="hidden min-h-10 min-w-10 items-center justify-center rounded-xl border border-gc/50 bg-background-card/40 text-ink-soft shadow-xs backdrop-blur-md transition-colors hover:bg-background-card/70 lg:inline-flex"
                 aria-expanded={!sidebarCollapsed}
                 aria-label={sidebarCollapsed ? 'הרחב תפריט צד' : 'כווץ תפריט צד'}
                 title={sidebarCollapsed ? 'הרחב תפריט' : 'כווץ תפריט'}
@@ -227,7 +227,7 @@ export function AdminShell({
               <button
                 type="button"
                 onClick={() => setSidebarOpen(false)}
-                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl text-slate-600 hover:bg-background-card/60 active:bg-background-card/80 lg:hidden"
+                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl text-ink-soft hover:bg-background-card/60 active:bg-background-card/80 lg:hidden"
                 aria-label="סגור תפריט"
               >
                 <X size={24} />
@@ -358,7 +358,7 @@ export function AdminShell({
                     'flex min-h-11 w-full items-center justify-between gap-2 rounded-2xl px-4 py-3 text-start text-[15px] transition-all duration-200 active:scale-[0.99] sm:text-base',
                     isAlmogNavSection && !isHome && !isJourneyManage
                       ? 'bg-violet-500/15 font-semibold text-violet-950'
-                      : 'text-slate-600 hover:bg-background-card/50 hover:text-slate-900',
+                      : 'text-ink-soft hover:bg-background-card/50 hover:text-ink',
                   )}
                   aria-expanded={almogNavOpen}
                 >
@@ -368,7 +368,7 @@ export function AdminShell({
                   </span>
                   <ChevronDown
                     size={18}
-                    className={cn('shrink-0 text-slate-400 transition-transform', almogNavOpen && '-rotate-180')}
+                    className={cn('shrink-0 text-ink-faint transition-transform', almogNavOpen && '-rotate-180')}
                   />
                 </button>
 
@@ -382,7 +382,7 @@ export function AdminShell({
                           'flex min-h-11 items-center gap-2 rounded-xl px-3 py-2.5 text-sm transition-colors active:bg-violet-400/20 sm:text-[15px]',
                           isAlmogSettings
                             ? 'bg-violet-400/20 font-bold text-violet-950'
-                            : 'text-slate-600 hover:bg-background-card/50 hover:text-slate-900',
+                            : 'text-ink-soft hover:bg-background-card/50 hover:text-ink',
                         )}
                       >
                         <UserCircle size={17} className="shrink-0 opacity-90" />
@@ -397,7 +397,7 @@ export function AdminShell({
                           'flex min-h-11 items-center gap-2 rounded-xl px-3 py-2.5 text-sm transition-colors active:bg-amber-400/25 sm:text-[15px]',
                           (np === '/ops/journey' || np.startsWith('/ops/steps')) && !isJourneyHub
                             ? 'bg-amber-400/25 font-bold text-amber-950'
-                            : 'text-slate-600 hover:bg-background-card/50 hover:text-slate-900',
+                            : 'text-ink-soft hover:bg-background-card/50 hover:text-ink',
                         )}
                       >
                         <ListTree size={17} className="shrink-0 opacity-90" />
@@ -412,7 +412,7 @@ export function AdminShell({
                           'flex min-h-11 items-center gap-2 rounded-xl px-3 py-2.5 text-sm transition-colors active:bg-amber-400/25 sm:text-[15px]',
                           isAudio
                             ? 'bg-amber-400/25 font-bold text-amber-950'
-                            : 'text-slate-600 hover:bg-background-card/50 hover:text-slate-900',
+                            : 'text-ink-soft hover:bg-background-card/50 hover:text-ink',
                         )}
                       >
                         <Music size={17} className="shrink-0 opacity-90" />
@@ -483,7 +483,7 @@ export function AdminShell({
             <Link prefetch={false}
               href={coursesHref}
               className={cn(
-                'flex min-h-11 items-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-500 transition-colors hover:bg-background-card/55 hover:text-slate-800 active:bg-background-card/70',
+                'flex min-h-11 items-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-ink-faint transition-colors hover:bg-background-card/55 hover:text-ink active:bg-background-card/70',
                 sidebarCollapsed && 'lg:justify-center lg:px-2',
               )}
               onClick={() => setSidebarOpen(false)}
@@ -517,7 +517,7 @@ export function AdminShell({
               <button
                 type="button"
                 onClick={() => setSidebarOpen(true)}
-                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full bg-gc text-slate-800 shadow-[0_1px_3px_rgba(0,0,0,0.08)] active:scale-[0.98]"
+                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full bg-gc text-ink shadow-[0_1px_3px_rgba(0,0,0,0.08)] active:scale-[0.98]"
                 aria-label="פתח תפריט"
               >
                 <Menu size={22} />
@@ -530,11 +530,11 @@ export function AdminShell({
                 aria-hidden
               />
               <div className="min-w-0">
-                <p className="truncate text-[11px] font-medium text-slate-500 sm:text-xs">
+                <p className="truncate text-[11px] font-medium text-ink-faint sm:text-xs">
                   {dayPart} <span aria-hidden>·</span> פאנל ניהול NuraWell
                 </p>
                 <h2 className="flex min-w-0 items-center gap-1.5 truncate font-display text-base font-black leading-tight tracking-tight sm:text-lg md:text-xl">
-                  <span className="text-slate-900">
+                  <span className="text-ink">
                     {greetingName ? `שלום, ${greetingName}` : 'שלום'}
                   </span>
                   <span className="onboarding-wave-hand shrink-0" aria-hidden>

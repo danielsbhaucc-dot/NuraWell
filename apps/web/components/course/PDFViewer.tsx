@@ -31,7 +31,7 @@ export function PDFViewer({ url, title, fileName }: PDFViewerProps) {
           <a
             href={url}
             download={fileName || 'document.pdf'}
-            className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-white transition-colors"
+            className="w-8 h-8 rounded-xl flex items-center justify-center text-ink-faint hover:text-white transition-colors"
             style={{ background: 'rgba(255,255,255,0.08)' }}
             aria-label="הורד PDF"
           >
@@ -41,7 +41,7 @@ export function PDFViewer({ url, title, fileName }: PDFViewerProps) {
             href={url}
             target="_blank"
             rel="noopener noreferrer"
-            className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-white transition-colors"
+            className="w-8 h-8 rounded-xl flex items-center justify-center text-ink-faint hover:text-white transition-colors"
             style={{ background: 'rgba(255,255,255,0.08)' }}
             aria-label="פתח בחלון חדש"
           >
@@ -58,7 +58,7 @@ export function PDFViewer({ url, title, fileName }: PDFViewerProps) {
               style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.25)' }}>
               <FileText className="w-8 h-8 text-red-400" />
             </div>
-            <p className="text-slate-400 text-sm">טוען מסמך...</p>
+            <p className="text-ink-faint text-sm">טוען מסמך...</p>
           </div>
         )}
         <iframe
@@ -73,7 +73,7 @@ export function PDFViewer({ url, title, fileName }: PDFViewerProps) {
       {/* Footer hint for mobile */}
       <div className="px-4 py-2 flex items-center justify-center gap-2"
         style={{ background: 'rgba(255,255,255,0.03)', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-ink-faint">
           💡 לחץ על
           <a href={url} target="_blank" rel="noopener noreferrer" className="text-primary-400 mx-1 hover:underline">
             פתח בכרטיסייה חדשה

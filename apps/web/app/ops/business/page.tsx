@@ -22,7 +22,7 @@ export default async function OpsBusinessPage() {
   const m = await buildBusinessMetrics(createAdminClient());
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="px-1 font-display text-[1.75rem] font-black leading-tight tracking-tight text-slate-900">מדדים עסקיים</h1>
+      <h1 className="px-1 font-display text-[1.75rem] font-black leading-tight tracking-tight text-ink">מדדים עסקיים</h1>
       <p className="text-sm text-primary-800/80">משתמשים אמיתיים בלבד (ללא מנהלים וחשבונות בדיקה) · חלון {m.windowDays} ימים</p>
       <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Stat label="משתמשים" value={m.realUsers} hint={`${m.newUsers} חדשים · ${m.onboarded} השלימו קליטה`} />

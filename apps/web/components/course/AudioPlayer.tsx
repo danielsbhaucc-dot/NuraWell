@@ -93,7 +93,7 @@ export function AudioPlayer({ src, title, duration }: AudioPlayerProps) {
             <Headphones className="w-5 h-5 text-emerald-700" />
           </div>
           {title && (
-            <p className="text-[15px] font-black text-slate-800 line-clamp-2 leading-snug flex-1">
+            <p className="text-[15px] font-black text-ink line-clamp-2 leading-snug flex-1">
               {title}
             </p>
           )}
@@ -112,7 +112,7 @@ export function AudioPlayer({ src, title, duration }: AudioPlayerProps) {
               background: `linear-gradient(to right, #10b981, #2dd4bf ${progress}%, rgba(15,23,42,0.12) ${progress}%)`,
             }}
           />
-          <div className="flex justify-between text-[11px] font-bold tabular-nums text-slate-600 mt-1.5">
+          <div className="flex justify-between text-[11px] font-bold tabular-nums text-ink-soft mt-1.5">
             <span>{formatTime(currentTime)}</span>
             <span>{totalDuration ? formatTime(totalDuration) : '--:--'}</span>
           </div>

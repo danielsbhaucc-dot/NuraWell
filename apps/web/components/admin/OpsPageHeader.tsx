@@ -91,14 +91,14 @@ export function OpsPageHeader({
           </span>
           <div className="min-w-0">
             {eyebrow ? <p className={cn('text-xs font-semibold', t.eyebrowText)}>{eyebrow}</p> : null}
-            <h1 className="truncate font-display text-[1.75rem] font-black leading-tight tracking-tight text-slate-900 sm:text-[2rem]">
+            <h1 className="truncate font-display text-[1.75rem] font-black leading-tight tracking-tight text-ink sm:text-[2rem]">
               {title}
             </h1>
           </div>
         </div>
         {actions ? <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div> : null}
       </div>
-      {description ? <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-slate-500">{description}</p> : null}
+      {description ? <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-ink-faint">{description}</p> : null}
     </section>
   );
 }

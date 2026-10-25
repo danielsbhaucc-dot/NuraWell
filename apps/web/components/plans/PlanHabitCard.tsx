@@ -47,7 +47,7 @@ export function PlanHabitCard({ habit, canStepDown, canStepUp, highlighted }: { 
         <LadderActions assignmentId={habit.id} title={habit.currentStep} eased={habit.status === 'eased'} canStepDown={canStepDown} canStepUp={canStepUp} />
       </div>
 
-      <details className="group mt-3 rounded-2xl bg-emerald-50/70 ring-1 ring-emerald-100">
+      <details className="group mt-3 rounded-2xl bg-surface-sunken/80 ring-1 ring-hairline">
         <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2.5 text-[13px] font-bold text-primary-700 [&::-webkit-details-marker]:hidden">
           <span>הצעדים ויום קשה</span>
           <svg aria-hidden viewBox="0 0 20 20" className="size-4 transition-transform group-open:rotate-180">
@@ -56,13 +56,13 @@ export function PlanHabitCard({ habit, canStepDown, canStepUp, highlighted }: { 
         </summary>
         <div className="flex flex-col gap-2.5 px-3 pb-3">
           <dl className="grid grid-cols-2 gap-2">
-            <div className="rounded-xl bg-glass/85 backdrop-blur-md px-3 py-2 ring-1 ring-emerald-100">
-              <dt className="text-[11px] font-bold text-emerald-700">הצעד הבא</dt>
-              <dd className="mt-0.5 text-[13px] font-semibold leading-snug text-primary-900">{habit.nextStep ?? 'שומרים על מה שבנינו'}</dd>
+            <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-forest-800 to-forest-700 px-3 py-2.5 shadow-lift ring-1 ring-glow/20 before:absolute before:inset-x-0 before:top-0 before:h-0.5 before:bg-gradient-to-l before:from-glow before:to-glow-teal">
+              <dt className="text-[11px] font-bold text-glow">הצעד הבא</dt>
+              <dd className="mt-0.5 text-[13px] font-semibold leading-snug text-on-dark">{habit.nextStep ?? 'שומרים על מה שבנינו'}</dd>
             </div>
-            <div className="rounded-xl bg-glass/85 backdrop-blur-md px-3 py-2 ring-1 ring-amber-100">
-              <dt className="text-[11px] font-bold text-amber-700">ביום קשה</dt>
-              <dd className="mt-0.5 text-[13px] font-semibold leading-snug text-primary-900">{habit.fallbackStep ?? 'גם חצי צעד נחשב'}</dd>
+            <div className="relative overflow-hidden rounded-xl bg-surface-elevated px-3 py-2.5 shadow-float ring-1 ring-hairline before:absolute before:inset-x-0 before:top-0 before:h-0.5 before:bg-gradient-to-l before:from-amber-400 before:to-orange-400">
+              <dt className="text-[11px] font-bold text-amber-800">ביום קשה</dt>
+              <dd className="mt-0.5 text-[13px] font-semibold leading-snug text-ink">{habit.fallbackStep ?? 'גם חצי צעד נחשב'}</dd>
             </div>
           </dl>
           {habit.ladder.length > 1 ? (

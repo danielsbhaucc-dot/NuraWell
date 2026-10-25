@@ -137,25 +137,25 @@ export function AdminAlmogAvatarPanel() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex-1 text-right">
           <h2
-            className="flex flex-wrap items-center gap-2 text-lg font-black tracking-tight text-slate-800 sm:text-xl"
+            className="flex flex-wrap items-center gap-2 text-lg font-black tracking-tight text-ink sm:text-xl"
             style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
           >
             <UserCircle className="h-6 w-6 shrink-0 text-emerald-500" aria-hidden />
             {avatarMetaReady && hasCustom ? 'עדכון תמונת פרופיל — אלמוג' : 'תמונת פרופיל — אלמוג'}
           </h2>
-          <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-slate-600">
+          <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-ink-soft">
             רק לדמות אלמוג בצ&apos;אט: מוצגת בצ&apos;אט, במשובים ובהתראות. עדיף תמונה ברורה של פנים,
             ריבועית או פורטרט.
           </p>
           {avatarMetaReady && cdnConfigured && cdnHostname ? (
-            <p className="text-xs text-gray-500 mt-2 leading-relaxed max-w-xl">
+            <p className="text-xs text-ink-faint mt-2 leading-relaxed max-w-xl">
               קובץ ציבורי ב־CDN{' '}
               <span className="font-semibold text-emerald-800">{cdnHostname}</span>
               {': '}
-              <code className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] text-slate-700" dir="ltr">
+              <code className="rounded bg-surface px-1.5 py-0.5 text-[11px] text-ink-soft" dir="ltr">
                 /almog/avatar
               </code>
-              <span className="text-gray-500"> — כל העלאה מחליפה את אותו האובייקט ב־R2.</span>
+              <span className="text-ink-faint"> — כל העלאה מחליפה את אותו האובייקט ב־R2.</span>
             </p>
           ) : avatarMetaReady ? (
             <p className="text-xs text-amber-800 mt-2 leading-relaxed max-w-xl rounded-lg bg-amber-50/90 border border-amber-200/80 px-3 py-2">
@@ -234,8 +234,8 @@ export function AdminAlmogAvatarPanel() {
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-background-card shadow-xs ring-1 ring-emerald-100">
             <Upload className="h-6 w-6 text-emerald-600" strokeWidth={2} />
           </div>
-          <p className="text-sm font-bold text-slate-800">גרור תמונה לכאן או לחץ לבחירה</p>
-          <p className="text-xs text-slate-500">PNG, JPEG, WebP או AVIF · עד כ־4MB</p>
+          <p className="text-sm font-bold text-ink">גרור תמונה לכאן או לחץ לבחירה</p>
+          <p className="text-xs text-ink-faint">PNG, JPEG, WebP או AVIF · עד כ־4MB</p>
           {file && (
             <p className="text-xs font-semibold text-emerald-800 mt-1">
               נבחר: {file.name}

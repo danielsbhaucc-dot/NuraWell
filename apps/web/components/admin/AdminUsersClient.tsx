@@ -441,7 +441,7 @@ export function AdminUsersClient() {
           onChange={(e) => setQ(e.target.value)}
           placeholder="חיפוש לפי שם, אימייל או מזהה..."
           dir="rtl"
-          className="w-full rounded-2xl border border-gc/60 bg-background-card/55 py-3.5 ps-12 pe-4 text-sm font-medium text-slate-900 shadow-[0_8px_28px_rgba(16,185,129,0.08)] outline-hidden backdrop-blur-xl transition placeholder:text-slate-400 focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-400/40"
+          className="w-full rounded-2xl border border-gc/60 bg-background-card/55 py-3.5 ps-12 pe-4 text-sm font-medium text-ink shadow-[0_8px_28px_rgba(16,185,129,0.08)] outline-hidden backdrop-blur-xl transition placeholder:text-ink-faint focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-400/40"
         />
       </div>
 
@@ -469,7 +469,7 @@ export function AdminUsersClient() {
           style={glassCardStyle}
         >
           <UserCircle className="h-10 w-10 text-slate-300" />
-          <p className="text-sm font-semibold text-slate-500">לא נמצאו משתמשים</p>
+          <p className="text-sm font-semibold text-ink-faint">לא נמצאו משתמשים</p>
         </div>
       ) : (
         <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -485,10 +485,10 @@ export function AdminUsersClient() {
                   >
                     <Avatar id={u.id} name={u.full_name} />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate font-display text-sm font-black text-slate-900">
+                      <p className="truncate font-display text-sm font-black text-ink">
                         {u.full_name || 'ללא שם'}
                       </p>
-                      <p className="truncate text-xs text-slate-500">{u.email ?? u.id}</p>
+                      <p className="truncate text-xs text-ink-faint">{u.email ?? u.id}</p>
                       <div className="mt-1.5 flex flex-wrap gap-1">
                         <span
                           className={cn(
@@ -561,12 +561,12 @@ export function AdminUsersClient() {
                 {detailLoading ? (
                   <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
                 ) : (
-                  <p className="text-sm text-slate-500">לא ניתן לטעון את פרטי המשתמש</p>
+                  <p className="text-sm text-ink-faint">לא ניתן לטעון את פרטי המשתמש</p>
                 )}
                 <button
                   type="button"
                   onClick={closeUser}
-                  className="absolute inset-e-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-gc/55 bg-background-card/45 text-slate-600 backdrop-blur-md hover:bg-background-card/70"
+                  className="absolute inset-e-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-gc/55 bg-background-card/45 text-ink-soft backdrop-blur-md hover:bg-background-card/70"
                   aria-label="סגור"
                 >
                   <X className="h-4 w-4" />
@@ -580,7 +580,7 @@ export function AdminUsersClient() {
                     type="button"
                     onClick={closeUser}
                     disabled={saving || deleting}
-                    className="absolute inset-e-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-gc/55 bg-background-card/45 text-slate-600 backdrop-blur-md transition hover:bg-background-card/70 disabled:opacity-50 sm:inset-e-4 sm:top-4"
+                    className="absolute inset-e-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-gc/55 bg-background-card/45 text-ink-soft backdrop-blur-md transition hover:bg-background-card/70 disabled:opacity-50 sm:inset-e-4 sm:top-4"
                     aria-label="סגור"
                   >
                     <X className="h-4 w-4" />
@@ -592,7 +592,7 @@ export function AdminUsersClient() {
                       <h2 className="truncate bg-linear-to-l from-emerald-700 via-teal-600 to-cyan-700 bg-clip-text font-display text-xl font-black text-transparent">
                         {form.full_name || 'משתמש'}
                       </h2>
-                      <p className="flex items-center gap-1.5 truncate text-xs text-slate-600">
+                      <p className="flex items-center gap-1.5 truncate text-xs text-ink-soft">
                         <Mail className="h-3.5 w-3.5 shrink-0 opacity-70" />
                         {detail.auth.email ?? '—'}
                       </p>
@@ -622,7 +622,7 @@ export function AdminUsersClient() {
                           'flex min-h-10 shrink-0 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold transition-all sm:text-sm',
                           tab === key
                             ? 'bg-linear-to-br from-emerald-500 to-teal-600 text-gc shadow-md shadow-emerald-600/25'
-                            : 'text-slate-600 hover:bg-background-card/55 hover:text-slate-900',
+                            : 'text-ink-soft hover:bg-background-card/55 hover:text-ink',
                         )}
                         aria-pressed={tab === key}
                       >
@@ -764,7 +764,7 @@ export function AdminUsersClient() {
                               'flex-1 rounded-lg py-1.5 text-xs font-bold transition',
                               costDays === w.days
                                 ? 'bg-emerald-600 text-gc shadow-xs'
-                                : 'text-slate-600 hover:bg-background-card/70',
+                                : 'text-ink-soft hover:bg-background-card/70',
                             )}
                           >
                             {w.label}
@@ -784,7 +784,7 @@ export function AdminUsersClient() {
                             <p className="mt-1 font-display text-4xl font-black tabular-nums text-emerald-800">
                               {usdFmt(cost.breakdown.totalUsd)}
                             </p>
-                            <p className="mt-1 text-[11px] text-slate-500">
+                            <p className="mt-1 text-[11px] text-ink-faint">
                               מחירון OpenRouter נוכחי + חיוב ספק כשנשמר
                             </p>
                           </div>
@@ -793,28 +793,28 @@ export function AdminUsersClient() {
                               <p className="flex items-center gap-1.5 text-xs font-bold text-emerald-800">
                                 <MessageSquare className="h-3.5 w-3.5" /> צ׳אט
                               </p>
-                              <p className="mt-1 font-display text-lg font-black tabular-nums text-slate-900">
+                              <p className="mt-1 font-display text-lg font-black tabular-nums text-ink">
                                 {usdFmt(cost.breakdown.chatUsd)}
                               </p>
-                              <p className="text-[11px] text-slate-500">{cost.counts.chatMessages} הודעות</p>
+                              <p className="text-[11px] text-ink-faint">{cost.counts.chatMessages} הודעות</p>
                             </div>
                             <div className="rounded-2xl border border-amber-200/70 bg-amber-50/60 p-3">
                               <p className="flex items-center gap-1.5 text-xs font-bold text-amber-800">
                                 <Sparkles className="h-3.5 w-3.5" /> נתב וקובץ חי
                               </p>
-                              <p className="mt-1 font-display text-lg font-black tabular-nums text-slate-900">
+                              <p className="mt-1 font-display text-lg font-black tabular-nums text-ink">
                                 {usdFmt(cost.breakdown.backgroundUsd ?? 0)}
                               </p>
-                              <p className="text-[11px] text-slate-500">אומדן לכל תור</p>
+                              <p className="text-[11px] text-ink-faint">אומדן לכל תור</p>
                             </div>
                             <div className="rounded-2xl border border-violet-200/70 bg-violet-50/60 p-3">
                               <p className="flex items-center gap-1.5 text-xs font-bold text-violet-800">
                                 <Bell className="h-3.5 w-3.5" /> התראות
                               </p>
-                              <p className="mt-1 font-display text-lg font-black tabular-nums text-slate-900">
+                              <p className="mt-1 font-display text-lg font-black tabular-nums text-ink">
                                 {usdFmt(cost.breakdown.notificationsUsd)}
                               </p>
-                              <p className="text-[11px] text-slate-500">
+                              <p className="text-[11px] text-ink-faint">
                                 {cost.counts.notifications} התראות
                                 {cost.counts.notificationsEstimated > 0
                                   ? ` · ${cost.counts.notificationsEstimated} באומדן`
@@ -825,25 +825,25 @@ export function AdminUsersClient() {
                               <p className="flex items-center gap-1.5 text-xs font-bold text-sky-800">
                                 <Video className="h-3.5 w-3.5" /> וידאו
                               </p>
-                              <p className="mt-1 font-display text-lg font-black tabular-nums text-slate-900">
+                              <p className="mt-1 font-display text-lg font-black tabular-nums text-ink">
                                 {usdFmt(cost.breakdown.videoUsd)}
                               </p>
-                              <p className="text-[11px] text-slate-500">
+                              <p className="text-[11px] text-ink-faint">
                                 {cost.counts.videoViews} צפיות · {Math.round(cost.counts.videoSeconds / 60)} דק׳
                               </p>
                             </div>
                           </div>
                           {cost.byModel && cost.byModel.length > 0 ? (
                             <div className="rounded-2xl border border-gc/45 bg-background-card/40 p-3">
-                              <p className="mb-2 text-xs font-bold text-slate-700">פירוק לפי מודל כותב</p>
+                              <p className="mb-2 text-xs font-bold text-ink-soft">פירוק לפי מודל כותב</p>
                               <ul className="space-y-1.5">
                                 {cost.byModel.map((m) => (
                                   <li
                                     key={m.model}
                                     className="flex items-center justify-between gap-2 text-xs"
                                   >
-                                    <span className="truncate text-slate-700">{shortModelName(m.model)}</span>
-                                    <span className="shrink-0 tabular-nums text-slate-900">
+                                    <span className="truncate text-ink-soft">{shortModelName(m.model)}</span>
+                                    <span className="shrink-0 tabular-nums text-ink">
                                       {usdFmt(m.usd)} · {m.messages}
                                     </span>
                                   </li>
@@ -853,7 +853,7 @@ export function AdminUsersClient() {
                           ) : null}
                         </>
                       ) : (
-                        <p className="py-12 text-center text-sm text-slate-500">
+                        <p className="py-12 text-center text-sm text-ink-faint">
                           לא הצלחנו לטעון עלויות למשתמש זה
                         </p>
                       )}
@@ -919,7 +919,7 @@ export function AdminUsersClient() {
 }
 
 const inputClass =
-  'w-full rounded-xl border border-gc/60 bg-background-card/60 px-3 py-2.5 text-sm font-medium text-slate-900 outline-hidden backdrop-blur-sm transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-400/40';
+  'w-full rounded-xl border border-gc/60 bg-background-card/60 px-3 py-2.5 text-sm font-medium text-ink outline-hidden backdrop-blur-sm transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-400/40';
 
 function SelectInput({
   value,
@@ -978,7 +978,7 @@ function Section({
         >
           <Icon className="h-4 w-4" aria-hidden />
         </span>
-        <h3 className="font-display text-sm font-black text-slate-800">{title}</h3>
+        <h3 className="font-display text-sm font-black text-ink">{title}</h3>
       </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">{children}</div>
     </section>
@@ -988,14 +988,14 @@ function Section({
 function Field({ label, className, children }: { label: string; className?: string; children: ReactNode }) {
   return (
     <label className={cn('block', className)}>
-      <span className="mb-1 block text-xs font-bold text-slate-600">{label}</span>
+      <span className="mb-1 block text-xs font-bold text-ink-soft">{label}</span>
       {children}
     </label>
   );
 }
 
 const CHIP_TONES = {
-  slate: 'border-slate-200/70 bg-slate-50/70 text-slate-700',
+  slate: 'border-hairline/70 bg-surface-sunken/70 text-ink-soft',
   emerald: 'border-emerald-200/70 bg-emerald-50/80 text-emerald-800',
   sky: 'border-sky-200/70 bg-sky-50/80 text-sky-800',
   violet: 'border-violet-200/70 bg-violet-50/80 text-violet-800',
@@ -1049,10 +1049,10 @@ function NotifyTestToggle({
   };
 
   return (
-    <div className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-gc px-4 py-3 shadow-xs">
+    <div className="flex items-center justify-between gap-3 rounded-2xl border border-hairline bg-gc px-4 py-3 shadow-xs">
       <div className="min-w-0">
-        <p className="text-sm font-semibold text-slate-800">משתמש בדיקה להתראות</p>
-        <p className="text-xs text-slate-500">
+        <p className="text-sm font-semibold text-ink">משתמש בדיקה להתראות</p>
+        <p className="text-xs text-ink-faint">
           {isAdminAccount
             ? 'חשבון אדמין — מקבל התראות אוטומטיות רק כשהמתג פעיל.'
             : 'משתמש רגיל מקבל התראות בכל מקרה; המתג מסמן אותו כחשבון בדיקה.'}

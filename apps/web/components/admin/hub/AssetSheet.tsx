@@ -31,19 +31,19 @@ export function AssetSheet({ assetKey, hub, onClose, onChanged }: { assetKey: st
           {hub ? <AssetThumb thumb={hub.thumb} kind={hub.kind} size="lg" className="h-24 w-24 shrink-0 rounded-[22px] sm:h-28 sm:w-28" /> : <div className="h-24 w-24 shrink-0 animate-pulse rounded-[22px] bg-emerald-900/10" />}
           <div className="min-w-0 flex-1">
             <p className="text-[11.5px] font-bold text-amber-700">{hub ? `${kindHe(hub.kind)}${hub.created_on ? ` · ${hub.created_on.split('-').reverse().join('.')}` : ''}` : '…'}</p>
-            <h2 className="mt-0.5 break-words font-[Rubik] text-xl font-bold leading-tight text-slate-900">{hub?.title || item?.title || assetKey.split('/').pop()}</h2>
+            <h2 className="mt-0.5 break-words font-[Rubik] text-xl font-bold leading-tight text-ink">{hub?.title || item?.title || assetKey.split('/').pop()}</h2>
             {st ? <span className={cn('mt-2 inline-flex rounded-full border px-2.5 py-0.5 text-[11.5px] font-bold', st.cls)}>{st.label}</span> : null}
           </div>
-          <button type="button" onClick={onClose} aria-label="סגירה" className="rounded-full p-1.5 text-slate-600 hover:bg-glass/50"><X size={20} /></button>
+          <button type="button" onClick={onClose} aria-label="סגירה" className="rounded-full p-1.5 text-ink-soft hover:bg-glass/50"><X size={20} /></button>
         </div>
 
         {hub?.match && hub.receipt !== 'confirmed' ? (
           <section className="mt-5 rounded-[22px] border border-amber-300/50 bg-amber-500/[0.07] p-4" data-testid="asset-match">
             <p className="flex items-center gap-1.5 text-[12px] font-bold text-amber-800"><Sparkles size={14} />{hub.receipt === 'auto' ? 'שויך לבד' : 'התאמה אוטומטית'}</p>
-            <p className="mt-1 font-[Rubik] font-bold text-slate-900">{hub.match.vendor}{hub.match.plan ? ` · ${hub.match.plan}` : ''}</p>
-            <p className="text-[12.5px] text-slate-600">{[hub.match.amount != null ? `${hub.match.amount} ${hub.match.currency ?? ''}` : null, hub.match.receipt_date ? `התקבלה ${hub.match.receipt_date.split('-').reverse().join('.')}` : null].filter(Boolean).join(' · ')}</p>
+            <p className="mt-1 font-[Rubik] font-bold text-ink">{hub.match.vendor}{hub.match.plan ? ` · ${hub.match.plan}` : ''}</p>
+            <p className="text-[12.5px] text-ink-soft">{[hub.match.amount != null ? `${hub.match.amount} ${hub.match.currency ?? ''}` : null, hub.match.receipt_date ? `התקבלה ${hub.match.receipt_date.split('-').reverse().join('.')}` : null].filter(Boolean).join(' · ')}</p>
             <div className="mt-2.5 h-2 overflow-hidden rounded-full bg-teal-900/10"><div className="h-full rounded-full bg-linear-to-l from-teal-500 to-emerald-700" style={{ width: `${hub.match.confidence}%` }} /></div>
-            <p className="mt-1 text-[12px] text-slate-600">התאמה {hub.match.confidence}%: {hub.match.reasons.join(' · ')}</p>
+            <p className="mt-1 text-[12px] text-ink-soft">התאמה {hub.match.confidence}%: {hub.match.reasons.join(' · ')}</p>
             {done ? <p className="mt-3 flex items-center gap-1.5 text-sm font-bold text-emerald-800"><Check size={16} />{done}</p> : (
               <div className="mt-3 flex flex-wrap gap-2">
                 <button type="button" onClick={() => void decide('confirmed')} disabled={!!busy} className="inline-flex min-h-10 items-center gap-1.5 rounded-xl bg-linear-to-br from-amber-500 to-amber-700 px-4 text-sm font-bold text-amber-50 shadow-[0_6px_16px_rgba(180,83,9,0.28)]" data-testid="asset-match-confirm">{busy === 'confirmed' ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} />}נכון, לשייך</button>
@@ -54,13 +54,13 @@ export function AssetSheet({ assetKey, hub, onClose, onChanged }: { assetKey: st
         ) : hub?.receipt === 'missing' ? (
           <section className="mt-5 rounded-[22px] border border-rose-300/50 bg-rose-500/[0.06] p-4">
             <p className="font-[Rubik] font-bold text-rose-900">חסרה קבלה</p>
-            <p className="mt-1 text-[13px] text-slate-700">מעבירים את מייל הקבלה ל־receipts@nurawell.ai, או מעלים אותה בלשונית ״קבלות ומנויים״. היא תשויך לקובץ לבד.</p>
+            <p className="mt-1 text-[13px] text-ink-soft">מעבירים את מייל הקבלה ל־receipts@nurawell.ai, או מעלים אותה בלשונית ״קבלות ומנויים״. היא תשויך לקובץ לבד.</p>
           </section>
         ) : null}
 
         <div className="mt-5">
-          <p className="mb-2 px-1 text-[12px] font-bold text-slate-500">פרטים, יומן ראיות והפקת תיק</p>
-          {item ? <ul><ItemCard item={item} open onToggle={() => undefined} onChanged={() => { void load(); onChanged(); }} /></ul> : <div className="grid place-items-center p-8"><Loader2 className="animate-spin text-slate-400" /></div>}
+          <p className="mb-2 px-1 text-[12px] font-bold text-ink-faint">פרטים, יומן ראיות והפקת תיק</p>
+          {item ? <ul><ItemCard item={item} open onToggle={() => undefined} onChanged={() => { void load(); onChanged(); }} /></ul> : <div className="grid place-items-center p-8"><Loader2 className="animate-spin text-ink-faint" /></div>}
         </div>
       </div>
     </div>

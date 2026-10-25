@@ -82,7 +82,7 @@ export function AdminAiAssistantCard({ opsHref }: AdminAiAssistantCardProps) {
           </span>
           <div className="min-w-0">
             <p className="font-display text-base font-black text-slate-950">{copy.title}</p>
-            <p className="mt-1 text-sm leading-relaxed text-slate-600">{copy.body}</p>
+            <p className="mt-1 text-sm leading-relaxed text-ink-soft">{copy.body}</p>
           </div>
         </div>
         <Link prefetch={false}

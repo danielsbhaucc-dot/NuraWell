@@ -76,8 +76,8 @@ export function AdminRegisterBackgroundPanel() {
           <ImageIcon className="h-5 w-5" aria-hidden />
         </span>
         <div>
-          <h2 className="font-display text-lg font-black text-slate-800">רקע דף הרשמה</h2>
-          <p className="text-sm text-slate-600">בחר תמונה ממנהל הקבצים.</p>
+          <h2 className="font-display text-lg font-black text-ink">רקע דף הרשמה</h2>
+          <p className="text-sm text-ink-soft">בחר תמונה ממנהל הקבצים.</p>
         </div>
       </div>
 
@@ -87,7 +87,7 @@ export function AdminRegisterBackgroundPanel() {
             <img src={coverUrl} alt="" aria-hidden className="h-full w-full object-cover" />
           ) : (
             <div className="flex h-full items-center justify-center">
-              <ImageIcon className="h-6 w-6 text-slate-400" />
+              <ImageIcon className="h-6 w-6 text-ink-faint" />
             </div>
           )}
         </div>

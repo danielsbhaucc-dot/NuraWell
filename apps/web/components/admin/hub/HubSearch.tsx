@@ -41,9 +41,9 @@ export function HubSearch({ open, onClose, onPick }: { open: boolean; onClose: (
       <div onClick={(e) => e.stopPropagation()} className="flex max-h-[100dvh] w-full max-w-2xl flex-col overflow-hidden border border-amber-200/40 bg-[linear-gradient(160deg,rgba(220,240,233,0.96),rgba(233,226,205,0.94))] shadow-2xl backdrop-blur-xl sm:max-h-[78vh] sm:rounded-[28px]">
         <div className="flex items-center gap-3 border-b border-emerald-900/10 px-4 py-3.5 pt-[max(0.875rem,env(safe-area-inset-top))]">
           <Search size={18} className="text-teal-700" />
-          <input ref={input} value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={onKey} placeholder="מה מחפשים?" className="min-w-0 flex-1 bg-transparent text-[16px] font-semibold text-slate-900 outline-none placeholder:text-slate-400" data-testid="hub-search-input" />
-          {loading ? <Loader2 size={16} className="animate-spin text-slate-400" /> : null}
-          <button type="button" onClick={onClose} aria-label="סגירה" className="rounded-full p-1.5 text-slate-500 hover:bg-glass/50"><X size={18} /></button>
+          <input ref={input} value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={onKey} placeholder="מה מחפשים?" className="min-w-0 flex-1 bg-transparent text-[16px] font-semibold text-ink outline-none placeholder:text-ink-faint" data-testid="hub-search-input" />
+          {loading ? <Loader2 size={16} className="animate-spin text-ink-faint" /> : null}
+          <button type="button" onClick={onClose} aria-label="סגירה" className="rounded-full p-1.5 text-ink-faint hover:bg-glass/50"><X size={18} /></button>
         </div>
         <div className="overflow-y-auto p-2.5">
           {meta.range || meta.semantic ? (
@@ -54,16 +54,16 @@ export function HubSearch({ open, onClose, onPick }: { open: boolean; onClose: (
           ) : null}
           {!hits ? (
             <div className="p-3">
-              <p className="mb-2 text-[12px] font-bold text-slate-500">אפשר לכתוב חופשי, גם עם טעויות. למשל:</p>
-              <div className="flex flex-wrap gap-2">{EXAMPLES.map((x) => <button key={x} type="button" onClick={() => setQ(x)} className="rounded-full border border-gc/50 bg-glass/40 px-3 py-1.5 text-[13px] font-semibold text-slate-700 hover:bg-glass/70">{x}</button>)}</div>
+              <p className="mb-2 text-[12px] font-bold text-ink-faint">אפשר לכתוב חופשי, גם עם טעויות. למשל:</p>
+              <div className="flex flex-wrap gap-2">{EXAMPLES.map((x) => <button key={x} type="button" onClick={() => setQ(x)} className="rounded-full border border-gc/50 bg-glass/40 px-3 py-1.5 text-[13px] font-semibold text-ink-soft hover:bg-glass/70">{x}</button>)}</div>
             </div>
-          ) : flat.length === 0 && !loading ? <p className="p-6 text-center text-sm text-slate-500">לא נמצא. אפשר לנסות מילה אחרת, שם של ספק או חודש.</p> : groups.map(([g, list]) => (
+          ) : flat.length === 0 && !loading ? <p className="p-6 text-center text-sm text-ink-faint">לא נמצא. אפשר לנסות מילה אחרת, שם של ספק או חודש.</p> : groups.map(([g, list]) => (
             <div key={g} className="mb-1">
               <p className="px-2.5 pb-1 pt-2 font-[Rubik] text-[12px] font-bold text-teal-800">{GROUP[g].label} · {list.length}</p>
               {list.map((h) => { idx++; const i = idx; const I = GROUP[h.type].Icon; return (
                 <button key={`${h.type}:${h.id}`} type="button" onMouseEnter={() => setSel(i)} onClick={() => onPick(h)} className={cn('flex w-full items-center gap-3 rounded-2xl px-2.5 py-2.5 text-right', sel === i ? 'bg-teal-700/12 ring-1 ring-teal-700/15' : 'hover:bg-glass/40')} data-testid="hub-search-hit">
                   <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-emerald-50/40 text-emerald-700 ring-1 ring-emerald-900/10"><I size={17} /></span>
-                  <span className="min-w-0 flex-1"><span className="block truncate font-[Rubik] text-[14px] font-bold text-slate-900">{h.title}</span><span className="block truncate text-[12px] text-slate-500">{h.sub}</span></span>
+                  <span className="min-w-0 flex-1"><span className="block truncate font-[Rubik] text-[14px] font-bold text-ink">{h.title}</span><span className="block truncate text-[12px] text-ink-faint">{h.sub}</span></span>
                 </button>
               ); })}
             </div>

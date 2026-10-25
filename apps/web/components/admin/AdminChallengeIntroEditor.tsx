@@ -68,9 +68,9 @@ export function AdminChallengeIntroEditor() {
   }
 
   return (
-    <div className="rounded-3xl border border-slate-200/60 bg-background-card/70 p-5 shadow-xs backdrop-blur-md sm:p-6">
-      <h2 className="mb-4 text-lg font-bold text-slate-900">טקסט פתיחה + ElevenLabs</h2>
-      <p className="mb-4 text-sm text-slate-600">
+    <div className="rounded-3xl border border-hairline/60 bg-background-card/70 p-5 shadow-xs backdrop-blur-md sm:p-6">
+      <h2 className="mb-4 text-lg font-bold text-ink">טקסט פתיחה + ElevenLabs</h2>
+      <p className="mb-4 text-sm text-ink-soft">
         שורות הפתיחה אחרי השיר. השתמש ב-{'{firstName}'} לשם פרטי.
       </p>
 
@@ -84,9 +84,9 @@ export function AdminChallengeIntroEditor() {
                 next[i] = { ...line, text: e.target.value };
                 setLines(next);
               }}
-              className="min-h-11 flex-1 rounded-xl border border-slate-200 px-3 py-2 text-sm"
+              className="min-h-11 flex-1 rounded-xl border border-hairline px-3 py-2 text-sm"
             />
-            <label className="flex items-center gap-1 text-xs text-slate-500">
+            <label className="flex items-center gap-1 text-xs text-ink-faint">
               <input
                 type="checkbox"
                 checked={Boolean(line.emphasis)}
@@ -112,14 +112,14 @@ export function AdminChallengeIntroEditor() {
         שמור שורות
       </button>
 
-      <hr className="my-6 border-slate-200" />
+      <hr className="my-6 border-hairline" />
 
-      <label className="mb-2 block text-sm font-semibold text-slate-700">תמלול ElevenLabs (Liam)</label>
+      <label className="mb-2 block text-sm font-semibold text-ink-soft">תמלול ElevenLabs (Liam)</label>
       <textarea
         value={ttsText}
         onChange={(e) => setTtsText(e.target.value)}
         rows={5}
-        className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+        className="w-full rounded-xl border border-hairline px-3 py-2 text-sm"
         placeholder="היי, נעים להכיר — אני אלמוג!..."
       />
       <button

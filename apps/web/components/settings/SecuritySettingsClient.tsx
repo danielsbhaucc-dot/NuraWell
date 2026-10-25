@@ -158,7 +158,7 @@ export function SecuritySettingsClient() {
         <div aria-hidden className="absolute -left-10 -top-10 h-40 w-40 rounded-full bg-amber-300/30 blur-3xl" />
         <div aria-hidden className="absolute -bottom-12 right-6 h-36 w-36 rounded-full bg-teal-200/30 blur-3xl" />
         <div className="relative flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-amber-200/60 backdrop-blur">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-surface-elevated/15 ring-1 ring-amber-200/60 backdrop-blur">
             <ShieldCheck className="h-6 w-6 text-amber-200" aria-hidden />
           </div>
           <div>
@@ -170,11 +170,11 @@ export function SecuritySettingsClient() {
 
       {blocked ? (
         <section role="alert" className="crystal-surface rounded-2xl border border-amber-300/70 p-5 space-y-3">
-          <h2 className="flex items-center gap-2 font-bold text-slate-900">
+          <h2 className="flex items-center gap-2 font-bold text-ink">
             <TriangleAlert className="h-4 w-4 text-amber-600" aria-hidden />
             {blocked === 'reauth' ? 'צריך להתחבר שוב' : 'צריך מכשיר מאושר'}
           </h2>
-          <p className="text-sm leading-relaxed text-slate-600">
+          <p className="text-sm leading-relaxed text-ink-soft">
             {blocked === 'reauth'
               ? 'כדי להוסיף דרך כניסה חדשה, החיבור צריך להיות מהרבע שעה האחרונה. זה מגן על החשבון אם מישהו אחר משתמש במכשיר.'
               : 'לחשבון ניהול אפשר להוסיף דרכי כניסה רק ממכשיר שכבר אושר. המכשיר הזה עוד לא אושר.'}
@@ -213,10 +213,10 @@ export function SecuritySettingsClient() {
                 <Fingerprint className="h-5 w-5 text-emerald-700" aria-hidden />
               </div>
               <div>
-                <h2 id="pk-h" className="font-black text-slate-900" style={{ fontFamily: 'Rubik, Heebo, sans-serif' }}>
+                <h2 id="pk-h" className="font-black text-ink" style={{ fontFamily: 'Rubik, Heebo, sans-serif' }}>
                   Face ID וטביעת אצבע
                 </h2>
-                <p className="text-sm leading-relaxed text-slate-600">
+                <p className="text-sm leading-relaxed text-ink-soft">
                   מפתח גישה נשמר רק במכשיר שלך. הכניסה מאושרת בפנים, באצבע או בקוד המכשיר, והמידע הביומטרי לא מגיע אלינו אף פעם.
                 </p>
               </div>
@@ -230,8 +230,8 @@ export function SecuritySettingsClient() {
                   <li key={p.id} className="flex items-center gap-3 rounded-xl border border-[#E8D5B5] bg-glass/70 backdrop-blur-md p-3">
                     <Smartphone className="h-5 w-5 shrink-0 text-teal-600" aria-hidden />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-bold text-slate-900">{p.label}</p>
-                      <p className="text-xs text-slate-500">
+                      <p className="truncate text-sm font-bold text-ink">{p.label}</p>
+                      <p className="text-xs text-ink-faint">
                         נוסף ב־{fmt(p.created_at)} · שימוש אחרון: {fmt(p.last_used_at)}
                       </p>
                     </div>
@@ -269,17 +269,17 @@ export function SecuritySettingsClient() {
                 <KeyRound className="h-5 w-5 text-amber-700" aria-hidden />
               </div>
               <div>
-                <h2 id="bc-h" className="font-black text-slate-900" style={{ fontFamily: 'Rubik, Heebo, sans-serif' }}>
+                <h2 id="bc-h" className="font-black text-ink" style={{ fontFamily: 'Rubik, Heebo, sans-serif' }}>
                   קודי גיבוי
                 </h2>
-                <p className="text-sm leading-relaxed text-slate-600">
+                <p className="text-sm leading-relaxed text-ink-soft">
                   10 קודים חד־פעמיים לכניסה כשהמכשיר לא בהישג יד. כל קוד עובד פעם אחת בלבד, ואנחנו שומרים רק גרסה מוצפנת שלו.
                 </p>
               </div>
             </div>
             <Divider />
             <div className="flex items-center justify-between rounded-xl border border-[#E8D5B5] bg-glass-hi/80 p-3">
-              <span className="text-sm font-bold text-slate-800">קודים שנשארו</span>
+              <span className="text-sm font-bold text-ink">קודים שנשארו</span>
               <span className={`text-lg font-black ${state.backup_codes_left <= 2 ? 'text-rose-600' : 'text-emerald-700'}`}>
                 {state.backup_codes_left} / 10
               </span>
@@ -299,28 +299,28 @@ export function SecuritySettingsClient() {
       )}
 
       <AnimatedDialog open={removeId !== null} onClose={() => busy === null && setRemoveId(null)} variant="sheet" mobileChromePadding aria-labelledby="rm-h" backdropClassName="absolute inset-0 bg-slate-900/45" panelClassName="crystal-surface max-w-md rounded-2xl p-5 shadow-2xl sm:rounded-2xl">
-        <h3 id="rm-h" className="text-lg font-black text-slate-900">להסיר את מפתח הגישה?</h3>
-        <p className="mt-2 text-sm leading-relaxed text-slate-600">אחרי ההסרה לא יהיה אפשר להיכנס איתו. תמיד אפשר להוסיף אותו שוב.</p>
+        <h3 id="rm-h" className="text-lg font-black text-ink">להסיר את מפתח הגישה?</h3>
+        <p className="mt-2 text-sm leading-relaxed text-ink-soft">אחרי ההסרה לא יהיה אפשר להיכנס איתו. תמיד אפשר להוסיף אותו שוב.</p>
         <div className="mt-5 flex gap-2">
           <button type="button" onClick={() => void removePasskey()} disabled={busy !== null} className="flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-xl bg-rose-600 font-bold text-white disabled:opacity-50">
             {busy === 'remove' ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
             כן, להסיר
           </button>
-          <button type="button" onClick={() => setRemoveId(null)} disabled={busy !== null} className="min-h-[44px] rounded-xl border border-slate-200 px-4 font-bold text-slate-700">
+          <button type="button" onClick={() => setRemoveId(null)} disabled={busy !== null} className="min-h-[44px] rounded-xl border border-hairline px-4 font-bold text-ink-soft">
             ביטול
           </button>
         </div>
       </AnimatedDialog>
 
       <AnimatedDialog open={regenOpen} onClose={() => busy === null && setRegenOpen(false)} variant="sheet" mobileChromePadding aria-labelledby="rg-h" backdropClassName="absolute inset-0 bg-slate-900/45" panelClassName="crystal-surface max-w-md rounded-2xl p-5 shadow-2xl sm:rounded-2xl">
-        <h3 id="rg-h" className="text-lg font-black text-slate-900">ליצור קודים חדשים?</h3>
-        <p className="mt-2 text-sm leading-relaxed text-slate-600">כל הקודים הקודמים יפסיקו לעבוד מיד, ויוצגו 10 קודים חדשים פעם אחת בלבד.</p>
+        <h3 id="rg-h" className="text-lg font-black text-ink">ליצור קודים חדשים?</h3>
+        <p className="mt-2 text-sm leading-relaxed text-ink-soft">כל הקודים הקודמים יפסיקו לעבוד מיד, ויוצגו 10 קודים חדשים פעם אחת בלבד.</p>
         <div className="mt-5 flex gap-2">
           <button type="button" onClick={() => void regenerate()} disabled={busy !== null} className="flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-xl bg-linear-to-l from-amber-500 to-amber-600 font-bold text-white disabled:opacity-50">
             {busy === 'codes' ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
             כן, ליצור חדשים
           </button>
-          <button type="button" onClick={() => setRegenOpen(false)} disabled={busy !== null} className="min-h-[44px] rounded-xl border border-slate-200 px-4 font-bold text-slate-700">
+          <button type="button" onClick={() => setRegenOpen(false)} disabled={busy !== null} className="min-h-[44px] rounded-xl border border-hairline px-4 font-bold text-ink-soft">
             ביטול
           </button>
         </div>
@@ -330,14 +330,14 @@ export function SecuritySettingsClient() {
         <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-linear-to-br from-amber-200 to-emerald-200 ring-1 ring-amber-400/60">
           <KeyRound className="h-6 w-6 text-amber-800" aria-hidden />
         </div>
-        <h3 id="codes-h" className="text-center text-xl font-black text-slate-900" style={{ fontFamily: 'Rubik, Heebo, sans-serif' }}>
+        <h3 id="codes-h" className="text-center text-xl font-black text-ink" style={{ fontFamily: 'Rubik, Heebo, sans-serif' }}>
           קודי הגיבוי שלך
         </h3>
-        <p className="mt-1 text-center text-sm text-slate-600">הם מוצגים עכשיו בפעם היחידה. כדאי לשמור אותם במקום בטוח.</p>
+        <p className="mt-1 text-center text-sm text-ink-soft">הם מוצגים עכשיו בפעם היחידה. כדאי לשמור אותם במקום בטוח.</p>
         <div className="my-4 h-px bg-linear-to-l from-transparent via-amber-300/80 to-transparent" aria-hidden />
         <ol dir="ltr" className="grid grid-cols-2 gap-2">
           {(codes ?? []).map((c) => (
-            <li key={c} className="rounded-xl border border-[#E8D5B5] bg-glass/85 backdrop-blur-md py-2 text-center font-mono text-[15px] font-bold tracking-wider text-slate-800">
+            <li key={c} className="rounded-xl border border-[#E8D5B5] bg-glass/85 backdrop-blur-md py-2 text-center font-mono text-[15px] font-bold tracking-wider text-ink">
               {c}
             </li>
           ))}
@@ -352,7 +352,7 @@ export function SecuritySettingsClient() {
             הורדה
           </button>
         </div>
-        <label className="mt-4 flex items-center gap-2 text-sm font-semibold text-slate-700">
+        <label className="mt-4 flex items-center gap-2 text-sm font-semibold text-ink-soft">
           <input type="checkbox" checked={saved} onChange={(e) => setSaved(e.target.checked)} className="h-4 w-4 accent-emerald-600" />
           שמרתי את הקודים במקום בטוח
         </label>

@@ -84,7 +84,7 @@ export function StepUpDialog({ open, purpose, reason, onClose, onVerified, varia
   };
 
   if (!open) return null;
-  const tab = (k: typeof mode, label: string, show = true) => show ? <button type="button" onClick={() => { setMode(k); setErr(null); setCode(''); }} className={cn('flex-1 rounded-2xl px-3 py-2 text-[13px] font-bold transition', mode === k ? 'bg-emerald-800 text-amber-50 shadow' : 'text-slate-600 hover:bg-glass/50')}>{label}</button> : null;
+  const tab = (k: typeof mode, label: string, show = true) => show ? <button type="button" onClick={() => { setMode(k); setErr(null); setCode(''); }} className={cn('flex-1 rounded-2xl px-3 py-2 text-[13px] font-bold transition', mode === k ? 'bg-emerald-800 text-amber-50 shadow' : 'text-ink-soft hover:bg-glass/50')}>{label}</button> : null;
 
   return (
     <div className="fixed inset-0 z-[60] grid place-items-end bg-emerald-950/45 backdrop-blur-sm sm:place-items-center" role="dialog" aria-modal="true" aria-label="אימות זהות" dir="rtl" data-testid="stepup-dialog">
@@ -92,9 +92,9 @@ export function StepUpDialog({ open, purpose, reason, onClose, onVerified, varia
         <div className="mb-3 flex items-start justify-between gap-3">
           <div>
             <p className="text-[11px] font-bold tracking-wide text-amber-700">{eyebrow ?? (variant === 'login' ? 'כניסה עם הטלפון' : 'אימות לפני פעולה רגישה')}</p>
-            <h3 className="font-[Rubik] text-lg font-bold text-slate-900">{reason}</h3>
+            <h3 className="font-[Rubik] text-lg font-bold text-ink">{reason}</h3>
           </div>
-          <button type="button" onClick={onClose} aria-label="סגירה" className="rounded-full p-1.5 text-slate-600 hover:bg-glass/50"><X size={18} /></button>
+          <button type="button" onClick={onClose} aria-label="סגירה" className="rounded-full p-1.5 text-ink-soft hover:bg-glass/50"><X size={18} /></button>
         </div>
         {done ? (
           <div className="grid place-items-center gap-2 py-10 text-emerald-800"><CheckCircle2 size={44} /><p className="font-bold">אומת. ממשיכים…</p></div>
@@ -107,13 +107,13 @@ export function StepUpDialog({ open, purpose, reason, onClose, onVerified, varia
             ) : null}
             {mode === 'qr' ? (
               <div className="text-center">
-                <p className="mb-3 text-sm text-slate-700">{variant === 'login' ? 'סורקים במצלמה של טלפון שכבר מחובר לחשבון, ומאשרים שם עם Face ID. המסך הזה ייכנס לבד.' : 'סורקים במצלמה של הטלפון שלך ומאשרים שם עם Face ID. המסך הזה ימשיך לבד.'}</p>
+                <p className="mb-3 text-sm text-ink-soft">{variant === 'login' ? 'סורקים במצלמה של טלפון שכבר מחובר לחשבון, ומאשרים שם עם Face ID. המסך הזה ייכנס לבד.' : 'סורקים במצלמה של הטלפון שלך ומאשרים שם עם Face ID. המסך הזה ימשיך לבד.'}</p>
                 <div className="mx-auto grid h-52 w-52 place-items-center rounded-[26px] border border-amber-300/50 bg-amber-50/40 p-3 shadow-inner" data-testid="stepup-qr">
-                  {qr ? <div className="h-full w-full [&_svg]:h-full [&_svg]:w-full" dangerouslySetInnerHTML={{ __html: sanitizeSvg(qr.svg) }} /> : <Loader2 className="animate-spin text-slate-400" />}
+                  {qr ? <div className="h-full w-full [&_svg]:h-full [&_svg]:w-full" dangerouslySetInnerHTML={{ __html: sanitizeSvg(qr.svg) }} /> : <Loader2 className="animate-spin text-ink-faint" />}
                 </div>
                 {qr?.match ? (
                   <div className="mx-auto mt-3 flex w-fit items-center gap-3 rounded-2xl border border-emerald-700/25 bg-emerald-900/[0.06] px-4 py-2" data-testid="stepup-match">
-                    <span className="text-[13px] font-bold text-slate-700">בטלפון בוחרים את המספר</span>
+                    <span className="text-[13px] font-bold text-ink-soft">בטלפון בוחרים את המספר</span>
                     <span className="font-[Rubik] text-3xl font-bold tabular-nums tracking-wider text-emerald-900" dir="ltr">{qr.match}</span>
                   </div>
                 ) : null}
@@ -130,11 +130,11 @@ export function StepUpDialog({ open, purpose, reason, onClose, onVerified, varia
               </div>
             ) : (
               <div>
-                <p className="mb-2 flex items-center gap-2 text-sm text-slate-700">{mode === 'totp' ? <><Smartphone size={16} />מקלידים את 6 הספרות מאפליקציית הקודים</> : <><KeyRound size={16} />מקלידים אחד מקודי הגיבוי. כל קוד עובד פעם אחת.</>}</p>
+                <p className="mb-2 flex items-center gap-2 text-sm text-ink-soft">{mode === 'totp' ? <><Smartphone size={16} />מקלידים את 6 הספרות מאפליקציית הקודים</> : <><KeyRound size={16} />מקלידים אחד מקודי הגיבוי. כל קוד עובד פעם אחת.</>}</p>
                 <input autoFocus value={code} onChange={(e) => setCode(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && code) void submitCode(); }} inputMode={mode === 'totp' ? 'numeric' : 'text'} autoComplete="one-time-code" dir="ltr" maxLength={mode === 'totp' ? 6 : 12}
                   placeholder={mode === 'totp' ? '123456' : 'ABCDE-FGHJK'} className={cn(opsInputClass, 'text-center font-mono text-xl tracking-[0.35em]')} data-testid="stepup-code" />
                 <button type="button" onClick={() => void submitCode()} disabled={busy || !code} className={cn(opsGlassBtnPrimaryClass, 'mt-3 w-full justify-center')}>{busy ? <Loader2 size={16} className="animate-spin" /> : 'אימות'}</button>
-                {mode === 'backup' && m ? <p className="mt-2 text-center text-[11px] text-slate-500">נשארו {m.backup_left} קודים</p> : null}
+                {mode === 'backup' && m ? <p className="mt-2 text-center text-[11px] text-ink-faint">נשארו {m.backup_left} קודים</p> : null}
               </div>
             )}
             {err ? <p role="alert" className="mt-3 rounded-xl border border-rose-300/60 bg-rose-100/50 px-3 py-2 text-sm font-semibold text-rose-800">{err}</p> : null}

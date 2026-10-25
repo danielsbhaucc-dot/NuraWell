@@ -236,11 +236,11 @@ function LoginFormContent() {
         panelClassName="crystal-surface max-w-md rounded-2xl p-5 shadow-2xl sm:rounded-2xl"
       >
         <form onSubmit={handleBackup} dir="rtl" className="space-y-3" noValidate>
-          <h3 id="backup-login-h" className="flex items-center gap-2 text-lg font-black text-slate-900">
+          <h3 id="backup-login-h" className="flex items-center gap-2 text-lg font-black text-ink">
             <KeyRound className="w-5 h-5 text-amber-600" aria-hidden />
             כניסה עם קוד גיבוי
           </h3>
-          <p className="text-sm text-slate-600 leading-relaxed">כל קוד עובד פעם אחת בלבד. אחרי הכניסה כדאי ליצור קודים חדשים.</p>
+          <p className="text-sm text-ink-soft leading-relaxed">כל קוד עובד פעם אחת בלבד. אחרי הכניסה כדאי ליצור קודים חדשים.</p>
           <input type="email" dir="ltr" autoComplete="username" value={backupEmail} onChange={(e) => setBackupEmail(e.target.value)} placeholder="your@email.com" aria-label="כתובת אימייל" className="input-field text-sm" />
           <input dir="ltr" autoComplete="one-time-code" value={backupCode} onChange={(e) => setBackupCode(e.target.value.toUpperCase())} placeholder="XXXXX-XXXXX" maxLength={16} aria-label="קוד גיבוי" className="input-field text-sm font-mono tracking-widest text-center" />
           {backupError ? <p role="alert" className="text-sm font-semibold text-red-600">{backupError}</p> : null}
@@ -284,7 +284,7 @@ function LoginFormContent() {
                   'text-3xl font-black leading-tight',
                   isDarkUi
                     ? 'bg-linear-to-l from-emerald-200 via-teal-100 to-amber-100 bg-clip-text text-transparent'
-                    : 'text-gray-900',
+                    : 'text-ink',
                 ].join(' ')}
                 style={{ fontFamily: 'Rubik, Heebo, sans-serif' }}
               >
@@ -294,7 +294,7 @@ function LoginFormContent() {
             <p
               className={[
                 'text-[15px] mt-1.5 font-medium',
-                isDarkUi ? 'text-emerald-100/90' : 'text-gray-500',
+                isDarkUi ? 'text-emerald-100/90' : 'text-ink-faint',
               ].join(' ')}
             >
               התחברו כדי להמשיך את המסע שלכם
@@ -351,7 +351,7 @@ function LoginFormContent() {
               <h2
                 className={[
                   'font-black text-xl',
-                  isDarkUi ? 'text-white' : 'text-gray-900',
+                  isDarkUi ? 'text-white' : 'text-ink',
                 ].join(' ')}
                 style={{ fontFamily: 'Rubik, Heebo, sans-serif' }}
               >
@@ -365,7 +365,7 @@ function LoginFormContent() {
                   htmlFor="login-email"
                   className={[
                     'flex items-center gap-1.5 text-sm font-bold mb-2',
-                    isDarkUi ? 'text-emerald-50' : 'text-gray-700',
+                    isDarkUi ? 'text-emerald-50' : 'text-ink-soft',
                   ].join(' ')}
                 >
                   <Mail className={`w-4 h-4 ${isDarkUi ? 'text-emerald-300' : 'text-emerald-600'}`} />
@@ -390,7 +390,7 @@ function LoginFormContent() {
                   htmlFor="login-password"
                   className={[
                     'flex items-center gap-1.5 text-sm font-bold mb-2',
-                    isDarkUi ? 'text-emerald-50' : 'text-gray-700',
+                    isDarkUi ? 'text-emerald-50' : 'text-ink-soft',
                   ].join(' ')}
                 >
                   <Lock className={`w-4 h-4 ${isDarkUi ? 'text-emerald-300' : 'text-emerald-600'}`} />
@@ -414,7 +414,7 @@ function LoginFormContent() {
                     aria-pressed={showPassword}
                     className={[
                       'absolute left-3 top-1/2 -translate-y-1/2 transition-colors p-1',
-                      isDarkUi ? 'text-emerald-200/70 hover:text-white' : 'text-gray-400 hover:text-gray-600',
+                      isDarkUi ? 'text-emerald-200/70 hover:text-white' : 'text-ink-faint hover:text-ink-soft',
                     ].join(' ')}
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" aria-hidden /> : <Eye className="w-4 h-4" aria-hidden />}
@@ -454,9 +454,9 @@ function LoginFormContent() {
 
             <div className="mt-5 space-y-3">
               <div className="flex items-center gap-3" aria-hidden>
-                <div className={`h-px flex-1 ${isDarkUi ? 'bg-white/15' : 'bg-amber-300/60'}`} />
-                <span className={`text-xs font-bold ${isDarkUi ? 'text-emerald-100/70' : 'text-gray-400'}`}>או</span>
-                <div className={`h-px flex-1 ${isDarkUi ? 'bg-white/15' : 'bg-amber-300/60'}`} />
+                <div className={`h-px flex-1 ${isDarkUi ? 'bg-surface-elevated/15' : 'bg-amber-300/60'}`} />
+                <span className={`text-xs font-bold ${isDarkUi ? 'text-emerald-100/70' : 'text-ink-faint'}`}>או</span>
+                <div className={`h-px flex-1 ${isDarkUi ? 'bg-surface-elevated/15' : 'bg-amber-300/60'}`} />
               </div>
               {passkeySupported ? (
                 <button
@@ -465,7 +465,7 @@ function LoginFormContent() {
                   disabled={passkeyBusy}
                   className={[
                     'w-full min-h-[52px] rounded-2xl font-bold flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-60',
-                    isDarkUi ? 'bg-white/10 text-white ring-1 ring-amber-200/50 backdrop-blur' : 'bg-glass/80 text-emerald-800 ring-1 ring-amber-300/70 shadow-[0_6px_18px_rgba(217,119,6,0.12)]',
+                    isDarkUi ? 'bg-surface-elevated/10 text-white ring-1 ring-amber-200/50 backdrop-blur' : 'bg-glass/80 text-emerald-800 ring-1 ring-amber-300/70 shadow-[0_6px_18px_rgba(217,119,6,0.12)]',
                   ].join(' ')}
                 >
                   {passkeyBusy ? <div className="w-5 h-5 border-2 border-current/30 border-t-current rounded-full animate-spin" /> : <Fingerprint className="w-5 h-5" aria-hidden />}
@@ -478,7 +478,7 @@ function LoginFormContent() {
                 data-testid="login-qr"
                 className={[
                   'w-full min-h-[48px] rounded-2xl font-bold flex items-center justify-center gap-2 transition-all active:scale-95',
-                  isDarkUi ? 'bg-white/5 text-emerald-50 ring-1 ring-white/20' : 'bg-glass/50 text-emerald-800 ring-1 ring-emerald-300/60',
+                  isDarkUi ? 'bg-surface-elevated/5 text-emerald-50 ring-1 ring-white/20' : 'bg-glass/50 text-emerald-800 ring-1 ring-emerald-300/60',
                 ].join(' ')}
               >
                 <QrCode className="w-5 h-5" aria-hidden />
@@ -494,7 +494,7 @@ function LoginFormContent() {
                   setBackupError(null);
                   setBackupOpen(true);
                 }}
-                className={`w-full text-xs font-medium opacity-70 underline-offset-4 hover:underline ${isDarkUi ? 'text-emerald-100/80' : 'text-gray-500'}`}
+                className={`w-full text-xs font-medium opacity-70 underline-offset-4 hover:underline ${isDarkUi ? 'text-emerald-100/80' : 'text-ink-faint'}`}
               >
                 קוד גיבוי
               </button>
@@ -502,7 +502,7 @@ function LoginFormContent() {
             </div>
 
             {!isOpsHost && <div className="mt-5 text-center">
-              <p className={['text-sm', isDarkUi ? 'text-emerald-100/80' : 'text-gray-500'].join(' ')}>
+              <p className={['text-sm', isDarkUi ? 'text-emerald-100/80' : 'text-ink-faint'].join(' ')}>
                 אין לכם חשבון?{' '}
                 <Link
                   href="/register"

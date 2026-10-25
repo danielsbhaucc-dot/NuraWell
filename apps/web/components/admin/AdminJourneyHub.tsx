@@ -312,7 +312,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
       <section className="overflow-hidden rounded-2xl border border-gc/50 bg-background-card/30 shadow-[0_8px_28px_rgba(15,23,42,0.06)] backdrop-blur-xl">
         <div className="border-b border-gc/40 p-3">
           <div className="relative">
-            <Search className="absolute inset-s-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden />
+            <Search className="absolute inset-s-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-faint" aria-hidden />
             <input
               type="search"
               value={searchQ}
@@ -338,7 +338,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
                 'flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-xl px-2 py-2 text-xs font-bold transition-all sm:text-sm',
                 viewTab === key
                   ? 'border border-amber-300/50 bg-amber-500/15 text-amber-900 shadow-xs backdrop-blur-md'
-                  : 'border border-transparent text-slate-600 hover:border-gc/50 hover:bg-background-card/35',
+                  : 'border border-transparent text-ink-soft hover:border-gc/50 hover:bg-background-card/35',
               )}
             >
               <Icon className="h-4 w-4" aria-hidden />
@@ -352,7 +352,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
       {/* רשימה */}
       {viewTab === 'stations' ? (
         filteredStations.length === 0 ? (
-          <p className="py-10 text-center text-sm text-slate-500">
+          <p className="py-10 text-center text-sm text-ink-faint">
             {q ? 'לא נמצאו תחנות תואמות' : 'אין תחנות עדיין — צרו תחנה חדשה'}
           </p>
         ) : (
@@ -370,7 +370,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
                       {st.sort_order}
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate font-display text-[15px] font-black text-slate-900">
+                      <span className="block truncate font-display text-[15px] font-black text-ink">
                         {st.title}
                         {st.is_foundation ? (
                           <span className="ms-2 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
@@ -378,7 +378,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
                           </span>
                         ) : null}
                       </span>
-                      <span className="text-[11px] text-slate-500">
+                      <span className="text-[11px] text-ink-faint">
                         {stepCount} צעדים
                         {st.coverImageUrl ? ' · תמונה' : ''}
                       </span>
@@ -393,7 +393,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
           </ul>
         )
       ) : filteredOrphans.length === 0 ? (
-        <p className="py-10 text-center text-sm text-slate-500">
+        <p className="py-10 text-center text-sm text-ink-faint">
           {q ? 'לא נמצאו צעדים תואמים' : 'כל הצעדים משויכים לתחנות'}
         </p>
       ) : (
@@ -407,7 +407,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-emerald-300/35 bg-emerald-500/10 text-xs font-black text-emerald-800 backdrop-blur-sm">
                   {s.step_number}
                 </span>
-                <span className="truncate text-sm font-semibold text-slate-800">{s.title}</span>
+                <span className="truncate text-sm font-semibold text-ink">{s.title}</span>
               </span>
               <Link href={`${opsBase}/steps/${s.id}`} className={opsGlassBtnClass}>
                 <Edit3 className="h-3.5 w-3.5" />
@@ -445,7 +445,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
                 type="button"
                 onClick={() => !busy && closeStation()}
                 disabled={!!busy}
-                className="absolute inset-e-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-gc/55 bg-background-card/30 text-slate-600 backdrop-blur-md transition hover:bg-background-card/50 disabled:opacity-50 sm:inset-e-4 sm:top-4"
+                className="absolute inset-e-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-gc/55 bg-background-card/30 text-ink-soft backdrop-blur-md transition hover:bg-background-card/50 disabled:opacity-50 sm:inset-e-4 sm:top-4"
                 aria-label="סגור"
               >
                 <X className="h-4 w-4" />
@@ -460,7 +460,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
                   <h2 className="truncate bg-linear-to-l from-amber-800 via-orange-700 to-amber-700 bg-clip-text font-display text-xl font-black text-transparent">
                     {selected.title}
                   </h2>
-                  <p className="text-xs text-slate-600">
+                  <p className="text-xs text-ink-soft">
                     {stepsByStation(selected.id).length} צעדים
                     {selected.is_foundation ? ' · תחנת חובה' : ''}
                     {selected.coverImageUrl ? ' · יש תמונת רקע' : ''}
@@ -530,7 +530,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
                       'flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-xl px-2 py-2 text-xs font-bold transition-all sm:text-sm',
                       popupTab === key
                         ? 'border border-amber-300/50 bg-amber-500/20 text-amber-900 shadow-xs backdrop-blur-md'
-                        : 'border border-transparent text-slate-600 hover:bg-background-card/40',
+                        : 'border border-transparent text-ink-soft hover:bg-background-card/40',
                     )}
                   >
                     <Icon className="h-4 w-4" aria-hidden />
@@ -544,7 +544,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
               {popupTab === 'steps' ? (
                 <ul className="space-y-2">
                   {stepsByStation(selected.id).length === 0 ? (
-                    <li className="rounded-2xl border border-dashed border-gc/55 bg-background-card/20 py-10 text-center text-sm text-slate-500 backdrop-blur-md">
+                    <li className="rounded-2xl border border-dashed border-gc/55 bg-background-card/20 py-10 text-center text-sm text-ink-faint backdrop-blur-md">
                       אין צעדים בתחנה זו
                     </li>
                   ) : (
@@ -557,7 +557,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
                           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-emerald-300/35 bg-emerald-500/10 text-xs font-black text-emerald-800">
                             {s.step_number}
                           </span>
-                          <span className="truncate text-sm font-semibold text-slate-800">{s.title}</span>
+                          <span className="truncate text-sm font-semibold text-ink">{s.title}</span>
                         </span>
                         <Link href={`${opsBase}/steps/${s.id}`} className={opsGlassBtnClass}>
                           <Edit3 className="h-3.5 w-3.5" />
@@ -632,15 +632,15 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
             <button
               type="button"
               onClick={() => !busy && setShowAddPopup(false)}
-              className="absolute inset-e-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gc/55 bg-background-card/30 text-slate-600 backdrop-blur-md hover:bg-background-card/50"
+              className="absolute inset-e-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gc/55 bg-background-card/30 text-ink-soft backdrop-blur-md hover:bg-background-card/50"
               aria-label="סגור"
             >
               <X className="h-4 w-4" />
             </button>
-            <h3 className="mb-4 ps-8 font-display text-lg font-black text-slate-900">תחנה חדשה</h3>
+            <h3 className="mb-4 ps-8 font-display text-lg font-black text-ink">תחנה חדשה</h3>
             <form onSubmit={addStation} className="space-y-3">
               <label className="block">
-                <span className="mb-1 block text-xs font-bold text-slate-700">שם תחנה</span>
+                <span className="mb-1 block text-xs font-bold text-ink-soft">שם תחנה</span>
                 <input
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
@@ -650,7 +650,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
                 />
               </label>
               <label className="block">
-                <span className="mb-1 block text-xs font-bold text-slate-700">סדר</span>
+                <span className="mb-1 block text-xs font-bold text-ink-soft">סדר</span>
                 <input
                   type="number"
                   value={newSort}
@@ -690,7 +690,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
             <button
               type="button"
               onClick={() => !aiBusy && setShowAiPopup(false)}
-              className="absolute inset-e-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gc/55 bg-background-card/30 text-slate-600 backdrop-blur-md hover:bg-background-card/50"
+              className="absolute inset-e-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gc/55 bg-background-card/30 text-ink-soft backdrop-blur-md hover:bg-background-card/50"
               aria-label="סגור"
             >
               <X className="h-4 w-4" />
@@ -698,9 +698,9 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
 
             <div className="mb-1 flex items-center gap-2 ps-8">
               <Sparkles className="h-5 w-5 text-indigo-500" />
-              <h3 className="font-display text-lg font-black text-slate-900">מצב סוכן — צור מסע ב-AI</h3>
+              <h3 className="font-display text-lg font-black text-ink">מצב סוכן — צור מסע ב-AI</h3>
             </div>
-            <p className="mb-4 ps-8 text-xs text-slate-600">
+            <p className="mb-4 ps-8 text-xs text-ink-soft">
               תארו את המסע הרצוי ואלמוג יבנה תחנות וצעדים כטיוטה (לא מפורסם). אחר כך אפשר ללטש כל צעד עם המילוי החכם.
             </p>
 
@@ -724,7 +724,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
             ) : (
               <form onSubmit={generateJourneyWithAi} className="space-y-3">
                 <label className="block">
-                  <span className="mb-1 block text-xs font-bold text-slate-700">תיאור המסע</span>
+                  <span className="mb-1 block text-xs font-bold text-ink-soft">תיאור המסע</span>
                   <textarea
                     value={aiPrompt}
                     onChange={(e) => setAiPrompt(e.target.value)}
@@ -735,7 +735,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
                 </label>
                 <div className="flex gap-3">
                   <label className="flex-1">
-                    <span className="mb-1 block text-xs font-bold text-slate-700">מס׳ תחנות (אופציונלי)</span>
+                    <span className="mb-1 block text-xs font-bold text-ink-soft">מס׳ תחנות (אופציונלי)</span>
                     <input
                       type="number"
                       value={aiStations}
@@ -747,7 +747,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
                     />
                   </label>
                   <label className="flex-1">
-                    <span className="mb-1 block text-xs font-bold text-slate-700">צעדים לתחנה (אופציונלי)</span>
+                    <span className="mb-1 block text-xs font-bold text-ink-soft">צעדים לתחנה (אופציונלי)</span>
                     <input
                       type="number"
                       value={aiStepsPer}

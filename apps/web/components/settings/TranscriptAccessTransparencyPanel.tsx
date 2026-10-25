@@ -35,9 +35,9 @@ export function TranscriptAccessTransparencyPanel({
     <div className={cn('space-y-3', className)} dir="rtl">
       <div className="flex items-center gap-2">
         <Shield className="h-4 w-4 text-emerald-700" />
-        <h3 className="text-sm font-black text-slate-900">מה חשוף לצוות כרגע</h3>
+        <h3 className="text-sm font-black text-ink">מה חשוף לצוות כרגע</h3>
       </div>
-      <p className="text-xs leading-relaxed text-slate-600">
+      <p className="text-xs leading-relaxed text-ink-soft">
         שקיפות מלאה — כל גישה נרשמת. טבלה זו מתעדכנת אחרי כל אישור או ביטול.
       </p>
 

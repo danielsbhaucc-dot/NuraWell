@@ -45,7 +45,7 @@ function groupByStation(steps: AdminUserJourneyStepRow[]) {
 function DetailBlock({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div>
-      <p className="text-[10px] font-bold text-slate-500 mb-1">{title}</p>
+      <p className="text-[10px] font-bold text-ink-faint mb-1">{title}</p>
       {children}
     </div>
   );
@@ -53,10 +53,10 @@ function DetailBlock({ title, children }: { title: string; children: ReactNode }
 
 function StepCard({ step }: { step: AdminUserJourneyStepRow }) {
   return (
-    <article className="rounded-xl border border-slate-200/90 bg-background-card/90 p-3 space-y-2">
+    <article className="rounded-xl border border-hairline/90 bg-background-card/90 p-3 space-y-2">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <p className="text-sm font-black text-slate-900">
+          <p className="text-sm font-black text-ink">
             צעד {step.step_number}: {step.title}
           </p>
           <Link
@@ -68,7 +68,7 @@ function StepCard({ step }: { step: AdminUserJourneyStepRow }) {
         </div>
         <div className="flex flex-wrap gap-1">
           {!step.is_published ? (
-            <span className="text-[10px] rounded-md bg-slate-200 text-slate-700 px-1.5 py-0.5 font-bold">
+            <span className="text-[10px] rounded-md bg-hairline text-ink-soft px-1.5 py-0.5 font-bold">
               טיוטה
             </span>
           ) : null}
@@ -96,18 +96,18 @@ function StepCard({ step }: { step: AdminUserJourneyStepRow }) {
             <li className="rounded-md bg-violet-100 text-violet-900 px-1.5 py-0.5">התחייבות</li>
           ) : null}
           {step.last_section ? (
-            <li className="rounded-md bg-slate-100 text-slate-700 px-1.5 py-0.5">
+            <li className="rounded-md bg-surface text-ink-soft px-1.5 py-0.5">
               אחרון: {SECTION_HE[step.last_section] ?? step.last_section}
             </li>
           ) : null}
           {step.updated_at ? (
-            <li className="rounded-md bg-slate-50 text-slate-500 px-1.5 py-0.5">
+            <li className="rounded-md bg-surface-sunken text-ink-faint px-1.5 py-0.5">
               עודכן {new Date(step.updated_at).toLocaleString('he-IL', { dateStyle: 'short', timeStyle: 'short' })}
             </li>
           ) : null}
         </ul>
       ) : (
-        <p className="text-xs text-slate-400">לא התחיל צעד זה</p>
+        <p className="text-xs text-ink-faint">לא התחיל צעד זה</p>
       )}
 
       {step.tasks.length > 0 ? (
@@ -128,9 +128,9 @@ function StepCard({ step }: { step: AdminUserJourneyStepRow }) {
                 key={h.id}
                 className="flex flex-wrap items-center justify-between gap-2 text-xs border-b border-slate-50 pb-1 last:border-0"
               >
-                <span className="font-medium text-slate-800 min-w-0">{h.title}</span>
+                <span className="font-medium text-ink min-w-0">{h.title}</span>
                 <span className="flex flex-wrap items-center gap-1 shrink-0">
-                  <span className="text-slate-600">
+                  <span className="text-ink-soft">
                     {h.total > 0 ? `סימוני היום ${h.checked}/${h.total}` : '—'}
                   </span>
                   {h.streak_current > 0 ? (
@@ -140,7 +140,7 @@ function StepCard({ step }: { step: AdminUserJourneyStepRow }) {
                     </span>
                   ) : null}
                   {h.streak_best > 0 && h.streak_best !== h.streak_current ? (
-                    <span className="rounded-md bg-slate-100 text-slate-600 px-1.5 py-0.5">
+                    <span className="rounded-md bg-surface text-ink-soft px-1.5 py-0.5">
                       שיא {h.streak_best}
                     </span>
                   ) : null}
@@ -196,7 +196,7 @@ function TaskExecutionDots({ task }: { task: AdminUserJourneyTaskRow }) {
               ? 'bg-emerald-600'
               : day.count === 1
                 ? 'bg-emerald-400'
-                : 'bg-slate-200',
+                : 'bg-hairline',
           ].join(' ')}
           title={`${day.key}: ${day.count} ביצועים`}
         />
@@ -209,7 +209,7 @@ function TaskRow({ task }: { task: AdminUserJourneyTaskRow }) {
   return (
     <li className="space-y-1 border-b border-slate-50 pb-1.5 last:border-0">
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-        <span className="font-medium text-slate-800 min-w-0">{task.title}</span>
+        <span className="font-medium text-ink min-w-0">{task.title}</span>
         <span className="flex flex-wrap items-center gap-1 shrink-0">
           <span
             className={[
@@ -220,7 +220,7 @@ function TaskRow({ task }: { task: AdminUserJourneyTaskRow }) {
                   ? 'bg-red-100 text-red-800'
                   : task.status === 'pending'
                     ? 'bg-amber-100 text-amber-900'
-                    : 'bg-slate-100 text-slate-500',
+                    : 'bg-surface text-ink-faint',
             ].join(' ')}
           >
             {TASK_STATUS_HE[task.status]}
@@ -255,7 +255,7 @@ function TaskRow({ task }: { task: AdminUserJourneyTaskRow }) {
               <span
                 className={[
                   'rounded px-1.5 py-0.5 font-bold',
-                  task.execution_done ? 'bg-emerald-600 text-gc' : 'bg-slate-100 text-slate-600',
+                  task.execution_done ? 'bg-emerald-600 text-gc' : 'bg-surface text-ink-soft',
                 ].join(' ')}
               >
                 {task.execution_done ? 'בוצע פעם' : 'לא סומן'}
@@ -282,28 +282,28 @@ export function AdminUserJourneyDetail({ steps }: { steps: AdminUserJourneyStepR
 
   if (steps.length === 0) {
     return (
-      <p className="text-sm text-slate-500 border-t border-slate-100 pt-4">אין צעדי מסע במערכת.</p>
+      <p className="text-sm text-ink-faint border-t border-hairline/60 pt-4">אין צעדי מסע במערכת.</p>
     );
   }
 
   const hasHidden = !showAllSteps && steps.length > 24 && filteredSteps.length < steps.length;
 
   return (
-    <section className="border-t border-slate-200 pt-4 space-y-3">
+    <section className="border-t border-hairline pt-4 space-y-3">
       <button
         type="button"
         onClick={() => setSectionOpen((v) => !v)}
         className="w-full flex items-center justify-between gap-2 text-start"
       >
-        <span className="text-sm font-black text-slate-900 flex items-center gap-2">
+        <span className="text-sm font-black text-ink flex items-center gap-2">
           <MapPin className="w-4 h-4 text-emerald-600" />
           מסע — פירוט צעדים, משימות והרגלים
         </span>
-        <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform ${sectionOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-4 h-4 text-ink-faint transition-transform ${sectionOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {hasHidden ? (
-        <p className="text-[11px] text-slate-500">
+        <p className="text-[11px] text-ink-faint">
           מוצגים {filteredSteps.length} צעדים עם התקדמות מתוך {steps.length}.
         </p>
       ) : null}
@@ -322,7 +322,7 @@ export function AdminUserJourneyDetail({ steps }: { steps: AdminUserJourneyStepR
 
           <div className="space-y-4 max-h-[min(52vh,520px)] overflow-y-auto ps-1">
             {groups.length === 0 ? (
-              <p className="text-sm text-slate-500 text-center py-4">עדיין אין התקדמות במסע.</p>
+              <p className="text-sm text-ink-faint text-center py-4">עדיין אין התקדמות במסע.</p>
             ) : (
               groups.map((group) => (
                 <div key={group.title} className="space-y-2">

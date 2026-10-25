@@ -1,65 +1,42 @@
+/** Dashboard loading: canonical forest hero + glass skeletons (tokens only). */
 export default function DashboardLoading() {
   return (
-    <div>
-      {/* Purple hero skeleton */}
-      <div className="-mt-16 pt-16 relative overflow-hidden"
-        style={{ background: 'linear-gradient(160deg, #047857 0%, #059669 50%, #10b981 80%, #34d399 100%)' }}>
-        <div style={{ padding: '12px 20px 40px' }}>
+    <div aria-busy="true" aria-live="polite">
+      <span className="sr-only">טוענים…</span>
+      <div className="relative -mt-16 overflow-hidden bg-gradient-to-br from-forest-800 via-forest-700 to-forest-600 pt-16">
+        <div aria-hidden className="pointer-events-none absolute -top-16 start-1/2 size-64 -translate-x-1/2 rounded-full bg-glow/25 blur-3xl" />
+        <div className="relative px-5 pb-10 pt-3">
           <div className="flex items-end gap-3.5">
-            <div className="flex-shrink-0 w-[82px] h-[82px] rounded-full animate-pulse" style={{ background: 'rgba(255,255,255,0.15)' }} />
-            <div className="flex-1 rounded-[18px] h-[70px] animate-pulse" style={{ background: 'rgba(255,255,255,0.10)' }} />
+            <div className="size-[82px] shrink-0 animate-pulse rounded-full bg-on-dark/15 ring-1 ring-on-dark/20 motion-reduce:animate-none" />
+            <div className="h-[70px] flex-1 animate-pulse rounded-[18px] bg-on-dark/10 ring-1 ring-on-dark/15 motion-reduce:animate-none" />
           </div>
         </div>
       </div>
-
-      {/* White body skeleton */}
-      <div style={{
-        background: '#EDF5F0', borderRadius: '26px 26px 0 0', marginTop: '-18px',
-        padding: '22px 16px 20px', position: 'relative', zIndex: 3, minHeight: '55vh',
-      }}>
-        {/* Progress card skeleton */}
-        <div className="flex gap-3.5 items-center mb-3.5 p-4 animate-pulse"
-          style={{ background: 'rgba(248,251,246,0.92)', borderRadius: '22px', border: '1px solid rgba(248,251,246,0.8)', boxShadow: '0 4px 20px rgba(6,78,59,0.08)' }}>
-          <div className="w-[58px] h-[58px] rounded-[18px]" style={{ background: 'linear-gradient(145deg, #047857, #10b981)' }} />
+      <div className="relative z-[3] -mt-[18px] min-h-[55vh] rounded-t-[26px] bg-canvas px-4 pb-5 pt-[22px]">
+        <div className="mb-3.5 flex animate-pulse items-center gap-3.5 rounded-[22px] bg-surface-elevated/90 p-4 shadow-float ring-1 ring-hairline motion-reduce:animate-none">
+          <div className="size-[58px] rounded-[18px] bg-gradient-to-br from-primary-700 to-primary-500" />
           <div className="flex-1 space-y-2">
-            <div className="h-4 w-32 rounded-lg" style={{ background: 'rgba(6,78,59,0.12)' }} />
-            <div className="h-3 w-40 rounded-md" style={{ background: 'rgba(6,78,59,0.07)' }} />
-            <div className="flex gap-1">
-              {[0,1,2,3,4,5].map(i => <div key={i} className="h-1.5 flex-1 rounded-full" style={{ background: 'rgba(6,78,59,0.08)' }} />)}
-            </div>
+            <div className="h-4 w-32 rounded-lg bg-ink/10" />
+            <div className="h-3 w-40 rounded-md bg-ink/5" />
+            <div className="flex gap-1">{[0, 1, 2, 3, 4, 5].map((i) => <div key={i} className="h-1.5 flex-1 rounded-full bg-ink/10" />)}</div>
           </div>
         </div>
-
-        {/* Badge skeleton */}
-        <div className="flex items-center gap-3.5 mb-4 p-3.5 px-4 animate-pulse"
-          style={{ background: '#FFF8E7', borderRadius: '20px', border: '1.5px solid rgba(245,166,35,0.2)' }}>
-          <div className="w-[50px] h-[50px] rounded-[16px]" style={{ background: 'rgba(245,166,35,0.3)' }} />
-          <div className="space-y-1.5 flex-1">
-            <div className="h-3.5 w-28 rounded-lg" style={{ background: 'rgba(245,166,35,0.15)' }} />
-            <div className="h-3 w-36 rounded-md" style={{ background: 'rgba(245,166,35,0.10)' }} />
-          </div>
-        </div>
-
-        {/* Section label skeleton */}
-        <div className="h-3 w-16 rounded-md mt-4 mb-3 me-0.5 animate-pulse" style={{ background: 'rgba(6,78,59,0.10)' }} />
-
-        {/* Lesson-card skeletons */}
+        <div className="mb-3 mt-4 h-3 w-16 animate-pulse rounded-md bg-ink/10 motion-reduce:animate-none" />
         {[0, 1, 2].map((i) => (
-          <div key={i} className="mb-3.5 overflow-hidden animate-pulse"
-            style={{ borderRadius: '22px', boxShadow: '0 4px 20px rgba(6,78,59,0.12)', animationDelay: `${i * 100}ms` }}>
-            <div style={{ background: 'linear-gradient(145deg, #047857, #059669, #10b981)', padding: '18px 16px', display: 'flex', alignItems: 'center', gap: '14px' }}>
-              <div className="w-12 h-12 rounded-[15px]" style={{ background: 'rgba(255,255,255,0.15)' }} />
+          <div key={i} className="mb-3.5 animate-pulse overflow-hidden rounded-[22px] shadow-lift motion-reduce:animate-none" style={{ animationDelay: `${i * 100}ms` }}>
+            <div className="flex items-center gap-3.5 bg-gradient-to-br from-forest-800 to-forest-600 px-4 py-[18px]">
+              <div className="size-12 rounded-[15px] bg-on-dark/15" />
               <div className="flex-1 space-y-1.5">
-                <div className="h-2.5 w-20 rounded-md" style={{ background: 'rgba(255,255,255,0.15)' }} />
-                <div className="h-4 w-40 rounded-lg" style={{ background: 'rgba(255,255,255,0.2)' }} />
+                <div className="h-2.5 w-20 rounded-md bg-on-dark/15" />
+                <div className="h-4 w-40 rounded-lg bg-on-dark/20" />
               </div>
-              <div className="w-[42px] h-[42px] rounded-full" style={{ background: 'rgba(255,255,255,0.1)' }} />
+              <div className="size-[42px] rounded-full bg-on-dark/10" />
             </div>
-            <div style={{ background: 'rgba(248,251,246,0.97)', padding: '12px 16px' }}>
-              <div className="h-3 w-full rounded-md mb-2" style={{ background: 'rgba(6,78,59,0.07)' }} />
-              <div className="flex justify-between items-center">
-                <div className="h-3 w-20 rounded-md" style={{ background: 'rgba(6,78,59,0.08)' }} />
-                <div className="h-5 w-20 rounded-full" style={{ background: 'rgba(13,189,184,0.1)' }} />
+            <div className="bg-surface-elevated px-4 py-3">
+              <div className="mb-2 h-3 w-full rounded-md bg-ink/5" />
+              <div className="flex items-center justify-between">
+                <div className="h-3 w-20 rounded-md bg-ink/10" />
+                <div className="h-5 w-20 rounded-full bg-glow-teal/15" />
               </div>
             </div>
           </div>

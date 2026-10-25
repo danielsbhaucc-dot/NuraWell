@@ -24,7 +24,7 @@ export function GuideRulesPanel() {
 
   if (!rules) {
     return (
-      <div className="flex items-center gap-2 rounded-2xl bg-gc p-4 text-sm text-slate-600 ring-1 ring-slate-200">
+      <div className="flex items-center gap-2 rounded-2xl bg-gc p-4 text-sm text-ink-soft ring-1 ring-hairline">
         <Loader2 className="h-4 w-4 animate-spin" /> טוען כללי פתיחת מדריכים…
       </div>
     );
@@ -48,16 +48,16 @@ export function GuideRulesPanel() {
     <label className="flex cursor-pointer items-start gap-3 py-1.5">
       <input type="checkbox" className="mt-1 h-4 w-4 accent-emerald-600" checked={checked} onChange={(e) => onChange(e.target.checked)} />
       <span>
-        <span className="block text-sm font-semibold text-slate-900">{label}</span>
-        {hint ? <span className="block text-xs text-slate-500">{hint}</span> : null}
+        <span className="block text-sm font-semibold text-ink">{label}</span>
+        {hint ? <span className="block text-xs text-ink-faint">{hint}</span> : null}
       </span>
     </label>
   );
 
   return (
-    <section dir="rtl" className="rounded-2xl bg-gc p-4 ring-1 ring-slate-200">
-      <h2 className="mb-1 text-base font-bold text-slate-900">מתי אלמוג פותח מדריך</h2>
-      <p className="mb-3 text-xs text-slate-500">חל על פתיחה מהצ&apos;אט ועל הסריקה הלילית. משתמש תמיד יכול לבקש מדריך במפורש אם האפשרות מופעלת.</p>
+    <section dir="rtl" className="rounded-2xl bg-gc p-4 ring-1 ring-hairline">
+      <h2 className="mb-1 text-base font-bold text-ink">מתי אלמוג פותח מדריך</h2>
+      <p className="mb-3 text-xs text-ink-faint">חל על פתיחה מהצ&apos;אט ועל הסריקה הלילית. משתמש תמיד יכול לבקש מדריך במפורש אם האפשרות מופעלת.</p>
       <Toggle label="אלמוג רשאי לפתוח מדריכים" checked={rules.enabled} onChange={(v) => set({ enabled: v })} />
       <Toggle label="לפתוח כשהמשתמש מבקש במפורש" hint='למשל "תפתח לי מדריך על שבת"' checked={rules.open_on_explicit_request} onChange={(v) => set({ open_on_explicit_request: v })} />
       <Toggle label="לפתוח כשהמשתמש מדבר על שבת" checked={rules.signals.shabbat} onChange={(v) => set({ signals: { ...rules.signals, shabbat: v } })} />
@@ -66,16 +66,16 @@ export function GuideRulesPanel() {
       <Toggle label="הסריקה הלילית פותחת מדריך בלי בקשה" hint="כבוי: ההמלצה נשארת הצעה שאלמוג יכול להעלות בשיחה" checked={rules.companion_auto_open} onChange={(v) => set({ companion_auto_open: v })} />
       <div className="mt-2 grid grid-cols-2 gap-3">
         <label className="text-sm">
-          <span className="block font-semibold text-slate-900">מקסימום מדריכים פעילים</span>
+          <span className="block font-semibold text-ink">מקסימום מדריכים פעילים</span>
           <input type="number" min={1} max={20} className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1" value={rules.max_active_guides} onChange={(e) => set({ max_active_guides: Number(e.target.value) || 1 })} />
         </label>
         <label className="text-sm">
-          <span className="block font-semibold text-slate-900">שעות המתנה בין פתיחות</span>
+          <span className="block font-semibold text-ink">שעות המתנה בין פתיחות</span>
           <input type="number" min={0} max={720} className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1" value={rules.cooldown_hours} onChange={(e) => set({ cooldown_hours: Number(e.target.value) || 0 })} />
         </label>
       </div>
       <label className="mt-3 block text-sm">
-        <span className="block font-semibold text-slate-900">לא לפתוח כשההודעה כוללת (מופרד בפסיקים)</span>
+        <span className="block font-semibold text-ink">לא לפתוח כשההודעה כוללת (מופרד בפסיקים)</span>
         <input className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1" value={phrases} onChange={(e) => { setPhrases(e.target.value); setState('idle'); }} />
       </label>
       <div className="mt-3 flex items-center gap-3">

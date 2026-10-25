@@ -46,11 +46,11 @@ export function HealthConsentSection({
 
   return (
     <section className="crystal-surface rounded-2xl p-5 space-y-3" aria-labelledby="health-consent-h">
-      <h2 id="health-consent-h" className="font-bold text-slate-900 flex items-center gap-2">
+      <h2 id="health-consent-h" className="font-bold text-ink flex items-center gap-2">
         <HeartPulse className="w-4 h-4 text-rose-500" aria-hidden />
         הסכמה למידע בריאותי
       </h2>
-      <p className="text-sm text-slate-600 leading-relaxed">
+      <p className="text-sm text-ink-soft leading-relaxed">
         משקל, גובה, יעד, העדפות תזונה, רמת פעילות ומצבים בריאותיים נחשבים מידע רגיש. אנחנו משתמשים בהם רק
         בהסכמתך, כדי להתאים את הליווי אליך. המידע שמור מוצפן.
       </p>
@@ -59,15 +59,15 @@ export function HealthConsentSection({
         <p className="text-sm font-semibold text-red-600">לא הצלחנו לטעון את מצב ההסכמה. נסה לרענן.</p>
       ) : !state ? (
         <div className="flex justify-center py-3">
-          <Loader2 className="w-5 h-5 animate-spin text-slate-400" aria-label="טוען" />
+          <Loader2 className="w-5 h-5 animate-spin text-ink-faint" aria-label="טוען" />
         </div>
       ) : (
         <div className="flex items-center gap-3 rounded-xl border border-[#E8D5B5] bg-glass-hi/80 p-3">
           <div className="min-w-0 flex-1">
-            <p id="health-consent-label" className="font-bold text-slate-900 text-sm">
+            <p id="health-consent-label" className="font-bold text-ink text-sm">
               {active ? 'ההסכמה פעילה' : 'ההסכמה בוטלה'}
             </p>
-            <p className="text-xs text-slate-600 mt-0.5">
+            <p className="text-xs text-ink-soft mt-0.5">
               {active ? 'הליווי מותאם לנתונים הבריאותיים שלך.' : 'לא נאסף ולא נשמר מידע בריאותי.'}
             </p>
           </div>
@@ -106,7 +106,7 @@ export function HealthConsentSection({
           </button>
         </h3>
         <div id="health-consent-how" role="region" aria-labelledby="health-consent-how-btn" hidden={!open}>
-          <ul className="space-y-2 px-4 pb-3 text-sm leading-relaxed text-slate-700 list-disc marker:text-emerald-700 pr-5">
+          <ul className="space-y-2 px-4 pb-3 text-sm leading-relaxed text-ink-soft list-disc marker:text-emerald-700 pr-5">
             {ex.bullets.map((b) => (
               <li key={b}>{b}</li>
             ))}

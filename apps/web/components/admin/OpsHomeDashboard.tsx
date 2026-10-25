@@ -32,9 +32,9 @@ function usd(n: number): string {
 function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
     <div className="min-w-0 p-4">
-      <p className="text-[13px] font-medium text-slate-500">{label}</p>
-      <p className="mt-0.5 font-display text-[1.75rem] font-black tabular-nums leading-tight text-slate-900">{value}</p>
-      {sub ? <p className="mt-0.5 truncate text-xs text-slate-500">{sub}</p> : null}
+      <p className="text-[13px] font-medium text-ink-faint">{label}</p>
+      <p className="mt-0.5 font-display text-[1.75rem] font-black tabular-nums leading-tight text-ink">{value}</p>
+      {sub ? <p className="mt-0.5 truncate text-xs text-ink-faint">{sub}</p> : null}
     </div>
   );
 }

@@ -193,7 +193,7 @@ export function AdminAudioPlaylistsClient() {
         {showCreateForm ? (
           <div className="mb-4 grid grid-cols-1 gap-3 rounded-2xl border border-emerald-200/60 bg-emerald-50/30 p-4 sm:grid-cols-[1fr_1.4fr_auto] sm:items-end">
             <label className="block">
-              <span className="mb-1 block text-xs font-bold text-slate-600">שם הפלייליסט</span>
+              <span className="mb-1 block text-xs font-bold text-ink-soft">שם הפלייליסט</span>
               <input
                 value={newTitle}
                 onChange={(e) => setNewTitle(e.target.value)}
@@ -202,7 +202,7 @@ export function AdminAudioPlaylistsClient() {
               />
             </label>
             <label className="block">
-              <span className="mb-1 block text-xs font-bold text-slate-600">תיאור (אופציונלי)</span>
+              <span className="mb-1 block text-xs font-bold text-ink-soft">תיאור (אופציונלי)</span>
               <input
                 value={newDescription}
                 onChange={(e) => setNewDescription(e.target.value)}
@@ -223,7 +223,7 @@ export function AdminAudioPlaylistsClient() {
         ) : null}
 
         {loading ? (
-          <div className="flex items-center gap-2 py-6 text-slate-500">
+          <div className="flex items-center gap-2 py-6 text-ink-faint">
             <Loader2 className="h-5 w-5 animate-spin" /> טוען…
           </div>
         ) : listError ? (
@@ -231,7 +231,7 @@ export function AdminAudioPlaylistsClient() {
             <AlertTriangle className="h-4 w-4" /> {listError}
           </p>
         ) : playlists.length === 0 ? (
-          <p className="py-4 text-sm text-slate-500">עדיין אין פלייליסטים. צרו אחד למעלה.</p>
+          <p className="py-4 text-sm text-ink-faint">עדיין אין פלייליסטים. צרו אחד למעלה.</p>
         ) : (
           <ul className="space-y-2.5">
             {playlists.map((pl) => {
@@ -262,8 +262,8 @@ export function AdminAudioPlaylistsClient() {
                         <Music className="h-5 w-5" />
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate font-bold text-slate-800">{pl.title}</span>
-                        <span className="block truncate text-xs text-slate-500">
+                        <span className="block truncate font-bold text-ink">{pl.title}</span>
+                        <span className="block truncate text-xs text-ink-faint">
                           {pl.track_count} רצועות
                           {pl.description ? ` · ${pl.description}` : ''}
                         </span>
@@ -313,7 +313,7 @@ export function AdminAudioPlaylistsClient() {
                             'flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-bold transition-all',
                             playlistTab === 'tracks'
                               ? 'bg-linear-to-l from-violet-500 to-fuchsia-600 text-gc shadow-xs'
-                              : 'text-slate-600 hover:bg-background-card/55',
+                              : 'text-ink-soft hover:bg-background-card/55',
                           ].join(' ')}
                         >
                           <Music className="h-3.5 w-3.5" />
@@ -326,7 +326,7 @@ export function AdminAudioPlaylistsClient() {
                             'flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-bold transition-all',
                             playlistTab === 'assign'
                               ? 'bg-linear-to-l from-sky-500 to-cyan-600 text-gc shadow-xs'
-                              : 'text-slate-600 hover:bg-background-card/55',
+                              : 'text-ink-soft hover:bg-background-card/55',
                           ].join(' ')}
                         >
                           <MapPin className="h-3.5 w-3.5" />
@@ -435,13 +435,13 @@ function PlaylistTrackManager({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-2">
-        <h4 className="text-sm font-black text-slate-700">
+        <h4 className="text-sm font-black text-ink-soft">
           רצועות {tracks.length > 0 ? `(${tracks.length})` : ''}
         </h4>
         <button
           type="button"
           onClick={() => setShowUploader((v) => !v)}
-          className="inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-gc/55 bg-background-card/30 px-3 py-1.5 text-xs font-bold text-slate-800 backdrop-blur-md transition hover:bg-background-card/50"
+          className="inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-gc/55 bg-background-card/30 px-3 py-1.5 text-xs font-bold text-ink backdrop-blur-md transition hover:bg-background-card/50"
         >
           <Upload className="h-3.5 w-3.5" />
           {showUploader ? 'סגור העלאה' : 'הוסף רצועה'}
@@ -461,11 +461,11 @@ function PlaylistTrackManager({
 
       <div>
         {loading ? (
-          <div className="flex items-center gap-2 py-3 text-sm text-slate-500">
+          <div className="flex items-center gap-2 py-3 text-sm text-ink-faint">
             <Loader2 className="h-4 w-4 animate-spin" /> טוען רצועות…
           </div>
         ) : tracks.length === 0 ? (
-          <p className="py-2 text-sm text-slate-500">אין עדיין רצועות. העלו קובץ אודיו למעלה.</p>
+          <p className="py-2 text-sm text-ink-faint">אין עדיין רצועות. העלו קובץ אודיו למעלה.</p>
         ) : (
           <ul className="space-y-2">
             {tracks.map((track) => (
@@ -483,8 +483,8 @@ function PlaylistTrackManager({
                   <>
                     <div className="flex items-center gap-2">
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-bold text-slate-800">{track.title}</span>
-                        <span className="block truncate text-[11px] text-slate-500">
+                        <span className="block truncate text-sm font-bold text-ink">{track.title}</span>
+                        <span className="block truncate text-[11px] text-ink-faint">
                           {formatDuration(track.duration_seconds)} · {formatBytes(track.size_bytes)} ·{' '}
                           {track.credit?.author ? `${track.credit.author} (${track.credit.source})` : 'ללא קרדיט'}
                         </span>
@@ -616,19 +616,19 @@ function PlaylistStepAssigner({ playlistId }: { playlistId: string }) {
     <div className="mt-4 rounded-2xl border border-sky-200/60 bg-linear-to-br from-sky-50/70 to-background-card/30 p-3 backdrop-blur-xl sm:p-4">
       <div className="mb-1 flex items-center gap-2">
         <MapPin className="h-4 w-4 text-sky-600" />
-        <h4 className="text-sm font-black text-slate-700">איפה זה מתנגן?</h4>
+        <h4 className="text-sm font-black text-ink-soft">איפה זה מתנגן?</h4>
         {assignedCount > 0 && (
           <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[11px] font-bold text-sky-700">
             {assignedCount} צעדים
           </span>
         )}
       </div>
-      <p className="mb-3 text-[11px] text-slate-500">
+      <p className="mb-3 text-[11px] text-ink-faint">
         בחרו את הצעדים שבהם הפלייליסט יתנגן ברקע. צעד יכול להיות משויך לפלייליסט אחד בלבד.
       </p>
 
       {loading ? (
-        <div className="flex items-center gap-2 py-2 text-sm text-slate-500">
+        <div className="flex items-center gap-2 py-2 text-sm text-ink-faint">
           <Loader2 className="h-4 w-4 animate-spin" /> טוען צעדים…
         </div>
       ) : error ? (
@@ -636,7 +636,7 @@ function PlaylistStepAssigner({ playlistId }: { playlistId: string }) {
           <AlertTriangle className="h-4 w-4" /> {error}
         </p>
       ) : steps.length === 0 ? (
-        <p className="py-1 text-sm text-slate-500">אין צעדים זמינים.</p>
+        <p className="py-1 text-sm text-ink-faint">אין צעדים זמינים.</p>
       ) : (
         <>
           <input
@@ -675,18 +675,18 @@ function PlaylistStepAssigner({ playlistId }: { playlistId: string }) {
                       ) : null}
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-semibold text-slate-800">
+                      <span className="block truncate text-sm font-semibold text-ink">
                         {step.step_number != null ? `${step.step_number}. ` : ''}
                         {step.title}
                       </span>
                       {step.journey_stations?.title && (
-                        <span className="block truncate text-[11px] text-slate-500">
+                        <span className="block truncate text-[11px] text-ink-faint">
                           {step.journey_stations.title}
                         </span>
                       )}
                     </span>
                     {assignedElsewhere && (
-                      <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">
+                      <span className="shrink-0 rounded-full bg-surface px-2 py-0.5 text-[10px] font-bold text-ink-faint">
                         משויך לאחר
                       </span>
                     )}
@@ -766,7 +766,7 @@ function CreditFields({
   return (
     <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
       <div className="sm:col-span-2">
-        <span className="mb-1 block text-xs font-bold text-slate-600">מקור התוכן</span>
+        <span className="mb-1 block text-xs font-bold text-ink-soft">מקור התוכן</span>
         <div className="flex flex-wrap gap-1.5">
           {sources.map((s) => {
             const active = sourceType === s.id;
@@ -781,7 +781,7 @@ function CreditFields({
                     ? s.id === 'suno'
                       ? 'border-violet-400/70 bg-violet-100/80 text-violet-800'
                       : 'border-emerald-400/70 bg-emerald-100/80 text-emerald-800'
-                    : 'border-gc/70 bg-background-card/60 text-slate-600 hover:bg-background-card/90',
+                    : 'border-gc/70 bg-background-card/60 text-ink-soft hover:bg-background-card/90',
                 ].join(' ')}
               >
                 {s.id === 'suno' && <Sparkles className="h-3.5 w-3.5" />}
@@ -807,7 +807,7 @@ function CreditFields({
       )}
 
       <label className="block">
-        <span className="mb-1 block text-xs font-bold text-slate-600">
+        <span className="mb-1 block text-xs font-bold text-ink-soft">
           {isSuno ? 'יוצר / בעל הזכויות' : 'מקור'}
         </span>
         <input
@@ -817,7 +817,7 @@ function CreditFields({
         />
       </label>
       <label className="block">
-        <span className="mb-1 block text-xs font-bold text-slate-600">
+        <span className="mb-1 block text-xs font-bold text-ink-soft">
           {isSuno ? 'שם האמן/הערוץ שלך' : 'יוצר / אמן'}
         </span>
         <input
@@ -828,7 +828,7 @@ function CreditFields({
         />
       </label>
       <label className="block">
-        <span className="mb-1 block text-xs font-bold text-slate-600">שם היצירה (אופציונלי)</span>
+        <span className="mb-1 block text-xs font-bold text-ink-soft">שם היצירה (אופציונלי)</span>
         <input
           value={credit.title ?? ''}
           onChange={(e) => onChange({ ...credit, title: e.target.value })}
@@ -836,7 +836,7 @@ function CreditFields({
         />
       </label>
       <label className="block">
-        <span className="mb-1 block text-xs font-bold text-slate-600">
+        <span className="mb-1 block text-xs font-bold text-ink-soft">
           {isSuno ? 'קישור לשיר ב-Suno (אופציונלי)' : 'קישור למקור (אופציונלי)'}
         </span>
         <input
@@ -848,7 +848,7 @@ function CreditFields({
         />
       </label>
       <label className="block sm:col-span-2">
-        <span className="mb-1 block text-xs font-bold text-slate-600">רישיון (אופציונלי)</span>
+        <span className="mb-1 block text-xs font-bold text-ink-soft">רישיון (אופציונלי)</span>
         <input
           value={credit.license ?? ''}
           onChange={(e) => onChange({ ...credit, license: e.target.value })}
@@ -914,7 +914,7 @@ function TrackEditor({
         עריכת פרטי רצועה
       </div>
       <label className="block">
-        <span className="mb-1 block text-xs font-bold text-slate-600">שם הרצועה</span>
+        <span className="mb-1 block text-xs font-bold text-ink-soft">שם הרצועה</span>
         <input value={title} onChange={(e) => setTitle(e.target.value)} className={inputCls} />
       </label>
       <CreditFields credit={credit} onChange={setCredit} />
@@ -939,7 +939,7 @@ function TrackEditor({
           type="button"
           onClick={onCancel}
           disabled={saving}
-          className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-gc/70 bg-background-card/60 px-4 py-2 text-sm font-bold text-slate-600 hover:bg-background-card/90 disabled:opacity-50"
+          className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-gc/70 bg-background-card/60 px-4 py-2 text-sm font-bold text-ink-soft hover:bg-background-card/90 disabled:opacity-50"
         >
           <X className="h-4 w-4" />
           ביטול
@@ -1240,7 +1240,7 @@ function TrackUploader({ playlistId, onUploaded }: TrackUploaderProps) {
   return (
     <div className="rounded-2xl border border-gc/60 bg-background-card/55 p-3 sm:p-4" dir="rtl">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <h4 className="flex items-center gap-2 text-sm font-black text-slate-700">
+        <h4 className="flex items-center gap-2 text-sm font-black text-ink-soft">
           <Upload className="h-4 w-4 text-emerald-600" />
           העלאת רצועה
         </h4>
@@ -1305,20 +1305,20 @@ function TrackUploader({ playlistId, onUploaded }: TrackUploaderProps) {
         ].join(' ')}
       >
         <Music className="h-5 w-5 text-emerald-600" />
-        <p className="text-sm font-bold text-slate-800">גרור קובץ אודיו או לחץ לבחירה</p>
+        <p className="text-sm font-bold text-ink">גרור קובץ אודיו או לחץ לבחירה</p>
         {file ? (
           <p className="text-xs text-emerald-800">
             {file.name} · {formatBytes(file.size)}
           </p>
         ) : (
-          <p className="text-[11px] text-slate-500">הקובץ יידחס ל-MP3 בדפדפן לפני ההעלאה</p>
+          <p className="text-[11px] text-ink-faint">הקובץ יידחס ל-MP3 בדפדפן לפני ההעלאה</p>
         )}
       </label>
 
       {/* פרטי רצועה + קרדיט */}
       <div className="mt-3 space-y-2.5">
         <label className="block">
-          <span className="mb-1 block text-xs font-bold text-slate-600">שם הרצועה</span>
+          <span className="mb-1 block text-xs font-bold text-ink-soft">שם הרצועה</span>
           <input value={title} onChange={(e) => setTitle(e.target.value)} className={inputCls} />
         </label>
         <CreditFields credit={credit} onChange={setCredit} />
@@ -1340,7 +1340,7 @@ function TrackUploader({ playlistId, onUploaded }: TrackUploaderProps) {
 
       {busy && (
         <div className="mt-2.5" aria-live="polite">
-          <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-slate-200/70 ring-1 ring-gc/60">
+          <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-hairline/70 ring-1 ring-gc/60">
             <div
               className="nura-flow-bar absolute inset-y-0 right-0 rounded-full transition-[width] duration-200 ease-out"
               style={{ width: phase === 'transcoding' ? `${progress}%` : '100%' }}
@@ -1349,7 +1349,7 @@ function TrackUploader({ playlistId, onUploaded }: TrackUploaderProps) {
               <div className="absolute inset-0 animate-pulse rounded-full bg-background-card/20" />
             )}
           </div>
-          <div className="mt-1 flex items-center justify-between text-[11px] font-semibold text-slate-500">
+          <div className="mt-1 flex items-center justify-between text-[11px] font-semibold text-ink-faint">
             <span>{phase === 'transcoding' ? 'דוחס בדפדפן (איכות מרבית, משקל נמוך)' : 'מעלה ישירות ל-CDN'}</span>
             <span className="tabular-nums text-emerald-600">{phase === 'transcoding' ? `${progress}%` : '…'}</span>
           </div>

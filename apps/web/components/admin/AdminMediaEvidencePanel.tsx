@@ -86,7 +86,7 @@ function ProvenanceForm({ item, onSaved }: { item: Item; onSaved: () => void }) 
   };
   return (
     <div className="space-y-3">
-      <label className="block text-xs font-bold text-slate-600">סוג המקור
+      <label className="block text-xs font-bold text-ink-soft">סוג המקור
         <select value={t} onChange={(e) => setP({ ...p, source_type: e.target.value as SourceType })} className={cn(opsInputClass, 'mt-1')}>
           {SOURCE_TYPES.map((s) => <option key={s} value={s}>{SOURCE_LABEL_HE[s]}</option>)}
         </select>
@@ -96,7 +96,7 @@ function ProvenanceForm({ item, onSaved }: { item: Item; onSaved: () => void }) 
           const v = (p[k] as string | null | undefined) ?? '';
           const required = item.missing.includes(k);
           if (k === 'generator') return (
-            <label key={k} className="block text-xs font-bold text-slate-600">{label(k)}{required ? <span className="text-rose-600"> *</span> : null}
+            <label key={k} className="block text-xs font-bold text-ink-soft">{label(k)}{required ? <span className="text-rose-600"> *</span> : null}
               <select value={v} onChange={(e) => setP({ ...p, generator: (e.target.value || null) as Provenance['generator'] })} className={cn(opsInputClass, 'mt-1')}>
                 <option value="">בחירה</option>
                 {Object.entries(GENERATORS).map(([id, g]) => <option key={id} value={id}>{g.label}</option>)}
@@ -104,20 +104,20 @@ function ProvenanceForm({ item, onSaved }: { item: Item; onSaved: () => void }) 
             </label>
           );
           if (k === 'license_status') return (
-            <label key={k} className="block text-xs font-bold text-slate-600">מצב הרישיון
+            <label key={k} className="block text-xs font-bold text-ink-soft">מצב הרישיון
               <select value={v} onChange={(e) => setP({ ...p, license_status: (e.target.value || null) as Provenance['license_status'] })} className={cn(opsInputClass, 'mt-1')}>
                 <option value="">לא צוין</option><option value="pending">ממתין להוכחה</option><option value="confirmed">מאושר</option>
               </select>
             </label>
           );
           if (k === 'prompt' || k === 'notes') return (
-            <label key={k} className="block text-xs font-bold text-slate-600 sm:col-span-2">{label(k)}{required ? <span className="text-rose-600"> *</span> : null}
+            <label key={k} className="block text-xs font-bold text-ink-soft sm:col-span-2">{label(k)}{required ? <span className="text-rose-600"> *</span> : null}
               <textarea value={v} onChange={(e) => setP({ ...p, [k]: e.target.value })} rows={k === 'prompt' ? 4 : 2} className={cn(opsInputClass, 'mt-1 resize-y')} dir="auto" />
             </label>
           );
           const isUrl = /url$/.test(k);
           return (
-            <label key={k} className="block text-xs font-bold text-slate-600">{label(k)}{required ? <span className="text-rose-600"> *</span> : null}
+            <label key={k} className="block text-xs font-bold text-ink-soft">{label(k)}{required ? <span className="text-rose-600"> *</span> : null}
               <input value={v} onChange={(e) => setP({ ...p, [k]: e.target.value })} type={k === 'created_on' ? 'date' : 'text'} inputMode={isUrl ? 'url' : undefined} dir={isUrl ? 'ltr' : 'auto'} placeholder={isUrl ? 'https://' : undefined} className={cn(opsInputClass, 'mt-1')} />
             </label>
           );
@@ -150,15 +150,15 @@ function AttachmentBox({ item, onSaved }: { item: Item; onSaved: () => void }) {
   return (
     <div className="space-y-2">
       {(item.provenance.attachments ?? []).length ? (
-        <ul className="space-y-1 text-xs text-slate-700">{item.provenance.attachments!.map((a) => <li key={a.sha256} className="flex items-center gap-1.5"><Paperclip size={12} />{a.label} · {a.name}</li>)}</ul>
-      ) : <p className="text-xs text-slate-500">אין עדיין מסמכים מצורפים.</p>}
+        <ul className="space-y-1 text-xs text-ink-soft">{item.provenance.attachments!.map((a) => <li key={a.sha256} className="flex items-center gap-1.5"><Paperclip size={12} />{a.label} · {a.name}</li>)}</ul>
+      ) : <p className="text-xs text-ink-faint">אין עדיין מסמכים מצורפים.</p>}
       <div className="flex flex-wrap items-center gap-2">
         <input value={lbl} onChange={(e) => setLbl(e.target.value)} className={cn(opsInputClass, 'w-44 py-1.5 text-xs')} aria-label="תיאור המסמך" />
         <label className={cn(opsGlassBtnClass, 'cursor-pointer')}><Paperclip size={14} />{file ? file.name.slice(0, 24) : 'בחירת קובץ'}
           <input type="file" accept="application/pdf,image/png,image/jpeg,image/webp,text/plain,text/html,message/rfc822" className="sr-only" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
         </label>
         <button type="button" onClick={send} disabled={!file || busy} className={opsGlassBtnPrimaryClass}>{busy ? <Loader2 size={14} className="animate-spin" /> : null}צירוף</button>
-        {msg ? <span role="status" className="text-xs font-bold text-slate-700">{msg}</span> : null}
+        {msg ? <span role="status" className="text-xs font-bold text-ink-soft">{msg}</span> : null}
       </div>
     </div>
   );
@@ -228,20 +228,20 @@ export function ItemCard({ item, open, onToggle, onChanged }: { item: Item; open
           {src ? <img src={src} alt="" loading="lazy" className="h-full w-full object-contain p-1" /> : <K.Icon size={22} className="text-teal-700" aria-hidden />}
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-bold text-slate-900">{item.title ?? item.path ?? item.key}</span>
-          <span className="block truncate text-xs text-slate-500">{item.ai_description ?? item.path}</span>
+          <span className="block truncate text-sm font-bold text-ink">{item.title ?? item.path ?? item.key}</span>
+          <span className="block truncate text-xs text-ink-faint">{item.ai_description ?? item.path}</span>
           <span className="mt-1.5 flex flex-wrap gap-1.5">
             <Chip className={STATUS[item.status].cls}>{STATUS[item.status].label}</Chip>
-            <Chip className="border-gc/60 text-slate-700">{SOURCE_LABEL_HE[item.source_type]}</Chip>
-            <Chip className="border-gc/60 text-slate-600">{K.label}</Chip>
+            <Chip className="border-gc/60 text-ink-soft">{SOURCE_LABEL_HE[item.source_type]}</Chip>
+            <Chip className="border-gc/60 text-ink-soft">{K.label}</Chip>
             {['ai_image', 'ai_music', 'ai_voice'].includes(item.source_type) ? (item.coverage
               ? <Chip className="border-teal-300/70 bg-teal-500/10 text-teal-800">✓ נוצר במנוי בתשלום{item.coverage.plan ? ` · ${item.coverage.plan}` : ''}</Chip>
               : <Chip className="border-orange-300/70 text-orange-800">אין קבלה לתקופה</Chip>) : null}
             {item.metadata.c2pa ? <Chip className="border-teal-300/70 text-teal-800">C2PA</Chip> : null}
-            {!item.present ? <Chip className="border-gc/60 text-slate-500">הוסר מהאתר</Chip> : null}
+            {!item.present ? <Chip className="border-gc/60 text-ink-faint">הוסר מהאתר</Chip> : null}
           </span>
         </span>
-        <ChevronDown size={18} className={cn('shrink-0 text-slate-400 transition', open && 'rotate-180')} aria-hidden />
+        <ChevronDown size={18} className={cn('shrink-0 text-ink-faint transition', open && 'rotate-180')} aria-hidden />
       </button>
       {open ? (
         <div className="mt-4 space-y-4">
@@ -271,15 +271,15 @@ export function ItemCard({ item, open, onToggle, onChanged }: { item: Item; open
           {item.kind === 'audio' && item.has_file ? <audio controls preload="none" src={`/api/v1/ops/legal/media/item/file?key=${q}`} className="w-full" /> : null}
 
           <details open={item.status !== 'verified'} className="group rounded-2xl border border-gc/50 bg-glass/50 backdrop-blur-md p-3">
-            <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-bold text-slate-800">מקור ורישיון<ChevronDown size={16} className="text-slate-400 transition group-open:rotate-180" /></summary>
+            <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-bold text-ink">מקור ורישיון<ChevronDown size={16} className="text-ink-faint transition group-open:rotate-180" /></summary>
             <div className="mt-3"><ProvenanceForm item={item} onSaved={changed} /></div>
           </details>
           <details open={['ai_music', 'ai_voice', 'ai_image'].includes(item.source_type)} className="group rounded-2xl border border-gc/50 bg-glass/50 backdrop-blur-md p-3">
-            <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-bold text-slate-800">קבלות, חשבוניות וצילומים<ChevronDown size={16} className="text-slate-400 transition group-open:rotate-180" /></summary>
+            <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-bold text-ink">קבלות, חשבוניות וצילומים<ChevronDown size={16} className="text-ink-faint transition group-open:rotate-180" /></summary>
             <div className="mt-3"><AttachmentBox item={item} onSaved={changed} /></div>
           </details>
           <details className="group rounded-2xl border border-gc/50 bg-glass/50 backdrop-blur-md p-3">
-            <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-bold text-slate-800">פרטי הקובץ והיכן בשימוש<ChevronDown size={16} className="text-slate-400 transition group-open:rotate-180" /></summary>
+            <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-bold text-ink">פרטי הקובץ והיכן בשימוש<ChevronDown size={16} className="text-ink-faint transition group-open:rotate-180" /></summary>
             <dl className="mt-3 grid gap-2 text-xs sm:grid-cols-2">
               {([
                 ['מיקום', item.path ?? '—', true], ['SHA-256', item.sha256 ?? '—', true], ['גיבוב תפיסתי', item.phash ?? '—', true],
@@ -287,23 +287,23 @@ export function ItemCard({ item, open, onToggle, onChanged }: { item: Item; open
                 ['הופעה ראשונה ב־git', item.first_commit ? `${fmt(item.first_commit.date)} · ${item.first_commit.author} · ${item.first_commit.sha.slice(0, 10)}` : '—', false],
                 ['מידע מוטמע', [item.metadata.c2pa ? `C2PA ${item.metadata.c2pa_claim_generator ?? ''}` : null, item.metadata.software, item.metadata.digital_source_type, item.metadata.id3 ? Object.values(item.metadata.id3).join(' · ') : null].filter(Boolean).join(' · ') || 'אין', false],
               ] as Array<[string, string, boolean]>).map(([k, v, mono]) => (
-                <div key={k} className="rounded-lg bg-glass/70 backdrop-blur-md px-3 py-2"><dt className="text-[11px] font-bold text-slate-500">{k}</dt><dd className={cn('break-all text-slate-800', mono && 'font-mono text-[11px]')} dir={mono ? 'ltr' : undefined}>{v}</dd></div>
+                <div key={k} className="rounded-lg bg-glass/70 backdrop-blur-md px-3 py-2"><dt className="text-[11px] font-bold text-ink-faint">{k}</dt><dd className={cn('break-all text-ink', mono && 'font-mono text-[11px]')} dir={mono ? 'ltr' : undefined}>{v}</dd></div>
               ))}
             </dl>
-            <p className="mt-3 text-[11px] font-bold text-slate-500">בשימוש ב:</p>
-            <ul className="mt-1 flex flex-wrap gap-1.5">{(item.usages.length ? item.usages : ['לא נמצא שימוש']).map((u) => <li key={u}><Chip className="border-gc/60 text-slate-700">{u}</Chip></li>)}</ul>
+            <p className="mt-3 text-[11px] font-bold text-ink-faint">בשימוש ב:</p>
+            <ul className="mt-1 flex flex-wrap gap-1.5">{(item.usages.length ? item.usages : ['לא נמצא שימוש']).map((u) => <li key={u}><Chip className="border-gc/60 text-ink-soft">{u}</Chip></li>)}</ul>
           </details>
           <details className="group rounded-2xl border border-gc/50 bg-glass/50 backdrop-blur-md p-3">
-            <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-bold text-slate-800">רשומות חתומות ({item.records})<ChevronDown size={16} className="text-slate-400 transition group-open:rotate-180" /></summary>
-            {!recs ? <Loader2 className="mx-auto my-3 animate-spin text-slate-400" /> : (
+            <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-bold text-ink">רשומות חתומות ({item.records})<ChevronDown size={16} className="text-ink-faint transition group-open:rotate-180" /></summary>
+            {!recs ? <Loader2 className="mx-auto my-3 animate-spin text-ink-faint" /> : (
               <ol className="mt-3 space-y-1.5 border-r-2 border-teal-200/80 pr-3 text-xs">
                 {recs.map((r, i) => (
                   <li key={r.id} className="flex flex-wrap items-center gap-2">
-                    <span className="font-bold text-slate-800">{i + 1}. {EVENT[r.event] ?? r.event}</span>
-                    <span className="text-slate-500">{fmt(r.created_at)}</span>
+                    <span className="font-bold text-ink">{i + 1}. {EVENT[r.event] ?? r.event}</span>
+                    <span className="text-ink-faint">{fmt(r.created_at)}</span>
                     <Chip className={r.tsa ? 'border-teal-300/70 text-teal-800' : 'border-rose-300/70 text-rose-700'}>{r.tsa ? '✓' : '✗'} חותמת זמן</Chip>
-                    <Chip className={r.ots ? 'border-teal-300/70 text-teal-800' : 'border-gc/60 text-slate-500'}>{r.ots ? '✓' : '•'} עיגון</Chip>
-                    {r.event === 'license_snapshot' ? <span className="truncate text-slate-500" dir="ltr">{String(r.summary.url ?? '')}</span> : null}
+                    <Chip className={r.ots ? 'border-teal-300/70 text-teal-800' : 'border-gc/60 text-ink-faint'}>{r.ots ? '✓' : '•'} עיגון</Chip>
+                    {r.event === 'license_snapshot' ? <span className="truncate text-ink-faint" dir="ltr">{String(r.summary.url ?? '')}</span> : null}
                   </li>
                 ))}
               </ol>
@@ -351,34 +351,34 @@ export function AdminMediaEvidencePanel() {
   }, [items]);
   const todo = filtered.filter((i) => i.status !== 'verified');
   const done = filtered.filter((i) => i.status === 'verified');
-  const filterBtn = (active: boolean) => cn('rounded-full border px-3 py-1.5 text-xs font-bold transition', active ? 'border-teal-400/70 bg-teal-600 text-white' : 'border-gc/60 bg-glass/50 backdrop-blur-md text-slate-700 hover:bg-glass/80');
+  const filterBtn = (active: boolean) => cn('rounded-full border px-3 py-1.5 text-xs font-bold transition', active ? 'border-teal-400/70 bg-teal-600 text-white' : 'border-gc/60 bg-glass/50 backdrop-blur-md text-ink-soft hover:bg-glass/80');
 
   return (
     <div dir="rtl" className="space-y-4" data-testid="media-evidence-panel">
       <section className={cn(opsGlassCardClass, 'p-4 sm:p-5')}>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="text-lg font-bold text-slate-900">מאיפה הגיע כל קובץ באתר</h2>
-            <p className="mt-1 text-sm text-slate-600">כל תמונה, איור, שיר, גופן ואייקון נסרקים אוטומטית. לכל קובץ נשמרים העותק המקורי, טביעת אצבע, היסטוריית קוד ועמוד הרישיון, והכול נחתם ומקבל חותמת זמן.</p>
+            <h2 className="text-lg font-bold text-ink">מאיפה הגיע כל קובץ באתר</h2>
+            <p className="mt-1 text-sm text-ink-soft">כל תמונה, איור, שיר, גופן ואייקון נסרקים אוטומטית. לכל קובץ נשמרים העותק המקורי, טביעת אצבע, היסטוריית קוד ועמוד הרישיון, והכול נחתם ומקבל חותמת זמן.</p>
           </div>
           <button type="button" onClick={rescan} className={opsGlassBtnClass}><RefreshCw size={14} className={cn(scan === 'סורק...' && 'animate-spin')} />סריקה עכשיו</button>
         </div>
-        {scan ? <p role="status" className="mt-2 text-xs font-bold text-slate-600">{scan}</p> : null}
+        {scan ? <p role="status" className="mt-2 text-xs font-bold text-ink-soft">{scan}</p> : null}
         <div className="mt-4 grid grid-cols-3 gap-2 text-center">
           {([['missing_source', counts.missing, 'חסר מקור', 'text-rose-700'], ['draft', counts.draft, 'חסרים פרטים', 'text-orange-700'], ['verified', counts.verified, 'מתועדים', 'text-teal-700']] as const).map(([s, n, l, c]) => (
             <button key={s} type="button" onClick={() => setStatus(status === s ? 'all' : s)} className={cn('rounded-2xl border px-2 py-3 transition', status === s ? 'border-teal-400/70 bg-glass/80 backdrop-blur-md' : 'border-gc/50 bg-glass/40 backdrop-blur-md hover:bg-glass/70')}>
-              <span className={cn('block text-2xl font-black', c)}>{items ? n : '·'}</span><span className="text-xs font-bold text-slate-600">{l}</span>
+              <span className={cn('block text-2xl font-black', c)}>{items ? n : '·'}</span><span className="text-xs font-bold text-ink-soft">{l}</span>
             </button>
           ))}
         </div>
-        {ai && ai.calls ? <p className="mt-3 text-[11px] text-slate-500">תיאור אוטומטי: {ai.calls} קבצים · עלות כוללת ${ai.total_usd.toFixed(4)} (בערך ${(ai.total_usd / ai.calls).toFixed(5)} לקובץ, פעם אחת בלבד)</p> : null}
+        {ai && ai.calls ? <p className="mt-3 text-[11px] text-ink-faint">תיאור אוטומטי: {ai.calls} קבצים · עלות כוללת ${ai.total_usd.toFixed(4)} (בערך ${(ai.total_usd / ai.calls).toFixed(5)} לקובץ, פעם אחת בלבד)</p> : null}
       </section>
 
       <div className="sticky top-2 z-10 space-y-2 rounded-3xl border border-gc/50 bg-background-card/70 p-3 shadow-[0_12px_40px_rgba(15,23,42,0.1)] backdrop-blur-2xl">
         <label className="relative block">
-          <Search size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden />
+          <Search size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-faint" aria-hidden />
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="חיפוש: שם, תיאור, יוצר, רישיון, עמוד באתר..." className={cn(opsInputClass, 'pr-9')} data-testid="media-evidence-search" />
-          {q ? <button type="button" onClick={() => setQ('')} aria-label="ניקוי חיפוש" className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 hover:text-slate-700"><X size={14} /></button> : null}
+          {q ? <button type="button" onClick={() => setQ('')} aria-label="ניקוי חיפוש" className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full p-1 text-ink-faint hover:text-ink-soft"><X size={14} /></button> : null}
         </label>
         <div className="flex gap-1.5 overflow-x-auto pb-0.5">
           {['all', 'image', 'illustration', 'icon', 'audio', 'video', 'font'].map((k) => <button key={k} type="button" onClick={() => setKind(k)} className={cn(filterBtn(kind === k), 'shrink-0')}>{k === 'all' ? 'כל הסוגים' : KIND[k]!.label}</button>)}
@@ -391,23 +391,23 @@ export function AdminMediaEvidencePanel() {
 
       {pending.length ? (
         <section aria-label="פעולות פתוחות" className={cn(opsGlassCardClass, 'space-y-2 p-4')}>
-          <h3 className="text-sm font-bold text-slate-900">פעולות שמחכות לך</h3>
+          <h3 className="text-sm font-bold text-ink">פעולות שמחכות לך</h3>
           <ul className="space-y-2">{pending.map((p) => <PendingLicenseCard key={p.key} p={p} onDone={load} />)}</ul>
         </section>
       ) : null}
       <ReceiptsSection onChanged={load} />
       {err ? <p role="alert" className="rounded-xl bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700">{err}</p> : null}
-      {!items ? <div className={cn(opsGlassCardClass, 'grid place-items-center p-10')}><Loader2 className="animate-spin text-slate-400" /></div> : (
+      {!items ? <div className={cn(opsGlassCardClass, 'grid place-items-center p-10')}><Loader2 className="animate-spin text-ink-faint" /></div> : (
         <>
           <section aria-label="צריך את הקלט שלך" className="space-y-2">
-            <h3 className="flex items-center gap-2 px-1 text-sm font-bold text-slate-700"><span className="grid h-6 w-6 place-items-center rounded-full bg-rose-100 text-xs text-rose-700">{todo.length}</span>צריך את הקלט שלך</h3>
-            {todo.length ? <ul className="space-y-2">{todo.map((i) => <ItemCard key={i.key} item={i} open={open === i.key} onToggle={() => setOpen(open === i.key ? null : i.key)} onChanged={load} />)}</ul> : <p className={cn(opsGlassCardClass, 'p-4 text-center text-sm text-slate-500')}>אין פריטים פתוחים בסינון הזה 🎉</p>}
+            <h3 className="flex items-center gap-2 px-1 text-sm font-bold text-ink-soft"><span className="grid h-6 w-6 place-items-center rounded-full bg-rose-100 text-xs text-rose-700">{todo.length}</span>צריך את הקלט שלך</h3>
+            {todo.length ? <ul className="space-y-2">{todo.map((i) => <ItemCard key={i.key} item={i} open={open === i.key} onToggle={() => setOpen(open === i.key ? null : i.key)} onChanged={load} />)}</ul> : <p className={cn(opsGlassCardClass, 'p-4 text-center text-sm text-ink-faint')}>אין פריטים פתוחים בסינון הזה 🎉</p>}
           </section>
           <OpsDivider />
           <section aria-label="מתועדים במלואם" className="space-y-2">
-            <button type="button" onClick={() => setShowDone(!showDone)} aria-expanded={showDone} className="flex w-full items-center justify-between px-1 text-sm font-bold text-slate-700">
+            <button type="button" onClick={() => setShowDone(!showDone)} aria-expanded={showDone} className="flex w-full items-center justify-between px-1 text-sm font-bold text-ink-soft">
               <span className="flex items-center gap-2"><span className="grid h-6 w-6 place-items-center rounded-full bg-teal-100 text-xs text-teal-700">{done.length}</span>מתועדים במלואם</span>
-              <ChevronDown size={16} className={cn('text-slate-400 transition', showDone && 'rotate-180')} />
+              <ChevronDown size={16} className={cn('text-ink-faint transition', showDone && 'rotate-180')} />
             </button>
             {showDone || q ? <ul className="space-y-2">{done.map((i) => <ItemCard key={i.key} item={i} open={open === i.key} onToggle={() => setOpen(open === i.key ? null : i.key)} onChanged={load} />)}</ul> : null}
           </section>

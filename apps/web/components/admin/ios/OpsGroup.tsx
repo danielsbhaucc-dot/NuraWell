@@ -7,11 +7,11 @@ import { cn } from '@/lib/cn';
 export function OpsGroup({ title, footer, children, className }: { title?: string; footer?: ReactNode; children: ReactNode; className?: string }) {
   return (
     <section className={className}>
-      {title ? <h2 className="mb-1.5 px-4 text-[13px] font-medium text-slate-500">{title}</h2> : null}
+      {title ? <h2 className="mb-1.5 px-4 text-[13px] font-medium text-ink-faint">{title}</h2> : null}
       <div className="overflow-hidden rounded-[1.25rem] bg-gc shadow-[0_1px_2px_rgba(0,0,0,0.04),0_4px_16px_rgba(0,0,0,0.04)] divide-y divide-black/6">
         {children}
       </div>
-      {footer ? <p className="mt-1.5 px-4 text-xs leading-relaxed text-slate-500">{footer}</p> : null}
+      {footer ? <p className="mt-1.5 px-4 text-xs leading-relaxed text-ink-faint">{footer}</p> : null}
     </section>
   );
 }
@@ -35,8 +35,8 @@ export function OpsRow({ href, icon: Icon, tone = 'emerald', title, desc, traili
         <Icon className="h-[18px] w-[18px]" aria-hidden />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-[16px] font-semibold text-slate-900">{title}</span>
-        {desc ? <span className="block truncate text-[13px] text-slate-500">{desc}</span> : null}
+        <span className="block truncate text-[16px] font-semibold text-ink">{title}</span>
+        {desc ? <span className="block truncate text-[13px] text-ink-faint">{desc}</span> : null}
       </span>
       {trailing}
       <ChevronLeft className="h-4 w-4 shrink-0 text-slate-300" aria-hidden />

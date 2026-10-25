@@ -41,7 +41,7 @@ const CATEGORY_STYLES: Partial<Record<MemoryVectorCategory, string>> = {
   breakthrough: 'bg-fuchsia-100/90 text-fuchsia-900 border-fuchsia-200/80',
 };
 
-const DEFAULT_CATEGORY_STYLE = 'bg-slate-100/90 text-slate-800 border-slate-200/80';
+const DEFAULT_CATEGORY_STYLE = 'bg-surface/90 text-ink border-hairline/80';
 
 function categoryLabel(cat: MemoryVectorCategory): string {
   return CATEGORY_LABELS[cat] ?? cat;
@@ -172,10 +172,10 @@ export function AlmogMemoryPanel({ userId }: Props) {
             <Brain className="w-5 h-5" aria-hidden />
           </div>
           <div>
-            <h3 id="almog-memory-heading" className="text-sm font-black text-slate-900">
+            <h3 id="almog-memory-heading" className="text-sm font-black text-ink">
               מה אלמוג זוכר על המשתמש
             </h3>
-            <p className="text-xs text-slate-600/90 leading-relaxed">
+            <p className="text-xs text-ink-soft/90 leading-relaxed">
               תובנות שנבנו מהשיחות וההרשמה — מוזרקות לצ&apos;אט כשהנושא רלוונטי
             </p>
           </div>
@@ -193,11 +193,11 @@ export function AlmogMemoryPanel({ userId }: Props) {
             <Loader2 className="w-6 h-6 animate-spin text-violet-600" />
           </p>
         ) : !configured ? (
-          <p className="text-sm text-slate-600 text-center py-6">
+          <p className="text-sm text-ink-soft text-center py-6">
             אינדקס הזיכרון לא מוגדר בסביבה זו
           </p>
         ) : items.length === 0 ? (
-          <p className="text-sm text-slate-500 text-center py-6">
+          <p className="text-sm text-ink-faint text-center py-6">
             {error ?? 'עדיין אין זיכרון סמנטי — ייווצר מהשיחות וההרשמה'}
           </p>
         ) : (
@@ -209,7 +209,7 @@ export function AlmogMemoryPanel({ userId }: Props) {
             ) : null}
             {grouped.map(({ category, entries }) => (
               <div key={category}>
-                <p className="text-[10px] font-black uppercase tracking-wide text-slate-500 mb-2">
+                <p className="text-[10px] font-black uppercase tracking-wide text-ink-faint mb-2">
                   {categoryLabel(category)}
                 </p>
                 <ul className="space-y-2">
@@ -233,12 +233,12 @@ export function AlmogMemoryPanel({ userId }: Props) {
                             </span>
                           ) : null}
                           {item.memoryLevel && item.memoryLevel >= 3 ? (
-                            <span className="text-[10px] text-slate-500">רמה {item.memoryLevel}</span>
+                            <span className="text-[10px] text-ink-faint">רמה {item.memoryLevel}</span>
                           ) : null}
                         </div>
-                        <p className="text-sm text-slate-900 leading-relaxed">{item.text}</p>
+                        <p className="text-sm text-ink leading-relaxed">{item.text}</p>
                         {item.updatedAt ? (
-                          <p className="text-[10px] text-slate-400 mt-1">
+                          <p className="text-[10px] text-ink-faint mt-1">
                             עודכן {formatMemoryDate(item.updatedAt)}
                           </p>
                         ) : null}

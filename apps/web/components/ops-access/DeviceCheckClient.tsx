@@ -28,7 +28,7 @@ export function GideonAvatar({ state }: { state: Phase }) {
 
 const Bubble = ({ children, tone = 'plain' }: { children: React.ReactNode; tone?: 'plain' | 'ok' | 'warn' | 'bad' }) => (
   <div className={cn('animate-in fade-in slide-in-from-bottom-1 rounded-3xl rounded-ss-md px-4 py-3 text-[15px] leading-7 duration-300',
-    tone === 'ok' ? 'bg-emerald-50 text-emerald-900' : tone === 'warn' ? 'bg-amber-50 text-amber-900' : tone === 'bad' ? 'bg-rose-50 text-rose-900' : 'bg-[#f6f1e7] text-slate-800')}>{children}</div>
+    tone === 'ok' ? 'bg-emerald-50 text-emerald-900' : tone === 'warn' ? 'bg-amber-50 text-amber-900' : tone === 'bad' ? 'bg-rose-50 text-rose-900' : 'bg-[#f6f1e7] text-ink')}>{children}</div>
 );
 
 function useCountdown(until: number | null) {
@@ -147,9 +147,9 @@ export function DeviceCheckClient({ initialError }: { initialError: string | nul
                 <Bubble>
                   <span className="flex items-start gap-2"><Send className="mt-1 h-4 w-4 shrink-0 text-[#0b6b4b]" /><span>שלחתי לך עכשיו בקשה <b>בטלגרם</b>. לחיצה על ״אשר כניסה״ (עם Face ID אם הגדרת) וזהו. הדף הזה יתקדם לבד.</span></span>
                 </Bubble>
-                <div className="flex items-center justify-between rounded-2xl bg-gc/80 px-4 py-2.5 text-sm text-slate-600 ring-1 ring-black/5">
+                <div className="flex items-center justify-between rounded-2xl bg-gc/80 px-4 py-2.5 text-sm text-ink-soft ring-1 ring-black/5">
                   <span className="inline-flex items-center gap-2"><span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" />ממתין לאישור שלך</span>
-                  {left ? <span dir="ltr" className="font-mono tabular-nums text-slate-500">{left}</span> : null}
+                  {left ? <span dir="ltr" className="font-mono tabular-nums text-ink-faint">{left}</span> : null}
                 </div>
               </>
             )}
@@ -161,7 +161,7 @@ export function DeviceCheckClient({ initialError }: { initialError: string | nul
                 <input id="dc-code" dir="ltr" autoFocus autoComplete="one-time-code" inputMode={mode === 'email' ? 'numeric' : 'text'} value={code}
                   onChange={(e) => setCode(mode === 'email' ? e.target.value.replace(/\D/g, '') : e.target.value)} onKeyDown={(e) => e.key === 'Enter' && code && void submit()}
                   maxLength={mode === 'email' ? 6 : 11} placeholder={mode === 'email' ? '••••••' : 'XXXXX-XXXXX'}
-                  className="w-full rounded-2xl border border-slate-200 bg-gc px-4 py-3.5 text-center font-mono text-2xl tracking-[0.35em] outline-none transition focus:border-[#0b6b4b] focus:ring-4 focus:ring-emerald-100" />
+                  className="w-full rounded-2xl border border-hairline bg-gc px-4 py-3.5 text-center font-mono text-2xl tracking-[0.35em] outline-none transition focus:border-[#0b6b4b] focus:ring-4 focus:ring-emerald-100" />
                 <button type="button" disabled={!!busy || !code} onClick={submit} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#0f3d2e] py-3.5 font-bold text-[#f6f1e7] shadow-lg shadow-emerald-900/20 transition active:scale-[0.99] disabled:opacity-50">
                   {busy === 'code' ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}אשר את המכשיר
                 </button>
@@ -181,18 +181,18 @@ export function DeviceCheckClient({ initialError }: { initialError: string | nul
 
           {(phase === 'waiting' || phase === 'expired' || phase === 'error') && (
             <>
-              <p className="mb-2 mt-6 px-1 text-xs font-semibold text-slate-500">אין לך טלגרם בהישג יד?</p>
+              <p className="mb-2 mt-6 px-1 text-xs font-semibold text-ink-faint">אין לך טלגרם בהישג יד?</p>
               <button type="button" onClick={tapKey} disabled={!!busy || phase !== 'waiting'} className="mb-2 flex w-full items-center justify-center gap-2.5 rounded-2xl bg-[#0f3d2e] py-3.5 font-bold text-[#f6f1e7] shadow-lg shadow-emerald-900/20 transition active:scale-[0.99] disabled:opacity-50">
                 {busy === 'key' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Usb className="h-4 w-4" />}נגיעה במפתח האבטחה
               </button>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                <button type="button" onClick={sendEmail} disabled={!!busy || phase !== 'waiting'} className={cn('flex items-center gap-2.5 rounded-2xl bg-gc/80 px-4 py-3 text-start text-sm font-semibold text-slate-700 ring-1 ring-black/5 transition hover:bg-gc disabled:opacity-50', mode === 'email' && 'ring-2 ring-[#0b6b4b]')}>
+                <button type="button" onClick={sendEmail} disabled={!!busy || phase !== 'waiting'} className={cn('flex items-center gap-2.5 rounded-2xl bg-gc/80 px-4 py-3 text-start text-sm font-semibold text-ink-soft ring-1 ring-black/5 transition hover:bg-gc disabled:opacity-50', mode === 'email' && 'ring-2 ring-[#0b6b4b]')}>
                   {busy === 'email' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4 text-[#0b6b4b]" />}קוד למייל
                 </button>
-                <button type="button" disabled={phase !== 'waiting'} onClick={() => { setMode('recovery'); setCode(''); setInfo(null); setErr(null); }} className={cn('flex items-center gap-2.5 rounded-2xl bg-gc/80 px-4 py-3 text-start text-sm font-semibold text-slate-700 ring-1 ring-black/5 transition hover:bg-gc disabled:opacity-50', mode === 'recovery' && 'ring-2 ring-[#0b6b4b]')}>
+                <button type="button" disabled={phase !== 'waiting'} onClick={() => { setMode('recovery'); setCode(''); setInfo(null); setErr(null); }} className={cn('flex items-center gap-2.5 rounded-2xl bg-gc/80 px-4 py-3 text-start text-sm font-semibold text-ink-soft ring-1 ring-black/5 transition hover:bg-gc disabled:opacity-50', mode === 'recovery' && 'ring-2 ring-[#0b6b4b]')}>
                   <KeyRound className="h-4 w-4 text-[#0b6b4b]" />קוד שחזור
                 </button>
-                <button type="button" disabled={phase !== 'waiting'} onClick={() => { setMode('wait'); setErr(null); }} className={cn('flex items-center gap-2.5 rounded-2xl bg-gc/80 px-4 py-3 text-start text-sm font-semibold text-slate-700 ring-1 ring-black/5 transition hover:bg-gc disabled:opacity-50', mode === 'wait' && 'ring-2 ring-[#0b6b4b]')}>
+                <button type="button" disabled={phase !== 'waiting'} onClick={() => { setMode('wait'); setErr(null); }} className={cn('flex items-center gap-2.5 rounded-2xl bg-gc/80 px-4 py-3 text-start text-sm font-semibold text-ink-soft ring-1 ring-black/5 transition hover:bg-gc disabled:opacity-50', mode === 'wait' && 'ring-2 ring-[#0b6b4b]')}>
                   <Smartphone className="h-4 w-4 text-[#0b6b4b]" />טלגרם / מכשיר מאושר
                 </button>
               </div>
@@ -207,7 +207,7 @@ export function DeviceCheckClient({ initialError }: { initialError: string | nul
                     <p className="mb-2 text-sm text-rose-900">לחסום את הכניסה הזו ולנתק את כל החיבורים לחשבון בכל המכשירים?</p>
                     <div className="flex gap-2">
                       <button type="button" onClick={denySelf} disabled={busy === 'deny'} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-rose-600 py-2.5 text-sm font-bold text-gc">{busy === 'deny' ? <Loader2 className="h-4 w-4 animate-spin" /> : null}כן, לחסום</button>
-                      <button type="button" onClick={() => setConfirmDeny(false)} className="flex-1 rounded-xl bg-gc py-2.5 text-sm font-semibold text-slate-700 ring-1 ring-black/10">ביטול</button>
+                      <button type="button" onClick={() => setConfirmDeny(false)} className="flex-1 rounded-xl bg-gc py-2.5 text-sm font-semibold text-ink-soft ring-1 ring-black/10">ביטול</button>
                     </div>
                   </div>
                 )}
@@ -215,7 +215,7 @@ export function DeviceCheckClient({ initialError }: { initialError: string | nul
             </>
           )}
         </div>
-        <p className="mt-4 text-center text-xs text-slate-500">🔒 אני אף פעם לא אבקש ממך קוד בטלגרם או בטלפון. קודים מוקלדים רק בדף הזה.</p>
+        <p className="mt-4 text-center text-xs text-ink-faint">🔒 אני אף פעם לא אבקש ממך קוד בטלגרם או בטלפון. קודים מוקלדים רק בדף הזה.</p>
       </main>
     </div>
   );

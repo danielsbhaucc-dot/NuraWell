@@ -16,8 +16,8 @@ export function UserQuickActions({ userId }: { userId: string | null }) {
     setMsg(r.ok ? ok : d.error ?? 'שגיאה');
   };
   return (
-    <div dir="rtl" className="space-y-3 rounded-2xl border border-slate-200 bg-gc px-4 py-3 text-sm shadow-xs">
-      <p className="font-semibold text-slate-800">פעולות מהירות</p>
+    <div dir="rtl" className="space-y-3 rounded-2xl border border-hairline bg-gc px-4 py-3 text-sm shadow-xs">
+      <p className="font-semibold text-ink">פעולות מהירות</p>
       <div className="flex flex-wrap items-center gap-2">
         <span>השהיית התראות ל-</span>
         <input type="number" min={0} max={60} value={days} onChange={(e) => setDays(Number(e.target.value))} className="w-16 rounded-lg border px-2 py-1" />
@@ -33,7 +33,7 @@ export function UserQuickActions({ userId }: { userId: string | null }) {
           שליחת התראה
         </button>
       </div>
-      {msg ? <p className="text-xs text-slate-600">{msg}</p> : null}
+      {msg ? <p className="text-xs text-ink-soft">{msg}</p> : null}
     </div>
   );
 }

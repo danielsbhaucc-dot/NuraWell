@@ -90,15 +90,15 @@ export function AdminChallengeTasksEditor() {
   };
 
   return (
-    <div className="rounded-3xl border border-slate-200/60 bg-background-card/70 p-5 shadow-xs backdrop-blur-md sm:p-6">
+    <div className="rounded-3xl border border-hairline/60 bg-background-card/70 p-5 shadow-xs backdrop-blur-md sm:p-6">
       <div className="mb-4 flex flex-wrap items-center gap-3">
-        <h2 className="text-lg font-bold text-slate-900">משימות לפי יום</h2>
+        <h2 className="text-lg font-bold text-ink">משימות לפי יום</h2>
         <label className="ms-auto flex items-center gap-2 text-sm">
-          <span className="text-slate-500">יום</span>
+          <span className="text-ink-faint">יום</span>
           <select
             value={dayIndex}
             onChange={(e) => setDayIndex(Number(e.target.value))}
-            className="rounded-xl border border-slate-200 px-3 py-1.5"
+            className="rounded-xl border border-hairline px-3 py-1.5"
           >
             {Array.from({ length: 14 }, (_, i) => i + 1).map((d) => (
               <option key={d} value={d}>
@@ -124,18 +124,18 @@ export function AdminChallengeTasksEditor() {
       ) : (
         <div className="space-y-3">
           {tasks.map((task) => (
-            <div key={task.id} className="rounded-2xl border border-slate-200/80 bg-background-card p-4">
+            <div key={task.id} className="rounded-2xl border border-hairline/80 bg-background-card p-4">
               <div className="grid gap-3 sm:grid-cols-2">
                 <input
                   value={task.title_he}
                   onChange={(e) => updateLocal(task.id, { title_he: e.target.value })}
-                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold"
+                  className="rounded-xl border border-hairline px-3 py-2 text-sm font-semibold"
                   placeholder="כותרת"
                 />
                 <select
                   value={task.schedule_type}
                   onChange={(e) => updateLocal(task.id, { schedule_type: e.target.value })}
-                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                  className="rounded-xl border border-hairline px-3 py-2 text-sm"
                 >
                   <option value="daily">יומי</option>
                   <option value="per_meal">לכל ארוחה</option>
@@ -148,7 +148,7 @@ export function AdminChallengeTasksEditor() {
                 value={task.description_he ?? ''}
                 onChange={(e) => updateLocal(task.id, { description_he: e.target.value })}
                 rows={2}
-                className="mt-3 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                className="mt-3 w-full rounded-xl border border-hairline px-3 py-2 text-sm"
                 placeholder="תיאור"
               />
               <div className="mt-3 flex gap-2">
@@ -173,7 +173,7 @@ export function AdminChallengeTasksEditor() {
             </div>
           ))}
           {!tasks.length ? (
-            <p className="py-6 text-center text-sm text-slate-500">אין משימות ליום {dayIndex}</p>
+            <p className="py-6 text-center text-sm text-ink-faint">אין משימות ליום {dayIndex}</p>
           ) : null}
         </div>
       )}
