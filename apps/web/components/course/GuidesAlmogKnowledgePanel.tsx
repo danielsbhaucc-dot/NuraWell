@@ -27,7 +27,7 @@ export function GuidesAlmogKnowledgePanel({ entries }: GuidesAlmogKnowledgePanel
     <div
       className="mb-4 rounded-2xl overflow-hidden"
       style={{
-        background: 'linear-gradient(135deg, rgba(236,253,245,0.95) 0%, rgba(231,238,220,0.88) 100%)',
+        background: 'linear-gradient(135deg, rgba(236,253,245,0.95) 0%, rgba(207,233,220,0.88) 100%)',
         border: '1px solid rgba(20,184,166,0.28)',
         boxShadow: '0 6px 20px rgba(6,78,59,0.08)',
       }}
@@ -64,7 +64,7 @@ export function GuidesAlmogKnowledgePanel({ entries }: GuidesAlmogKnowledgePanel
               key={entry.courseId}
               className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm"
               style={{
-                background: entry.indexed ? 'rgba(231,238,220,0.72)' : 'rgba(254,243,199,0.5)',
+                background: entry.indexed ? 'rgba(207,233,220,0.72)' : 'rgba(254,243,199,0.5)',
                 border: `1px solid ${entry.indexed ? 'rgba(16,185,129,0.2)' : 'rgba(245,158,11,0.3)'}`,
               }}
             >

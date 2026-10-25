@@ -49,7 +49,7 @@ const sourceLabel: Record<DayExecRow['source'], string> = {
  * Popup ידידותי שמראה את כל המשימות שבוצעו ביום מסוים.
  *
  * עיצוב:
- *  - שכבת glass עם רקע ירוק-קרם, ללא #e7eedc.
+ *  - שכבת glass עם רקע ירוק-קרם, ללא #cfe9dc.
  *  - כרטיס פר-משימה: אמוג'י, שם, צעד, סלוט (בוקר/ארוחה/...) ושעה.
  *  - אם אין רשומות + זה היום → "היום עוד פתוח לפנינו" (עידוד, לא פספוס).
  *  - אם אין רשומות + זה בעבר → טקסט עדין "לא תועד ביצוע" — לא דרמטי.
@@ -131,7 +131,7 @@ export function DayDetailPopup({ open, dateKey, todayKey, rows, onClose }: Props
                 'linear-gradient(168deg, rgba(236,253,245,0.9) 0%, rgba(220,252,231,0.82) 48%, rgba(254,252,232,0.82) 100%)',
               border: '1px solid rgba(248,251,246,0.55)',
               boxShadow:
-                '0 36px 90px rgba(6,78,59,0.4), 0 0 0 1px rgba(167,243,208,0.45), inset 0 1px 1px rgba(231,238,220,0.95)',
+                '0 36px 90px rgba(6,78,59,0.4), 0 0 0 1px rgba(167,243,208,0.45), inset 0 1px 1px rgba(207,233,220,0.95)',
               backdropFilter: 'blur(36px) saturate(1.45)',
               WebkitBackdropFilter: 'blur(36px) saturate(1.45)',
             }}

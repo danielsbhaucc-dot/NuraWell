@@ -836,8 +836,8 @@ export function TaskHistoryClient({
                       greeting.tone === 'festive'
                         ? '#FFD97D'
                         : greeting.tone === 'solemn'
-                          ? 'rgba(231,238,220,0.78)'
-                          : 'rgba(231,238,220,0.92)',
+                          ? 'rgba(207,233,220,0.78)'
+                          : 'rgba(207,233,220,0.92)',
                     fontStyle: greeting.tone === 'solemn' ? 'italic' : 'normal',
                   }}
                 >

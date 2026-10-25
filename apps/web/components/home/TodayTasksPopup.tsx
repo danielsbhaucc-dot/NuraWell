@@ -260,9 +260,9 @@ export function TodayTasksPopup({
             style={{
               maxHeight: '100%',
               background:
-                'linear-gradient(168deg, rgba(231,238,220,0.78) 0%, rgba(236,253,245,0.62) 52%, rgba(231,238,220,0.72) 100%)',
+                'linear-gradient(168deg, rgba(207,233,220,0.78) 0%, rgba(236,253,245,0.62) 52%, rgba(207,233,220,0.72) 100%)',
               border: '1px solid rgba(167,243,208,0.35)',
-              boxShadow: '0 32px 80px rgba(4,47,36,0.32), inset 0 1px 0 rgba(231,238,220,0.85)',
+              boxShadow: '0 32px 80px rgba(4,47,36,0.32), inset 0 1px 0 rgba(207,233,220,0.85)',
               backdropFilter: 'blur(28px) saturate(1.5)',
               WebkitBackdropFilter: 'blur(28px) saturate(1.5)',
             }}
@@ -366,7 +366,7 @@ export function TodayTasksPopup({
                 <div
                   className="rounded-2xl p-4 text-start"
                   style={{
-                    background: '#e7eedc',
+                    background: '#cfe9dc',
                     border: '1px solid rgba(167,243,208,0.55)',
                     boxShadow: '0 6px 20px rgba(6,78,59,0.06)',
                   }}
@@ -406,7 +406,7 @@ export function TodayTasksPopup({
                       background: 'rgba(248,251,246,0.55)',
                       border: '1px solid rgba(167,243,208,0.4)',
                       boxShadow:
-                        '0 4px 14px rgba(6,78,59,0.05), inset 0 1px 0 rgba(231,238,220,0.65)',
+                        '0 4px 14px rgba(6,78,59,0.05), inset 0 1px 0 rgba(207,233,220,0.65)',
                     }}
                   >
                     <button
@@ -500,14 +500,14 @@ export function TodayTasksPopup({
                     className="w-full text-start rounded-2xl p-3.5"
                     style={{
                       background: isFeatured
-                        ? 'linear-gradient(170deg, rgba(231,238,220,0.72) 0%, rgba(255,251,235,0.58) 100%)'
+                        ? 'linear-gradient(170deg, rgba(207,233,220,0.72) 0%, rgba(255,251,235,0.58) 100%)'
                         : 'rgba(248,251,246,0.55)',
                       border: isFeatured
                         ? '1px solid rgba(245,158,11,0.38)'
                         : '1px solid rgba(167,243,208,0.4)',
                       boxShadow: isFeatured
-                        ? '0 10px 24px rgba(245,158,11,0.1), inset 0 1px 0 rgba(231,238,220,0.75)'
-                        : '0 4px 14px rgba(6,78,59,0.05), inset 0 1px 0 rgba(231,238,220,0.65)',
+                        ? '0 10px 24px rgba(245,158,11,0.1), inset 0 1px 0 rgba(207,233,220,0.75)'
+                        : '0 4px 14px rgba(6,78,59,0.05), inset 0 1px 0 rgba(207,233,220,0.65)',
                       backdropFilter: 'blur(12px)',
                       WebkitBackdropFilter: 'blur(12px)',
                     }}
@@ -622,7 +622,7 @@ export function TodayTasksPopup({
                       key={`done-${task.id}`}
                       className="rounded-2xl p-3.5"
                       style={{
-                        background: 'rgba(231,238,220,0.85)',
+                        background: 'rgba(207,233,220,0.85)',
                         border: '1px solid rgba(167,243,208,0.4)',
                       }}
                     >

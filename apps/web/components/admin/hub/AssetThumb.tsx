@@ -21,7 +21,7 @@ export function AssetThumb({ thumb, kind, className, size = 'md' }: { thumb: Thu
         // eslint-disable-next-line @next/next/no-img-element
         <img src={thumb.src!} alt="" loading="lazy" onError={() => setFailed(true)} className={cn('h-full w-full', kind === 'icon' || kind === 'illustration' ? 'object-contain p-4' : 'object-cover')} />
       ) : (
-        <span className={cn('grid place-items-center rounded-2xl bg-primary-50/40 text-primary-700 shadow-[inset_0_1px_0_rgba(231,238,220,0.6),0_6px_16px_rgba(6,78,59,0.12)] ring-1 ring-primary-900/10', size === 'lg' ? 'h-20 w-20' : size === 'sm' ? 'h-9 w-9 rounded-xl' : 'h-14 w-14')}>
+        <span className={cn('grid place-items-center rounded-2xl bg-primary-50/40 text-primary-700 shadow-[inset_0_1px_0_rgba(207,233,220,0.6),0_6px_16px_rgba(6,78,59,0.12)] ring-1 ring-primary-900/10', size === 'lg' ? 'h-20 w-20' : size === 'sm' ? 'h-9 w-9 rounded-xl' : 'h-14 w-14')}>
           <Icon size={ic} strokeWidth={1.75} />
         </span>
       )}

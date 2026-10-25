@@ -954,7 +954,7 @@ export function StepEditor({ step }: StepEditorProps) {
       {/* Header */}
       <div
         className="mb-5 flex flex-col gap-3 rounded-3xl px-3 py-3 backdrop-blur-md sm:flex-row sm:items-center"
-        style={{ background: 'rgba(231,238,220,0.62)', border: '1px solid rgba(231,238,220,0.65)', boxShadow: '0 10px 24px rgba(16,24,40,0.08)' }}
+        style={{ background: 'rgba(207,233,220,0.62)', border: '1px solid rgba(207,233,220,0.65)', boxShadow: '0 10px 24px rgba(16,24,40,0.08)' }}
       >
         <div className="flex min-w-0 items-center gap-3">
         <button onClick={() => router.push(journeyListPath)}
@@ -1016,8 +1016,8 @@ export function StepEditor({ step }: StepEditorProps) {
         <div
           className="rounded-2xl p-4 space-y-3 backdrop-blur-md"
           style={{
-            background: 'linear-gradient(135deg, rgba(231,238,220,0.75), rgba(231,238,220,0.75))',
-            border: '1px solid rgba(231,238,220,0.9)',
+            background: 'linear-gradient(135deg, rgba(207,233,220,0.75), rgba(207,233,220,0.75))',
+            border: '1px solid rgba(207,233,220,0.9)',
             boxShadow: '0 14px 32px rgba(15,23,42,0.12)',
           }}
         >
@@ -1419,7 +1419,7 @@ export function StepEditor({ step }: StepEditorProps) {
             </p>
           )}
           {quizQuestions.map((q, qi) => (
-            <div key={q.id || qi} className="rounded-xl border border-primary-100 overflow-hidden" style={{ background: 'rgba(231,238,220,0.85)' }}>
+            <div key={q.id || qi} className="rounded-xl border border-primary-100 overflow-hidden" style={{ background: 'rgba(207,233,220,0.85)' }}>
               <button
                 type="button"
                 onClick={() => setExpandedQuiz(expandedQuiz === qi ? null : qi)}
@@ -1488,7 +1488,7 @@ export function StepEditor({ step }: StepEditorProps) {
             רק טקסט הטענה יוקרא — לא תשובות ולא הסברים. הקובץ נוצר פעם אחת ונשמר ב-R2 תחת תחנה + צעד.
           </p>
           {gameItems.map((g, gi) => (
-            <div key={g.id || gi} className="rounded-xl border border-accent-100 overflow-hidden" style={{ background: 'rgba(231,238,220,0.88)' }}>
+            <div key={g.id || gi} className="rounded-xl border border-accent-100 overflow-hidden" style={{ background: 'rgba(207,233,220,0.88)' }}>
               <button
                 type="button"
                 onClick={() => setExpandedGame(expandedGame === gi ? null : gi)}
@@ -1604,7 +1604,7 @@ export function StepEditor({ step }: StepEditorProps) {
             </button>
           )}
           {researches.map((r, ri) => (
-            <div key={r.id || ri} className="rounded-xl border overflow-hidden" style={{ borderColor: 'rgba(139,92,246,0.18)', background: 'rgba(231,238,220,0.72)' }}>
+            <div key={r.id || ri} className="rounded-xl border overflow-hidden" style={{ borderColor: 'rgba(139,92,246,0.18)', background: 'rgba(207,233,220,0.72)' }}>
               <button
                 type="button"
                 onClick={() => setExpandedResearch(expandedResearch === ri ? null : ri)}
@@ -1671,7 +1671,7 @@ export function StepEditor({ step }: StepEditorProps) {
                   </div>
 
                   {(r.ai_summary || r.key_findings?.length || r.practical_takeaway || r.limitations) && (
-                    <div className="rounded-xl p-3 space-y-2 text-sm" style={{ background: 'rgba(231,238,220,0.72)', border: '1px solid rgba(124,58,237,0.16)' }}>
+                    <div className="rounded-xl p-3 space-y-2 text-sm" style={{ background: 'rgba(207,233,220,0.72)', border: '1px solid rgba(124,58,237,0.16)' }}>
                       <p className="text-xs font-black text-iris-900">מה אלמוג יקבל מהמחקר</p>
                       {r.ai_summary && <p className="leading-relaxed text-ink-soft">{r.ai_summary}</p>}
                       {r.key_findings?.length ? (
@@ -1727,7 +1727,7 @@ export function StepEditor({ step }: StepEditorProps) {
               t.meal_timing === 'after' ? 'after' : t.meal_timing === 'during' ? 'during' : 'before';
             const mealTarget: 'fixed' | 'all' = t.meal_target === 'all' ? 'all' : 'fixed';
             return (
-            <div key={t.id || ti} className="rounded-xl border overflow-hidden" style={{ borderColor: 'rgba(249,115,22,0.2)', background: 'rgba(231,238,220,0.75)' }}>
+            <div key={t.id || ti} className="rounded-xl border overflow-hidden" style={{ borderColor: 'rgba(249,115,22,0.2)', background: 'rgba(207,233,220,0.75)' }}>
               <button
                 type="button"
                 onClick={() => setExpandedTask(expandedTask === ti ? null : ti)}
@@ -2006,7 +2006,7 @@ export function StepEditor({ step }: StepEditorProps) {
                           <div
                             key={lvl.id || li}
                             className="rounded-lg p-2 space-y-1"
-                            style={{ background: 'rgba(231,238,220,0.7)', border: '1px solid rgba(249,115,22,0.12)' }}
+                            style={{ background: 'rgba(207,233,220,0.7)', border: '1px solid rgba(249,115,22,0.12)' }}
                           >
                             <div className="flex flex-wrap items-center gap-2">
                               <input
@@ -2144,7 +2144,7 @@ export function StepEditor({ step }: StepEditorProps) {
             דוגמה: &quot;לפני כל ארוחה שותה כוס מים&quot;.
           </div>
           {habits.map((h, hi) => (
-            <div key={h.id || hi} className="rounded-xl border overflow-hidden" style={{ borderColor: 'rgba(16,185,129,0.24)', background: 'rgba(231,238,220,0.76)' }}>
+            <div key={h.id || hi} className="rounded-xl border overflow-hidden" style={{ borderColor: 'rgba(16,185,129,0.24)', background: 'rgba(207,233,220,0.76)' }}>
               <button
                 type="button"
                 onClick={() => setExpandedHabit(expandedHabit === hi ? null : hi)}
@@ -2271,13 +2271,13 @@ export function StepEditor({ step }: StepEditorProps) {
           </Field>
         </Section>
 
-        <div className="flex items-center justify-between gap-3 rounded-2xl p-3 backdrop-blur-sm" style={{ background: 'rgba(231,238,220,0.68)', border: '1px solid rgba(231,238,220,0.9)' }}>
+        <div className="flex items-center justify-between gap-3 rounded-2xl p-3 backdrop-blur-sm" style={{ background: 'rgba(207,233,220,0.68)', border: '1px solid rgba(207,233,220,0.9)' }}>
           <button
             type="button"
             onClick={goPrevSection}
             disabled={!canGoBack}
             className="px-4 py-2.5 rounded-xl font-bold text-sm border transition disabled:opacity-40"
-            style={{ borderColor: 'rgba(0,0,0,0.12)', background: '#e7eedc', color: '#374151' }}
+            style={{ borderColor: 'rgba(0,0,0,0.12)', background: '#cfe9dc', color: '#374151' }}
           >
             שלב קודם
           </button>
@@ -2311,7 +2311,7 @@ export function StepEditor({ step }: StepEditorProps) {
         <div className="fixed inset-0 z-60 flex items-center justify-center bg-ink-900/45 backdrop-blur-sm px-4" dir="rtl">
           <div
             className="w-full max-w-sm rounded-3xl p-6 text-center"
-            style={{ background: 'rgba(231,238,220,0.97)', border: '1px solid rgba(231,238,220,0.9)', boxShadow: '0 24px 60px rgba(15,23,42,0.35)' }}
+            style={{ background: 'rgba(207,233,220,0.97)', border: '1px solid rgba(207,233,220,0.9)', boxShadow: '0 24px 60px rgba(15,23,42,0.35)' }}
           >
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl" style={{ background: 'linear-gradient(135deg, #047857, #10b981)' }}>
               <Loader2 className="h-7 w-7 animate-spin text-gc" />
@@ -2374,7 +2374,7 @@ export function StepEditor({ step }: StepEditorProps) {
         <div className="fixed inset-0 z-60 flex items-center justify-center bg-ink-900/45 backdrop-blur-sm px-4" dir="rtl">
           <div
             className="w-full max-w-sm rounded-3xl p-6 text-center"
-            style={{ background: 'rgba(231,238,220,0.97)', border: '1px solid rgba(231,238,220,0.9)', boxShadow: '0 24px 60px rgba(76,29,149,0.35)' }}
+            style={{ background: 'rgba(207,233,220,0.97)', border: '1px solid rgba(207,233,220,0.9)', boxShadow: '0 24px 60px rgba(76,29,149,0.35)' }}
           >
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl" style={{ background: 'linear-gradient(135deg, #7c3aed, #2563eb)' }}>
               <Loader2 className="h-7 w-7 animate-spin text-gc" />
@@ -2469,7 +2469,7 @@ function Section({
 }) {
   if (!isVisible) return null;
   return (
-    <div className="rounded-2xl p-4 sm:p-5 space-y-4 backdrop-blur-md" style={{ background: 'rgba(231,238,220,0.74)', border: '1px solid rgba(231,238,220,0.95)', boxShadow: '0 12px 28px rgba(6,78,59,0.10)' }}>
+    <div className="rounded-2xl p-4 sm:p-5 space-y-4 backdrop-blur-md" style={{ background: 'rgba(207,233,220,0.74)', border: '1px solid rgba(207,233,220,0.95)', boxShadow: '0 12px 28px rgba(6,78,59,0.10)' }}>
       <div className="flex items-center gap-2">
         <div className="w-7 h-7 rounded-full text-gc text-xs font-black flex items-center justify-center" style={{ background: color }}>
           {sectionNumber}
@@ -2510,7 +2510,7 @@ function SectionTab({
           ? `1px solid ${color}55`
           : '1px solid rgba(248,251,246,0.55)',
         boxShadow: active
-          ? `0 8px 24px ${color}22, inset 0 1px 0 rgba(231,238,220,0.65)`
+          ? `0 8px 24px ${color}22, inset 0 1px 0 rgba(207,233,220,0.65)`
           : '0 2px 10px rgba(15,23,42,0.06), inset 0 1px 0 rgba(241,244,234,0.45)',
       }}
     >

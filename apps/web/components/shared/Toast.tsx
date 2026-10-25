@@ -37,7 +37,7 @@ const config = {
     icon: XCircle,
     iconBg: 'linear-gradient(135deg, rgba(239,68,68,0.35), rgba(185,28,28,0.25))',
     iconColor: '#fca5a5',
-    titleColor: '#e7eedc',
+    titleColor: '#cfe9dc',
     msgColor: '#fecaca',
     border: 'rgba(239,68,68,0.5)',
     glow: 'rgba(239,68,68,0.25)',
@@ -51,7 +51,7 @@ const config = {
     icon: Info,
     iconBg: 'linear-gradient(135deg, rgba(59,130,246,0.35), rgba(29,78,216,0.25))',
     iconColor: '#93c5fd',
-    titleColor: '#e7eedc',
+    titleColor: '#cfe9dc',
     msgColor: '#bfdbfe',
     border: 'rgba(59,130,246,0.45)',
     glow: 'rgba(59,130,246,0.22)',
@@ -150,7 +150,7 @@ function Toast({ toast, onDismiss }: ToastProps) {
           onClick={() => onDismiss(toast.id)}
           className="flex-shrink-0 w-7 h-7 rounded-xl flex items-center justify-center transition-all mt-0.5"
           style={{ color: 'rgba(255,255,255,0.4)', background: 'rgba(255,255,255,0.05)' }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; e.currentTarget.style.color = 'rgba(231,238,220,0.8)'; }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; e.currentTarget.style.color = 'rgba(207,233,220,0.8)'; }}
           onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'rgba(255,255,255,0.4)'; }}
         >
           <X className="w-3.5 h-3.5" />

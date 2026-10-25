@@ -331,7 +331,7 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
                     key={req.id}
                     className={`flex items-start gap-3 rounded-xl border p-3 ${
                       highlightedRequest === req.id
-                        ? 'border-iris-300 bg-[#e7eedc]'
+                        ? 'border-iris-300 bg-[#cfe9dc]'
                         : 'border-[#E8D5B5] bg-glass-hi/80'
                     }`}
                   >

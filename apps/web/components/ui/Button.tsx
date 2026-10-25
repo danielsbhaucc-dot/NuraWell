@@ -1,7 +1,7 @@
 import { forwardRef, type ButtonHTMLAttributes } from 'react';
 import { cn } from './cn';
 
-type Variant = 'primary' | 'secondary' | 'soft' | 'ghost' | 'danger' | 'dark';
+type Variant = 'primary' | 'secondary' | 'soft' | 'ghost' | 'danger' | 'dark' | 'amber';
 type Size = 'sm' | 'md' | 'lg';
 
 const variants: Record<Variant, string> = {
@@ -13,6 +13,8 @@ const variants: Record<Variant, string> = {
   soft: 'bg-primary-500/10 text-primary-800 ring-1 ring-primary-500/20 hover:bg-primary-500/15 focus-visible:ring-primary-300',
   ghost: 'bg-transparent text-primary-800 hover:bg-primary-500/10 focus-visible:ring-primary-300',
   danger: 'bg-linear-to-br from-energy-700 to-energy-500 text-on-dark shadow-btn hover:brightness-105 focus-visible:ring-energy-400',
+  // Warm amber — premium CTA on dark public pages (pricing, landing-style surfaces).
+  amber: 'bg-linear-to-br from-accent-300 to-accent-500 text-forest-950 shadow-btn ring-1 ring-accent-200/50 hover:brightness-105 focus-visible:ring-accent-300',
   // Deep forest — admin chrome, auth, hero bands.
   dark: 'bg-linear-to-br from-forest-800 to-forest-600 text-on-dark shadow-btn ring-1 ring-glow/20 hover:ring-glow/40 focus-visible:ring-glow',
 };

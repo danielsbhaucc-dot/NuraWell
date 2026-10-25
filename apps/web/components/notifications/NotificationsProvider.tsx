@@ -843,7 +843,7 @@ export function NotificationsProvider({
             style={{
               border: '1px solid rgba(255,255,255,0.52)',
               boxShadow:
-                '0 -24px 64px rgba(6,78,59,0.14), 0 0 0 1px rgba(255,255,255,0.35) inset, inset 0 1px 0 rgba(231,238,220,0.65)',
+                '0 -24px 64px rgba(6,78,59,0.14), 0 0 0 1px rgba(255,255,255,0.35) inset, inset 0 1px 0 rgba(207,233,220,0.65)',
               background:
                 'linear-gradient(168deg, rgba(248,251,246,0.58) 0%, rgba(236,253,245,0.42) 42%, rgba(255,255,255,0.52) 100%)',
               backdropFilter: 'blur(26px) saturate(1.35)',

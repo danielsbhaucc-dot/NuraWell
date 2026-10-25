@@ -5,10 +5,10 @@ export function HeroArt({ className }: { className?: string }) {
       <defs>
         <linearGradient id="ldg-gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#f6e2a8" /><stop offset=".45" stopColor="#c9a45c" /><stop offset=".7" stopColor="#fbe7b0" /><stop offset="1" stopColor="#9c7a35" /></linearGradient>
         <linearGradient id="ldg-em" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#6ee7b7" /><stop offset=".5" stopColor="#10b981" /><stop offset="1" stopColor="#0d9488" /></linearGradient>
-        <linearGradient id="ldg-glass" x1="0" y1="0" x2=".3" y2="1"><stop offset="0" stopColor="#e7eedc" stopOpacity=".85" /><stop offset=".5" stopColor="#a7f3d0" stopOpacity=".35" /><stop offset="1" stopColor="#5eead4" stopOpacity=".25" /></linearGradient>
+        <linearGradient id="ldg-glass" x1="0" y1="0" x2=".3" y2="1"><stop offset="0" stopColor="#cfe9dc" stopOpacity=".85" /><stop offset=".5" stopColor="#a7f3d0" stopOpacity=".35" /><stop offset="1" stopColor="#5eead4" stopOpacity=".25" /></linearGradient>
         <radialGradient id="ldg-oe" cx=".35" cy=".3"><stop offset="0" stopColor="#ecfdf5" /><stop offset=".4" stopColor="#34d399" /><stop offset="1" stopColor="#065f46" /></radialGradient>
-        <radialGradient id="ldg-oa" cx=".35" cy=".3"><stop offset="0" stopColor="#e7eedc" /><stop offset=".4" stopColor="#fbbf24" /><stop offset="1" stopColor="#c2410c" /></radialGradient>
-        <radialGradient id="ldg-ot" cx=".35" cy=".3"><stop offset="0" stopColor="#e7eedc" /><stop offset=".45" stopColor="#2dd4bf" /><stop offset="1" stopColor="#115e59" /></radialGradient>
+        <radialGradient id="ldg-oa" cx=".35" cy=".3"><stop offset="0" stopColor="#cfe9dc" /><stop offset=".4" stopColor="#fbbf24" /><stop offset="1" stopColor="#c2410c" /></radialGradient>
+        <radialGradient id="ldg-ot" cx=".35" cy=".3"><stop offset="0" stopColor="#cfe9dc" /><stop offset=".45" stopColor="#2dd4bf" /><stop offset="1" stopColor="#115e59" /></radialGradient>
         <filter id="ldg-blur"><feGaussianBlur stdDeviation="14" /></filter>
         <filter id="ldg-sh"><feDropShadow dx="0" dy="18" stdDeviation="16" floodColor="#022c22" floodOpacity=".45" /></filter>
       </defs>

@@ -120,9 +120,9 @@ export function DeclinedTasksPageClient() {
               <div
                 className="rounded-[21px] px-4 py-3.5 text-start"
                 style={{
-                  background: 'linear-gradient(180deg, rgba(231,238,220,0.78) 0%, rgba(255,241,242,0.38) 100%)',
-                  border: '1px solid rgba(231,238,220,0.65)',
-                  boxShadow: 'inset 0 1px 0 rgba(231,238,220,0.88)',
+                  background: 'linear-gradient(180deg, rgba(207,233,220,0.78) 0%, rgba(255,241,242,0.38) 100%)',
+                  border: '1px solid rgba(207,233,220,0.65)',
+                  boxShadow: 'inset 0 1px 0 rgba(207,233,220,0.88)',
                   backdropFilter: 'blur(12px)',
                 }}
               >

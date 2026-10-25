@@ -48,10 +48,10 @@ export function BottomNav() {
       <div
         className="absolute inset-0"
         style={{
-          background: 'linear-gradient(180deg, rgba(231,238,220,0.66) 0%, rgba(231,238,220,0.94) 100%)',
+          background: 'linear-gradient(180deg, rgba(207,233,220,0.66) 0%, rgba(207,233,220,0.94) 100%)',
           backdropFilter: 'blur(26px) saturate(190%)',
           WebkitBackdropFilter: 'blur(26px) saturate(190%)',
-          borderTop: '1px solid rgba(231,238,220,0.9)',
+          borderTop: '1px solid rgba(207,233,220,0.9)',
           boxShadow: '0 -12px 40px rgba(6,78,59,0.12)',
         }}
       />
