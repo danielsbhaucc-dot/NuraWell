@@ -1,15 +1,17 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { opsGlassBtnClass, opsGlassBtnPrimaryClass, opsGlassCardClass } from '@/components/admin/OpsPanel';
+import { cn } from '@/lib/cn';
 import { AlertTriangle, CheckCircle2, Loader2, RefreshCw, XCircle } from 'lucide-react';
 
 type Result = { id: string; label: string; description: string; status: 'ok' | 'warn' | 'fail'; value: number | null; unit?: string; detail: string; ms: number };
 type Report = { productId: string; generatedAt: string; overall: Result['status']; results: Result[]; window: string };
 
 const TONE = {
-  ok: { icon: CheckCircle2, cls: 'border-emerald-200 bg-emerald-50 text-emerald-800', label: 'תקין' },
-  warn: { icon: AlertTriangle, cls: 'border-amber-200 bg-amber-50 text-amber-800', label: 'לתשומת לב' },
-  fail: { icon: XCircle, cls: 'border-rose-200 bg-rose-50 text-rose-800', label: 'דורש טיפול' },
+  ok: { icon: CheckCircle2, cls: 'border-teal-400/50 bg-teal-500/10 text-teal-800', label: 'תקין' },
+  warn: { icon: AlertTriangle, cls: 'border-amber-400/50 bg-amber-500/10 text-amber-800', label: 'לתשומת לב' },
+  fail: { icon: XCircle, cls: 'border-rose-400/50 bg-rose-500/10 text-rose-800', label: 'דורש טיפול' },
 } as const;
 
 /** "בקרת איכות": generic, renders whatever checks the selected product registered. */
@@ -43,15 +45,15 @@ export function QcScreen() {
           <p className="text-sm text-slate-600">בדיקות אוטומטיות לפי המוצר שנבחר. כל בדיקה רצה בנפרד, כך שבדיקה תקועה לא מפילה את המסך.</p>
         </div>
         <div className="flex items-center gap-2">
-          <div role="tablist" aria-label="טווח זמן" className="flex rounded-2xl bg-slate-100 p-1">
+          <div role="tablist" aria-label="טווח זמן" className={cn(opsGlassCardClass, "flex p-1")}>
             {(['24h', '7d'] as const).map((w) => (
               <button key={w} role="tab" aria-selected={win === w} onClick={() => setWin(w)}
-                className={`min-h-10 rounded-xl px-4 text-sm font-semibold ${win === w ? 'bg-white text-[#0f3d2e] shadow' : 'text-slate-600'}`}>
+                className={`min-h-10 rounded-xl px-4 text-sm font-semibold ${win === w ? 'bg-teal-500/10 text-teal-800' : 'text-slate-600'}`}>
                 {w === '24h' ? '24 שעות' : '7 ימים'}
               </button>
             ))}
           </div>
-          <button onClick={() => void load(win)} disabled={loading} aria-label="רענון" className="flex min-h-10 min-w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white disabled:opacity-50">
+          <button onClick={() => void load(win)} disabled={loading} aria-label="רענון" className={cn(opsGlassBtnClass, "min-h-10 min-w-10 disabled:opacity-50")}>
             <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
           </button>
         </div>
@@ -60,13 +62,13 @@ export function QcScreen() {
       {err && (
         <div role="alert" className="flex items-center justify-between gap-3 rounded-3xl border border-rose-200 bg-rose-50 p-4 text-rose-800">
           <span className="font-semibold">{err}</span>
-          <button onClick={() => void load(win)} className="rounded-2xl bg-rose-700 px-4 py-2 text-sm font-bold text-white">נסו שוב</button>
+          <button onClick={() => void load(win)} className={opsGlassBtnPrimaryClass}>נסו שוב</button>
         </div>
       )}
 
       {loading && !data && (
         <div className="grid gap-3 sm:grid-cols-2" aria-busy="true">
-          {[0, 1, 2, 3].map((i) => <div key={i} className="h-32 animate-pulse rounded-3xl bg-slate-100" />)}
+          {[0, 1, 2, 3].map((i) => <div key={i} className={cn(opsGlassCardClass, "h-32 animate-pulse")} />)}
         </div>
       )}
 
@@ -81,13 +83,13 @@ export function QcScreen() {
             {loading && <Loader2 className="ms-auto animate-spin" size={18} />}
           </section>
           {data.results.length === 0 ? (
-            <p className="rounded-3xl border border-dashed border-slate-300 p-8 text-center text-slate-600">למוצר הזה עדיין לא הוגדרו בדיקות איכות.</p>
+            <p className={cn(opsGlassCardClass, "p-8 text-center text-slate-600")}>למוצר הזה עדיין לא הוגדרו בדיקות איכות.</p>
           ) : (
             <ul className="grid gap-3 sm:grid-cols-2">
               {data.results.map((r) => {
                 const T = TONE[r.status];
                 return (
-                  <li key={r.id} className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <li key={r.id} className={cn(opsGlassCardClass, "p-4")}>
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <h2 className="font-bold text-[#0f3d2e]">{r.label}</h2>
