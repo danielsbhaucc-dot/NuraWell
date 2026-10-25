@@ -11,7 +11,7 @@ export async function deleteUserCompletely(
   userId: string
 ): Promise<DeleteUserResult> {
   // טבלאות בלי FK עם CASCADE: מוחקים ידנית כדי שלא יישאר מזהה משתמש
-  for (const table of ['ai_usage_events', 'error_events']) {
+  for (const table of ['ai_usage_events', 'ai_usage_monthly', 'ai_interaction_edits', 'error_events']) {
     const { error: e } = await admin.from(table).delete().eq('user_id', userId);
     if (e) console.warn('[deleteUserCompletely] cleanup failed', table, e.message);
   }
