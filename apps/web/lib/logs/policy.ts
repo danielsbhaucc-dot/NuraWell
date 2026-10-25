@@ -40,6 +40,16 @@ export const LOG_POLICY: PolicyRow[] = [
   { table: 'chat_transcript_access_requests', tsCol: 'created_at', days: 2555, klass: 'legal', label: 'בקשות גישה לשיחות' },
 ];
 
+/**
+ * Display-only row for the Ops logs retention table. Account data after a subscription ends is not a log table:
+ * it is purged by the subscription retention job (lib/privacy/subscription-retention.ts), per the user's own choice.
+ */
+export const ACCOUNT_RETENTION_ROW = {
+  label: 'נתוני חשבון אחרי סיום מנוי',
+  retention_he: 'לפי בחירת המשתמש: מיד או 24 חודשים מסיום המנוי',
+  note_he: 'חשבונות ותיקים בלי בחירה: 24 חודשים. תיעוד הבחירה נשמר 7 שנים.',
+} as const;
+
 export const CLASS_HE: Record<LogClass, string> = { operational: 'תפעולי — נמחק אוטומטית', access: 'גישה ואבטחה — 24 חודשים לפי החוק', legal: 'ראיה משפטית — לא נמחק אוטומטית' };
 
 export function retentionHe(days: number): string {
