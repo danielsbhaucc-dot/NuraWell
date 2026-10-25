@@ -271,6 +271,16 @@ export function AdminShell({
             </Link>
 
             <Link prefetch={false}
+              href={opsHref('/qc')}
+              onClick={() => setSidebarOpen(false)}
+              className={navBtn(np === '/ops/qc', 'emerald')}
+              title="בקרת איכות"
+            >
+              <ShieldCheck size={20} className={cn('shrink-0', np === '/ops/qc' && 'text-emerald-600')} />
+              <span className={cn('truncate', !showNavLabels && 'lg:sr-only')}>בקרת איכות</span>
+            </Link>
+
+            <Link prefetch={false}
               href={opsHref('/notify-quality')}
               onClick={() => setSidebarOpen(false)}
               className={navBtn(isNotifyQuality, 'emerald')}
