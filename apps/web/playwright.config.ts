@@ -26,6 +26,9 @@ export default defineConfig({
       // Signed-in pass with the role=test account (see docs/E2E.md); mobile RTL.
       name: 'signed-in-mobile',
       testMatch: /signed-in\/.*\.spec\.ts/,
+      // all signed-in specs share one test account (server-side state) -> run them serially
+      fullyParallel: false,
+      workers: 1,
       use: { ...devices['Pixel 7'], timezoneId: 'Asia/Jerusalem' },
     },
   ],

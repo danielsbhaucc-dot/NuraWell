@@ -57,7 +57,7 @@ export async function backfillDerivedPii(admin: SupabaseClient, budgetMs = 60_00
     if (error) throw new Error(`dossier: ${error.message}`);
     if (!data?.length) break;
     for (const r of data as Array<{ user_id: string; personal_context: unknown }>) {
-      if (r.personal_context === null || r.personal_context === undefined || isEncrypted(r.personal_context)) continue;
+      if (r.personal_context === null || r.personal_context === undefined || isEncrypted(r.personal_context) || String(r.personal_context).startsWith('enc:v2:')) continue;
       await admin.from('user_memory_dossier').update({ personal_context: encryptJson(r.personal_context, r.user_id) }).eq('user_id', r.user_id);
       out.dossier += 1;
     }

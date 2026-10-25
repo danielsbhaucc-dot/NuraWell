@@ -19,3 +19,13 @@ export function createAdminClient() {
     }
   );
 }
+
+/**
+ * Service-role client WITHOUT the field-decryption wrapper: returns stored values (ciphertext) as-is.
+ * Only for crypto maintenance jobs (backfills, key rotation) that must see what is really stored.
+ */
+export function createRawAdminClient() {
+  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+}

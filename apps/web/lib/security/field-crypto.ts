@@ -22,7 +22,7 @@ import {
   unwrapDataKey,
   type WrappedDek,
 } from '@/lib/security/field-envelope';
-import { encryptedTable, type FieldKind } from '@/lib/security/field-registry';
+import { encryptedTable, isBlocked, type FieldKind } from '@/lib/security/field-registry';
 
 export const FIELD_KEK_VERSION = 1;
 
@@ -180,4 +180,24 @@ export async function decryptRow<T extends Record<string, unknown>>(table: strin
 
 export function blindIndexFor(table: string, column: string, value: string): string {
   return blindIndex(derive().indexKey, `${table}.${column}`, value);
+}
+
+/**
+ * Seals every registered, non-BLOCKED column present in `patch` as enc:v2 for (table, owner, row).
+ * Accepts plain values; enc:v1 values are opened first (legacy writers), enc:v2 values are kept.
+ */
+export async function sealRow<T extends Record<string, unknown>>(table: string, userId: string, rowId: string, patch: T): Promise<T> {
+  const spec = encryptedTable(table);
+  if (!spec) return patch;
+  const out: Record<string, unknown> = { ...patch };
+  const { decryptJson, decryptString, isEncrypted } = await import('@/lib/crypto/pii');
+  for (const [c, kind] of Object.entries(spec.columns)) {
+    if (!(c in out) || isBlocked(table, c)) continue;
+    let v = out[c];
+    if (v === null || v === undefined || isV2(v)) continue;
+    if (Array.isArray(v) && kind === 'text[]') v = v.map((x) => (isEncrypted(x) ? decryptString(x, userId) : x));
+    else if (isEncrypted(v)) v = kind === 'text' ? decryptString(v, userId) : decryptJson(v, userId);
+    out[c] = await encryptValue(table, c, userId, rowId, v);
+  }
+  return out as T;
 }
