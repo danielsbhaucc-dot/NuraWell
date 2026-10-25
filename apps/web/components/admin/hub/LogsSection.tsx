@@ -6,6 +6,7 @@ import { IncidentSheet } from './IncidentSheet';
 import { opsGlassCardClass } from '@/components/admin/OpsPanel';
 import { cn } from '@/lib/cn';
 import { LOG_TYPE_HE, type LogInv, type LogRow, type LogType } from '@/lib/logs/query';
+import { ACCOUNT_RETENTION_ROW } from '@/lib/logs/policy';
 
 type StorageType = { table: string; label: string; klass: 'operational' | 'access' | 'legal'; klass_he: string; retention_he: string; bytes: number; rows: number };
 type Storage = { db_bytes: number; limit_bytes: number; level: 'ok' | 'warn' | 'critical'; last_run: { created_at: string; dry_run: boolean } | null; types: StorageType[] };
@@ -55,6 +56,13 @@ function StoragePanel() {
             </span>
           </li>
         ))}
+        <li className="flex flex-wrap items-center justify-between gap-2 py-2" data-testid="logs-account-retention-row">
+          <span className="font-semibold text-slate-700">{ACCOUNT_RETENTION_ROW.label}</span>
+          <span className="flex flex-wrap items-center gap-2 text-slate-500">
+            <span>{ACCOUNT_RETENTION_ROW.note_he}</span>
+            <span className="rounded-full border border-sky-300/60 bg-sky-500/10 px-2 py-0.5 text-[11px] font-semibold text-sky-800">שמירה: {ACCOUNT_RETENTION_ROW.retention_he}</span>
+          </span>
+        </li>
       </ul>
     </div>
   );

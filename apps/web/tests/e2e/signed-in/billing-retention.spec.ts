@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { hasCreds, login } from './helpers';
+import { closeConsentSheet, hasCreds, login } from './helpers';
 
 /**
  * Subscription retention + billing (prod, role=test account). Never deletes data, never charges.
@@ -33,6 +33,8 @@ test.describe.serial('billing + retention (prod, test account)', () => {
     expect(['keep_24m', 'delete_now']).toContain(before.choice);
 
     await page.goto('/settings/privacy');
+    // the test account has no health consent, so the consent sheet opens over the page; close it (never consent)
+    await closeConsentSheet(page);
     const section = page.getByTestId('retention-choice-section');
     await expect(section).toBeVisible({ timeout: 20_000 });
     const target = before.choice === 'keep_24m' && !before.is_default ? 'delete_now' : 'keep_24m';
