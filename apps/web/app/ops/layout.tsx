@@ -1,3 +1,4 @@
+import { PiiJustificationHost } from '@/components/ops/access/PiiJustificationHost';
 import type { Metadata } from 'next';
 import { ensureOpsAdminServer, getOpsSessionContext } from '@/lib/auth/ensure-ops-admin-server';
 import { AdminShell } from '@/components/admin/AdminShell';
@@ -41,6 +42,7 @@ export default async function OpsLayout({ children }: { children: React.ReactNod
     >
       {children}
       <OpsPendingLoginAlert />
+      <PiiJustificationHost />
     </AdminShell>
   );
 }

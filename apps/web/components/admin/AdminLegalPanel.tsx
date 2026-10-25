@@ -1,5 +1,6 @@
 'use client';
 
+import { piiFetch } from '@/lib/platform/access/pii-fetch';
 import { useCallback, useEffect, useState } from 'react';
 import { CheckCircle2, ChevronDown, Download, FileText, Image as ImageIcon, Loader2, Search, ShieldAlert, ShieldCheck, Scale, Mail } from 'lucide-react';
 import { OpsDivider, opsGlassBtnClass, opsGlassCardClass } from '@/components/admin/OpsPanel';
@@ -61,7 +62,7 @@ export function AdminLegalPanel() {
   const pick = useCallback(async (id: string) => {
     setSel(id); setDetail(null); setChecks(null); setPre(null); setOvr(false); setOvrReason(''); setOvrAck(false); setLoading(true); setErr(null);
     try {
-      const r = await fetch(`/api/v1/ops/legal/user/${id}`, { cache: 'no-store' });
+      const r = await piiFetch(`/api/v1/ops/legal/user/${id}`, { cache: 'no-store' });
       if (!r.ok) throw new Error();
       setDetail(await r.json());
     } catch { setErr('לא הצלחנו לטעון את התיעוד'); } finally { setLoading(false); }
