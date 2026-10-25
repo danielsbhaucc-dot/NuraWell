@@ -1,0 +1,60 @@
+name: CI
+# The single required PR check ("ci"). One job (minutes are rounded up per job), cancels superseded runs,
+# skips tests when only docs/workflow text changed. Secrets are never used here (safe for Dependabot/fork PRs).
+on:
+  pull_request:
+concurrency:
+  group: ci-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+jobs:
+  ci:
+    name: ci
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: What changed
+        id: changed
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          files="$(git diff --name-only "$BASE...HEAD")"
+          echo "$files" | sed 's/^/  /'
+          code=false; lock=false
+          echo "$files" | grep -qE '^(apps/|packages/|lib/|scripts/|supabase/|package(-lock)?\.json|vercel\.json|tsconfig)' && code=true
+          echo "$files" | grep -qE '(^|/)package(-lock)?\.json$' && lock=true
+          echo "code=$code" >> "$GITHUB_OUTPUT"; echo "lock=$lock" >> "$GITHUB_OUTPUT"
+      - name: Secrets (gitleaks, PR commits)
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          bash scripts/ci/install-tools.sh gitleaks
+          gitleaks git --redact --no-banner -c .gitleaks.toml --log-opts="$BASE..HEAD"
+      - name: Code scan (Semgrep CE, new findings only)
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: bash scripts/ci/semgrep.sh "$BASE"
+      - uses: actions/setup-node@v4
+        if: steps.changed.outputs.code == 'true'
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Install
+        if: steps.changed.outputs.code == 'true'
+        run: npm ci --legacy-peer-deps --no-audit --no-fund
+      - name: Dependencies (npm audit, high+, production)
+        if: steps.changed.outputs.lock == 'true'
+        run: npm audit --omit=dev --audit-level=high
+      - name: Design guard (no white / raw colors / raw buttons)
+        if: steps.changed.outputs.code == 'true'
+        working-directory: apps/web
+        run: npm run lint:design --if-present
+      - name: Unit tests
+        if: steps.changed.outputs.code == 'true'
+        working-directory: apps/web
+        run: npm run test

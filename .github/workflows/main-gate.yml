@@ -1,0 +1,70 @@
+name: main-gate
+# Free-plan replacement for branch protection. Every push to main must be the merge of a PR whose
+# "ci" check passed. Otherwise: revert, alert the owner (Telegram + email), and fail — Vercel waits for
+# this check ("main-gate") before building, so an unchecked commit never reaches production.
+on:
+  push:
+    branches: [main]
+concurrency:
+  group: main-gate
+  cancel-in-progress: false
+permissions:
+  contents: write
+  pull-requests: read
+  checks: read
+jobs:
+  main-gate:
+    name: main-gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Came through a green PR?
+        id: verify
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.sha }}
+          BEFORE: ${{ github.event.before }}
+          REPO: ${{ github.repository }}
+        run: |
+          ok=false; why=""
+          pr="$(gh api "repos/$REPO/commits/$SHA/pulls" --jq "[.[] | select(.merged_at != null and .merge_commit_sha == \"$SHA\")][0] // empty")"
+          if [ -z "$pr" ]; then
+            why="no merged PR produced this commit"
+          else
+            head="$(jq -r .head.sha <<<"$pr")"; num="$(jq -r .number <<<"$pr")"
+            # The PR's head must equal what was tested, and its "ci" run must have succeeded.
+            concl="$(gh api "repos/$REPO/commits/$head/check-runs?check_name=ci&per_page=20" --jq '[.check_runs[] | select(.app.slug == "github-actions")] | sort_by(.completed_at) | last | .conclusion // "none"')"
+            if [ "$concl" = "success" ]; then ok=true; why="PR #$num, ci=success"; else why="PR #$num, ci=$concl"; fi
+          fi
+          # Every pushed commit is also scanned for secrets, whatever its origin.
+          bash scripts/ci/install-tools.sh gitleaks >/dev/null
+          range="$SHA~1..$SHA"
+          [ "$BEFORE" != "0000000000000000000000000000000000000000" ] && git cat-file -e "$BEFORE" 2>/dev/null && range="$BEFORE..$SHA"
+          if ! gitleaks git --redact --no-banner -c .gitleaks.toml --log-opts="$range"; then ok=false; why="$why; gitleaks found a secret"; fi
+          echo "ok=$ok" >> "$GITHUB_OUTPUT"; echo "range=$range" >> "$GITHUB_OUTPUT"
+          echo "result: $ok ($why)"
+          echo "why=$why" >> "$GITHUB_OUTPUT"
+      - name: Revert and alert
+        if: steps.verify.outputs.ok != 'true'
+        env:
+          RANGE: ${{ steps.verify.outputs.range }}
+          WHY: ${{ steps.verify.outputs.why }}
+          SHA: ${{ github.sha }}
+          APP: ${{ secrets.VERCEL_APP_URL }}
+          KEY: ${{ secrets.DB_BACKUP_SECRET }}
+          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          git config user.name "main-gate"; git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          reverted=no
+          if git revert --no-edit $(git rev-list --no-merges "$RANGE") 2>/dev/null || git revert --no-edit -m 1 "$SHA" 2>/dev/null; then
+            git commit --amend -m "Revert unchecked push to main ($SHA)" -m "main-gate: $WHY. Run: $RUN" >/dev/null
+            git push origin HEAD:main && reverted=yes
+          fi
+          echo "reverted=$reverted"
+          detail="$(printf '%s; reverted=%s' "$WHY" "$reverted" | tr -cd '[:alnum:] #.,:;=_/()-' | cut -c1-280)"
+          body="$(jq -nc --arg sha "$SHA" --arg run "$RUN" --arg d "$detail" '{kind:"unreviewed_push",sha:$sha,run_url:$run,detail:$d}')"
+          curl -fsS -m 30 -X POST -H "Authorization: Bearer $KEY" -H 'Content-Type: application/json' -d "$body" "$APP/api/v1/ops/ci-alert" >/dev/null || echo "alert delivery failed"
+          exit 1
