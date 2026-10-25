@@ -3,7 +3,8 @@ import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import { consumeRateLimit, rateLimitResponse } from '@/lib/api/rate-limit';
 import { audit } from '@/lib/auth/passkeys';
 import { hasSensitiveStepUp } from '@/lib/ops/sensitive-stepup';
-import { ENVELOPE_KEY_NAMES, ensureKmsKeysSync, kmsEnvelopeStatus, wrapKeysSync } from '@/lib/security/kms-envelope';
+import { ensureKmsKeysSync, googleIdTokenForAudience, kmsEnvelopeStatus } from '@/lib/security/kms-envelope';
+import { kmsRotatorUrl } from '@/lib/security/kms-rotation';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 export const runtime = 'nodejs';
@@ -21,9 +22,10 @@ export async function GET(request: Request) {
 }
 
 /**
- * One-time wrap: encrypts the current plain keys with Cloud KMS and returns ONLY ciphertext
- * (useless without KMS access) + fingerprints, after a decrypt round-trip check.
- * The ciphertexts are then stored as KMS_WRAPPED_<NAME> env vars. Plain vars stay until verified.
+ * "Wrap keys in the vault": after admin + sensitive step-up, triggers the KMS rotation job
+ * (Cloud Run, IAM-protected) which asks this server for fresh ciphertexts server-to-server, writes them
+ * straight into Vercel production env, redeploys and verifies. Ciphertexts NEVER reach the browser;
+ * this response carries only a started/failed flag.
  */
 export async function POST(request: Request) {
   const auth = await requireOpsApiAdmin(request);
@@ -40,13 +42,23 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'stepup', message: 'צריך לאמת שוב את הזהות לפני עטיפת המפתחות.' }, { status: 403, headers: NO_STORE });
   }
 
+  const url = kmsRotatorUrl();
+  if (!url) {
+    await audit(db, uid, 'kms_wrap_failed', { code: 'no_rotator_url' });
+    return NextResponse.json({ error: 'failed', message: 'שירות הכספת עדיין לא מוגדר. שום דבר לא השתנה.' }, { status: 503, headers: NO_STORE });
+  }
   try {
-    const wrapped = wrapKeysSync(ENVELOPE_KEY_NAMES);
-    await audit(db, uid, 'kms_keys_wrapped', {
-      keys: wrapped.map((w) => ({ name: w.name, fingerprint: w.fingerprint, roundTrip: w.roundTrip })),
-      ua: request.headers.get('user-agent')?.slice(0, 160) ?? null,
-    });
-    return NextResponse.json({ ok: wrapped.every((w) => w.roundTrip), wrapped }, { headers: NO_STORE });
+    const idt = await googleIdTokenForAudience(url);
+    await audit(db, uid, 'kms_wrap_requested', { ua: request.headers.get('user-agent')?.slice(0, 160) ?? null });
+    const r = await fetch(url, {
+      method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${idt}` },
+      body: JSON.stringify({ force: true, requestedBy: uid }), signal: AbortSignal.timeout(20_000),
+    }).catch((e: unknown) => (e instanceof Error && e.name === 'TimeoutError' ? 'started' : null));
+    if (r === 'started' || (r && (r.ok || r.status === 202))) {
+      return NextResponse.json({ ok: true, started: true, message: 'העטיפה התחילה בשרת. בעוד כמה דקות המצב כאן יתעדכן.' }, { headers: NO_STORE });
+    }
+    await audit(db, uid, 'kms_wrap_failed', { code: r ? `rotator_${r.status}` : 'rotator_unreachable' });
+    return NextResponse.json({ error: 'failed', message: 'העטיפה לא התחילה. שום מפתח לא נחשף ושום דבר לא השתנה.' }, { status: 502, headers: NO_STORE });
   } catch (e) {
     const code = e instanceof Error ? e.message.slice(0, 60) : 'error';
     await audit(db, uid, 'kms_wrap_failed', { code });
