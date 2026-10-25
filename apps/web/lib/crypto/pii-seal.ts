@@ -8,6 +8,7 @@ import { AI_CONTEXT_ENC_KEYS, encryptProfilePatch, encryptTableRow, TABLE_ENC_TE
 import { firstNameFromFullName, restorePiiPlaceholders } from './pii-placeholders';
 import { healthConsentStatus, patchHasHealthFields, stripHealthFields } from '@/lib/privacy/health-consent';
 import { scrubHealthJson, isHealthText } from '@/lib/privacy/health-memory';
+import { assertProfileEnums } from '@/lib/security/profile-enums';
 
 type Row = Record<string, unknown>;
 const PLACEHOLDER = /\[\[?\s*[A-Zא-ת_][A-Z0-9_א-ת]*\s*\]\]?/i;
@@ -45,6 +46,7 @@ export async function sealTableRow<T extends Row>(table: EncTextTable, row: T, u
 }
 
 export async function sealProfilePatch<T extends Row>(patch: T, userId: string): Promise<T> {
+  assertProfileEnums(patch);
   let p: Row = patch;
   // Health-data consent withdrawn → never write health fields again until re-granted.
   const ctxHasHealth = (() => {
