@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { expectHealthy, hasCreds, login, resetLadder, closeConsentSheet } from './helpers';
+import { expectHealthy, hasCreds, login, resetLadder, resetLadderToZero, closeConsentSheet, confirmLevel } from './helpers';
 
 /**
  * Main flow: login → home → journey → plan with a seeded main task →
@@ -12,6 +12,7 @@ test.describe.serial('main flow', () => {
   test('login → journey → plan → ladder down/up → progress', async ({ page }) => {
     await login(page);
     await resetLadder(page);
+    await resetLadderToZero(page);
     await page.goto('/home');
     await expectHealthy(page);
 
@@ -37,12 +38,12 @@ test.describe.serial('main flow', () => {
     await closeConsentSheet(page);
 
     await page.getByRole('button', { name: 'קשה לי', exact: true }).first().click();
-    await page.getByRole('button', { name: 'אישור' }).click();
+    await confirmLevel(page, 'easier');
     await expect(page.getByRole('button', { name: 'גם זה קשה לי' }).first()).toBeVisible({ timeout: 20_000 });
 
     await closeConsentSheet(page);
     await page.getByRole('button', { name: 'קל לי' }).first().click();
-    await page.getByRole('button', { name: 'אישור' }).click();
+    await confirmLevel(page, 'harder');
     await expect(page.getByRole('button', { name: 'קשה לי', exact: true }).first()).toBeVisible({ timeout: 20_000 });
 
     await page.goto('/progress');
