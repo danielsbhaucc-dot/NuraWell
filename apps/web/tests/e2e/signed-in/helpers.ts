@@ -31,3 +31,28 @@ export async function dismissCookieNotice(page: Page) {
     await page.evaluate(() => document.querySelectorAll('.cn-root').forEach((e) => e.remove()));
   });
 }
+
+/**
+ * The ladder specs step the shared test account down and back up. An aborted run can leave it at the
+ * floor, where "easier" correctly returns 409 at_floor. Bring the main task back to level 0 first.
+ */
+export async function resetLadder(page: Page) {
+  for (let i = 0; i < 6; i++) {
+    const plan = await (await page.request.get('/api/v1/tasks/plan')).json();
+    const t = plan?.tasks?.[0];
+    if (!t || t.currentLevel >= 0 || !t.canStepUp) return;
+    await page.request.post('/api/v1/tasks/level', { data: { assignmentId: t.id, direction: 'harder', reason: 'e2e reset' } });
+  }
+}
+
+/** The health-data consent sheet can open over /plans for the test account; close it (no consent given). */
+export async function closeConsentSheet(page: Page) {
+  const sheet = page.getByTestId('consent-evidence-sheet');
+  if (await sheet.isVisible().catch(() => false)) {
+    await page.keyboard.press('Escape');
+    if (await sheet.isVisible().catch(() => false)) {
+      await page.getByRole('button', { name: 'סגירה' }).last().click({ force: true }).catch(() => {});
+    }
+    await sheet.waitFor({ state: 'hidden', timeout: 5_000 }).catch(() => {});
+  }
+}
