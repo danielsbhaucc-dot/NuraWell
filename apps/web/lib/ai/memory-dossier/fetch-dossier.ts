@@ -51,8 +51,9 @@ export async function upsertUserMemoryDossier(
       tags: (scrubHealthJson(dossier.tags) ?? []) as UserMemoryDossier['tags'],
     };
   }
+  const { sealRow } = await import('@/lib/security/field-crypto');
   const { error } = await supabase.from('user_memory_dossier').upsert(
-    {
+    await sealRow('user_memory_dossier', dossier.user_id, dossier.user_id, {
       user_id: dossier.user_id,
       tags: dossier.tags,
       essentials: dossier.essentials,
@@ -67,7 +68,7 @@ export async function upsertUserMemoryDossier(
       risk_signals: encryptJson(dossier.risk_signals, dossier.user_id),
       inferred_insights: dossier.inferred_insights,
       source_stats: dossier.source_stats,
-    },
+    }),
     { onConflict: 'user_id' }
   );
 

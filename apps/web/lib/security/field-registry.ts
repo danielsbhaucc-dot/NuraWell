@@ -231,6 +231,7 @@ export const ENCRYPTED_TABLES = {
 
 /** Registered but not yet safe to encrypt: a DB object reads/constrains the plaintext. Writes/backfill skip these. */
 export const BLOCKED: Readonly<Record<string, string>> = {
+  'journey_next_step_cache.recommendation': 'primary key is (user_id, date_key); row binding needs a composite row key first',
   'profiles.full_name': "trigger handle_new_user writes plaintext at signup; restore_pii_placeholders() reads it in SQL to fill [NAME] tokens \u2014 move both to the app first",
   'profiles.gender': "CHECK enum constraint \u2014 drop and validate in app first",
   'profiles.activity_level': "CHECK enum constraint",
