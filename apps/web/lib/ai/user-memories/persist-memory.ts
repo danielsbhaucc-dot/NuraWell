@@ -1,3 +1,4 @@
+import { normalizeMemoryText } from './memory-text';
 import { createHealthMemoryGate } from '@/lib/privacy/health-memory';
 import { sealTableRow } from '@/lib/crypto/pii-seal';
 import { embedTextForRag } from '../openrouter-embeddings';
@@ -27,7 +28,8 @@ export async function persistUserMemory(params: PersistUserMemoryParams): Promis
   upstash_vector_id: string;
   skipped_reason?: string;
 }> {
-  const text = params.memoryText.replace(/\s+/g, ' ').trim().slice(0, 600);
+  const text = normalizeMemoryText(params.memoryText);
+  if (!text) return { id: '', upstash_vector_id: '', skipped_reason: 'memory_text_invalid_length' };
   if (await createHealthMemoryGate(params.userId)(params.category, text)) {
     return { id: '', upstash_vector_id: '', skipped_reason: 'health_consent_inactive' };
   }
