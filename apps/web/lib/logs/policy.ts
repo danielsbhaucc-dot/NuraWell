@@ -1,6 +1,6 @@
 /**
  * Log retention policy — single source of truth in the app.
- * Mirrored by `public.log_retention_policy()` (migration 000181); tests/logs-retention.test.ts keeps both equal.
+ * Mirrored by `public.log_retention_policy()` (migrations 000181, 000185); tests/logs-retention.test.ts keeps both equal.
  *  - operational: purged automatically after `days`.
  *  - access: legally required access/security logs (Data Security Regulations 2017, reg. 10) — kept 24 months, then purged.
  *  - legal: consent / legal evidence — REPORT ONLY. The job counts what is past the period but never deletes it.
@@ -20,10 +20,13 @@ export const LOG_POLICY: PolicyRow[] = [
   { table: 'gideon_device_requests', tsCol: 'created_at', days: 30, klass: 'operational', extra: "status <> 'pending'", label: 'בקשות מכשיר לגדעון' },
   { table: 'rate_limit_buckets', tsCol: 'expires_at', days: 1, klass: 'operational', label: 'מוני הגבלת בקשות' },
   { table: 'security_signals', tsCol: 'created_at', days: 90, klass: 'operational', label: 'אותות אבטחה' },
-  { table: 'ip_blocks', tsCol: 'blocked_until', days: 7, klass: 'operational', label: 'חסימות זמניות' },
+  { table: 'ip_blocks', tsCol: 'blocked_until', days: 7, klass: 'operational', label: 'חסימות כתובות' },
+  { table: 'ip_block_ranges', tsCol: 'blocked_until', days: 7, klass: 'operational', label: 'חסימות טווחי כתובות' },
+  { table: 'tg_action_nonces', tsCol: 'expires_at', days: 7, klass: 'operational', label: 'אסימוני כפתורי טלגרם' },
   { table: 'log_retention_runs', tsCol: 'created_at', days: 400, klass: 'operational', label: 'ריצות ניקוי יומנים' },
   { table: 'admin_audit_log', tsCol: 'created_at', days: 730, klass: 'access', label: 'יומן גישת מנהלים' },
   { table: 'ops_security_events', tsCol: 'created_at', days: 730, klass: 'access', label: 'אירועי אבטחה' },
+  { table: 'security_incidents', tsCol: 'created_at', days: 730, klass: 'access', label: 'אירועי חדירה וטיפול' },
   { table: 'ceo_audit_log', tsCol: 'created_at', days: 730, klass: 'access', label: 'יומן פעולות גדעון' },
   { table: 'challenge_admin_audit_log', tsCol: 'created_at', days: 730, klass: 'access', label: 'יומן ניהול אתגרים' },
   { table: 'chat_transcript_admin_audit_log', tsCol: 'created_at', days: 730, klass: 'access', label: 'יומן צפייה בשיחות' },

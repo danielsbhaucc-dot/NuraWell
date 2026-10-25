@@ -5,8 +5,7 @@ import { sessionIdOf } from '@/lib/auth/stepup';
 import { hasSensitiveStepUp } from '@/lib/ops/sensitive-stepup';
 import { hashIp, requestIp } from '@/lib/logs/signals';
 import { createAdminClient } from '@/lib/supabase/admin';
-/** Who performed an incident-response action. */
-export type Actor = { userId: string; sessionId: string | null; ipHash: string | null; ip?: string | null };
+import type { Actor } from './ir';
 
 export const NO_STORE = { 'Cache-Control': 'no-store' };
 export const fail = (status: number, error: string, extra: Record<string, unknown> = {}) => NextResponse.json({ error, ...extra }, { status, headers: NO_STORE });
