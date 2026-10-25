@@ -14,6 +14,7 @@ export const CONSENT_TYPES = {
   parentalGuardian: 'parental_guardian',
   ageDeclaration: 'age_declaration',
   adminTranscriptAccess: 'admin_transcript_access',
+  postSubscriptionRetention: 'post_subscription_retention',
 } as const;
 
 export type ConsentType = (typeof CONSENT_TYPES)[keyof typeof CONSENT_TYPES];
