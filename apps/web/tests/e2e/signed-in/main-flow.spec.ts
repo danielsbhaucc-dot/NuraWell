@@ -40,6 +40,7 @@ test.describe.serial('main flow', () => {
     await page.getByRole('button', { name: 'אישור' }).click();
     await expect(page.getByRole('button', { name: 'גם זה קשה לי' }).first()).toBeVisible({ timeout: 20_000 });
 
+    await closeConsentSheet(page);
     await page.getByRole('button', { name: 'קל לי' }).first().click();
     await page.getByRole('button', { name: 'אישור' }).click();
     await expect(page.getByRole('button', { name: 'קשה לי', exact: true }).first()).toBeVisible({ timeout: 20_000 });

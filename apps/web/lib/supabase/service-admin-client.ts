@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { withFieldDecryption } from '@/lib/security/field-fetch';
 
 /** User-Agent שרתי — מפתחות sb_secret נחסמים כשהבקשה נראית כדפדפן (מדיניות Supabase). */
 const SERVER_UA = 'NuraWell-Server/ops-bridge/1';
@@ -12,11 +13,11 @@ export function createServiceSupabaseAdmin(url: string, serviceOrSecretKey: stri
   return createClient(baseUrl, serviceOrSecretKey, {
     auth: { persistSession: false, autoRefreshToken: false },
     global: {
-      fetch: (input, init) => {
+      fetch: withFieldDecryption((input, init) => {
         const h = new Headers(init?.headers as HeadersInit);
         h.set('User-Agent', SERVER_UA);
         return fetch(input, { ...init, headers: h });
-      },
+      }),
     },
   });
 }

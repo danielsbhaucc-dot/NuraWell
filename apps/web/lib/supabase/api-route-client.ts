@@ -1,6 +1,7 @@
 import { createClient as createBearerClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { AuthError, User } from '@supabase/supabase-js';
 import { createClient as createCookieClient } from './server';
+import { withFieldDecryption } from '@/lib/security/field-fetch';
 
 /**
  * Two code paths (cookie SSR vs bearer) — both return a valid SupabaseClient
@@ -34,6 +35,7 @@ export async function createSupabaseForApiRoute(request: Request): Promise<ApiRo
       {
         global: {
           headers: { Authorization: `Bearer ${bearer}` },
+          fetch: withFieldDecryption(),
         },
       }
     );
