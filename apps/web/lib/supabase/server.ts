@@ -1,6 +1,7 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { mergeAuthCookieOptions } from './cookie-options';
+import { withFieldDecryption } from '@/lib/security/field-fetch';
 
 /**
  * Create a Supabase client for server components/actions
@@ -13,6 +14,7 @@ export async function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      global: { fetch: withFieldDecryption() },
       cookies: {
         get(name: string) {
           return cookieStore.get(name)?.value;

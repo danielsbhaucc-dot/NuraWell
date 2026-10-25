@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { withFieldDecryption } from '@/lib/security/field-fetch';
 
 /**
  * Create a Supabase admin client with service role
@@ -14,6 +15,7 @@ export function createAdminClient() {
         autoRefreshToken: false,
         persistSession: false,
       },
+      global: { fetch: withFieldDecryption() },
     }
   );
 }
