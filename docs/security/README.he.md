@@ -13,3 +13,4 @@
 | [PAID_OPTIONS.he.md](PAID_OPTIONS.he.md) | הצעות בתשלום עם מחירים (לא בוצע דבר) |
 | [ACCOUNT_POSTURE.he.md](ACCOUNT_POSTURE.he.md) | מצב אבטחת החשבונות |
 | [BACKUP_RESTORE_TEST.he.md](BACKUP_RESTORE_TEST.he.md) | תוכנית בדיקת שחזור גיבוי |
+| [MONITORING_WITHOUT_GROK.he.md](MONITORING_WITHOUT_GROK.he.md) | ניטור והתראות שלא תלויים ב-Grok Bot, ומה עושים בלעדיו |

@@ -44,7 +44,7 @@ export function decryptString(value: string, userId: string): string {
   if (!isEncrypted(value)) return value;
   const [iv, tag, ct] = value.slice(PREFIX.length).split('.');
   if (!iv || !tag || ct === undefined) throw new Error('PII ciphertext malformed');
-  const d = createDecipheriv('aes-256-gcm', key(), Buffer.from(iv, 'base64url'));
+  const d = createDecipheriv('aes-256-gcm', key(), Buffer.from(iv, 'base64url'), { authTagLength: 16 });
   d.setAAD(Buffer.from(userId));
   d.setAuthTag(Buffer.from(tag, 'base64url'));
   return Buffer.concat([d.update(Buffer.from(ct, 'base64url')), d.final()]).toString('utf8');

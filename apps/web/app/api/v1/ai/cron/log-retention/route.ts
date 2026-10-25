@@ -5,6 +5,10 @@ import { runLogRetentionJob } from '@/lib/logs/retention-job';
 import { runSubscriptionRetention } from '@/lib/privacy/subscription-retention';
 import { runDunning } from '@/lib/billing/subscription-service';
 import { billingPlatformEnabled } from '@/lib/billing/platform';
+import { runDeadman } from '@/lib/platform/secmon';
+import { secmonConfig } from '@/lib/ops/secmon-config';
+import { alertOwnerSecurity } from '@/lib/ops/device-notify';
+import { ownerAdminId } from '@/lib/ops/owner-actions';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -38,8 +42,18 @@ export async function POST(request: Request) {
     } catch (e) {
       subscription_retention = { error: e instanceof Error ? e.message.slice(0, 120) : 'error' };
     }
-    console.log('[cron/log-retention]', JSON.stringify({ deleted: out.deleted, db_bytes: out.db_bytes, alert: out.alert, dunning, subscription_retention }));
-    return NextResponse.json({ ok: true, ...out, dunning, subscription_retention });
+    // Second, independent watcher of the security-run dead-man switch (in case the secmon cron itself stops).
+    let deadman: unknown = null;
+    if (!dryRun) {
+      try {
+        const owner = await ownerAdminId(admin).catch(() => null);
+        deadman = await runDeadman(admin, secmonConfig(), (t, s) => alertOwnerSecurity(admin, owner, t, s));
+      } catch (e) {
+        deadman = { error: e instanceof Error ? e.message.slice(0, 120) : 'error' };
+      }
+    }
+    console.log('[cron/log-retention]', JSON.stringify({ deleted: out.deleted, db_bytes: out.db_bytes, alert: out.alert, dunning, subscription_retention, deadman }));
+    return NextResponse.json({ ok: true, ...out, dunning, subscription_retention, deadman });
   } catch (e) {
     console.error('[cron/log-retention] failed', e instanceof Error ? e.message : 'error');
     return NextResponse.json({ ok: false, error: 'retention_failed' }, { status: 500 });

@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "eslint . --quiet && next build",
+    "build": "node ../../scripts/gen-deps-snapshot.mjs && eslint . --quiet && next build",
     "start": "next start",
     "lint": "eslint .",
     "test": "npx vitest run",
@@ -26,6 +26,7 @@
     "@hebcal/core": "^6.5.1",
     "@pdf-lib/fontkit": "^1.1.1",
     "@pdfsmaller/pdf-encrypt": "^1.2.0",
+    "@saas/billing": "*",
     "@simplewebauthn/browser": "^14.0.0",
     "@simplewebauthn/server": "^14.0.3",
     "@supabase/ssr": "^0.12.7",
@@ -33,6 +34,7 @@
     "@tailwindcss/postcss": "^4.3.3",
     "@upstash/workflow": "^1.2.1",
     "@zip.js/zip.js": "^2.24.0",
+    "age-encryption": "^0.3.1",
     "ai": "^7.0.137",
     "bidi-js": "^1.1.0",
     "clsx": "^2.1.0",
@@ -60,8 +62,7 @@
     "typescript": "^6.0.3",
     "vaul": "^1.1.2",
     "web-push": "^3.6.7",
-    "zod": "^4.6.7",
-    "@saas/billing": "*"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
