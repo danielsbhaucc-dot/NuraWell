@@ -28,7 +28,8 @@ begin
   if (select banned_until from auth.users where id = f) is not null then raise exception 'FAIL ban'; end if;
   if exists (select 1 from public.ops_trusted_devices where user_id = f and revoked_at is null) then raise exception 'FAIL devices'; end if;
   if exists (select 1 from public.ops_login_requests where user_id = f and status = 'pending') then raise exception 'FAIL requests'; end if;
-  if exists (select 1 from public.ops_security_state where user_id = f) then raise exception 'FAIL recovery lockout'; end if;
+  if exists (select 1 from public.ops_security_state where user_id = f and (recovery_locked_until is not null)) then raise exception 'FAIL recovery lockout'; end if;
+  if not exists (select 1 from public.ops_security_state where user_id = f and password_rotation_required) then raise exception 'FAIL rotation flag not set'; end if;
   if exists (select 1 from public.ops_security_keys where user_id = f and revoked_at is null) then raise exception 'FAIL keys'; end if;
   if (select active from public.ops_lockdown where id = 1) then raise exception 'FAIL lockdown'; end if;
   if exists (select 1 from public.ip_blocks where ip_hash = 'auto') then raise exception 'FAIL auto block'; end if;
