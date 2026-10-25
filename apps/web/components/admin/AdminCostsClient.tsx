@@ -14,6 +14,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { OpsPageHeader } from '@/components/admin/OpsPageHeader';
+import { AdminCostLedger } from '@/components/admin/AdminCostLedger';
 
 type Breakdown = {
   chatUsd: number;
@@ -233,6 +234,8 @@ export function AdminCostsClient() {
           </div>
         }
       />
+
+      <AdminCostLedger />
 
       {error ? (
         <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-800">
