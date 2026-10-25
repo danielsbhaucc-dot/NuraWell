@@ -4,7 +4,9 @@
  */
 import { createAdminClient } from '@/lib/supabase/admin';
 import { isEncrypted } from './pii';
-import { AI_CONTEXT_ENC_KEYS, encryptProfilePatch, encryptTableRow, TABLE_ENC_TEXT, type EncTextTable } from './pii-fields';
+import { AI_CONTEXT_ENC_KEYS, decryptAiContext, decryptProfileRow, encryptProfilePatch, encryptTableRow, PROFILE_ENC_NUMERIC, PROFILE_SEALED_COLUMNS, TABLE_ENC_TEXT, type EncTextTable } from './pii-fields';
+import { sealRow } from '@/lib/security/field-crypto';
+import { isBlocked } from '@/lib/security/field-registry';
 import { firstNameFromFullName, restorePiiPlaceholders } from './pii-placeholders';
 import { healthConsentStatus, patchHasHealthFields, stripHealthFields } from '@/lib/privacy/health-consent';
 import { scrubHealthJson, isHealthText } from '@/lib/privacy/health-memory';
@@ -64,5 +66,25 @@ export async function sealProfilePatch<T extends Row>(patch: T, userId: string):
   if (ctx && typeof ctx === 'object' && !Array.isArray(ctx)) {
     p = { ...p, ai_context: await restoreFields(ctx as Row, AI_CONTEXT_ENC_KEYS, userId) };
   }
-  return encryptProfilePatch(p as T, userId);
+  return sealProfileColumnsV2(p, userId) as Promise<T>;
+}
+
+/**
+ * v2 write for the columns v1 encrypted (same column set, so every existing reader — all via decProfileResult —
+ * keeps working). Legacy v1 values in the patch are opened first; numbers keep their numeric text form.
+ * Columns v1 left plaintext stay plaintext here (their readers/SQL dependencies are tracked separately).
+ */
+async function sealProfileColumnsV2(p: Row, userId: string): Promise<Row> {
+  const sealed = PROFILE_SEALED_COLUMNS.filter((c) => c in p && !isBlocked('profiles', c));
+  if (!sealed.length) return encryptProfilePatch(p, userId);
+  const subset: Row = {};
+  for (const c of sealed) subset[c] = p[c];
+  const plain = decryptProfileRow(subset, userId) as Row; // v1 → plain (numbers parsed, json opened)
+  if ('ai_context' in plain) plain.ai_context = decryptAiContext(plain.ai_context, userId);
+  for (const c of PROFILE_ENC_NUMERIC) if (c in plain && plain[c] !== null) plain[c] = String(plain[c]);
+  for (const c of sealed) if (typeof subset[c] === 'string' && (subset[c] as string).startsWith('enc:v2:')) plain[c] = subset[c];
+  const v2 = await sealRow('profiles', userId, userId, plain);
+  const rest: Row = { ...p };
+  for (const c of sealed) delete rest[c];
+  return { ...encryptProfilePatch(rest, userId), ...v2 };
 }

@@ -135,11 +135,42 @@ function mapResult<R extends QueryResult>(r: R, fn: (row: Row) => Row): R {
   return { ...r, data } as R;
 }
 
+/** Columns the v1 profile writer encrypted. sealProfilePatch now writes exactly these as enc:v2. */
+export const PROFILE_SEALED_COLUMNS: readonly string[] = [...PROFILE_ENC_NUMERIC, ...PROFILE_ENC_JSON, ...PROFILE_ENC_TEXT, 'ai_context'];
+
+const isV2Str = (v: unknown) => typeof v === 'string' && v.startsWith('enc:v2:');
+
+/** Opens enc:v2 profile columns (dual-read), then the legacy v1 mapping. Needs the owner id (arg or row.id). */
+export async function decryptProfileRowV2<T extends Row | null | undefined>(row: T, userId?: string): Promise<T> {
+  if (!row) return row;
+  const uid = userId ?? ((row as Row).id as string | undefined);
+  if (!uid) return row;
+  const cols = Object.keys(row as Row).filter((c) => isV2Str((row as Row)[c]));
+  let out: Row = row as Row;
+  if (cols.length) {
+    const { decryptValue } = await import('@/lib/security/field-crypto');
+    out = { ...out };
+    for (const c of cols) {
+      try {
+        out[c] = await decryptValue('profiles', c, uid, uid, out[c]);
+      } catch {
+        // unreadable value (shredded key / tamper): behave like a missing field, never leak ciphertext
+        out[c] = c === 'ai_context' ? {} : null;
+      }
+    }
+  }
+  return decryptProfileRow(out, uid) as T;
+}
+
 /** לשימוש: supabase.from('profiles').select(...).eq('id', uid).maybeSingle().then(decProfileResult(uid)) */
 export const decProfileResult =
   (userId?: string) =>
-  <R extends QueryResult>(r: R): R =>
-    mapResult(r, (row) => decryptProfileRow(row, userId ?? (row.id as string | undefined)));
+  async <R extends QueryResult>(r: R): Promise<R> => {
+    if (!r || r.data === null || r.data === undefined) return r;
+    const fn = (row: Row) => decryptProfileRowV2(row, userId ?? (row.id as string | undefined));
+    const data = Array.isArray(r.data) ? await Promise.all(r.data.map((x) => fn(x as Row))) : await fn(r.data as Row);
+    return { ...r, data } as R;
+  };
 
 export const decMeasurementResult =
   (userId?: string) =>
