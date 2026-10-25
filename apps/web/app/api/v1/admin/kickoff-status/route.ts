@@ -1,7 +1,6 @@
-import { auditAdminRequest } from '@/lib/api/require-ops-api-admin';
+import { auditAdminRequest, requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '../../../../../lib/supabase/admin';
-import { requireApiSession } from '../../../../../lib/api/route-guards';
 import { sendKickoffNudgeForUser } from '../../../../../lib/workflows/almog-onboarding-kickoff';
 import {
   markKickoffFailed,
@@ -21,7 +20,7 @@ export const dynamic = 'force-dynamic';
  *   - limit=100 (אופציונלי, max 500)
  */
 export async function GET(request: Request) {
-  const auth = await requireApiSession(request);
+  const auth = await requireOpsApiAdmin(request);
   if (!auth.ok) return auth.response;
 
   const rl = await consumeMultiRateLimits(auth.user.id, 'admin-api', [
@@ -90,7 +89,7 @@ export async function GET(request: Request) {
  * Body: { userId: string }
  */
 export async function POST(request: Request) {
-  const auth = await requireApiSession(request);
+  const auth = await requireOpsApiAdmin(request);
   if (!auth.ok) return auth.response;
 
   const rl = await consumeMultiRateLimits(auth.user.id, 'admin-api', [
@@ -109,7 +108,7 @@ export async function POST(request: Request) {
   if (roleRow?.role !== 'admin') {
     return NextResponse.json({ error: 'admins only' }, { status: 403 });
   }
-  await auditAdminRequest(request, auth.user.id);
+  // audited centrally in requireApiAdmin
 
   let body: { userId?: string } = {};
   try {

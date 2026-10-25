@@ -62,7 +62,30 @@ export async function requireApiAdmin(request: Request, opts: { skipDeviceGate?:
       return { ok: false, response: NextResponse.json({ error: 'נדרש אישור מכשיר', code: 'device_unverified' }, { status: 403 }) };
     }
   }
+  await auditAdminApiAccess(request, user.id);
   return { ok: true, supabase, user };
+}
+
+/**
+ * Central access log (Privacy Protection (Data Security) Regulations 2017, reg. 10): every authorised
+ * admin API call, reads included, records actor, method, path (never query string or body) and IP.
+ * Never fails the request.
+ */
+export async function auditAdminApiAccess(request: Request, actorId: string): Promise<void> {
+  try {
+    const { createAdminClient } = await import('@/lib/supabase/admin');
+    let path = 'unknown';
+    try {
+      path = new URL(request.url).pathname.slice(0, 300);
+    } catch {
+      /* keep 'unknown' */
+    }
+    const ip = (request.headers.get('x-real-ip') || request.headers.get('x-forwarded-for')?.split(',')[0] || '').trim().slice(0, 64) || null;
+    const { error } = await createAdminClient().from('admin_audit_log').insert({ actor_id: actorId, method: request.method, path, ip });
+    if (error) console.error('[admin-audit]', error.message);
+  } catch {
+    /* best-effort */
+  }
 }
 
 function readCookie(request: Request, name: string): string | null {

@@ -9,6 +9,8 @@
  * throws and never blocks the caller — reporting failures are swallowed.
  */
 
+import { scrubTelemetry } from '@/lib/security/scrub-sensitive';
+
 export type Severity = 'info' | 'warning' | 'error' | 'fatal';
 
 export interface ReportContext {
@@ -77,7 +79,14 @@ async function storeInSupabase(payload: MonitoringPayload): Promise<void> {
   }
 }
 
-async function deliver(payload: MonitoringPayload): Promise<void> {
+async function deliver(raw: MonitoringPayload): Promise<void> {
+  // Every sink below sees only scrubbed text (no emails/phones/keys/JWTs/ciphertext/DB row echoes).
+  const payload: MonitoringPayload = {
+    ...raw,
+    message: scrubTelemetry(raw.message),
+    stack: raw.stack ? scrubTelemetry(raw.stack) : undefined,
+    tags: raw.tags ? Object.fromEntries(Object.entries(raw.tags).map(([k, v]) => [k, scrubTelemetry(v)])) : undefined,
+  };
   await storeInSupabase(payload);
   const webhook = process.env.MONITORING_WEBHOOK_URL?.trim();
   if (webhook) {
