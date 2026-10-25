@@ -71,6 +71,7 @@ import {
 import { buildCoachingStylePromptBlock } from '../../../../../lib/ai/almog-coaching-style';
 import { stitchModelTextUntilComplete, looksLikeCompleteHebrewMessage } from '../../../../../lib/ai/almog-message-complete';
 import { routeV3, routingV3Enabled, dailySoftCapUsd } from '../../../../../lib/ai/routing-v3';
+import { testAccountWriterOverride } from '../../../../../lib/ai/test-account-writer';
 import {
   formatAiWorkingMemoryPromptBlock,
   updateAiContext,
@@ -2903,6 +2904,12 @@ async function handleChatPost(request: Request) {
       .limit(2000);
     const spent = (spendRows ?? []).reduce((n, r) => n + Number(r.cost_usd ?? 0), 0);
     if (spent > dailySoftCapUsd()) v3 = { writer: v3.writer === 'grok' ? 'grok' : v3.writer, slug: 'openai/gpt-5.6-luna', lane: 'soft_cap_luna', light: true };
+  }
+  {
+    // cost guard: internal test accounts (prod e2e) never hit premium writers
+    const { data: roleRow } = await createAdminClient().from('profiles').select('role').eq('id', user.id).maybeSingle();
+    const testLane = testAccountWriterOverride((roleRow as { role?: string } | null)?.role);
+    if (testLane) v3 = testLane;
   }
   const routedWriter = v3?.writer ?? stickyResult.writer;
   const cheapTrivialWriter = trivialBypass && routedWriter === 'llama4';
