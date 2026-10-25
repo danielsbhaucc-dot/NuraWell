@@ -64,7 +64,7 @@ export default async function DashboardLayout({
     meal_schedule: profile?.meal_schedule ?? null,
   };
 
-  const fullName = (profile?.full_name ?? user.user_metadata?.full_name ?? '') as string;
+  const fullName = (profile?.full_name ?? '') as string;
   const firstName = fullName.trim().split(/\s+/)[0] || '';
 
   return (
