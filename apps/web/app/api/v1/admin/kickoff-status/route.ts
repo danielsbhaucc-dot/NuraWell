@@ -59,8 +59,7 @@ export async function GET(request: Request) {
       skip_reason,
       source,
       created_at,
-      updated_at,
-      profiles:profiles(full_name, onboarding_completed, created_at, last_active_at)
+      updated_at
     `
     )
     .order('updated_at', { ascending: false })
@@ -77,9 +76,25 @@ export async function GET(request: Request) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: counts } = await admin.rpc('almog_kickoff_state_counts').single();
 
+  // profiles fetched top-level (not embedded) so enc:v2 columns like full_name are decrypted
+  const baseRows = (data ?? []) as Array<{ user_id: string } & Record<string, unknown>>;
+  const ids = [...new Set(baseRows.map((r) => r.user_id).filter(Boolean))];
+  const profById = new Map<string, Record<string, unknown>>();
+  if (ids.length) {
+    const { data: profs } = await admin
+      .from('profiles')
+      .select('id, full_name, onboarding_completed, created_at, last_active_at')
+      .in('id', ids);
+    for (const p of (profs ?? []) as Array<{ id: string } & Record<string, unknown>>) {
+      const { id, ...rest } = p;
+      profById.set(id, rest);
+    }
+  }
+  const rows = baseRows.map((r) => ({ ...r, profiles: profById.get(r.user_id) ?? null }));
+
   return NextResponse.json({
     ok: true,
-    rows: data ?? [],
+    rows,
     stats: counts ?? null,
   });
 }
