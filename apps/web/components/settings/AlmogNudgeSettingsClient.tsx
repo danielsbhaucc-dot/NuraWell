@@ -398,13 +398,13 @@ export function AlmogNudgeSettingsClient({
               <details className="group mt-2 text-xs text-slate-500" data-testid="quality-check-info">
                 <summary className="inline-flex min-h-[44px] cursor-pointer list-none items-center gap-1.5 rounded-lg text-violet-700 hover:text-violet-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400">
                   <Sparkles className="h-3.5 w-3.5" aria-hidden />
-                  חלק מההתראות עוברות בקרת איכות אוטומטית
+                  חלק מההתראות ומהתשובות עוברות בקרת איכות אוטומטית
                   <span className="text-slate-400 group-open:hidden" aria-hidden>ⓘ</span>
                 </summary>
                 <p className="mt-1 rounded-xl bg-violet-50/70 p-3 leading-relaxed text-slate-600">
                   לפני שחלק מההתראות יוצאות, בקרת איכות אוטומטית בודקת דקדוק, פנייה ומגדר נכונים, שימוש בשם
-                  הנכון, משפטים שבורים או לא הגיוניים ובלבול בפרטים בתוך הטקסט. השם הפרטי מוסתר בבקרה ולא נשלח
-                  שום פרט מזהה. התיקונים נשמרים בלי שם ובלי מזהה משתמש, כדי שהניסוח
+                  הנכון, משפטים שבורים או לא הגיוניים ובלבול בפרטים בתוך הטקסט. גם חלק מהתשובות של אלמוג בצ׳אט
+                  נבדקות כך מיד אחרי שנכתבו. השם הפרטי מוסתר בבקרה ולא נשלח שום פרט מזהה. התיקונים נשמרים בלי שם ובלי מזהה משתמש, כדי שהניסוח
                   ישתפר עם הזמן.
                 </p>
               </details>
