@@ -51,13 +51,23 @@ export async function isIpBlocked(db: SupabaseClient, ipHash: string | null, now
   return until > now;
 }
 
-async function alertOnce(db: SupabaseClient, key: string, kind: string, detail: Record<string, unknown>, text: string, subject: string, withinMs = 3_600_000): Promise<void> {
+type AlertExtras = { buttons?: import('@/lib/ceo/channel').CeoButton[][]; emailLink?: { href: string; label: string } };
+async function alertOnce(db: SupabaseClient, key: string, kind: string, detail: Record<string, unknown>, text: string, subject: string, withinMs = 3_600_000, extras: AlertExtras | (() => Promise<AlertExtras>) = {}): Promise<void> {
   const since = new Date(Date.now() - withinMs).toISOString();
   const { data: prev } = await db.from('ops_security_events').select('id').eq('kind', kind).gte('created_at', since).contains('detail', { key }).limit(1);
   if (prev?.length) return;
   await db.from('ops_security_events').insert({ kind, detail: { key, ...detail }, alerted_at: new Date().toISOString() });
   const { alertOwnerSecurity } = await import('@/lib/ops/device-notify');
-  await alertOwnerSecurity(db, null, text, subject).catch(() => undefined);
+  const x = typeof extras === 'function' ? await extras().catch(() => ({})) : extras;
+  // null user = system alert → Telegram + every admin owner's email (before 2026-10 the email leg was skipped)
+  await alertOwnerSecurity(db, null, text, subject, { ...x, purpose: `security_${kind}` }).catch(() => undefined);
+}
+
+/** Deep link to the investigation view (email only; Telegram never shows the Ops address). */
+export function investigateLink(params: Record<string, string>): string {
+  const base = (process.env.CEO_OPS_BASE_URL || process.env.NEXT_PUBLIC_OPS_URL || 'https://ops.nurawell.ai').trim().replace(/\/$/, '');
+  const q = new URLSearchParams({ tab: 'security', ...params });
+  return `${base.startsWith('http') ? base : `https://${base}`}/legal?${q.toString()}`;
 }
 
 async function trustedIp(db: SupabaseClient, ipHash: string): Promise<boolean> {
