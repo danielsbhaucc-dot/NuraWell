@@ -22,6 +22,8 @@ import {
 import type { ConsentCollected } from '@/components/legal/ConsentEvidenceSheet';
 import { validateBirthDate } from '@/lib/privacy/age-validation';
 import { SCREENING_GUIDANCE } from '@/lib/onboarding/safety-screening';
+import { RetentionChoicePicker } from '@/components/privacy/RetentionChoicePicker';
+import type { RetentionChoice } from '@saas/billing';
 
 const TOTAL_STEPS = 6;
 
@@ -61,6 +63,7 @@ export function OnboardingFormClient() {
   const [consentEvidence, setConsentEvidence] = useState<ConsentCollected | null>(null);
   const [screen, setScreen] = useState({ ed_history: false, pregnancy: false, fluid_restriction: false, medical_followup: false });
   const [legalConsent, setLegalConsent] = useState(false);
+  const [retentionChoice, setRetentionChoice] = useState<RetentionChoice | null>(null);
 
   const ageInfo = useMemo(() => {
     if (!birthDate.trim()) return null;
@@ -209,6 +212,10 @@ export function OnboardingFormClient() {
   );
 
   const submit = () => {
+    if (!retentionChoice) {
+      toast.warning('שמירת מידע', 'יש לבחור מה יקרה למידע כשהמנוי יסתיים');
+      return;
+    }
     if (!legalConsent) {
       toast.warning('אישור משפטי', 'יש לאשר את תנאי השימוש ומדיניות הפרטיות');
       return;
@@ -257,6 +264,7 @@ export function OnboardingFormClient() {
       if (consentEvidence.client) fd.set('health_consent_client', JSON.stringify(consentEvidence.client));
     }
     fd.set('legal_consent', 'true');
+    fd.set('post_sub_retention', retentionChoice);
     if (typeof window !== 'undefined') {
       fd.set('app_origin', window.location.origin);
     }
@@ -698,6 +706,9 @@ export function OnboardingFormClient() {
                         required
                       />
                     </label>
+                    <div className="mb-4" data-testid="onboarding-retention-choice">
+                      <RetentionChoicePicker value={retentionChoice} onChange={setRetentionChoice} disabled={pending} tone="dark" />
+                    </div>
                     <LegalConsentCheckbox
                       id="onboarding-legal-consent"
                       checked={legalConsent}

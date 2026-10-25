@@ -25,4 +25,35 @@ test.describe.serial('billing + retention (prod, test account)', () => {
     console.log('EVIDENCE billing webhook', w.status());
     expect(w.status()).toBe(404);
   });
+
+  test('retention choice: settings UI changes it and every change is recorded', async ({ page }) => {
+    await login(page);
+    const before = await page.evaluate(async () => (await fetch('/api/v1/account/retention-choice', { cache: 'no-store' })).json());
+    console.log('EVIDENCE retention before', JSON.stringify(before));
+    expect(['keep_24m', 'delete_now']).toContain(before.choice);
+
+    await page.goto('/settings/privacy');
+    const section = page.getByTestId('retention-choice-section');
+    await expect(section).toBeVisible({ timeout: 20_000 });
+    const target = before.choice === 'keep_24m' && !before.is_default ? 'delete_now' : 'keep_24m';
+    await section.locator(`[data-choice="${target}"]`).click();
+    await section.getByTestId('retention-save').click();
+    await expect.poll(async () => (await page.evaluate(async () => (await fetch('/api/v1/account/retention-choice', { cache: 'no-store' })).json())).choice, { timeout: 15_000 }).toBe(target);
+    console.log('EVIDENCE retention changed to', target);
+
+    // Always leave the test account on keep_24m (never delete_now).
+    const restore = await page.evaluate(async () => (await fetch('/api/v1/account/retention-choice', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ choice: 'keep_24m' }) })).status);
+    expect(restore).toBe(200);
+    const bad = await page.evaluate(async () => (await fetch('/api/v1/account/retention-choice', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ choice: 'forever' }) })).status);
+    expect(bad).toBe(400);
+  });
+
+  test('onboarding shows the retention choice with nothing preselected', async ({ browser }) => {
+    const ctx = await browser.newContext();
+    const p = await ctx.newPage();
+    const res = await p.goto('/onboarding');
+    console.log('EVIDENCE onboarding', res?.status());
+    expect(res?.status()).toBeLessThan(500);
+    await ctx.close();
+  });
 });

@@ -33,6 +33,7 @@ import {
   WEAKEST_TIMES,
 } from '@/lib/onboarding/types';
 import { clearChallengeGateCookie } from '@/lib/challenge/gate-cookie';
+import { recordRetentionChoice } from '@/lib/privacy/subscription-retention';
 import { recordConsentEvidence, validateSubmission } from '@/lib/legal/record-evidence';
 
 const timeRegex = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -83,6 +84,9 @@ const onboardingSchema = z.object({
   }),
   legal_consent: z.literal('true', {
     error: 'נדרש אישור תנאי שימוש ומדיניות פרטיות',
+  }),
+  post_sub_retention: z.enum(['delete_now', 'keep_24m'], {
+    error: 'יש לבחור מה יקרה למידע כשהמנוי יסתיים',
   }),
 });
 
@@ -153,6 +157,7 @@ export async function completeOnboarding(
     date_of_birth: formData.get('date_of_birth'),
     health_data_consent: formData.get('health_data_consent'),
     legal_consent: formData.get('legal_consent'),
+    post_sub_retention: formData.get('post_sub_retention'),
   };
 
   const parsed = onboardingSchema.safeParse(raw);
@@ -329,6 +334,15 @@ export async function completeOnboarding(
   });
   if (!consentResult.ok) {
     console.warn('[complete-onboarding] consent record failed', consentResult.error);
+  }
+
+  const retentionResult = await recordRetentionChoice(admin, {
+    userId,
+    choice: data.post_sub_retention,
+    source: 'onboarding',
+  });
+  if (!retentionResult.ok) {
+    console.warn('[complete-onboarding] retention choice record failed', retentionResult.error);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
