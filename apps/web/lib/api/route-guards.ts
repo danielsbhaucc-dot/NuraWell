@@ -103,6 +103,8 @@ async function requireApiAdminInner(request: Request, opts: { skipDeviceGate?: b
   }
   const locked = await lockdownRefusal(request, user.id, accessToken);
   if (locked) return { ok: false, response: locked };
+  const rotate = await rotationRefusal(request, user.id);
+  if (rotate) return { ok: false, response: rotate };
   const iamDenied = await iamRefusal(request, user.id);
   if (iamDenied) return { ok: false, response: iamDenied };
   await auditAdminApiAccess(request, user.id, accessToken);
@@ -162,6 +164,19 @@ export async function auditAdminApiAccess(request: Request, actorId: string, acc
   } catch {
     /* best-effort */
   }
+}
+
+/** Break-glass: until the founder sets a new password, only the device-approval and rotation routes work. Fails closed. */
+async function rotationRefusal(request: Request, userId: string): Promise<NextResponse | null> {
+  const { rotationExempt, passwordRotationRequired } = await import('@/lib/ops/password-rotation');
+  if (rotationExempt(new URL(request.url).pathname)) return null;
+  try {
+    const { createAdminClient } = await import('@/lib/supabase/admin');
+    if (!(await passwordRotationRequired(createAdminClient(), userId))) return null;
+  } catch {
+    /* fall through: closed */
+  }
+  return NextResponse.json({ error: 'יש להגדיר סיסמה חדשה לפני כל פעולה בפאנל.', code: 'password_rotation_required' }, { status: 403 });
 }
 
 /**
