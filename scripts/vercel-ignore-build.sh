@@ -1,6 +1,7 @@
 #!/bin/bash
 # Vercel "Ignored Build Step": exit 0 = SKIP build, exit 1 = BUILD.
 # cost: skip preview builds for Dependabot branches and for commits that don't touch the app.
+# Note: production deploys are triggered by the Vercel GitHub App on push to main.
 # Production (main) always builds.
 set -u
 if [ "${VERCEL_ENV:-}" = "production" ]; then exit 1; fi
