@@ -59,17 +59,17 @@ export function AdminLegalPasswords({ refreshKey = 0 }: { refreshKey?: number })
 
   return (
     <section dir="rtl" className={cn(opsGlassCardClass, 'p-4 sm:p-5')} aria-label="סיסמאות" data-testid="legal-passwords">
-      <h2 className="mb-1 flex items-center gap-2 font-bold text-slate-900"><KeyRound size={18} className="text-amber-600" />סיסמאות</h2>
-      <p className="mb-3 text-[13px] text-slate-600">כל קובץ ראיות מוצפן בסיסמה משלו. להצגה מאשרים עם הטלפון (Face ID), קוד מאפליקציה או קוד גיבוי, וכל הצגה נרשמת. הסיסמה נמחקת יחד עם הקובץ אחרי 7 ימים.</p>
+      <h2 className="mb-1 flex items-center gap-2 font-bold text-ink"><KeyRound size={18} className="text-amber-600" />סיסמאות</h2>
+      <p className="mb-3 text-[13px] text-ink-soft">כל קובץ ראיות מוצפן בסיסמה משלו. להצגה מאשרים עם הטלפון (Face ID), קוד מאפליקציה או קוד גיבוי, וכל הצגה נרשמת. הסיסמה נמחקת יחד עם הקובץ אחרי 7 ימים.</p>
       {err ? <p role="alert" className="mb-3 rounded-xl border border-rose-300/60 bg-rose-100/50 px-3 py-2 text-sm font-semibold text-rose-800 backdrop-blur">{err}</p> : null}
-      {!items ? <Loader2 className="mx-auto my-4 animate-spin text-slate-400" /> : items.length === 0 ? <p className="py-4 text-center text-sm text-slate-500">עוד לא הופקו קבצים</p> : (
+      {!items ? <Loader2 className="mx-auto my-4 animate-spin text-ink-faint" /> : items.length === 0 ? <p className="py-4 text-center text-sm text-ink-faint">עוד לא הופקו קבצים</p> : (
         <ul className="space-y-2">
           {items.map((it) => (
             <li key={it.id} className="rounded-2xl border border-emerald-900/10 bg-[linear-gradient(135deg,rgba(236,247,240,0.72),rgba(252,244,224,0.6))] p-3 backdrop-blur-md">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-bold text-slate-900">{it.label}</p>
-                  <p className="text-[11px] text-slate-500">{KIND[it.kind] ?? it.kind} · {it.format.toUpperCase()} · הופק {fmt(it.created_at)} · נמחק בעוד {daysLeft(it.expires_at)} ימים</p>
+                  <p className="truncate text-sm font-bold text-ink">{it.label}</p>
+                  <p className="text-[11px] text-ink-faint">{KIND[it.kind] ?? it.kind} · {it.format.toUpperCase()} · הופק {fmt(it.created_at)} · נמחק בעוד {daysLeft(it.expires_at)} ימים</p>
                 </div>
                 {!shown[it.id] ? (
                   <button type="button" onClick={() => reveal(it)} disabled={busy === it.id} className={cn(opsGlassBtnClass, 'gap-2')} data-testid="legal-pw-reveal">
@@ -93,11 +93,11 @@ export function AdminLegalPasswords({ refreshKey = 0 }: { refreshKey?: number })
         <div className="fixed inset-0 z-50 grid place-items-end bg-emerald-950/40 backdrop-blur-sm sm:place-items-center" role="dialog" aria-modal="true" aria-label="טיוטת שליחה">
           <div className="w-full max-w-lg rounded-t-[28px] border border-amber-200/40 bg-[linear-gradient(160deg,rgba(236,247,240,0.94),rgba(250,240,214,0.92))] p-5 shadow-2xl backdrop-blur-xl sm:rounded-[28px]">
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="font-bold text-slate-900">טיוטה לשליחה</h3>
-              <button type="button" onClick={() => setDraft(null)} aria-label="סגירה" className="rounded-full p-1.5 text-slate-600 hover:bg-glass/40"><X size={18} /></button>
+              <h3 className="font-bold text-ink">טיוטה לשליחה</h3>
+              <button type="button" onClick={() => setDraft(null)} aria-label="סגירה" className="rounded-full p-1.5 text-ink-soft hover:bg-glass/40"><X size={18} /></button>
             </div>
-            <p className="mb-2 text-[12px] text-slate-600">שום דבר לא נשלח אוטומטית. אפשר לערוך, ואז לפתוח את הטיוטה באפליקציית המייל שלך ולשלוח משם.</p>
-            <label className="mb-2 block text-sm text-slate-700">למי
+            <p className="mb-2 text-[12px] text-ink-soft">שום דבר לא נשלח אוטומטית. אפשר לערוך, ואז לפתוח את הטיוטה באפליקציית המייל שלך ולשלוח משם.</p>
+            <label className="mb-2 block text-sm text-ink-soft">למי
               <input value={draft.to} onChange={(e) => setDraft({ ...draft, to: e.target.value })} dir="ltr" placeholder="lawyer@example.com" className="mt-1 w-full rounded-xl border border-emerald-900/15 bg-emerald-50/40 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-300" />
             </label>
             <textarea value={draft.text} onChange={(e) => setDraft({ ...draft, text: e.target.value })} rows={8} className="w-full rounded-xl border border-emerald-900/15 bg-emerald-50/40 px-3 py-2 text-sm leading-relaxed outline-none focus:ring-2 focus:ring-amber-300" />

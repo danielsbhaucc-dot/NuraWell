@@ -100,17 +100,17 @@ export function AdminMentorAvatarPanel({ mentorId }: AdminMentorAvatarPanelProps
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex-1 text-right">
           <h2
-            className="flex flex-wrap items-center gap-2 text-lg font-black text-slate-800 sm:text-xl"
+            className="flex flex-wrap items-center gap-2 text-lg font-black text-ink sm:text-xl"
             style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
           >
             <UserCircle className="h-6 w-6 shrink-0 text-emerald-500" aria-hidden />
             {ready && hasCustom ? `עדכון — ${mentor.name}` : mentor.name}
           </h2>
-          <p className="mt-1.5 text-sm text-slate-600">{mentor.description}</p>
+          <p className="mt-1.5 text-sm text-ink-soft">{mentor.description}</p>
           {ready && cdnConfigured && cdnHostname ? (
-            <p className="text-xs text-gray-500 mt-2">
+            <p className="text-xs text-ink-faint mt-2">
               CDN <span className="font-semibold">{cdnHostname}</span>
-              <code className="mx-1 rounded bg-slate-100 px-1" dir="ltr">
+              <code className="mx-1 rounded bg-surface px-1" dir="ltr">
                 /{mentor.objectKey}
               </code>
             </p>
@@ -179,7 +179,7 @@ export function AdminMentorAvatarPanel({ mentorId }: AdminMentorAvatarPanelProps
         ].join(' ')}
       >
         <Upload className="h-6 w-6 text-emerald-600" />
-        <p className="text-sm font-bold text-slate-800">גרור תמונה או לחץ לבחירה</p>
+        <p className="text-sm font-bold text-ink">גרור תמונה או לחץ לבחירה</p>
         {file ? <p className="text-xs text-emerald-800">{file.name}</p> : null}
       </label>
 

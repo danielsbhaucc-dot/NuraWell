@@ -53,12 +53,12 @@ function Row({ r, onSaved }: { r: Receipt; onSaved: () => void }) {
   return (
     <li className="rounded-2xl border border-gc/50 bg-glass/55 backdrop-blur-md p-3">
       <div className="flex flex-wrap items-center gap-2 text-sm">
-        <span className="font-bold text-slate-900">{VENDORS[r.vendor]?.label ?? r.vendor}</span>
-        {r.plan ? <span className="text-slate-600">· {r.plan}</span> : null}
-        {r.amount !== null ? <span className="text-slate-600" dir="ltr">· {r.amount} {r.currency ?? ''}</span> : null}
+        <span className="font-bold text-ink">{VENDORS[r.vendor]?.label ?? r.vendor}</span>
+        {r.plan ? <span className="text-ink-soft">· {r.plan}</span> : null}
+        {r.amount !== null ? <span className="text-ink-soft" dir="ltr">· {r.amount} {r.currency ?? ''}</span> : null}
         <span className={cn('rounded-full border px-2 py-0.5 text-[11px] font-bold', TRUST[r.trust].c)}>{r.trust === 'verified' ? <ShieldCheck size={11} className="inline" /> : <ShieldAlert size={11} className="inline" />} {TRUST[r.trust].l}</span>
       </div>
-      <p className="mt-1 truncate text-xs text-slate-500">{r.subject} · {r.source === 'email' ? 'הגיע במייל' : 'הועלה ידנית'}{r.attachments.length ? ` · ${r.attachments.length} קבצים` : ''}</p>
+      <p className="mt-1 truncate text-xs text-ink-faint">{r.subject} · {r.source === 'email' ? 'הגיע במייל' : 'הועלה ידנית'}{r.attachments.length ? ` · ${r.attachments.length} קבצים` : ''}</p>
       <div className="mt-2 grid gap-2 sm:grid-cols-4">
         <select value={p.vendor} onChange={(e) => setP({ ...p, vendor: e.target.value as VendorId })} className={cn(opsInputClass, 'py-1.5 text-xs')} aria-label="ספק">{Object.entries(VENDORS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}</select>
         <input value={p.plan} onChange={(e) => setP({ ...p, plan: e.target.value })} placeholder="מסלול" className={cn(opsInputClass, 'py-1.5 text-xs')} aria-label="מסלול" />
@@ -69,7 +69,7 @@ function Row({ r, onSaved }: { r: Receipt; onSaved: () => void }) {
         <button type="button" disabled={!!busy || !dirty} onClick={() => save()} className={cn(opsGlassBtnClass, !dirty && 'opacity-50')} title={dirty ? undefined : 'אין שינויים לשמירה'}>{busy === 'save' ? <Loader2 size={14} className="animate-spin" /> : null}שמירת השינויים</button>
         {r.trust !== 'verified' ? <button type="button" disabled={!!busy} onClick={() => save('verified')} className={opsGlassBtnPrimaryClass}>{busy === 'verified' ? <Loader2 size={14} className="animate-spin" /> : null}אישור הקבלה</button> : null}
         {r.trust !== 'rejected' ? <button type="button" disabled={!!busy} onClick={() => save('rejected')} className={opsGlassBtnClass}>{busy === 'rejected' ? <Loader2 size={14} className="animate-spin" /> : null}לא רלוונטי</button> : null}
-        {msg ? <span role="status" aria-live="polite" className={cn('text-xs font-bold', msg.ok ? 'text-teal-800' : 'text-rose-700')}>{msg.text}</span> : !dirty && !busy ? <span className="text-[11px] text-slate-500">כדי לשמור, קודם משנים ספק, מסלול או תאריכים</span> : null}
+        {msg ? <span role="status" aria-live="polite" className={cn('text-xs font-bold', msg.ok ? 'text-teal-800' : 'text-rose-700')}>{msg.text}</span> : !dirty && !busy ? <span className="text-[11px] text-ink-faint">כדי לשמור, קודם משנים ספק, מסלול או תאריכים</span> : null}
       </div>
     </li>
   );
@@ -112,13 +112,13 @@ export function ReceiptsSection({ onChanged, defaultOpen = false }: { onChanged:
   return (
     <section id="receipts" className={cn(opsGlassCardClass, 'p-4')}>
       <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} className="flex w-full items-center justify-between text-right">
-        <span className="flex items-center gap-2 font-bold text-slate-900"><Mail size={16} className="text-teal-700" />קבלות ומנויים{pending ? <span className="rounded-full bg-orange-100 px-2 text-xs text-orange-800">{pending} לבדיקה</span> : null}</span>
-        <ChevronDown size={16} className={cn('text-slate-400 transition', open && 'rotate-180')} />
+        <span className="flex items-center gap-2 font-bold text-ink"><Mail size={16} className="text-teal-700" />קבלות ומנויים{pending ? <span className="rounded-full bg-orange-100 px-2 text-xs text-orange-800">{pending} לבדיקה</span> : null}</span>
+        <ChevronDown size={16} className={cn('text-ink-faint transition', open && 'rotate-180')} />
       </button>
-      {open ? !data ? <Loader2 className="mx-auto my-4 animate-spin text-slate-400" /> : (
+      {open ? !data ? <Loader2 className="mx-auto my-4 animate-spin text-ink-faint" /> : (
         <div className="mt-3 space-y-3">
           <Divider tone="gold" />
-          <p className="text-sm text-slate-600">קבלות שמגיעות לכתובת <span className="font-bold" dir="ltr">{data.address}</span> נשמרות כאן אוטומטית, עם המייל המקורי, בדיקת חתימת הספק וחותמת זמן. כך כל תמונה ושיר מ־AI מראים אם נוצרו בזמן מנוי בתשלום.</p>
+          <p className="text-sm text-ink-soft">קבלות שמגיעות לכתובת <span className="font-bold" dir="ltr">{data.address}</span> נשמרות כאן אוטומטית, עם המייל המקורי, בדיקת חתימת הספק וחותמת זמן. כך כל תמונה ושיר מ־AI מראים אם נוצרו בזמן מנוי בתשלום.</p>
           {!data.configured ? <p className="rounded-xl bg-orange-50 px-3 py-2 text-xs font-bold text-orange-800">קליטת המיילים עוד לא הופעלה. בינתיים אפשר להעלות קבלה ידנית.</p> : null}
           <Divider variant="section" label="הוספה ידנית" className="pt-1" />
           <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-dashed border-gc/70 p-3">
@@ -128,16 +128,16 @@ export function ReceiptsSection({ onChanged, defaultOpen = false }: { onChanged:
               <input type="file" accept="application/pdf,image/png,image/jpeg,.eml,message/rfc822" className="sr-only" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
             </label>
             <button type="button" onClick={upload} disabled={!file || busy} className={opsGlassBtnPrimaryClass}>{busy ? <Loader2 size={14} className="animate-spin" /> : null}העלאה</button>
-            {msg ? <span role="status" className="text-xs font-bold text-slate-700">{msg}</span> : null}
+            {msg ? <span role="status" className="text-xs font-bold text-ink-soft">{msg}</span> : null}
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <label className={cn(opsGlassBtnClass, 'cursor-pointer')}><Paperclip size={14} />ייבוא תיק ראיות (ZIP)
               <input type="file" accept=".zip,application/zip" className="sr-only" onChange={(e) => void importZip(e.target.files?.[0])} />
             </label>
-            {imp ? <span role="status" className="text-xs font-bold text-slate-700">{imp}</span> : null}
+            {imp ? <span role="status" className="text-xs font-bold text-ink-soft">{imp}</span> : null}
           </div>
           <Divider variant="section" label="קבלות" count={data.receipts.length} className="pt-1" />
-          {data.receipts.length ? <ul className="space-y-2">{data.receipts.map((r) => <Row key={r.id} r={r} onSaved={() => { load(); onChanged(); }} />)}</ul> : <p className="text-center text-xs text-slate-500">עוד אין קבלות.</p>}
+          {data.receipts.length ? <ul className="space-y-2">{data.receipts.map((r) => <Row key={r.id} r={r} onSaved={() => { load(); onChanged(); }} />)}</ul> : <p className="text-center text-xs text-ink-faint">עוד אין קבלות.</p>}
         </div>
       ) : null}
     </section>

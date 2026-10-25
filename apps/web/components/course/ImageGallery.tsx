@@ -139,7 +139,7 @@ export function ImageGallery({ images }: ImageGalleryProps) {
                 />
               </div>
 
-              <p id={titleId} className="text-center text-slate-400 text-sm mt-3">
+              <p id={titleId} className="text-center text-ink-faint text-sm mt-3">
                 {lightboxIndex + 1} / {images.length}
                 {images[lightboxIndex].name ? ` · ${images[lightboxIndex].name}` : ''}
               </p>

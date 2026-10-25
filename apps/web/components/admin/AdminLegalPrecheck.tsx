@@ -55,11 +55,11 @@ export function AdminLegalPrecheck({ userId, onChange }: { userId: string; onCha
     <section className={cn(opsGlassCardClass, 'p-4 sm:p-5')} aria-label="בדיקה לפני הפקה" data-testid="legal-precheck" dir="rtl">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="flex items-center gap-2 font-bold text-slate-900">
+          <h3 className="flex items-center gap-2 font-bold text-ink">
             <span className="grid h-6 w-6 place-items-center rounded-full bg-amber-100 text-xs text-amber-700">✓</span>
             בדיקה לפני הפקת מסמך
           </h3>
-          <p className="mt-0.5 text-xs text-slate-500">
+          <p className="mt-0.5 text-xs text-ink-faint">
             {pc ? `${pc.critical} חמורים · ${pc.warn} אזהרות · נבדק ${new Intl.DateTimeFormat('he-IL', { timeZone: 'Asia/Jerusalem', timeStyle: 'short' }).format(new Date(pc.checkedAt))}` : 'בודק את כל הרשומות, הצילומים, החותמות והקבלות'}
           </p>
         </div>
@@ -72,9 +72,9 @@ export function AdminLegalPrecheck({ userId, onChange }: { userId: string; onCha
           {pc.critical ? 'יש כשלים חמורים. ההפקה חסומה עד שיטופלו, או עם עקיפה מתועדת.' : pc.warn ? 'אפשר להפיק. האזהרות יופיעו בגלוי בעמוד הראשון של המסמך.' : 'הכול תקין. אפשר להפיק.'}
         </div>
       ) : null}
-      {note ? <p role="status" className="mt-2 text-sm text-slate-600">{note}</p> : null}
+      {note ? <p role="status" className="mt-2 text-sm text-ink-soft">{note}</p> : null}
       <div className="my-3 h-px bg-gradient-to-l from-transparent via-amber-300/80 to-transparent" aria-hidden />
-      {loading && !pc ? <Loader2 className="mx-auto my-4 animate-spin text-slate-400" /> : (
+      {loading && !pc ? <Loader2 className="mx-auto my-4 animate-spin text-ink-faint" /> : (
         <ul className="space-y-2">
           {(pc?.items ?? []).map((it) => {
             const s = SEV[it.severity];
@@ -86,18 +86,18 @@ export function AdminLegalPrecheck({ userId, onChange }: { userId: string; onCha
                   <s.Icon size={18} className={cn('mt-0.5 shrink-0', it.severity === 'critical' ? 'text-rose-600' : it.severity === 'warn' ? 'text-amber-600' : 'text-emerald-600')} aria-hidden />
                   <span className="min-w-0 flex-1">
                     <span className="flex flex-wrap items-center gap-2">
-                      <span className="text-sm font-bold text-slate-900">{it.title}</span>
+                      <span className="text-sm font-bold text-ink">{it.title}</span>
                       <span className={cn('rounded-full border px-2 py-0.5 text-[11px] font-bold', s.chip)}>{s.label}</span>
                     </span>
-                    <span className="mt-0.5 block text-[13px] leading-relaxed text-slate-600">{it.what}</span>
-                    {it.events.length ? <span className="mt-1 block text-[11px] text-slate-500">אירועים: {it.events.map((e) => `${e.n}`).join(', ')}</span> : null}
+                    <span className="mt-0.5 block text-[13px] leading-relaxed text-ink-soft">{it.what}</span>
+                    {it.events.length ? <span className="mt-1 block text-[11px] text-ink-faint">אירועים: {it.events.map((e) => `${e.n}`).join(', ')}</span> : null}
                   </span>
-                  <ChevronDown size={16} className={cn('mt-1 shrink-0 text-slate-400 transition', isOpen && 'rotate-180')} aria-hidden />
+                  <ChevronDown size={16} className={cn('mt-1 shrink-0 text-ink-faint transition', isOpen && 'rotate-180')} aria-hidden />
                 </button>
                 {isOpen ? (
                   <div className="border-t border-gc/50 px-4 pb-4 pt-3">
-                    <p className="mb-1.5 text-xs font-bold text-slate-700">מה לעשות</p>
-                    <ol className="list-decimal space-y-1 pr-5 text-[13px] leading-relaxed text-slate-700">
+                    <p className="mb-1.5 text-xs font-bold text-ink-soft">מה לעשות</p>
+                    <ol className="list-decimal space-y-1 pr-5 text-[13px] leading-relaxed text-ink-soft">
                       {it.steps.map((st) => <li key={st}>{st}</li>)}
                     </ol>
                     {it.fix ? (

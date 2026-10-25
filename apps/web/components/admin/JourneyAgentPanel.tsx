@@ -134,7 +134,7 @@ export function JourneyAgentPanel({ stepId, onApply }: { stepId?: string | null;
 
   const bubble: Record<Line['kind'], string> = {
     status: 'bg-transparent text-violet-700/80 text-[12px] italic',
-    thought: 'bg-slate-100 text-slate-800',
+    thought: 'bg-surface text-ink',
     opinion: 'bg-violet-50 text-violet-950 ring-1 ring-violet-200',
     question: 'bg-amber-50 text-amber-950 ring-1 ring-amber-200',
     review: 'bg-sky-50 text-sky-950 ring-1 ring-sky-200',
@@ -180,8 +180,8 @@ export function JourneyAgentPanel({ stepId, onApply }: { stepId?: string | null;
             <div className="space-y-2 rounded-xl bg-amber-50/60 p-2">
               {questions.map((q) => (
                 <label key={q.id} className="block text-sm">
-                  <span className="font-semibold text-slate-900">{q.label}</span>
-                  {q.why ? <span className="block text-[11px] text-slate-500">{q.why}</span> : null}
+                  <span className="font-semibold text-ink">{q.label}</span>
+                  {q.why ? <span className="block text-[11px] text-ink-faint">{q.why}</span> : null}
                   <textarea className="input-field mt-1 min-h-[56px]" value={answers[q.id] ?? ''} onChange={(e) => setAnswers((a) => ({ ...a, [q.id]: e.target.value }))} placeholder="ריק = תחליט אתה" />
                 </label>
               ))}
@@ -199,7 +199,7 @@ export function JourneyAgentPanel({ stepId, onApply }: { stepId?: string | null;
             <div className="flex flex-wrap items-center gap-2">
               <button type="button" onClick={() => { onApply(draft); setApplied(true); }} className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-gc hover:bg-emerald-700"><CheckCircle2 className="h-4 w-4" /> מלא את הטופס בטיוטה</button>
               {applied ? <span className="text-xs font-semibold text-emerald-700">מולא. עברו על הסעיפים, הוסיפו וידאו ושמרו.</span> : null}
-              <button type="button" onClick={() => { setSessionId(null); setLines([]); setDraft(null); setProgress(0); }} className="text-xs font-semibold text-slate-500 underline">סשן חדש</button>
+              <button type="button" onClick={() => { setSessionId(null); setLines([]); setDraft(null); setProgress(0); }} className="text-xs font-semibold text-ink-faint underline">סשן חדש</button>
             </div>
           )}
         </div>

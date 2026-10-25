@@ -1,16 +1,12 @@
 {
  "app/(auth)/login/page.tsx": {
-  "white": 8,
+  "white": 4,
   "rawHex": 4,
   "rawButton": 2
  },
  "app/(dashboard)/journey/declined/page.tsx": {
   "rawHex": 1,
   "arbitraryColor": 1
- },
- "app/(dashboard)/loading.tsx": {
-  "white": 6,
-  "rawHex": 11
  },
  "app/(dashboard)/plans/page.tsx": {
   "rawHex": 3,
@@ -182,9 +178,6 @@
  "components/admin/JourneyAgentPanel.tsx": {
   "rawButton": 2
  },
- "components/admin/LegalSearch.tsx": {
-  "white": 1
- },
  "components/admin/MediaReceiptsSection.tsx": {
   "rawButton": 1
  },
@@ -227,7 +220,6 @@
   "rawButton": 2
  },
  "components/admin/hub/LogsSection.tsx": {
-  "white": 1,
   "rawButton": 1
  },
  "components/ai/AIChatWidget.tsx": {
@@ -624,7 +616,7 @@
   "white": 1
  },
  "components/not-found/NotFoundClient.tsx": {
-  "rawHex": 6
+  "rawHex": 2
  },
  "components/notifications/AlmogReplyModal.tsx": {
   "white": 2,
@@ -690,7 +682,7 @@
   "rawButton": 2
  },
  "components/ops-access/SecurityKeysPanel.tsx": {
-  "white": 2,
+  "white": 1,
   "rawHex": 11,
   "arbitraryColor": 11,
   "rawButton": 2
@@ -750,7 +742,7 @@
   "arbitraryColor": 2
  },
  "components/settings/PasskeyNudge.tsx": {
-  "white": 7,
+  "white": 4,
   "rawHex": 18,
   "arbitraryColor": 5,
   "rawButton": 2
@@ -760,7 +752,6 @@
   "arbitraryColor": 5
  },
  "components/settings/SecuritySettingsClient.tsx": {
-  "white": 1,
   "rawHex": 3,
   "arbitraryColor": 3,
   "rawButton": 2

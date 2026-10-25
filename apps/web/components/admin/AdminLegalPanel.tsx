@@ -25,7 +25,7 @@ const LOG: Record<string, string> = { legal_view_timeline: 'צפייה בציר 
 function Pill({ ok, label }: { ok: boolean | null; label: string }) {
   return (
     <span className={cn('inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-bold',
-      ok === null ? 'border-gc/60 text-slate-500' : ok ? 'border-emerald-300/70 bg-emerald-500/10 text-emerald-800' : 'border-rose-300/70 bg-rose-500/10 text-rose-800')}>
+      ok === null ? 'border-gc/60 text-ink-faint' : ok ? 'border-emerald-300/70 bg-emerald-500/10 text-emerald-800' : 'border-rose-300/70 bg-rose-500/10 text-rose-800')}>
       {ok === null ? '•' : ok ? '✓' : '✗'} {label}
     </span>
   );
@@ -107,21 +107,21 @@ export function AdminLegalPanel() {
   return (
     <div dir="rtl" className="grid gap-5 lg:grid-cols-[320px_1fr]">
       <section className={cn(opsGlassCardClass, 'p-4')} aria-label="משתמשים">
-        <h2 className="mb-3 flex items-center gap-2 font-bold text-slate-900"><span className="grid h-6 w-6 place-items-center rounded-full bg-amber-100 text-xs text-amber-700">1</span>משתמשים עם תיעוד</h2>
+        <h2 className="mb-3 flex items-center gap-2 font-bold text-ink"><span className="grid h-6 w-6 place-items-center rounded-full bg-amber-100 text-xs text-amber-700">1</span>משתמשים עם תיעוד</h2>
         <label className="relative block">
-          <Search size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden />
+          <Search size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-faint" aria-hidden />
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="חיפוש לפי שם או מייל" className="w-full rounded-xl border border-gc/60 bg-glass/70 backdrop-blur-md py-2.5 pr-9 pl-3 text-sm outline-none focus:ring-2 focus:ring-emerald-300" />
         </label>
         <OpsDivider className="my-3 px-0 sm:px-0" />
-        {!users ? <Loader2 className="mx-auto my-6 animate-spin text-slate-400" /> : filtered.length === 0 ? <p className="py-6 text-center text-sm text-slate-500">אין עדיין תיעוד</p> : (
+        {!users ? <Loader2 className="mx-auto my-6 animate-spin text-ink-faint" /> : filtered.length === 0 ? <p className="py-6 text-center text-sm text-ink-faint">אין עדיין תיעוד</p> : (
           <ul className="max-h-[60vh] overflow-y-auto">
             {filtered.map((u, i) => (
               <li key={u.user_id} className="relative py-1">
                 {i > 0 ? <Divider tone="teal" className="absolute inset-x-3 top-0" /> : null}
                 <button type="button" onClick={() => pick(u.user_id)} className={cn('w-full rounded-xl border px-3 py-2.5 text-right transition', sel === u.user_id ? 'border-emerald-300 bg-emerald-50/80' : 'border-transparent hover:bg-glass/60')}>
-                  <span className="block truncate text-sm font-bold text-slate-900">{u.name || 'ללא שם'}</span>
-                  <span className="block truncate text-xs text-slate-500" dir="ltr">{u.email}</span>
-                  <span className="mt-1 flex items-center gap-2 text-[11px] text-slate-500">{u.events} אירועים · אחרון: {u.last_action === 'grant' ? 'הסכמה' : 'ביטול'} {fmt(u.last_at)}</span>
+                  <span className="block truncate text-sm font-bold text-ink">{u.name || 'ללא שם'}</span>
+                  <span className="block truncate text-xs text-ink-faint" dir="ltr">{u.email}</span>
+                  <span className="mt-1 flex items-center gap-2 text-[11px] text-ink-faint">{u.events} אירועים · אחרון: {u.last_action === 'grant' ? 'הסכמה' : 'ביטול'} {fmt(u.last_at)}</span>
                 </button>
               </li>
             ))}
@@ -132,16 +132,16 @@ export function AdminLegalPanel() {
       <section className="space-y-4">
         {err ? <p role="alert" className="rounded-xl bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700">{err}</p> : null}
         {!sel ? (
-          <div className={cn(opsGlassCardClass, 'grid place-items-center p-10 text-center text-slate-500')}><Scale className="mb-2 text-amber-500" />בחרו משתמש כדי לראות את ציר ההסכמות</div>
+          <div className={cn(opsGlassCardClass, 'grid place-items-center p-10 text-center text-ink-faint')}><Scale className="mb-2 text-amber-500" />בחרו משתמש כדי לראות את ציר ההסכמות</div>
         ) : loading || !detail ? (
-          <div className={cn(opsGlassCardClass, 'grid place-items-center p-10')}><Loader2 className="animate-spin text-slate-400" /></div>
+          <div className={cn(opsGlassCardClass, 'grid place-items-center p-10')}><Loader2 className="animate-spin text-ink-faint" /></div>
         ) : (
           <>
             <div className={cn(opsGlassCardClass, 'p-4 sm:p-5')}>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <h2 className="text-lg font-bold text-slate-900">{detail.user.name || 'ללא שם'}</h2>
-                  <p className="text-sm text-slate-500" dir="ltr">{detail.user.email}</p>
+                  <h2 className="text-lg font-bold text-ink">{detail.user.name || 'ללא שם'}</h2>
+                  <p className="text-sm text-ink-faint" dir="ltr">{detail.user.email}</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <button type="button" onClick={verify} disabled={!!busy} className={cn(opsGlassBtnClass, 'gap-2')}>{busy === 'verify' ? <Loader2 size={16} className="animate-spin" /> : <ShieldCheck size={16} />}בדיקת שלמות</button>
@@ -159,10 +159,10 @@ export function AdminLegalPanel() {
                   ) : (
                     <div className="space-y-2">
                       <p className="text-[13px] leading-relaxed text-rose-900">העקיפה נרשמת ביומן, והמסמך יציין בעמוד הראשון שהופק למרות הכשלים, מי אישר, מתי ולמה.</p>
-                      <label className="block text-xs font-bold text-slate-700">למה צריך להפיק עכשיו (לפחות 10 תווים)
+                      <label className="block text-xs font-bold text-ink-soft">למה צריך להפיק עכשיו (לפחות 10 תווים)
                         <textarea value={ovrReason} onChange={(e) => setOvrReason(e.target.value)} maxLength={500} rows={2} className="mt-1 w-full rounded-xl border border-gc/60 bg-glass/70 px-3 py-2 text-sm font-normal outline-none backdrop-blur-md focus:ring-2 focus:ring-rose-300" />
                       </label>
-                      <label className="flex items-center gap-2 text-[13px] font-semibold text-slate-800">
+                      <label className="flex items-center gap-2 text-[13px] font-semibold text-ink">
                         <input type="checkbox" checked={ovrAck} onChange={(e) => setOvrAck(e.target.checked)} className="h-4 w-4 accent-rose-600" />
                         אני מבין שהמסמך יציג את הכשלים בגלוי
                       </label>
@@ -182,7 +182,7 @@ export function AdminLegalPanel() {
             </div>
 
             <AdminLegalPrecheck userId={detail.user.id} onChange={setPre} />
-            <div className="flex items-center gap-2 text-sm font-bold text-slate-700"><span className="grid h-6 w-6 place-items-center rounded-full bg-amber-100 text-xs text-amber-700">2</span>ציר זמן</div>
+            <div className="flex items-center gap-2 text-sm font-bold text-ink-soft"><span className="grid h-6 w-6 place-items-center rounded-full bg-amber-100 text-xs text-amber-700">2</span>ציר זמן</div>
             <ol className="relative space-y-3 border-r-2 border-amber-200/80 pr-5">
               {detail.events.map((e, i) => {
                 const c = checkFor(e.id);
@@ -192,8 +192,8 @@ export function AdminLegalPanel() {
                     <span className={cn('absolute -right-[29px] top-5 h-4 w-4 rounded-full border-2 border-white', e.action === 'grant' ? 'bg-emerald-500' : 'bg-rose-500')} aria-hidden />
                     <button type="button" onClick={() => setOpen(isOpen ? null : e.id)} className="flex w-full items-start justify-between gap-3 text-right" aria-expanded={isOpen}>
                       <div>
-                        <p className="font-bold text-slate-900">{i + 1}. {e.action === 'grant' ? 'מתן הסכמה' : 'ביטול הסכמה'} <span className="text-xs font-semibold text-slate-500">· {SRC[e.source] ?? e.source}</span></p>
-                        <p className="text-xs text-slate-500">{fmt(e.created_at)} · <span dir="ltr">{e.reference}</span></p>
+                        <p className="font-bold text-ink">{i + 1}. {e.action === 'grant' ? 'מתן הסכמה' : 'ביטול הסכמה'} <span className="text-xs font-semibold text-ink-faint">· {SRC[e.source] ?? e.source}</span></p>
+                        <p className="text-xs text-ink-faint">{fmt(e.created_at)} · <span dir="ltr">{e.reference}</span></p>
                         <div className="mt-2 flex flex-wrap gap-1.5">
                           <Pill ok={e.tsa_time ? true : false} label="חותמת זמן" />
                           <Pill ok={e.ots > 0} label="עיגון ציבורי" />
@@ -201,7 +201,7 @@ export function AdminLegalPanel() {
                           {c ? <><Pill ok={c.chain && c.record_hash} label="שרשרת" /><Pill ok={c.signature} label="חתימה" /><Pill ok={c.snapshot} label="נוסח" /><Pill ok={c.screenshot.present ? c.screenshot.ok : null} label="צילום" /></> : null}
                         </div>
                       </div>
-                      <ChevronDown size={18} className={cn('mt-1 shrink-0 text-slate-400 transition', isOpen && 'rotate-180')} />
+                      <ChevronDown size={18} className={cn('mt-1 shrink-0 text-ink-faint transition', isOpen && 'rotate-180')} />
                     </button>
                     {isOpen ? (
                       <div className="mt-4 grid gap-4 border-t border-amber-200/60 pt-4 md:grid-cols-2">
@@ -214,25 +214,25 @@ export function AdminLegalPanel() {
                             ['מכשיר', e.user_agent ?? '—'],
                             ['חותמת זמן מוסמכת', fmt(e.tsa_time)],
                           ].map(([k, v]) => (
-                            <div key={k} className="rounded-lg bg-glass/60 backdrop-blur-md px-3 py-2"><dt className="text-[11px] font-bold text-slate-500">{k}</dt><dd className="break-words text-slate-800">{v}</dd></div>
+                            <div key={k} className="rounded-lg bg-glass/60 backdrop-blur-md px-3 py-2"><dt className="text-[11px] font-bold text-ink-faint">{k}</dt><dd className="break-words text-ink">{v}</dd></div>
                           ))}
-                          <div className="rounded-lg bg-glass/60 backdrop-blur-md px-3 py-2"><dt className="text-[11px] font-bold text-slate-500">גיבוב הרשומה</dt><dd className="break-all font-mono text-[11px] text-slate-700" dir="ltr">{e.record_hash}</dd></div>
+                          <div className="rounded-lg bg-glass/60 backdrop-blur-md px-3 py-2"><dt className="text-[11px] font-bold text-ink-faint">גיבוב הרשומה</dt><dd className="break-all font-mono text-[11px] text-ink-soft" dir="ltr">{e.record_hash}</dd></div>
                         </dl>
                         <div className="space-y-3">
                           {e.has_screenshot ? (
                             <figure className="overflow-hidden rounded-xl border border-amber-200 bg-glass/85 backdrop-blur-md">
                               {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img src={`/api/v1/ops/legal/image/${e.id}`} alt="צילום חלון ההסכמה" className="max-h-[420px] w-full object-contain" loading="lazy" />
-                              <figcaption className="flex items-center justify-between px-3 py-2 text-xs text-slate-500">
+                              <figcaption className="flex items-center justify-between px-3 py-2 text-xs text-ink-faint">
                                 <span className="flex items-center gap-1"><ImageIcon size={13} />צילום החלון</span>
                                 <a href={`/api/v1/ops/legal/image/${e.id}?download=1`} className="font-bold text-emerald-700 underline">הורדה</a>
                               </figcaption>
                             </figure>
-                          ) : <p className="rounded-xl bg-glass/60 backdrop-blur-md p-3 text-xs text-slate-500">אין צילום לאירוע זה</p>}
+                          ) : <p className="rounded-xl bg-glass/60 backdrop-blur-md p-3 text-xs text-ink-faint">אין צילום לאירוע זה</p>}
                           <button type="button" onClick={() => pullLogs(e.id)} disabled={!!busy} className={cn(opsGlassBtnClass, 'w-full justify-center gap-2 text-xs')} data-testid="legal-provider-logs">
                             {busy === `logs:${e.id}` ? <Loader2 size={14} className="animate-spin" /> : <FileText size={14} />}שליפת יומני ספק לאירוע הזה
                           </button>
-                          <details className="rounded-xl bg-glass/60 backdrop-blur-md p-3 text-xs text-slate-700">
+                          <details className="rounded-xl bg-glass/60 backdrop-blur-md p-3 text-xs text-ink-soft">
                             <summary className="cursor-pointer font-bold">הנוסח שהוצג</summary>
                             <div className="mt-2 space-y-1">{e.text_lines.map((l, j) => <p key={j}>{l}</p>)}</div>
                           </details>
@@ -245,13 +245,13 @@ export function AdminLegalPanel() {
               })}
             </ol>
 
-            <div className="flex items-center gap-2 text-sm font-bold text-slate-700"><span className="grid h-6 w-6 place-items-center rounded-full bg-amber-100 text-xs text-amber-700">3</span>יומן גישה לתיעוד</div>
+            <div className="flex items-center gap-2 text-sm font-bold text-ink-soft"><span className="grid h-6 w-6 place-items-center rounded-full bg-amber-100 text-xs text-amber-700">3</span>יומן גישה לתיעוד</div>
             <ul className={cn(opsGlassCardClass, 'p-2 text-sm')}>
-              {detail.access_log.length === 0 ? <li className="p-3 text-slate-500">אין גישות קודמות</li> : detail.access_log.map((l, i) => (
-                <li key={i} className="relative flex justify-between gap-3 px-3 py-2">{i > 0 ? <Divider tone="teal" className="absolute inset-x-3 top-0" /> : null}<span>{LOG[l.path] ?? l.path}</span><span className="text-xs text-slate-500">{fmt(l.created_at)}</span></li>
+              {detail.access_log.length === 0 ? <li className="p-3 text-ink-faint">אין גישות קודמות</li> : detail.access_log.map((l, i) => (
+                <li key={i} className="relative flex justify-between gap-3 px-3 py-2">{i > 0 ? <Divider tone="teal" className="absolute inset-x-3 top-0" /> : null}<span>{LOG[l.path] ?? l.path}</span><span className="text-xs text-ink-faint">{fmt(l.created_at)}</span></li>
               ))}
             </ul>
-            <p className="flex items-center gap-1.5 text-xs text-slate-500"><Mail size={13} />כל צפייה, בדיקה והפקה נרשמות ביומן הגישה ונכללות בתיק הראיות.</p>
+            <p className="flex items-center gap-1.5 text-xs text-ink-faint"><Mail size={13} />כל צפייה, בדיקה והפקה נרשמות ביומן הגישה ונכללות בתיק הראיות.</p>
           </>
         )}
       </section>

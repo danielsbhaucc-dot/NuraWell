@@ -76,7 +76,7 @@ export function GuideLessonEditor({
     <div className="space-y-3 rounded-2xl border border-emerald-100/80 bg-background-card/70 p-4 backdrop-blur-md" dir="rtl">
       <div className="flex flex-wrap items-center gap-2">
         <input
-          className="flex-1 min-w-[180px] rounded-xl border border-slate-200 px-3 py-2 text-sm font-bold"
+          className="flex-1 min-w-[180px] rounded-xl border border-hairline px-3 py-2 text-sm font-bold"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="כותרת פרק"
@@ -84,7 +84,7 @@ export function GuideLessonEditor({
         <button
           type="button"
           onClick={() => setPreview((p) => !p)}
-          className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-background-card px-3 py-2 text-xs font-bold text-slate-700"
+          className="inline-flex items-center gap-1.5 rounded-xl border border-hairline bg-background-card px-3 py-2 text-xs font-bold text-ink-soft"
         >
           <Eye className="h-3.5 w-3.5" />
           {preview ? 'עריכה' : 'תצוגה מקדימה'}
@@ -101,7 +101,7 @@ export function GuideLessonEditor({
       </div>
 
       <textarea
-        className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm min-h-[56px]"
+        className="w-full rounded-xl border border-hairline px-3 py-2 text-sm min-h-[56px]"
         value={description}
         onChange={(e) => setDescription(e.target.value)}
         placeholder="תיאור קצר לפרק"
@@ -109,7 +109,7 @@ export function GuideLessonEditor({
 
       {!preview ? (
         <>
-          <div className="flex flex-wrap gap-1.5 rounded-xl border border-slate-200 bg-slate-50/80 p-2">
+          <div className="flex flex-wrap gap-1.5 rounded-xl border border-hairline bg-surface-sunken/80 p-2">
             <button type="button" onClick={() => applyWrap('<strong>', '</strong>')} className="guide-editor-btn" title="מודגש">
               <Bold className="h-3.5 w-3.5" />
             </button>
@@ -142,7 +142,7 @@ export function GuideLessonEditor({
           <textarea
             ref={textareaRef}
             dir="rtl"
-            className="guide-lesson-code-editor w-full min-h-[220px] rounded-xl border border-slate-200 p-3 text-sm font-mono"
+            className="guide-lesson-code-editor w-full min-h-[220px] rounded-xl border border-hairline p-3 text-sm font-mono"
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder="<p>תוכן HTML…</p>"

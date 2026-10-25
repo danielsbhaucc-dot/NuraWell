@@ -84,7 +84,7 @@ export function ConfirmDialog({
         type="button"
         onClick={() => !busy && onCancel()}
         aria-label="סגור"
-        className="absolute inset-e-3 top-3 inline-flex h-7 w-7 items-center justify-center rounded-lg border border-gc/50 bg-background-card/40 text-slate-600 hover:bg-background-card/70"
+        className="absolute inset-e-3 top-3 inline-flex h-7 w-7 items-center justify-center rounded-lg border border-gc/50 bg-background-card/40 text-ink-soft hover:bg-background-card/70"
       >
         <X className="h-4 w-4" />
       </button>
@@ -99,8 +99,8 @@ export function ConfirmDialog({
           <Icon className="h-5 w-5" />
         </span>
         <div className="min-w-0 flex-1 pt-0.5">
-          <h3 className="text-base font-black text-slate-800">{title}</h3>
-          {message && <p className="mt-1 text-sm leading-snug text-slate-600">{message}</p>}
+          <h3 className="text-base font-black text-ink">{title}</h3>
+          {message && <p className="mt-1 text-sm leading-snug text-ink-soft">{message}</p>}
         </div>
       </div>
 
@@ -122,7 +122,7 @@ export function ConfirmDialog({
             value={input.value}
             placeholder={input.placeholder}
             onChange={(e) => input.onChange(e.target.value)}
-            className="w-full rounded-xl border border-gc/60 bg-background-card/60 px-3 py-2.5 text-base text-slate-800 shadow-inner outline-hidden backdrop-blur-md placeholder:text-slate-400 focus:ring-2 focus:ring-teal-400/60"
+            className="w-full rounded-xl border border-gc/60 bg-background-card/60 px-3 py-2.5 text-base text-ink shadow-inner outline-hidden backdrop-blur-md placeholder:text-ink-faint focus:ring-2 focus:ring-teal-400/60"
           />
         </form>
       ) : null}
@@ -146,7 +146,7 @@ export function ConfirmDialog({
             type="button"
             onClick={onCancel}
             disabled={busy}
-            className="inline-flex items-center justify-center rounded-xl border border-gc/60 bg-background-card/40 px-4 py-2.5 text-sm font-bold text-slate-700 backdrop-blur-md hover:bg-background-card/70 disabled:opacity-60"
+            className="inline-flex items-center justify-center rounded-xl border border-gc/60 bg-background-card/40 px-4 py-2.5 text-sm font-bold text-ink-soft backdrop-blur-md hover:bg-background-card/70 disabled:opacity-60"
           >
             {cancelLabel}
           </button>

@@ -76,8 +76,8 @@ export function AdminChatBackgroundPanel() {
           <ImageIcon className="h-5 w-5" aria-hidden />
         </span>
         <div>
-          <h2 className="font-display text-lg font-black text-slate-800">רקע ה-HERO בצ׳אט אלמוג</h2>
-          <p className="text-sm text-slate-600">תמונת הרקע בראש רשימת השיחות (inbox).</p>
+          <h2 className="font-display text-lg font-black text-ink">רקע ה-HERO בצ׳אט אלמוג</h2>
+          <p className="text-sm text-ink-soft">תמונת הרקע בראש רשימת השיחות (inbox).</p>
         </div>
       </div>
 
@@ -87,7 +87,7 @@ export function AdminChatBackgroundPanel() {
             <img src={coverUrl} alt="" aria-hidden className="h-full w-full object-cover" />
           ) : (
             <div className="flex h-full items-center justify-center">
-              <ImageIcon className="h-6 w-6 text-slate-400" />
+              <ImageIcon className="h-6 w-6 text-ink-faint" />
             </div>
           )}
         </div>

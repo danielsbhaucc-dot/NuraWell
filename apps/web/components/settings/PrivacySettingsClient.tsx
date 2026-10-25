@@ -237,11 +237,11 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
             <Shield className="w-5 h-5 text-emerald-700" />
           </div>
           <div>
-            <h1 className="text-xl font-black text-slate-900">פרטיות ונתונים</h1>
-            <p className="text-sm text-slate-600">מימוש זכויותיך לפי חוק הגנה הפרטיות (תיקון 13)</p>
+            <h1 className="text-xl font-black text-ink">פרטיות ונתונים</h1>
+            <p className="text-sm text-ink-soft">מימוש זכויותיך לפי חוק הגנה הפרטיות (תיקון 13)</p>
           </div>
         </div>
-        <p className="text-sm text-slate-600 leading-relaxed mt-3">
+        <p className="text-sm text-ink-soft leading-relaxed mt-3">
           כאן אפשר לייצא עותק של הנתונים השמורים עליך, או לבקש מחיקת חשבון. לשאלות נוספות:{' '}
           <a href="mailto:privacy@nurawell.ai" className="font-semibold text-emerald-700 underline">
             privacy@nurawell.ai
@@ -250,11 +250,11 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
       </div>
 
       <section className="crystal-surface rounded-2xl p-5 space-y-3">
-        <h2 className="font-bold text-slate-900 flex items-center gap-2">
+        <h2 className="font-bold text-ink flex items-center gap-2">
           <Download className="w-4 h-4 text-emerald-600" />
           ייצוא נתונים (ניידות)
         </h2>
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-ink-soft">
           הורדת קובץ JSON עם הפרופיל, ההסכמות, ההתקדמות, השיחות והנתונים הקשורים לחשבונך.
         </p>
         <button
@@ -277,17 +277,17 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
       <RetentionChoiceSection onToast={(msg, kind) => (kind === 'success' ? toast.success(msg) : toast.error(msg))} />
 
       <section className="crystal-surface rounded-2xl p-5 space-y-3">
-        <h2 className="font-bold text-slate-900 flex items-center gap-2">
+        <h2 className="font-bold text-ink flex items-center gap-2">
           <Lock className="w-4 h-4 text-indigo-600" />
           גישת צוות לתמלילי שיחה
         </h2>
-        <p className="text-sm text-slate-600 leading-relaxed">
+        <p className="text-sm text-ink-soft leading-relaxed">
           כברירת מחדל, צוות התמיכה <strong>לא</strong> יכול לצפות בתמלילי השיחות שלך. ניתן לאשר גישה
           גלובלית (למקרי תמיכה), או לאשר/לדחות בקשות ספציפיות.
         </p>
         {transcriptLoading ? (
           <div className="flex justify-center py-4">
-            <Loader2 className="w-5 h-5 animate-spin text-slate-400" />
+            <Loader2 className="w-5 h-5 animate-spin text-ink-faint" />
           </div>
         ) : (
           <>
@@ -299,8 +299,8 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
                 onChange={(e) => void handleTranscriptConsentToggle(e.target.checked)}
                 className="mt-1 h-4 w-4 rounded border-[#D4C4A8]"
               />
-              <span className="min-w-0 flex-1 text-sm text-slate-700">
-                <span className="font-bold text-slate-900 block mb-0.5">
+              <span className="min-w-0 flex-1 text-sm text-ink-soft">
+                <span className="font-bold text-ink block mb-0.5">
                   אישרתי לצוות NuraWell לצפות בתמלילי השיחות שלי
                 </span>
                 ניתן לבטל בכל עת — הצוות יקבל התראה על ביטול. כל גישה נרשמת ביומן audit פנימי.
@@ -479,10 +479,10 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
         backdropClassName="absolute inset-0 bg-slate-900/45"
         panelClassName="crystal-surface max-w-md rounded-2xl p-5 shadow-2xl sm:rounded-2xl"
       >
-        <h3 id="revoke-transcript-title" className="text-lg font-black text-slate-900">
+        <h3 id="revoke-transcript-title" className="text-lg font-black text-ink">
           לבטל את האישור?
         </h3>
-        <p className="mt-2 text-sm text-slate-600 leading-relaxed">
+        <p className="mt-2 text-sm text-ink-soft leading-relaxed">
           צוות NuraWell לא יוכל לצפות בתמלילי השיחות שלך (אלא אם יינתן אישור מחדש). מנהלי המערכת יקבלו
           התראה על הביטול.
         </p>
@@ -500,7 +500,7 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
             type="button"
             onClick={() => setRevokeConfirmOpen(false)}
             disabled={transcriptSaving}
-            className="px-4 min-h-[44px] rounded-xl font-bold border border-slate-200 text-slate-700"
+            className="px-4 min-h-[44px] rounded-xl font-bold border border-hairline text-ink-soft"
           >
             השאר מאושר
           </button>
@@ -517,14 +517,14 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
         backdropClassName="absolute inset-0 bg-slate-900/45"
         panelClassName="crystal-surface max-w-md rounded-2xl p-5 shadow-2xl sm:rounded-2xl"
       >
-            <h3 id="delete-account-title" className="text-lg font-black text-slate-900">
+            <h3 id="delete-account-title" className="text-lg font-black text-ink">
               מחיקת חשבון לצמיתות
             </h3>
-            <p className="mt-2 text-sm text-slate-600 leading-relaxed">
+            <p className="mt-2 text-sm text-ink-soft leading-relaxed">
               לא ניתן לשחזר את החשבון. לאישור, יש להזין את כתובת האימייל שלך:
             </p>
             <label className="block mt-4">
-              <span className="text-xs font-bold text-slate-600 flex items-center gap-1 mb-1">
+              <span className="text-xs font-bold text-ink-soft flex items-center gap-1 mb-1">
                 <Mail className="w-3 h-3" />
                 {email}
               </span>
@@ -532,7 +532,7 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
                 type="email"
                 value={confirmEmail}
                 onChange={(e) => setConfirmEmail(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+                className="w-full rounded-xl border border-hairline px-3 py-2 text-sm"
                 dir="ltr"
                 autoComplete="email"
                 placeholder={email}
@@ -554,7 +554,7 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
                 type="button"
                 onClick={() => !deleting && setDeleteOpen(false)}
                 disabled={deleting}
-                className="px-4 min-h-[44px] rounded-xl font-bold border border-slate-200 text-slate-700"
+                className="px-4 min-h-[44px] rounded-xl font-bold border border-hairline text-ink-soft"
               >
                 ביטול
               </button>

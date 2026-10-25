@@ -75,13 +75,13 @@ export function StepUpApprove({ id, demo }: { id: string; demo?: ApproveInfo }) 
   };
 
   const Done = ({ icon, title, text }: { icon: React.ReactNode; title: string; text: string }) => (
-    <div className="py-4 text-center">{icon}<h1 className="mt-2 font-[Rubik] text-xl font-bold text-slate-900">{title}</h1><p className="mt-1 text-[15px] text-slate-600">{text}</p></div>
+    <div className="py-4 text-center">{icon}<h1 className="mt-2 font-[Rubik] text-xl font-bold text-ink">{title}</h1><p className="mt-1 text-[15px] text-ink-soft">{text}</p></div>
   );
 
   return (
     <main dir="rtl" className="mx-auto grid min-h-[90dvh] w-full max-w-md place-items-center p-4">
       <section className="w-full rounded-[30px] border border-amber-200/50 bg-[linear-gradient(160deg,rgba(214,238,229,0.92),rgba(236,228,206,0.9))] p-5 shadow-[0_24px_60px_-28px_rgba(6,78,59,0.55)] backdrop-blur-xl" data-testid="stepup-approve">
-        {state === 'loading' ? <Loader2 className="mx-auto my-10 animate-spin text-slate-400" />
+        {state === 'loading' ? <Loader2 className="mx-auto my-10 animate-spin text-ink-faint" />
           : state === 'signin' ? (
             <>
               <Done icon={<ShieldAlert className="mx-auto text-amber-600" size={38} />} title="צריך להתחבר בטלפון" text="מתחברים לחשבון שלך בטלפון הזה, ואז חוזרים לכאן אוטומטית." />
@@ -99,15 +99,15 @@ export function StepUpApprove({ id, demo }: { id: string; demo?: ApproveInfo }) 
                 <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-emerald-700 to-teal-600 text-amber-100 shadow-lg"><Monitor size={22} /></div>
                 <div className="min-w-0">
                   <p className="text-[12px] font-bold text-amber-700">מישהו מבקש אישור</p>
-                  <h1 className="font-[Rubik] text-lg font-bold leading-snug text-slate-900">{PURPOSE_HE[d.purpose] ?? 'פעולה רגישה'}</h1>
+                  <h1 className="font-[Rubik] text-lg font-bold leading-snug text-ink">{PURPOSE_HE[d.purpose] ?? 'פעולה רגישה'}</h1>
                 </div>
               </div>
               <dl className="mt-4 grid gap-1.5 rounded-2xl border border-emerald-900/10 bg-emerald-950/[0.04] p-3 text-[14px]" data-testid="approve-context">
-                <div className="flex items-center gap-2"><Monitor size={15} className="shrink-0 text-emerald-700" /><dt className="sr-only">מכשיר</dt><dd className="text-slate-800">{d.requester ?? 'דפדפן לא מזוהה'}</dd></div>
-                <div className="flex items-center gap-2"><MapPin size={15} className="shrink-0 text-emerald-700" /><dt className="sr-only">מיקום משוער</dt><dd className="text-slate-800">{d.city ?? 'מיקום לא ידוע'} <span className="text-slate-500">(משוער, לפי הרשת)</span></dd></div>
-                <div className="flex items-center gap-2"><Clock size={15} className="shrink-0 text-emerald-700" /><dt className="sr-only">זמן</dt><dd className="text-slate-800">{fmt(d.created_at)} · שעון ישראל <span className="text-slate-500">· {left > 0 ? `נשארו ${left} שניות` : 'פג'}</span></dd></div>
+                <div className="flex items-center gap-2"><Monitor size={15} className="shrink-0 text-emerald-700" /><dt className="sr-only">מכשיר</dt><dd className="text-ink">{d.requester ?? 'דפדפן לא מזוהה'}</dd></div>
+                <div className="flex items-center gap-2"><MapPin size={15} className="shrink-0 text-emerald-700" /><dt className="sr-only">מיקום משוער</dt><dd className="text-ink">{d.city ?? 'מיקום לא ידוע'} <span className="text-ink-faint">(משוער, לפי הרשת)</span></dd></div>
+                <div className="flex items-center gap-2"><Clock size={15} className="shrink-0 text-emerald-700" /><dt className="sr-only">זמן</dt><dd className="text-ink">{fmt(d.created_at)} · שעון ישראל <span className="text-ink-faint">· {left > 0 ? `נשארו ${left} שניות` : 'פג'}</span></dd></div>
               </dl>
-              <p className="mt-4 text-[15px] font-bold text-slate-900">איזה מספר מופיע במסך השני?</p>
+              <p className="mt-4 text-[15px] font-bold text-ink">איזה מספר מופיע במסך השני?</p>
               <div className="mt-2 grid grid-cols-3 gap-2" role="radiogroup" aria-label="מספר התאמה">
                 {d.choices.map((c) => (
                   <button key={c} type="button" role="radio" aria-checked={pick === c} onClick={() => setPick(c)} data-testid="match-choice"

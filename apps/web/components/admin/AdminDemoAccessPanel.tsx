@@ -270,7 +270,7 @@ export function AdminDemoAccessPanel() {
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-slate-600">
+      <div className="flex items-center gap-2 text-ink-soft">
         <Loader2 className="h-5 w-5 animate-spin" />
         טוען קישורים…
       </div>
@@ -284,22 +284,22 @@ export function AdminDemoAccessPanel() {
       ) : null}
 
       <section className="rounded-3xl border border-teal-200/60 bg-linear-to-br from-teal-50/80 via-gc to-amber-50/50 p-5 shadow-xs sm:p-6">
-        <h2 className="text-lg font-black text-slate-900">פתיחת גישת דמו</h2>
-        <p className="mt-1 text-sm text-slate-600">
+        <h2 className="text-lg font-black text-ink">פתיחת גישת דמו</h2>
+        <p className="mt-1 text-sm text-ink-soft">
           לינק + סיבה + שם אורח (אופציונלי) + סיסמה זמנית (אופציונלי). האורח רואה את נתוני משתמש היעד
           כאילו מחובר אליו — בלי הרשאות מנהל.
         </p>
 
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
           <label className="block sm:col-span-2">
-            <span className="mb-1.5 block text-sm font-semibold text-slate-700">
+            <span className="mb-1.5 block text-sm font-semibold text-ink-soft">
               משתמש דמו ברירת מחדל (נבחר אוטומטית כאן, וגם גדעון משתמש בו)
             </span>
             <select
               value={defaultTargetId}
               disabled={busy === 'default'}
               onChange={(e) => void saveDefaultTarget(e.target.value)}
-              className="w-full rounded-2xl border border-slate-200 bg-gc px-3 py-2.5 text-sm"
+              className="w-full rounded-2xl border border-hairline bg-gc px-3 py-2.5 text-sm"
             >
               <option value="">לא הוגדר</option>
               {users.map((u) => (
@@ -311,21 +311,21 @@ export function AdminDemoAccessPanel() {
           </label>
 
           <label className="block sm:col-span-2">
-            <span className="mb-1.5 block text-sm font-semibold text-slate-700">חיפוש משתמש יעד</span>
+            <span className="mb-1.5 block text-sm font-semibold text-ink-soft">חיפוש משתמש יעד</span>
             <input
               value={userQuery}
               onChange={(e) => setUserQuery(e.target.value)}
               placeholder="שם / אימייל / test / admin…"
-              className="w-full rounded-2xl border border-slate-200 bg-gc px-3 py-2.5 text-sm"
+              className="w-full rounded-2xl border border-hairline bg-gc px-3 py-2.5 text-sm"
             />
           </label>
 
           <label className="block sm:col-span-2">
-            <span className="mb-1.5 block text-sm font-semibold text-slate-700">משתמש יעד *</span>
+            <span className="mb-1.5 block text-sm font-semibold text-ink-soft">משתמש יעד *</span>
             <select
               value={targetUserId}
               onChange={(e) => setTargetUserId(e.target.value)}
-              className="w-full rounded-2xl border border-slate-200 bg-gc px-3 py-2.5 text-sm"
+              className="w-full rounded-2xl border border-hairline bg-gc px-3 py-2.5 text-sm"
             >
               <option value="">בחרו משתמש…</option>
               {filteredUsers.map((u) => (
@@ -339,31 +339,31 @@ export function AdminDemoAccessPanel() {
           </label>
 
           <label className="block sm:col-span-2">
-            <span className="mb-1.5 block text-sm font-semibold text-slate-700">סיבה / מטרה *</span>
+            <span className="mb-1.5 block text-sm font-semibold text-ink-soft">סיבה / מטרה *</span>
             <input
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="למשל: הדגמה למפתח / סקירת מוצר לרופא"
-              className="w-full rounded-2xl border border-slate-200 bg-gc px-3 py-2.5 text-sm"
+              className="w-full rounded-2xl border border-hairline bg-gc px-3 py-2.5 text-sm"
             />
           </label>
 
           <label className="block">
-            <span className="mb-1.5 block text-sm font-semibold text-slate-700">שם אורח (לא חובה)</span>
+            <span className="mb-1.5 block text-sm font-semibold text-ink-soft">שם אורח (לא חובה)</span>
             <input
               value={guestName}
               onChange={(e) => setGuestName(e.target.value)}
               placeholder="דולב"
-              className="w-full rounded-2xl border border-slate-200 bg-gc px-3 py-2.5 text-sm"
+              className="w-full rounded-2xl border border-hairline bg-gc px-3 py-2.5 text-sm"
             />
           </label>
 
           <label className="block">
-            <span className="mb-1.5 block text-sm font-semibold text-slate-700">תוקף</span>
+            <span className="mb-1.5 block text-sm font-semibold text-ink-soft">תוקף</span>
             <select
               value={ttlMinutes}
               onChange={(e) => setTtlMinutes(Number(e.target.value))}
-              className="w-full rounded-2xl border border-slate-200 bg-gc px-3 py-2.5 text-sm"
+              className="w-full rounded-2xl border border-hairline bg-gc px-3 py-2.5 text-sm"
             >
               {TTL_OPTIONS.map((o) => (
                 <option key={o.minutes} value={o.minutes}>
@@ -374,18 +374,18 @@ export function AdminDemoAccessPanel() {
           </label>
 
           <label className="block">
-            <span className="mb-1.5 block text-sm font-semibold text-slate-700">סיסמה זמנית (לא חובה)</span>
+            <span className="mb-1.5 block text-sm font-semibold text-ink-soft">סיסמה זמנית (לא חובה)</span>
             <input
               type="text"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="למשל: welcome-dolev"
-              className="w-full rounded-2xl border border-slate-200 bg-gc px-3 py-2.5 text-sm"
+              className="w-full rounded-2xl border border-hairline bg-gc px-3 py-2.5 text-sm"
             />
           </label>
 
           <label className="block">
-            <span className="mb-1.5 block text-sm font-semibold text-slate-700">מקס׳ כניסות (לא חובה)</span>
+            <span className="mb-1.5 block text-sm font-semibold text-ink-soft">מקס׳ כניסות (לא חובה)</span>
             <input
               type="number"
               min={1}
@@ -393,7 +393,7 @@ export function AdminDemoAccessPanel() {
               value={maxClaims}
               onChange={(e) => setMaxClaims(e.target.value)}
               placeholder="ללא הגבלה"
-              className="w-full rounded-2xl border border-slate-200 bg-gc px-3 py-2.5 text-sm"
+              className="w-full rounded-2xl border border-hairline bg-gc px-3 py-2.5 text-sm"
             />
           </label>
         </div>
@@ -424,9 +424,9 @@ export function AdminDemoAccessPanel() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-black text-slate-900">קישורים קיימים</h2>
+        <h2 className="text-lg font-black text-ink">קישורים קיימים</h2>
         {links.length === 0 ? (
-          <p className="text-sm text-slate-500">עדיין אין קישורי דמו.</p>
+          <p className="text-sm text-ink-faint">עדיין אין קישורי דמו.</p>
         ) : (
           links.map((link) => {
             const expired = new Date(link.expires_at).getTime() <= Date.now();
@@ -434,20 +434,20 @@ export function AdminDemoAccessPanel() {
             return (
               <article
                 key={link.id}
-                className="rounded-3xl border border-slate-200/70 bg-background-card/70 p-4 shadow-xs backdrop-blur-md sm:p-5"
+                className="rounded-3xl border border-hairline/70 bg-background-card/70 p-4 shadow-xs backdrop-blur-md sm:p-5"
               >
                 <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
                   <div className="min-w-0">
-                    <p className="font-bold text-slate-900">
+                    <p className="font-bold text-ink">
                       {link.guest_name ? `${link.guest_name} · ` : ''}
                       {link.reason}
                     </p>
-                    <p className="mt-1 text-xs text-slate-500 wrap-break-word">
+                    <p className="mt-1 text-xs text-ink-faint wrap-break-word">
                       יעד: {link.target_name || 'ללא שם'}
                       {link.target_email ? ` · ${link.target_email}` : ''} · דרגה במקור:{' '}
                       {link.target_role}
                     </p>
-                    <p className="mt-1 text-xs text-slate-500">
+                    <p className="mt-1 text-xs text-ink-faint">
                       תוקף: {new Date(link.expires_at).toLocaleString('he-IL')}
                       {expired ? ' (פג)' : ''}
                       {revoked ? ' · בוטל' : ''}
@@ -460,7 +460,7 @@ export function AdminDemoAccessPanel() {
                     </p>
                   </div>
                   <div className="flex w-full flex-wrap gap-2 sm:w-auto">
-                    <label className="inline-flex cursor-pointer items-center gap-1 rounded-xl border border-slate-200 bg-gc px-3 py-2 text-xs font-semibold text-slate-700">
+                    <label className="inline-flex cursor-pointer items-center gap-1 rounded-xl border border-hairline bg-gc px-3 py-2 text-xs font-semibold text-ink-soft">
                       <ImagePlus className="h-3.5 w-3.5" />
                       רקע
                       <input
@@ -505,7 +505,7 @@ export function AdminDemoAccessPanel() {
                       type="button"
                       disabled={!!busy}
                       onClick={() => deleteLink(link.id)}
-                      className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-gc px-3 py-2 text-xs font-semibold text-slate-700"
+                      className="inline-flex items-center gap-1 rounded-xl border border-hairline bg-gc px-3 py-2 text-xs font-semibold text-ink-soft"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                       מחק

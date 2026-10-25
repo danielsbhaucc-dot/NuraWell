@@ -223,7 +223,7 @@ export function GuidesManager() {
 
       {/* AI Generator */}
       <section className="crystal-surface rounded-2xl p-5 border border-violet-200/40">
-        <h2 className="font-bold text-slate-900 flex items-center gap-2 mb-3">
+        <h2 className="font-bold text-ink flex items-center gap-2 mb-3">
           <Sparkles className="w-5 h-5 text-violet-600" />
           מחולל מדריך AI
         </h2>
@@ -231,7 +231,7 @@ export function GuidesManager() {
           value={sourceText}
           onChange={(e) => setSourceText(e.target.value)}
           placeholder="הדבק כאן טקסט גולמי — מאמר, תסריט, הערות… ה-AI יחלק לפרקים, משימות והרגלים"
-          className="w-full min-h-[140px] rounded-xl border border-slate-200 p-3 text-sm"
+          className="w-full min-h-[140px] rounded-xl border border-hairline p-3 text-sm"
           dir="rtl"
         />
 
@@ -240,9 +240,9 @@ export function GuidesManager() {
             <p className="text-sm font-bold text-violet-900">שאלות חידוד:</p>
             {aiPhase.questions.map((q) => (
               <div key={q}>
-                <label className="text-xs font-semibold text-slate-600">{q}</label>
+                <label className="text-xs font-semibold text-ink-soft">{q}</label>
                 <input
-                  className="w-full mt-1 rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                  className="w-full mt-1 rounded-lg border border-hairline px-3 py-2 text-sm"
                   value={clarificationAnswers[q] ?? ''}
                   onChange={(e) =>
                     setClarificationAnswers((prev) => ({ ...prev, [q]: e.target.value }))
@@ -267,18 +267,18 @@ export function GuidesManager() {
               <p className="text-sm font-black">תצוגה מקדימה — אשר לפני פרסום</p>
             </div>
             <div>
-              <h3 className="text-lg font-black text-slate-900">{aiPhase.guide.title}</h3>
-              <p className="text-sm text-slate-600 mt-1">{aiPhase.guide.description}</p>
+              <h3 className="text-lg font-black text-ink">{aiPhase.guide.title}</h3>
+              <p className="text-sm text-ink-soft mt-1">{aiPhase.guide.description}</p>
             </div>
             <div className="space-y-3 max-h-[420px] overflow-y-auto ps-1">
               {[...aiPhase.guide.lessons]
                 .sort((a, b) => a.sort_order - b.sort_order)
                 .map((lesson, i) => (
                   <div key={`${lesson.title}-${i}`} className="guide-glass-card p-3">
-                    <p className="font-bold text-sm text-slate-900">
+                    <p className="font-bold text-sm text-ink">
                       {i + 1}. {lesson.title}
                     </p>
-                    <p className="text-xs text-slate-500 mt-0.5">{lesson.description}</p>
+                    <p className="text-xs text-ink-faint mt-0.5">{lesson.description}</p>
                     <div
                       className="lesson-content text-sm mt-2 max-h-32 overflow-hidden"
                       dangerouslySetInnerHTML={{ __html: sanitizeLessonHtml(lesson.text_content) }}
@@ -331,7 +331,7 @@ export function GuidesManager() {
           value={newTitle}
           onChange={(e) => setNewTitle(e.target.value)}
           placeholder="שם מדריך חדש"
-          className="flex-1 min-w-[200px] rounded-xl border border-slate-200 px-3 py-2 text-sm"
+          className="flex-1 min-w-[200px] rounded-xl border border-hairline px-3 py-2 text-sm"
         />
         <button
           type="button"
@@ -373,7 +373,7 @@ export function GuidesManager() {
           <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
         </div>
       ) : guides.length === 0 ? (
-        <p className="text-center text-slate-500 py-8">אין מדריכים עדיין</p>
+        <p className="text-center text-ink-faint py-8">אין מדריכים עדיין</p>
       ) : (
         <div className="grid gap-3">
           {guides.map((g) => {
@@ -395,8 +395,8 @@ export function GuidesManager() {
                   {!bg && <BookOpen className="w-6 h-6 text-emerald-600 m-4" />}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-bold text-slate-900 truncate">{g.title}</p>
-                  <p className="text-xs text-slate-500 mt-0.5">
+                  <p className="font-bold text-ink truncate">{g.title}</p>
+                  <p className="text-xs text-ink-faint mt-0.5">
                     {(g.lessons?.length ?? 0)} פרקים
                     {g.is_published ? ' · פורסם' : ' · טיוטה'}
                     {g.visibility === 'hidden' ? ' · מוסתר' : ''}
@@ -412,7 +412,7 @@ export function GuidesManager() {
                     'text-xs font-bold px-2.5 py-1 rounded-full',
                     g.is_published
                       ? 'bg-emerald-100 text-emerald-800'
-                      : 'bg-slate-100 text-slate-600'
+                      : 'bg-surface text-ink-soft'
                   )}
                 >
                   {g.is_published ? 'פעיל' : 'טיוטה'}

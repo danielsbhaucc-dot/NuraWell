@@ -187,12 +187,12 @@ function CoverSummaryRow({
             {hasCover && coverUrl ? (
               <img src={coverUrl} alt="" aria-hidden className="h-full w-full object-cover" />
             ) : (
-              <ImageIcon className="h-5 w-5 text-slate-400" aria-hidden />
+              <ImageIcon className="h-5 w-5 text-ink-faint" aria-hidden />
             )}
           </div>
           <div className="min-w-0 text-right">
-            <p className="text-sm font-bold text-slate-800">תמונת רקע לכרטיס התחנה</p>
-            <p className="mt-0.5 text-xs text-slate-500">
+            <p className="text-sm font-bold text-ink">תמונת רקע לכרטיס התחנה</p>
+            <p className="mt-0.5 text-xs text-ink-faint">
               {hasCover ? 'מוגדרת תמונה שתוצג במסע.' : 'לא הוגדרה תמונה — יוצג עיצוב ברירת המחדל.'}
             </p>
           </div>

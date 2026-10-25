@@ -31,7 +31,7 @@ function StepIcon({ status }: { status: TranscriptAccessTimelineStep['status'] }
     case 'skipped':
       return <Circle className="h-4 w-4 shrink-0 text-slate-300" />;
     default:
-      return <Clock className="h-4 w-4 shrink-0 text-slate-400" />;
+      return <Clock className="h-4 w-4 shrink-0 text-ink-faint" />;
   }
 }
 

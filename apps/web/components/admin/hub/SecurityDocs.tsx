@@ -20,18 +20,18 @@ export function SecurityDocs() {
       .catch(() => setErr(true));
   }, []);
   if (err) return <p role="alert" className="rounded-2xl border border-rose-300/60 bg-rose-500/10 px-4 py-3 text-sm font-semibold text-rose-800">לא הצלחנו לטעון את המסמכים.</p>;
-  if (!docs) return <Loader2 className="mx-auto animate-spin text-slate-400" />;
+  if (!docs) return <Loader2 className="mx-auto animate-spin text-ink-faint" />;
   return (
     <div className="space-y-2" data-testid="security-docs">
       {docs.map((d) => (
         <section key={d.slug} className={cn(opsGlassCardClass, 'overflow-hidden')}>
           <button type="button" onClick={() => setOpen(open === d.slug ? null : d.slug)} aria-expanded={open === d.slug}
-            className="flex w-full items-center justify-between gap-3 px-4 py-3 text-right text-[15px] font-bold text-slate-800">
+            className="flex w-full items-center justify-between gap-3 px-4 py-3 text-right text-[15px] font-bold text-ink">
             {d.title}
             <ChevronLeft size={16} className={cn('shrink-0 transition', open === d.slug && '-rotate-90')} />
           </button>
           {open === d.slug ? (
-            <div dir="rtl" className="prose prose-sm max-w-none overflow-x-auto px-4 pb-4 [&_table]:text-xs [&_td]:border [&_td]:border-slate-200 [&_td]:px-2 [&_th]:border [&_th]:border-slate-200 [&_th]:px-2"
+            <div dir="rtl" className="prose prose-sm max-w-none overflow-x-auto px-4 pb-4 [&_table]:text-xs [&_td]:border [&_td]:border-hairline [&_td]:px-2 [&_th]:border [&_th]:border-hairline [&_th]:px-2"
               dangerouslySetInnerHTML={{ __html: sanitizeLessonHtml(d.html) }} />
           ) : null}
         </section>

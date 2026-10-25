@@ -51,26 +51,26 @@ export default async function OpsCeoPage() {
       </OpsGroup>
 
       <OpsGroup title={`ממתין לאישור (${pending?.length ?? 0})`}>
-        {!pending?.length ? <p className="px-4 py-3.5 text-[15px] text-slate-500">אין פעולות ממתינות</p> : null}
+        {!pending?.length ? <p className="px-4 py-3.5 text-[15px] text-ink-faint">אין פעולות ממתינות</p> : null}
         {pending?.map((a) => (
           <div key={a.id} className="flex flex-col gap-2 px-4 py-3">
-            <p className="line-clamp-3 break-words text-[15px] font-semibold text-slate-900">{a.summary}</p>
-            <p className="text-xs text-slate-500">{fmt.format(new Date(a.created_at))} · <span dir="ltr" className="font-mono">{a.tool}</span></p>
+            <p className="line-clamp-3 break-words text-[15px] font-semibold text-ink">{a.summary}</p>
+            <p className="text-xs text-ink-faint">{fmt.format(new Date(a.created_at))} · <span dir="ltr" className="font-mono">{a.tool}</span></p>
             <form action={decide} className="flex gap-2">
               <input type="hidden" name="id" value={a.id} />
               <button name="approve" value="1" className="min-h-10 rounded-full bg-emerald-600 px-5 text-sm font-bold text-gc">אשר</button>
-              <button name="approve" value="0" className="min-h-10 rounded-full bg-slate-100 px-5 text-sm font-bold text-slate-700">בטל</button>
+              <button name="approve" value="0" className="min-h-10 rounded-full bg-surface px-5 text-sm font-bold text-ink-soft">בטל</button>
             </form>
           </div>
         ))}
       </OpsGroup>
 
       <OpsGroup title="היסטוריה">
-        {!history?.length ? <p className="px-4 py-3.5 text-[15px] text-slate-500">עוד אין היסטוריה</p> : null}
+        {!history?.length ? <p className="px-4 py-3.5 text-[15px] text-ink-faint">עוד אין היסטוריה</p> : null}
         {history?.map((a) => (
           <div key={a.id} className="flex min-w-0 items-start justify-between gap-3 px-4 py-3 text-sm">
-            <span className="line-clamp-2 min-w-0 break-words text-slate-900 [overflow-wrap:anywhere]">{a.summary}</span>
-            <span className="shrink-0 text-xs text-slate-500">{STATUS[a.status] ?? a.status} · {fmt.format(new Date(a.decided_at ?? a.created_at))}</span>
+            <span className="line-clamp-2 min-w-0 break-words text-ink [overflow-wrap:anywhere]">{a.summary}</span>
+            <span className="shrink-0 text-xs text-ink-faint">{STATUS[a.status] ?? a.status} · {fmt.format(new Date(a.decided_at ?? a.created_at))}</span>
           </div>
         ))}
       </OpsGroup>

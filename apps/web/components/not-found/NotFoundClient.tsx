@@ -40,7 +40,7 @@ const secondaryBtnClass =
 const secondaryBtnStyle = {
   background: 'rgba(0,0,0,0.03)',
   border: '1.5px solid rgba(0,0,0,0.08)',
-  color: '#4b5563',
+  color: 'var(--color-ink-soft)',
 } as const;
 
 function isAbsolute(href: string): boolean {
@@ -126,14 +126,14 @@ export default function NotFoundClient({ isAuthenticated, absoluteOrigin = null 
           className="rounded-2xl overflow-hidden mb-8"
           style={{ border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 4px 24px rgba(0,0,0,0.06)' }}
         >
-          <div className="px-6 py-5" style={{ background: 'linear-gradient(145deg, #047857, #059669, #10b981)' }}>
+          <div className="px-6 py-5" style={{ background: 'linear-gradient(145deg, var(--color-forest-800), var(--color-forest-600) 60%, var(--color-primary-600))' }}>
             <h1 className="text-2xl font-black text-white">אופס! הדף לא נמצא 🌱</h1>
           </div>
           <div className="p-6 bg-background-card">
-            <p className="text-gray-600 text-lg leading-relaxed mb-4">
+            <p className="text-ink-soft text-lg leading-relaxed mb-4">
               נראה שטיילתם קצת רחוק מדי בדרך לבריאות...
             </p>
-            <p className="text-gray-500 text-sm">הדף שחיפשתם לא קיים או שהועבר למקום אחר</p>
+            <p className="text-ink-faint text-sm">הדף שחיפשתם לא קיים או שהועבר למקום אחר</p>
           </div>
         </div>
 
@@ -191,7 +191,7 @@ export default function NotFoundClient({ isAuthenticated, absoluteOrigin = null 
             <Leaf className="w-4 h-4" />
             <span>הידעת?</span>
           </div>
-          <p className="text-gray-600 text-sm">
+          <p className="text-ink-soft text-sm">
             צמחים גדלים בכיוון האור — גם כשיש נסיגה קטנה, הם תמיד ממשיכים למעלה! 🌱
           </p>
         </motion.div>

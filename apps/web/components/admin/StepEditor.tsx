@@ -160,7 +160,7 @@ function TtsStatusBadge({ text, tts }: { text: string; tts?: QuestionTtsMeta | n
   const trimmed = text.trim();
   if (!trimmed) {
     return (
-      <span className="text-[11px] font-semibold text-gray-400">אין טקסט להקראה</span>
+      <span className="text-[11px] font-semibold text-ink-faint">אין טקסט להקראה</span>
     );
   }
   if (tts?.status === 'ready' && tts.url) {
@@ -1028,7 +1028,7 @@ export function StepEditor({ step }: StepEditorProps) {
             >
               מבנה הצעד
             </h2>
-            <span className="text-xs text-gray-600">החליקו הצידה במובייל ובחרו את החלק לעריכה</span>
+            <span className="text-xs text-ink-soft">החליקו הצידה במובייל ובחרו את החלק לעריכה</span>
           </div>
           <div className="-mx-1 flex snap-x gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0">
             <SectionTab
@@ -1119,7 +1119,7 @@ export function StepEditor({ step }: StepEditorProps) {
             </Field>
             <Field label="סטטוס">
               <button onClick={() => setIsPublished(!isPublished)}
-                className={`w-full py-2.5 rounded-xl font-bold text-sm transition-all ${isPublished ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
+                className={`w-full py-2.5 rounded-xl font-bold text-sm transition-all ${isPublished ? 'bg-emerald-100 text-emerald-700' : 'bg-surface text-ink-faint'}`}>
                 {isPublished ? '✓ פורסם' : 'טיוטה'}
               </button>
             </Field>
@@ -1137,7 +1137,7 @@ export function StepEditor({ step }: StepEditorProps) {
                 </option>
               ))}
             </select>
-            <p className="mt-1.5 text-xs text-gray-500 leading-relaxed">
+            <p className="mt-1.5 text-xs text-ink-faint leading-relaxed">
               תחנה מקבצת צעדים לוגית (ללא הגבלת כמות). ניתן לנהל תחנות במסך &quot;מסע ותחנות&quot;.
             </p>
           </Field>
@@ -1154,7 +1154,7 @@ export function StepEditor({ step }: StepEditorProps) {
                 </option>
               ))}
             </select>
-            <p className="mt-1.5 text-xs text-gray-500 leading-relaxed">
+            <p className="mt-1.5 text-xs text-ink-faint leading-relaxed">
               הפלייליסט ינוגן ברקע לאורך כל הצעד (מהשלב הראשון ועד הסיכום), יונמך בזמן וידאו, ויוצג לו
               קרדיט. ניתן לנהל פלייליסטים במסך &quot;מוזיקת רקע&quot;. רק פלייליסט מפורסם זמין לבחירה.
             </p>
@@ -1213,7 +1213,7 @@ export function StepEditor({ step }: StepEditorProps) {
             <Field label="כתובת HLS (Pull Zone — video.nurawell.ai)">
               <input value={videoExternalUrl} onChange={e => setVideoExternalUrl(e.target.value)}
                 className="input-field" placeholder="https://video.nurawell.ai/{מזהה-וידאו}/playlist.m3u8" dir="ltr" />
-              <p className="text-xs text-gray-500 mt-1.5 leading-relaxed">
+              <p className="text-xs text-ink-faint mt-1.5 leading-relaxed">
                 זה הדומיין המחובר ל־Bunny Stream אצלכם. אפשר להדביק את ה־URL המלא, או רק את הנתיב (למשל{' '}
                 <span dir="ltr" className="font-mono text-[11px]">/uuid/playlist.m3u8</span>
                 ). אפשר גם להזין <strong>רק UUID</strong> של הסרטון בשדה &quot;מזהה&quot; למעלה — יבנה אוטומטית ל־playlist ב־video.nurawell.ai.
@@ -1303,7 +1303,7 @@ export function StepEditor({ step }: StepEditorProps) {
                           className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[11px] font-bold ${
                             stop.correct_option_index === oi
                               ? 'border-emerald-500 bg-emerald-500 text-gc'
-                              : 'border-gray-300 text-gray-400'
+                              : 'border-gray-300 text-ink-faint'
                           }`}
                         >
                           {stop.correct_option_index === oi ? '✓' : oi + 1}
@@ -1425,7 +1425,7 @@ export function StepEditor({ step }: StepEditorProps) {
                 onClick={() => setExpandedQuiz(expandedQuiz === qi ? null : qi)}
                 className="w-full p-3 flex items-center justify-between gap-2 text-right transition-colors hover:bg-emerald-50/80"
               >
-                <span className="text-sm font-bold text-gray-800 min-w-0 flex-1 truncate">
+                <span className="text-sm font-bold text-ink min-w-0 flex-1 truncate">
                   שאלה {qi + 1}
                   {q.question.trim() ? ` — ${q.question.trim().slice(0, 72)}${q.question.trim().length > 72 ? '…' : ''}` : ''}
                 </span>
@@ -1460,7 +1460,7 @@ export function StepEditor({ step }: StepEditorProps) {
                     <div key={oi} className="flex items-center gap-2">
                       <button type="button" onClick={() => {
                         const arr = [...quizQuestions]; arr[qi] = { ...arr[qi], correct_index: oi }; setQuizQuestions(arr);
-                      }} className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0 ${q.correct_index === oi ? 'bg-emerald-500 text-gc' : 'bg-gray-200 text-gray-500'}`}>
+                      }} className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0 ${q.correct_index === oi ? 'bg-emerald-500 text-gc' : 'bg-hairline text-ink-faint'}`}>
                         {String.fromCharCode(1488 + oi)}
                       </button>
                       <input value={opt} onChange={e => {
@@ -1494,7 +1494,7 @@ export function StepEditor({ step }: StepEditorProps) {
                 onClick={() => setExpandedGame(expandedGame === gi ? null : gi)}
                 className="w-full p-3 flex items-center justify-between gap-2 text-right transition-colors hover:bg-amber-50/90"
               >
-                <span className="text-sm font-bold text-gray-800 min-w-0 flex-1 truncate">
+                <span className="text-sm font-bold text-ink min-w-0 flex-1 truncate">
                   טענה {gi + 1}
                   {g.statement.trim() ? ` — ${g.statement.trim().slice(0, 72)}${g.statement.trim().length > 72 ? '…' : ''}` : ''}
                 </span>
@@ -1527,11 +1527,11 @@ export function StepEditor({ step }: StepEditorProps) {
                   }} className="input-field" placeholder="טקסט הטענה" />
                   <div className="flex items-center gap-3">
                     <button type="button" onClick={() => { const arr = [...gameItems]; arr[gi] = { ...arr[gi], is_true: true }; setGameItems(arr); }}
-                      className={`px-4 py-2 rounded-lg font-bold text-sm ${g.is_true ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
+                      className={`px-4 py-2 rounded-lg font-bold text-sm ${g.is_true ? 'bg-emerald-100 text-emerald-700' : 'bg-surface text-ink-faint'}`}>
                       ✓ נכון
                     </button>
                     <button type="button" onClick={() => { const arr = [...gameItems]; arr[gi] = { ...arr[gi], is_true: false }; setGameItems(arr); }}
-                      className={`px-4 py-2 rounded-lg font-bold text-sm ${!g.is_true ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-500'}`}>
+                      className={`px-4 py-2 rounded-lg font-bold text-sm ${!g.is_true ? 'bg-red-100 text-red-600' : 'bg-surface text-ink-faint'}`}>
                       ✗ לא נכון
                     </button>
                   </div>
@@ -1552,11 +1552,11 @@ export function StepEditor({ step }: StepEditorProps) {
         {/* ═══ COMMITMENT ═══ */}
         <Section title="התחייבות" icon={Heart} color="#ec4899" sectionNumber={5} isVisible={activeSection === 'commitment'}>
           {commitment ? (
-            <div className="p-4 rounded-xl bg-gray-50 border border-gray-100 space-y-3">
+            <div className="p-4 rounded-xl bg-surface-sunken border border-hairline/60 space-y-3">
               <Field label="טקסט ההתחייבות">
                 <input value={commitment.text} onChange={e => setCommitment({ ...commitment, text: e.target.value })}
                   className="input-field" placeholder="למשל: לשתות 2 כוסות מים לפני כל ארוחה" />
-                <p className="mt-1.5 text-xs text-gray-500 leading-relaxed">
+                <p className="mt-1.5 text-xs text-ink-faint leading-relaxed">
                   אל תכתבו &quot;אני מתחייב&quot; — המערכת מוסיפה אוטומטית פתיח מותאם מגדר
                   (&quot;אני מתחייב&quot; / &quot;אני מתחייבת&quot;) לפי פרופיל המשתמש. כתבו רק את ההמשך.
                 </p>
@@ -1673,15 +1673,15 @@ export function StepEditor({ step }: StepEditorProps) {
                   {(r.ai_summary || r.key_findings?.length || r.practical_takeaway || r.limitations) && (
                     <div className="rounded-xl p-3 space-y-2 text-sm" style={{ background: 'rgba(248,251,246,0.72)', border: '1px solid rgba(124,58,237,0.16)' }}>
                       <p className="text-xs font-black text-violet-900">מה אלמוג יקבל מהמחקר</p>
-                      {r.ai_summary && <p className="leading-relaxed text-slate-700">{r.ai_summary}</p>}
+                      {r.ai_summary && <p className="leading-relaxed text-ink-soft">{r.ai_summary}</p>}
                       {r.key_findings?.length ? (
-                        <ul className="list-disc pr-5 text-slate-700 space-y-1">
+                        <ul className="list-disc pr-5 text-ink-soft space-y-1">
                           {r.key_findings.map((finding, idx) => <li key={`${r.id}-finding-${idx}`}>{finding}</li>)}
                         </ul>
                       ) : null}
-                      {r.practical_takeaway && <p className="text-slate-700"><strong>משמעות לשיעור:</strong> {r.practical_takeaway}</p>}
-                      {r.limitations && <p className="text-slate-600"><strong>סייגים:</strong> {r.limitations}</p>}
-                      <p className="text-xs text-slate-500">רמת ראיות: {r.evidence_level ?? 'unknown'}</p>
+                      {r.practical_takeaway && <p className="text-ink-soft"><strong>משמעות לשיעור:</strong> {r.practical_takeaway}</p>}
+                      {r.limitations && <p className="text-ink-soft"><strong>סייגים:</strong> {r.limitations}</p>}
+                      <p className="text-xs text-ink-faint">רמת ראיות: {r.evidence_level ?? 'unknown'}</p>
                     </div>
                   )}
 
@@ -1825,7 +1825,7 @@ export function StepEditor({ step }: StepEditorProps) {
                           }}
                           className="input-field"
                         />
-                        <p className="text-[10px] text-slate-500 mt-1">
+                        <p className="text-[10px] text-ink-faint mt-1">
                           שלילי = לפני, 0 = בזמן, חיובי = אחרי. מסתנכרן עם שעות הארוחות מהפרופיל של המשתמש.
                         </p>
                       </Field>
@@ -2281,7 +2281,7 @@ export function StepEditor({ step }: StepEditorProps) {
           >
             שלב קודם
           </button>
-          <span className="text-xs text-gray-500">שלב {activeSectionIndex + 1} מתוך {sectionOrder.length}</span>
+          <span className="text-xs text-ink-faint">שלב {activeSectionIndex + 1} מתוך {sectionOrder.length}</span>
           <button
             type="button"
             onClick={goNextSection}
@@ -2360,7 +2360,7 @@ export function StepEditor({ step }: StepEditorProps) {
               </ul>
             )}
 
-            <p className="mt-4 text-xs text-slate-500 leading-relaxed">
+            <p className="mt-4 text-xs text-ink-faint leading-relaxed">
               {saveHasTts
                 ? 'יצירת אודיו ב-ElevenLabs עשויה לקחת מספר שניות לכל שאלה. לא לסגור את החלון.'
                 : 'רק רגע, שומר את הצעד…'}
@@ -2420,7 +2420,7 @@ export function StepEditor({ step }: StepEditorProps) {
               })}
             </ul>
 
-            <p className="mt-4 text-xs text-slate-500 leading-relaxed">
+            <p className="mt-4 text-xs text-ink-faint leading-relaxed">
               סריקת קישורי המחקרים עשויה לקחת מספר שניות. אל תסגור/י את החלון.
             </p>
           </div>
@@ -2537,7 +2537,7 @@ function SectionTab({
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="text-xs font-bold text-gray-600 mb-1.5 block">{label}</label>
+      <label className="text-xs font-bold text-ink-soft mb-1.5 block">{label}</label>
       {children}
     </div>
   );
@@ -2546,7 +2546,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 function AddButton({ label, onClick }: { label: string; onClick: () => void }) {
   return (
     <button onClick={onClick}
-      className="w-full py-3 rounded-xl border-2 border-dashed border-gray-200 text-gray-400 font-bold text-sm flex items-center justify-center gap-2 hover:border-emerald-300 hover:text-emerald-600 transition-all">
+      className="w-full py-3 rounded-xl border-2 border-dashed border-hairline text-ink-faint font-bold text-sm flex items-center justify-center gap-2 hover:border-emerald-300 hover:text-emerald-600 transition-all">
       <Plus className="w-4 h-4" /> {label}
     </button>
   );

@@ -55,8 +55,8 @@ export function AdminAccessibilityPanel() {
       <div className="rounded-2xl border border-gc/50 bg-background-card/35 p-4 backdrop-blur-xl">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="font-display text-sm font-black text-slate-900">ביקורת alt במדיה</p>
-            <p className="mt-1 text-xs leading-relaxed text-slate-600">
+            <p className="font-display text-sm font-black text-ink">ביקורת alt במדיה</p>
+            <p className="mt-1 text-xs leading-relaxed text-ink-soft">
               סריקה של תמונות במאגר המדיה ללא טקסט חלופי. ניתן ליצור alt אוטומטי בעברית ולשמור.
             </p>
           </div>
@@ -66,7 +66,7 @@ export function AdminAccessibilityPanel() {
         </div>
 
         {loading ? (
-          <p className="mt-4 inline-flex items-center gap-2 text-sm text-slate-600">
+          <p className="mt-4 inline-flex items-center gap-2 text-sm text-ink-soft">
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
             טוען…
           </p>
@@ -90,16 +90,16 @@ export function AdminAccessibilityPanel() {
       {audit && audit.samples.length > 0 ? (
         <div className="overflow-hidden rounded-2xl border border-gc/50 bg-background-card/30 backdrop-blur-xl">
           <div className="border-b border-gc/40 px-4 py-3">
-            <p className="text-sm font-black text-slate-900">דוגמאות לתיקון</p>
+            <p className="text-sm font-black text-ink">דוגמאות לתיקון</p>
           </div>
-          <ul className="divide-y divide-slate-200/60">
+          <ul className="divide-y divide-hairline/60">
             {audit.samples.map((sample) => (
               <li key={sample.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-bold text-slate-900">
+                  <p className="truncate text-sm font-bold text-ink">
                     {sample.title || 'ללא כותרת'}
                   </p>
-                  <p className="truncate text-[11px] text-slate-500">{sample.folder || 'ללא תיקייה'}</p>
+                  <p className="truncate text-[11px] text-ink-faint">{sample.folder || 'ללא תיקייה'}</p>
                 </div>
                 <button
                   type="button"
@@ -147,11 +147,11 @@ function StatCard({
         'rounded-xl border px-3 py-3',
         tone === 'warn'
           ? 'border-amber-200/80 bg-amber-50/80'
-          : 'border-slate-200/70 bg-background-card/70',
+          : 'border-hairline/70 bg-background-card/70',
       )}
     >
-      <p className="text-[11px] font-bold text-slate-600">{label}</p>
-      <p className="mt-1 text-2xl font-black text-slate-900">{value}</p>
+      <p className="text-[11px] font-bold text-ink-soft">{label}</p>
+      <p className="mt-1 text-2xl font-black text-ink">{value}</p>
     </div>
   );
 }

@@ -11,7 +11,7 @@ export function AdminLegalGuide() {
   const [open, setOpen] = useState<string | null>(null);
   return (
     <section dir="rtl" className={cn(opsGlassCardClass, 'p-4 sm:p-5')} aria-label="מדריך" data-testid="legal-guide">
-      <h2 className="flex items-center gap-2 font-bold text-slate-900"><BookOpen size={18} className="text-emerald-700" />מדריך</h2>
+      <h2 className="flex items-center gap-2 font-bold text-ink"><BookOpen size={18} className="text-emerald-700" />מדריך</h2>
       <p className="mt-1 text-xs text-emerald-900/60">מה עושים בכל מצב. פנימי בלבד, לא נכלל בשום קובץ שמופק.</p>
       <ul className="mt-3 space-y-2">
         {ADMIN_GUIDE.map((s) => {

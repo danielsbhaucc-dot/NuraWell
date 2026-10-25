@@ -83,10 +83,10 @@ export function TranscriptAccessRequestDialog({
             <Lock className="h-5 w-5" />
           </span>
           <div className="min-w-0 flex-1">
-            <h3 id="transcript-req-title" className="text-lg font-black text-slate-900">
+            <h3 id="transcript-req-title" className="text-lg font-black text-ink">
               בקשה לצפייה בתמליל
             </h3>
-            <p className="mt-1 text-sm text-slate-600">
+            <p className="mt-1 text-sm text-ink-soft">
               צוות NuraWell מבקש את אישורך. {press} לאשר או לדחות.
             </p>
           </div>
