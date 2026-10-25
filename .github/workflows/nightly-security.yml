@@ -1,0 +1,64 @@
+name: nightly-security
+# Nightly, one job: full-history secret scan, full Semgrep CE scan, OSV dependency scan, Actions-minutes
+# monitor (alert at 70% of 2,000). Reports a heartbeat to the app; the app's dead-man switch alerts if it stops.
+on:
+  schedule:
+    - cron: '15 2 * * *'
+  workflow_dispatch:
+concurrency:
+  group: nightly-security
+  cancel-in-progress: true
+permissions:
+  contents: read
+  actions: read
+jobs:
+  nightly:
+    name: nightly
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: bash scripts/ci/install-tools.sh gitleaks osv
+      - name: Secrets (full history)
+        id: gitleaks
+        continue-on-error: true
+        run: gitleaks git --redact --no-banner -c .gitleaks.toml
+      - name: Code scan (Semgrep CE, full)
+        id: semgrep
+        continue-on-error: true
+        run: bash scripts/ci/semgrep.sh
+      - name: Dependencies (OSV)
+        id: osv
+        continue-on-error: true
+        run: osv-scanner scan source --lockfile package-lock.json
+      - name: Actions minutes
+        id: minutes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          out="$(python3 scripts/ci/actions-minutes.py)"; echo "$out"
+          echo "used=$(jq -r .used <<<"$out")" >> "$GITHUB_OUTPUT"; echo "crossed=$(jq -r .crossed <<<"$out")" >> "$GITHUB_OUTPUT"
+      - name: Alerts + heartbeat
+        if: always()
+        env:
+          APP: ${{ secrets.VERCEL_APP_URL }}
+          KEY: ${{ secrets.DB_BACKUP_SECRET }}
+          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          G: ${{ steps.gitleaks.outcome }}
+          S: ${{ steps.semgrep.outcome }}
+          O: ${{ steps.osv.outcome }}
+          USED: ${{ steps.minutes.outputs.used }}
+          CROSSED: ${{ steps.minutes.outputs.crossed }}
+        run: |
+          post() { curl -fsS -m 30 -X POST -H "Authorization: Bearer $KEY" -H 'Content-Type: application/json' -d "$2" "$APP/api/v1/ops/$1" >/dev/null || echo "post $1 failed"; }
+          failed=""
+          [ "$G" = success ] || failed="$failed gitleaks"
+          [ "$S" = success ] || failed="$failed semgrep"
+          [ "$O" = success ] || failed="$failed osv"
+          if [ -n "$failed" ]; then post ci-alert "$(jq -nc --arg d "failed:$failed" --arg r "$RUN" '{kind:"scan",detail:$d,run_url:$r}')"; fi
+          if [ "$CROSSED" = true ]; then post ci-alert "$(jq -nc --arg d "used ${USED} of 2000 minutes" --arg r "$RUN" '{kind:"minutes",detail:$d,run_url:$r}')"; fi
+          ok=true; [ -n "$failed" ] && ok=false
+          post secmon/heartbeat "$(jq -nc --argjson ok $ok --arg d "gitleaks=$G semgrep=$S osv=$O minutes=${USED:-?}" '{source:"gh.nightly-security",ok:$ok,detail:$d}')"
