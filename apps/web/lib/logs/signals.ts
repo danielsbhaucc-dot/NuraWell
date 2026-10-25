@@ -51,6 +51,20 @@ export async function isIpBlocked(db: SupabaseClient, ipHash: string | null, now
   return until > now;
 }
 
+const rangeCache = new Map<string, { hit: boolean; checked: number }>();
+/** Manual CIDR range blocks (ip_block_ranges), 30s cache per IP. */
+export async function isIpRangeBlocked(db: SupabaseClient, ip: string, now = Date.now()): Promise<boolean> {
+  const { isIP } = await import('node:net');
+  if (!ip || !isIP(ip)) return false;
+  const c = rangeCache.get(ip);
+  if (c && now - c.checked < 30_000) return c.hit;
+  const { data } = await db.rpc('ops_ip_in_blocked_range', { p_ip: ip });
+  const hit = data === true;
+  if (rangeCache.size > 2000) rangeCache.clear();
+  rangeCache.set(ip, { hit, checked: now });
+  return hit;
+}
+
 type AlertExtras = { buttons?: import('@/lib/ceo/channel').CeoButton[][]; emailLink?: { href: string; label: string } };
 async function alertOnce(db: SupabaseClient, key: string, kind: string, detail: Record<string, unknown>, text: string, subject: string, withinMs = 3_600_000, extras: AlertExtras | (() => Promise<AlertExtras>) = {}): Promise<void> {
   const since = new Date(Date.now() - withinMs).toISOString();
@@ -100,7 +114,7 @@ export async function recordAdminDenial(db: SupabaseClient, request: Request, st
 
 /** Called after a successful admin check. Detects new IP/country and bulk reads. Best-effort; never throws. */
 const okSeen = new Map<string, number>();
-export async function recordAdminSuccess(db: SupabaseClient, request: Request, actorId: string): Promise<void> {
+export async function recordAdminSuccess(db: SupabaseClient, request: Request, actorId: string, sessionId: string | null = null): Promise<void> {
   try {
     const ipHash = hashIp(requestIp(request));
     const country = requestCountry(request);
@@ -112,11 +126,18 @@ export async function recordAdminSuccess(db: SupabaseClient, request: Request, a
       const { data: prior } = await db.from('security_signals').select('country').eq('kind', 'admin_ok').gte('created_at', since).limit(200);
       await db.from('security_signals').insert({ kind: 'admin_ok', ip_hash: ipHash, actor_id: actorId, path: safePath(request), country });
       const priorRows = (prior ?? []) as { country: string | null }[];
-      if (isNewPlace((seen ?? 0) > 0, priorRows.length > 0)) {
+      const { data: known } = await db.from('ops_known_places').select('ip_hash').eq('ip_hash', ipHash).maybeSingle();
+      if (!known && isNewPlace((seen ?? 0) > 0, priorRows.length > 0)) {
         const newCountry = !!country && !priorRows.some((r) => r.country === country);
-        await alertOnce(db, `newip:${ipHash}`, 'admin_new_ip', { country, new_country: newCountry },
-          `🔐 כניסה לממשק הניהול מ${newCountry ? `מדינה חדשה (${country})` : 'כתובת רשת חדשה'}.\nאם זה אתה (רשת אחרת, טלפון, חו״ל) אין צורך לעשות כלום.\nאם לא: לחץ "נתק את כל החיבורים" ב-Ops והחלף סיסמה.`,
-          'כניסה לממשק הניהול ממקום חדש', 7 * 86_400_000);
+        const link = investigateLink(sessionId ? { investigate: 'session', id: sessionId } : { investigate: 'iphash', id: ipHash });
+        await alertOnce(db, `newip:${ipHash}`, 'admin_new_ip', { country, new_country: newCountry, session: sessionId },
+          `🔐 כניסה לממשק הניהול מ${newCountry ? `מדינה חדשה (${country})` : 'כתובת רשת חדשה'}.\nזה אתה? לחץ "זה אני" ולא אתריע שוב על הכתובת הזו.\nלא אתה? לחץ "זה לא אני": אנתק את החיבור, אחסום את הכתובת ל-24 שעות ואפתח אירוע לחקירה במסך היומנים ב-Ops.\nהכפתורים תקפים 30 דקות ופועלים פעם אחת.`,
+          'כניסה לממשק הניהול ממקום חדש', 7 * 86_400_000,
+          async () => {
+            const { createAlertButtons } = await import('@/lib/security/tg-actions');
+            const buttons = await createAlertButtons(db, { userId: actorId, sessionId, ipHash, country });
+            return { buttons, emailLink: { href: link, label: 'פתח את החקירה "איך הוא נכנס"' } };
+          });
       }
     }
     const { count } = await db.from('admin_audit_log').select('id', { count: 'exact', head: true })

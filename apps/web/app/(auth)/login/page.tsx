@@ -133,6 +133,7 @@ function LoginFormContent() {
       const supabase = createClient();
       const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
 
+      void fetch('/api/v1/auth/login-event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ok: !authError }), keepalive: true }).catch(() => undefined);
       if (authError) {
         toast.error('התחברות נכשלה', 'אימייל או סיסמה שגויים');
         return;
