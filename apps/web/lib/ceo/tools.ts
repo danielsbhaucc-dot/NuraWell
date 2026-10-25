@@ -1,3 +1,4 @@
+import { nameMatches } from '@/lib/security/name-match';
 import { decInteractionResult } from '@/lib/crypto/pii-fields';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { z } from 'zod';
@@ -70,8 +71,10 @@ export const CEO_TOOLS: CeoTool[] = [
       if (a.filter === 'inactive') q = q.lt('last_active_at', daysAgo(7));
       if (a.filter === 'not_onboarded') q = q.eq('onboarding_completed', false);
       if (a.filter === 'new') q = q.gte('created_at', daysAgo(7));
-      if (a.name) q = q.ilike('full_name', `%${String(a.name).replace(/[%_,()\\]/g, '')}%`);
-      const r = await rows(q.order('last_active_at', { ascending: true, nullsFirst: true }).limit(Number(a.limit ?? 20)));
+      // full_name is encrypted at rest: filter by name in app (after decryption), not with ilike on ciphertext
+      const lim = Number(a.limit ?? 20);
+      let r = await rows(q.order('last_active_at', { ascending: true, nullsFirst: true }).limit(a.name ? 5000 : lim));
+      if (a.name) r = r.filter((u) => nameMatches((u as { full_name?: string | null }).full_name, String(a.name))).slice(0, lim);
       return r.map((u) => ({ ...firstNameOnly(u as Record<string, unknown>), link: opsLink(`/users?user=${u.id}`) }));
     },
   },
@@ -101,10 +104,14 @@ export const CEO_TOOLS: CeoTool[] = [
       const since = daysAgo(Number(a.days ?? 1));
       const n = Number(a.limit ?? 12);
       const [chat, notes] = await Promise.all([
-        rows(db.from('ai_interactions').select('user_id, content, created_at, profiles!inner(gender, role)').eq('role', 'assistant').eq('profiles.role', 'user').gte('created_at', since).order('created_at', { ascending: false }).limit(n).then(decInteractionResult())),
-        rows(db.from('notifications').select('user_id, type, title, body, created_at, profiles!inner(gender, role)').eq('profiles.role', 'user').gte('created_at', since).order('created_at', { ascending: false }).limit(n)),
+        rows(db.from('ai_interactions').select('user_id, content, created_at, profiles!inner(role)').eq('role', 'assistant').eq('profiles.role', 'user').gte('created_at', since).order('created_at', { ascending: false }).limit(n).then(decInteractionResult())),
+        rows(db.from('notifications').select('user_id, type, title, body, created_at, profiles!inner(role)').eq('profiles.role', 'user').gte('created_at', since).order('created_at', { ascending: false }).limit(n)),
       ]);
-      const g = (r: Record<string, unknown>) => (r.profiles as { gender?: string } | null)?.gender ?? null;
+      // gender is encrypted at rest and embeds are not decrypted: read it top-level (decrypted by the read path)
+      const ids = [...new Set([...chat, ...notes].map((r) => String(r.user_id)))];
+      const gm = new Map<string, string | null>();
+      if (ids.length) for (const p of await rows(db.from('profiles').select('id, gender').in('id', ids))) gm.set(String(p.id), (p.gender as string | null) ?? null);
+      const g = (r: Record<string, unknown>) => gm.get(String(r.user_id)) ?? null;
       return {
         chat: chat.map((r) => ({ userGender: g(r), text: clip(r.content, 400), at: r.created_at })),
         notifications: notes.map((r) => ({ userGender: g(r), type: r.type, title: r.title, body: clip(r.body, 240), at: r.created_at })),
