@@ -407,6 +407,13 @@ export async function proxy(request: NextRequest) {
       const { data: sess } = await supabase.auth.getSession();
       const gate = await opsDeviceGate(createAdminClient(), user.id, request.cookies.get(DEVICE_COOKIE)?.value, sess.session?.access_token, request.headers.get('user-agent'), { allowBootstrap: !enrollOnly(), headers: request.headers });
       // Internal Ops (app host): role already verified as admin → send to new-device approval; Ops host stays a plain 404.
+      if (!gate.ok && gate.reauth) {
+        // unbound/stale/revoked admin session: never adopted later → end it and require a full login again
+        await supabase.auth.signOut({ scope: 'local' });
+        const out = NextResponse.redirect(new URL('/', loginOrigin));
+        for (const c of response.cookies.getAll()) out.cookies.set(c);
+        return applySecurityHeaders(out);
+      }
       if (!gate.ok) {
         if (appHostOpsPath && !enrollOnly()) return applySecurityHeaders(NextResponse.redirect(new URL('/device-check', request.url)));
         return stealthNotFound();
