@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { readJsonBody } from '@/lib/api/json-request';
+import { hasSensitiveStepUp } from '@/lib/ops/sensitive-stepup';
 import { setSubscriptionEnded } from '@/lib/privacy/subscription-retention';
 
 export const runtime = 'nodejs';
@@ -15,7 +16,12 @@ const schema = z.object({ action: z.enum(['end', 'reactivate']), ended_at: z.str
 export async function POST(request: Request, context: RouteContext) {
   const auth = await requireOpsApiAdmin(request);
   if (!auth.ok) return auth.response;
+  // Ending a subscription starts the deletion clock: Ops sensitive step-up (fresh login or single-use grant).
+  const { data: sess } = await auth.supabase.auth.getSession();
+  if (!(await hasSensitiveStepUp({ accessToken: sess.session?.access_token, userId: auth.user.id, req: request })))
+    return NextResponse.json({ error: 'stepup_required', stepUp: true }, { status: 403, headers: { 'Cache-Control': 'no-store' } });
   const { userId } = await context.params;
+  if (!z.string().uuid().safeParse(userId).success) return NextResponse.json({ error: 'bad_id' }, { status: 400 });
   const raw = await readJsonBody(request);
   if (!raw.ok) return raw.response;
   const parsed = schema.safeParse(raw.value);
