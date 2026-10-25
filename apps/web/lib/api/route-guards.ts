@@ -27,6 +27,36 @@ export async function requireApiSession(request: Request): Promise<SessionOk | G
 }
 
 export async function requireApiAdmin(request: Request, opts: { skipDeviceGate?: boolean } = {}): Promise<SessionOk | GuardFail> {
+  const blocked = await adminIpBlocked(request);
+  if (blocked) return { ok: false, response: NextResponse.json({ error: 'יותר מדי ניסיונות. נסה שוב בעוד חצי שעה.', code: 'ip_temporarily_blocked' }, { status: 429 }) };
+  const res = await requireApiAdminInner(request, opts);
+  if (!res.ok && (res.response.status === 401 || res.response.status === 403)) {
+    await noteAdminDenial(request, res.response.status, null);
+  }
+  return res;
+}
+
+async function adminIpBlocked(request: Request): Promise<boolean> {
+  try {
+    const { createAdminClient } = await import('@/lib/supabase/admin');
+    const { isIpBlocked, hashIp, requestIp } = await import('@/lib/logs/signals');
+    return await isIpBlocked(createAdminClient(), hashIp(requestIp(request)));
+  } catch {
+    return false;
+  }
+}
+
+async function noteAdminDenial(request: Request, status: number, actorId: string | null): Promise<void> {
+  try {
+    const { createAdminClient } = await import('@/lib/supabase/admin');
+    const { recordAdminDenial } = await import('@/lib/logs/signals');
+    await recordAdminDenial(createAdminClient(), request, status, actorId);
+  } catch {
+    /* best-effort */
+  }
+}
+
+async function requireApiAdminInner(request: Request, opts: { skipDeviceGate?: boolean }): Promise<SessionOk | GuardFail> {
   const session = await requireApiSession(request);
   if (!session.ok) return session;
 
@@ -81,8 +111,12 @@ export async function auditAdminApiAccess(request: Request, actorId: string): Pr
       /* keep 'unknown' */
     }
     const ip = (request.headers.get('x-real-ip') || request.headers.get('x-forwarded-for')?.split(',')[0] || '').trim().slice(0, 64) || null;
-    const { error } = await createAdminClient().from('admin_audit_log').insert({ actor_id: actorId, method: request.method, path, ip });
+    const country = (request.headers.get('x-vercel-ip-country') || '').trim().toUpperCase().slice(0, 4) || null;
+    const db = createAdminClient();
+    const { error } = await db.from('admin_audit_log').insert({ actor_id: actorId, method: request.method, path, ip, detail: country ? { country } : {} });
     if (error) console.error('[admin-audit]', error.message);
+    const { recordAdminSuccess } = await import('@/lib/logs/signals');
+    await recordAdminSuccess(db, request, actorId);
   } catch {
     /* best-effort */
   }
