@@ -127,6 +127,14 @@ async function handleTelegramUpdateInner(db: SupabaseClient, channel: CeoChannel
     await channel.ack({ callbackId: u.callback_query.id, chatId, messageId: u.callback_query.message?.message_id }, msg);
     return { opsLogin: lcb[1] };
   }
+  // New-IP alert buttons ("זה אני" / "זה לא אני"): defensive only, signed single-use nonce, env-allowlisted chat only.
+  const scb = u.callback_query?.data?.match(/^ceo:(sk|sx):([A-Za-z0-9_.-]{20,50})$/);
+  if (scb && u.callback_query) {
+    const { handleAlertCallback } = await import('@/lib/security/tg-actions');
+    const out = await handleAlertCallback(db, scb[1] as 'sk' | 'sx', scb[2], chatId).catch(() => ({ ok: false, text: 'הפעולה נכשלה. אפשר לטפל במסך היומנים ב-Ops.' }));
+    await channel.ack({ callbackId: u.callback_query.id, chatId, messageId: u.callback_query.message?.message_id }, out.text);
+    return { securityAlert: scb[1], ok: out.ok };
+  }
   if (sec.disabled) {
     if (u.callback_query) await channel.ack({ callbackId: u.callback_query.id, chatId });
     else await channel.send(chatId, '⛔ גדעון כבוי כרגע. אפשר להפעיל מחדש מ-Ops ← גדעון ← אבטחה.', undefined, { kind: 'reply' });

@@ -9,10 +9,12 @@ import { normalizeStorage, storageAlert, vacuumCandidates } from '@/lib/logs/ret
 const root = join(__dirname, '..', '..', '..');
 const migDir = join(root, 'supabase', 'migrations');
 const mig = readFileSync(join(migDir, readdirSync(migDir).find((f) => f.startsWith('000181_'))!), 'utf8');
+// latest migration that redefines log_retention_policy() is the source of truth for the policy mirror
+const policyMig = readdirSync(migDir).filter((f) => f.endsWith('.sql')).sort().map((f) => readFileSync(join(migDir, f), 'utf8')).filter((t) => /function public\.log_retention_policy\(\)/.test(t)).pop()!;
 
 describe('log retention policy', () => {
   it('TS policy mirrors SQL log_retention_policy()', () => {
-    const sql = [...mig.matchAll(/\('([a-z_]+)','([a-z_]+)',(\d+),'(operational|access|legal)',(null|'[^)]*')\)/g)]
+    const sql = [...policyMig.matchAll(/\('([a-z_]+)','([a-z_]+)',(\d+),'(operational|access|legal)',(null|'[^)]*')\)/g)]
       .map((m) => ({ table: m[1], tsCol: m[2], days: Number(m[3]), klass: m[4], extra: m[5] === 'null' ? undefined : m[5].slice(1, -1).replace(/''/g, "'") }));
     expect(sql).toEqual(LOG_POLICY.map(({ table, tsCol, days, klass, extra }) => ({ table, tsCol, days, klass, extra })));
   });

@@ -27,7 +27,9 @@ export async function requireApiSession(request: Request): Promise<SessionOk | G
 }
 
 export async function requireApiAdmin(request: Request, opts: { skipDeviceGate?: boolean } = {}): Promise<SessionOk | GuardFail> {
-  const blocked = await adminIpBlocked(request);
+  // The recovery route stays reachable from a blocked IP (it still needs admin + step-up + a recovery code),
+  // so a mistaken "זה לא אני" on the owner's own network can never lock him out.
+  const blocked = !isRecoverPath(request) && (await adminIpBlocked(request));
   if (blocked) return { ok: false, response: NextResponse.json({ error: 'יותר מדי ניסיונות. נסה שוב בעוד חצי שעה.', code: 'ip_temporarily_blocked' }, { status: 429 }) };
   const res = await requireApiAdminInner(request, opts);
   if (!res.ok && (res.response.status === 401 || res.response.status === 403)) {
@@ -36,11 +38,17 @@ export async function requireApiAdmin(request: Request, opts: { skipDeviceGate?:
   return res;
 }
 
+function isRecoverPath(request: Request): boolean {
+  try { return new URL(request.url).pathname === '/api/v1/ops/security/recover'; } catch { return false; }
+}
+
 async function adminIpBlocked(request: Request): Promise<boolean> {
   try {
     const { createAdminClient } = await import('@/lib/supabase/admin');
-    const { isIpBlocked, hashIp, requestIp } = await import('@/lib/logs/signals');
-    return await isIpBlocked(createAdminClient(), hashIp(requestIp(request)));
+    const { isIpBlocked, isIpRangeBlocked, hashIp, requestIp } = await import('@/lib/logs/signals');
+    const db = createAdminClient();
+    const ip = requestIp(request);
+    return (await isIpBlocked(db, hashIp(ip))) || (await isIpRangeBlocked(db, ip));
   } catch {
     return false;
   }
@@ -82,17 +90,20 @@ async function requireApiAdminInner(request: Request, opts: { skipDeviceGate?: b
       response: NextResponse.json({ error: 'Forbidden' }, { status: 403 }),
     };
   }
+  const { data: sess } = await supabase.auth.getSession();
+  const accessToken = sess.session?.access_token ?? null;
   if (!opts.skipDeviceGate) {
     const { opsDeviceGate } = await import('@/lib/ops/device-gate');
     const { DEVICE_COOKIE } = await import('@/lib/ops/device-trust');
     const { createAdminClient } = await import('@/lib/supabase/admin');
-    const { data: sess } = await supabase.auth.getSession();
-    const gate = await opsDeviceGate(createAdminClient(), user.id, readCookie(request, DEVICE_COOKIE), sess.session?.access_token, request.headers.get('user-agent'));
+    const gate = await opsDeviceGate(createAdminClient(), user.id, readCookie(request, DEVICE_COOKIE), accessToken, request.headers.get('user-agent'));
     if (!gate.ok) {
       return { ok: false, response: NextResponse.json({ error: 'נדרש אישור מכשיר', code: 'device_unverified' }, { status: 403 }) };
     }
   }
-  await auditAdminApiAccess(request, user.id);
+  const locked = await lockdownRefusal(request, user.id, accessToken);
+  if (locked) return { ok: false, response: locked };
+  await auditAdminApiAccess(request, user.id, accessToken);
   return { ok: true, supabase, user };
 }
 
@@ -101,7 +112,29 @@ async function requireApiAdminInner(request: Request, opts: { skipDeviceGate?: b
  * admin API call, reads included, records actor, method, path (never query string or body) and IP.
  * Never fails the request.
  */
-export async function auditAdminApiAccess(request: Request, actorId: string): Promise<void> {
+/** Emergency lockdown (lib/security/ir.ts): IP allowlist for N hours + step-up on every admin call. Fails open on DB errors. */
+async function lockdownRefusal(request: Request, userId: string, accessToken: string | null): Promise<NextResponse | null> {
+  try {
+    const { createAdminClient } = await import('@/lib/supabase/admin');
+    const { readLockdown, lockdownDecision } = await import('@/lib/security/ir');
+    const db = createAdminClient();
+    const ld = await readLockdown(db);
+    if (!ld?.active) return null;
+    const { hashIp, requestIp } = await import('@/lib/logs/signals');
+    const { isFreshSession } = await import('@/lib/auth/passkeys');
+    const { STEPUP_COOKIE, peekGrant, readCookieFrom } = await import('@/lib/auth/stepup');
+    let path = '';
+    try { path = new URL(request.url).pathname; } catch { /* empty */ }
+    const steppedUp = isFreshSession(accessToken) || (await peekGrant(db, userId, 'ops.sensitive', readCookieFrom(request, STEPUP_COOKIE)));
+    const d = lockdownDecision(ld, { path, ipHash: hashIp(requestIp(request)), steppedUp });
+    if (!d) return null;
+    return NextResponse.json({ error: d.error, code: d.code, stepUp: d.code === 'lockdown_stepup', lockdown: true }, { status: 403 });
+  } catch {
+    return null;
+  }
+}
+
+export async function auditAdminApiAccess(request: Request, actorId: string, accessToken?: string | null): Promise<void> {
   try {
     const { createAdminClient } = await import('@/lib/supabase/admin');
     let path = 'unknown';
@@ -113,10 +146,17 @@ export async function auditAdminApiAccess(request: Request, actorId: string): Pr
     const ip = (request.headers.get('x-real-ip') || request.headers.get('x-forwarded-for')?.split(',')[0] || '').trim().slice(0, 64) || null;
     const country = (request.headers.get('x-vercel-ip-country') || '').trim().toUpperCase().slice(0, 4) || null;
     const db = createAdminClient();
-    const { error } = await db.from('admin_audit_log').insert({ actor_id: actorId, method: request.method, path, ip, detail: country ? { country } : {} });
+    const { sessionIdOf } = await import('@/lib/auth/stepup');
+    const session = sessionIdOf(accessToken);
+    const ua = (request.headers.get('user-agent') || '').slice(0, 160) || null;
+    const detail: Record<string, unknown> = {};
+    if (country) detail.country = country;
+    if (session) detail.session = session;
+    if (ua) detail.ua = ua;
+    const { error } = await db.from('admin_audit_log').insert({ actor_id: actorId, method: request.method, path, ip, detail });
     if (error) console.error('[admin-audit]', error.message);
     const { recordAdminSuccess } = await import('@/lib/logs/signals');
-    await recordAdminSuccess(db, request, actorId);
+    await recordAdminSuccess(db, request, actorId, session);
   } catch {
     /* best-effort */
   }
