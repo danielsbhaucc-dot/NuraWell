@@ -47,18 +47,19 @@ export function detectVendor(from: string, subject: string, text: string): Vendo
 /** Platform vendors are identified by their own sending domain (or Google Cloud's billing wording). */
 export function detectInfraVendor(from: string, hay: string): VendorId | null {
   const f = from.toLowerCase();
-  const dom = (d: string) => new RegExp(`@(?:[\\w-]+\\.)*${d.replace(/\./g, '\\.')}$`).test(f);
+  const host = f.slice(f.lastIndexOf('@') + 1);
+  const dom = (d: string) => host === d || host.endsWith(`.${d}`);
   if (dom('openrouter.ai')) return 'openrouter';
   if (dom('deepseek.com')) return 'deepseek';
   if (dom('anthropic.com')) return 'anthropic';
   if (dom('vercel.com')) return 'vercel';
   if (dom('supabase.com') || dom('supabase.io')) return 'supabase';
   if (dom('upstash.com')) return 'upstash';
-  if (dom('cloudflare.com')) return /registrar|domain|דומיין/i.test(hay) ? 'domain' : 'cloudflare';
+  if (dom('cloudflare.com')) return /registrar|domain (?:renewal|registration|transfer)|חידוש דומיין/i.test(hay) ? 'domain' : 'cloudflare';
   if (dom('resend.com') || dom('resend.dev')) return 'resend';
   if (dom('bunny.net')) return 'bunny';
   if (dom('namecheap.com') || dom('porkbun.com') || dom('godaddy.com') || dom('gandi.net')) return 'domain';
-  if (/@google\.com$/.test(f) && /google cloud|cloud platform|cloud billing|\bGCP\b|billing account \w{6}-\w{6}-\w{6}/i.test(hay)) return 'google_cloud';
+  if (host === 'google.com' && /google cloud|cloud platform|cloud billing|\bGCP\b|billing account \w{6}-\w{6}-\w{6}/i.test(hay)) return 'google_cloud';
   return null;
 }
 
