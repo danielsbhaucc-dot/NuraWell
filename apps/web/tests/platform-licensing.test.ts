@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import {
   generateSigningKeyPair, loadSigningKey, issueLicense, renewLicense, verifyLicense, satisfies, hostMatches,
   signRevocationList, verifyRevocationList, revocationFor, buildBundle, verifyBundle, encodeWatermark, extractWatermark,
+  matchBuyerWatermark, decryptSealedFile, contentKeyFromToken, generateContentKey, contentKeyB64,
   createLicenseGuard, fileRevocationPublisher, type RevocationList,
 } from '../../../packages/@platform/licensing/src';
 import { createVerifierHandler, memoryStorage, toHost, checkOnline } from '../../../packages/@platform/licensing/src/online';
@@ -26,7 +27,17 @@ describe('license', () => {
     expect(Date.parse(license.expiresAt!) - T0.getTime()).toBe(30 * 86_400_000);
     expect(verifyLicense(token, K.publicPem, ctx()).ok).toBe(true);
   });
-  it('expiry', () => { expect(verifyLicense(lic().token, K.publicPem, ctx({ now: day(31) }))).toMatchObject({ ok: false, reason: 'expired' }); });
+  it('grace days: still valid after period, expired after period+grace', () => {
+    const { token, license } = lic();
+    expect(license.graceDays).toBe(3);
+    // expiresAt = day 30; hard stop = day 30 + 3 = day 33 (inclusive <=)
+    expect(verifyLicense(token, K.publicPem, ctx({ now: day(31) })).ok).toBe(true);
+    expect(verifyLicense(token, K.publicPem, ctx({ now: day(32) })).ok).toBe(true);
+    expect(verifyLicense(token, K.publicPem, ctx({ now: day(33) }))).toMatchObject({ ok: false, reason: 'expired' });
+  });
+  it('graceDays=0 expires at period end', () => {
+    expect(verifyLicense(lic({ graceDays: 0 }).token, K.publicPem, ctx({ now: day(31) }))).toMatchObject({ ok: false, reason: 'expired' });
+  });
   it('domain mismatch + wildcard', () => {
     expect(verifyLicense(lic().token, K.publicPem, ctx({ host: 'evil.com' }))).toMatchObject({ reason: 'domain_mismatch' });
     expect(hostMatches('a.example.com', '*.example.com')).toBe(true);
@@ -97,12 +108,12 @@ describe('guard (buyer side)', () => {
     await g.refresh(true);
     expect((await g.status()).state).toBe('locked');
   });
-  it('unreachable list → keeps working until expiry (offline grace)', async () => {
+  it('unreachable list: active within 6h, then fail-closed (offline_too_long)', async () => {
     let t = day(1);
     const g = createLicenseGuard({ ...base, now: () => t, fetch: async () => { throw new Error('down'); } });
     expect((await g.status()).state).toBe('active');
-    t = day(31);
-    expect(await g.status()).toMatchObject({ state: 'locked', reason: 'expired' });
+    t = new Date(day(1).getTime() + 7 * 3_600_000); // >6h
+    expect(await g.status()).toMatchObject({ state: 'locked', reason: 'offline_too_long' });
   });
   it('tampered list ignored, garbage token never throws', async () => {
     const bad = doc(9, true); bad.list.entries = [];
@@ -134,6 +145,47 @@ describe('bundle', () => {
     expect(verifyBundle(K.publicPem, b.manifest, b.signature, read)).toMatchObject({ reason: 'missing_file' });
     expect(verifyBundle(K.publicPem, b.manifest, b.signature, (p) => b.files.find((f) => f.path === p)?.content ?? null, [...b.files.map((f) => f.path), 'x.js'])).toMatchObject({ reason: 'extra_file' });
     expect(verifyBundle(K.publicPem, { ...b.manifest, watermark: 'zzz' }, b.signature, read)).toMatchObject({ reason: 'bad_signature' });
+  });
+});
+
+
+describe('closed-source sealed bundle (monthly subscription default)', () => {
+  it('no token / no key → cannot decrypt', async () => {
+    const key = generateContentKey();
+    const b = await buildBundle(K.privatePem, { moduleId: 'm', version: '1.0.0', lid: 'L1', licenseeId: 'buyer-42', files: [{ path: 'index.js', content: 'export const secret=42;' }], seal: key });
+    expect(b.contentKey).toBeTruthy();
+    expect(b.manifest.sealed).toBe(true);
+    expect(b.files[0].path).toMatch(/\.enc$/);
+    expect(decryptSealedFile(null, b.files[0].content)).toEqual({ ok: false, reason: 'no_key' });
+    expect(verifyBundle(K.publicPem, b.manifest, b.signature, (p) => b.files.find((f) => f.path === p || f.path === p + '.enc' || `${p}.enc` === f.path)?.content ?? null)).toMatchObject({ reason: 'no_key' });
+  });
+  it('valid contentKey from license opens; tamper of sealed bytes refuses', async () => {
+    const key = generateContentKey();
+    const { token } = issueLicense(K.privatePem, { moduleId: 'm', versionRange: '^1.0.0', licensee: { id: 'buyer-42', name: 'b' }, domains: ['shop.example.com'], mode: 'bundle', contentKey: contentKeyB64(key) }, T0);
+    const b = await buildBundle(K.privatePem, { moduleId: 'm', version: '1.0.0', lid: 'L1', licenseeId: 'buyer-42', files: [{ path: 'index.js', content: 'export const secret=42;' }], seal: key });
+    const fs = new Map(b.files.map((f) => [f.path, f.content]));
+    const read = (p: string) => fs.get(p) ?? fs.get(p.endsWith('.enc') ? p : p + '.enc') ?? null;
+    const ck = contentKeyFromToken(token, K.publicPem, ctx());
+    expect(ck?.equals(key)).toBe(true);
+    expect(verifyBundle(K.publicPem, b.manifest, b.signature, read, undefined, ck)).toEqual({ ok: true });
+    const opened = decryptSealedFile(ck, b.files[0].content);
+    expect(opened.ok).toBe(true);
+    if (opened.ok) expect(opened.plain).toContain('secret=42');
+    // tamper
+    fs.set(b.files[0].path, b.files[0].content.slice(0, -4) + 'xxxx');
+    expect(verifyBundle(K.publicPem, b.manifest, b.signature, read, undefined, ck)).toMatchObject({ ok: false, reason: 'bad_seal' });
+  });
+  it('watermark match helper identifies buyer from leaked file', async () => {
+    const b = await buildBundle(K.privatePem, { moduleId: 'm', version: '1.0.0', lid: 'L1', licenseeId: 'buyer-99', files: [{ path: 'index.js', content: 'export const a=1;' }], seal: false });
+    const plain = b.plainFiles.find((f) => f.path === 'index.js')!.content;
+    expect(matchBuyerWatermark(plain, [{ id: 'buyer-1', label: 'א' }, { id: 'buyer-99', label: 'חנות דנה' }])).toEqual({ id: 'buyer-99', label: 'חנות דנה' });
+    expect(matchBuyerWatermark('no mark here', [{ id: 'buyer-99' }])).toBeNull();
+  });
+  it('termsVersion and termsAcceptedAt ride in the signed license', () => {
+    const { token, license } = issueLicense(K.privatePem, { moduleId: 'm', versionRange: '^1.0.0', licensee: { id: 'c', name: 'c' }, domains: ['shop.example.com'], mode: 'bundle', termsVersion: '2026-10-draft-2', termsAcceptedAt: T0 }, T0);
+    expect(license.termsVersion).toBe('2026-10-draft-2');
+    expect(license.termsAcceptedAt).toBe(T0.toISOString());
+    expect(verifyLicense(token, K.publicPem, ctx()).ok).toBe(true);
   });
 });
 

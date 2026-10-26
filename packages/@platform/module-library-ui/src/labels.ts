@@ -7,7 +7,7 @@ export const TIER_MEANING: Record<Tier, string> = {
 };
 export const CAT_LABEL: Record<Category, string> = { security: 'אבטחה', privacy: 'פרטיות', platform: 'פלטפורמה', feature: 'פיצ׳ר', ui: 'ממשק', ops: 'תפעול' };
 // Finder-tag style category colors; all keep >= 4.5:1 with the light glyph (WCAG AA).
-export const CAT_TINT: Record<Category, string> = { security: '#3f5b9a', privacy: '#7b4fa8', platform: '#1f7896', feature: '#b9532c', ui: '#b03f78', ops: '#86661c' };
+export const CAT_TINT: Record<Category, string> = { security: '#3558b8', privacy: '#8a3ec2', platform: '#0f8aa8', feature: '#d14a1f', ui: '#c23488', ops: '#9a7210' };
 export const STATE_LABEL = { active: 'פעיל', suspended_until: 'מושעה עד תאריך', suspended_until_payment: 'מושעה עד תשלום', revoked_permanent: 'בוטל לצמיתות' } as const;
 export const fmtDate = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString('he-IL', { day: 'numeric', month: 'short', year: 'numeric' }) : 'ללא תפוגה');
 export const fmtNum = (n: number | null) => (n === null ? null : n.toLocaleString('he-IL'));

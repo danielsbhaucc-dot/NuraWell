@@ -25,7 +25,7 @@ function Done({ out, note }: { out: PackOut; note: string }) {
   return (
     <div className="fd-result">
       <p className="fd-ok">✓ {note}</p>
-      {out.lid ? <p>הרישיון בתוקף עד <b>{fmtDate(out.expiresAt ?? null)}</b>. אפשר לחדש או לחסום אותו בעמוד &quot;רישיונות&quot;.</p> : null}
+      {out.lid ? <p>התקופה ששולמה עד <b>{fmtDate(out.expiresAt ?? null)}</b> (ועוד 3 ימי חסד). אפשר לחדש או לחסום בעמוד &quot;רישיונות&quot;.</p> : null}
       {out.secret ? <OneTimeKey secret={out.secret} installId={out.installId} /> : null}
       {out.base64 ? <button type="button" className="fd-btn" onClick={() => downloadBase64(out.fileName, out.base64!)}>להוריד שוב</button> : null}
       <TechDetails>
@@ -74,18 +74,18 @@ export function SellDialog({ m, api, signingReady, onClose, initial }: { m: Regi
   };
   return (
     <Shell title={`מכירה: ${m.store.name}`} onClose={onClose}>
-      <p>ממלאים שלושה פרטים ולוחצים. הקונה מקבל קובץ להתקנה, והרכיב עובד אצלו רק באתר שלו ועד סוף התקופה.</p>
+      <p>ממלאים שלושה פרטים ולוחצים. הקונה מקבל חבילה נעולה להתקנה. הרכיב עובד רק באתר שלו, עד סוף התקופה ועוד שלושה ימי חסד.</p>
       {why ? <p className="fd-warn">{why}</p> : null}
       {p.s === 'done' ? <Done out={p.out} note="נמכר. הקובץ לקונה ירד למחשב" /> : (
         <form className="fd-form" onSubmit={(e) => { e.preventDefault(); go(); }}>
           <label>שם הקונה<input value={name} onChange={(e) => setName(e.target.value)} placeholder="למשל: חנות הפרחים של דנה" disabled={!!why} /><small>נשמר מוצפן אצלנו בלבד.</small></label>
           <label>כתובת האתר של הקונה<input value={domain} onChange={(e) => setDomain(e.target.value)} placeholder="shop.example.com" dir="ltr" required disabled={!!why} /><small>הרכיב יעבוד רק בכתובת הזאת.</small></label>
-          <label>לכמה זמן<select value={days} onChange={(e) => setDays(Number(e.target.value))} disabled={!!why}>{PERIODS.map(([d, t]) => <option key={d} value={d}>{t}{d === 30 ? ' (מומלץ)' : ''}</option>)}</select><small>בסוף התקופה הרכיב נעצר עד שמחדשים.</small></label>
+          <label>לכמה זמן<select value={days} onChange={(e) => setDays(Number(e.target.value))} disabled={!!why}>{PERIODS.map(([d, t]) => <option key={d} value={d}>{t}{d === 30 ? ' (מומלץ)' : ''}</option>)}</select><small>בסוף התקופה יש 3 ימי חסד, ואז הרכיב נעצר עד חידוש התשלום.</small></label>
           {p.s === 'error' ? <p className="fd-err" role="alert">{p.msg}</p> : null}
           <button type="submit" className="fd-btn fd-btn-primary fd-btn-wide" disabled={!!why || p.s === 'busy' || !domain.trim()}>{p.s === 'busy' ? 'מכינים…' : 'מכירה והורדת הקובץ לקונה'}</button>
         </form>
       )}
-      <TechDetails><p>נוצר רישיון חתום דיגיטלית (Ed25519) שקשור לכתובת האתר ולטווח הגרסאות, וחבילה מכווצת עם סימן מים ומניפסט חתום. הכול רץ על השרתים של הקונה. ההפעלה בשרת דורשת את <span className="fd-mono">LICENSE_SIGNING_KEY</span>. מכירת קוד מלא לא זמינה מהמסך הזה.</p></TechDetails>
+      <TechDetails><p>נוצר רישיון חתום (Ed25519) עם מפתח לפתיחת החבילה המוצפנת (AES-GCM), סימן נסתר של הקונה, ומניפסט חתום. הכול רץ על השרתים של הקונה. חסימה באמצע התקופה דרך קובץ סטטוס חתום. מכירת קוד מלא לא זמינה מהמסך הזה.</p></TechDetails>
     </Shell>
   );
 }

@@ -38,7 +38,7 @@ export function LicensesView({ api, initial, initialRevoke, initialUnblock, init
   return (
     <div className="fd-pane">
       <h2>רישיונות</h2>
-      <p className="fd-dim">כל מכירה יוצרת רישיון. <b>חידוש</b> מאריך בחודש, <b>חסימה</b> עוצרת את הרכיב אצל הקונה, <b>ביטול חסימה</b> מחזיר אותו לעבוד תוך שניות, ו<b>מפתח חדש</b> מחליף מפתח שדלף.</p>
+      <p className="fd-dim">כל מכירה יוצרת רישיון. <b>חידוש</b> מאריך עד החיוב הבא, <b>חסימה</b> עוצרת תוך כשתי דקות, <b>ביטול חסימה</b> מחזיר באותה מהירות, ו<b>מפתח חדש</b> מחליף מפתח שדלף. כל פעולה = כפתור אחד.</p>
       {!load.signingReady ? <p className="fd-warn">הרישיונות עוד לא הופעלו בשרת, ולכן כרגע אפשר רק לצפות.</p> : null}
       {msg ? <p className={msg.ok ? 'fd-note' : 'fd-err'} role={msg.ok ? 'status' : 'alert'}>{msg.t}</p> : null}
       {load.rows.length === 0 ? <div className="fd-empty">עוד לא נמכר אף רכיב. מוכרים מתוך ספריית המודולים, בכפתור &quot;מכירה&quot;.</div> : (
@@ -65,13 +65,13 @@ export function LicensesView({ api, initial, initialRevoke, initialUnblock, init
           <form className="fd-modal fd-form" role="dialog" aria-modal="true" aria-label="חסימת רישיון" onClick={(e) => e.stopPropagation()} onSubmit={(e) => { e.preventDefault(); act({ op: 'revoke', lid: rev.lid, state: rev.state, until: rev.state === 'suspended_until' ? plus30() : null, reason: reasonLabel(rev.reason), reasonCode: rev.reason }, 'החסימה נשמרה'); }}>
             <button type="button" className="fd-close" onClick={() => setRev(null)} aria-label="סגירה">×</button>
             <h3>חסימה{target ? `: ${target.licensee}` : ''}</h3>
-            <p>הרכיב ייעצר אצל הקונה תוך כמה שניות. הקבצים שלו לא נמחקים, ואפשר לבטל בכל רגע.</p>
+            <p>הרכיב ייעצר אצל הקונה תוך כשתי דקות. הקבצים שלו לא נמחקים, ואפשר לבטל בכל רגע.</p>
             <label>למה?<select value={rev.reason} onChange={(e) => setRev({ ...rev, reason: e.target.value })}>{REASONS.map(([k, t]) => <option key={k} value={k}>{t}</option>)}</select><small>הקונה רואה רק את סוג הסיבה, בלי פרטים.</small></label>
             <fieldset className="fd-choices"><legend>מה לעשות?</legend>
               {STATES.map(([s, t, d]) => <label key={s} className={`fd-choice ${rev.state === s ? 'is-on' : ''}`}><input type="radio" name="st" checked={rev.state === s} onChange={() => setRev({ ...rev, state: s })} /><span><b>{t}</b><small>{d}</small></span></label>)}
             </fieldset>
             <button type="submit" className="fd-btn fd-btn-danger fd-btn-wide">חסימה</button>
-            <TechDetails><p>מספר רישיון: <span className="fd-mono">{rev.lid}</span>. החלק החשוב של הרכיב רץ אצלנו בשרת הליבה, והשרת קורא את המצב מחדש כל 5 שניות לכל היותר, אז החסימה תופסת תוך שניות. בגרסה הלא־מקוונת (קובץ סטטוס חתום) זה לוקח עד 2 דקות, עם עד 6 שעות עבודה אם הקובץ לא זמין.</p></TechDetails>
+            <TechDetails><p>מספר רישיון: <span className="fd-mono">{rev.lid}</span>. מעדכנים קובץ סטטוס חתום שהקונה קורא כל כשתי דקות. אם הקובץ לא נגיש יותר מ-6 שעות, הרכיב נעצר עד שהבדיקה חוזרת. נתיב &quot;מוח מרחוק&quot; (חסימה בשניות) הוא אופציה יקרה בנפרד.</p></TechDetails>
           </form>
         </div>
       ) : null}
@@ -80,7 +80,7 @@ export function LicensesView({ api, initial, initialRevoke, initialUnblock, init
           <div className="fd-modal fd-form" role="dialog" aria-modal="true" aria-label="ביטול חסימה" onClick={(e) => e.stopPropagation()}>
             <button type="button" className="fd-close" onClick={() => setUnb(null)} aria-label="סגירה">×</button>
             <h3>ביטול חסימה{unbRow ? `: ${unbRow.licensee}` : ''}</h3>
-            <p>הרכיב יחזור לעבוד אצל הקונה תוך כמה שניות. אין צורך לשלוח לו קובץ חדש.</p>
+            <p>הרכיב יחזור לעבוד אצל הקונה תוך כשתי דקות. אין צורך לשלוח לו קובץ חדש.</p>
             <button type="button" className="fd-btn fd-btn-primary fd-btn-wide" onClick={() => act({ op: 'reinstate', lid: unb }, 'הרכיב חזר לעבוד אצל הקונה')}>ביטול החסימה</button>
           </div>
         </div>
