@@ -25,6 +25,10 @@ export function isCondensable(section: string): boolean {
   return !PROTECTED.test(section) && CONDENSABLE.some((r) => r.test(head.trim()));
 }
 
+/** Neutral delimiters + one-line instruction: background for the writer, never text to quote. */
+export const CONDENSED_OPEN = '<<<רקע פנימי — לשימושך בלבד, אל תצטט ואל תעתיק ניסוח, כותרת או נקודות מכאן>>>';
+export const CONDENSED_CLOSE = '<<<סוף רקע>>>';
+
 const SYSTEM = `You prepare a context brief for a health coach. From the memory blocks, keep ONLY what helps answer the user's current message: active difficulties/blockers, recent successes and failures, commitments, relevant facts and dates. Hebrew, bullet points, max 120 words. Never invent. If unsure whether something matters, keep it.`;
 
 export async function condenseContextSections(params: {
@@ -55,7 +59,7 @@ export async function condenseContextSections(params: {
       return { sections, condensed: false, reason: 'bad_brief', savedChars: 0 };
     }
     const first = idx[0]!;
-    const out = sections.flatMap((s, i) => (i === first ? [`[תקציר הקשר רלוונטי]\n${brief}`] : idx.includes(i) ? [] : [s]));
+    const out = sections.flatMap((s, i) => (i === first ? [`${CONDENSED_OPEN}\n${brief}\n${CONDENSED_CLOSE}`] : idx.includes(i) ? [] : [s]));
     return { sections: out, condensed: true, reason: 'ok', savedChars: raw.length - brief.length };
   } catch (e) {
     return { sections, condensed: false, reason: e instanceof Error && e.message === 'timeout' ? 'timeout' : 'error', savedChars: 0 };
