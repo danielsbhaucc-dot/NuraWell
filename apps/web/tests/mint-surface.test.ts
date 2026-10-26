@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 // @ts-expect-error -- plain .mjs helper without types
-import { findMintSurfaces, isTintedLight } from '../scripts/mint-surface.mjs';
+import { findMintSurfaces, isTintedLight } from '../../scripts/design/mint-surface.mjs';
 
 describe('mint/sage/cream surface detector', () => {
   it('flags mint, sage and cream light surfaces', () => {
