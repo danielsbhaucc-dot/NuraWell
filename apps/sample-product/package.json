@@ -12,6 +12,7 @@
   "dependencies": {
     "@platform/ai-engine": "*",
     "@platform/auth": "*",
+    "@platform/licensing": "*",
     "@platform/ui": "*",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.49.0",

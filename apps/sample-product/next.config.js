@@ -2,7 +2,7 @@
 module.exports = {
   reactStrictMode: true,
   poweredByHeader: false,
-  transpilePackages: ['@platform/ui', '@platform/ai-engine', '@platform/auth'],
+  transpilePackages: ['@platform/ui', '@platform/ai-engine', '@platform/auth', '@platform/licensing'],
   async headers() {
     return [{ source: '/:path*', headers: [
       { key: 'X-Frame-Options', value: 'DENY' },
