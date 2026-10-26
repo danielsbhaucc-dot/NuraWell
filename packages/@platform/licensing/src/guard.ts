@@ -59,8 +59,8 @@ export function createLicenseGuard(cfg: GuardConfig) {
     try {
       const fresh = verifyRevocationList(await cfg.fetch(cfg.revocationUrl), cfg.publicKeyPem);
       if (!fresh) return;
-      lastListOkAt = now().getTime(); // tampered or unsigned list: ignore, keep the last good one
-      if (list && fresh.version < list.version) return; // rollback attempt: reject
+      if (list && fresh.version < list.version) return; // rollback attempt: reject (and it does not count as a fresh check)
+      lastListOkAt = now().getTime(); // tampered or unsigned list: ignored above, keep the last good one
       list = fresh;
       await cfg.cache?.set(fresh);
     } catch { /* unreachable: keep working until license expiry (the backstop) */ }

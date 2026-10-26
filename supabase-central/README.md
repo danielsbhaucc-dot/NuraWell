@@ -32,3 +32,11 @@ Product servers never get central credentials by default. The hub (server-side o
 2. Point `/ops/modules` reads at central behind a flag, dual-read and compare, then switch writes.
 3. Move staff grants; keep NuraWell `iam_*` read-only for one release, then drop.
 Risks: two DBs to keep consistent during dual-run; extra env secret on Vercel; free-tier pause if keepalive fails (restore is manual); hub latency for cross-DB reads.
+
+## שלב 1 — רישום מודולים ורישוי מרכזי (מיגרציות 000003–000004)
+
+- הקטלוג, מצבי המודולים, הרישיונות והחסימות נשמרים עכשיו ב-`central` (סכמה פרטית, RLS כפוי, ללא anon, יומן ביקורת על כל שינוי).
+- גישה רק דרך פונקציות `public.central_*` עם service_role.
+- **הפעלה:** להגדיר ב-Vercel את `CENTRAL_SUPABASE_URL` ואת `CENTRAL_SUPABASE_SECRET_KEY` (רגיש). בלי המשתנים האלה ה-Hub ממשיך לקרוא מה-DB של NuraWell.
+- המוצר לדוגמה (`apps/sample-product`) נרשם, מקבל טוקן רישיון (עד מועד החיוב הבא + 3 ימי חסד), בודק קובץ סטטוס חתום כל 2 דקות, וננעל אחרי 6 שעות בלי קובץ מאומת.
+- ידוע: שינוי מצב מודול מה-Hub עדיין נכתב ל-DB של NuraWell (רק הקריאה עברה).

@@ -1,6 +1,7 @@
 import type { ProductRow, ProductSummary, RegistryModule } from '../types';
 import type { Deployment } from '../HubViews';
 import type { ActivityItem, CostTrend } from '../OverviewExtras';
+import type { CentralSnapshot } from './central';
 import registryJson from '../registry.generated.json';
 
 export const REGISTRY = (registryJson as unknown as { modules: RegistryModule[] }).modules;
@@ -11,9 +12,12 @@ type Db = { from(t: string): any }; // eslint-disable-line @typescript-eslint/no
 type Metrics = { productId: string; users: number; aiCost30dUsd: number; errors7d: number };
 
 /** Builds hub props from aggregates only. Missing sources stay null; nothing is estimated. */
-export async function loadHubData(db: Db, products: { id: string; name: string }[], metrics: { rows: Metrics[]; error: string | null }, visible: (productId: string) => boolean) {
-  const shown = products.filter((p) => visible(p.id));
-  const { data: states, error: stErr } = await db.from('iam_product_modules').select('product_id, module_id, enabled');
+export async function loadHubData(db: Db, products: { id: string; name: string }[], metrics: { rows: Metrics[]; error: string | null }, visible: (productId: string) => boolean, central?: CentralSnapshot | null) {
+  // Central DB (platform-central) is the source of truth for products + module states when configured.
+  const shown = (central ? central.products.filter((p) => p.status !== 'disabled') : products).filter((p) => visible(p.id));
+  const { data: states, error: stErr } = central
+    ? { data: central.states.map((s) => ({ product_id: s.productId, module_id: s.moduleId, enabled: s.enabled })), error: null }
+    : await db.from('iam_product_modules').select('product_id, module_id, enabled');
   const rows: ProductRow[] = shown.map((p) => ({
     id: p.id, name: p.name, color: COLORS[p.id] ?? '#5b6b7a', panelHref: PANELS[p.id] ?? null,
     enabled: stErr ? [] : ((states ?? []) as { product_id: string; module_id: string; enabled: boolean }[]).filter((s) => s.product_id === p.id && s.enabled).map((s) => s.module_id),
@@ -29,7 +33,7 @@ export async function loadHubData(db: Db, products: { id: string; name: string }
   // Only time, kind and product leave the server: no actor, target or detail (PII-free by construction).
   const activity: ActivityItem[] | null = logErr ? null : ((log ?? []) as { at: string; kind: string; product_id: string | null }[])
     .filter((r) => r.product_id === null || ids.includes(r.product_id)).slice(0, 10).map((r) => ({ at: r.at, kind: r.kind, productId: r.product_id }));
-  return { products: rows, summaries, deployment, activity, costTrend: await loadCostTrend(db, ids), metricsError: metrics.error, statesError: stErr ? 'module_states_unavailable' : null };
+  return { products: rows, summaries, deployment, activity, costTrend: await loadCostTrend(db, ids), metricsError: metrics.error, statesError: stErr ? 'module_states_unavailable' : null, source: central ? 'central' as const : 'product' as const };
 }
 const TREND_CAP = 20000;
 /** Daily AI spend for the visible products, from ai_usage_events (the same table the cost screen reads). Null when unavailable. */
