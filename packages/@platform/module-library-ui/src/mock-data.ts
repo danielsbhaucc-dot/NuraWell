@@ -21,7 +21,7 @@ export const MODULES: LibModule[] = [
 
 export const PRODUCTS: Product[] = [
   { id: 'nurawell', name: 'NuraWell', color: '#2f9e6b', enabled: ['almog-chat', 'journey', 'media-library', 'notifications', 'a11y-widget', 'costs'] },
-  { id: 'fitflow', name: 'FitFlow', color: '#3b82c4', enabled: ['habit-streaks', 'notifications', 'a11y-widget'] },
-  { id: 'mindspace', name: 'MindSpace', color: '#8b6cc7', enabled: ['media-library'] },
-  { id: 'sample', name: 'Sample Product', color: '#8a8f98', enabled: [] },
+  { id: 'fitflow', name: 'FitFlow', color: '#2a74c9', enabled: ['habit-streaks', 'notifications', 'a11y-widget'] },
+  { id: 'mindspace', name: 'MindSpace', color: '#7a52c7', enabled: ['media-library'] },
+  { id: 'sample', name: 'Sample Product', color: '#c2496f', enabled: [] },
 ];

@@ -6,7 +6,8 @@ import { MODULES, PRODUCTS, type LibModule, type Product, type Tier } from './mo
 
 const TIER_LABEL: Record<Tier, string> = { internal: 'פנימי', shareable: 'לשיתוף', sellable: 'למכירה' };
 const CAT_LABEL = { security: 'אבטחה', privacy: 'פרטיות', platform: 'פלטפורמה', feature: 'פיצ׳ר', ui: 'ממשק', ops: 'תפעול' } as const;
-const CAT_TINT = { security: '#5b6472', privacy: '#6b5f86', platform: '#4f6f8f', feature: '#3f7d68', ui: '#7a6a52', ops: '#6a6f76' } as const;
+// Finder-tag style category colors; all keep >= 4.5:1 with the light glyph (WCAG AA).
+const CAT_TINT = { security: '#3f5b9a', privacy: '#7b4fa8', platform: '#1f7896', feature: '#b9532c', ui: '#b03f78', ops: '#86661c' } as const;
 
 export interface FinderDashboardProps { initialProduct?: string; initialView?: 'icons' | 'list'; initialSelected?: string | null }
 
@@ -27,7 +28,7 @@ export function FinderDashboard({ initialProduct = 'nurawell', initialView = 'ic
   const onCount = MODULES.filter(isOn).length;
 
   return (
-    <div className="fd-root" dir="rtl">
+    <div className="fd-root" dir="rtl" style={{ ['--pa' as string]: product.color }}>
       <div className="fd-window">
         <aside className="fd-sidebar" aria-label="מוצרים">
           <div className="fd-lights" aria-hidden><span /><span /><span /></div>
