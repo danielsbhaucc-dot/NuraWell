@@ -60,4 +60,20 @@ test.describe.serial('billing + retention (prod, test account)', () => {
     expect(res?.status()).toBeLessThan(500);
     await ctx.close();
   });
+  test('billing screens stay dark in prod (flag OFF)', async ({ page }) => {
+    await login(page);
+    for (const path of ['/billing/checkout', '/settings/subscription', '/ops/billing']) {
+      const r = await page.goto(path);
+      console.log('EVIDENCE dark page', path, r?.status());
+      expect(r?.status()).toBe(404);
+    }
+    const codes = await page.evaluate(async () => Promise.all([
+      fetch('/api/v1/billing/platform/plans').then((r) => r.status),
+      fetch('/api/v1/billing/platform/me').then((r) => r.status),
+      fetch('/api/v1/billing/platform/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{"plan_code":"x"}' }).then((r) => r.status),
+      fetch('/api/v1/admin/billing').then((r) => r.status),
+    ]));
+    console.log('EVIDENCE dark api', JSON.stringify(codes));
+    expect(codes).toEqual([404, 404, 404, 404]);
+  });
 });
