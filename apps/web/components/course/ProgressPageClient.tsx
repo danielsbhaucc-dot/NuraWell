@@ -290,7 +290,7 @@ function ProgressTrack({
       : 'linear-gradient(90deg, #0f766e, #14b8a6)';
 
   return (
-    <div className="h-1.5 rounded-full bg-black/6 overflow-hidden">
+    <div className="h-1.5 rounded-full bg-forest-950/6 overflow-hidden">
       <motion.div
         className="h-full rounded-full"
         style={{ background: fill }}
@@ -430,7 +430,7 @@ export function ProgressPageClient({
             </div>
             <div className="min-w-0 flex-1 text-start">
               <p
-                className="text-[15px] font-black text-white leading-tight"
+                className="text-[15px] font-black text-on-dark leading-tight"
                 style={{ fontFamily: hebrewFont }}
               >
                 {progressPageGreeting(firstName)}
@@ -443,20 +443,20 @@ export function ProgressPageClient({
                       greeting.tone === 'festive'
                         ? '#FFD97D'
                         : greeting.tone === 'solemn'
-                          ? 'rgba(248,251,246,0.78)'
-                          : 'rgba(248,251,246,0.92)',
+                          ? 'rgba(207,233,220,0.78)'
+                          : 'rgba(207,233,220,0.92)',
                     fontStyle: greeting.tone === 'solemn' ? 'italic' : 'normal',
                   }}
                 >
                   {greeting.occasionGreeting}
                 </p>
               ) : (
-                <p className="mt-1 text-xs font-semibold text-white/80">
+                <p className="mt-1 text-xs font-semibold text-on-dark/80">
                   {greeting.timeGreeting.replace(/,$/, '')}
                 </p>
               )}
               <h1
-                className="mt-2 text-2xl font-black text-white tracking-tight"
+                className="mt-2 text-2xl font-black text-on-dark tracking-tight"
                 style={{ fontFamily: hebrewFont }}
               >
                 ההתקדמות שלי
@@ -515,7 +515,7 @@ export function ProgressPageClient({
             />
             <Link
               href="/journey"
-              className="inline-flex shrink-0 items-center gap-0.5 rounded-full px-3 py-1.5 text-xs font-bold text-teal-800 crystal-pill"
+              className="inline-flex shrink-0 items-center gap-0.5 rounded-full px-3 py-1.5 text-xs font-bold text-secondary-800 crystal-pill"
             >
               למסע
               <ChevronLeft className="h-3.5 w-3.5" />
@@ -541,7 +541,7 @@ export function ProgressPageClient({
                 <div className="flex justify-between text-[11px] font-semibold text-[#9896B8]">
                   <span className="tabular-nums text-[#1A1730]">{taskFollowPct}%</span>
                   <span className="inline-flex items-center gap-1">
-                    <ListChecks className="h-3.5 w-3.5 text-amber-600" />
+                    <ListChecks className="h-3.5 w-3.5 text-accent-600" />
                     ביצוע משימות שאישרת
                   </span>
                 </div>
@@ -614,23 +614,23 @@ export function ProgressPageClient({
 
                 <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1 pt-1 text-[10px] font-medium text-[#9896B8]">
                   <span className="inline-flex items-center gap-1">
-                    <span className="h-2 w-2 rounded-full bg-teal-500" />
+                    <span className="h-2 w-2 rounded-full bg-secondary-500" />
                     הושלם
                   </span>
                   <span className="inline-flex items-center gap-1">
-                    <span className="h-2 w-2 rounded-full bg-amber-500" />
+                    <span className="h-2 w-2 rounded-full bg-accent-500" />
                     חלקי
                   </span>
                   <span className="inline-flex items-center gap-1">
-                    <span className="h-2 w-2 rounded-full bg-violet-500" />
+                    <span className="h-2 w-2 rounded-full bg-iris-500" />
                     ניסיתי
                   </span>
                   <span className="inline-flex items-center gap-1">
-                    <span className="h-2 w-2 rounded-full bg-sky-300" />
+                    <span className="h-2 w-2 rounded-full bg-secondary-300" />
                     פתוח
                   </span>
                   <span className="inline-flex items-center gap-1">
-                    <span className="h-2 w-2 rounded-full bg-rose-300" />
+                    <span className="h-2 w-2 rounded-full bg-coral-300" />
                     פספוס
                   </span>
                 </div>
@@ -641,11 +641,11 @@ export function ProgressPageClient({
                     role="note"
                   >
                     <AlertCircle
-                      className="mt-0.5 h-4 w-4 shrink-0 text-amber-700"
+                      className="mt-0.5 h-4 w-4 shrink-0 text-accent-700"
                       strokeWidth={2.4}
                       aria-hidden
                     />
-                    <p className="text-[12px] font-bold leading-relaxed text-amber-900/90">
+                    <p className="text-[12px] font-bold leading-relaxed text-accent-900/90">
                       {partialDaysMessage}
                     </p>
                   </div>
@@ -717,7 +717,7 @@ export function ProgressPageClient({
                     href={`/guides/${course.id}`}
                     className="crystal-surface block flex items-center gap-3 rounded-2xl p-3.5 transition hover:opacity-95"
                   >
-                    <div className="h-11 w-11 flex-shrink-0 overflow-hidden rounded-xl border border-black/4 bg-black/4">
+                    <div className="h-11 w-11 flex-shrink-0 overflow-hidden rounded-xl border border-forest-950/4 bg-forest-950/4">
                       {course.thumbnail ? (
                         <Image
                           src={course.thumbnail}
@@ -769,7 +769,7 @@ export function ProgressPageClient({
                           הושלם · {formatHebrewRelative(a.completed_at)}
                         </p>
                       </div>
-                      <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-teal-600" />
+                      <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-secondary-600" />
                     </Link>
                   </motion.div>
                 );
@@ -795,7 +795,7 @@ export function ProgressPageClient({
             </p>
             <Link
               href="/home"
-              className="inline-flex items-center justify-center rounded-2xl px-6 py-3 font-bold text-white crystal-header"
+              className="inline-flex items-center justify-center rounded-2xl px-6 py-3 font-bold text-on-dark crystal-header"
             >
               למדריכים
             </Link>

@@ -33,7 +33,7 @@ export function GlassConfirmDialog({
       onClose={() => !busy && onCancel()}
       zIndex={320}
       aria-labelledby="glass-confirm-title"
-      backdropClassName="absolute inset-0 bg-slate-900/35 backdrop-blur-sm"
+      backdropClassName="absolute inset-0 bg-ink-900/35 backdrop-blur-sm"
       panelClassName="max-w-md overflow-hidden rounded-2xl p-5 text-start"
       panelStyle={glassCardStyle}
     >
@@ -46,13 +46,13 @@ export function GlassConfirmDialog({
               : 'linear-gradient(135deg, rgba(16,185,129,0.35), rgba(5,150,105,0.2))',
           }}
         >
-          <AlertTriangle className={`h-5 w-5 ${danger ? 'text-red-200' : 'text-emerald-100'}`} />
+          <AlertTriangle className={`h-5 w-5 ${danger ? 'text-coral-200' : 'text-primary-100'}`} />
         </div>
         <div>
-          <p id="glass-confirm-title" className="text-base font-black text-slate-900">
+          <p id="glass-confirm-title" className="text-base font-black text-ink-900">
             {title}
           </p>
-          <p className="mt-1 text-sm text-slate-700">{message}</p>
+          <p className="mt-1 text-sm text-ink-700">{message}</p>
         </div>
       </div>
       <div className="flex flex-wrap justify-end gap-2">
@@ -60,7 +60,7 @@ export function GlassConfirmDialog({
           type="button"
           onClick={onCancel}
           disabled={busy}
-          className="rounded-xl border border-white/55 bg-background-card/20 px-4 py-2 text-sm font-bold text-slate-800 backdrop-blur-sm disabled:opacity-50"
+          className="rounded-xl border border-on-dark/55 bg-background-card/20 px-4 py-2 text-sm font-bold text-ink-800 backdrop-blur-sm disabled:opacity-50"
         >
           {cancelLabel}
         </button>
@@ -68,8 +68,8 @@ export function GlassConfirmDialog({
           type="button"
           onClick={onConfirm}
           disabled={busy}
-          className={`rounded-xl px-4 py-2 text-sm font-bold text-white disabled:opacity-50 ${
-            danger ? 'bg-red-600/90' : 'bg-emerald-700/90'
+          className={`rounded-xl px-4 py-2 text-sm font-bold text-on-dark disabled:opacity-50 ${
+            danger ? 'bg-coral-600/90' : 'bg-primary-700/90'
           }`}
         >
           {confirmLabel}

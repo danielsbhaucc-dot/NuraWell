@@ -462,10 +462,10 @@ export function TaskDailySlots({
     return (
       <div
         dir="rtl"
-        className="glass-inset mt-2 rounded-2xl px-3 py-3 text-[12px] font-semibold text-emerald-900/85 leading-relaxed text-start"
+        className="glass-inset mt-2 rounded-2xl px-3 py-3 text-[12px] font-semibold text-primary-900/85 leading-relaxed text-start"
         style={{ borderStyle: 'dashed' }}
       >
-        <RotateCcw className="inline w-3.5 h-3.5 me-1 -mt-0.5 text-emerald-700" />
+        <RotateCcw className="inline w-3.5 h-3.5 me-1 -mt-0.5 text-primary-700" />
         משימה שבועית — מופיעה לסימון רק ביום שנקבע ({scheduleLabel(schedule, times_per_day, weekly_day, meal_timing, meal_target)}).
       </div>
     );
@@ -481,15 +481,15 @@ export function TaskDailySlots({
         className="pointer-events-none absolute inset-x-3 top-px h-px"
         style={{
           background:
-            'linear-gradient(90deg, transparent, rgba(248,251,246,0.8), transparent)',
+            'linear-gradient(90deg, transparent, rgba(207,233,220,0.8), transparent)',
         }}
       />
       <div className="relative flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-[11px] font-black text-emerald-900/85">
+          <span className="text-[11px] font-black text-primary-900/85">
             סימון יומי
           </span>
-          <span className="text-[11px] font-semibold text-emerald-800/70">
+          <span className="text-[11px] font-semibold text-primary-800/70">
             {scheduleLabel(schedule, times_per_day, weekly_day, meal_timing, meal_target)}
           </span>
         </div>
@@ -502,7 +502,7 @@ export function TaskDailySlots({
               ? {
                   background:
                     'linear-gradient(135deg, rgba(16,185,129,0.95), rgba(52,211,153,0.85))',
-                  color: '#fff',
+                  color: '#eef4ea',
                   border: '1px solid rgba(52,211,153,0.50)',
                   boxShadow:
                     '0 2px 8px rgba(16,185,129,0.30), inset 0 1px 0 rgba(255,255,255,0.35)',
@@ -541,10 +541,10 @@ export function TaskDailySlots({
                 onClick={() => void toggleSlot(slot, cell.completed)}
                 className={`relative flex flex-col items-center justify-center gap-1 rounded-2xl py-2.5 px-2 transition active:scale-[0.97] disabled:opacity-50 ${
                   isCompleted
-                    ? 'text-white ring-1 ring-white/30'
+                    ? 'text-on-dark ring-1 ring-on-dark/30'
                     : isFailed
-                      ? 'text-violet-900 ring-1 ring-violet-300/50'
-                      : 'glass-pill text-emerald-900'
+                      ? 'text-iris-900 ring-1 ring-iris-300/50'
+                      : 'glass-pill text-primary-900'
                 }`}
                 style={
                   isCompleted
@@ -581,10 +581,10 @@ export function TaskDailySlots({
                   {slotLabel(slot, schedule === 'per_meal' ? meal_timing : undefined)}
                 </span>
                 {isCompleted ? (
-                  <Check className="absolute top-1 inset-s-1 w-3.5 h-3.5 text-white/95" strokeWidth={3} />
+                  <Check className="absolute top-1 inset-s-1 w-3.5 h-3.5 text-on-dark/95" strokeWidth={3} />
                 ) : isFailed ? (
                   <XCircle
-                    className="absolute top-1 inset-s-1 w-3.5 h-3.5 text-violet-700/85"
+                    className="absolute top-1 inset-s-1 w-3.5 h-3.5 text-iris-700/85"
                     strokeWidth={2.5}
                   />
                 ) : null}
@@ -603,8 +603,8 @@ export function TaskDailySlots({
                   onClick={() => void reportAttemptFailed(slot, isFailed)}
                   className={`relative text-[10px] font-bold py-1 px-2 rounded-xl transition active:scale-[0.97] disabled:opacity-50 ${
                     isFailed
-                      ? 'bg-violet-100/85 text-violet-900 ring-1 ring-violet-300/60'
-                      : 'bg-slate-100/60 text-slate-700 hover:bg-violet-50/75 hover:text-violet-800'
+                      ? 'bg-iris-100/85 text-iris-900 ring-1 ring-iris-300/60'
+                      : 'bg-ink-100/60 text-ink-700 hover:bg-iris-50/75 hover:text-iris-800'
                   }`}
                   aria-label={
                     isFailed
@@ -620,7 +620,7 @@ export function TaskDailySlots({
         })}
       </div>
 
-      <p className="text-[10px] text-emerald-900/65 leading-relaxed text-start">
+      <p className="text-[10px] text-primary-900/65 leading-relaxed text-start">
         {schedule === 'daily' || schedule === 'weekly'
           ? 'הסימון מתאפס מחר — אפשר לחזור ולסמן שוב. אפשר גם לדווח "ניסיתי" כדי שאלמוג ידע שניסית.'
           : 'כל סלוט מתאפס מחר. דווח "בוצע" או "ניסיתי" — אלמוג רואה הכל בזמן אמת.'}
@@ -629,10 +629,10 @@ export function TaskDailySlots({
       {errMsg ? (
         <div
           role="alert"
-          className="flex items-start gap-2 rounded-xl px-3 py-2 text-[11px] font-semibold leading-relaxed text-amber-900"
+          className="flex items-start gap-2 rounded-xl px-3 py-2 text-[11px] font-semibold leading-relaxed text-accent-900"
           style={{ background: 'rgba(254, 243, 199, 0.85)', border: '1px solid rgba(217,119,6,0.45)' }}
         >
-          <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0 text-amber-700" aria-hidden />
+          <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0 text-accent-700" aria-hidden />
           <span className="wrap-break-word">{errMsg}</span>
         </div>
       ) : null}

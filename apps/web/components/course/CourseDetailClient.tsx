@@ -169,7 +169,7 @@ export function CourseDetailClient({
         <div className="container-mobile absolute inset-x-0 top-0 z-3 px-4 pt-5">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-extrabold backdrop-blur-md"
-              style={{ background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.35)', color: '#fff' }}>
+              style={{ background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.35)', color: '#eef4ea' }}>
               <BookOpen className="w-3.5 h-3.5" /> מדריך
             </span>
             {viewMode === 'read' && (
@@ -177,7 +177,7 @@ export function CourseDetailClient({
                 type="button"
                 onClick={() => setViewMode('cover')}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-extrabold backdrop-blur-md transition hover:bg-background-card/25"
-                style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.3)', color: '#fff' }}
+                style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.3)', color: '#eef4ea' }}
               >
                 <Sparkles className="w-3.5 h-3.5" /> שער כניסה
               </button>
@@ -206,20 +206,20 @@ export function CourseDetailClient({
         {/* Title + glass stats strip at the bottom */}
         <div className="container-mobile absolute inset-x-0 bottom-0 z-3 px-4 pb-7">
           <div>
-            <h1 className="text-4xl md:text-5xl font-black text-white mb-4 leading-[1.1] tracking-tight"
+            <h1 className="text-4xl md:text-5xl font-black text-on-dark mb-4 leading-[1.1] tracking-tight"
               style={{ textShadow: '0 4px 24px rgba(0,0,0,0.45)' }}>
               {course.title}
             </h1>
 
             <div className="guide-hero-stats guide-hero-stats--inline">
               <div className="guide-hero-stat">
-                <BookOpen className="w-4 h-4 text-emerald-200 shrink-0" />
-                <span className="font-bold text-white whitespace-nowrap">{totalLessons} פרקים</span>
+                <BookOpen className="w-4 h-4 text-primary-200 shrink-0" />
+                <span className="font-bold text-on-dark whitespace-nowrap">{totalLessons} פרקים</span>
               </div>
               <span className="guide-hero-stat-sep" aria-hidden />
               <div className="guide-hero-stat">
-                <Clock className="w-4 h-4 text-emerald-200 shrink-0" />
-                <span className="font-bold text-white whitespace-nowrap">
+                <Clock className="w-4 h-4 text-primary-200 shrink-0" />
+                <span className="font-bold text-on-dark whitespace-nowrap">
                   {hebrewMinutesLabel(totalMinutes, { approx: true })}
                 </span>
               </div>
@@ -227,8 +227,8 @@ export function CourseDetailClient({
                 <>
                   <span className="guide-hero-stat-sep" aria-hidden />
                   <div className="guide-hero-stat">
-                    <Award className="w-4 h-4 text-teal-100 shrink-0" />
-                    <span className="font-bold text-white whitespace-nowrap">{completedCount}/{totalLessons} הושלמו</span>
+                    <Award className="w-4 h-4 text-secondary-100 shrink-0" />
+                    <span className="font-bold text-on-dark whitespace-nowrap">{completedCount}/{totalLessons} הושלמו</span>
                   </div>
                 </>
               )}
@@ -302,13 +302,13 @@ export function CourseDetailClient({
             firstIncompleteLessonId ? (
               <Link
                 href={lessonHref(firstIncompleteLessonId)}
-                className="w-full justify-center mb-6 text-base py-4 inline-flex items-center gap-2 rounded-2xl font-black text-white transition active:scale-[0.99]"
+                className="w-full justify-center mb-6 text-base py-4 inline-flex items-center gap-2 rounded-2xl font-black text-on-dark transition active:scale-[0.99]"
                 style={{
                   background: 'linear-gradient(135deg, #047857 0%, #14b8a6 60%, #2dd4bf 100%)',
                   boxShadow: '0 10px 30px rgba(20,184,166,0.35), inset 0 1px 0 rgba(255,255,255,0.25)',
                 }}
               >
-                <Play className="w-5 h-5" fill="white" />
+                <Play className="w-5 h-5" fill="#eef4ea" />
                 {guideLearnCta(gender, progress === 0)}
               </Link>
             ) : (
@@ -332,7 +332,7 @@ export function CourseDetailClient({
       <div className="container-mobile px-4 pb-8 relative z-10">
         <div className="guide-section-header">
           <span className="guide-section-bar" aria-hidden />
-          <Zap className="w-4 h-4 text-emerald-600" />
+          <Zap className="w-4 h-4 text-primary-600" />
           <div>
             <h2>תוכן המדריך</h2>
             <p className="text-xs font-semibold mt-0.5" style={{ color: '#6B6890' }}>
@@ -489,7 +489,7 @@ function GuideCover({
         >
           <span
             className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-extrabold backdrop-blur-md"
-            style={{ background: 'rgba(255,255,255,0.14)', border: '1px solid rgba(255,255,255,0.3)', color: '#fff' }}
+            style={{ background: 'rgba(255,255,255,0.14)', border: '1px solid rgba(255,255,255,0.3)', color: '#eef4ea' }}
           >
             <BookOpen className="h-3.5 w-3.5" /> מדריך
           </span>
@@ -509,7 +509,7 @@ function GuideCover({
             initial={{ opacity: 0, y: 24, letterSpacing: '0.06em' }}
             animate={{ opacity: 1, y: 0, letterSpacing: '-0.01em' }}
             transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] as const, delay: 0.2 }}
-            className="max-w-full px-1 text-[clamp(1.75rem,7vw,3.5rem)] leading-[1.15] text-white wrap-break-word hyphens-none"
+            className="max-w-full px-1 text-[clamp(1.75rem,7vw,3.5rem)] leading-[1.15] text-on-dark wrap-break-word hyphens-none"
             style={{
               fontFamily: "'Rubik','Heebo',sans-serif",
               fontWeight: 900,
@@ -553,19 +553,19 @@ function GuideCover({
           className="-mt-24 mx-auto w-full max-w-sm space-y-3"
         >
           <p
-            className="text-center text-lg font-black text-white"
+            className="text-center text-lg font-black text-on-dark"
             style={{ textShadow: '0 2px 12px rgba(0,0,0,0.4)' }}
           >
             {guideCoverDivePrompt(gender)}
           </p>
-          <p className="text-center text-xs font-bold text-white/60">{guideCoverModeQuestion(gender)}</p>
+          <p className="text-center text-xs font-bold text-on-dark/60">{guideCoverModeQuestion(gender)}</p>
 
           <motion.button
             type="button"
             onClick={() => onSelectMode('path')}
             whileTap={{ scale: 0.98 }}
             dir="rtl"
-            className="flex w-full items-center justify-center gap-2.5 rounded-2xl py-4 text-base font-black text-white transition hover:brightness-110"
+            className="flex w-full items-center justify-center gap-2.5 rounded-2xl py-4 text-base font-black text-on-dark transition hover:brightness-110"
             style={{
               background: 'linear-gradient(135deg, #047857 0%, #14b8a6 60%, #2dd4bf 100%)',
               boxShadow: '0 14px 38px rgba(20,184,166,0.4), inset 0 1px 0 rgba(255,255,255,0.25)',
@@ -580,7 +580,7 @@ function GuideCover({
             onClick={() => onSelectMode('read')}
             whileTap={{ scale: 0.98 }}
             dir="rtl"
-            className="flex w-full items-center justify-center gap-2.5 rounded-2xl border py-3.5 text-sm font-black text-white backdrop-blur-md transition hover:bg-background-card/10"
+            className="flex w-full items-center justify-center gap-2.5 rounded-2xl border py-3.5 text-sm font-black text-on-dark backdrop-blur-md transition hover:bg-background-card/10"
             style={{
               background: 'rgba(255,255,255,0.12)',
               borderColor: 'rgba(255,255,255,0.35)',
@@ -591,7 +591,7 @@ function GuideCover({
             <span>קרא במדריך</span>
           </motion.button>
 
-          <p className="pt-1 text-center text-[11px] font-semibold text-white/45">
+          <p className="pt-1 text-center text-[11px] font-semibold text-on-dark/45">
             בחר מצב — תמיד אפשר לעבור ביניהם
           </p>
         </motion.div>
@@ -614,9 +614,9 @@ function CoverStat({
       className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm backdrop-blur-md whitespace-nowrap"
       style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.25)' }}
     >
-      <Icon className="h-4 w-4 text-emerald-200 shrink-0" />
-      <span className="font-bold text-white">{value}</span>
-      <span className="text-xs text-white/65">{label}</span>
+      <Icon className="h-4 w-4 text-primary-200 shrink-0" />
+      <span className="font-bold text-on-dark">{value}</span>
+      <span className="text-xs text-on-dark/65">{label}</span>
     </span>
   );
 }
@@ -669,7 +669,7 @@ function LessonCardContent({
       {isLocked ? (
         <Lock className="w-4 h-4 flex-shrink-0" style={{ color: '#9896B8' }} />
       ) : isDone ? (
-        <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+        <CheckCircle2 className="w-4 h-4 text-primary-500 flex-shrink-0" />
       ) : (
         <ChevronLeft className="w-4 h-4 flex-shrink-0" style={{ color: '#9896B8' }} />
       )}

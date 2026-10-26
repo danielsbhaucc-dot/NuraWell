@@ -11,8 +11,8 @@ export function StockImageAttribution({ credit, variant = 'public', className }:
   const provider = providerLabel(credit.source);
   const linkClass =
     variant === 'admin'
-      ? 'underline decoration-slate-400 underline-offset-2 hover:text-slate-900'
-      : 'underline decoration-white/40 underline-offset-2 hover:text-white';
+      ? 'underline decoration-ink-400 underline-offset-2 hover:text-ink-900'
+      : 'underline decoration-on-dark/40 underline-offset-2 hover:text-on-dark';
 
   if (credit.source === 'pixabay') {
     return (
@@ -75,7 +75,7 @@ export function StockImageSearchAttribution({ providers, className }: StockImage
           href="https://pixabay.com/"
           target="_blank"
           rel="noopener noreferrer"
-          className="mx-1 font-semibold underline decoration-emerald-500/50 underline-offset-2"
+          className="mx-1 font-semibold underline decoration-primary-500/50 underline-offset-2"
         >
           Pixabay
         </a>
@@ -86,7 +86,7 @@ export function StockImageSearchAttribution({ providers, className }: StockImage
           href="https://www.pexels.com/"
           target="_blank"
           rel="noopener noreferrer"
-          className="mx-1 font-semibold underline decoration-emerald-500/50 underline-offset-2"
+          className="mx-1 font-semibold underline decoration-primary-500/50 underline-offset-2"
         >
           Pexels
         </a>

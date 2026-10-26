@@ -35,7 +35,7 @@ export function MediaAssetEditPanel({
 
   if (!asset) {
     return (
-      <p className="text-sm text-slate-600">בחר פריט מהרשימה לעריכה או מחיקה.</p>
+      <p className="text-sm text-ink-600">בחר פריט מהרשימה לעריכה או מחיקה.</p>
     );
   }
 
@@ -84,9 +84,9 @@ export function MediaAssetEditPanel({
 
   return (
     <div className="space-y-3">
-      <p className="text-xs font-bold text-slate-700">עריכה מתקדמת</p>
+      <p className="text-xs font-bold text-ink-700">עריכה מתקדמת</p>
       <div>
-        <label htmlFor={`media-edit-title-${asset.id}`} className="mb-1 block text-xs text-slate-600">
+        <label htmlFor={`media-edit-title-${asset.id}`} className="mb-1 block text-xs text-ink-600">
           כותרת
         </label>
         <input
@@ -97,7 +97,7 @@ export function MediaAssetEditPanel({
         />
       </div>
       <div>
-        <label className="mb-1 block text-xs text-slate-600" htmlFor={`alt-text-${asset.id}`}>
+        <label className="mb-1 block text-xs text-ink-600" htmlFor={`alt-text-${asset.id}`}>
           טקסט חלופי
         </label>
         <div className="flex flex-wrap gap-2">
@@ -112,7 +112,7 @@ export function MediaAssetEditPanel({
               type="button"
               onClick={() => void generateAlt()}
               disabled={altBusy || busy}
-              className="inline-flex items-center gap-1 rounded-xl border border-violet-300/70 bg-violet-500/10 px-3 py-2 text-xs font-bold text-violet-900 disabled:opacity-50"
+              className="inline-flex items-center gap-1 rounded-xl border border-iris-300/70 bg-iris-500/10 px-3 py-2 text-xs font-bold text-iris-900 disabled:opacity-50"
             >
               {altBusy ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
@@ -124,13 +124,13 @@ export function MediaAssetEditPanel({
           ) : null}
         </div>
         {asset.kind === 'image' ? (
-          <p className="mt-1 text-[10px] text-slate-500">
+          <p className="mt-1 text-[10px] text-ink-500">
             <Sparkles className="inline h-3 w-3 align-middle" aria-hidden /> ניתן ליצור alt אוטומטי בעברית — מומלץ לערוך לפני שמירה.
           </p>
         ) : null}
       </div>
       <div>
-        <label htmlFor={`media-edit-folder-${asset.id}`} className="mb-1 block text-xs text-slate-600">
+        <label htmlFor={`media-edit-folder-${asset.id}`} className="mb-1 block text-xs text-ink-600">
           תיקייה
         </label>
         <input
@@ -141,21 +141,21 @@ export function MediaAssetEditPanel({
         />
       </div>
       {asset.url ? (
-        <p className="break-all text-[10px] text-slate-500" dir="ltr">
+        <p className="break-all text-[10px] text-ink-500" dir="ltr">
           {asset.url}
         </p>
       ) : null}
       {asset.kind === 'audio' && asset.folder?.startsWith('tts/') ? (
-        <p className="rounded-xl bg-violet-50/80 px-3 py-2 text-[11px] leading-relaxed text-violet-900 border border-violet-200/60">
+        <p className="rounded-xl bg-iris-50/80 px-3 py-2 text-[11px] leading-relaxed text-iris-900 border border-iris-200/60">
           הקראת שאלה (ElevenLabs · Liam · מנוי מסחרי). ליצירה מחדש — ערכו את הטקסט בעורך הצעד ושמרו.
           {asset.credit?.license ? (
-            <span className="mt-1 block text-violet-800/90">רישיון: {asset.credit.license}</span>
+            <span className="mt-1 block text-iris-800/90">רישיון: {asset.credit.license}</span>
           ) : null}
         </p>
       ) : null}
       <a
         href={`/ops/legal?tab=media&asset=${encodeURIComponent(`db:${asset.id}`)}`}
-        className="flex items-center justify-between rounded-xl border border-teal-200/70 bg-teal-50/70 px-3 py-2 text-[11px] font-bold text-teal-900"
+        className="flex items-center justify-between rounded-xl border border-secondary-200/70 bg-secondary-50/70 px-3 py-2 text-[11px] font-bold text-secondary-900"
       >
         <span>מקור, רישיון וראיות משפטיות לקובץ הזה</span>
         <span aria-hidden>←</span>
@@ -165,7 +165,7 @@ export function MediaAssetEditPanel({
           type="button"
           onClick={() => void save()}
           disabled={busy}
-          className="inline-flex items-center gap-1 rounded-xl bg-emerald-800/85 px-3 py-2 text-xs font-bold text-white disabled:opacity-50"
+          className="inline-flex items-center gap-1 rounded-xl bg-primary-800/85 px-3 py-2 text-xs font-bold text-on-dark disabled:opacity-50"
         >
           {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
           שמור
@@ -174,7 +174,7 @@ export function MediaAssetEditPanel({
           type="button"
           onClick={onRequestDelete}
           disabled={busy || deleteBusy}
-          className="inline-flex items-center gap-1 rounded-xl border border-red-300/60 bg-red-500/15 px-3 py-2 text-xs font-bold text-red-900 disabled:opacity-50"
+          className="inline-flex items-center gap-1 rounded-xl border border-coral-300/60 bg-coral-500/15 px-3 py-2 text-xs font-bold text-coral-900 disabled:opacity-50"
         >
           <Trash2 className="h-3.5 w-3.5" />
           מחק

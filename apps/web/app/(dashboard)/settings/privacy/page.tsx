@@ -23,7 +23,7 @@ export default async function PrivacySettingsPage() {
     <Suspense
       fallback={
         <div className="flex justify-center py-20">
-          <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+          <Loader2 className="h-6 w-6 animate-spin text-ink-400" />
         </div>
       }
     >

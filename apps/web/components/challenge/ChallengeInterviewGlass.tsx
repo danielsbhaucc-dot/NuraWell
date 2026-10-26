@@ -67,15 +67,15 @@ export function ChallengeInterviewGlass() {
       dir="rtl"
     >
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute inset-e-1/4 top-20 h-64 w-64 rounded-full bg-violet-500/20 blur-3xl" />
-        <div className="absolute bottom-32 inset-s-1/4 h-72 w-72 rounded-full bg-emerald-500/15 blur-3xl" />
+        <div className="absolute inset-e-1/4 top-20 h-64 w-64 rounded-full bg-iris-500/20 blur-3xl" />
+        <div className="absolute bottom-32 inset-s-1/4 h-72 w-72 rounded-full bg-primary-500/15 blur-3xl" />
       </div>
 
-      <header className="relative z-10 border-b border-white/10 bg-background-card/5 px-4 py-4 backdrop-blur-xl">
+      <header className="relative z-10 border-b border-on-dark/10 bg-background-card/5 px-4 py-4 backdrop-blur-xl">
         <div className="mx-auto max-w-lg">
           <DemoExitBanner />
           <div className="flex items-center gap-3">
-            <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full ring-2 ring-emerald-400/40">
+            <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full ring-2 ring-primary-400/40">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={avatarUrl}
@@ -87,10 +87,10 @@ export function ChallengeInterviewGlass() {
               />
             </div>
             <div>
-              <h1 className="font-display text-lg font-bold text-white">ריאיון עם אלמוג</h1>
-              <p className="text-xs text-white/50">כמה דקות — כדי שאזהה את ההצלחות שלך</p>
+              <h1 className="font-display text-lg font-bold text-on-dark">ריאיון עם אלמוג</h1>
+              <p className="text-xs text-on-dark/50">כמה דקות — כדי שאזהה את ההצלחות שלך</p>
             </div>
-            <Sparkles className="ms-auto h-5 w-5 text-emerald-400" />
+            <Sparkles className="ms-auto h-5 w-5 text-primary-400" />
           </div>
         </div>
       </header>
@@ -100,18 +100,18 @@ export function ChallengeInterviewGlass() {
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            className="rounded-3xl border border-white/15 bg-background-card/10 p-6 text-center backdrop-blur-2xl"
+            className="rounded-3xl border border-on-dark/15 bg-background-card/10 p-6 text-center backdrop-blur-2xl"
           >
-            <Mic className="mx-auto mb-4 h-10 w-10 text-emerald-300" />
-            <p className="leading-relaxed text-white/80">
+            <Mic className="mx-auto mb-4 h-10 w-10 text-primary-300" />
+            <p className="leading-relaxed text-on-dark/80">
               אלמוג ישאל אותך על המוטיבציה, הקשיים, ומה הצלחה אומרת עבורך —
-              <strong className="text-emerald-300"> לא בהכרח ירידה במשקל</strong>.
+              <strong className="text-primary-300"> לא בהכרח ירידה במשקל</strong>.
             </p>
             <button
               type="button"
               disabled={loading}
               onClick={() => sendTurn()}
-              className="mt-6 w-full rounded-2xl bg-emerald-500 py-3.5 font-bold text-white shadow-lg shadow-emerald-600/25 disabled:opacity-60"
+              className="mt-6 w-full rounded-2xl bg-primary-500 py-3.5 font-bold text-on-dark shadow-lg shadow-primary-600/25 disabled:opacity-60"
             >
               {loading ? 'מתחבר...' : 'התחל ריאיון'}
             </button>
@@ -129,8 +129,8 @@ export function ChallengeInterviewGlass() {
                   <div
                     className={`max-w-[88%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
                       t.role === 'user'
-                        ? 'rounded-es-md bg-background-card/15 text-white'
-                        : 'rounded-ee-md border border-emerald-400/20 bg-emerald-500/10 text-emerald-50'
+                        ? 'rounded-es-md bg-background-card/15 text-on-dark'
+                        : 'rounded-ee-md border border-primary-400/20 bg-primary-500/10 text-primary-50'
                     }`}
                   >
                     {t.content}
@@ -140,7 +140,7 @@ export function ChallengeInterviewGlass() {
             </AnimatePresence>
             {loading ? (
               <div className="flex justify-end">
-                <Loader2 className="h-6 w-6 animate-spin text-emerald-400" />
+                <Loader2 className="h-6 w-6 animate-spin text-primary-400" />
               </div>
             ) : null}
             <div ref={bottomRef} />
@@ -149,7 +149,7 @@ export function ChallengeInterviewGlass() {
       </div>
 
       {started ? (
-        <div className="relative z-10 border-t border-white/10 bg-black/40 px-4 py-4 backdrop-blur-xl">
+        <div className="relative z-10 border-t border-on-dark/10 bg-forest-950/40 px-4 py-4 backdrop-blur-xl">
           <form
             className="mx-auto flex max-w-lg gap-2"
             onSubmit={(e) => {
@@ -162,12 +162,12 @@ export function ChallengeInterviewGlass() {
               onChange={(e) => setInput(e.target.value)}
               placeholder="כתבו בכנות..."
               disabled={loading}
-              className="min-h-12 flex-1 rounded-2xl border border-white/10 bg-background-card/10 px-4 text-white placeholder:text-white/35 focus:border-emerald-400/50 focus:outline-hidden"
+              className="min-h-12 flex-1 rounded-2xl border border-on-dark/10 bg-background-card/10 px-4 text-on-dark placeholder:text-on-dark/35 focus:border-primary-400/50 focus:outline-hidden"
             />
             <button
               type="submit"
               disabled={loading || !input.trim()}
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-500 text-white disabled:opacity-50"
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-500 text-on-dark disabled:opacity-50"
             >
               <Send className="h-5 w-5" />
             </button>

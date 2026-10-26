@@ -209,7 +209,7 @@ export function ProfilePageClient({
           <button
             type="button"
             onClick={() => setIsSettingsOpen(true)}
-            className="absolute inset-e-4 top-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-2xl text-white transition hover:scale-[1.03] active:scale-95"
+            className="absolute inset-e-4 top-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-2xl text-on-dark transition hover:scale-[1.03] active:scale-95"
             style={{
               background: 'rgba(255,255,255,0.12)',
               border: '1px solid rgba(255,255,255,0.25)',
@@ -221,10 +221,10 @@ export function ProfilePageClient({
           </button>
 
           <div className="relative w-full pe-12">
-            <h1 className="text-2xl font-black text-white tracking-tight text-start w-full">
+            <h1 className="text-2xl font-black text-on-dark tracking-tight text-start w-full">
               הפרופיל שלי
             </h1>
-            <p className="mt-2 text-[15px] font-semibold leading-relaxed text-white/95 text-start w-full">
+            <p className="mt-2 text-[15px] font-semibold leading-relaxed text-on-dark/95 text-start w-full">
               {profileSubtitle(profile?.gender ?? null, firstName)}
             </p>
           </div>
@@ -233,7 +233,7 @@ export function ProfilePageClient({
             <button
               type="button"
               onClick={() => setIsChatOpen(true)}
-              className="inline-flex w-full max-w-[280px] items-center justify-center rounded-2xl px-4 py-3 text-sm font-bold text-white transition hover:scale-[1.01] active:scale-[0.99]"
+              className="inline-flex w-full max-w-[280px] items-center justify-center rounded-2xl px-4 py-3 text-sm font-bold text-on-dark transition hover:scale-[1.01] active:scale-[0.99]"
               style={{
                 background: 'rgba(255,255,255,0.14)',
                 border: '1px solid rgba(255,255,255,0.28)',
@@ -291,7 +291,7 @@ export function ProfilePageClient({
                 />
               ) : (
                 <div
-                  className="w-[72px] h-[72px] rounded-2xl flex items-center justify-center text-2xl font-black text-white"
+                  className="w-[72px] h-[72px] rounded-2xl flex items-center justify-center text-2xl font-black text-on-dark"
                   style={{
                     background: 'linear-gradient(135deg, #14b8a6, #10b981)',
                     boxShadow: '0 8px 24px rgba(20,184,166,0.35)',
@@ -300,51 +300,51 @@ export function ProfilePageClient({
                   {initials}
                 </div>
               )}
-              <span className="absolute -bottom-1 -inset-e-1 flex h-7 w-7 items-center justify-center rounded-full bg-emerald-600 text-white shadow-md border-2 border-white group-hover:scale-110 transition">
+              <span className="absolute -bottom-1 -inset-e-1 flex h-7 w-7 items-center justify-center rounded-full bg-primary-600 text-on-dark shadow-md border-2 border-on-dark group-hover:scale-110 transition">
                 <Camera className="h-3.5 w-3.5" />
               </span>
             </button>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1">
-                <p className="text-lg font-black text-slate-900 line-clamp-1 flex-1">
+                <p className="text-lg font-black text-ink-900 line-clamp-1 flex-1">
                   {profile?.full_name || 'משתמש NuraWell'}
                 </p>
                 <button
                   type="button"
                   onClick={() => openEdit('name')}
-                  className="shrink-0 p-1.5 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 transition"
+                  className="shrink-0 p-1.5 rounded-lg text-ink-400 hover:text-primary-600 hover:bg-primary-50 transition"
                   aria-label="ערוך שם"
                 >
                   <Pencil className="h-3.5 w-3.5" />
                 </button>
               </div>
-              <p className="text-sm text-slate-500 line-clamp-1">{email}</p>
+              <p className="text-sm text-ink-500 line-clamp-1">{email}</p>
               <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                <span className="text-[11px] font-semibold text-slate-500">דרגת משתמש:</span>
+                <span className="text-[11px] font-semibold text-ink-500">דרגת משתמש:</span>
                 {isDemoAccess ? (
-                  <span className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-200">
+                  <span className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full bg-accent-100 text-accent-900 border border-accent-200">
                     <Shield className="w-3 h-3" /> משתמש דמו
                   </span>
                 ) : profile?.role === 'admin' ? (
-                  <span className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full bg-violet-100 text-violet-800 border border-violet-200">
+                  <span className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full bg-iris-100 text-iris-800 border border-iris-200">
                     <Shield className="w-3 h-3" /> מנהל
                   </span>
                 ) : profile?.role === 'test' ? (
-                  <span className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full bg-sky-100 text-sky-800 border border-sky-200">
+                  <span className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full bg-secondary-100 text-secondary-800 border border-secondary-200">
                     <Shield className="w-3 h-3" /> בדיקות
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                  <span className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full bg-primary-100 text-primary-800 border border-primary-200">
                     <Shield className="w-3 h-3" /> משתמש
                   </span>
                 )}
-                <span className="text-xs text-slate-500 flex items-center gap-1">
+                <span className="text-xs text-ink-500 flex items-center gap-1">
                   {memberSinceLabel(profile?.gender ?? null, memberSince)}
                   {genderLabel(profile?.gender ?? null) ? ` · ${genderLabel(profile?.gender ?? null)}` : ''}
                   <button
                     type="button"
                     onClick={() => openEdit('gender')}
-                    className="p-0.5 rounded text-slate-400 hover:text-emerald-600"
+                    className="p-0.5 rounded text-ink-400 hover:text-primary-600"
                     aria-label="ערוך מגדר"
                   >
                     <Pencil className="h-3 w-3" />
@@ -372,8 +372,8 @@ export function ProfilePageClient({
               >
                 <s.icon className="w-4 h-4" style={{ color: s.color }} strokeWidth={2.4} />
               </div>
-              <p className="text-xl font-black text-slate-900 tabular-nums">{s.value}</p>
-              <p className="text-[11px] text-slate-500 mt-0.5 leading-tight">{s.label}</p>
+              <p className="text-xl font-black text-ink-900 tabular-nums">{s.value}</p>
+              <p className="text-[11px] text-ink-500 mt-0.5 leading-tight">{s.label}</p>
             </div>
           ))}
         </motion.div>
@@ -392,14 +392,14 @@ export function ProfilePageClient({
             className="crystal-surface rounded-3xl overflow-hidden"
           >
             <div className="px-5 pt-4 pb-2 flex items-center justify-between">
-              <h3 className="font-bold text-slate-900 flex items-center gap-2">
-                <User className="w-4 h-4 text-emerald-600" />
+              <h3 className="font-bold text-ink-900 flex items-center gap-2">
+                <User className="w-4 h-4 text-primary-600" />
                 מה שאלמוג יודע עלייך
               </h3>
               <button
                 type="button"
                 onClick={() => setIsChatOpen(true)}
-                className="text-xs font-bold text-emerald-700 flex items-center gap-1 hover:underline"
+                className="text-xs font-bold text-primary-700 flex items-center gap-1 hover:underline"
               >
                 <MessageCircle className="h-3.5 w-3.5" />
                 עדכן
@@ -434,7 +434,7 @@ export function ProfilePageClient({
             className="crystal-surface rounded-3xl overflow-hidden"
           >
             <div className="px-5 pt-4 pb-2">
-              <h3 className="font-bold text-slate-900">מדדים נוספים</h3>
+              <h3 className="font-bold text-ink-900">מדדים נוספים</h3>
             </div>
             <div className="crystal-divider mx-5" />
             <div className="px-5 py-3 space-y-1">
@@ -464,7 +464,7 @@ export function ProfilePageClient({
           className="crystal-surface rounded-3xl overflow-hidden"
         >
           <div className="px-5 pt-4 pb-2">
-            <h3 className="font-bold text-slate-900">ניווט מהיר</h3>
+            <h3 className="font-bold text-ink-900">ניווט מהיר</h3>
           </div>
           <div className="crystal-divider mx-5" />
           {navItems.map((item, idx, arr) => (
@@ -472,25 +472,25 @@ export function ProfilePageClient({
               key={`${item.href}-${item.label}`}
               href={item.href}
               prefetch
-              className="flex items-center gap-3 px-5 py-3.5 transition-colors hover:bg-emerald-50/60"
+              className="flex items-center gap-3 px-5 py-3.5 transition-colors hover:bg-primary-50/60"
               style={idx < arr.length - 1 ? { borderBottom: '1px solid rgba(6,78,59,0.06)' } : {}}
             >
               <div className="crystal-pill w-9 h-9 rounded-xl flex items-center justify-center text-lg flex-shrink-0">
                 {item.emoji}
               </div>
-              <span className="flex-1 text-sm font-semibold text-slate-700 text-start">{item.label}</span>
-              <ChevronLeft className="w-4 h-4 text-slate-400" />
+              <span className="flex-1 text-sm font-semibold text-ink-700 text-start">{item.label}</span>
+              <ChevronLeft className="w-4 h-4 text-ink-400" />
             </Link>
           ))}
           <Link
             href="/settings/almog"
-            className="flex items-center gap-3 px-5 py-3.5 transition-colors hover:bg-emerald-50/60 border-t border-emerald-50"
+            className="flex items-center gap-3 px-5 py-3.5 transition-colors hover:bg-primary-50/60 border-t border-primary-50"
           >
             <div className="crystal-pill w-9 h-9 rounded-xl flex items-center justify-center text-lg">
               🔔
             </div>
-            <span className="flex-1 text-sm font-semibold text-slate-700 text-start">התראות מאלמוג</span>
-            <Bell className="w-4 h-4 text-slate-400" />
+            <span className="flex-1 text-sm font-semibold text-ink-700 text-start">התראות מאלמוג</span>
+            <Bell className="w-4 h-4 text-ink-400" />
           </Link>
         </motion.div>
 
@@ -498,21 +498,21 @@ export function ProfilePageClient({
           <button
             onClick={handleSignOut}
             disabled={isSigningOut}
-            className="w-full flex items-center justify-center gap-2 rounded-2xl p-4 font-bold text-red-700 transition-all active:scale-98"
+            className="w-full flex items-center justify-center gap-2 rounded-2xl p-4 font-bold text-coral-700 transition-all active:scale-98"
             style={{
               background: 'linear-gradient(135deg, rgba(254,226,226,0.95), rgba(254,202,202,0.88))',
               border: '1px solid rgba(248,113,113,0.35)',
             }}
           >
             {isSigningOut ? (
-              <div className="w-5 h-5 border-2 border-red-700/30 border-t-red-700 rounded-full animate-spin" />
+              <div className="w-5 h-5 border-2 border-coral-700/30 border-t-coral-700 rounded-full animate-spin" />
             ) : (
               <LogOut className="w-4 h-4" />
             )}
             התנתקות
           </button>
           {signOutError ? (
-            <p className="mt-2 text-center text-sm font-semibold text-red-600">{signOutError}</p>
+            <p className="mt-2 text-center text-sm font-semibold text-coral-600">{signOutError}</p>
           ) : null}
         </motion.div>
 
@@ -524,17 +524,17 @@ export function ProfilePageClient({
         onClose={() => setEditField(null)}
         zIndex={280}
         aria-label="עריכת פרופיל"
-        backdropClassName="absolute inset-0 bg-slate-900/45"
+        backdropClassName="absolute inset-0 bg-ink-900/45"
         panelClassName="crystal-surface max-w-md overflow-hidden rounded-2xl shadow-2xl"
       >
         <div className="crystal-header flex items-center justify-between px-4 py-3">
-          <h3 className="text-lg font-black text-white">
+          <h3 className="text-lg font-black text-on-dark">
             {editField === 'gender' ? 'עריכת מגדר' : 'עריכת שם'}
           </h3>
           <button
             type="button"
             onClick={() => setEditField(null)}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-white/90 hover:bg-background-card/15"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-on-dark/90 hover:bg-background-card/15"
             aria-label="סגור"
           >
             <X className="h-4 w-4" />
@@ -545,14 +545,14 @@ export function ProfilePageClient({
           <div className="space-y-3">
             {(editField === 'name' || editField === 'gender') && editField === 'name' ? (
               <div>
-                <label htmlFor="profile-edit-name" className="mb-1 block text-sm font-semibold text-slate-700 text-start">
+                <label htmlFor="profile-edit-name" className="mb-1 block text-sm font-semibold text-ink-700 text-start">
                   שם מלא
                 </label>
                 <input
                   id="profile-edit-name"
                   value={nameInput}
                   onChange={(e) => setNameInput(e.target.value)}
-                  className="crystal-pill w-full rounded-xl px-3 py-2 text-sm text-slate-900 outline-hidden focus:ring-2 focus:ring-emerald-400/40"
+                  className="crystal-pill w-full rounded-xl px-3 py-2 text-sm text-ink-900 outline-hidden focus:ring-2 focus:ring-primary-400/40"
                   placeholder="איך קוראים לך?"
                   dir="rtl"
                 />
@@ -561,14 +561,14 @@ export function ProfilePageClient({
 
             {editField === 'gender' ? (
               <div>
-                <label htmlFor="profile-edit-gender" className="mb-1 block text-sm font-semibold text-slate-700 text-start">
+                <label htmlFor="profile-edit-gender" className="mb-1 block text-sm font-semibold text-ink-700 text-start">
                   מגדר
                 </label>
                 <select
                   id="profile-edit-gender"
                   value={genderInput}
                   onChange={(e) => setGenderInput((e.target.value as 'male' | 'female' | '') ?? '')}
-                  className="crystal-pill w-full rounded-xl px-3 py-2 text-sm text-slate-900 outline-hidden focus:ring-2 focus:ring-emerald-400/40"
+                  className="crystal-pill w-full rounded-xl px-3 py-2 text-sm text-ink-900 outline-hidden focus:ring-2 focus:ring-primary-400/40"
                 >
                   <option value="">ללא בחירה</option>
                   <option value="male">גבר</option>
@@ -578,16 +578,16 @@ export function ProfilePageClient({
             ) : null}
           </div>
 
-          {saveError ? <p className="mt-3 text-sm font-semibold text-red-600">{saveError}</p> : null}
+          {saveError ? <p className="mt-3 text-sm font-semibold text-coral-600">{saveError}</p> : null}
 
           <button
             type="button"
             onClick={saveProfile}
             disabled={savingProfile || isPending}
-            className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-emerald-500 disabled:opacity-60"
+            className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-primary-600 px-4 py-3 text-sm font-bold text-on-dark transition hover:bg-primary-500 disabled:opacity-60"
           >
             {savingProfile ? (
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-on-dark/40 border-t-on-dark" />
             ) : (
               <Save className="h-4 w-4" />
             )}
@@ -611,17 +611,17 @@ function EditableInfoRow({
   return (
     <div className="flex items-center justify-between py-2 group">
       <div className="flex items-center gap-1.5 min-w-0">
-        <span className="text-sm text-slate-500 shrink-0">{label}</span>
+        <span className="text-sm text-ink-500 shrink-0">{label}</span>
         <button
           type="button"
           onClick={onEdit}
-          className="p-1 rounded-md text-slate-300 opacity-60 group-hover:opacity-100 group-hover:text-emerald-600 transition"
+          className="p-1 rounded-md text-ink-300 opacity-60 group-hover:opacity-100 group-hover:text-primary-600 transition"
           aria-label={`ערוך ${label}`}
         >
           <Pencil className="h-3 w-3" />
         </button>
       </div>
-      <span className="text-sm font-semibold text-slate-800 text-left line-clamp-1">{value}</span>
+      <span className="text-sm font-semibold text-ink-800 text-left line-clamp-1">{value}</span>
     </div>
   );
 }

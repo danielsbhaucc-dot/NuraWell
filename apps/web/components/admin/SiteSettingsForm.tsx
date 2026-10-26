@@ -96,7 +96,7 @@ export function SiteSettingsForm() {
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 text-slate-600">
+      <div className="flex items-center gap-2 text-ink-soft">
         <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
         טוען…
       </div>
@@ -106,28 +106,28 @@ export function SiteSettingsForm() {
   return (
     <div className="space-y-6">
       <div className="rounded-2xl border border-gc/35 bg-background-card/40 p-5 shadow-lg backdrop-blur-xl sm:p-6">
-        <p className="flex items-center gap-2 text-sm font-bold text-slate-800">
-          <Globe className="h-4 w-4 text-emerald-700" aria-hidden />
+        <p className="flex items-center gap-2 text-sm font-bold text-ink">
+          <Globe className="h-4 w-4 text-primary-700" aria-hidden />
           כתובת האתר הציבורי
         </p>
-        <p className="mt-2 text-sm leading-relaxed text-slate-600">
+        <p className="mt-2 text-sm leading-relaxed text-ink-soft">
           ברירת המחדל בקוד היא <strong className="font-semibold">{PUBLIC_APP_URL_DEFAULT}</strong>. ערך נשמר במסד ומעדכן
           הפניות מדומיין Ops (לוגין וכו׳).
         </p>
         <p
           dir="ltr"
-          className="mt-3 rounded-xl border border-slate-200/80 bg-background-card/70 px-4 py-3 text-left text-sm text-slate-800"
+          className="mt-3 rounded-xl border border-hairline/80 bg-background-card/70 px-4 py-3 text-left text-sm text-ink"
         >
           {url || '—'}
         </p>
         {updatedAt && (
-          <p className="mt-2 text-xs text-slate-500">עדכון אחרון: {new Date(updatedAt).toLocaleString('he-IL')}</p>
+          <p className="mt-2 text-xs text-ink-faint">עדכון אחרון: {new Date(updatedAt).toLocaleString('he-IL')}</p>
         )}
       </div>
 
-      <div className="rounded-2xl border border-amber-400/35 bg-amber-50/50 p-5 shadow-md backdrop-blur-xl sm:p-6">
-        <p className="text-sm font-bold text-amber-950">שלב מעבר — הפניה ל־NuraWell</p>
-        <p className="mt-2 text-sm text-amber-950/90">
+      <div className="rounded-2xl border border-accent-400/35 bg-accent-50/50 p-5 shadow-md backdrop-blur-xl sm:p-6">
+        <p className="text-sm font-bold text-accent-950">שלב מעבר — הפניה ל־NuraWell</p>
+        <p className="mt-2 text-sm text-accent-950/90">
           לחיצה אחת מעדכנת את כתובת ההפניות ל־<strong className="font-semibold">{PRESET_PROD}</strong> ומעתיקה תזכורת לניקוי
           ההגדרה כשתסיים עם השלב.
         </p>
@@ -135,13 +135,13 @@ export function SiteSettingsForm() {
           type="button"
           disabled={busy}
           onClick={() => void previewProdPreset()}
-          className="mt-4 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-amber-600 px-6 py-3 font-bold text-gc shadow-lg transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+          className="mt-4 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-accent-600 px-6 py-3 font-bold text-gc shadow-lg transition hover:bg-accent-700 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
         >
           {busy ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden /> : <Sparkles className="h-5 w-5" aria-hidden />}
           בדוק מה ישתנה
         </button>
         {preview && (
-          <div className="mt-4 rounded-2xl bg-gc/80 p-4 text-sm text-slate-800 shadow-sm" role="status">
+          <div className="mt-4 rounded-2xl bg-gc/80 p-4 text-sm text-ink shadow-sm" role="status">
             <p className="font-bold">תצוגה מקדימה, שום דבר עוד לא נשמר</p>
             <ul className="mt-2 list-disc space-y-1 pe-1 ps-5">
               <li>ישתנה: כתובת האתר במסד ({url || '—'} ← {PRESET_PROD}).</li>
@@ -155,11 +155,11 @@ export function SiteSettingsForm() {
                 type="button"
                 disabled={busy || !preview.live}
                 onClick={() => void applyProdPreset()}
-                className="min-h-11 rounded-xl bg-emerald-700 px-4 font-bold text-gc disabled:opacity-40"
+                className="min-h-11 rounded-xl bg-primary-700 px-4 font-bold text-gc disabled:opacity-40"
               >
                 אשר ושמור
               </button>
-              <button type="button" onClick={() => setPreview(null)} className="min-h-11 rounded-xl bg-slate-200 px-4 font-bold text-slate-800">
+              <button type="button" onClick={() => setPreview(null)} className="min-h-11 rounded-xl bg-hairline px-4 font-bold text-ink">
                 ביטול
               </button>
             </div>
@@ -167,15 +167,15 @@ export function SiteSettingsForm() {
         )}
       </div>
 
-      <div className="rounded-xl border border-slate-300/60 bg-slate-50/80 p-4 text-sm text-slate-700">
-        <p className="font-semibold text-slate-800">טקסט התזכורת (להעתקה ידנית)</p>
-        <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap rounded-lg bg-background-card/90 p-3 text-xs leading-relaxed text-slate-800">
+      <div className="rounded-xl border border-ink-300/60 bg-surface-sunken/80 p-4 text-sm text-ink-soft">
+        <p className="font-semibold text-ink">טקסט התזכורת (להעתקה ידנית)</p>
+        <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap rounded-lg bg-background-card/90 p-3 text-xs leading-relaxed text-ink">
           {REMINDER_TEXT}
         </pre>
       </div>
 
-      {message && <p className="text-sm font-medium text-emerald-800">{message}</p>}
-      {error && <p className="text-sm font-medium text-red-700">{error}</p>}
+      {message && <p className="text-sm font-medium text-primary-800">{message}</p>}
+      {error && <p className="text-sm font-medium text-coral-700">{error}</p>}
     </div>
   );
 }

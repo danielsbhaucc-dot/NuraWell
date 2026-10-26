@@ -47,8 +47,8 @@ export function SiteSettingsTabs() {
               className={cn(
                 'inline-flex min-h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl px-3.5 py-2 text-sm font-bold transition-all',
                 active
-                  ? 'bg-linear-to-l from-sky-500 to-cyan-600 text-gc shadow-md shadow-sky-500/25'
-                  : 'text-slate-600 hover:bg-background-card/50 hover:text-slate-900',
+                  ? 'bg-linear-to-l from-secondary-500 to-secondary-600 text-gc shadow-md shadow-secondary-500/25'
+                  : 'text-ink-soft hover:bg-background-card/50 hover:text-ink',
               )}
             >
               <Icon className="h-4 w-4" aria-hidden />
@@ -61,8 +61,8 @@ export function SiteSettingsTabs() {
       <div className="overflow-hidden rounded-2xl border border-gc/50 bg-background-card/30 backdrop-blur-xl">
         <div className="flex items-center justify-between gap-3 border-b border-gc/40 px-4 py-3">
           <div className="min-w-0">
-            <p className="font-display text-sm font-black text-slate-900">{activeTab.label}</p>
-            <p className="truncate text-[11px] text-slate-500">{activeTab.hint}</p>
+            <p className="font-display text-sm font-black text-ink">{activeTab.label}</p>
+            <p className="truncate text-[11px] text-ink-faint">{activeTab.hint}</p>
           </div>
           <button
             type="button"
@@ -78,7 +78,11 @@ export function SiteSettingsTabs() {
         {contentOpen ? (
           <div className="p-1 sm:p-2">
             {tab === 'general' ? <SiteSettingsForm /> : null}
-            {tab === 'coming-soon' ? <AdminComingSoonPanel /> : null}
+            {tab === 'coming-soon' ? (
+              <div data-cs-legacy>
+                <AdminComingSoonPanel />
+              </div>
+            ) : null}
             {tab === 'register' ? <AdminRegisterBackgroundPanel /> : null}
             {tab === 'login' ? <AdminLoginBackgroundPanel /> : null}
             {tab === 'chat' ? <AdminChatBackgroundPanel /> : null}

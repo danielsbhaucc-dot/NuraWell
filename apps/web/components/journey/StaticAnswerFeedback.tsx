@@ -13,12 +13,12 @@ export function StaticAnswerFeedback({
   return (
     <div
       className={`mt-3 rounded-2xl p-4 text-start ring-1 ${
-        isCorrect ? 'bg-emerald-50/90 ring-emerald-200' : 'bg-amber-50/90 ring-amber-200'
+        isCorrect ? 'bg-primary-50/90 ring-primary-200' : 'bg-accent-50/90 ring-accent-200'
       }`}
     >
       <p
         className={`mb-1.5 flex items-center gap-1.5 text-sm font-black ${
-          isCorrect ? 'text-emerald-800' : 'text-amber-800'
+          isCorrect ? 'text-primary-800' : 'text-accent-800'
         }`}
       >
         {isCorrect ? (
@@ -28,7 +28,7 @@ export function StaticAnswerFeedback({
         )}
         {isCorrect ? 'נכון, יפה מאוד!' : 'לא בדיוק — הנה ההסבר'}
       </p>
-      {explanation ? <p className="text-sm leading-relaxed text-gray-800">{explanation}</p> : null}
+      {explanation ? <p className="text-sm leading-relaxed text-ink-800">{explanation}</p> : null}
     </div>
   );
 }

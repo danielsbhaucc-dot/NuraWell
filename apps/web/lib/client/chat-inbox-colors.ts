@@ -57,7 +57,7 @@ export function chipStyle(selected: boolean, main: string, soft: string, border:
   return {
     border: `1px solid ${border}`,
     background: `linear-gradient(145deg, ${glassTint(main, 0.38)}, ${glassTint(main, 0.14)})`,
-    color: '#ffffff',
+    color: '#eef4ea',
     boxShadow: `inset 0 1px 0 rgba(255,255,255,0.22), 0 6px 18px ${glassTint(main, 0.25)}`,
   };
 }

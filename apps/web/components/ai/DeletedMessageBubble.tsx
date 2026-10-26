@@ -7,7 +7,7 @@ export function DeletedMessageBubble({ text, time }: { text: string; time: strin
   const reason = text.slice(REDACTED_PLACEHOLDER.length).replace(/^\s*·\s*/, '').trim();
   return (
     <div
-      className="max-w-[82%] rounded-[20px] rounded-ss-md px-3.5 py-2.5 text-[13px] text-slate-300"
+      className="max-w-[82%] rounded-[20px] rounded-ss-md px-3.5 py-2.5 text-[13px] text-ink-300"
       style={{
         background: 'rgba(30,41,59,0.55)',
         border: '1px dashed rgba(148,163,184,0.35)',
@@ -22,8 +22,8 @@ export function DeletedMessageBubble({ text, time }: { text: string; time: strin
         </svg>
         {REDACTED_PLACEHOLDER}
       </p>
-      {reason && <p className="mt-0.5 text-[11px] text-slate-400">{reason}</p>}
-      <div className="mt-1 text-end text-[10px] text-slate-500">{time}</div>
+      {reason && <p className="mt-0.5 text-[11px] text-ink-400">{reason}</p>}
+      <div className="mt-1 text-end text-[10px] text-ink-500">{time}</div>
     </div>
   );
 }

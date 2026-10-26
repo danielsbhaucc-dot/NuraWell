@@ -41,14 +41,14 @@ export function JourneyResultsDrawer({
       <Drawer.Portal container={overlayRoot ?? undefined}>
         <Drawer.Overlay
           data-nura-overlay="1"
-          className="fixed inset-0 z-180 bg-slate-900/50 backdrop-blur-[3px]"
+          className="fixed inset-0 z-180 bg-ink-900/50 backdrop-blur-[3px]"
         />
         <Drawer.Content
           dir="rtl"
           data-nura-overlay="1"
           className="fixed bottom-0 left-0 right-0 z-190 mx-auto flex max-h-[min(90dvh,920px)] h-auto w-full max-w-md flex-col rounded-t-[26px] outline-hidden shadow-[0_-12px_48px_rgba(0,0,0,0.2)] sm:max-h-[85vh]"
           style={{
-            background: 'linear-gradient(180deg, #ecfdf5 0%, #f0fdf4 40%, #f8fafc 100%)',
+            background: 'linear-gradient(180deg, #ecfdf5 0%, #cfe9dc 40%, #cfe9dc 100%)',
           }}
         >
           <Drawer.Title className="sr-only">{title}</Drawer.Title>
@@ -62,13 +62,13 @@ export function JourneyResultsDrawer({
               <div className="h-1.5 w-12 rounded-full" style={{ background: 'rgba(255,255,255,0.42)' }} />
             </div>
             <div className="px-5 pb-5 text-center">
-              <div className="mb-2 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[11px] font-black text-white/95"
+              <div className="mb-2 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[11px] font-black text-on-dark/95"
                 style={{ background: 'rgba(255,255,255,0.16)', border: '0.5px solid rgba(255,255,255,0.28)' }}>
                 <Map className="h-3.5 w-3.5" style={{ color: h.accent }} />
                 המפה שלך
               </div>
-              <p className="text-xl font-black text-white">{title}</p>
-              <p className="mt-1.5 text-xs font-semibold text-white/90">{subtitle}</p>
+              <p className="text-xl font-black text-on-dark">{title}</p>
+              <p className="mt-1.5 text-xs font-semibold text-on-dark/90">{subtitle}</p>
             </div>
           </div>
 

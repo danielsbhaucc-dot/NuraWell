@@ -36,7 +36,7 @@ export function OpsDevicesPanel() {
   return (
     <section className="space-y-4">
       {banner && !codes && (
-        <div className="rounded-3xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+        <div className="rounded-3xl border border-accent-300 bg-accent-50 p-4 text-sm text-accent-900">
           <b>שמור קודי שחזור.</b> אם תאבד גישה לטלגרם ולמייל, קוד שחזור יכניס אותך ממכשיר חדש.
           <button type="button" onClick={regen} className="mt-3 block rounded-2xl bg-[#0f3d2e] px-4 py-2 font-semibold text-[#f6f1e7]">צור קודי שחזור</button>
         </div>
@@ -46,26 +46,26 @@ export function OpsDevicesPanel() {
           <p className="mb-2 text-sm font-semibold text-[#0f3d2e]">הקודים מוצגים פעם אחת בלבד. שמור אותם במקום בטוח (מנהל סיסמאות / דף מודפס).</p>
           <ol dir="ltr" className="grid grid-cols-2 gap-2 font-mono text-base">{codes.map((c) => <li key={c} className="rounded-xl bg-gc px-3 py-2 text-center shadow-sm">{c}</li>)}</ol>
           <div className="mt-3 flex gap-2">
-            <button type="button" onClick={() => navigator.clipboard?.writeText(codes.join('\n'))} className="rounded-2xl border border-slate-200 bg-gc px-4 py-2 text-sm">העתק</button>
+            <button type="button" onClick={() => navigator.clipboard?.writeText(codes.join('\n'))} className="rounded-2xl border border-hairline bg-gc px-4 py-2 text-sm">העתק</button>
             <button type="button" onClick={() => setCodes(null)} className="rounded-2xl bg-[#0f3d2e] px-4 py-2 text-sm font-semibold text-[#f6f1e7]">שמרתי</button>
           </div>
         </div>
       )}
-      <div className="overflow-hidden rounded-3xl border border-black/5 bg-gc shadow-[0_4px_20px_rgba(15,61,46,0.06)]">
+      <div className="overflow-hidden rounded-3xl border border-forest-950/5 bg-gc shadow-[0_4px_20px_rgba(15,61,46,0.06)]">
         <div className="flex items-center justify-between px-4 py-3">
           <h2 className="font-bold text-[#0f3d2e]">מכשירים מאושרים</h2>
-          <span className="text-xs text-slate-500">קודי שחזור זמינים: {unused}</span>
+          <span className="text-xs text-ink-faint">קודי שחזור זמינים: {unused}</span>
         </div>
-        <ul className="divide-y divide-slate-100">
+        <ul className="divide-y divide-ink-100">
           {devices.map((d) => (
             <li key={d.id} className="flex items-center justify-between gap-3 px-4 py-3 text-sm">
-              <div><div className="font-medium">{d.label || 'מכשיר'}</div><div className="text-xs text-slate-500">{VIA[d.via] ?? d.via} · נראה לאחרונה {fmt(d.last_seen_at)}</div></div>
-              <button type="button" onClick={async () => { if (await confirmDialog({ title: 'לבטל את המכשיר?', message: 'הוא יצטרך אישור מחדש.', danger: true, confirmLabel: 'בטל מכשיר' })) { await post({ action: 'revoke', id: d.id }); void load(); } }} className="rounded-xl px-3 py-1.5 text-red-700 hover:bg-red-50">בטל</button>
+              <div><div className="font-medium">{d.label || 'מכשיר'}</div><div className="text-xs text-ink-faint">{VIA[d.via] ?? d.via} · נראה לאחרונה {fmt(d.last_seen_at)}</div></div>
+              <button type="button" onClick={async () => { if (await confirmDialog({ title: 'לבטל את המכשיר?', message: 'הוא יצטרך אישור מחדש.', danger: true, confirmLabel: 'בטל מכשיר' })) { await post({ action: 'revoke', id: d.id }); void load(); } }} className="rounded-xl px-3 py-1.5 text-coral-700 hover:bg-coral-50">בטל</button>
             </li>
           ))}
-          {!devices.length && <li className="px-4 py-3 text-sm text-slate-500">אין מכשירים.</li>}
+          {!devices.length && <li className="px-4 py-3 text-sm text-ink-faint">אין מכשירים.</li>}
         </ul>
-        <div className="border-t border-slate-100 px-4 py-3"><button type="button" onClick={regen} className="text-sm font-semibold text-[#0b6b4b]">צור קודי שחזור חדשים</button></div>
+        <div className="border-t border-hairline/60 px-4 py-3"><button type="button" onClick={regen} className="text-sm font-semibold text-[#0b6b4b]">צור קודי שחזור חדשים</button></div>
       </div>
     </section>
   );
@@ -92,12 +92,12 @@ export function OpsPendingLoginAlert() {
     setReqs((x) => x.slice(1));
   };
   return (
-    <div dir="rtl" role="alertdialog" className="fixed inset-x-3 bottom-4 z-[60] mx-auto max-w-md rounded-3xl border border-black/5 bg-gc p-4 shadow-[0_12px_40px_rgba(15,61,46,0.18)]">
+    <div dir="rtl" role="alertdialog" className="fixed inset-x-3 bottom-4 z-[60] mx-auto max-w-md rounded-3xl border border-forest-950/5 bg-gc p-4 shadow-[0_12px_40px_rgba(15,61,46,0.18)]">
       <p className="font-bold text-[#0f3d2e]">🔐 ניסיון כניסה ממכשיר חדש</p>
-      <p className="mt-1 text-sm text-slate-600">{r.label} · {r.location} · {fmt(r.created_at)}</p>
+      <p className="mt-1 text-sm text-ink-soft">{r.label} · {r.location} · {fmt(r.created_at)}</p>
       <div className="mt-3 flex gap-2">
         <button type="button" onClick={() => decide(true)} className="flex-1 rounded-2xl bg-[#0f3d2e] py-2.5 font-semibold text-[#f6f1e7]">אשר כניסה</button>
-        <button type="button" onClick={() => decide(false)} className="flex-1 rounded-2xl border border-red-200 py-2.5 font-semibold text-red-700">זה לא אני</button>
+        <button type="button" onClick={() => decide(false)} className="flex-1 rounded-2xl border border-coral-200 py-2.5 font-semibold text-coral-700">זה לא אני</button>
       </div>
     </div>
   );

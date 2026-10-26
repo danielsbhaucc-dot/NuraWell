@@ -388,14 +388,14 @@ export function MediaManager({ open, options, onClose }: MediaManagerProps) {
           />
           <div className="relative flex items-center justify-between gap-3 px-4 py-3.5 sm:px-5">
             <div className="flex min-w-0 items-center gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/45 bg-background-card/20 shadow-[inset_0_1px_0_rgba(248,251,246,0.55)] backdrop-blur-md">
-                <FolderOpen className="h-5 w-5 text-white" />
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-on-dark/45 bg-background-card/20 shadow-[inset_0_1px_0_rgba(248,251,246,0.55)] backdrop-blur-md">
+                <FolderOpen className="h-5 w-5 text-on-dark" />
               </div>
               <div className="min-w-0">
-                <h2 className="truncate text-lg font-black text-white drop-shadow-xs">
+                <h2 className="truncate text-lg font-black text-on-dark drop-shadow-xs">
                   {options?.title ?? 'מנהל קבצים'}
                 </h2>
-                <p className="truncate text-xs font-medium text-white/85">
+                <p className="truncate text-xs font-medium text-on-dark/85">
                   {mode === 'pick' ? 'בחרו פריט ולחצו עליו' : 'ספריית מדיה — העלאה, עריכה ומחיקה'}
                 </p>
               </div>
@@ -404,7 +404,7 @@ export function MediaManager({ open, options, onClose }: MediaManagerProps) {
               type="button"
               onClick={onClose}
               aria-label="סגירה"
-              className="shrink-0 rounded-xl border border-white/45 bg-background-card/15 p-2 text-white shadow-xs backdrop-blur-md transition hover:bg-background-card/30"
+              className="shrink-0 rounded-xl border border-on-dark/45 bg-background-card/15 p-2 text-on-dark shadow-xs backdrop-blur-md transition hover:bg-background-card/30"
             >
               <X className="h-5 w-5" />
             </button>
@@ -412,9 +412,9 @@ export function MediaManager({ open, options, onClose }: MediaManagerProps) {
         </header>
 
         <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-          <nav className="flex shrink-0 gap-1 overflow-x-auto border-b border-white/35 px-3 py-2 lg:w-48 lg:flex-col lg:border-b-0 lg:border-l">
+          <nav className="flex shrink-0 gap-1 overflow-x-auto border-b border-on-dark/35 px-3 py-2 lg:w-48 lg:flex-col lg:border-b-0 lg:border-l">
             {allowedKinds.length > 1 ? (
-              <p className="hidden px-2 pb-1 text-[10px] font-black tracking-wide text-slate-500 lg:block">
+              <p className="hidden px-2 pb-1 text-[10px] font-black tracking-wide text-ink-500 lg:block">
                 קטגוריות
               </p>
             ) : null}
@@ -431,8 +431,8 @@ export function MediaManager({ open, options, onClose }: MediaManagerProps) {
                   className={cn(
                     'flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold whitespace-nowrap transition',
                     activeKind === k
-                      ? 'bg-emerald-800/80 text-white'
-                      : 'text-slate-700 hover:bg-background-card/25'
+                      ? 'bg-primary-800/80 text-on-dark'
+                      : 'text-ink-700 hover:bg-background-card/25'
                   )}
                 >
                   <Icon className="h-4 w-4" />
@@ -444,7 +444,7 @@ export function MediaManager({ open, options, onClose }: MediaManagerProps) {
 
           <div className="flex min-h-0 min-w-0 flex-1 flex-col">
             {activeKind === 'file' ? (
-              <div className="flex shrink-0 gap-1 overflow-x-auto border-b border-white/30 px-3 py-2">
+              <div className="flex shrink-0 gap-1 overflow-x-auto border-b border-on-dark/30 px-3 py-2">
                 {FILE_SUBTYPES.map((st) => (
                   <button
                     key={st}
@@ -452,7 +452,7 @@ export function MediaManager({ open, options, onClose }: MediaManagerProps) {
                     onClick={() => setFileSubtype(st)}
                     className={cn(
                       'rounded-lg px-2.5 py-1 text-xs font-bold',
-                      fileSubtype === st ? 'bg-teal-800/75 text-white' : 'text-slate-600'
+                      fileSubtype === st ? 'bg-secondary-800/75 text-on-dark' : 'text-ink-600'
                     )}
                   >
                     {FILE_TAB_LABELS[st]}
@@ -461,13 +461,13 @@ export function MediaManager({ open, options, onClose }: MediaManagerProps) {
               </div>
             ) : null}
 
-            <div className="flex shrink-0 gap-2 border-b border-white/30 px-3 py-2">
+            <div className="flex shrink-0 gap-2 border-b border-on-dark/30 px-3 py-2">
               <button
                 type="button"
                 onClick={() => setPanel('library')}
                 className={cn(
                   'rounded-lg px-3 py-1.5 text-xs font-bold',
-                  panel === 'library' ? 'bg-slate-900/75 text-white' : 'text-slate-600'
+                  panel === 'library' ? 'bg-ink-900/75 text-on-dark' : 'text-ink-600'
                 )}
               >
                 ספרייה
@@ -478,7 +478,7 @@ export function MediaManager({ open, options, onClose }: MediaManagerProps) {
                   onClick={() => setPanel('upload')}
                   className={cn(
                     'inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-bold',
-                    panel === 'upload' ? 'bg-slate-900/75 text-white' : 'text-slate-600'
+                    panel === 'upload' ? 'bg-ink-900/75 text-on-dark' : 'text-ink-600'
                   )}
                 >
                   <Upload className="h-3.5 w-3.5" />
@@ -491,7 +491,7 @@ export function MediaManager({ open, options, onClose }: MediaManagerProps) {
                   onClick={() => setPanel('stock')}
                   className={cn(
                     'rounded-lg px-3 py-1.5 text-xs font-bold',
-                    panel === 'stock' ? 'bg-slate-900/75 text-white' : 'text-slate-600'
+                    panel === 'stock' ? 'bg-ink-900/75 text-on-dark' : 'text-ink-600'
                   )}
                 >
                   Pixabay / Pexels
@@ -523,20 +523,20 @@ export function MediaManager({ open, options, onClose }: MediaManagerProps) {
                     <button
                       type="button"
                       onClick={() => void load()}
-                      className="shrink-0 rounded-xl bg-slate-900/75 px-3 text-white"
+                      className="shrink-0 rounded-xl bg-ink-900/75 px-3 text-on-dark"
                     >
                       <Search className="h-4 w-4" />
                     </button>
                   </div>
                   {loadError ? (
-                    <div className="mb-3 flex items-start gap-2 rounded-xl border border-amber-300/60 bg-amber-200/20 px-3 py-2.5 text-sm text-amber-900 backdrop-blur-sm">
+                    <div className="mb-3 flex items-start gap-2 rounded-xl border border-accent-300/60 bg-accent-200/20 px-3 py-2.5 text-sm text-accent-900 backdrop-blur-sm">
                       <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                       <div>
                         <p className="font-bold">{loadError}</p>
                         <button
                           type="button"
                           onClick={() => void load()}
-                          className="mt-1 rounded-lg border border-amber-400/60 bg-background-card/25 px-2.5 py-1 text-xs font-bold"
+                          className="mt-1 rounded-lg border border-accent-400/60 bg-background-card/25 px-2.5 py-1 text-xs font-bold"
                         >
                           נסה שוב
                         </button>
@@ -545,7 +545,7 @@ export function MediaManager({ open, options, onClose }: MediaManagerProps) {
                   ) : null}
                   {loading ? (
                     <div className="flex justify-center py-12">
-                      <Loader2 className="h-8 w-8 animate-spin text-emerald-700" />
+                      <Loader2 className="h-8 w-8 animate-spin text-primary-700" />
                     </div>
                   ) : (
                     <MediaFinderGrid
@@ -565,10 +565,10 @@ export function MediaManager({ open, options, onClose }: MediaManagerProps) {
                   )}
                   {!loading && !loadError && visibleItems.length === 0 && folderView.folders.length === 0 ? (
                     <div className="flex flex-col items-center gap-2 py-12 text-center">
-                      <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/45 bg-background-card/15 backdrop-blur-sm">
-                        <FolderOpen className="h-7 w-7 text-slate-500" />
+                      <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-on-dark/45 bg-background-card/15 backdrop-blur-sm">
+                        <FolderOpen className="h-7 w-7 text-ink-500" />
                       </div>
-                      <p className="text-sm font-bold text-slate-700">
+                      <p className="text-sm font-bold text-ink-700">
                         {isRootLibraryView
                           ? `אין עדיין פריטים ב${KIND_LABELS[activeKind]}`
                           : `אין פריטים בתיקייה זו`}
@@ -577,7 +577,7 @@ export function MediaManager({ open, options, onClose }: MediaManagerProps) {
                         <button
                           type="button"
                           onClick={() => setPanel('upload')}
-                          className="rounded-xl bg-emerald-800/85 px-4 py-2 text-xs font-bold text-white"
+                          className="rounded-xl bg-primary-800/85 px-4 py-2 text-xs font-bold text-on-dark"
                         >
                           העלאה עכשיו
                         </button>
@@ -605,8 +605,8 @@ export function MediaManager({ open, options, onClose }: MediaManagerProps) {
               ) : null}
 
               {activeKind === 'video' ? (
-                <div className="mt-4 space-y-3 rounded-2xl border border-white/40 p-4" style={{ background: 'rgba(255,255,255,0.12)' }}>
-                  <p className="text-sm font-bold text-slate-800">הוספת וידאו Bunny (video.nurawell.ai)</p>
+                <div className="mt-4 space-y-3 rounded-2xl border border-on-dark/40 p-4" style={{ background: 'rgba(255,255,255,0.12)' }}>
+                  <p className="text-sm font-bold text-ink-800">הוספת וידאו Bunny (video.nurawell.ai)</p>
                   <input
                     value={videoTitle}
                     onChange={(e) => setVideoTitle(e.target.value)}
@@ -631,7 +631,7 @@ export function MediaManager({ open, options, onClose }: MediaManagerProps) {
                     type="button"
                     disabled={videoBusy}
                     onClick={() => void addVideo()}
-                    className="rounded-xl bg-emerald-800/85 px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
+                    className="rounded-xl bg-primary-800/85 px-4 py-2 text-sm font-bold text-on-dark disabled:opacity-50"
                   >
                     {videoBusy ? 'שומר…' : 'שמור וידאו'}
                   </button>
@@ -645,29 +645,29 @@ export function MediaManager({ open, options, onClose }: MediaManagerProps) {
               type="button"
               aria-label="סגור תצוגה"
               onClick={() => setSelected(null)}
-              className="fixed inset-0 z-295 bg-slate-900/40 backdrop-blur-sm lg:hidden"
+              className="fixed inset-0 z-295 bg-ink-900/40 backdrop-blur-sm lg:hidden"
             />
           ) : null}
           <aside
             className={cn(
               'flex-col gap-3 overflow-y-auto p-4',
               selected
-                ? 'fixed inset-x-0 bottom-0 z-300 flex max-h-[85dvh] rounded-t-[26px] border-t border-white/45 shadow-[0_-14px_44px_rgba(6,78,59,0.28)]'
+                ? 'fixed inset-x-0 bottom-0 z-300 flex max-h-[85dvh] rounded-t-[26px] border-t border-on-dark/45 shadow-[0_-14px_44px_rgba(6,78,59,0.28)]'
                 : 'hidden',
-              'lg:static lg:z-auto lg:flex lg:max-h-none lg:w-72 lg:shrink-0 lg:rounded-none lg:border-t-0 lg:border-r lg:border-white/35 lg:shadow-none'
+              'lg:static lg:z-auto lg:flex lg:max-h-none lg:w-72 lg:shrink-0 lg:rounded-none lg:border-t-0 lg:border-r lg:border-on-dark/35 lg:shadow-none'
             )}
             style={{ background: 'rgba(245,250,248,0.55)', backdropFilter: 'blur(22px)' }}
           >
             <div className="relative mb-1 flex h-5 items-center lg:hidden">
               <span
-                className="absolute left-1/2 top-1 h-1.5 w-12 -translate-x-1/2 rounded-full bg-slate-400/50"
+                className="absolute left-1/2 top-1 h-1.5 w-12 -translate-x-1/2 rounded-full bg-ink-400/50"
                 aria-hidden
               />
               <button
                 type="button"
                 onClick={() => setSelected(null)}
                 aria-label="סגור תצוגה"
-                className="ml-auto rounded-lg border border-white/50 bg-background-card/40 p-1.5 text-slate-700"
+                className="ml-auto rounded-lg border border-on-dark/50 bg-background-card/40 p-1.5 text-ink-700"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -693,7 +693,7 @@ export function MediaManager({ open, options, onClose }: MediaManagerProps) {
               <button
                 type="button"
                 onClick={() => handleSelect(selected)}
-                className="mt-3 w-full rounded-xl bg-emerald-700/90 py-2.5 text-sm font-bold text-white"
+                className="mt-3 w-full rounded-xl bg-primary-700/90 py-2.5 text-sm font-bold text-on-dark"
               >
                 בחר פריט זה
               </button>

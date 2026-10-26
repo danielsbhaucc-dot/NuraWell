@@ -202,7 +202,7 @@ export const HlsVideo = forwardRef<HTMLVideoElement, HlsVideoProps>(function Hls
         suppressHydrationWarning
       />
       {loadError ? (
-        <p className="absolute bottom-2 inset-e-2 inset-s-2 z-20 rounded-lg bg-black/80 py-2 px-2 text-center text-xs text-red-200">
+        <p className="absolute bottom-2 inset-e-2 inset-s-2 z-20 rounded-lg bg-forest-950/80 py-2 px-2 text-center text-xs text-coral-200">
           {loadError}
         </p>
       ) : null}

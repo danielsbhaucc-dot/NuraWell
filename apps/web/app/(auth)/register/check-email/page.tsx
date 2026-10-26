@@ -1,3 +1,4 @@
+import { AuthBackdrop } from '@/components/onboarding/AuthBackdrop';
 import { CheckEmailClient } from '@/components/onboarding/CheckEmailClient';
 import { PublicAiPresence } from '@/components/ai/PublicAiPresence';
 import { createClient } from '@/lib/supabase/server';
@@ -34,7 +35,10 @@ export default async function RegisterCheckEmailPage({
       .eq('id', user.id)
       .maybeSingle();
 
-    const profileRow = profile as { full_name?: string | null; gender?: OnboardingGender | null } | null;
+    const profileRow = profile as {
+      full_name?: string | null;
+      gender?: OnboardingGender | null;
+    } | null;
     firstName = firstNameFromFull(profileRow?.full_name ?? null);
     gender = profileRow?.gender ?? '';
   }
@@ -42,14 +46,10 @@ export default async function RegisterCheckEmailPage({
   return (
     <main
       id="main-content"
-      className="onboarding-shell-dark min-h-dvh flex flex-col items-center justify-center px-4 py-12"
+      className="onboarding-shell-dark relative min-h-dvh flex flex-col items-center justify-center-safe px-4 pb-[max(3rem,env(safe-area-inset-bottom))] pt-[max(1.25rem,env(safe-area-inset-top))]"
     >
-      <CheckEmailClient
-        email={email}
-        hasAuthError={hasError}
-        firstName={firstName}
-        gender={gender}
-      />
+      <AuthBackdrop />
+      <CheckEmailClient email={email} hasAuthError={hasError} firstName={firstName} gender={gender} />
       <div className="mt-5 w-full px-2">
         <PublicAiPresence compact />
       </div>

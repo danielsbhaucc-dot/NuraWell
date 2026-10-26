@@ -126,7 +126,7 @@ export default async function RootLayout({
       <body className="min-h-screen bg-background font-sans antialiased notranslate">
         <a
           href="#main-content"
-          className="absolute inset-s-[-10000px] top-auto z-100 overflow-hidden focus:fixed focus:inset-s-4 focus:top-16 focus:h-auto focus:w-auto focus:overflow-visible focus:rounded-xl focus:bg-teal-600 focus:px-4 focus:py-3 focus:text-white focus:shadow-lg focus:outline-hidden focus:ring-2 focus:ring-teal-300"
+          className="absolute inset-s-[-10000px] top-auto z-100 overflow-hidden focus:fixed focus:inset-s-4 focus:top-16 focus:h-auto focus:w-auto focus:overflow-visible focus:rounded-xl focus:bg-secondary-600 focus:px-4 focus:py-3 focus:text-on-dark focus:shadow-lg focus:outline-hidden focus:ring-2 focus:ring-secondary-300"
         >
           דלג לתוכן הראשי
         </a>

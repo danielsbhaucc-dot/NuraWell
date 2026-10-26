@@ -293,7 +293,7 @@ export function ProgressReportProvider({
 
       <Drawer.Root open={open} onOpenChange={setOpen} direction="bottom" shouldScaleBackground>
         <Drawer.Portal container={overlayRoot ?? undefined}>
-          <Drawer.Overlay data-nura-overlay="1" className="fixed inset-0 z-220 bg-emerald-950/40 backdrop-blur-xs" />
+          <Drawer.Overlay data-nura-overlay="1" className="fixed inset-0 z-220 bg-primary-950/40 backdrop-blur-xs" />
           <Drawer.Content
             dir="rtl"
             data-nura-overlay="1"
@@ -314,7 +314,7 @@ export function ProgressReportProvider({
             </Drawer.Description>
 
             <div className="shrink-0 pt-2.5 pb-2 flex justify-center">
-              <div className="h-1.5 w-11 rounded-full bg-emerald-800/25" />
+              <div className="h-1.5 w-11 rounded-full bg-primary-800/25" />
             </div>
 
             <div
@@ -323,7 +323,7 @@ export function ProgressReportProvider({
             >
               <div className="flex items-center gap-2 justify-end">
                 <div
-                  className="flex h-11 w-11 items-center justify-center rounded-2xl text-white shadow-md"
+                  className="flex h-11 w-11 items-center justify-center rounded-2xl text-on-dark shadow-md"
                   style={{ background: 'linear-gradient(145deg, #047857, #10b981)' }}
                 >
                   <ClipboardCheck className="h-5 w-5" strokeWidth={2.2} />
@@ -332,7 +332,7 @@ export function ProgressReportProvider({
                   <p className="text-lg font-black text-[#1A1730]" style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}>
                     דיווח מהיר
                   </p>
-                  <p className="text-xs font-semibold text-emerald-900/70">
+                  <p className="text-xs font-semibold text-primary-900/70">
                     תבחר כרטיסייה — עדכון משימות או מעקב הרגלים
                   </p>
                 </div>
@@ -352,7 +352,7 @@ export function ProgressReportProvider({
                   onClick={() => setActiveTab('task_execution')}
                   className={`min-h-[42px] flex-1 rounded-[16px] px-2 py-2 text-center text-[11px] font-black leading-tight transition sm:text-xs ${
                     activeTab === 'task_execution'
-                      ? 'bg-linear-to-l from-emerald-600 to-teal-500 text-white shadow-md shadow-emerald-900/25 ring-1 ring-white/25'
+                      ? 'bg-linear-to-l from-primary-600 to-secondary-500 text-on-dark shadow-md shadow-primary-900/25 ring-1 ring-on-dark/25'
                       : ' hover:bg-background-card/45'
                   }`}
                 >
@@ -365,7 +365,7 @@ export function ProgressReportProvider({
                   onClick={() => setActiveTab('habits')}
                   className={`min-h-[42px] flex-1 rounded-[16px] px-2 py-2 text-center text-[11px] font-black leading-tight transition sm:text-xs ${
                     activeTab === 'habits'
-                      ? 'bg-linear-to-l from-emerald-600 to-teal-500 text-white shadow-md shadow-emerald-900/25 ring-1 ring-white/25'
+                      ? 'bg-linear-to-l from-primary-600 to-secondary-500 text-on-dark shadow-md shadow-primary-900/25 ring-1 ring-on-dark/25'
                       : ' hover:bg-background-card/45'
                   }`}
                 >
@@ -376,12 +376,12 @@ export function ProgressReportProvider({
 
             <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-8 pt-1 scrollbar-hide">
               {loading && (
-                <div className="flex justify-center py-16 text-emerald-800">
+                <div className="flex justify-center py-16 text-primary-800">
                   <Loader2 className="h-8 w-8 animate-spin" />
                 </div>
               )}
               {error && (
-                <p className="text-center text-sm text-red-700 py-10 px-4">{error}</p>
+                <p className="text-center text-sm text-coral-700 py-10 px-4">{error}</p>
               )}
               {!loading && !error && data && (
                 <div className="space-y-5 pb-4">
@@ -397,17 +397,17 @@ export function ProgressReportProvider({
                             className="pointer-events-none absolute inset-x-4 top-px h-px"
                             style={{
                               background:
-                                'linear-gradient(90deg, transparent, rgba(248,251,246,0.8), transparent)',
+                                'linear-gradient(90deg, transparent, rgba(207,233,220,0.8), transparent)',
                             }}
                           />
                           <div className="relative flex items-center gap-2 justify-end mb-3">
-                            <Sparkles className="h-4 w-4 text-amber-500 shrink-0" />
-                            <h3 className="text-sm font-black text-emerald-950 truncate text-start">
+                            <Sparkles className="h-4 w-4 text-accent-500 shrink-0" />
+                            <h3 className="text-sm font-black text-primary-950 truncate text-start">
                               משימות מאלמוג
                             </h3>
                           </div>
                           <div className="relative space-y-2">
-                            <p className="text-[11px] font-bold text-emerald-800/85 text-start">
+                            <p className="text-[11px] font-bold text-primary-800/85 text-start">
                               אותן משימות שרואים ב&quot;המשימות שלי&quot;
                             </p>
                             {almogOpen.map((t) => {
@@ -422,17 +422,17 @@ export function ProgressReportProvider({
                                   className="glass-inset flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-start transition active:scale-[0.99] disabled:opacity-60"
                                 >
                                   {busy ? (
-                                    <Loader2 className="h-5 w-5 shrink-0 animate-spin text-emerald-700" />
+                                    <Loader2 className="h-5 w-5 shrink-0 animate-spin text-primary-700" />
                                   ) : (
-                                    <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600" />
+                                    <CheckCircle2 className="h-5 w-5 shrink-0 text-primary-600" />
                                   )}
                                   <span className="text-xl shrink-0" aria-hidden>
                                     ✨
                                   </span>
-                                  <span className="flex-1 text-start text-sm font-bold text-emerald-950 leading-snug">
+                                  <span className="flex-1 text-start text-sm font-bold text-primary-950 leading-snug">
                                     {t.title}
                                     {similar > 1 ? (
-                                      <span className="mt-0.5 block text-[10px] font-semibold text-emerald-800/65">
+                                      <span className="mt-0.5 block text-[10px] font-semibold text-primary-800/65">
                                         {similar} ניסוחים דומים · לחיצה מסמנת את כולם
                                       </span>
                                     ) : null}
@@ -462,17 +462,17 @@ export function ProgressReportProvider({
                               className="pointer-events-none absolute inset-x-4 top-px h-px"
                               style={{
                                 background:
-                                  'linear-gradient(90deg, transparent, rgba(248,251,246,0.8), transparent)',
+                                  'linear-gradient(90deg, transparent, rgba(207,233,220,0.8), transparent)',
                               }}
                             />
                             <div className="relative flex items-center gap-2 justify-end mb-3">
-                              <Sparkles className="h-4 w-4 text-amber-500 shrink-0" />
-                              <h3 className="text-sm font-black text-emerald-950 truncate text-start">
+                              <Sparkles className="h-4 w-4 text-accent-500 shrink-0" />
+                              <h3 className="text-sm font-black text-primary-950 truncate text-start">
                                 צעד {step.step_number}: {step.title}
                               </h3>
                             </div>
                             <div className="relative space-y-2">
-                              <p className="text-[11px] font-bold text-emerald-800/85 text-start">משימות שקיבלת</p>
+                              <p className="text-[11px] font-bold text-primary-800/85 text-start">משימות שקיבלת</p>
                                 {acceptedTasks.map((t) => {
                                   const { schedule, times_per_day, weekly_day, meal_timing, meal_target } =
                                     resolveTaskSchedule(t, userMealProfile);
@@ -490,7 +490,7 @@ export function ProgressReportProvider({
                                         className="glass-inset relative overflow-hidden rounded-2xl px-3 py-2.5 space-y-2"
                                       >
                                         <div className="flex items-center gap-2 justify-end">
-                                          <span className="glass-pill relative overflow-hidden text-[10px] font-bold tracking-wide px-2.5 py-1 rounded-full text-emerald-900">
+                                          <span className="glass-pill relative overflow-hidden text-[10px] font-bold tracking-wide px-2.5 py-1 rounded-full text-primary-900">
                                             {scheduleLabel(
                                               schedule,
                                               times_per_day,
@@ -502,7 +502,7 @@ export function ProgressReportProvider({
                                           <span className="text-xl shrink-0" aria-hidden>
                                             {emoji}
                                           </span>
-                                          <span className="flex-1 text-start text-sm font-bold text-emerald-950 leading-snug">
+                                          <span className="flex-1 text-start text-sm font-bold text-primary-950 leading-snug">
                                             {t.title}
                                           </span>
                                         </div>
@@ -525,7 +525,7 @@ export function ProgressReportProvider({
                                     >
                                       <input
                                         type="checkbox"
-                                        className="h-5 w-5 accent-emerald-600 shrink-0"
+                                        className="h-5 w-5 accent-primary-600 shrink-0"
                                         checked={done}
                                         disabled={busy}
                                         onChange={(e) =>
@@ -535,7 +535,7 @@ export function ProgressReportProvider({
                                       <span className="text-xl shrink-0" aria-hidden>
                                         {emoji}
                                       </span>
-                                      <span className="flex-1 text-start text-sm font-bold text-emerald-950 leading-snug">
+                                      <span className="flex-1 text-start text-sm font-bold text-primary-950 leading-snug">
                                         {t.title}
                                       </span>
                                     </label>
@@ -546,7 +546,7 @@ export function ProgressReportProvider({
                         );
                       })}
                       {!hasAcceptedJourney && almogOpen.length === 0 && (
-                        <p className="text-center text-sm text-emerald-900/70 py-12 px-4 leading-relaxed">
+                        <p className="text-center text-sm text-primary-900/70 py-12 px-4 leading-relaxed">
                           עוד אין משימות לדיווח. משימות מאלמוג או ממסע שקיבלת יופיעו כאן — ואז תוכל לסמן ביצוע.
                         </p>
                       )}
@@ -575,17 +575,17 @@ export function ProgressReportProvider({
                               className="pointer-events-none absolute inset-x-4 top-px h-px"
                               style={{
                                 background:
-                                  'linear-gradient(90deg, transparent, rgba(248,251,246,0.8), transparent)',
+                                  'linear-gradient(90deg, transparent, rgba(207,233,220,0.8), transparent)',
                               }}
                             />
                             <div className="relative flex items-center gap-2 justify-end mb-3">
-                              <Leaf className="h-4 w-4 text-emerald-600 shrink-0" />
-                              <h3 className="text-sm font-black text-emerald-950 truncate text-start">
+                              <Leaf className="h-4 w-4 text-primary-600 shrink-0" />
+                              <h3 className="text-sm font-black text-primary-950 truncate text-start">
                                 צעד {step.step_number}: {step.title}
                               </h3>
                             </div>
                             <div className="relative space-y-2">
-                                <p className="text-[11px] font-bold text-emerald-800/85 text-start flex items-center justify-end gap-1">
+                                <p className="text-[11px] font-bold text-primary-800/85 text-start flex items-center justify-end gap-1">
                                   <Leaf className="h-3.5 w-3.5" />
                                   הרגלים בצעד
                                 </p>
@@ -655,7 +655,7 @@ export function ProgressReportProvider({
                         );
                       })}
                       {data.steps.every((s) => parseItems(s.habits).length === 0) && (
-                        <p className="text-center text-sm text-emerald-900/70 py-12 px-4 leading-relaxed">
+                        <p className="text-center text-sm text-primary-900/70 py-12 px-4 leading-relaxed">
                           אין הרגלים מוגדרים בצעדי המסע כרגע.
                         </p>
                       )}

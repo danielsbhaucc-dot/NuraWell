@@ -92,18 +92,18 @@ function CostCard({
   sub?: string;
 }) {
   const toneClass = {
-    emerald: 'border-emerald-300/50 from-emerald-100/70 to-teal-100/50 text-emerald-700',
-    violet: 'border-violet-300/45 from-violet-100/60 to-fuchsia-50/45 text-violet-700',
-    sky: 'border-sky-300/50 from-cyan-100/70 to-sky-100/50 text-sky-700',
-    amber: 'border-amber-300/50 from-amber-100/60 to-orange-50/45 text-amber-700',
+    emerald: 'border-primary-300/50 from-primary-100/70 to-secondary-100/50 text-primary-700',
+    violet: 'border-iris-300/45 from-iris-100/60 to-iris-50/45 text-iris-700',
+    sky: 'border-secondary-300/50 from-secondary-100/70 to-secondary-100/50 text-secondary-700',
+    amber: 'border-accent-300/50 from-accent-100/60 to-energy-50/45 text-accent-700',
   }[tone];
   return (
     <div className={`rounded-2xl border bg-linear-to-br ${toneClass} p-4 backdrop-blur-xl`}>
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="text-xs font-semibold text-slate-700/85">{label}</p>
-          <p className="mt-1 font-display text-2xl font-black tabular-nums text-slate-900">{value}</p>
-          {sub ? <p className="mt-1 text-[11px] text-slate-600">{sub}</p> : null}
+          <p className="text-xs font-semibold text-ink-soft/85">{label}</p>
+          <p className="mt-1 font-display text-2xl font-black tabular-nums text-ink">{value}</p>
+          {sub ? <p className="mt-1 text-[11px] text-ink-soft">{sub}</p> : null}
         </div>
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-gc/60 bg-background-card/55 shadow-xs">
           {icon}
@@ -117,15 +117,15 @@ function BreakdownBars({ b }: { b: Breakdown }) {
   const total = b.totalUsd || 1;
   const pct = (v: number) => `${Math.round((v / total) * 100)}%`;
   const parts = [
-    { label: 'צ׳אט', v: b.chatUsd, color: 'bg-emerald-500' },
-    { label: 'רקע', v: b.backgroundUsd ?? 0, color: 'bg-amber-500' },
-    { label: 'התראות', v: b.notificationsUsd, color: 'bg-violet-500' },
-    { label: 'וידאו', v: b.videoUsd, color: 'bg-sky-500' },
-    { label: 'משותף', v: b.sharedUsd ?? 0, color: 'bg-slate-400' },
+    { label: 'צ׳אט', v: b.chatUsd, color: 'bg-primary-500' },
+    { label: 'רקע', v: b.backgroundUsd ?? 0, color: 'bg-accent-500' },
+    { label: 'התראות', v: b.notificationsUsd, color: 'bg-iris-500' },
+    { label: 'וידאו', v: b.videoUsd, color: 'bg-secondary-500' },
+    { label: 'משותף', v: b.sharedUsd ?? 0, color: 'bg-ink-400' },
   ];
   return (
     <div className="space-y-2">
-      <div className="flex h-3 w-full overflow-hidden rounded-full bg-slate-100">
+      <div className="flex h-3 w-full overflow-hidden rounded-full bg-surface">
         {parts.map((p) => (
           <div key={p.label} className={p.color} style={{ width: pct(p.v) }} title={`${p.label} ${usd(p.v)}`} />
         ))}
@@ -133,8 +133,8 @@ function BreakdownBars({ b }: { b: Breakdown }) {
       <div className="grid grid-cols-5 gap-2 text-center text-xs">
         {parts.map((p) => (
           <div key={p.label}>
-            <p className="font-bold text-slate-800">{usd(p.v)}</p>
-            <p className="text-slate-500">{p.label}</p>
+            <p className="font-bold text-ink">{usd(p.v)}</p>
+            <p className="text-ink-faint">{p.label}</p>
           </div>
         ))}
       </div>
@@ -224,8 +224,8 @@ export function AdminCostsClient() {
                 className={[
                   'rounded-xl px-3 py-2 text-xs font-bold transition-colors',
                   days === w.days
-                    ? 'bg-linear-to-br from-emerald-500 to-teal-600 text-gc shadow-md shadow-emerald-600/25'
-                    : 'text-slate-600 hover:bg-background-card/70',
+                    ? 'bg-linear-to-br from-primary-500 to-secondary-600 text-gc shadow-md shadow-primary-600/25'
+                    : 'text-ink-soft hover:bg-background-card/70',
                 ].join(' ')}
               >
                 {w.label}
@@ -238,7 +238,7 @@ export function AdminCostsClient() {
       <AdminCostLedger />
 
       {error ? (
-        <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-800">
+        <p className="rounded-xl border border-coral-200 bg-coral-50 px-3 py-2 text-sm font-medium text-coral-800">
           {error}
         </p>
       ) : null}
@@ -246,7 +246,7 @@ export function AdminCostsClient() {
       {/* סיכום אגרגטיבי */}
       {aggLoading ? (
         <p className="flex justify-center py-10">
-          <Loader2 className="h-7 w-7 animate-spin text-emerald-600" />
+          <Loader2 className="h-7 w-7 animate-spin text-primary-600" />
         </p>
       ) : agg ? (
         <section className="space-y-4">
@@ -254,36 +254,36 @@ export function AdminCostsClient() {
             <CostCard
               label="ממוצע למשתמש פעיל"
               value={usd(agg.averagePerActiveUser.totalUsd)}
-              icon={<TrendingUp className="h-4 w-4 text-emerald-600" />}
+              icon={<TrendingUp className="h-4 w-4 text-primary-600" />}
               tone="emerald"
               sub={`${agg.activeUsers} פעילים מתוך ${agg.totalUsers}`}
             />
             <CostCard
               label="ממוצע לכלל המשתמשים"
               value={usd(agg.averagePerUser.totalUsd)}
-              icon={<Users className="h-4 w-4 text-violet-600" />}
+              icon={<Users className="h-4 w-4 text-iris-600" />}
               tone="violet"
               sub={`${agg.totalUsers} משתמשים רשומים`}
             />
             <CostCard
               label={`סך עלות (${agg.days} ימים)`}
               value={usd(agg.totals.totalUsd)}
-              icon={<DollarSign className="h-4 w-4 text-sky-600" />}
+              icon={<DollarSign className="h-4 w-4 text-secondary-600" />}
               tone="sky"
             />
             <CostCard
               label="מחיר Bunny לצפייה"
               value={usd(agg.pricing.bunnyMinutesPerView * agg.pricing.bunnyUsdPerMinute)}
-              icon={<Video className="h-4 w-4 text-amber-600" />}
+              icon={<Video className="h-4 w-4 text-accent-600" />}
               tone="amber"
               sub={`${agg.pricing.bunnyMinutesPerView} דק' × צפייה`}
             />
           </div>
 
           <div className="rounded-2xl border border-gc/80 bg-background-card/60 p-4 backdrop-blur-xl">
-            <p className="mb-3 text-sm font-bold text-slate-700">פירוק סך העלות לפי מקור</p>
+            <p className="mb-3 text-sm font-bold text-ink-soft">פירוק סך העלות לפי מקור</p>
             <BreakdownBars b={agg.totals} />
-            <p className="mt-2 text-xs text-slate-500">
+            <p className="mt-2 text-xs text-ink-faint">
               {agg.measured
                 ? `AI לפי עלות שחויבה בפועל ב-OpenRouter. "משותף" = קריאות רקע בלי משתמש (${usd(agg.sharedTotalUsd ?? 0)}), מחולק בין הפעילים.`
                 : 'אין עדיין נתוני מדידה בחלון הזה, ולכן רקע והתראות הם אומדן.'}
@@ -292,11 +292,11 @@ export function AdminCostsClient() {
 
           {agg.trend?.length ? (
             <div className="rounded-2xl border border-gc/80 bg-background-card/60 p-4 backdrop-blur-xl">
-              <p className="mb-3 text-sm font-bold text-slate-700">מגמה יומית (AI)</p>
+              <p className="mb-3 text-sm font-bold text-ink-soft">מגמה יומית (AI)</p>
               <div className="flex h-24 items-end gap-1" dir="ltr">
                 {agg.trend.map((d) => {
                   const max = Math.max(...agg.trend!.map((x) => x.usd), 0.0001);
-                  return <div key={d.day} className="flex-1 rounded-t bg-emerald-500/80" style={{ height: `${Math.max(2, (d.usd / max) * 100)}%` }} title={`${d.day}: ${usd(d.usd)} · ${d.active} פעילים`} />;
+                  return <div key={d.day} className="flex-1 rounded-t bg-primary-500/80" style={{ height: `${Math.max(2, (d.usd / max) * 100)}%` }} title={`${d.day}: ${usd(d.usd)} · ${d.active} פעילים`} />;
                 })}
               </div>
             </div>
@@ -304,13 +304,13 @@ export function AdminCostsClient() {
 
           {agg.byFeature?.length ? (
             <div className="rounded-2xl border border-gc/80 bg-background-card/60 p-4 backdrop-blur-xl">
-              <p className="mb-2 text-sm font-bold text-slate-700">AI לפי פיצ׳ר ומודל (נמדד)</p>
+              <p className="mb-2 text-sm font-bold text-ink-soft">AI לפי פיצ׳ר ומודל (נמדד)</p>
               <table className="w-full text-xs">
                 <tbody>
                   {agg.byFeature.slice(0, 15).map((f) => (
-                    <tr key={`${f.feature}|${f.model}`} className="border-t border-slate-100">
+                    <tr key={`${f.feature}|${f.model}`} className="border-t border-hairline/60">
                       <td className="py-1 font-mono" dir="ltr">{f.feature}</td>
-                      <td className="py-1 font-mono text-slate-500" dir="ltr">{f.model}</td>
+                      <td className="py-1 font-mono text-ink-faint" dir="ltr">{f.model}</td>
                       <td className="py-1 text-end">{f.calls}</td>
                       <td className="py-1 text-end font-bold">{usd(f.usd)}</td>
                     </tr>
@@ -322,12 +322,12 @@ export function AdminCostsClient() {
 
           {agg.fixedMonthly?.length ? (
             <div className="rounded-2xl border border-gc/80 bg-background-card/60 p-4 backdrop-blur-xl">
-              <p className="mb-2 text-sm font-bold text-slate-700">עלויות קבועות לחודש (לא לפי משתמש)</p>
+              <p className="mb-2 text-sm font-bold text-ink-soft">עלויות קבועות לחודש (לא לפי משתמש)</p>
               <div className="grid grid-cols-2 gap-2 text-xs lg:grid-cols-5">
                 {agg.fixedMonthly.map((f) => (
                   <div key={f.item} className="rounded-xl bg-background-card/70 p-2">
-                    <p className="font-bold text-slate-800">{usd(f.usd)}</p>
-                    <p className="text-slate-500">{f.item} · {f.plan}</p>
+                    <p className="font-bold text-ink">{usd(f.usd)}</p>
+                    <p className="text-ink-faint">{f.item} · {f.plan}</p>
                   </div>
                 ))}
               </div>
@@ -339,25 +339,25 @@ export function AdminCostsClient() {
       {/* בחירת משתמש + פירוק */}
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,320px)_1fr]">
         <section className="flex max-h-[60vh] flex-col overflow-hidden rounded-2xl border border-gc/80 bg-background-card/60 backdrop-blur-xl">
-          <div className="border-b border-slate-100 p-3">
+          <div className="border-b border-hairline/60 p-3">
             <div className="relative">
-              <Search className="absolute inset-s-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <Search className="absolute inset-s-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-faint" />
               <input
                 type="search"
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="חיפוש משתמש..."
-                className="w-full rounded-xl border border-slate-200 bg-background-card/80 py-2 ps-10 pe-3 text-sm"
+                className="w-full rounded-xl border border-hairline bg-background-card/80 py-2 ps-10 pe-3 text-sm"
                 dir="rtl"
               />
             </div>
           </div>
           {aggLoading ? (
             <p className="flex justify-center p-6">
-              <Loader2 className="h-6 w-6 animate-spin text-emerald-600" />
+              <Loader2 className="h-6 w-6 animate-spin text-primary-600" />
             </p>
           ) : (
-            <ul className="flex-1 divide-y divide-slate-100 overflow-y-auto">
+            <ul className="flex-1 divide-y divide-ink-100 overflow-y-auto">
               {filteredUsers.map((u) => (
                 <li key={u.userId}>
                   <button
@@ -367,20 +367,20 @@ export function AdminCostsClient() {
                       setSelectedName(u.fullName || 'משתמש');
                     }}
                     className={[
-                      'w-full px-4 py-3 text-start transition-colors hover:bg-emerald-50/80',
-                      selectedId === u.userId ? 'bg-emerald-50' : '',
+                      'w-full px-4 py-3 text-start transition-colors hover:bg-primary-50/80',
+                      selectedId === u.userId ? 'bg-primary-50' : '',
                     ].join(' ')}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="text-sm font-bold text-slate-900">{u.fullName || 'ללא שם'}</p>
-                        <p className="truncate text-[11px] text-slate-500">{u.userId}</p>
+                        <p className="text-sm font-bold text-ink">{u.fullName || 'ללא שם'}</p>
+                        <p className="truncate text-[11px] text-ink-faint">{u.userId}</p>
                       </div>
-                      <p className="shrink-0 font-display text-sm font-black tabular-nums text-emerald-700">
+                      <p className="shrink-0 font-display text-sm font-black tabular-nums text-primary-700">
                         {usd(u.breakdown.totalUsd)}
                       </p>
                     </div>
-                    <div className="mt-2 grid grid-cols-2 gap-1 text-[10px] text-slate-500 sm:grid-cols-4">
+                    <div className="mt-2 grid grid-cols-2 gap-1 text-[10px] text-ink-faint sm:grid-cols-4">
                       <span>צ׳אט {usd(u.breakdown.chatUsd)}</span>
                       <span>רקע {usd(u.breakdown.backgroundUsd ?? 0)}</span>
                       <span>התראות {usd(u.breakdown.notificationsUsd)}</span>
@@ -390,7 +390,7 @@ export function AdminCostsClient() {
                 </li>
               ))}
               {filteredUsers.length === 0 ? (
-                <li className="p-6 text-center text-sm text-slate-500">לא נמצאו משתמשים</li>
+                <li className="p-6 text-center text-sm text-ink-faint">לא נמצאו משתמשים</li>
               ) : null}
             </ul>
           )}
@@ -399,14 +399,14 @@ export function AdminCostsClient() {
         <section className="min-h-[280px] rounded-2xl border border-gc/80 bg-background-card/60 p-4 backdrop-blur-xl sm:p-5">
           {!selectedId ? (
             <div className="space-y-4">
-              <p className="flex items-center justify-center gap-2 py-6 text-sm text-slate-500">
+              <p className="flex items-center justify-center gap-2 py-6 text-sm text-ink-faint">
                 <UserCircle className="h-5 w-5" />
                 יש לבחור משתמש כדי לראות פירוק עלות
               </p>
               {agg && agg.topUsers.length > 0 ? (
                 <div>
-                  <p className="mb-2 text-xs font-bold text-slate-500">המשתמשים היקרים ביותר</p>
-                  <ul className="divide-y divide-slate-100">
+                  <p className="mb-2 text-xs font-bold text-ink-faint">המשתמשים היקרים ביותר</p>
+                  <ul className="divide-y divide-ink-100">
                     {agg.topUsers.map((u) => (
                       <li key={u.userId}>
                         <button
@@ -415,10 +415,10 @@ export function AdminCostsClient() {
                             setSelectedId(u.userId);
                             setSelectedName(u.fullName || 'משתמש');
                           }}
-                          className="flex w-full items-center justify-between gap-3 px-1 py-2 text-start hover:bg-slate-50"
+                          className="flex w-full items-center justify-between gap-3 px-1 py-2 text-start hover:bg-surface-sunken"
                         >
-                          <span className="truncate text-sm text-slate-700">{u.fullName || u.userId}</span>
-                          <span className="shrink-0 font-bold tabular-nums text-emerald-700">
+                          <span className="truncate text-sm text-ink-soft">{u.fullName || u.userId}</span>
+                          <span className="shrink-0 font-bold tabular-nums text-primary-700">
                             {usd(u.breakdown.totalUsd)}
                           </span>
                         </button>
@@ -430,14 +430,14 @@ export function AdminCostsClient() {
             </div>
           ) : userLoading ? (
             <p className="flex justify-center py-16">
-              <Loader2 className="h-7 w-7 animate-spin text-emerald-600" />
+              <Loader2 className="h-7 w-7 animate-spin text-primary-600" />
             </p>
           ) : userCost ? (
             <div className="space-y-5">
               <div>
-                <h2 className="text-lg font-black text-slate-900">{selectedName}</h2>
-                <p className="text-sm text-slate-600">סה״כ עלות ב-{userCost.days} הימים האחרונים</p>
-                <p className="mt-1 font-display text-3xl font-black tabular-nums text-emerald-700">
+                <h2 className="text-lg font-black text-ink">{selectedName}</h2>
+                <p className="text-sm text-ink-soft">סה״כ עלות ב-{userCost.days} הימים האחרונים</p>
+                <p className="mt-1 font-display text-3xl font-black tabular-nums text-primary-700">
                   {usd(userCost.breakdown.totalUsd)}
                 </p>
               </div>
@@ -445,48 +445,48 @@ export function AdminCostsClient() {
               <BreakdownBars b={userCost.breakdown} />
 
               <div className="grid gap-2 sm:grid-cols-2">
-                <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-3">
-                  <p className="flex items-center gap-1.5 text-xs font-semibold text-emerald-800">
+                <div className="rounded-xl border border-primary-200 bg-primary-50/60 p-3">
+                  <p className="flex items-center gap-1.5 text-xs font-semibold text-primary-800">
                     <MessageSquare className="h-3.5 w-3.5" /> צ׳אט
                   </p>
-                  <p className="mt-1 font-bold tabular-nums text-slate-900">{usd(userCost.breakdown.chatUsd)}</p>
-                  <p className="text-[11px] text-slate-500">{userCost.counts.chatMessages} הודעות</p>
+                  <p className="mt-1 font-bold tabular-nums text-ink">{usd(userCost.breakdown.chatUsd)}</p>
+                  <p className="text-[11px] text-ink-faint">{userCost.counts.chatMessages} הודעות</p>
                 </div>
-                <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-3">
-                  <p className="flex items-center gap-1.5 text-xs font-semibold text-amber-800">
+                <div className="rounded-xl border border-accent-200 bg-accent-50/60 p-3">
+                  <p className="flex items-center gap-1.5 text-xs font-semibold text-accent-800">
                     <Sparkles className="h-3.5 w-3.5" /> נתב וקובץ חי
                   </p>
-                  <p className="mt-1 font-bold tabular-nums text-slate-900">
+                  <p className="mt-1 font-bold tabular-nums text-ink">
                     {usd(userCost.breakdown.backgroundUsd ?? 0)}
                   </p>
-                  <p className="text-[11px] text-slate-500">אומדן לכל תור</p>
+                  <p className="text-[11px] text-ink-faint">אומדן לכל תור</p>
                 </div>
-                <div className="rounded-xl border border-violet-200 bg-violet-50/60 p-3">
-                  <p className="flex items-center gap-1.5 text-xs font-semibold text-violet-800">
+                <div className="rounded-xl border border-iris-200 bg-iris-50/60 p-3">
+                  <p className="flex items-center gap-1.5 text-xs font-semibold text-iris-800">
                     <Bell className="h-3.5 w-3.5" /> התראות
                   </p>
-                  <p className="mt-1 font-bold tabular-nums text-slate-900">
+                  <p className="mt-1 font-bold tabular-nums text-ink">
                     {usd(userCost.breakdown.notificationsUsd)}
                   </p>
-                  <p className="text-[11px] text-slate-500">
+                  <p className="text-[11px] text-ink-faint">
                     {userCost.counts.notifications} התראות
                     {userCost.counts.notificationsEstimated > 0
                       ? ` · ${userCost.counts.notificationsEstimated} באומדן`
                       : ''}
                   </p>
                 </div>
-                <div className="rounded-xl border border-sky-200 bg-sky-50/60 p-3">
-                  <p className="flex items-center gap-1.5 text-xs font-semibold text-sky-800">
+                <div className="rounded-xl border border-secondary-200 bg-secondary-50/60 p-3">
+                  <p className="flex items-center gap-1.5 text-xs font-semibold text-secondary-800">
                     <Video className="h-3.5 w-3.5" /> וידאו (Bunny)
                   </p>
-                  <p className="mt-1 font-bold tabular-nums text-slate-900">{usd(userCost.breakdown.videoUsd)}</p>
-                  <p className="text-[11px] text-slate-500">
+                  <p className="mt-1 font-bold tabular-nums text-ink">{usd(userCost.breakdown.videoUsd)}</p>
+                  <p className="text-[11px] text-ink-faint">
                     {userCost.counts.videoViews} צפיות · {Math.round(userCost.counts.videoSeconds / 60)} דק׳
                   </p>
                 </div>
               </div>
 
-              <p className="rounded-lg bg-slate-50 px-3 py-2 text-[11px] leading-relaxed text-slate-500">
+              <p className="rounded-lg bg-surface-sunken px-3 py-2 text-[11px] leading-relaxed text-ink-faint">
                 מחירון OpenRouter נוכחי (אוגוסט 2026). חיוב ספק נשמר כש-OpenRouter מחזיר usage.cost.
                 נתב וקובץ חי הם אומדן. התראות ללא טוקנים מתועדים מחושבות באומדן. צפיות וידאו מתומחרות
                 לפי {userCost.pricing.bunnyMinutesPerView} דק׳ לצפייה × {usd(userCost.pricing.bunnyUsdPerMinute)}{' '}

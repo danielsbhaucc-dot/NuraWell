@@ -25,7 +25,7 @@ export function MentorEmojiReactionBadge({
 
   return (
     <motion.span
-      className="inline-flex h-7 min-w-7 items-center justify-center rounded-full border border-[#cfe3cf] bg-[#E8F3E8] px-1.5 text-[15px] leading-none text-[#1f3a2a] shadow-[0_3px_10px_rgba(0,0,0,0.28)] ring-1 ring-black/10"
+      className="inline-flex h-7 min-w-7 items-center justify-center rounded-full border border-[#cfe3cf] bg-[#E8F3E8] px-1.5 text-[15px] leading-none text-[#1f3a2a] shadow-[0_3px_10px_rgba(0,0,0,0.28)] ring-1 ring-forest-950/10"
       title={label}
       aria-label={label}
       initial={reduceMotion ? false : { opacity: 0, scale: 0.35, y: 8 }}

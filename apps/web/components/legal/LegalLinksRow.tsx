@@ -14,9 +14,9 @@ export function LegalLinksRow({
 }) {
   const linkClass =
     tone === 'dark'
-      ? 'text-emerald-100/80 hover:text-white'
-      : 'text-emerald-700/80 hover:text-emerald-800';
-  const dotClass = tone === 'dark' ? 'text-emerald-100/40' : 'text-emerald-700/30';
+      ? 'text-primary-100/80 hover:text-on-dark'
+      : 'text-primary-700/80 hover:text-primary-800';
+  const dotClass = tone === 'dark' ? 'text-primary-100/40' : 'text-primary-700/30';
 
   return (
     <nav

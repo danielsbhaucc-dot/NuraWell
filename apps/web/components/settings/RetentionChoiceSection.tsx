@@ -59,29 +59,29 @@ export function RetentionChoiceSection({ onToast }: { onToast: (msg: string, kin
 
   return (
     <section className="crystal-surface rounded-2xl p-5 space-y-3" data-testid="retention-choice-section">
-      <h2 className="font-bold text-slate-900 flex items-center gap-2">
-        <Archive className="w-4 h-4 text-teal-600" />
+      <h2 className="font-bold text-ink flex items-center gap-2">
+        <Archive className="w-4 h-4 text-secondary-600" />
         המידע שלכם אחרי סיום המנוי
       </h2>
       {!state && !loadError ? (
         <div className="flex justify-center py-6" aria-busy="true">
-          <Loader2 className="w-5 h-5 animate-spin text-slate-400" />
+          <Loader2 className="w-5 h-5 animate-spin text-ink-faint" />
         </div>
       ) : loadError ? (
-        <div className="rounded-xl border border-red-200 bg-red-50/70 p-3 text-sm text-red-800 flex items-center justify-between gap-2">
+        <div className="rounded-xl border border-coral-200 bg-coral-50/70 p-3 text-sm text-coral-800 flex items-center justify-between gap-2">
           <span>לא הצלחנו לטעון את הבחירה.</span>
-          <button type="button" onClick={() => void load()} className="flex items-center gap-1 font-bold text-red-700">
+          <button type="button" onClick={() => void load()} className="flex items-center gap-1 font-bold text-coral-700">
             <RefreshCw className="w-4 h-4" /> לנסות שוב
           </button>
         </div>
       ) : state ? (
         <>
           {state.is_default ? (
-            <p className="rounded-xl bg-sky-50 border border-sky-200 p-3 text-xs text-sky-900 leading-relaxed" data-testid="retention-default-note">
+            <p className="rounded-xl bg-secondary-50 border border-secondary-200 p-3 text-xs text-secondary-900 leading-relaxed" data-testid="retention-default-note">
               החשבון נפתח לפני שהבחירה הזו הייתה קיימת, ולכן חלה כרגע ברירת המחדל: שמירה של 24 חודשים מסיום המנוי ואז מחיקה. אפשר לבחור כאן אחרת.
             </p>
           ) : (
-            <p className="text-xs text-slate-500" data-testid="retention-current">
+            <p className="text-xs text-ink-faint" data-testid="retention-current">
               הבחירה הנוכחית: {state.choice === 'keep_24m' ? 'לשמור 24 חודשים' : 'למחוק מיד'}
               {state.decided_at ? ` · עודכנה ב־${new Date(state.decided_at).toLocaleDateString('he-IL')}` : ''}
             </p>
@@ -92,13 +92,13 @@ export function RetentionChoiceSection({ onToast }: { onToast: (msg: string, kin
             onClick={() => void save()}
             disabled={!dirty || saving}
             data-testid="retention-save"
-            className="w-full min-h-[48px] rounded-xl font-bold text-white bg-linear-to-l from-teal-600 to-sky-600 disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full min-h-[48px] rounded-xl font-bold text-on-dark bg-linear-to-l from-secondary-600 to-secondary-600 disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
             שמירת הבחירה
           </button>
-          {saveError ? <p className="text-sm font-semibold text-red-600">{saveError}</p> : null}
-          <p className="text-[11px] text-slate-500">כל שינוי נשמר כתיעוד הסכמה עם תאריך וגרסה.</p>
+          {saveError ? <p className="text-sm font-semibold text-coral-600">{saveError}</p> : null}
+          <p className="text-[11px] text-ink-faint">כל שינוי נשמר כתיעוד הסכמה עם תאריך וגרסה.</p>
         </>
       ) : null}
     </section>

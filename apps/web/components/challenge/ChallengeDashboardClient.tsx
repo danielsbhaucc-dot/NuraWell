@@ -58,12 +58,12 @@ const ICON_MAP: Record<string, typeof Droplets> = {
 };
 
 const CELEBRATION_GRADIENT: Record<string, string> = {
-  water: 'from-sky-500/30 to-cyan-500/20 border-sky-400/40',
-  movement: 'from-orange-500/30 to-amber-500/20 border-orange-400/40',
-  food: 'from-lime-500/30 to-emerald-500/20 border-lime-400/40',
-  moon: 'from-indigo-500/30 to-violet-500/20 border-indigo-400/40',
-  day_complete: 'from-amber-500/40 to-emerald-500/30 border-amber-400/50',
-  default: 'from-emerald-500/30 to-teal-500/20 border-emerald-400/40',
+  water: 'from-secondary-500/30 to-secondary-500/20 border-secondary-400/40',
+  movement: 'from-energy-500/30 to-accent-500/20 border-energy-400/40',
+  food: 'from-primary-500/30 to-primary-500/20 border-primary-400/40',
+  moon: 'from-iris-500/30 to-iris-500/20 border-iris-400/40',
+  day_complete: 'from-accent-500/40 to-primary-500/30 border-accent-400/50',
+  default: 'from-primary-500/30 to-secondary-500/20 border-primary-400/40',
 };
 
 type Props = {
@@ -150,14 +150,14 @@ export function ChallengeDashboardClient({ initialState }: Props) {
   const progress = requiredUnits ? Math.round((doneUnits / requiredUnits) * 100) : 0;
 
   return (
-    <div className="min-h-dvh bg-linear-to-b from-[#05010f] via-[#0a1628] to-[#05010f] text-white" dir="rtl">
+    <div className="min-h-dvh bg-linear-to-b from-[#05010f] via-[#0a1628] to-[#05010f] text-on-dark" dir="rtl">
       <AnimatePresence>
         {celebration ? (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-forest-950/70 backdrop-blur-sm px-4"
           >
             <motion.div
               {...celebrationMotion}
@@ -167,7 +167,7 @@ export function ChallengeDashboardClient({ initialState }: Props) {
             >
               <div className="text-5xl">{celebration.emoji}</div>
               <h2 className="mt-4 font-display text-2xl font-black">{celebration.title}</h2>
-              <p className="mt-2 text-sm leading-relaxed text-white/75">{celebration.subtitle}</p>
+              <p className="mt-2 text-sm leading-relaxed text-on-dark/75">{celebration.subtitle}</p>
             </motion.div>
           </motion.div>
         ) : null}
@@ -175,8 +175,8 @@ export function ChallengeDashboardClient({ initialState }: Props) {
 
       <div className="mx-auto max-w-lg px-4 pb-24 pt-6">
         {state.is_demo ? (
-          <div className="mb-4 flex items-center justify-between gap-2 rounded-2xl border border-amber-400/40 bg-amber-500/10 px-4 py-3">
-            <span className="text-sm text-amber-100">מצב דemo</span>
+          <div className="mb-4 flex items-center justify-between gap-2 rounded-2xl border border-accent-400/40 bg-accent-500/10 px-4 py-3">
+            <span className="text-sm text-accent-100">מצב דemo</span>
             <button
               type="button"
               onClick={exitDemo}
@@ -191,7 +191,7 @@ export function ChallengeDashboardClient({ initialState }: Props) {
         <ChallengePushBanner />
 
         {pendingOffline > 0 ? (
-          <div className="mb-4 flex items-center justify-between gap-2 rounded-2xl border border-amber-400/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+          <div className="mb-4 flex items-center justify-between gap-2 rounded-2xl border border-accent-400/40 bg-accent-500/10 px-4 py-3 text-sm text-accent-100">
             <span>{pendingOffline} סימונים ממתינים לסנכרון</span>
             <button
               type="button"
@@ -205,18 +205,18 @@ export function ChallengeDashboardClient({ initialState }: Props) {
         ) : null}
 
         <header className="mb-6">
-          <p className="text-sm text-emerald-300/80">אתגר 14 יום</p>
+          <p className="text-sm text-primary-300/80">אתגר 14 יום</p>
           <h1 className="font-display text-2xl font-black">
             יום {dayIndex} מתוך {state.days_total}
           </h1>
           <div className="mt-4 h-2 overflow-hidden rounded-full bg-background-card/10">
             <motion.div
-              className="h-full rounded-full bg-linear-to-l from-emerald-400 to-teal-500"
+              className="h-full rounded-full bg-linear-to-l from-primary-400 to-secondary-500"
               initial={{ width: 0 }}
               animate={{ width: `${progress}%` }}
             />
           </div>
-          <p className="mt-2 text-xs text-white/45">
+          <p className="mt-2 text-xs text-on-dark/45">
             {doneUnits} מתוך {requiredUnits} סימונים היום
           </p>
         </header>
@@ -230,10 +230,10 @@ export function ChallengeDashboardClient({ initialState }: Props) {
         <ChallengeInsightsCard />
 
         <section className="mt-6 space-y-3">
-          <h2 className="text-sm font-bold text-white/60">משימות היום</h2>
+          <h2 className="text-sm font-bold text-on-dark/60">משימות היום</h2>
           {loading ? (
             <div className="flex justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-emerald-400" />
+              <Loader2 className="h-8 w-8 animate-spin text-primary-400" />
             </div>
           ) : (
             tasks.map((task) => {
@@ -248,8 +248,8 @@ export function ChallengeDashboardClient({ initialState }: Props) {
                     key={task.id}
                     className={`rounded-2xl border transition-colors ${
                       task.completed
-                        ? 'border-emerald-500/30 bg-emerald-500/10'
-                        : 'border-white/10 bg-background-card/5'
+                        ? 'border-primary-500/30 bg-primary-500/10'
+                        : 'border-on-dark/10 bg-background-card/5'
                     }`}
                   >
                     <button
@@ -259,25 +259,25 @@ export function ChallengeDashboardClient({ initialState }: Props) {
                     >
                       <div className="mt-0.5 shrink-0">
                         {task.completed ? (
-                          <CheckCircle2 className="h-6 w-6 text-emerald-400" />
+                          <CheckCircle2 className="h-6 w-6 text-primary-400" />
                         ) : (
-                          <Icon className="h-6 w-6 text-white/40" />
+                          <Icon className="h-6 w-6 text-on-dark/40" />
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="font-semibold">{task.title_he}</div>
-                        <p className="mt-1 text-xs text-white/45">
+                        <p className="mt-1 text-xs text-on-dark/45">
                           {doneSlots}/{task.slots!.length} ארוחות
                         </p>
                       </div>
                       {isExpanded ? (
-                        <ChevronUp className="h-5 w-5 text-white/40" />
+                        <ChevronUp className="h-5 w-5 text-on-dark/40" />
                       ) : (
-                        <ChevronDown className="h-5 w-5 text-white/40" />
+                        <ChevronDown className="h-5 w-5 text-on-dark/40" />
                       )}
                     </button>
                     {isExpanded ? (
-                      <div className="space-y-2 border-t border-white/10 px-3 pb-3 pt-2">
+                      <div className="space-y-2 border-t border-on-dark/10 px-3 pb-3 pt-2">
                         {task.slots!.map((slot) => (
                           <button
                             key={slot.slot_key}
@@ -286,8 +286,8 @@ export function ChallengeDashboardClient({ initialState }: Props) {
                             onClick={() => !slot.completed && completeTask(task.id, slot.slot_key)}
                             className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-sm ${
                               slot.completed
-                                ? 'bg-emerald-500/15 text-emerald-200'
-                                : 'bg-black/20 active:bg-background-card/10'
+                                ? 'bg-primary-500/15 text-primary-200'
+                                : 'bg-forest-950/20 active:bg-background-card/10'
                             }`}
                           >
                             <span>{slot.label}</span>
@@ -296,7 +296,7 @@ export function ChallengeDashboardClient({ initialState }: Props) {
                             ) : completing === `${task.id}:${slot.slot_key}` ? (
                               <Loader2 className="h-4 w-4 animate-spin" />
                             ) : (
-                              <Circle className="h-4 w-4 text-white/30" />
+                              <Circle className="h-4 w-4 text-on-dark/30" />
                             )}
                           </button>
                         ))}
@@ -315,23 +315,23 @@ export function ChallengeDashboardClient({ initialState }: Props) {
                   whileTap={{ scale: 0.98 }}
                   className={`flex w-full items-start gap-3 rounded-2xl border p-4 text-start transition-colors ${
                     task.completed
-                      ? 'border-emerald-500/30 bg-emerald-500/10'
-                      : 'border-white/10 bg-background-card/5 active:bg-background-card/10'
+                      ? 'border-primary-500/30 bg-primary-500/10'
+                      : 'border-on-dark/10 bg-background-card/5 active:bg-background-card/10'
                   }`}
                 >
                   <div className="mt-0.5 shrink-0">
                     {task.completed ? (
-                      <CheckCircle2 className="h-6 w-6 text-emerald-400" />
+                      <CheckCircle2 className="h-6 w-6 text-primary-400" />
                     ) : completing === task.id ? (
-                      <Loader2 className="h-6 w-6 animate-spin text-white/50" />
+                      <Loader2 className="h-6 w-6 animate-spin text-on-dark/50" />
                     ) : (
-                      <Icon className="h-6 w-6 text-white/40" />
+                      <Icon className="h-6 w-6 text-on-dark/40" />
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="font-semibold">{task.title_he}</div>
                     {task.description_he ? (
-                      <p className="mt-1 text-sm text-white/50">{task.description_he}</p>
+                      <p className="mt-1 text-sm text-on-dark/50">{task.description_he}</p>
                     ) : null}
                   </div>
                 </motion.button>

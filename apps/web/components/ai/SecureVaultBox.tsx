@@ -119,7 +119,7 @@ export function SecureVaultBox({ onSaved, onClose, field, initialKind, initialVa
       ) : (
         <div className="nw-vault__ok" role="status">
           <div className="nw-vault__ring">
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#eef4ea" strokeWidth="3" strokeLinecap="round"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
           </div>
           <b>נשמר ונעול 🔒</b>
           {ref ? (<><p>מוצפן ב-AES-256. אלמוג רואה רק את ההפניה:</p><span className="nw-vault__chip">{ref}</span></>) : <p>נשמר בפרופיל, בלי לעבור דרך ה-AI.</p>}

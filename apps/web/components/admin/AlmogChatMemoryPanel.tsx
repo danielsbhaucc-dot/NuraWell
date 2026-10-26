@@ -127,13 +127,13 @@ function accessBadgeClass(status: TranscriptAccessStatus | undefined): string {
   switch (status) {
     case 'granted_global':
     case 'granted_session':
-      return 'bg-emerald-100 text-emerald-800';
+      return 'bg-primary-100 text-primary-800';
     case 'pending':
-      return 'bg-amber-100 text-amber-800';
+      return 'bg-accent-100 text-accent-800';
     case 'denied':
-      return 'bg-rose-100 text-rose-800';
+      return 'bg-coral-100 text-coral-800';
     default:
-      return 'bg-slate-100 text-slate-600';
+      return 'bg-surface text-ink-soft';
   }
 }
 
@@ -497,7 +497,7 @@ export function AlmogChatMemoryPanel({
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-16 text-slate-500">
+      <div className="flex items-center justify-center py-16 text-ink-faint">
         <Loader2 className="h-6 w-6 animate-spin" />
       </div>
     );
@@ -505,7 +505,7 @@ export function AlmogChatMemoryPanel({
 
   if (error || !data) {
     return (
-      <div className="rounded-xl border border-rose-200 bg-rose-50/80 p-4 text-rose-800">
+      <div className="rounded-xl border border-coral-200 bg-coral-50/80 p-4 text-coral-800">
         {error ?? 'לא נטען'}
       </div>
     );
@@ -513,12 +513,12 @@ export function AlmogChatMemoryPanel({
 
   return (
     <div className="space-y-6">
-      <section className="rounded-2xl border border-indigo-200/80 bg-indigo-50/60 p-4">
+      <section className="rounded-2xl border border-iris-200/80 bg-iris-50/60 p-4">
         <div className="flex items-start gap-2">
-          <Shield className="mt-0.5 h-4 w-4 shrink-0 text-indigo-700" />
-          <div className="text-xs leading-relaxed text-indigo-900">
+          <Shield className="mt-0.5 h-4 w-4 shrink-0 text-iris-700" />
+          <div className="text-xs leading-relaxed text-iris-900">
             <p className="font-semibold">הגנה רב-שכבתית על תמלילים</p>
-            <p className="mt-1 text-indigo-800/90">
+            <p className="mt-1 text-iris-800/90">
               צפייה בתמליל דורשת אישור משתמש, סיבת גישה (נרשמת ב-audit log), והרשאת Ops.
               {data.transcript_global_consent
                 ? ' למשתמש זה יש הסכמה גלובלית פעילה.'
@@ -530,29 +530,29 @@ export function AlmogChatMemoryPanel({
 
       {data.rollup ? (
         <section className="rounded-2xl p-4" style={glassCardStyle}>
-          <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-800">
+          <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-ink">
             <MessageSquare className="h-4 w-4" />
             סיכום cross-session
           </h3>
-          <pre className="whitespace-pre-wrap text-xs leading-relaxed text-slate-700">{data.rollup}</pre>
+          <pre className="whitespace-pre-wrap text-xs leading-relaxed text-ink-soft">{data.rollup}</pre>
         </section>
       ) : null}
 
       <section className="rounded-2xl p-4" style={glassPanelStyle}>
-        <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800">
+        <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-ink">
           <Calendar className="h-4 w-4" />
           סיכומים תקופתיים ({data.periodic_summaries.length})
         </h3>
         {data.periodic_summaries.length === 0 ? (
-          <p className="text-sm text-slate-500">אין עדיין</p>
+          <p className="text-sm text-ink-faint">אין עדיין</p>
         ) : (
           <ul className="space-y-3">
             {data.periodic_summaries.map((p) => (
-              <li key={`${p.type}-${p.period_key}`} className="rounded-xl border border-slate-200/80 bg-background-card/60 p-3">
-                <div className="mb-1 text-xs font-medium text-indigo-700">
+              <li key={`${p.type}-${p.period_key}`} className="rounded-xl border border-hairline/80 bg-background-card/60 p-3">
+                <div className="mb-1 text-xs font-medium text-iris-700">
                   {TYPE_LABELS[p.type] ?? p.type} · {p.period_key} · {p.session_count} שיחות · {fmt(p.updated_at)}
                 </div>
-                <p className="text-sm text-slate-700">{p.ai_insight}</p>
+                <p className="text-sm text-ink-soft">{p.ai_insight}</p>
               </li>
             ))}
           </ul>
@@ -560,7 +560,7 @@ export function AlmogChatMemoryPanel({
       </section>
 
       <section className="rounded-2xl p-4" style={glassPanelStyle}>
-        <h3 className="mb-3 text-sm font-semibold text-slate-800">
+        <h3 className="mb-3 text-sm font-semibold text-ink">
           שיחות ({data.sessions.length})
         </h3>
         <ul className="space-y-2">
@@ -572,14 +572,14 @@ export function AlmogChatMemoryPanel({
             const hasAccess = canViewTranscript(access);
 
             return (
-              <li key={s.id} className="rounded-xl border border-slate-200/80 bg-background-card/60">
+              <li key={s.id} className="rounded-xl border border-hairline/80 bg-background-card/60">
                 <button
                   type="button"
                   className="flex w-full flex-col gap-1 px-3 py-2 text-start text-sm"
                   onClick={() => toggleSession(s)}
                 >
                   <span
-                    className="line-clamp-2 font-medium leading-snug text-slate-800"
+                    className="line-clamp-2 font-medium leading-snug text-ink"
                     title={fullTitle}
                   >
                     {fullTitle}
@@ -588,8 +588,8 @@ export function AlmogChatMemoryPanel({
                     <span
                       className={
                         s.status === 'open'
-                          ? 'rounded-full bg-emerald-100 px-2 py-0.5 text-emerald-800'
-                          : 'rounded-full bg-slate-100 px-2 py-0.5 text-slate-600'
+                          ? 'rounded-full bg-primary-100 px-2 py-0.5 text-primary-800'
+                          : 'rounded-full bg-surface px-2 py-0.5 text-ink-soft'
                       }
                     >
                       {s.status === 'open' ? 'פתוח' : 'סגור'}
@@ -598,20 +598,20 @@ export function AlmogChatMemoryPanel({
                       {ACCESS_LABELS[access]}
                     </span>
                     {typeof s.message_count === 'number' ? (
-                      <span className="text-slate-500">{s.message_count} הודעות</span>
+                      <span className="text-ink-faint">{s.message_count} הודעות</span>
                     ) : null}
-                    <span className="ms-auto text-slate-500">{fmt(s.updated_at)}</span>
+                    <span className="ms-auto text-ink-faint">{fmt(s.updated_at)}</span>
                   </div>
                 </button>
                 {open ? (
-                  <div className="space-y-3 border-t border-slate-100 px-3 py-3 text-xs">
+                  <div className="space-y-3 border-t border-hairline/60 px-3 py-3 text-xs">
                     <div className="flex flex-wrap gap-2">
                       {s.status === 'open' ? (
                         <button
                           type="button"
                           disabled={busy}
                           onClick={() => void runAction(s.id, 'close')}
-                          className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-background-card px-2 py-1 font-medium text-slate-700 disabled:opacity-50"
+                          className="inline-flex items-center gap-1 rounded-lg border border-hairline bg-background-card px-2 py-1 font-medium text-ink-soft disabled:opacity-50"
                         >
                           <Lock className="h-3.5 w-3.5" />
                           סגירה
@@ -621,7 +621,7 @@ export function AlmogChatMemoryPanel({
                           type="button"
                           disabled={busy}
                           onClick={() => void runAction(s.id, 'reopen')}
-                          className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-background-card px-2 py-1 font-medium text-slate-700 disabled:opacity-50"
+                          className="inline-flex items-center gap-1 rounded-lg border border-hairline bg-background-card px-2 py-1 font-medium text-ink-soft disabled:opacity-50"
                         >
                           <Unlock className="h-3.5 w-3.5" />
                           פתיחה מחדש
@@ -631,16 +631,16 @@ export function AlmogChatMemoryPanel({
                         type="button"
                         disabled={busy}
                         onClick={() => void runAction(s.id, 'delete')}
-                        className="inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-rose-50 px-2 py-1 font-medium text-rose-700 disabled:opacity-50"
+                        className="inline-flex items-center gap-1 rounded-lg border border-coral-200 bg-coral-50 px-2 py-1 font-medium text-coral-700 disabled:opacity-50"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                         מחיקה
                       </button>
-                      {busy ? <Loader2 className="h-4 w-4 animate-spin text-slate-400" /> : null}
+                      {busy ? <Loader2 className="h-4 w-4 animate-spin text-ink-faint" /> : null}
                     </div>
 
                     {actionMsg ? (
-                      <p className="flex items-center gap-1 text-emerald-700">
+                      <p className="flex items-center gap-1 text-primary-700">
                         <CheckCircle2 className="h-3.5 w-3.5" />
                         {actionMsg}
                       </p>
@@ -648,15 +648,15 @@ export function AlmogChatMemoryPanel({
 
                     {s.summary ? (
                       <div>
-                        <div className="mb-1 font-medium text-slate-700">סיכום סגירה</div>
-                        <p className="whitespace-pre-wrap text-slate-600">{s.summary}</p>
+                        <div className="mb-1 font-medium text-ink-soft">סיכום סגירה</div>
+                        <p className="whitespace-pre-wrap text-ink-soft">{s.summary}</p>
                       </div>
                     ) : null}
 
                     {s.live_conversation_file ? (
                       <div>
-                        <div className="mb-1 font-medium text-slate-700">קובץ שיחה חי</div>
-                        <pre className="max-h-64 overflow-auto whitespace-pre-wrap rounded-lg bg-slate-50 p-2 text-slate-600">
+                        <div className="mb-1 font-medium text-ink-soft">קובץ שיחה חי</div>
+                        <pre className="max-h-64 overflow-auto whitespace-pre-wrap rounded-lg bg-surface-sunken p-2 text-ink-soft">
                           {s.live_conversation_file}
                         </pre>
                       </div>
@@ -665,7 +665,7 @@ export function AlmogChatMemoryPanel({
                     {!hasAccess ? (
                       <div className="flex items-start gap-3 rounded-xl border border-[#E8D5B5] bg-glass-hi/80 p-3">
                         <div className="min-w-0 flex-1">
-                        <div className="mb-2 flex items-center gap-2 font-medium text-amber-900">
+                        <div className="mb-2 flex items-center gap-2 font-medium text-accent-900">
                           {access === 'pending' ? (
                             <Clock className="h-4 w-4 shrink-0" />
                           ) : (
@@ -679,26 +679,26 @@ export function AlmogChatMemoryPanel({
                         </div>
                         {access !== 'pending' ? (
                           <>
-                            <label className="mb-1 block text-amber-900/90">סיבת הבקשה (נשלחת למשתמש)</label>
+                            <label className="mb-1 block text-accent-900/90">סיבת הבקשה (נשלחת למשתמש)</label>
                             <textarea
                               value={requestReason}
                               onChange={(e) => setRequestReason(e.target.value)}
                               rows={2}
-                              className="mb-2 w-full rounded-lg border border-[#E8D5B5] bg-glass/80 px-2 py-1 text-slate-800"
+                              className="mb-2 w-full rounded-lg border border-[#E8D5B5] bg-glass/80 px-2 py-1 text-ink"
                               placeholder="למשל: בקשת תמיכה #1234 — בדיקת תקלה בשיחה"
                             />
                             <button
                               type="button"
                               disabled={busy}
                               onClick={() => void requestAccess(s.id)}
-                              className="inline-flex items-center gap-1 rounded-lg bg-amber-700 px-3 py-1.5 font-medium text-[#FFFBF5] disabled:opacity-50"
+                              className="inline-flex items-center gap-1 rounded-lg bg-accent-700 px-3 py-1.5 font-medium text-[#cfe9dc] disabled:opacity-50"
                             >
                               <Send className="h-3.5 w-3.5" />
                               שלח בקשת אישור למשתמש
                             </button>
                           </>
                         ) : (
-                          <p className="mb-2 text-amber-900/90">
+                          <p className="mb-2 text-accent-900/90">
                             נשלחה התראה למשתמש. הסטטוס מתעדכן אוטומטית כל 20 שניות.
                           </p>
                         )}
@@ -707,7 +707,7 @@ export function AlmogChatMemoryPanel({
                             type="button"
                             disabled={busy}
                             onClick={() => void cancelAccessRequest(s.id)}
-                            className="mb-2 inline-flex items-center gap-1 rounded-lg border border-rose-300 bg-glass/80 px-3 py-1.5 text-xs font-bold text-rose-700 disabled:opacity-50"
+                            className="mb-2 inline-flex items-center gap-1 rounded-lg border border-coral-300 bg-glass/80 px-3 py-1.5 text-xs font-bold text-coral-700 disabled:opacity-50"
                           >
                             <Ban className="h-3.5 w-3.5" />
                             בטל בקשה (מחק התראה מהמשתמש)
@@ -727,7 +727,7 @@ export function AlmogChatMemoryPanel({
                           </div>
                         ) : null}
                         </div>
-                        <Shield className="mt-0.5 h-5 w-5 shrink-0 text-amber-800/70" aria-hidden />
+                        <Shield className="mt-0.5 h-5 w-5 shrink-0 text-accent-800/70" aria-hidden />
                       </div>
                     ) : (
                       <>
@@ -738,7 +738,7 @@ export function AlmogChatMemoryPanel({
                           <button
                             type="button"
                             onClick={() => void exportTranscript(s.id, 'txt')}
-                            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-background-card px-2 py-1 font-medium text-slate-700"
+                            className="inline-flex items-center gap-1 rounded-lg border border-hairline bg-background-card px-2 py-1 font-medium text-ink-soft"
                           >
                             <FileText className="h-3.5 w-3.5" />
                             ייצוא TXT
@@ -746,7 +746,7 @@ export function AlmogChatMemoryPanel({
                           <button
                             type="button"
                             onClick={() => void exportTranscript(s.id, 'json')}
-                            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-background-card px-2 py-1 font-medium text-slate-700"
+                            className="inline-flex items-center gap-1 rounded-lg border border-hairline bg-background-card px-2 py-1 font-medium text-ink-soft"
                           >
                             <FileJson className="h-3.5 w-3.5" />
                             ייצוא JSON
@@ -755,7 +755,7 @@ export function AlmogChatMemoryPanel({
                             type="button"
                             disabled={!transcript?.length}
                             onClick={() => void copyTranscript()}
-                            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-background-card px-2 py-1 font-medium text-slate-700 disabled:opacity-50"
+                            className="inline-flex items-center gap-1 rounded-lg border border-hairline bg-background-card px-2 py-1 font-medium text-ink-soft disabled:opacity-50"
                           >
                             <Copy className="h-3.5 w-3.5" />
                             העתק
@@ -764,7 +764,7 @@ export function AlmogChatMemoryPanel({
                             type="button"
                             disabled={!transcript?.length}
                             onClick={printTranscript}
-                            className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-background-card px-2 py-1 font-medium text-slate-700 disabled:opacity-50"
+                            className="inline-flex items-center gap-1 rounded-lg border border-hairline bg-background-card px-2 py-1 font-medium text-ink-soft disabled:opacity-50"
                           >
                             <Printer className="h-3.5 w-3.5" />
                             הדפס
@@ -773,7 +773,7 @@ export function AlmogChatMemoryPanel({
                             type="button"
                             disabled={busy}
                             onClick={() => void sendToUser(s.id)}
-                            className="inline-flex items-center gap-1 rounded-lg border border-indigo-200 bg-indigo-50 px-2 py-1 font-medium text-indigo-800 disabled:opacity-50"
+                            className="inline-flex items-center gap-1 rounded-lg border border-iris-200 bg-iris-50 px-2 py-1 font-medium text-iris-800 disabled:opacity-50"
                           >
                             <Download className="h-3.5 w-3.5" />
                             שלח קישור למשתמש
@@ -781,38 +781,38 @@ export function AlmogChatMemoryPanel({
                         </div>
 
                         <div className="relative">
-                          <Search className="pointer-events-none absolute inset-s-2 top-2 h-3.5 w-3.5 text-slate-400" />
+                          <Search className="pointer-events-none absolute inset-s-2 top-2 h-3.5 w-3.5 text-ink-faint" />
                           <input
                             type="search"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             placeholder="חיפוש בתמליל..."
-                            className="w-full rounded-lg border border-slate-200 bg-background-card py-1.5 ps-8 pe-2 text-slate-800"
+                            className="w-full rounded-lg border border-hairline bg-background-card py-1.5 ps-8 pe-2 text-ink"
                           />
                         </div>
 
                         <div>
-                          <div className="mb-1 font-medium text-slate-700">תמליל</div>
+                          <div className="mb-1 font-medium text-ink-soft">תמליל</div>
                           {transcriptLoading ? (
-                            <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
+                            <Loader2 className="h-4 w-4 animate-spin text-ink-faint" />
                           ) : transcriptError ? (
-                            <p className="text-rose-600">{transcriptError}</p>
+                            <p className="text-coral-600">{transcriptError}</p>
                           ) : filteredTranscript && filteredTranscript.length > 0 ? (
-                            <ul className="max-h-80 space-y-2 overflow-auto rounded-lg bg-slate-50 p-2">
+                            <ul className="max-h-80 space-y-2 overflow-auto rounded-lg bg-surface-sunken p-2">
                               {filteredTranscript.map((t, i) => (
                                 <li key={`${t.created_at}-${i}`}>
-                                  <span className="font-semibold text-slate-700">
+                                  <span className="font-semibold text-ink-soft">
                                     {t.role === 'user' ? 'משתמש' : 'אלמוג'}
                                   </span>
-                                  <span className="text-slate-400"> · {fmt(t.created_at)}</span>
-                                  <p className="whitespace-pre-wrap text-slate-600">{t.content}</p>
+                                  <span className="text-ink-faint"> · {fmt(t.created_at)}</span>
+                                  <p className="whitespace-pre-wrap text-ink-soft">{t.content}</p>
                                 </li>
                               ))}
                             </ul>
                           ) : transcript && transcript.length > 0 ? (
-                            <p className="text-slate-400">אין תוצאות לחיפוש</p>
+                            <p className="text-ink-faint">אין תוצאות לחיפוש</p>
                           ) : (
-                            <p className="text-slate-400">
+                            <p className="text-ink-faint">
                               {transcript === null
                                 ? 'יש לאשר סיבת גישה כדי לטעון את התמליל'
                                 : 'אין הודעות בשיחה זו'}
@@ -822,7 +822,7 @@ export function AlmogChatMemoryPanel({
                       </>
                     )}
 
-                    <div className="text-slate-400">
+                    <div className="text-ink-faint">
                       נוצר {fmt(s.created_at)}
                       {s.closed_at ? ` · נסגר ${fmt(s.closed_at)}` : null}
                     </div>
@@ -835,20 +835,20 @@ export function AlmogChatMemoryPanel({
       </section>
 
       {reasonModalSession ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-forest-950/40 p-4">
           <div className="w-full max-w-md rounded-2xl bg-background-card p-5 shadow-xl" dir="rtl">
-            <h4 className="mb-2 flex items-center gap-2 font-bold text-slate-900">
-              <Shield className="h-4 w-4 text-indigo-600" />
+            <h4 className="mb-2 flex items-center gap-2 font-bold text-ink">
+              <Shield className="h-4 w-4 text-iris-600" />
               אישור גישה לתמליל
             </h4>
-            <p className="mb-3 text-sm text-slate-600">
+            <p className="mb-3 text-sm text-ink-soft">
               יש להזין סיבת גישה (לפחות 8 תווים). הפעולה נרשמת ב-audit log ואינה ניתנת לביטול.
             </p>
             <textarea
               value={accessReason}
               onChange={(e) => setAccessReason(e.target.value)}
               rows={3}
-              className="mb-4 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+              className="mb-4 w-full rounded-xl border border-hairline px-3 py-2 text-sm"
               placeholder="סיבת הגישה — למשל: טיפול בפנייה #456"
             />
             <div className="flex gap-2">
@@ -856,14 +856,14 @@ export function AlmogChatMemoryPanel({
                 type="button"
                 disabled={accessReason.trim().length < 8}
                 onClick={confirmViewTranscript}
-                className="flex-1 rounded-xl bg-indigo-600 py-2 font-bold text-gc disabled:opacity-50"
+                className="flex-1 rounded-xl bg-iris-600 py-2 font-bold text-gc disabled:opacity-50"
               >
                 אשר וטען תמליל
               </button>
               <button
                 type="button"
                 onClick={() => setReasonModalSession(null)}
-                className="rounded-xl border border-slate-200 px-4 py-2 font-medium text-slate-700"
+                className="rounded-xl border border-hairline px-4 py-2 font-medium text-ink-soft"
               >
                 ביטול
               </button>

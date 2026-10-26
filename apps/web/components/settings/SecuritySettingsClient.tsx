@@ -21,7 +21,7 @@ async function post(body: Record<string, unknown>) {
 }
 
 function Divider() {
-  return <div aria-hidden className="h-px w-full bg-linear-to-l from-transparent via-amber-300/70 to-transparent" />;
+  return <div aria-hidden className="h-px w-full bg-linear-to-l from-transparent via-accent-300/70 to-transparent" />;
 }
 
 export function SecuritySettingsClient() {
@@ -154,38 +154,38 @@ export function SecuritySettingsClient() {
     <div className="container-mobile py-6 pt-6 md:pt-16 pb-10 space-y-5" dir="rtl">
       <ToastContainer toasts={toast.toasts} onDismiss={toast.dismiss} />
 
-      <header className="relative overflow-hidden rounded-3xl p-6 text-white shadow-[0_18px_50px_rgba(4,120,87,0.28)] bg-linear-to-br from-emerald-700 via-teal-600 to-emerald-500">
-        <div aria-hidden className="absolute -left-10 -top-10 h-40 w-40 rounded-full bg-amber-300/30 blur-3xl" />
-        <div aria-hidden className="absolute -bottom-12 right-6 h-36 w-36 rounded-full bg-teal-200/30 blur-3xl" />
+      <header className="relative overflow-hidden rounded-3xl p-6 text-on-dark shadow-[0_18px_50px_rgba(4,120,87,0.28)] bg-linear-to-br from-primary-700 via-secondary-600 to-primary-500">
+        <div aria-hidden className="absolute -left-10 -top-10 h-40 w-40 rounded-full bg-accent-300/30 blur-3xl" />
+        <div aria-hidden className="absolute -bottom-12 right-6 h-36 w-36 rounded-full bg-secondary-200/30 blur-3xl" />
         <div className="relative flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-amber-200/60 backdrop-blur">
-            <ShieldCheck className="h-6 w-6 text-amber-200" aria-hidden />
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-on-dark/15 ring-1 ring-accent-200/60 backdrop-blur">
+            <ShieldCheck className="h-6 w-6 text-accent-200" aria-hidden />
           </div>
           <div>
             <h1 className="text-2xl font-black" style={{ fontFamily: 'Rubik, Heebo, sans-serif' }}>כניסה ואבטחה</h1>
-            <p className="text-sm text-emerald-50/90">כניסה מהירה עם הפנים או האצבע, וקודי גיבוי לשעת הצורך</p>
+            <p className="text-sm text-primary-50/90">כניסה מהירה עם הפנים או האצבע, וקודי גיבוי לשעת הצורך</p>
           </div>
         </div>
       </header>
 
       {blocked ? (
-        <section role="alert" className="crystal-surface rounded-2xl border border-amber-300/70 p-5 space-y-3">
-          <h2 className="flex items-center gap-2 font-bold text-slate-900">
-            <TriangleAlert className="h-4 w-4 text-amber-600" aria-hidden />
+        <section role="alert" className="crystal-surface rounded-2xl border border-accent-300/70 p-5 space-y-3">
+          <h2 className="flex items-center gap-2 font-bold text-ink">
+            <TriangleAlert className="h-4 w-4 text-accent-600" aria-hidden />
             {blocked === 'reauth' ? 'צריך להתחבר שוב' : 'צריך מכשיר מאושר'}
           </h2>
-          <p className="text-sm leading-relaxed text-slate-600">
+          <p className="text-sm leading-relaxed text-ink-soft">
             {blocked === 'reauth'
               ? 'כדי להוסיף דרך כניסה חדשה, החיבור צריך להיות מהרבע שעה האחרונה. זה מגן על החשבון אם מישהו אחר משתמש במכשיר.'
               : 'לחשבון ניהול אפשר להוסיף דרכי כניסה רק ממכשיר שכבר אושר. המכשיר הזה עוד לא אושר.'}
           </p>
           {blocked === 'reauth' && (state?.passkeys.length ?? 0) > 0 ? (
-            <button type="button" onClick={() => setStepUp(true)} data-testid="security-stepup" className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-linear-to-l from-emerald-600 to-teal-500 font-bold text-white">
+            <button type="button" onClick={() => setStepUp(true)} data-testid="security-stepup" className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-linear-to-l from-primary-600 to-secondary-500 font-bold text-on-dark">
               <Smartphone className="h-4 w-4" aria-hidden />לאשר עם Face ID או עם הטלפון
             </button>
           ) : null}
           {blocked === 'reauth' ? (
-            <button type="button" onClick={() => void reauth()} className={(state?.passkeys.length ?? 0) > 0 ? 'min-h-[44px] w-full rounded-xl font-bold text-emerald-800 ring-1 ring-emerald-300/70' : 'min-h-[44px] w-full rounded-xl bg-linear-to-l from-emerald-600 to-teal-500 font-bold text-white'}>
+            <button type="button" onClick={() => void reauth()} className={(state?.passkeys.length ?? 0) > 0 ? 'min-h-[44px] w-full rounded-xl font-bold text-primary-800 ring-1 ring-primary-300/70' : 'min-h-[44px] w-full rounded-xl bg-linear-to-l from-primary-600 to-secondary-500 font-bold text-on-dark'}>
               להתחבר מחדש
             </button>
           ) : null}
@@ -195,7 +195,7 @@ export function SecuritySettingsClient() {
       ) : null}
 
       {loadError ? (
-        <section className="crystal-surface rounded-2xl p-5 text-sm font-semibold text-red-600">
+        <section className="crystal-surface rounded-2xl p-5 text-sm font-semibold text-coral-600">
           לא הצלחנו לטעון את ההגדרות.{' '}
           <button type="button" className="underline" onClick={() => void load()}>
             לנסות שוב
@@ -203,35 +203,35 @@ export function SecuritySettingsClient() {
         </section>
       ) : !state ? (
         <div className="flex justify-center py-16">
-          <Loader2 className="h-6 w-6 animate-spin text-emerald-600" aria-label="טוען" />
+          <Loader2 className="h-6 w-6 animate-spin text-primary-600" aria-label="טוען" />
         </div>
       ) : (
         <>
           <section className="crystal-surface rounded-2xl p-5 space-y-4" aria-labelledby="pk-h">
             <div className="flex items-start gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-emerald-100 to-amber-100 ring-1 ring-amber-300/60">
-                <Fingerprint className="h-5 w-5 text-emerald-700" aria-hidden />
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-primary-100 to-accent-100 ring-1 ring-accent-300/60">
+                <Fingerprint className="h-5 w-5 text-primary-700" aria-hidden />
               </div>
               <div>
-                <h2 id="pk-h" className="font-black text-slate-900" style={{ fontFamily: 'Rubik, Heebo, sans-serif' }}>
+                <h2 id="pk-h" className="font-black text-ink" style={{ fontFamily: 'Rubik, Heebo, sans-serif' }}>
                   Face ID וטביעת אצבע
                 </h2>
-                <p className="text-sm leading-relaxed text-slate-600">
+                <p className="text-sm leading-relaxed text-ink-soft">
                   מפתח גישה נשמר רק במכשיר שלך. הכניסה מאושרת בפנים, באצבע או בקוד המכשיר, והמידע הביומטרי לא מגיע אלינו אף פעם.
                 </p>
               </div>
             </div>
             <Divider />
             {state.passkeys.length === 0 ? (
-              <p className="rounded-xl bg-emerald-50/70 p-3 text-sm text-emerald-900">עוד אין מפתחות גישה בחשבון.</p>
+              <p className="rounded-xl bg-primary-50/70 p-3 text-sm text-primary-900">עוד אין מפתחות גישה בחשבון.</p>
             ) : (
               <ul className="space-y-2">
                 {state.passkeys.map((p) => (
                   <li key={p.id} className="flex items-center gap-3 rounded-xl border border-[#E8D5B5] bg-glass/70 backdrop-blur-md p-3">
-                    <Smartphone className="h-5 w-5 shrink-0 text-teal-600" aria-hidden />
+                    <Smartphone className="h-5 w-5 shrink-0 text-secondary-600" aria-hidden />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-bold text-slate-900">{p.label}</p>
-                      <p className="text-xs text-slate-500">
+                      <p className="truncate text-sm font-bold text-ink">{p.label}</p>
+                      <p className="text-xs text-ink-faint">
                         נוסף ב־{fmt(p.created_at)} · שימוש אחרון: {fmt(p.last_used_at)}
                       </p>
                     </div>
@@ -239,7 +239,7 @@ export function SecuritySettingsClient() {
                       type="button"
                       onClick={() => setRemoveId(p.id)}
                       aria-label={`הסרת ${p.label}`}
-                      className="flex h-10 w-10 items-center justify-center rounded-xl text-rose-600 hover:bg-rose-50"
+                      className="flex h-10 w-10 items-center justify-center rounded-xl text-coral-600 hover:bg-coral-50"
                     >
                       <Trash2 className="h-4 w-4" aria-hidden />
                     </button>
@@ -252,35 +252,35 @@ export function SecuritySettingsClient() {
                 type="button"
                 onClick={() => void addPasskey()}
                 disabled={busy !== null}
-                className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-linear-to-l from-emerald-600 to-teal-500 font-bold text-white shadow-[0_8px_24px_rgba(16,185,129,0.35)] disabled:opacity-60"
+                className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl bg-linear-to-l from-primary-600 to-secondary-500 font-bold text-on-dark shadow-[0_8px_24px_rgba(16,185,129,0.35)] disabled:opacity-60"
               >
                 {busy === 'add' ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden /> : <Fingerprint className="h-5 w-5" aria-hidden />}
                 הוספת מפתח גישה במכשיר הזה
               </button>
             ) : (
-              <p className="rounded-xl bg-amber-50 p-3 text-sm text-amber-900">הדפדפן הזה לא תומך במפתחות גישה. אפשר להוסיף מטלפון או ממחשב עדכני.</p>
+              <p className="rounded-xl bg-accent-50 p-3 text-sm text-accent-900">הדפדפן הזה לא תומך במפתחות גישה. אפשר להוסיף מטלפון או ממחשב עדכני.</p>
             )}
           </section>
 
           {state.backup_codes_enabled ? (
           <section className="crystal-surface rounded-2xl p-5 space-y-4" aria-labelledby="bc-h">
             <div className="flex items-start gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-amber-100 to-teal-100 ring-1 ring-amber-300/60">
-                <KeyRound className="h-5 w-5 text-amber-700" aria-hidden />
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-accent-100 to-secondary-100 ring-1 ring-accent-300/60">
+                <KeyRound className="h-5 w-5 text-accent-700" aria-hidden />
               </div>
               <div>
-                <h2 id="bc-h" className="font-black text-slate-900" style={{ fontFamily: 'Rubik, Heebo, sans-serif' }}>
+                <h2 id="bc-h" className="font-black text-ink" style={{ fontFamily: 'Rubik, Heebo, sans-serif' }}>
                   קודי גיבוי
                 </h2>
-                <p className="text-sm leading-relaxed text-slate-600">
+                <p className="text-sm leading-relaxed text-ink-soft">
                   10 קודים חד־פעמיים לכניסה כשהמכשיר לא בהישג יד. כל קוד עובד פעם אחת בלבד, ואנחנו שומרים רק גרסה מוצפנת שלו.
                 </p>
               </div>
             </div>
             <Divider />
             <div className="flex items-center justify-between rounded-xl border border-[#E8D5B5] bg-glass-hi/80 p-3">
-              <span className="text-sm font-bold text-slate-800">קודים שנשארו</span>
-              <span className={`text-lg font-black ${state.backup_codes_left <= 2 ? 'text-rose-600' : 'text-emerald-700'}`}>
+              <span className="text-sm font-bold text-ink">קודים שנשארו</span>
+              <span className={`text-lg font-black ${state.backup_codes_left <= 2 ? 'text-coral-600' : 'text-primary-700'}`}>
                 {state.backup_codes_left} / 10
               </span>
             </div>
@@ -288,7 +288,7 @@ export function SecuritySettingsClient() {
               type="button"
               onClick={() => (state.backup_codes_left > 0 ? setRegenOpen(true) : void regenerate())}
               disabled={busy !== null}
-              className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl border border-amber-400/70 bg-glass/80 backdrop-blur-md font-bold text-amber-800 disabled:opacity-60"
+              className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-xl border border-accent-400/70 bg-glass/80 backdrop-blur-md font-bold text-accent-800 disabled:opacity-60"
             >
               {busy === 'codes' ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden /> : <RefreshCw className="h-4 w-4" aria-hidden />}
               {state.backup_codes_left > 0 ? 'יצירת קודים חדשים' : 'יצירת קודי גיבוי'}
@@ -298,65 +298,65 @@ export function SecuritySettingsClient() {
         </>
       )}
 
-      <AnimatedDialog open={removeId !== null} onClose={() => busy === null && setRemoveId(null)} variant="sheet" mobileChromePadding aria-labelledby="rm-h" backdropClassName="absolute inset-0 bg-slate-900/45" panelClassName="crystal-surface max-w-md rounded-2xl p-5 shadow-2xl sm:rounded-2xl">
-        <h3 id="rm-h" className="text-lg font-black text-slate-900">להסיר את מפתח הגישה?</h3>
-        <p className="mt-2 text-sm leading-relaxed text-slate-600">אחרי ההסרה לא יהיה אפשר להיכנס איתו. תמיד אפשר להוסיף אותו שוב.</p>
+      <AnimatedDialog open={removeId !== null} onClose={() => busy === null && setRemoveId(null)} variant="sheet" mobileChromePadding aria-labelledby="rm-h" backdropClassName="absolute inset-0 bg-ink-900/45" panelClassName="crystal-surface max-w-md rounded-2xl p-5 shadow-2xl sm:rounded-2xl">
+        <h3 id="rm-h" className="text-lg font-black text-ink">להסיר את מפתח הגישה?</h3>
+        <p className="mt-2 text-sm leading-relaxed text-ink-soft">אחרי ההסרה לא יהיה אפשר להיכנס איתו. תמיד אפשר להוסיף אותו שוב.</p>
         <div className="mt-5 flex gap-2">
-          <button type="button" onClick={() => void removePasskey()} disabled={busy !== null} className="flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-xl bg-rose-600 font-bold text-white disabled:opacity-50">
+          <button type="button" onClick={() => void removePasskey()} disabled={busy !== null} className="flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-xl bg-coral-600 font-bold text-on-dark disabled:opacity-50">
             {busy === 'remove' ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
             כן, להסיר
           </button>
-          <button type="button" onClick={() => setRemoveId(null)} disabled={busy !== null} className="min-h-[44px] rounded-xl border border-slate-200 px-4 font-bold text-slate-700">
+          <button type="button" onClick={() => setRemoveId(null)} disabled={busy !== null} className="min-h-[44px] rounded-xl border border-hairline px-4 font-bold text-ink-soft">
             ביטול
           </button>
         </div>
       </AnimatedDialog>
 
-      <AnimatedDialog open={regenOpen} onClose={() => busy === null && setRegenOpen(false)} variant="sheet" mobileChromePadding aria-labelledby="rg-h" backdropClassName="absolute inset-0 bg-slate-900/45" panelClassName="crystal-surface max-w-md rounded-2xl p-5 shadow-2xl sm:rounded-2xl">
-        <h3 id="rg-h" className="text-lg font-black text-slate-900">ליצור קודים חדשים?</h3>
-        <p className="mt-2 text-sm leading-relaxed text-slate-600">כל הקודים הקודמים יפסיקו לעבוד מיד, ויוצגו 10 קודים חדשים פעם אחת בלבד.</p>
+      <AnimatedDialog open={regenOpen} onClose={() => busy === null && setRegenOpen(false)} variant="sheet" mobileChromePadding aria-labelledby="rg-h" backdropClassName="absolute inset-0 bg-ink-900/45" panelClassName="crystal-surface max-w-md rounded-2xl p-5 shadow-2xl sm:rounded-2xl">
+        <h3 id="rg-h" className="text-lg font-black text-ink">ליצור קודים חדשים?</h3>
+        <p className="mt-2 text-sm leading-relaxed text-ink-soft">כל הקודים הקודמים יפסיקו לעבוד מיד, ויוצגו 10 קודים חדשים פעם אחת בלבד.</p>
         <div className="mt-5 flex gap-2">
-          <button type="button" onClick={() => void regenerate()} disabled={busy !== null} className="flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-xl bg-linear-to-l from-amber-500 to-amber-600 font-bold text-white disabled:opacity-50">
+          <button type="button" onClick={() => void regenerate()} disabled={busy !== null} className="flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-xl bg-linear-to-l from-accent-500 to-accent-600 font-bold text-on-dark disabled:opacity-50">
             {busy === 'codes' ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
             כן, ליצור חדשים
           </button>
-          <button type="button" onClick={() => setRegenOpen(false)} disabled={busy !== null} className="min-h-[44px] rounded-xl border border-slate-200 px-4 font-bold text-slate-700">
+          <button type="button" onClick={() => setRegenOpen(false)} disabled={busy !== null} className="min-h-[44px] rounded-xl border border-hairline px-4 font-bold text-ink-soft">
             ביטול
           </button>
         </div>
       </AnimatedDialog>
 
-      <AnimatedDialog open={codes !== null} onClose={() => saved && setCodes(null)} dismissOnBackdrop={false} variant="center" aria-labelledby="codes-h" backdropClassName="absolute inset-0 bg-slate-900/55" panelClassName="crystal-surface max-w-md rounded-3xl p-6 shadow-2xl">
-        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-linear-to-br from-amber-200 to-emerald-200 ring-1 ring-amber-400/60">
-          <KeyRound className="h-6 w-6 text-amber-800" aria-hidden />
+      <AnimatedDialog open={codes !== null} onClose={() => saved && setCodes(null)} dismissOnBackdrop={false} variant="center" aria-labelledby="codes-h" backdropClassName="absolute inset-0 bg-ink-900/55" panelClassName="crystal-surface max-w-md rounded-3xl p-6 shadow-2xl">
+        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-linear-to-br from-accent-200 to-primary-200 ring-1 ring-accent-400/60">
+          <KeyRound className="h-6 w-6 text-accent-800" aria-hidden />
         </div>
-        <h3 id="codes-h" className="text-center text-xl font-black text-slate-900" style={{ fontFamily: 'Rubik, Heebo, sans-serif' }}>
+        <h3 id="codes-h" className="text-center text-xl font-black text-ink" style={{ fontFamily: 'Rubik, Heebo, sans-serif' }}>
           קודי הגיבוי שלך
         </h3>
-        <p className="mt-1 text-center text-sm text-slate-600">הם מוצגים עכשיו בפעם היחידה. כדאי לשמור אותם במקום בטוח.</p>
-        <div className="my-4 h-px bg-linear-to-l from-transparent via-amber-300/80 to-transparent" aria-hidden />
+        <p className="mt-1 text-center text-sm text-ink-soft">הם מוצגים עכשיו בפעם היחידה. כדאי לשמור אותם במקום בטוח.</p>
+        <div className="my-4 h-px bg-linear-to-l from-transparent via-accent-300/80 to-transparent" aria-hidden />
         <ol dir="ltr" className="grid grid-cols-2 gap-2">
           {(codes ?? []).map((c) => (
-            <li key={c} className="rounded-xl border border-[#E8D5B5] bg-glass/85 backdrop-blur-md py-2 text-center font-mono text-[15px] font-bold tracking-wider text-slate-800">
+            <li key={c} className="rounded-xl border border-[#E8D5B5] bg-glass/85 backdrop-blur-md py-2 text-center font-mono text-[15px] font-bold tracking-wider text-ink">
               {c}
             </li>
           ))}
         </ol>
         <div className="mt-4 grid grid-cols-2 gap-2">
-          <button type="button" onClick={() => void copyCodes()} className="flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-emerald-300 bg-glass/80 backdrop-blur-md font-bold text-emerald-800">
+          <button type="button" onClick={() => void copyCodes()} className="flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-primary-300 bg-glass/80 backdrop-blur-md font-bold text-primary-800">
             {copied ? <Check className="h-4 w-4" aria-hidden /> : <Copy className="h-4 w-4" aria-hidden />}
             {copied ? 'הועתק' : 'העתקה'}
           </button>
-          <button type="button" onClick={downloadCodes} className="flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-emerald-300 bg-glass/80 backdrop-blur-md font-bold text-emerald-800">
+          <button type="button" onClick={downloadCodes} className="flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-primary-300 bg-glass/80 backdrop-blur-md font-bold text-primary-800">
             <Download className="h-4 w-4" aria-hidden />
             הורדה
           </button>
         </div>
-        <label className="mt-4 flex items-center gap-2 text-sm font-semibold text-slate-700">
-          <input type="checkbox" checked={saved} onChange={(e) => setSaved(e.target.checked)} className="h-4 w-4 accent-emerald-600" />
+        <label className="mt-4 flex items-center gap-2 text-sm font-semibold text-ink-soft">
+          <input type="checkbox" checked={saved} onChange={(e) => setSaved(e.target.checked)} className="h-4 w-4 accent-primary-600" />
           שמרתי את הקודים במקום בטוח
         </label>
-        <button type="button" onClick={() => setCodes(null)} disabled={!saved} className="mt-3 min-h-[48px] w-full rounded-xl bg-linear-to-l from-emerald-600 to-teal-500 font-bold text-white disabled:opacity-40">
+        <button type="button" onClick={() => setCodes(null)} disabled={!saved} className="mt-3 min-h-[48px] w-full rounded-xl bg-linear-to-l from-primary-600 to-secondary-500 font-bold text-on-dark disabled:opacity-40">
           סיום
         </button>
       </AnimatedDialog>

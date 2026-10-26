@@ -45,43 +45,43 @@ export function AdminChallengeEatingWindowEditor() {
   if (loading || !lesson) {
     return (
       <div className="flex justify-center py-10">
-        <Loader2 className="h-8 w-8 animate-spin text-violet-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-iris-500" />
       </div>
     );
   }
 
   return (
-    <div className="rounded-3xl border border-slate-200/60 bg-background-card/70 p-5 shadow-xs backdrop-blur-md sm:p-6">
+    <div className="rounded-3xl border border-hairline/60 bg-background-card/70 p-5 shadow-xs backdrop-blur-md sm:p-6">
       <div className="mb-4 flex items-center gap-2">
-        <BookOpen className="h-5 w-5 text-emerald-600" />
-        <h2 className="text-lg font-bold text-slate-900">שיעור חלון אכילה</h2>
+        <BookOpen className="h-5 w-5 text-primary-600" />
+        <h2 className="text-lg font-bold text-ink">שיעור חלון אכילה</h2>
       </div>
-      <p className="mb-4 text-sm text-slate-600">
+      <p className="mb-4 text-sm text-ink-soft">
         מוצג לפני הגדרת חלון האכילה. ניתן HTML בסיסי ב-body_html.
       </p>
 
       <div className="space-y-3">
-        <label className="block text-sm font-semibold text-slate-700">
+        <label className="block text-sm font-semibold text-ink-soft">
           כותרת
           <input
             type="text"
             value={lesson.title}
             onChange={(e) => setLesson({ ...lesson, title: e.target.value })}
-            className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+            className="mt-1 w-full rounded-xl border border-hairline px-3 py-2 text-sm"
           />
         </label>
 
-        <label className="block text-sm font-semibold text-slate-700">
+        <label className="block text-sm font-semibold text-ink-soft">
           תוכן (HTML)
           <textarea
             value={lesson.body_html}
             onChange={(e) => setLesson({ ...lesson, body_html: e.target.value })}
             rows={6}
-            className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono text-sm"
+            className="mt-1 w-full rounded-xl border border-hairline px-3 py-2 font-mono text-sm"
           />
         </label>
 
-        <label className="block text-sm font-semibold text-slate-700">
+        <label className="block text-sm font-semibold text-ink-soft">
           קישור וידאו (אופציונלי)
           <input
             type="url"
@@ -90,7 +90,7 @@ export function AdminChallengeEatingWindowEditor() {
               setLesson({ ...lesson, video_url: e.target.value.trim() || null })
             }
             placeholder="https://..."
-            className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+            className="mt-1 w-full rounded-xl border border-hairline px-3 py-2 text-sm"
             dir="ltr"
           />
         </label>
@@ -101,12 +101,12 @@ export function AdminChallengeEatingWindowEditor() {
           type="button"
           disabled={saving}
           onClick={save}
-          className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-gc disabled:opacity-60"
+          className="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-4 py-2 text-sm font-semibold text-gc disabled:opacity-60"
         >
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
           שמור שיעור
         </button>
-        {saved ? <span className="text-sm text-emerald-700">נשמר ✓</span> : null}
+        {saved ? <span className="text-sm text-primary-700">נשמר ✓</span> : null}
       </div>
     </div>
   );

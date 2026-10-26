@@ -48,45 +48,45 @@ export const TYPE_COLORS: Record<
   { bg: string; ring: string; text: string; icon: typeof CalendarDays; accent: string }
 > = {
   daily: {
-    bg: 'bg-emerald-50',
-    ring: 'ring-emerald-200',
-    text: 'text-emerald-700',
-    accent: 'bg-emerald-500',
+    bg: 'bg-primary-50',
+    ring: 'ring-primary-200',
+    text: 'text-primary-700',
+    accent: 'bg-primary-500',
     icon: CalendarDays,
   },
   weekly: {
-    bg: 'bg-sky-50',
-    ring: 'ring-sky-200',
-    text: 'text-sky-700',
-    accent: 'bg-sky-500',
+    bg: 'bg-secondary-50',
+    ring: 'ring-secondary-200',
+    text: 'text-secondary-700',
+    accent: 'bg-secondary-500',
     icon: CalendarRange,
   },
   monthly: {
-    bg: 'bg-violet-50',
-    ring: 'ring-violet-200',
-    text: 'text-violet-700',
-    accent: 'bg-violet-500',
+    bg: 'bg-iris-50',
+    ring: 'ring-iris-200',
+    text: 'text-iris-700',
+    accent: 'bg-iris-500',
     icon: CalendarCheck,
   },
   quarterly: {
-    bg: 'bg-amber-50',
-    ring: 'ring-amber-200',
-    text: 'text-amber-700',
-    accent: 'bg-amber-500',
+    bg: 'bg-accent-50',
+    ring: 'ring-accent-200',
+    text: 'text-accent-700',
+    accent: 'bg-accent-500',
     icon: CalendarClock,
   },
   semi_annual: {
-    bg: 'bg-rose-50',
-    ring: 'ring-rose-200',
-    text: 'text-rose-700',
-    accent: 'bg-rose-500',
+    bg: 'bg-coral-50',
+    ring: 'ring-coral-200',
+    text: 'text-coral-700',
+    accent: 'bg-coral-500',
     icon: CalendarHeart,
   },
   annual: {
-    bg: 'bg-indigo-50',
-    ring: 'ring-indigo-200',
-    text: 'text-indigo-700',
-    accent: 'bg-indigo-500',
+    bg: 'bg-iris-50',
+    ring: 'ring-iris-200',
+    text: 'text-iris-700',
+    accent: 'bg-iris-500',
     icon: Trophy,
   },
 };
@@ -160,19 +160,19 @@ export function SummaryCard({ summary }: { summary: PeriodicSummaryRow }) {
             <p className={`text-xs font-bold uppercase tracking-wide ${colors.text}`}>
               סיכום {TYPE_LABEL_HE[summary.type]}
             </p>
-            <h3 className="text-base font-extrabold text-gray-900 leading-tight truncate">
+            <h3 className="text-base font-extrabold text-ink-900 leading-tight truncate">
               {formatPeriodKeyHe(summary.type, summary.period_key)}
             </h3>
           </div>
         </div>
-        <span className="shrink-0 text-[11px] text-gray-500 mt-1">
+        <span className="shrink-0 text-[11px] text-ink-500 mt-1">
           {formatHebrewRelative(summary.created_at)}
         </span>
       </header>
 
       {/* AI insight — הכי בולט */}
       {summary.ai_insight && (
-        <p className="text-[15px] leading-relaxed text-gray-800 whitespace-pre-line mb-4">
+        <p className="text-[15px] leading-relaxed text-ink-800 whitespace-pre-line mb-4">
           {summary.ai_insight}
         </p>
       )}
@@ -209,11 +209,11 @@ interface ChipProps {
 }
 
 const CHIP_TONES: Record<ChipProps['tone'], { bg: string; text: string }> = {
-  emerald: { bg: 'bg-emerald-50', text: 'text-emerald-700' },
-  sky: { bg: 'bg-sky-50', text: 'text-sky-700' },
-  amber: { bg: 'bg-amber-50', text: 'text-amber-800' },
-  rose: { bg: 'bg-rose-50', text: 'text-rose-700' },
-  violet: { bg: 'bg-violet-50', text: 'text-violet-700' },
+  emerald: { bg: 'bg-primary-50', text: 'text-primary-700' },
+  sky: { bg: 'bg-secondary-50', text: 'text-secondary-700' },
+  amber: { bg: 'bg-accent-50', text: 'text-accent-800' },
+  rose: { bg: 'bg-coral-50', text: 'text-coral-700' },
+  violet: { bg: 'bg-iris-50', text: 'text-iris-700' },
 };
 
 function Chip({ icon: Icon, label, tone }: ChipProps) {

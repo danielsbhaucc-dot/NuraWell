@@ -38,9 +38,9 @@ function iconFor(href: string): LucideIcon {
 const secondaryBtnClass =
   'flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all hover:scale-[1.01] active:scale-95';
 const secondaryBtnStyle = {
-  background: 'rgba(0,0,0,0.03)',
-  border: '1.5px solid rgba(0,0,0,0.08)',
-  color: '#4b5563',
+  background: 'rgba(16,38,30,0.62)',
+  border: '1px solid rgba(232,198,106,0.26)',
+  color: 'var(--color-ink-soft)',
 } as const;
 
 function isAbsolute(href: string): boolean {
@@ -97,7 +97,7 @@ export default function NotFoundClient({ isAuthenticated, absoluteOrigin = null 
   const [firstSecondary, ...restSecondary] = secondary;
 
   return (
-    <main id="main-content" className="min-h-screen flex flex-col items-center justify-center px-4 py-10 bg-mesh">
+    <main id="main-content" className="min-h-screen flex flex-col items-center justify-center px-4 py-10 public-dark public-dark-bg">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -124,23 +124,23 @@ export default function NotFoundClient({ isAuthenticated, absoluteOrigin = null 
 
         <div
           className="rounded-2xl overflow-hidden mb-8"
-          style={{ border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 4px 24px rgba(0,0,0,0.06)' }}
+          style={{ border: '1px solid rgba(232,198,106,0.3)', boxShadow: 'inset 0 1px 0 rgba(207,233,220,0.08), 0 30px 60px -30px rgba(0,0,0,0.8)' }}
         >
-          <div className="px-6 py-5" style={{ background: 'linear-gradient(145deg, #047857, #059669, #10b981)' }}>
-            <h1 className="text-2xl font-black text-white">אופס! הדף לא נמצא 🌱</h1>
+          <div className="px-6 py-5" style={{ background: 'linear-gradient(145deg, var(--color-forest-800), var(--color-forest-600) 60%, var(--color-primary-600))' }}>
+            <h1 className="text-2xl font-black text-on-dark">אופס! הדף לא נמצא 🌱</h1>
           </div>
-          <div className="p-6 bg-background-card">
-            <p className="text-gray-600 text-lg leading-relaxed mb-4">
+          <div className="p-6 bg-forest-900/60 backdrop-blur-xl">
+            <p className="text-ink-soft text-lg leading-relaxed mb-4">
               נראה שטיילתם קצת רחוק מדי בדרך לבריאות...
             </p>
-            <p className="text-gray-500 text-sm">הדף שחיפשתם לא קיים או שהועבר למקום אחר</p>
+            <p className="text-ink-faint text-sm">הדף שחיפשתם לא קיים או שהועבר למקום אחר</p>
           </div>
         </div>
 
         <div className="space-y-3">
           <NavAnchor
             href={primary.href}
-            className="flex items-center justify-center gap-2 w-full py-4 rounded-2xl font-bold text-lg text-white transition-all hover:scale-[1.02] active:scale-95"
+            className="flex items-center justify-center gap-2 w-full py-4 rounded-2xl font-bold text-lg text-on-dark transition-all hover:scale-[1.02] active:scale-95"
             style={{
               background: 'linear-gradient(135deg, #047857, #10b981)',
               boxShadow: '0 6px 20px rgba(16,185,129,0.25)',
@@ -185,13 +185,13 @@ export default function NotFoundClient({ isAuthenticated, absoluteOrigin = null 
           animate={{ opacity: 1 }}
           transition={{ delay: 0.6 }}
           className="mt-10 p-4 rounded-2xl"
-          style={{ background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.15)' }}
+          style={{ background: 'rgba(16,38,30,0.55)', border: '1px solid rgba(127,240,222,0.18)' }}
         >
-          <div className="flex items-center justify-center gap-2 text-emerald-700 text-sm font-bold mb-2">
+          <div className="flex items-center justify-center gap-2 text-primary-700 text-sm font-bold mb-2">
             <Leaf className="w-4 h-4" />
             <span>הידעת?</span>
           </div>
-          <p className="text-gray-600 text-sm">
+          <p className="text-ink-soft text-sm">
             צמחים גדלים בכיוון האור — גם כשיש נסיגה קטנה, הם תמיד ממשיכים למעלה! 🌱
           </p>
         </motion.div>

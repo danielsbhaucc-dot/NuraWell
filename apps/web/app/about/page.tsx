@@ -54,15 +54,15 @@ export default function AboutPage() {
         <LegalSection num="3" title="העקרונות שלנו">
           <ul>
             <li>
-              <Heart className="inline w-4 h-4 me-1 text-emerald-600" aria-hidden />
+              <Heart className="inline w-4 h-4 me-1 text-primary-600" aria-hidden />
               בלי דיאטה קיצונית, בלי הרעבה, בלי שיפוטיות.
             </li>
             <li>
-              <Users className="inline w-4 h-4 me-1 text-emerald-600" aria-hidden />
+              <Users className="inline w-4 h-4 me-1 text-primary-600" aria-hidden />
               ליווי שמרגיש כמו חבר אכפתי — לא כמו מאמן שצועק.
             </li>
             <li>
-              <Route className="inline w-4 h-4 me-1 text-emerald-600" aria-hidden />
+              <Route className="inline w-4 h-4 me-1 text-primary-600" aria-hidden />
               צעדים קטנים שמתחברים לחיים, לא ל״שבוע הבא״.
             </li>
           </ul>
@@ -71,23 +71,23 @@ export default function AboutPage() {
         <LegalSection num="4" title="רוצים להתחיל או לדבר איתנו">
           <p>
             אפשר{' '}
-            <Link href="/register" className="font-semibold text-emerald-700 underline">
+            <Link href="/register" className="font-semibold text-primary-700 underline">
               להירשם בחינם
             </Link>
             , או{' '}
-            <Link href="/contact" className="font-semibold text-emerald-700 underline">
+            <Link href="/contact" className="font-semibold text-primary-700 underline">
               ליצור קשר
             </Link>
             . לשאלות משפטיות ובטיחות ראו גם את{' '}
-            <Link href="/terms" className="font-semibold text-emerald-700 underline">
+            <Link href="/terms" className="font-semibold text-primary-700 underline">
               תנאי השימוש
             </Link>
             ,{' '}
-            <Link href="/privacy" className="font-semibold text-emerald-700 underline">
+            <Link href="/privacy" className="font-semibold text-primary-700 underline">
               מדיניות הפרטיות
             </Link>{' '}
             ו־
-            <Link href="/safety" className="font-semibold text-emerald-700 underline">
+            <Link href="/safety" className="font-semibold text-primary-700 underline">
               מרכז הבטיחות
             </Link>
             .
