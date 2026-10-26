@@ -1,17 +1,16 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { ENCRYPTED_TABLES, isBlocked } from '@/lib/security/field-registry';
-import { FIELD_V2_BACKFILL_TABLES } from '@/lib/security/field-backfill';
+import { plaintextGuardLines } from '@/lib/security/plaintext-guard-list';
+import { FIELD_V2_BACKFILL_COMPLETE, FIELD_V2_TABLES } from '@/lib/security/field-registry';
 
 describe('backup plaintext guard column list', () => {
-  it('matches field-registry + FIELD_V2_BACKFILL_TABLES', () => {
-    const want: string[] = [];
-    for (const [t, v] of Object.entries(ENCRYPTED_TABLES))
-      for (const [c, k] of Object.entries((v as { columns: Record<string, string> }).columns))
-        if (!isBlocked(t, c)) want.push(`${FIELD_V2_BACKFILL_TABLES.includes(t) ? 'enforce' : 'pending'} ${t} ${c} ${k}`);
+  it('matches field-registry + column-classification (regenerate with scripts/gen-plaintext-guard.mts)', () => {
     const got = readFileSync(join(__dirname, '../../../scripts/backup/encrypted-columns.txt'), 'utf8')
       .split('\n').filter((l) => l && !l.startsWith('#'));
-    expect(got).toEqual(want);
+    expect(got).toEqual(plaintextGuardLines());
+  });
+  it('completed tables are a subset of the live v2 tables', () => {
+    for (const t of FIELD_V2_BACKFILL_COMPLETE) expect(FIELD_V2_TABLES).toContain(t);
   });
 });
