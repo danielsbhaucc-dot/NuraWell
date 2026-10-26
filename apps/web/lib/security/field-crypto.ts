@@ -50,6 +50,7 @@ function derive(): Keys {
 export function __resetFieldCrypto(): void {
   keys = null;
   dekCache.clear();
+  userIndexKeys.clear();
   store = null;
 }
 
@@ -202,6 +203,22 @@ export async function decryptRow<T extends Record<string, unknown>>(table: strin
 
 export function blindIndexFor(table: string, column: string, value: string): string {
   return blindIndex(derive().indexKey, `${table}.${column}`, value);
+}
+
+/**
+ * Per-user blind index: HKDF(indexKey, salt=userId, info='nurawell:blind-index:user:v1') is the HMAC key, so equal
+ * values of two different users never produce equal indexes (no cross-user linkage). Use for dedupe that only
+ * compares one user's own rows; the global blindIndexFor stays for shared staff rows / system lookups.
+ */
+const userIndexKeys = new Map<string, Buffer>();
+export function blindIndexForUser(table: string, column: string, userId: string, value: string): string {
+  let k = userIndexKeys.get(userId);
+  if (!k) {
+    k = Buffer.from(hkdfSync('sha256', derive().indexKey, Buffer.from(userId, 'utf8'), 'nurawell:blind-index:user:v1', 32));
+    if (userIndexKeys.size > 5000) userIndexKeys.clear();
+    userIndexKeys.set(userId, k);
+  }
+  return blindIndex(k, `${table}.${column}`, value);
 }
 
 /**

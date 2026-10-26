@@ -175,6 +175,16 @@ async function checkPostgres(
 
 const loggedHits = new Map<string, number>();
 
+/**
+ * Audit writes go through the field-encryption fetch wrapper like every other admin_audit_log writer: ids/codes/counts
+ * in plain `facts`, anything else in `detail` (sealed enc:v2, system 'audit' key). These entries carry facts only.
+ */
+// skipcq: JS-0067 -- module-scoped (ES module)
+async function auditFetch(url: string, init: RequestInit): Promise<Response> {
+  const { withFieldDecryption } = await import('@/lib/security/field-fetch');
+  return withFieldDecryption(fetch)(url, init);
+}
+
 /** Best-effort audit entry (admin_audit_log, method SECURITY) — once per namespace+key per window. */
 // skipcq: JS-0067, JS-R1005 -- module-scoped (ES module)
 async function logLimitHit(input: RateLimitInput, result: RateLimitResult): Promise<void> {
@@ -188,13 +198,13 @@ async function logLimitHit(input: RateLimitInput, result: RateLimitResult): Prom
     const data = new TextEncoder().encode(`rl:${k}`);
     const digest = await crypto.subtle.digest('SHA-256', data);
     const keyTag = Array.from(new Uint8Array(digest)).slice(0, 6).map((b) => b.toString(16).padStart(2, '0')).join('');
-    await fetch(`${cfg.url}/rest/v1/admin_audit_log`, {
+    await auditFetch(`${cfg.url}/rest/v1/admin_audit_log`, {
       method: 'POST',
       headers: { apikey: cfg.key, Authorization: `Bearer ${cfg.key}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
       body: JSON.stringify({
         method: 'SECURITY',
         path: 'rate_limited',
-        detail: { namespace: input.namespace, limit: input.limit, window_s: input.windowSeconds, key_tag: keyTag },
+        facts: { namespace: input.namespace, limit: input.limit, window_s: input.windowSeconds, key_tag: keyTag },
       }),
       cache: 'no-store',
     });
@@ -244,13 +254,13 @@ async function logFallback(backend: 'redis' | 'postgres', namespace: string, now
   const cfg = supabaseRest();
   if (!cfg) return;
   try {
-    await fetch(`${cfg.url}/rest/v1/admin_audit_log`, {
+    await auditFetch(`${cfg.url}/rest/v1/admin_audit_log`, {
       method: 'POST',
       headers: { apikey: cfg.key, Authorization: `Bearer ${cfg.key}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
       body: JSON.stringify({
         method: 'SECURITY',
         path: spike ? 'rate_limit_fallback_spike' : 'rate_limit_fallback',
-        detail: { backend, namespace, failures_in_window: fallbackState.count, severity: spike ? 'high' : 'medium' },
+        facts: { backend, namespace, failures_in_window: fallbackState.count, severity: spike ? 'high' : 'medium' },
       }),
       cache: 'no-store',
     });

@@ -29,7 +29,7 @@ export type License = {
   termsVersion?: string;
   termsAcceptedAt?: string;
 };
-export type LicenseInput = Omit<License, 'v' | 'lid' | 'issuedAt' | 'expiresAt' | 'graceDays'> & {
+export type LicenseInput = Omit<License, 'v' | 'lid' | 'issuedAt' | 'expiresAt' | 'graceDays' | 'termsAcceptedAt'> & {
   lid?: string;
   issuedAt?: Date;
   /** Paid period length. null = no expiry (source buyout only). Default 30 (monthly). */

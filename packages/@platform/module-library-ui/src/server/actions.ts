@@ -2,7 +2,7 @@ import { signStatusUpdate, type StatusPusher } from '@platform/licensing/online'
 import type { GatewayAdmin } from '@platform/licensing/gateway';
 /** One install per license in the server-held-core gateway. */
 export const installIdFor = (lid: string) => `ins_${lid.replace(/[^A-Za-z0-9_-]/g, '')}`;
-import { PUBLIC_REASON_CODES, renewLicense, signRevocationList, type License, type RevocationEntry, type RevocationPublisher, type RevocationState, type Transform, type DistributionMode } from '@platform/licensing';
+import { DEFAULT_GRACE_DAYS, PUBLIC_REASON_CODES, renewLicense, signRevocationList, type License, type RevocationEntry, type RevocationPublisher, type RevocationState, type Transform, type DistributionMode } from '@platform/licensing';
 import type { RegistryModule, LicenseRow } from '../types';
 import { readModuleFiles, sellPackage, sharePackage } from './pack';
 
@@ -56,7 +56,7 @@ export async function packageAction(d: Deps, b: PkgBody): Promise<Out> {
   if (mode === 'bundle' && domains.length === 0) return err(400, 'צריך את כתובת האתר של הקונה.');
   const r = await sellPackage(files, m, { privatePem: d.privatePem, licensee: { id: ref, name: ref }, domains, validDays: b.validDays ?? 30, mode, transform: d.transform, revocationUrl: d.revocationUrl, verifierUrl: d.verifierUrl, verifierPublicKeyPem: d.verifierPublicKeyPem });
   if (!r.ok) return err(422, r.error);
-  const lic: License = { v: 1, lid: r.lid!, moduleId: m.id, versionRange: `^${m.version}`, licensee: { id: ref, name: ref }, domains, mode, issuedAt: new Date().toISOString(), expiresAt: r.expiresAt ?? null };
+  const lic: License = { v: 1, lid: r.lid!, moduleId: m.id, versionRange: `^${m.version}`, licensee: { id: ref, name: ref }, domains, mode, issuedAt: new Date().toISOString(), expiresAt: r.expiresAt ?? null, graceDays: DEFAULT_GRACE_DAYS };
   await d.store.saveLicense(lic, b.licenseeName ? await d.encrypt(lic.lid, b.licenseeName.slice(0, 120)) : null, g.actorId);
   await d.audit('license_issued', m.id, { lid: lic.lid, mode, domains: domains.length, expiresAt: lic.expiresAt });
   const access = d.gateway ? await d.gateway.issue({ lid: lic.lid, moduleId: m.id, domains, iid: installIdFor(lic.lid) }) : null;

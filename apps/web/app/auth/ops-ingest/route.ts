@@ -1,5 +1,6 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextRequest, NextResponse } from 'next/server';
+import { sealSessionTrailFor } from '@/lib/security/session-trail-seal';
 import { mergeAuthCookieOptions } from '@/lib/supabase/cookie-options';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { isOpsHostname, isOpsPreviewHostname } from '@/lib/ops-host';
@@ -74,6 +75,7 @@ export async function GET(request: NextRequest) {
     const dev = await createTrustedDevice(db, claim.userId, deviceLabel(request.headers.get('user-agent')), 'handoff', claim.deviceId);
     response.cookies.set(DEVICE_COOKIE, dev, cookieOpts(DEVICE_MAX_AGE_S));
     await audit(db, claim.userId, 'ops_session_minted', { parent: claim.deviceId });
+    await sealSessionTrailFor(claim.userId);
     return response;
   } catch {
     return fail(request, 'exception');

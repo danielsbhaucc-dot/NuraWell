@@ -96,7 +96,7 @@ describe('AAD binding (user + table.column + row)', () => {
 
 describe('fetch wrapper', () => {
   it('adds owner/row columns to narrow selects and strips them again', async () => {
-    expect(planSelect('notifications', 'title,body')).toEqual({ select: 'title,body,user_id,id', added: ['user_id', 'id'] });
+    expect(planSelect('notifications', 'title,body')).toEqual({ select: 'title,body,user_id,id', added: ['user_id', 'id'], embeds: [] });
     expect(planSelect('notifications', '*').added).toEqual([]);
     expect(planSelect('notifications', 'id,user_id,body').added).toEqual([]);
     expect(planSelect('notifications', 'count()').added).toEqual([]);
