@@ -5,6 +5,7 @@ import { blindIndexPatch, notificationUniqueScope, rewriteBlindFilters } from '@
 import { prepareWriteRow } from '@/lib/security/field-write';
 
 const U1 = '11111111-1111-4111-8111-111111111111';
+const U2 = '22222222-2222-4222-8222-222222222222';
 const EV = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 
 beforeEach(() => {
@@ -69,5 +70,21 @@ describe('task/ip blind indexes', () => {
     expect(url.searchParams.get('ip')).toBeNull();
     const p = await blindIndexPatch('admin_audit_log', { ip: '203.0.113.9' });
     expect(url.searchParams.get('or')).toContain(`ip_bidx.eq.${p.ip_bidx}`);
+  });
+  it('per-user title keys: same title, two users -> unrelated indexes; shared rows use the global key', async () => {
+    const o1 = await blindIndexPatch('task_definitions', { owner_user_id: U1, title: 'הליכה בבוקר' });
+    const o2 = await blindIndexPatch('task_definitions', { owner_user_id: U2, title: 'הליכה בבוקר' });
+    const sh = await blindIndexPatch('task_definitions', { owner_user_id: null, title: 'הליכה בבוקר' });
+    expect(o1.title_bidx).toBeTruthy();
+    expect(o1.title_bidx).not.toBe(o2.title_bidx);
+    expect(sh.title_bidx).not.toBe(o1.title_bidx);
+    expect(await blindIndexPatch('task_definitions', { owner_user_id: U1, title: 'הליכה  בבוקר' })).toEqual(o1);
+    const t1 = await blindIndexPatch('almog_assignments', { user_id: U1, title: 'הליכה בבוקר' });
+    const t2 = await blindIndexPatch('almog_assignments', { user_id: U2, title: 'הליכה בבוקר' });
+    expect((t1.title_tok_bidx as string[]).some((x) => (t2.title_tok_bidx as string[]).includes(x))).toBe(false);
+    const p1 = await blindIndexPatch('chat_task_proposals', { user_id: U1, title: 'x' });
+    const p2 = await blindIndexPatch('chat_task_proposals', { user_id: U2, title: 'x' });
+    expect(p1.title_bidx).not.toBe(p2.title_bidx);
+    expect((await blindIndexPatch('chat_task_proposals', { title: 'x' })).title_bidx).toBeNull();
   });
 });

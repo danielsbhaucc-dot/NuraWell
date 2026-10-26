@@ -68,9 +68,9 @@ export async function isIpRangeBlocked(db: SupabaseClient, ip: string, now = Dat
 type AlertExtras = { buttons?: import('@/lib/ceo/channel').CeoButton[][]; emailLink?: { href: string; label: string } };
 async function alertOnce(db: SupabaseClient, key: string, kind: string, detail: Record<string, unknown>, text: string, subject: string, withinMs = 3_600_000, extras: AlertExtras | (() => Promise<AlertExtras>) = {}): Promise<void> {
   const since = new Date(Date.now() - withinMs).toISOString();
-  const { data: prev } = await db.from('ops_security_events').select('id').eq('kind', kind).gte('created_at', since).contains('detail', { key }).limit(1);
+  const { data: prev } = await db.from('ops_security_events').select('id').eq('kind', kind).gte('created_at', since).contains('facts', { key }).limit(1);
   if (prev?.length) return;
-  await db.from('ops_security_events').insert({ kind, detail: { key, ...detail }, alerted_at: new Date().toISOString() });
+  await db.from('ops_security_events').insert({ kind, facts: { key }, detail: { key, ...detail }, alerted_at: new Date().toISOString() });
   const { alertOwnerSecurity } = await import('@/lib/ops/device-notify');
   const x = typeof extras === 'function' ? await extras().catch(() => ({})) : extras;
   // null user = system alert → Telegram + every admin owner's email (before 2026-10 the email leg was skipped)

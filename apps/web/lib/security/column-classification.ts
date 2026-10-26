@@ -34,7 +34,8 @@ export const COLUMN_CLASSIFICATION: Readonly<Record<string, Readonly<Record<stri
   },
   admin_audit_log: {
     ip_bidx: ["non_sensitive", "keyed HMAC blind index of the IP (filter), not reversible"],
-    detail: ["sensitive", "pending (not encrypted yet): written in SQL by ops_break_glass_reset (000142), which must run from the SQL editor when the app is down (no app key there); plus device-trust writes device label/location and rate-limit raw-fetch writes; move SQL/raw facts to a plain facts column, then register"],
+    detail: ["sensitive", "registered"],
+    facts: ["non_sensitive", "ids/fixed codes/counts/dates only (SQL writers + dedupe keys, 000214); free text goes to detail (enc:v2)"],
     ip: ["sensitive", "registered"],
     method: ["non_sensitive", "enum/status/routing code, no personal content"],
     path: ["non_sensitive", "enum/status/routing code, no personal content"],
@@ -138,9 +139,10 @@ export const COLUMN_CLASSIFICATION: Readonly<Record<string, Readonly<Record<stri
   },
   auth_session_trail: {
     aal: ["non_sensitive", "enum/status/routing code, no personal content"],
-    ip: ["sensitive", "pending (not encrypted yet): written by an auth.sessions trigger in SQL; needs DB-side sealing or an app writer"],
+    ip: ["sensitive", "registered"],
+    ip_bidx: ["non_sensitive", "keyed HMAC blind index of the IP (ops_session_trail lookup), not reversible"],
     product_id: ["non_sensitive", "identifier/key or public credential material, no personal content"],
-    user_agent: ["sensitive", "pending (not encrypted yet): written by an auth.sessions trigger in SQL; needs DB-side sealing or an app writer"],
+    user_agent: ["sensitive", "registered"],
   },
   billing_addons: {
     code: ["non_sensitive", "staff-authored catalog/config content, not user data"],
@@ -821,7 +823,8 @@ export const COLUMN_CLASSIFICATION: Readonly<Record<string, Readonly<Record<stri
     code_hash: ["non_sensitive", "hash/digest/signature, not reversible to content"],
   },
   ops_security_events: {
-    detail: ["sensitive", "pending (not encrypted yet): SQL function inserts (000142) and app .contains('detail', ...) dedupe; split dedupe keys first"],
+    detail: ["sensitive", "registered"],
+    facts: ["non_sensitive", "ids/fixed codes/counts/dates only (SQL writers + dedupe keys, 000214); free text goes to detail (enc:v2)"],
     kind: ["non_sensitive", "enum/status/routing code, no personal content"],
     product_id: ["non_sensitive", "identifier/key or public credential material, no personal content"],
   },

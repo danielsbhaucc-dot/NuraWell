@@ -44,3 +44,12 @@
 - עמודות קוד קבוע שנשארות גלויות: almog_assignments.schedule, almog_interventions.barrier_type, chat_sessions.topic (CHECK NOT VALID חדש), churn_feedback.reason (CHECK קיים), outcome של sos/interventions, ops_enroll_blocks.reason ('wrong_number' בלבד).
 - admin_audit_log.ip מוצפן עם ip_bidx.
 - עדיין פתוח: admin_audit_log.detail, ops_security_events.detail, auth_session_trail.ip/user_agent, habit_key/stable_key ישנים של ai_daily (000092) שמכילים כותרת.
+
+## 000214 — יומני ביקורת, מסלול סשנים, מפתחות HMAC לכל משתמש (sec/enc-close-2)
+- **HMAC לכותרות:** שורות בבעלות משתמש (task_definitions עם owner, almog_assignments, chat_task_proposals) משתמשות במפתח נגזר לכל משתמש (HKDF, salt=user_id) — אותה כותרת אצל שני משתמשים לא נותנת אותו אינדקס. מפתח גלובלי נשאר רק לשורות צוות משותפות (owner NULL) שהן תוכן צוות גלוי ממילא. מגבלה: כפילות מדויקת בין שורה משותפת לשורה פרטית כבר לא מתנגשת ב-SQL; ה-buildDupCandidates הלילי באפליקציה מכסה את זה.
+- **admin_audit_log / ops_security_events:** עמודה חדשה `facts jsonb` גלויה — מזהים, קודים קבועים, ספירות ותאריכים בלבד (SQL ו-dedupe: alertOnce, retention, anomaly). `detail` מוצפן (enc:v2, מפתח מערכת audit). כותב ה-rate-limit עובר דרך עטיפת ההצפנה; ops_break_glass_reset ו-run_data_retention כותבים רק ל-facts. legal_db_audit_window מחזיר facts ומחפש ב-facts/actor_id.
+- **auth_session_trail.ip/user_agent:** נכתבות ע"י טריגר על auth.sessions (אין מפתח ב-DB) ← cron אפליקטיבי `/api/v1/ai/cron/session-trail-seal` כל 5 דקות מצפין שורות חדשות ומוסיף ip_bidx. ops_session_trail מסנן לפי p_ip_bidx (+ ענף גלוי לשורות שעוד לא נאטמו). הבדיקה הלילית נכשלת על ערך גלוי שגילו מעל 15 דקות. אין טריגר דחייה בטבלה הזו (הוא היה מפיל את כתיבת הטריגר).
+  נבחר cron ולא sealed box ב-DB: pgsodium מוצא משימוש ב-Supabase; pgcrypto pgp_pub_encrypt חינמי, אבל ה-DB לא יכול לחשב ip_bidx (דורש את הסוד), וזה פורמט מעטפה שני מחוץ ל-enc:v2 / DEK לכל משתמש.
+- **ממתין לאישור דניאל:** `supabase/gated/000215_ai_daily_legacy_keys.sql` — habit_key/stable_key ישנים של ai_daily (000092) שמכילים כותרת ← מפתחות מבוססי id. לא הורץ.
+- **ניקוי שורת guide משותפת (אושר, לא הורץ):** `apps/web/scripts/guide-reason-cleanup.ts` — מעביר את הסיבה לשורת user_task_assignments של המשתמש (מוצפן) ומאפס את התיאור המשותף. `--dry-run` = ספירות בלבד; אימות: 0 שורות נותרות והסיבות מפוענחות.
+- **סדר פריסה:** 000212 ← 000214 ← קוד ← cron session-trail-seal רץ ← guide-reason-cleanup (--dry-run, ואז הרצה).
