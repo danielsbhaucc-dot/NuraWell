@@ -11,7 +11,8 @@
  * (none of the registered tables are read through embeds today; stage 5 guard enforces it).
  * The browser client is never wrapped: the browser never gets ciphertext keys.
  */
-import { encryptedTable, keyColumns } from '@/lib/security/field-registry';
+import { encryptedTable, FIELD_V2_TABLES, keyColumns } from '@/lib/security/field-registry';
+import { prepareWriteRow, sealedWriteCols } from '@/lib/security/field-write';
 // field-crypto (node:crypto, KMS key) is loaded lazily, only when a response really holds enc:v2 values.
 const FIELD_PREFIX_MARK = 'enc:v2:';
 
@@ -72,6 +73,12 @@ export function withFieldDecryption(base: FetchFn = fetch): FetchFn {
     const method = (init?.method ?? (input instanceof Request ? input.method : 'GET')).toUpperCase();
     if (method === 'HEAD' || method === 'DELETE' && !url.searchParams.has('select')) return base(input, init);
 
+    // write path: seal registered columns of live tables before PostgREST sees them
+    if ((method === 'POST' || method === 'PATCH') && FIELD_V2_TABLES.includes(table) && typeof init?.body === 'string') {
+      const sealed = await sealWrite(base, table, method, url, init);
+      if (sealed) return sealed;
+    }
+
     const plan = planSelect(table, url.searchParams.get('select'));
     if (plan.added.length) url.searchParams.set('select', plan.select!);
     const res = await base(plan.added.length ? url.toString() : input, init);
@@ -98,6 +105,119 @@ export function withFieldDecryption(base: FetchFn = fetch): FetchFn {
     body = Array.isArray(body) ? await Promise.all(body.map(fix)) : await fix(body);
     return rebuild(res, JSON.stringify(body));
   };
+}
+
+type Init = NonNullable<Parameters<FetchFn>[1]>;
+type Row = Record<string, unknown>;
+
+/** seal one row's registered columns for (table, owner, row key) */
+async function sealOne(table: string, row: Row, rowId: string, userId: string): Promise<Row> {
+  const { sealRow } = await import('@/lib/security/field-crypto');
+  return sealRow(table, userId, rowId, row);
+}
+
+function needsSeal(table: string, row: Row): boolean {
+  return sealedWriteCols(table, row).length > 0;
+}
+
+/**
+ * POST (insert / upsert) and PATCH (update) on a live table: every registered, non-BLOCKED column present in the
+ * body is sealed as enc:v2 for (table, owner, row) before it is sent. The row key bound into the AAD is
+ *   - insert: taken from the body, or a fresh uuid is assigned to `id` (all live tables default id to a uuid);
+ *     upsert on a non-key conflict target first looks up the existing row's id so the AAD matches the stored row;
+ *   - update: the matching rows' keys are read first and the update is sent per row (key filter added), so each
+ *     row gets its own AAD. A row that changes between the read and the write is simply not matched.
+ * Returns null to fall through unchanged (nothing to seal).
+ */
+async function sealWrite(base: FetchFn, table: string, method: string, url: URL, init: Init): Promise<Response | null> {
+  const spec = encryptedTable(table)!;
+  let body: unknown;
+  try {
+    body = JSON.parse(init.body as string);
+  } catch {
+    return null;
+  }
+  const rows = (Array.isArray(body) ? body : [body]) as Row[];
+  if (!rows.some((r) => r && typeof r === 'object' && needsSeal(table, r))) return null;
+  const keyCols = keyColumns(spec);
+  const headers = new Headers(init.headers);
+
+  if (method === 'POST') {
+    const conflict = (url.searchParams.get('on_conflict') ?? '').split(',').map((c) => c.trim()).filter(Boolean);
+    const out: Row[] = [];
+    for (const r0 of rows) {
+      let r = await prepareWriteRow(table, r0);
+      if (!spec.rowCols && spec.rowCol === 'id' && r.id == null) {
+        let id: unknown = null;
+        if (conflict.length && !conflict.includes('id') && conflict.every((c) => r[c] !== undefined)) {
+          const q = new URL(url.toString());
+          q.search = '';
+          q.searchParams.set('select', 'id');
+          for (const c of conflict) q.searchParams.set(c, r[c] === null ? 'is.null' : `eq.${String(r[c])}`);
+          const res = await base(q.toString(), { method: 'GET', headers: readHeaders(headers) });
+          if (res.ok) id = ((await res.json()) as Row[])[0]?.id ?? null;
+        }
+        r = { ...r, id: id ?? crypto.randomUUID() };
+      }
+      const userId = r[spec.userCol];
+      const rowId = keyCols.map((c) => r[c]).every((v) => v !== undefined && v !== null) ? keyCols.map((c) => String(r[c])).join('|') : null;
+      if (typeof userId !== 'string' || !rowId) throw new Error(`${table}: insert must carry ${spec.userCol} and ${keyCols.join(', ')} to seal encrypted columns`);
+      out.push(await sealOne(table, r, rowId, userId));
+    }
+    // PostgREST bulk insert needs the same keys in every object
+    const keys = [...new Set(out.flatMap((r) => Object.keys(r)))];
+    const norm = Array.isArray(body) ? out.map((r) => Object.fromEntries(keys.map((k) => [k, k in r ? r[k] : null]))) : out[0];
+    return withFieldDecryption(base)(url.toString(), { ...init, body: JSON.stringify(norm) });
+  }
+
+  // PATCH
+  const patch0 = rows[0];
+  const q = new URL(url.toString());
+  q.searchParams.set('select', [...new Set([...keyCols, spec.userCol])].join(','));
+  const pre = await base(q.toString(), { method: 'GET', headers: readHeaders(headers) });
+  if (!pre.ok) return pre;
+  const targets = (await pre.json()) as Row[];
+  const results: unknown[] = [];
+  let last: Response | null = null;
+  for (const t of targets) {
+    const userId = t[spec.userCol];
+    if (typeof userId !== 'string') continue;
+    const rowId = keyCols.map((c) => String(t[c])).join('|');
+    const patch = await sealOne(table, await prepareWriteRow(table, { ...patch0, [spec.userCol]: userId }), rowId, userId);
+    if (!(spec.userCol in patch0)) delete patch[spec.userCol];
+    const one = new URL(url.toString());
+    for (const c of keyCols) one.searchParams.set(c, `eq.${String(t[c])}`);
+    last = await withFieldDecryption(base)(one.toString(), { ...init, body: JSON.stringify(patch) });
+    if (!last.ok) return last;
+    const txt = await last.text();
+    if (txt) {
+      try {
+        const j = JSON.parse(txt);
+        if (Array.isArray(j)) results.push(...j);
+        else results.push(j);
+      } catch {
+        /* no representation */
+      }
+    }
+  }
+  if (!last) return base(url.toString(), init); // nothing matched: let PostgREST answer as usual
+  const wantsRep = (headers.get('prefer') ?? '').includes('return=representation');
+  const h = new Headers(last.headers);
+  h.delete('content-length');
+  h.delete('content-encoding');
+  h.set('content-range', `0-${Math.max(targets.length - 1, 0)}/*`);
+  if (!wantsRep) return new Response(null, { status: 204, headers: h });
+  const single = (headers.get('accept') ?? '').includes('vnd.pgrst.object');
+  return new Response(JSON.stringify(single ? (results[0] ?? null) : results), { status: 200, headers: h });
+}
+
+function readHeaders(h: Headers): Headers {
+  const r = new Headers();
+  for (const k of ['apikey', 'authorization', 'accept-profile', 'content-profile', 'x-client-info']) {
+    const v = h.get(k);
+    if (v) r.set(k, v);
+  }
+  return r;
 }
 
 function rebuild(res: Response, text: string): Response {
