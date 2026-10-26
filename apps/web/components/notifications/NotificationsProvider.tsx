@@ -99,6 +99,8 @@ function extractMentor(meta: unknown, title: string): MentorId {
   return 'almog';
 }
 
+const isSealedText = (v: unknown) => typeof v === 'string' && v.startsWith('enc:');
+
 function mapRealtimeRow(row: Record<string, unknown>): NotificationItem | null {
   const id = row.id;
   if (typeof id !== 'string') return null;
@@ -467,9 +469,25 @@ export function NotificationsProvider({
 
   /** Stable callback — נשמר באותו closure ב-Realtime callback. */
   const handleRealtimeInsert = useCallback(
-    (newRow: Record<string, unknown>) => {
-      const row = mapRealtimeRow(newRow);
+    async (newRow: Record<string, unknown>) => {
+      let row = mapRealtimeRow(newRow);
       if (!row || row.archived_at) return;
+      // title/body are stored sealed (enc:v2); realtime carries the raw row, so read the decrypted copy from the API
+      if (isSealedText(newRow.title) || isSealedText(newRow.body)) {
+        try {
+          const url = buildListUrl({ viewMode: 'inbox', filterKind: 'all', cursor: null, limit: 10 });
+          const res = await fetch(url, { cache: 'no-store' });
+          const data = (await res.json()) as { notifications?: Array<Record<string, unknown>> };
+          const hit = res.ok ? (data.notifications ?? []).find((n) => n.id === row!.id) : undefined;
+          if (!hit) {
+            void loadBadgeOnlyRef.current?.();
+            return;
+          }
+          row = { ...row, ...mapApiRow(hit) };
+        } catch {
+          return;
+        }
+      }
 
       const { viewMode: vm, filterKind: fk } = latestFiltersRef.current;
       const matchesFilter =
@@ -540,7 +558,7 @@ export function NotificationsProvider({
             filter: `user_id=eq.${userId}`,
           },
           (payload) => {
-            handleRealtimeInsert(payload.new as Record<string, unknown>);
+            void handleRealtimeInsert(payload.new as Record<string, unknown>);
           }
         )
         .subscribe((status, err) => {
@@ -643,7 +661,7 @@ export function NotificationsProvider({
       const payload = (data as { payload?: Record<string, unknown> }).payload;
       if (!payload) return;
       const row = mapRealtimeRow(payload);
-      if (!row) return;
+      if (!row || isSealedText(row.title) || isSealedText(row.body)) return;
       enqueueToast(row);
     };
 

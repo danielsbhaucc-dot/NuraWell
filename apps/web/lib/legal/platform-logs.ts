@@ -32,7 +32,15 @@ export async function fetchSupabaseLogs(userId: string, createdAt: string, admin
   try {
     const { data, error } = await admin.rpc('legal_db_audit_window', { p_user: userId, p_start: w.start, p_end: w.end });
     if (error) return { provider: 'supabase', source, status: 'error', note: error.message?.slice(0, 120) ?? 'rpc_error', rows: [] };
-    const rows = (data as Array<Record<string, unknown>> | null) ?? [];
+    const { decryptValue } = await import('@/lib/security/field-crypto');
+    const { logDetail } = await import('@/lib/logs/facts');
+    // admin_audit_log.detail is enc:v2 (system 'audit' key, 000214): decrypt, overlay on the plain facts
+    const rows = await Promise.all(((data as Array<Record<string, unknown>> | null) ?? []).map(async (r) => {
+      if (r.source !== 'public.admin_audit_log') { const { facts: _f, ...rest } = r; return rest; }
+      const detail = await decryptValue('admin_audit_log', 'detail', 'system:audit', '-', r.detail).catch(() => null);
+      const { facts, ...rest } = r;
+      return { ...rest, detail: logDetail({ facts, detail }) };
+    }));
     return { provider: 'supabase', source: `${source} · ${w.start} → ${w.end}`, status: rows.length ? 'ok' : 'empty', note: rows.length ? undefined : 'no audit rows in window', rows };
   } catch (e) {
     return { provider: 'supabase', source, status: 'error', note: e instanceof Error ? e.name : 'error', rows: [] };

@@ -36,6 +36,19 @@ const uuid = z.string().uuid();
 const clip = (s: unknown, n = 280) => (typeof s === 'string' ? (s.length > n ? `${s.slice(0, n)}…` : s) : s);
 const daysAgo = (d: number) => new Date(Date.now() - d * 86_400_000).toISOString();
 
+/** Below this many rows a quality sample can't support any claim. */
+export const MIN_QUALITY_SAMPLE = 3;
+/** Grounding envelope: explicit N, and a hard 'no samples' marker so the model can't invent examples. */
+export function shapeQualitySample<C extends { id: string }, N extends { id: string }>(chat: C[], notifications: N[]) {
+  const n = chat.length + notifications.length;
+  return {
+    sampleSize: { total: n, chat: chat.length, notifications: notifications.length },
+    ...(n === 0 ? { note: 'no samples: N=0. אין נתונים להערכה.' } : n < MIN_QUALITY_SAMPLE ? { note: `near-empty sample: N=${n}. אין מספיק נתונים להערכה.` } : {}),
+    chat,
+    notifications,
+  };
+}
+
 async function rows<T = Record<string, unknown>>(p: PromiseLike<{ data: T[] | null; error: { message: string } | null }>): Promise<T[]> {
   const { data, error } = await p;
   if (error) throw new Error(error.message);
@@ -104,18 +117,18 @@ export const CEO_TOOLS: CeoTool[] = [
       const since = daysAgo(Number(a.days ?? 1));
       const n = Number(a.limit ?? 12);
       const [chat, notes] = await Promise.all([
-        rows(db.from('ai_interactions').select('user_id, content, created_at, profiles!inner(role)').eq('role', 'assistant').eq('profiles.role', 'user').gte('created_at', since).order('created_at', { ascending: false }).limit(n).then(decInteractionResult())),
-        rows(db.from('notifications').select('user_id, type, title, body, created_at, profiles!inner(role)').eq('profiles.role', 'user').gte('created_at', since).order('created_at', { ascending: false }).limit(n)),
+        rows(db.from('ai_interactions').select('id, user_id, content, created_at, profiles!inner(role)').eq('role', 'assistant').eq('profiles.role', 'user').gte('created_at', since).order('created_at', { ascending: false }).limit(n).then(decInteractionResult())),
+        rows(db.from('notifications').select('id, user_id, type, title, body, created_at, profiles!inner(role)').eq('profiles.role', 'user').gte('created_at', since).order('created_at', { ascending: false }).limit(n)),
       ]);
       // gender is encrypted at rest and embeds are not decrypted: read it top-level (decrypted by the read path)
       const ids = [...new Set([...chat, ...notes].map((r) => String(r.user_id)))];
       const gm = new Map<string, string | null>();
       if (ids.length) for (const p of await rows(db.from('profiles').select('id, gender').in('id', ids))) gm.set(String(p.id), (p.gender as string | null) ?? null);
       const g = (r: Record<string, unknown>) => gm.get(String(r.user_id)) ?? null;
-      return {
-        chat: chat.map((r) => ({ userGender: g(r), text: clip(r.content, 400), at: r.created_at })),
-        notifications: notes.map((r) => ({ userGender: g(r), type: r.type, title: r.title, body: clip(r.body, 240), at: r.created_at })),
-      };
+      return shapeQualitySample(
+        chat.map((r) => ({ id: String(r.id), userGender: g(r), text: clip(r.content, 400), at: r.created_at })),
+        notes.map((r) => ({ id: String(r.id), userGender: g(r), type: r.type, title: r.title, body: clip(r.body, 240), at: r.created_at })),
+      );
     },
   },
   {
