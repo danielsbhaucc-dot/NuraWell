@@ -1,0 +1,22 @@
+{
+ "dek": "n8ajVUjLL9caAqROE3mkTmL+AOKaJErqp3FDDJjeezA=",
+ "wrapped": {
+  "v": 1,
+  "kek": "FIELD_KEK",
+  "kekv": 1,
+  "wdek": "aWbyaoVZv3QC4iPJ2IUti8rXYNDaaVF+IyxGmF/tkzXD3kjhrZ+ASTbhQibZ95ylcpuC0H6yOKWRgfVu",
+  "aad": "nurawell:dek:user:user-a"
+ },
+ "aad": "nurawell:field:profiles:notes:row-1",
+ "plain": "שלום עולם — test 123",
+ "ct": "enc:v2:BholzuRT+63Hexm/ORJNVhCVljNLmQu/9zzvW1pVBpzvDUknL7LTVNkJRpTHkGDY/ettE8ZJ0vXidg==",
+ "scope": "nurawell:dek:user:user-a",
+ "bi": "AIXS3vKcjhXT8FYkLNlKTQ",
+ "rewrapped": {
+  "v": 1,
+  "kek": "FIELD_KEK",
+  "kekv": 2,
+  "wdek": "ofuXWhzejUv1dT5bcd7snT/B3pG7RFC2QI64hlxq0iErMBp0Ospmz0wmZHtKvbQDm5xqP/Y0PmJkBCxL",
+  "aad": "nurawell:dek:user:user-a"
+ }
+}

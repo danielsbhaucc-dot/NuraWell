@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Platform module manifest (module.json)",
+  "type": "object",
+  "required": ["id", "package", "version", "distribution", "category", "toggleable", "description", "requires", "env", "migrations", "conformance"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+    "package": { "type": "string", "pattern": "^@[a-z0-9-]+/[a-z0-9-]+$" },
+    "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "distribution": { "enum": ["internal", "shareable", "sellable"] },
+    "category": { "enum": ["security", "privacy", "platform", "feature", "ui", "ops"] },
+    "toggleable": { "type": "boolean", "description": "false = always on (security/privacy modules)" },
+    "description": { "type": "string", "minLength": 20 },
+    "provides": { "type": "object", "properties": { "routes": { "type": "array" }, "apis": { "type": "array" }, "jobs": { "type": "array" }, "ui": { "type": "array" }, "tables": { "type": "array" } } },
+    "requires": { "type": "object", "properties": { "modules": { "type": "object", "additionalProperties": { "type": "string" } } } },
+    "env": { "type": "array", "items": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" }, "description": "env var NAMES only, never values" },
+    "migrations": { "type": "array", "items": { "type": "string" } },
+    "conformance": { "type": "array", "items": { "type": "string" } },
+    "tests": { "type": "array", "items": { "type": "string" } },
+    "dataPolicy": { "type": "string" },
+    "frozen": { "type": "array", "items": { "type": "string" } }
+  }
+}

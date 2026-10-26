@@ -1,0 +1,13 @@
+# @platform/security-crypto (module id: security-crypto, v0.1.0, shareable, always-on)
+Purpose: per-user envelope encryption for sensitive DB columns. Values look like `enc:v2:<base64(iv|ct|tag)>`.
+Install: node scripts/modules/install.mjs security-crypto --target <repo>   |  manifest: modules: { 'security-crypto': { enabled: true } }
+API:
+  newDataKey(fieldKek: Buffer, kekVersion: number, userId: string) -> { dek, wrapped }
+  unwrapDataKey(fieldKek, wrapped, userId) -> dek ; rewrapDataKey(oldKek, newKek, newVersion, wrapped, userId)
+  encryptField(dek, plaintext, aad) -> 'enc:v2:...' ; decryptField(dek, value, aad) -> plaintext
+  fieldAad(table, column, rowId) ; dekScope(userId) ; blindIndex(indexKey, field, value) ; blindIndexEquals(a, b)
+  migrateValue(value, { dek, aad, decryptLegacy }) -> idempotent plaintext/enc:v1 -> enc:v2
+Keys: 32-byte Buffers, INJECTED by the caller (this module reads no env and never talks to KMS or a DB).
+DO NOT change: the wire format, AAD strings, key sizes. tests/envelope.vectors.test.ts must stay green.
+Verify: npx vitest run (apps/web) -> tests/platform-security-crypto.test.ts
+Never use blindIndex on low-entropy fields (weight, yes/no).

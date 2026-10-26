@@ -1,0 +1,8 @@
+{
+  "name": "@platform/security-crypto",
+  "version": "0.1.0",
+  "private": true,
+  "description": "enc:v2 per-user envelope field encryption (AES-256-GCM, per-user DEK under an injected FIELD_KEK, AAD binding, blind indexes). No env reads, no DB, no product imports.",
+  "main": "src/index.ts",
+  "types": "src/index.ts"
+}
