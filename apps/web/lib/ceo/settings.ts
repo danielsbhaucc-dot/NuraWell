@@ -82,8 +82,10 @@ export function encryptSecret(plain: string, k: Buffer = key()): string {
 function decryptWith(blob: string, k: Buffer): string {
   const [v, iv, tag, data] = blob.split(':');
   if (v !== 'v1' || !iv || !tag || !data) throw new Error('bad secret blob');
-  const d = createDecipheriv('aes-256-gcm', k, Buffer.from(iv, 'base64'));
-  d.setAuthTag(Buffer.from(tag, 'base64'));
+  const t = Buffer.from(tag, 'base64');
+  if (t.length !== 16) throw new Error('bad secret blob');
+  const d = createDecipheriv('aes-256-gcm', k, Buffer.from(iv, 'base64'), { authTagLength: 16 });
+  d.setAuthTag(t);
   return Buffer.concat([d.update(Buffer.from(data, 'base64')), d.final()]).toString('utf8');
 }
 
