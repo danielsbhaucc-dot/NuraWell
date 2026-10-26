@@ -11,7 +11,7 @@
  * (none of the registered tables are read through embeds today; stage 5 guard enforces it).
  * The browser client is never wrapped: the browser never gets ciphertext keys.
  */
-import { encryptedTable, FIELD_V2_TABLES, keyColumns, rowKeyOf } from '@/lib/security/field-registry';
+import { aadColumns, encryptedTable, FIELD_V2_TABLES, keyColumns, ownerOf, rowKeyOf, SYSTEM_ROW } from '@/lib/security/field-registry';
 import { prepareWriteRow, sealedWriteCols } from '@/lib/security/field-write';
 // field-crypto (node:crypto, KMS key) is loaded lazily, only when a response really holds enc:v2 values.
 const FIELD_PREFIX_MARK = 'enc:v2:';
@@ -50,7 +50,7 @@ export function planSelect(table: string, select: string | null): { select: stri
   if (items.some((i) => i === '*')) return { select, added: [] };
   if (AGG.test(select)) return { select, added: [] };
   const have = new Set(items.map(returnedKey).filter(Boolean) as string[]);
-  const added = keyColumns(spec).filter((c) => !have.has(c));
+  const added = aadColumns(spec).filter((c) => !have.has(c));
   if (!added.length) return { select, added };
   return { select: [...items, ...added].join(','), added };
 }
@@ -147,7 +147,7 @@ async function sealWrite(base: FetchFn, table: string, method: string, url: URL,
     const out: Row[] = [];
     for (const r0 of rows) {
       let r = await prepareWriteRow(table, r0);
-      if (!spec.rowCols && spec.rowCol === 'id' && r.id == null) {
+      if (!spec.system && !spec.rowCols && spec.rowCol === 'id' && r.id == null) {
         let id: unknown = null;
         if (conflict.length && !conflict.includes('id') && conflict.every((c) => r[c] !== undefined)) {
           const q = new URL(url.toString());
@@ -159,9 +159,9 @@ async function sealWrite(base: FetchFn, table: string, method: string, url: URL,
         }
         r = { ...r, id: id ?? crypto.randomUUID() };
       }
-      const userId = r[spec.userCol];
+      const userId = ownerOf(spec, r);
       const rowId = rowKeyOf(spec, r);
-      if (typeof userId !== 'string' || !rowId) throw new Error(`${table}: insert must carry ${spec.userCol} and ${keyCols.join(', ')} to seal encrypted columns`);
+      if (!userId || !rowId) throw new Error(`${table}: insert must carry ${spec.userCol} and ${keyCols.join(', ')} to seal encrypted columns`);
       out.push(await sealOne(table, r, rowId, userId));
     }
     // PostgREST bulk insert needs the same keys in every object
@@ -172,6 +172,12 @@ async function sealWrite(base: FetchFn, table: string, method: string, url: URL,
 
   // PATCH
   const patch0 = rows[0];
+  if (spec.system) {
+    // one system key + constant AAD row id: seal once, forward the update unchanged (filters, bigint keys, bulk)
+    const owner = ownerOf(spec, patch0)!;
+    const patch = await sealOne(table, await prepareWriteRow(table, patch0), SYSTEM_ROW, owner);
+    return withFieldDecryption(base)(url.toString(), { ...init, body: JSON.stringify(patch) });
+  }
   const q = new URL(url.toString());
   q.searchParams.set('select', [...new Set([...keyCols, spec.userCol])].join(','));
   const pre = await base(q.toString(), { method: 'GET', headers: readHeaders(headers) });

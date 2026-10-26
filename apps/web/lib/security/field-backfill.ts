@@ -13,10 +13,11 @@ import { createHash } from 'node:crypto';
 import { decryptString, isEncrypted } from '@/lib/crypto/pii';
 import { createRawAdminClient } from '@/lib/supabase/admin';
 import { decryptValue, encryptValue, isV2 } from '@/lib/security/field-crypto';
-import { encryptedTable, FIELD_V2_TABLES, isBlocked, keyColumns, rowKeyOf } from '@/lib/security/field-registry';
+import { APPEND_ONLY_TABLES, encryptedTable, FIELD_V2_TABLES, isBlocked, keyColumns, ownerOf, rowKeyOf } from '@/lib/security/field-registry';
 
 /** staged rollout list (defined in field-registry so the write path can read it without a cycle) */
-export const FIELD_V2_BACKFILL_TABLES: readonly string[] = FIELD_V2_TABLES;
+// append-only evidence tables reject UPDATE by design: only rows written after go-live are encrypted (see APPEND_ONLY_TABLES)
+export const FIELD_V2_BACKFILL_TABLES: readonly string[] = FIELD_V2_TABLES.filter((t) => !(t in APPEND_ONLY_TABLES));
 
 const CAS_MAX = 2000;
 
@@ -74,9 +75,9 @@ export async function backfillFieldV2(budgetMs = 30_000, tables: readonly string
       offset += rows.length;
       for (const r of rows) {
         if (Date.now() >= deadline) break;
-        const userId = String(r[spec.userCol]);
+        const userId = ownerOf(spec, r);
         const rowId = rowKeyOf(spec, r);
-        if (!rowId) continue;
+        if (!rowId || !userId) continue;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any -- PostgREST builder types recurse too deep here
         const byKey = (qq: any): any => {
           let x = qq;

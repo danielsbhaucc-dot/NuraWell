@@ -2,7 +2,7 @@ import { randomBytes } from 'node:crypto';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { __resetFieldCrypto, decryptValue, setDekStoreForTests } from '@/lib/security/field-crypto';
 import { withFieldDecryption } from '@/lib/security/field-fetch';
-import { FIELD_V2_TABLES, ENCRYPTED_TABLES, isBlocked } from '@/lib/security/field-registry';
+import { APPEND_ONLY_TABLES, FIELD_V2_TABLES, ENCRYPTED_TABLES, isBlocked } from '@/lib/security/field-registry';
 import { FIELD_V2_BACKFILL_TABLES } from '@/lib/security/field-backfill';
 import { dedupeNormalize, notificationDedupeKey } from '@/lib/security/field-write';
 
@@ -81,7 +81,7 @@ describe('write sealing (server fetch wrapper)', () => {
       const live = Object.keys(spec.columns).some((c) => !isBlocked(t, c));
       expect(FIELD_V2_TABLES.includes(t), t).toBe(live);
     }
-    expect(FIELD_V2_BACKFILL_TABLES).toEqual(FIELD_V2_TABLES);
+    expect(FIELD_V2_BACKFILL_TABLES).toEqual(FIELD_V2_TABLES.filter((t) => !(t in APPEND_ONLY_TABLES)));
     expect(FIELD_V2_TABLES).toContain('pending_almog_commitment_jobs');
   });
 
