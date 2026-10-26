@@ -42,7 +42,12 @@ function legacyPlain(kind: string, v: unknown, userId: string): unknown {
 const needs = (v: unknown) =>
   v !== null && v !== undefined && v !== '' && !(isV2(v) || (Array.isArray(v) && (v.length === 0 || v.every(isV2))));
 
-export async function backfillFieldV2(budgetMs = 30_000, tables: readonly string[] = FIELD_V2_BACKFILL_TABLES) {
+/** `only`: restrict the scan to rows where `col = value` (e.g. one user's fresh auth_session_trail rows). */
+export async function backfillFieldV2(
+  budgetMs = 30_000,
+  tables: readonly string[] = FIELD_V2_BACKFILL_TABLES,
+  only?: { col: string; value: string },
+) {
   const db = createRawAdminClient();
   const deadline = Date.now() + budgetMs;
   const out: Record<string, { rows: number; skippedRace: number; verifyFail: number; remaining?: number; error?: string }> = {};
@@ -62,6 +67,7 @@ export async function backfillFieldV2(budgetMs = 30_000, tables: readonly string
     let offset = 0;
     while (Date.now() < deadline) {
       let q = db.from(table).select(selectCols);
+      if (only) q = q.eq(only.col, only.value);
       if (composite) {
         // composite key: stable order over all key columns, offset paging (rows never leave the set)
         for (const c of keyCols) q = q.order(c);

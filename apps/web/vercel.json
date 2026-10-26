@@ -20,7 +20,7 @@
     },
     {
       "path": "/api/v1/ai/cron/session-trail-seal",
-      "schedule": "*/5 * * * *"
+      "schedule": "55 11 * * *"
     },
     {
       "path": "/api/v1/legal/anchor",
