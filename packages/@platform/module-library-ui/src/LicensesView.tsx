@@ -1,4 +1,5 @@
 'use client';
+import { Accordion } from './Accordion';
 import { useEffect, useState } from 'react';
 import type { LicenseRow } from './types';
 import { postJson } from './api';
@@ -22,6 +23,7 @@ export function LicensesView({ api, initial, initialRevoke, initialUnblock, init
   const [load, setLoad] = useState<Load>(initial ?? { s: 'loading' });
   const [msg, setMsg] = useState<{ ok: boolean; t: string } | null>(null);
   const [rev, setRev] = useState<{ lid: string; state: RevState; reason: string } | null>(initialRevoke ? { lid: initialRevoke, state: 'suspended_until_payment', reason: 'unpaid' } : null);
+  const [more, setMore] = useState<string | null>(null);
   const [unb, setUnb] = useState<string | null>(initialUnblock ?? null);
   const [rot, setRot] = useState<{ lid: string; secret?: string } | null>(initialRotate ?? null);
   const refresh = () => postJson<{ licenses: LicenseRow[]; signingReady: boolean }>(api, { op: 'list' }, 'טעינת הרישיונות', (r) => setLoad(r.ok ? { s: 'ok', rows: r.data.licenses, signingReady: r.data.signingReady } : { s: 'error', msg: r.error }));
@@ -39,7 +41,8 @@ export function LicensesView({ api, initial, initialRevoke, initialUnblock, init
   return (
     <div className="fd-pane">
       <h2>רישיונות</h2>
-      <p className="fd-dim">כל מכירה יוצרת רישיון. <b>חידוש</b> מאריך עד החיוב הבא, <b>חסימה</b> עוצרת תוך כשתי דקות, <b>ביטול חסימה</b> מחזיר באותה מהירות, ו<b>מפתח חדש</b> מחליף מפתח שדלף. כל פעולה = כפתור אחד.</p>
+      <p className="fd-dim">כל מכירה יוצרת רישיון. כאן חוסמים, משחררים ומחדשים.</p>
+      <Accordion title="איך זה עובד" className="fd-acc-intro"><p className="fd-dim"><b>חידוש</b> מאריך עד החיוב הבא, <b>חסימה</b> עוצרת תוך כשתי דקות, <b>ביטול חסימה</b> מחזיר באותה מהירות, ו<b>מפתח חדש</b> מחליף מפתח שדלף. כל פעולה = כפתור אחד.</p></Accordion>
       {!load.signingReady ? <p className="fd-warn">הרישיונות עוד לא הופעלו בשרת, ולכן כרגע אפשר רק לצפות.</p> : null}
       {msg ? <p className={msg.ok ? 'fd-note' : 'fd-err'} role={msg.ok ? 'status' : 'alert'}>{msg.t}</p> : null}
       {load.rows.length === 0 ? <div className="fd-empty">עוד לא נמכר אף רכיב. מוכרים מתוך ספריית המודולים, בכפתור &quot;מכירה&quot;.</div> : (
@@ -51,12 +54,15 @@ export function LicensesView({ api, initial, initialRevoke, initialUnblock, init
               <span className={soon(l.expiresAt) ? 'fd-soon' : ''}>{fmtDate(l.expiresAt)}</span>
               <span>{STATE_LABEL[l.state]}{l.until ? ` (${fmtDate(l.until)})` : ''}</span>
               <span className="fd-actions">
-                <button type="button" className="fd-btn" disabled={!load.signingReady} onClick={() => act({ op: 'renew', lid: l.lid, validDays: 30 }, 'הרישיון הוארך בחודש')}>חידוש</button>
                 {l.state === 'active'
                   ? <button type="button" className="fd-btn fd-btn-danger" disabled={!load.signingReady} onClick={() => setRev({ lid: l.lid, state: 'suspended_until_payment', reason: 'unpaid' })}>חסימה</button>
                   : <button type="button" className="fd-btn" disabled={!load.signingReady} onClick={() => setUnb(l.lid)}>ביטול חסימה</button>}
-                <button type="button" className="fd-btn" disabled={!load.signingReady} onClick={() => setRot({ lid: l.lid })}>מפתח חדש</button>
+                <button type="button" className="fd-btn fd-btn-ghost" aria-expanded={more === l.lid} onClick={() => setMore(more === l.lid ? null : l.lid)}>עוד <span className="fd-acc-chev" aria-hidden>‹</span></button>
               </span>
+              {more === l.lid ? <span className="fd-row-more" role="cell"><span className="fd-dim">פעולות נוספות:</span>
+                <button type="button" className="fd-btn" disabled={!load.signingReady} onClick={() => act({ op: 'renew', lid: l.lid, validDays: 30 }, 'הרישיון הוארך בחודש')}>חידוש</button>
+                <button type="button" className="fd-btn" disabled={!load.signingReady} onClick={() => setRot({ lid: l.lid })}>מפתח חדש</button>
+              </span> : null}
             </div>
           ))}
         </div>

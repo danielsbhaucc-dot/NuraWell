@@ -1,4 +1,5 @@
 // Overview widgets. Everything shown comes from real sources; missing data is labelled, never estimated.
+import { Accordion } from './Accordion';
 import type { ProductRow, RegistryModule } from './types';
 import { CAT_LABEL, CAT_TINT, fmtUsd } from './labels';
 import { ModuleIcon } from './ModuleIcon';
@@ -17,8 +18,8 @@ const when = (iso: string) => new Date(iso).toLocaleString('he-IL', { timeZone: 
 
 export function ActivityList({ items, products }: { items: ActivityItem[] | null; products: ProductRow[] }) {
   return (
-    <section className="hb-panel">
-      <h3>פעילות אחרונה</h3>
+    <section className="hb-panel hb-acc">
+      <Accordion title="פעילות אחרונה" hint={items?.length ? `${items.length} פעולות` : undefined}>
       {items === null ? <p className="fd-dim">יומן הפעילות לא זמין כרגע.</p> : !items.length ? <p className="fd-dim">אין עדיין פעולות ביומן.</p> : (
         <ol className="hb-feed">
           {items.map((a, i) => { const p = products.find((x) => x.id === a.productId); return (
@@ -27,6 +28,7 @@ export function ActivityList({ items, products }: { items: ActivityItem[] | null
         </ol>
       )}
       <p className="hb-foot">מתוך יומן הביקורת. בלי שמות ובלי פרטים אישיים.</p>
+      </Accordion>
     </section>
   );
 }
@@ -54,8 +56,8 @@ export function QuickLinks({ onNav }: { onNav: (sec: 'library' | 'costs' | 'secu
 export function LibraryPreview({ registry, href }: { registry: RegistryModule[]; href: (id: string) => string }) {
   const cats = [...new Set(registry.map((m) => m.category))];
   return (
-    <section className="hb-panel hb-lib">
-      <h3>ספריית המודולים לפי קטגוריה</h3>
+    <section className="hb-panel hb-lib hb-acc">
+      <Accordion title="ספריית המודולים לפי קטגוריה" hint={`${registry.length} מודולים`}>
       <div className="hb-cats">
         {cats.map((c) => (
           <div key={c} className="hb-cat" style={{ ['--tint' as string]: CAT_TINT[c] }}>
@@ -64,6 +66,7 @@ export function LibraryPreview({ registry, href }: { registry: RegistryModule[];
           </div>
         ))}
       </div>
+      </Accordion>
     </section>
   );
 }
