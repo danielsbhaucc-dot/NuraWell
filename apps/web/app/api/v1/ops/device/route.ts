@@ -10,6 +10,8 @@ import {
 } from '@/lib/ops/device-trust';
 import { alertOwnerSecurity, sendLoginEmail, sendTelegramLoginCard } from '@/lib/ops/device-notify';
 import { killSwitch } from '@/lib/ceo/security';
+import { hasSensitiveStepUp } from '@/lib/ops/sensitive-stepup';
+import { passwordRotationRequired } from '@/lib/ops/password-rotation';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -72,6 +74,10 @@ export async function POST(request: Request) {
   const rl = await consumeMultiRateLimits(uid, `ops-device-${a.action}`, [{ limit: a.action === 'start' || a.action === 'email' ? 5 : 10, windowSeconds: 600 }]);
   if (!rl.ok) return rateLimitResponse(rl);
   const db = createAdminClient();
+  // The rotation gate exempts this route for the new-device flow only; everything else waits for the new password.
+  if (!PENDING_ACTIONS.has(a.action) && (await passwordRotationRequired(db, uid))) {
+    return json({ error: 'יש להגדיר סיסמה חדשה לפני כל פעולה בפאנל.', code: 'password_rotation_required' }, 403);
+  }
 
   if (a.action === 'start') {
     const label = deviceLabel(request.headers.get('user-agent'));
@@ -111,6 +117,12 @@ export async function POST(request: Request) {
     return json({ ok: true });
   }
   if (a.action === 'revoke') return json({ ok: await revokeDevice(db, uid, a.id, `ops:${uid}`) });
-  // regenerate_codes: shown once
-  return json({ codes: await regenerateRecoveryCodes(db, uid, `ops:${uid}`) });
+  // regenerate_codes: step-up (approved device / security key / fresh login), old codes revoked, shown once, alert.
+  const { data: sess } = await auth.supabase.auth.getSession();
+  if (!(await hasSensitiveStepUp({ accessToken: sess.session?.access_token, userId: uid, req: request }))) {
+    return json({ error: 'נדרש אימות נוסף לפני יצירת קודי גיבוי.', stepUp: true, code: 'stepup_required' }, 403);
+  }
+  const codes = await regenerateRecoveryCodes(db, uid, `ops:${uid}`);
+  await alertOwnerSecurity(db, uid, '🔑 נוצרו 10 קודי גיבוי חדשים לפאנל הניהול. כל הקודים הקודמים בוטלו. אם זה לא אתם, הריצו שבירת זכוכית מיד.', 'NuraWell: נוצרו קודי גיבוי חדשים').catch(() => undefined);
+  return json({ codes });
 }
