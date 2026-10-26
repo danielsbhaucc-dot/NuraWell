@@ -65,3 +65,9 @@ Planned interface (not implemented yet; keep these rules so the design stays con
 - **Functions to add** in `lib/security/`: `newDataKey(scope) -> { dek, wrapped }`, `unwrapDataKey(wrapped, scope)`, `encryptField(dek, plaintext, aad)`, `decryptField(dek, blob, aad)`; DEK cache in memory with short TTL only.
 - **Rotation:** rotating `FIELD_KEK` re-wraps DEKs only (no data rewrite); crypto-shredding a user = delete their wrapped DEK.
 - If a separate KMS key is ever needed for DEKs, give it its own service account and its own `ENVELOPE_*` config; never widen `vercel-kms`.
+
+## CI deploy (workflow `deploy-kms-functions`, manual)
+Runtime is pinned in `infra/gcp-kms/RUNTIME` (`python312`). One-time setup (owner, GCP console/gcloud) before the workflow can run:
+1. WIF pool `github` + OIDC provider `github-actions` (issuer `https://token.actions.githubusercontent.com`), condition `assertion.repository == 'danielsbhaucc-dot/NuraWell' && assertion.ref == 'refs/heads/main'`.
+2. Service account `kms-deployer@nurawell-kms-2610.iam.gserviceaccount.com` with `roles/cloudfunctions.developer`, `roles/run.developer`, `roles/cloudbuild.builds.editor`, `roles/artifactregistry.writer`, and `roles/iam.serviceAccountUser` **only on** `kms-rotator@…` and the killswitch runtime SA. Grant `roles/iam.workloadIdentityUser` on it to the pool principalSet for the repo.
+3. Repo variables (not secrets): `GCP_WIF_PROVIDER` = `projects/<number>/locations/global/workloadIdentityPools/github/providers/github-actions`, `GCP_DEPLOY_SA` = the SA email. Optional: GitHub environment `gcp-kms` with required reviewer.
