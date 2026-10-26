@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "module-library-ui config",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "off until an admin enables it per product"
+    },
+    "allowedRoles": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [
+        "admin"
+      ],
+      "description": "least privilege by default"
+    },
+    "logPii": {
+      "const": false,
+      "default": false,
+      "description": "PII never goes to logs"
+    },
+    "retentionDays": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 3650,
+      "default": 30
+    }
+  }
+}

@@ -1,0 +1,7 @@
+# @platform/module-library-ui
+
+> TODO: describe what the module-library-ui module does (one sentence, 20+ chars).
+
+- distribution: internal
+- config: config.schema.json (secure defaults; injected, never from env)
+- migrations: migrations/

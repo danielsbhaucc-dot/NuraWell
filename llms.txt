@@ -1,6 +1,7 @@
 # NuraWell platform modules — agent quickstart (generated; do not edit)
 > Read AGENTS.md first. Each module has its own llms.txt with API + install + what must NOT change.
 
+- module-library-ui (@platform/module-library-ui@0.1.0, internal): packages/@platform/module-library-ui/llms.txt — Mac Finder-style ops dashboard: product sidebar, module library (icon/list), per-product toggles, tier badges, detail panel. v1 is a mock with fake data.
 - security-crypto (@platform/security-crypto@0.1.0, shareable, always on): packages/@platform/security-crypto/llms.txt — Per-user envelope field encryption (enc:v2): AES-256-GCM, per-user data keys wrapped by an injected master key, AAD binding to table/column/row, blind indexes for equality search.
 
 Commands: node scripts/modules/list.mjs | check.mjs | index.mjs | pack.mjs <id> | install.mjs <id> --target <repo> [--dry-run] | verify.mjs

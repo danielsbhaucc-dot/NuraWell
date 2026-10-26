@@ -5,4 +5,5 @@ Read `/AGENTS.md` first. Plan and catalog: `docs/architecture/MODULE_CATALOG.he.
 
 | id | package | version | distribution | category | toggle | docs | description |
 |---|---|---|---|---|---|---|---|
+| `module-library-ui` | `@platform/module-library-ui` | 0.1.0 | internal | ops | yes | [README](../packages/@platform/module-library-ui/README.he.md) · [llms.txt](../packages/@platform/module-library-ui/llms.txt) | Mac Finder-style ops dashboard: product sidebar, module library (icon/list), per-product toggles, tier badges, detail panel. v1 is a mock with fake data. |
 | `security-crypto` | `@platform/security-crypto` | 0.1.0 | shareable | security | always on | [README](../packages/@platform/security-crypto/README.he.md) · [llms.txt](../packages/@platform/security-crypto/llms.txt) | Per-user envelope field encryption (enc:v2): AES-256-GCM, per-user data keys wrapped by an injected master key, AAD binding to table/column/row, blind indexes for equality search. |
