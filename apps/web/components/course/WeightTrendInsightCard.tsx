@@ -33,7 +33,7 @@ function ChatButton({ label, prefill }: { label: string; prefill: string }) {
     <button
       type="button"
       onClick={() => dispatchOpenAlmogChatWithPrefill(prefill)}
-      className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-bold text-secondary-700 bg-teal-500/8 border border-teal-500/20 transition active:scale-[0.98]"
+      className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-bold text-secondary-700 bg-secondary-500/8 border border-secondary-500/20 transition active:scale-[0.98]"
     >
       <MessageCircle className="w-4 h-4" />
       {label}
@@ -70,9 +70,9 @@ export function WeightTrendInsightCard() {
   if (loading) {
     return (
       <div dir="rtl" className="crystal-surface rounded-3xl p-4">
-        <div className="h-3 w-28 rounded-full bg-black/6 animate-pulse mb-3" />
-        <div className="h-3 w-full rounded-full bg-black/4 animate-pulse mb-2" />
-        <div className="h-3 w-3/4 rounded-full bg-black/4 animate-pulse" />
+        <div className="h-3 w-28 rounded-full bg-forest-950/6 animate-pulse mb-3" />
+        <div className="h-3 w-full rounded-full bg-forest-950/4 animate-pulse mb-2" />
+        <div className="h-3 w-3/4 rounded-full bg-forest-950/4 animate-pulse" />
       </div>
     );
   }
@@ -90,7 +90,7 @@ export function WeightTrendInsightCard() {
             className="flex items-center justify-center w-8 h-8 rounded-xl"
             style={{ background: 'rgba(99,102,241,0.10)' }}
           >
-            <LineChart className="w-4 h-4 text-indigo-500" />
+            <LineChart className="w-4 h-4 text-iris-500" />
           </div>
           <span className="text-sm font-black text-[#1A1730]">מעקב משקל</span>
         </div>
@@ -137,7 +137,7 @@ export function WeightTrendInsightCard() {
         <ul className="space-y-1.5 mb-3">
           {insight.checklist.map((c, i) => (
             <li key={i} className="flex items-start gap-2 text-[12.5px] text-[#9896B8]">
-              <Check className="w-3.5 h-3.5 text-teal-600 shrink-0 mt-0.5" strokeWidth={3} />
+              <Check className="w-3.5 h-3.5 text-secondary-600 shrink-0 mt-0.5" strokeWidth={3} />
               <span className="leading-snug">{c}</span>
             </li>
           ))}

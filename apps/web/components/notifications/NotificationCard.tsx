@@ -91,14 +91,14 @@ export function NotificationCard({
       className={cn(
         'relative rounded-2xl border text-start shadow-xs transition backdrop-blur-sm',
         n.is_read
-          ? 'border-slate-200/70 bg-linear-to-br from-slate-100/90 via-emerald-50/50 to-teal-50/40 opacity-95'
+          ? 'border-ink-200/70 bg-linear-to-br from-ink-100/90 via-primary-50/50 to-secondary-50/40 opacity-95'
           : isPlatform
-            ? 'border-indigo-200/70 bg-linear-to-br from-indigo-50/95 via-slate-50/80 to-indigo-100/50 shadow-indigo-900/5'
+            ? 'border-iris-200/70 bg-linear-to-br from-iris-50/95 via-ink-50/80 to-iris-100/50 shadow-iris-900/5'
           : isChallenge
-            ? 'border-emerald-300/70 bg-linear-to-br from-emerald-50/95 via-teal-50/75 to-emerald-100/60'
+            ? 'border-primary-300/70 bg-linear-to-br from-primary-50/95 via-secondary-50/75 to-primary-100/60'
             : isCheckpoint
-            ? 'border-amber-300/70 bg-linear-to-br from-amber-50/95 via-orange-50/75 to-amber-100/60'
-            : 'border-amber-200/65 bg-linear-to-br from-amber-50/90 via-yellow-50/55 to-emerald-50/70 shadow-amber-900/5',
+            ? 'border-accent-300/70 bg-linear-to-br from-accent-50/95 via-energy-50/75 to-accent-100/60'
+            : 'border-accent-200/65 bg-linear-to-br from-accent-50/90 via-accent-50/55 to-primary-50/70 shadow-accent-900/5',
         'cursor-pointer active:scale-[0.99]'
       )}
       onClick={handleCardClick}
@@ -118,8 +118,8 @@ export function NotificationCard({
           className={cn(
             'absolute top-3 bottom-3 inset-s-0 w-[3px] rounded-full shadow-xs',
             isCheckpoint
-              ? 'bg-linear-to-b from-amber-400 to-orange-400'
-              : 'bg-linear-to-b from-amber-400 to-amber-500'
+              ? 'bg-linear-to-b from-accent-400 to-energy-400'
+              : 'bg-linear-to-b from-accent-400 to-accent-500'
           )}
           aria-hidden
         />
@@ -128,7 +128,7 @@ export function NotificationCard({
       <button
         type="button"
         title={viewMode === 'inbox' ? 'העבר לארכיון' : 'החזר לתיבה'}
-        className="absolute top-2.5 inset-s-2.5 z-10 inline-flex h-8 w-8 items-center justify-center rounded-lg text-emerald-800/70 transition hover:bg-emerald-100/80 hover:text-emerald-900"
+        className="absolute top-2.5 inset-s-2.5 z-10 inline-flex h-8 w-8 items-center justify-center rounded-lg text-primary-800/70 transition hover:bg-primary-100/80 hover:text-primary-900"
         onClick={(e) =>
           viewMode === 'inbox' ? void onArchive(n.id, e) : void onUnarchive(n.id, e)
         }
@@ -152,7 +152,7 @@ export function NotificationCard({
           title="סמן כנקרא"
           aria-label="סמן כנקרא"
           onClick={handleMarkReadClick}
-          className="absolute top-2.5 inset-e-2.5 z-10 inline-flex h-7 w-7 items-center justify-center rounded-full bg-amber-500/85 text-white shadow-xs ring-2 ring-amber-100/80 transition hover:bg-emerald-600 hover:ring-emerald-100/90 active:scale-95"
+          className="absolute top-2.5 inset-e-2.5 z-10 inline-flex h-7 w-7 items-center justify-center rounded-full bg-accent-500/85 text-on-dark shadow-xs ring-2 ring-accent-100/80 transition hover:bg-primary-600 hover:ring-primary-100/90 active:scale-95"
         >
           <Check className="h-3.5 w-3.5" strokeWidth={3} aria-hidden />
         </button>
@@ -163,33 +163,33 @@ export function NotificationCard({
         <div className="flex flex-row-reverse items-start gap-3">
           <div className="min-w-0 flex-1 space-y-1.5">
             {isPlatform && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-indigo-200/60 px-2 py-0.5 text-[10px] font-bold text-indigo-950">
+              <span className="inline-flex items-center gap-1 rounded-full bg-iris-200/60 px-2 py-0.5 text-[10px] font-bold text-iris-950">
                 🛡️ מערכת · פרטיות
               </span>
             )}
             {isChallenge && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-200/60 px-2 py-0.5 text-[10px] font-bold text-emerald-950">
+              <span className="inline-flex items-center gap-1 rounded-full bg-primary-200/60 px-2 py-0.5 text-[10px] font-bold text-primary-950">
                 🏆 אתגר 14 יום
               </span>
             )}
             {isCheckpoint && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-amber-200/60 px-2 py-0.5 text-[10px] font-bold text-amber-950">
+              <span className="inline-flex items-center gap-1 rounded-full bg-accent-200/60 px-2 py-0.5 text-[10px] font-bold text-accent-950">
                 🌿 {habitLabel ? `מעקב הרגל · ${habitLabel}` : 'מעקב הרגל'}
                 {groupCount && groupCount > 1 ? ` · ${groupCount} הודעות` : ''}
               </span>
             )}
             <div className="flex flex-row items-baseline justify-between gap-2">
-              <h3 className="min-w-0 flex-1 text-[15px] font-bold leading-snug text-emerald-950 wrap-anywhere">
+              <h3 className="min-w-0 flex-1 text-[15px] font-bold leading-snug text-primary-950 wrap-anywhere">
                 {n.title}
               </h3>
               <time
-                className="shrink-0 text-[11px] font-medium text-emerald-800/55 tabular-nums whitespace-nowrap"
+                className="shrink-0 text-[11px] font-medium text-primary-800/55 tabular-nums whitespace-nowrap"
                 dateTime={n.created_at}
               >
                 {relative}
               </time>
             </div>
-            <p className="text-[14px] leading-relaxed text-emerald-950/85 wrap-anywhere">
+            <p className="text-[14px] leading-relaxed text-primary-950/85 wrap-anywhere">
               {n.body}
             </p>
 
@@ -203,7 +203,7 @@ export function NotificationCard({
                   <button
                     type="button"
                     onClick={handleReply}
-                    className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-3.5 py-1.5 text-xs font-bold text-emerald-50 shadow-xs transition hover:bg-emerald-700 active:scale-[0.98]"
+                    className="inline-flex items-center gap-1.5 rounded-full bg-primary-600 px-3.5 py-1.5 text-xs font-bold text-primary-50 shadow-xs transition hover:bg-primary-700 active:scale-[0.98]"
                   >
                     <MessageCircle className="h-3.5 w-3.5" strokeWidth={2.2} aria-hidden />
                     השב לאלמוג
@@ -217,7 +217,7 @@ export function NotificationCard({
                       void onMarkRead(n.id, !n.is_read);
                       onCloseDrawer();
                     }}
-                    className="inline-flex items-center gap-1 rounded-full border border-emerald-300/60 bg-emerald-100/70 px-3.5 py-1.5 text-xs font-bold text-emerald-900 transition hover:bg-emerald-200/60"
+                    className="inline-flex items-center gap-1 rounded-full border border-primary-300/60 bg-primary-100/70 px-3.5 py-1.5 text-xs font-bold text-primary-900 transition hover:bg-primary-200/60"
                   >
                     {notificationActionLabel(n.action_url)}
                     <ChevronLeft className="h-3.5 w-3.5" aria-hidden />
@@ -230,10 +230,10 @@ export function NotificationCard({
           <div className="shrink-0">
             {isPlatform ? (
               <div className="relative">
-                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-indigo-100 text-lg ring-2 ring-indigo-200/80 shadow-md">
+                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-iris-100 text-lg ring-2 ring-iris-200/80 shadow-md">
                   {n.icon_emoji ?? '🔒'}
                 </div>
-                <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-indigo-700 px-1.5 py-px text-[8px] font-bold text-indigo-50 shadow-sm">
+                <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-iris-700 px-1.5 py-px text-[8px] font-bold text-iris-50 shadow-sm">
                   מערכת
                 </span>
               </div>
@@ -242,19 +242,19 @@ export function NotificationCard({
                 <img
                   src={aiAvatar}
                   alt={ALMOG_AVATAR_ALT}
-                  className="h-11 w-11 rounded-full object-cover ring-2 ring-emerald-200/80 shadow-md"
+                  className="h-11 w-11 rounded-full object-cover ring-2 ring-primary-200/80 shadow-md"
                   onError={(e) => {
                     e.currentTarget.onerror = null;
                     e.currentTarget.src = aiAvatarFallback;
                   }}
                 />
-                <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-emerald-700 px-1.5 py-px text-[8px] font-bold text-emerald-50 shadow-sm">
+                <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-primary-700 px-1.5 py-px text-[8px] font-bold text-primary-50 shadow-sm">
                   {aiBadge}
                 </span>
               </div>
             ) : (
-              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-emerald-200/50 text-lg ring-1 ring-emerald-300/40">
-                {n.icon_emoji ?? <Zap className="h-5 w-5 text-emerald-700" strokeWidth={2.2} />}
+              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary-200/50 text-lg ring-1 ring-primary-300/40">
+                {n.icon_emoji ?? <Zap className="h-5 w-5 text-primary-700" strokeWidth={2.2} />}
               </div>
             )}
           </div>

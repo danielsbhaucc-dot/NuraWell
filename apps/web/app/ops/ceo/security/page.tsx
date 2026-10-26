@@ -12,7 +12,7 @@ export default async function Page() {
   return (
     <div className="mx-auto max-w-2xl space-y-4 p-4">
       <h1 className="text-2xl font-bold">גדעון · אבטחה</h1>
-      <p className="text-sm text-slate-600">אישורים רגילים: הקשה אחת בטלגרם. פעולות רגישות (מחיקות, הרשאות, פעולות גורפות, הפעלה מחדש): Face ID בתוך טלגרם בלבד.</p>
+      <p className="text-sm text-ink-soft">אישורים רגילים: הקשה אחת בטלגרם. פעולות רגישות (מחיקות, הרשאות, פעולות גורפות, הפעלה מחדש): Face ID בתוך טלגרם בלבד.</p>
       <SecurityKeysPanel />
       <OpsDevicesPanel />
       <AccessAuditFindings />

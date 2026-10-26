@@ -64,17 +64,17 @@ export function ChallengeWaitingExperience({ firstName, gender, initialState }: 
   const cd = countdown ?? { days: 0, hours: 0, minutes: 0, seconds: 0 };
 
   return (
-    <div className="relative min-h-dvh overflow-hidden bg-[#05010f] text-white" dir="rtl">
+    <div className="relative min-h-dvh overflow-hidden bg-[#05010f] text-on-dark" dir="rtl">
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -top-32 left-1/2 h-96 w-96 -translate-x-1/2 rounded-full bg-emerald-500/20 blur-3xl" />
-        <div className="absolute bottom-0 inset-s-0 h-72 w-72 rounded-full bg-violet-600/20 blur-3xl" />
+        <div className="absolute -top-32 left-1/2 h-96 w-96 -translate-x-1/2 rounded-full bg-primary-500/20 blur-3xl" />
+        <div className="absolute bottom-0 inset-s-0 h-72 w-72 rounded-full bg-iris-600/20 blur-3xl" />
       </div>
 
       <div className="relative z-10 mx-auto flex min-h-dvh max-w-lg flex-col px-5 pb-10 pt-8">
         {state.is_demo ? (
           <div className="mb-4 space-y-1">
-            <div className="flex items-center justify-between gap-2 rounded-2xl border border-amber-400/40 bg-amber-500/10 px-4 py-3">
-              <span className="text-sm text-amber-100">מצב דמו — תצוגה מקדימה למנהל בלבד</span>
+            <div className="flex items-center justify-between gap-2 rounded-2xl border border-accent-400/40 bg-accent-500/10 px-4 py-3">
+              <span className="text-sm text-accent-100">מצב דמו — תצוגה מקדימה למנהל בלבד</span>
               <button
                 type="button"
                 disabled={demoExiting}
@@ -85,7 +85,7 @@ export function ChallengeWaitingExperience({ firstName, gender, initialState }: 
                 {demoExiting ? 'יוצא...' : 'יציאה'}
               </button>
             </div>
-            {demoExitError ? <p className="text-xs text-red-400 px-1">{demoExitError}</p> : null}
+            {demoExitError ? <p className="text-xs text-coral-400 px-1">{demoExitError}</p> : null}
           </div>
         ) : null}
 
@@ -93,21 +93,21 @@ export function ChallengeWaitingExperience({ firstName, gender, initialState }: 
           {...challengeFadeUp(reducedMotion, 0)}
           className="flex flex-col items-center text-center"
         >
-          <div className="relative mb-5 h-28 w-28 overflow-hidden rounded-full ring-4 ring-emerald-400/50 ring-offset-4 ring-offset-[#05010f]">
+          <div className="relative mb-5 h-28 w-28 overflow-hidden rounded-full ring-4 ring-primary-400/50 ring-offset-4 ring-offset-[#05010f]">
             <Image src={almogUrl} alt="אלמוג" fill className="object-cover" priority />
           </div>
-          <Sparkles className="mb-2 h-6 w-6 text-emerald-400" />
+          <Sparkles className="mb-2 h-6 w-6 text-primary-400" />
           <h1 className="font-display text-2xl font-black sm:text-3xl">{waitingHeadline(name, g)}</h1>
-          <p className="mt-3 max-w-sm text-base leading-relaxed text-white/75">
+          <p className="mt-3 max-w-sm text-base leading-relaxed text-on-dark/75">
             {excitedAlmogLine(name, g)}
           </p>
         </motion.div>
 
         <motion.div
           {...challengeFadeUp(reducedMotion, 0.15)}
-          className="mt-10 rounded-3xl border border-white/10 bg-background-card/5 p-6 backdrop-blur-xl"
+          className="mt-10 rounded-3xl border border-on-dark/10 bg-background-card/5 p-6 backdrop-blur-xl"
         >
-          <div className="mb-4 flex items-center justify-center gap-2 text-emerald-300">
+          <div className="mb-4 flex items-center justify-center gap-2 text-primary-300">
             <Clock className="h-5 w-5" />
             <span className="text-sm font-semibold">האתגר מתחיל ביום ראשון</span>
           </div>
@@ -120,17 +120,17 @@ export function ChallengeWaitingExperience({ firstName, gender, initialState }: 
             ].map((unit) => (
               <div
                 key={unit.label}
-                className="rounded-2xl bg-black/30 px-2 py-4 shadow-inner shadow-emerald-500/10"
+                className="rounded-2xl bg-forest-950/30 px-2 py-4 shadow-inner shadow-primary-500/10"
               >
-                <div className="font-display text-3xl font-black tabular-nums text-white">
+                <div className="font-display text-3xl font-black tabular-nums text-on-dark">
                   {pad(unit.value)}
                 </div>
-                <div className="mt-1 text-xs text-white/50">{unit.label}</div>
+                <div className="mt-1 text-xs text-on-dark/50">{unit.label}</div>
               </div>
             ))}
           </div>
           {state.enrollment ? (
-            <p className="mt-4 text-center text-xs text-white/45">
+            <p className="mt-4 text-center text-xs text-on-dark/45">
               תאריך התחלה: {state.enrollment.challenge_start_date}
             </p>
           ) : null}
@@ -139,7 +139,7 @@ export function ChallengeWaitingExperience({ firstName, gender, initialState }: 
         {participants && participants > 1 ? (
           <motion.p
             {...challengeFadeUp(reducedMotion, 0.25)}
-            className="mt-6 flex items-center justify-center gap-2 text-sm text-emerald-200/80"
+            className="mt-6 flex items-center justify-center gap-2 text-sm text-primary-200/80"
           >
             <Users className="h-4 w-4" />
             {participants} משתתפים באתגר הזה עכשיו
@@ -157,15 +157,15 @@ export function ChallengeWaitingExperience({ firstName, gender, initialState }: 
                 });
                 window.location.href = '/challenge/intro';
               }}
-              className="rounded-2xl border border-violet-400/50 bg-violet-500/20 px-6 py-3 text-sm font-bold text-violet-100 backdrop-blur-md transition hover:bg-violet-500/30"
+              className="rounded-2xl border border-iris-400/50 bg-iris-500/20 px-6 py-3 text-sm font-bold text-iris-100 backdrop-blur-md transition hover:bg-iris-500/30"
             >
               דמו — התחל את האתגר עכשיו →
             </button>
-            <p className="mt-2 text-xs text-white/40">מדלג על ספירה לאחור — להמשך חוויה מלאה</p>
+            <p className="mt-2 text-xs text-on-dark/40">מדלג על ספירה לאחור — להמשך חוויה מלאה</p>
           </div>
         ) : null}
 
-        <div className="mt-auto pt-10 text-center text-sm text-white/40">
+        <div className="mt-auto pt-10 text-center text-sm text-on-dark/40">
           עד אז — המערכת נעולה. רק אתה, אלמוג, והציפייה לשינוי.
         </div>
       </div>

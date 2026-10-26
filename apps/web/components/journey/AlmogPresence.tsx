@@ -21,7 +21,7 @@ export function AlmogCompletionHero({
       <div
         className="relative p-[3px] rounded-full mb-3"
         style={{
-          background: 'linear-gradient(145deg, rgba(248,251,246,0.95), rgba(16,185,129,0.55), rgba(4,120,87,0.85))',
+          background: 'linear-gradient(145deg, rgba(207,233,220,0.95), rgba(16,185,129,0.55), rgba(4,120,87,0.85))',
           boxShadow: '0 12px 40px rgba(4,120,87,0.22), 0 0 0 1px rgba(255,255,255,0.35) inset',
         }}
       >
@@ -39,7 +39,7 @@ export function AlmogCompletionHero({
           />
         </div>
         <span
-          className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 translate-y-1/2 px-3 py-1 rounded-full text-[11px] font-black text-white whitespace-nowrap shadow-md"
+          className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 translate-y-1/2 px-3 py-1 rounded-full text-[11px] font-black text-on-dark whitespace-nowrap shadow-md"
           style={{
             background: 'linear-gradient(135deg, #047857, #10b981)',
             border: '1px solid rgba(255,255,255,0.35)',
@@ -48,7 +48,7 @@ export function AlmogCompletionHero({
           אלמוג
         </span>
       </div>
-      <p className="mt-5 text-sm font-semibold text-emerald-800/90 tracking-wide">{subtitle}</p>
+      <p className="mt-5 text-sm font-semibold text-primary-800/90 tracking-wide">{subtitle}</p>
     </motion.div>
   );
 }
@@ -101,7 +101,7 @@ export function AlmogAvatarChipWithNameTag({
     <div className={`relative shrink-0 ${prominent ? 'pb-2.5' : 'pb-2'}`}>
       <AlmogAvatarChip size={size} />
       <span
-        className={`absolute left-1/2 -translate-x-1/2 rounded-full font-black text-white whitespace-nowrap shadow-md ${
+        className={`absolute left-1/2 -translate-x-1/2 rounded-full font-black text-on-dark whitespace-nowrap shadow-md ${
           prominent
             ? 'bottom-1.5 translate-y-[28%] px-4 py-1 text-[11px]'
             : 'bottom-0 translate-y-1/2 px-3 py-0.5 text-[10px]'
@@ -131,7 +131,7 @@ export function MomentsHeroAvatar({ size = 96, name = 'אלמוג' }: { size?: n
         className="relative rounded-full p-[3px]"
         style={{
           background:
-            'linear-gradient(145deg, rgba(248,251,246,0.95), rgba(167,243,208,0.55), rgba(4,120,87,0.85))',
+            'linear-gradient(145deg, rgba(207,233,220,0.95), rgba(167,243,208,0.55), rgba(4,120,87,0.85))',
           boxShadow: '0 12px 40px rgba(4,120,87,0.22), 0 0 0 1px rgba(255,255,255,0.35) inset',
         }}
       >
@@ -153,7 +153,7 @@ export function MomentsHeroAvatar({ size = 96, name = 'אלמוג' }: { size?: n
           />
         </div>
         <span
-          className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 translate-y-1/2 px-4 py-1 rounded-full text-xs font-black text-white/95 whitespace-nowrap shadow-md backdrop-blur-sm"
+          className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 translate-y-1/2 px-4 py-1 rounded-full text-xs font-black text-on-dark/95 whitespace-nowrap shadow-md backdrop-blur-sm"
           style={{
             background: 'linear-gradient(135deg, rgba(4,120,87,0.72), rgba(16,185,129,0.68))',
             border: '1px solid rgba(255,255,255,0.42)',
@@ -184,8 +184,8 @@ export function AlmogInlinePresence({
     >
       <AlmogAvatarChip size={48} />
       <div className="text-start min-w-0">
-        <p className="font-black text-sm text-emerald-900">{title}</p>
-        <p className="text-xs text-gray-600 leading-snug">{subtitle}</p>
+        <p className="font-black text-sm text-primary-900">{title}</p>
+        <p className="text-xs text-ink-600 leading-snug">{subtitle}</p>
       </div>
     </motion.div>
   );

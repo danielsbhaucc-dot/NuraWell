@@ -51,8 +51,8 @@ export function MentorBubble({
           className={[
             'onboarding-mentor-avatar relative inline-block shrink-0 w-11 h-11 sm:w-12 sm:h-12 rounded-xl overflow-hidden',
             isDark
-              ? 'ring-2 ring-white/15 shadow-[0_4px_14px_rgba(0,0,0,0.18)]'
-              : 'ring-2 ring-emerald-500/20 shadow-[0_4px_14px_rgba(4,120,87,0.1)]',
+              ? 'ring-2 ring-on-dark/15 shadow-[0_4px_14px_rgba(0,0,0,0.18)]'
+              : 'ring-2 ring-primary-500/20 shadow-[0_4px_14px_rgba(4,120,87,0.1)]',
           ].join(' ')}
           aria-hidden={!ready}
         >
@@ -78,12 +78,12 @@ export function MentorBubble({
         <p
           className={[
             'text-[13px] font-bold leading-tight',
-            isDark ? 'text-emerald-100' : 'text-emerald-800',
+            isDark ? 'text-primary-100' : 'text-primary-800',
           ].join(' ')}
           style={{ fontFamily: 'Rubik, Heebo, sans-serif' }}
         >
           {mentorName}
-          <span className={isDark ? ' text-emerald-100/55 font-medium' : ' text-slate-500 font-medium'}>
+          <span className={isDark ? ' text-primary-100/55 font-medium' : ' text-ink-500 font-medium'}>
             {' '}
             · {subtitle}
           </span>

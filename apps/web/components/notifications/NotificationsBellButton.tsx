@@ -34,7 +34,7 @@ export function NotificationsBellButton({
       onClick={() => open()}
       className={cn(
         isChallenge
-          ? 'relative flex h-11 w-11 items-center justify-center rounded-2xl border border-white/15 bg-black/40 text-white shadow-lg backdrop-blur-md transition hover:bg-black/55 active:scale-95'
+          ? 'relative flex h-11 w-11 items-center justify-center rounded-2xl border border-on-dark/15 bg-forest-950/40 text-on-dark shadow-lg backdrop-blur-md transition hover:bg-forest-950/55 active:scale-95'
           : 'relative w-[42px] h-[42px] rounded-[14px] flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-90',
         className
       )}
@@ -52,15 +52,15 @@ export function NotificationsBellButton({
       }
     >
       <Bell
-        className={cn(isChallenge ? 'h-5 w-5' : 'w-5 h-5 text-white drop-shadow-xs')}
+        className={cn(isChallenge ? 'h-5 w-5' : 'w-5 h-5 text-on-dark drop-shadow-xs')}
         strokeWidth={2.2}
       />
       {unreadCount > 0 && (
         <span
           className={cn(
             isChallenge
-              ? 'absolute -inset-s-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-emerald-500 px-1 text-[10px] font-bold text-white'
-              : 'absolute -inset-s-0.5 -top-0.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full text-[10px] font-black leading-none text-white border-2 border-white/90 shadow-md',
+              ? 'absolute -inset-s-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary-500 px-1 text-[10px] font-bold text-on-dark'
+              : 'absolute -inset-s-0.5 -top-0.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full text-[10px] font-black leading-none text-on-dark border-2 border-on-dark/90 shadow-md',
             badgeClassName
           )}
           style={

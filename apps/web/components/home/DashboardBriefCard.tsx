@@ -98,12 +98,12 @@ export function DashboardBriefCard({ onOpenTasks, firstName }: DashboardBriefCar
         className="glass-surface-home rounded-[22px] p-4"
       >
         <div className="flex items-center gap-2 mb-3">
-          <div className="w-7 h-7 rounded-full bg-emerald-200/60 animate-pulse" />
-          <div className="h-3 w-28 rounded-full bg-emerald-200/60 animate-pulse" />
+          <div className="w-7 h-7 rounded-full bg-primary-200/60 animate-pulse" />
+          <div className="h-3 w-28 rounded-full bg-primary-200/60 animate-pulse" />
         </div>
-        <div className="h-3 w-full rounded-full bg-emerald-100/70 animate-pulse mb-2" />
-        <div className="h-3 w-4/5 rounded-full bg-emerald-100/70 animate-pulse mb-4" />
-        <div className="h-9 w-40 rounded-xl bg-emerald-200/60 animate-pulse" />
+        <div className="h-3 w-full rounded-full bg-primary-100/70 animate-pulse mb-2" />
+        <div className="h-3 w-4/5 rounded-full bg-primary-100/70 animate-pulse mb-4" />
+        <div className="h-9 w-40 rounded-xl bg-primary-200/60 animate-pulse" />
       </div>
     );
   }
@@ -126,12 +126,12 @@ export function DashboardBriefCard({ onOpenTasks, firstName }: DashboardBriefCar
         aria-hidden
         className="pointer-events-none absolute inset-x-4 top-px h-px"
         style={{
-          background: 'linear-gradient(90deg, transparent, rgba(248,251,246,0.75), transparent)',
+          background: 'linear-gradient(90deg, transparent, rgba(207,233,220,0.75), transparent)',
         }}
       />
 
       {firstName && firstName !== 'משתמש' ? (
-        <p className="mb-2 text-[11px] font-semibold text-emerald-800/55">
+        <p className="mb-2 text-[11px] font-semibold text-primary-800/55">
           היי {firstName} — קצר ואישי מהבית
         </p>
       ) : null}
@@ -148,7 +148,7 @@ export function DashboardBriefCard({ onOpenTasks, firstName }: DashboardBriefCar
               boxShadow: `0 4px 12px ${style.chip}`,
             }}
           >
-            <MoodIcon className="w-4 h-4 text-white" strokeWidth={2.4} />
+            <MoodIcon className="w-4 h-4 text-on-dark" strokeWidth={2.4} />
           </div>
           <span
             style={{
@@ -166,7 +166,7 @@ export function DashboardBriefCard({ onOpenTasks, firstName }: DashboardBriefCar
           onClick={() => void load(true)}
           disabled={refreshing}
           aria-label="רענן תקציר"
-          className="text-emerald-700/50 hover:text-emerald-700 transition"
+          className="text-primary-700/50 hover:text-primary-700 transition"
         >
           <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} aria-hidden />
         </button>
@@ -186,7 +186,7 @@ export function DashboardBriefCard({ onOpenTasks, firstName }: DashboardBriefCar
       <button
         type="button"
         onClick={handleCta}
-        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-white active:scale-[0.98] transition"
+        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-on-dark active:scale-[0.98] transition"
         style={{
           background: `linear-gradient(145deg, ${style.from}, ${style.to})`,
           boxShadow: `0 6px 16px ${style.chip}`,

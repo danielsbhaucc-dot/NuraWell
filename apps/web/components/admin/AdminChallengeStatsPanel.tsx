@@ -36,7 +36,7 @@ export function AdminChallengeStatsPanel() {
   if (loading) {
     return (
       <div className="flex justify-center py-10">
-        <Loader2 className="h-8 w-8 animate-spin text-violet-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-iris-500" />
       </div>
     );
   }
@@ -44,36 +44,36 @@ export function AdminChallengeStatsPanel() {
   if (!stats) return null;
 
   const cards = [
-    { label: 'הרשמות', value: stats.enrollments, icon: Users, color: 'text-violet-600' },
-    { label: 'פעילים', value: stats.active, icon: BarChart3, color: 'text-emerald-600' },
-    { label: 'המתנה', value: stats.waiting, icon: Users, color: 'text-amber-600' },
-    { label: 'סיימו', value: stats.completed, icon: BarChart3, color: 'text-sky-600' },
+    { label: 'הרשמות', value: stats.enrollments, icon: Users, color: 'text-iris-600' },
+    { label: 'פעילים', value: stats.active, icon: BarChart3, color: 'text-primary-600' },
+    { label: 'המתנה', value: stats.waiting, icon: Users, color: 'text-accent-600' },
+    { label: 'סיימו', value: stats.completed, icon: BarChart3, color: 'text-secondary-600' },
   ];
 
   return (
-    <div className="rounded-3xl border border-slate-200/60 bg-background-card/70 p-5 shadow-xs backdrop-blur-md sm:p-6">
-      <h2 className="mb-4 text-lg font-bold text-slate-900">אנליטיקס אתגר</h2>
+    <div className="rounded-3xl border border-hairline/60 bg-background-card/70 p-5 shadow-xs backdrop-blur-md sm:p-6">
+      <h2 className="mb-4 text-lg font-bold text-ink">אנליטיקס אתגר</h2>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {cards.map(({ label, value, icon: Icon, color }) => (
-          <div key={label} className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4">
+          <div key={label} className="rounded-2xl border border-hairline/60 bg-surface-sunken/80 p-4">
             <Icon className={`mb-2 h-5 w-5 ${color}`} />
-            <div className="font-display text-2xl font-black text-slate-900">{value}</div>
-            <div className="text-xs text-slate-500">{label}</div>
+            <div className="font-display text-2xl font-black text-ink">{value}</div>
+            <div className="text-xs text-ink-faint">{label}</div>
           </div>
         ))}
       </div>
       <div className="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
-        <div className="rounded-xl bg-emerald-50 px-4 py-3">
-          <span className="text-slate-500">אחוז סיום</span>
-          <div className="font-bold text-emerald-800">{stats.completion_rate_pct}%</div>
+        <div className="rounded-xl bg-primary-50 px-4 py-3">
+          <span className="text-ink-faint">אחוז סיום</span>
+          <div className="font-bold text-primary-800">{stats.completion_rate_pct}%</div>
         </div>
-        <div className="rounded-xl bg-violet-50 px-4 py-3">
-          <span className="text-slate-500">הצלחות</span>
-          <div className="font-bold text-violet-800">{stats.success_events}</div>
+        <div className="rounded-xl bg-iris-50 px-4 py-3">
+          <span className="text-ink-faint">הצלחות</span>
+          <div className="font-bold text-iris-800">{stats.success_events}</div>
         </div>
-        <div className="rounded-xl bg-sky-50 px-4 py-3">
-          <span className="text-slate-500">סימוני משימות</span>
-          <div className="font-bold text-sky-800">{stats.task_completions}</div>
+        <div className="rounded-xl bg-secondary-50 px-4 py-3">
+          <span className="text-ink-faint">סימוני משימות</span>
+          <div className="font-bold text-secondary-800">{stats.task_completions}</div>
         </div>
       </div>
     </div>

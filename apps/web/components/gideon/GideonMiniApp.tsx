@@ -99,13 +99,13 @@ export function GideonMiniApp() {
     <main dir="rtl" className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center gap-5 px-6 text-center">
       <div className="text-5xl">🔐</div>
       <h1 className="text-xl font-bold">{title}</h1>
-      {info?.summary ? <p className="rounded-2xl bg-slate-100 px-4 py-3 text-base">{info.summary}</p> : null}
+      {info?.summary ? <p className="rounded-2xl bg-ink-100 px-4 py-3 text-base">{info.summary}</p> : null}
       {info && !done ? (
-        <button onClick={run} disabled={busy} className="w-full rounded-2xl bg-emerald-700 px-5 py-4 text-lg font-semibold text-white disabled:opacity-60">
+        <button onClick={run} disabled={busy} className="w-full rounded-2xl bg-primary-700 px-5 py-4 text-lg font-semibold text-on-dark disabled:opacity-60">
           {busy ? 'מאמת…' : info.purpose === 'register' ? 'רשום Face ID' : 'אשר עם Face ID'}
         </button>
       ) : null}
-      {msg ? <p className="whitespace-pre-line text-base text-slate-700">{msg}</p> : null}
+      {msg ? <p className="whitespace-pre-line text-base text-ink-700">{msg}</p> : null}
     </main>
   );
 }

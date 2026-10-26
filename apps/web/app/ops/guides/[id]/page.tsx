@@ -145,7 +145,7 @@ export default function OpsGuideDetailPage() {
   if (loading || !guide) {
     return (
       <div className="flex justify-center py-20">
-        <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
       </div>
     );
   }
@@ -154,7 +154,7 @@ export default function OpsGuideDetailPage() {
 
   return (
     <div className="space-y-6 max-w-3xl" dir="rtl">
-      <Link href={guidesListHref} className="inline-flex items-center gap-1 text-sm text-slate-600 hover:text-emerald-700">
+      <Link href={guidesListHref} className="inline-flex items-center gap-1 text-sm text-ink-soft hover:text-primary-700">
         <ArrowRight className="w-4 h-4" />
         חזרה לרשימה
       </Link>
@@ -165,7 +165,7 @@ export default function OpsGuideDetailPage() {
           type="button"
           onClick={() => void saveGuide()}
           disabled={saving}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-background-card/90 text-emerald-800 text-sm font-bold hover:bg-background-card"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-background-card/90 text-primary-800 text-sm font-bold hover:bg-background-card"
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           שמור
@@ -174,7 +174,7 @@ export default function OpsGuideDetailPage() {
 
       <div className="crystal-surface space-y-4 p-5 rounded-2xl">
         <div>
-          <label htmlFor="guide-edit-title" className="text-xs font-bold text-slate-600">
+          <label htmlFor="guide-edit-title" className="text-xs font-bold text-ink-soft">
             כותרת
           </label>
           <input
@@ -185,7 +185,7 @@ export default function OpsGuideDetailPage() {
           />
         </div>
         <div>
-          <label htmlFor="guide-edit-description" className="text-xs font-bold text-slate-600">
+          <label htmlFor="guide-edit-description" className="text-xs font-bold text-ink-soft">
             תיאור
           </label>
           <textarea
@@ -222,21 +222,21 @@ export default function OpsGuideDetailPage() {
           </select>
         </div>
         <div>
-          <p className="text-xs font-bold text-slate-600 flex items-center gap-1.5 mb-2">
+          <p className="text-xs font-bold text-ink-soft flex items-center gap-1.5 mb-2">
             <ImagePlus className="w-3.5 h-3.5" aria-hidden />
             תמונת רקע למדריך
           </p>
           {bgUrl ? (
-            <div className="relative overflow-hidden rounded-2xl border border-slate-200">
+            <div className="relative overflow-hidden rounded-2xl border border-hairline">
               <div
                 className="h-32 bg-cover bg-center"
                 style={{ backgroundImage: `url(${bgUrl})` }}
               />
-              <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-linear-to-t from-slate-900/70 to-transparent p-2.5">
+              <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-linear-to-t from-ink-900/70 to-transparent p-2.5">
                 <button
                   type="button"
                   onClick={pickBackground}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-background-card/90 px-3 py-1.5 text-xs font-bold text-slate-800 shadow-sm hover:bg-background-card"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-background-card/90 px-3 py-1.5 text-xs font-bold text-ink shadow-sm hover:bg-background-card"
                 >
                   <ImagePlus className="w-3.5 h-3.5" />
                   החלפת תמונה
@@ -247,7 +247,7 @@ export default function OpsGuideDetailPage() {
                     setBgKey('');
                     void saveBackground('');
                   }}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-rose-500/90 px-3 py-1.5 text-xs font-bold text-gc shadow-sm hover:bg-rose-500"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-coral-500/90 px-3 py-1.5 text-xs font-bold text-gc shadow-sm hover:bg-coral-500"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                   הסר
@@ -258,17 +258,17 @@ export default function OpsGuideDetailPage() {
             <button
               type="button"
               onClick={pickBackground}
-              className="flex w-full flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50/60 py-7 text-slate-500 transition hover:border-emerald-400 hover:bg-emerald-50/50 hover:text-emerald-700"
+              className="flex w-full flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-ink-300 bg-surface-sunken/60 py-7 text-ink-faint transition hover:border-primary-400 hover:bg-primary-50/50 hover:text-primary-700"
             >
               <ImagePlus className="w-6 h-6" />
               <span className="text-sm font-bold">בחר תמונה ממנהל הקבצים</span>
-              <span className="text-xs text-slate-400">תמונת הרקע תוצג מאחורי המדריך</span>
+              <span className="text-xs text-ink-faint">תמונת הרקע תוצג מאחורי המדריך</span>
             </button>
           )}
           {saveMsg && (
             <p
               className={`mt-2 flex items-center gap-1.5 text-xs font-bold ${
-                saveMsg.type === 'ok' ? 'text-emerald-700' : 'text-red-600'
+                saveMsg.type === 'ok' ? 'text-primary-700' : 'text-coral-600'
               }`}
             >
               {saveMsg.type === 'ok' && <CheckCircle2 className="w-3.5 h-3.5" />}
@@ -276,14 +276,14 @@ export default function OpsGuideDetailPage() {
             </p>
           )}
           {saving && (
-            <p className="mt-2 flex items-center gap-1.5 text-xs font-bold text-slate-500">
+            <p className="mt-2 flex items-center gap-1.5 text-xs font-bold text-ink-faint">
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
               שומר תמונה…
             </p>
           )}
         </div>
         <div>
-          <label htmlFor="guide-edit-unlock-at" className="text-xs font-bold text-slate-600">
+          <label htmlFor="guide-edit-unlock-at" className="text-xs font-bold text-ink-soft">
             פתיחה מתוזמנת (unlock_at)
           </label>
           <input
@@ -302,12 +302,12 @@ export default function OpsGuideDetailPage() {
       </div>
 
       <section className="crystal-surface rounded-2xl p-5">
-        <div className="flex items-center justify-between mb-3 pb-3 border-b border-emerald-100">
-          <h2 className="font-bold text-slate-900">פרקים ({guide.lessons?.length ?? 0})</h2>
+        <div className="flex items-center justify-between mb-3 pb-3 border-b border-primary-100">
+          <h2 className="font-bold text-ink">פרקים ({guide.lessons?.length ?? 0})</h2>
           <button
             type="button"
             onClick={() => void addLesson()}
-            className="text-sm font-bold text-emerald-700"
+            className="text-sm font-bold text-primary-700"
           >
             + פרק
           </button>
@@ -325,12 +325,12 @@ export default function OpsGuideDetailPage() {
                   <span className="guide-chapter-index">{i + 1}</span>
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-sm truncate">{l.title}</p>
-                    <p className="text-xs text-slate-500">{l.lesson_type}</p>
+                    <p className="text-xs text-ink-faint">{l.lesson_type}</p>
                   </div>
                   {expandedLessonId === l.id ? (
-                    <ChevronUp className="w-4 h-4 text-slate-500" />
+                    <ChevronUp className="w-4 h-4 text-ink-faint" />
                   ) : (
-                    <ChevronDown className="w-4 h-4 text-slate-500" />
+                    <ChevronDown className="w-4 h-4 text-ink-faint" />
                   )}
                 </button>
                 {expandedLessonId === l.id ? (

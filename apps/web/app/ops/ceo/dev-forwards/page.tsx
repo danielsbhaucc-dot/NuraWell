@@ -31,7 +31,7 @@ export default async function DevForwardsPage() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-2">
-        <h1 className="px-1 font-display text-[1.75rem] font-black leading-tight tracking-tight text-slate-900">🛠️ הועבר לאורי</h1>
+        <h1 className="px-1 font-display text-[1.75rem] font-black leading-tight tracking-tight text-ink">🛠️ הועבר לאורי</h1>
         <a href="/ops/ceo" className="rounded-xl bg-primary-100/40 px-3 py-1.5 text-sm font-semibold text-primary-900">חזרה ל{CEO_NAME}</a>
       </div>
       <p className="text-sm text-primary-800/80">
@@ -44,10 +44,10 @@ export default async function DevForwardsPage() {
           {r.approval === 'pending' ? (
             <form action={decide} className="flex gap-2">
               <input type="hidden" name="id" value={r.id} />
-              <button name="approve" value="1" className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold text-gc">אשר לאורי לבנות</button>
+              <button name="approve" value="1" className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-bold text-gc">אשר לאורי לבנות</button>
               <button name="approve" value="0" className="rounded-lg border border-primary-200 px-4 py-2 text-sm font-bold text-primary-800">לא צריך</button>
             </form>
-          ) : r.approval === 'approved' ? <div className="text-xs text-emerald-700">אושר על ידך</div> : null}
+          ) : r.approval === 'approved' ? <div className="text-xs text-primary-700">אושר על ידך</div> : null}
           <div className="text-xs text-primary-700">
             {fmt.format(new Date(r.created_at))} · {STATUS[r.status] ?? r.status}
             {r.issue_url ? (

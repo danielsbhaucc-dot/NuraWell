@@ -33,26 +33,26 @@ export function ChallengeEatingWindowTimer({ initialStatus }: Props) {
       animate={{ opacity: 1, y: 0 }}
       className={`rounded-2xl border p-4 backdrop-blur-md ${
         status.is_open
-          ? 'border-emerald-400/30 bg-emerald-500/10'
-          : 'border-white/10 bg-background-card/5'
+          ? 'border-primary-400/30 bg-primary-500/10'
+          : 'border-on-dark/10 bg-background-card/5'
       }`}
     >
       <div className="mb-2 flex items-center gap-2">
-        <Clock className={`h-4 w-4 ${status.is_open ? 'text-emerald-300' : 'text-white/50'}`} />
-        <span className="text-sm font-bold text-white/80">חלון אכילה 12:12</span>
+        <Clock className={`h-4 w-4 ${status.is_open ? 'text-primary-300' : 'text-on-dark/50'}`} />
+        <span className="text-sm font-bold text-on-dark/80">חלון אכילה 12:12</span>
         <span
           className={`ms-auto rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
-            status.is_open ? 'bg-emerald-500/30 text-emerald-200' : 'bg-background-card/10 text-white/45'
+            status.is_open ? 'bg-primary-500/30 text-primary-200' : 'bg-background-card/10 text-on-dark/45'
           }`}
         >
           {status.is_open ? 'פתוח' : 'סגור'}
         </span>
       </div>
-      <p className="text-sm text-white/65">{status.label}</p>
+      <p className="text-sm text-on-dark/65">{status.label}</p>
       {status.is_open ? (
         <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-background-card/10">
           <motion.div
-            className="h-full rounded-full bg-linear-to-l from-emerald-400 to-teal-500"
+            className="h-full rounded-full bg-linear-to-l from-primary-400 to-secondary-500"
             initial={{ width: 0 }}
             animate={{ width: `${status.progress_pct}%` }}
           />

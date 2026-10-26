@@ -73,7 +73,7 @@ export function QuizSection({
       <div className="text-center py-8">
         <AlmogCompletionHero subtitle={copy.quizContinueTogether} />
         <h2 className="text-2xl font-black mb-2" style={{ color: '#1A1730' }}>כל הכבוד! סיימת את השאלות 🎉</h2>
-        <p className="text-gray-600 text-lg mb-2 leading-relaxed max-w-sm mx-auto">
+        <p className="text-ink-600 text-lg mb-2 leading-relaxed max-w-sm mx-auto">
           {copy.quizAnsweredCorrect(score, questions.length)}
         </p>
         <div className="mt-4 flex justify-center gap-2 flex-wrap">
@@ -93,7 +93,7 @@ export function QuizSection({
           <button
             type="button"
             onClick={() => setResultsOpen(true)}
-            className="w-full py-3.5 rounded-2xl font-bold text-emerald-800 flex items-center justify-center gap-2"
+            className="w-full py-3.5 rounded-2xl font-bold text-primary-800 flex items-center justify-center gap-2"
             style={{ background: 'rgba(16,185,129,0.12)', border: '1.5px solid rgba(16,185,129,0.28)' }}
           >
             <ClipboardList className="w-5 h-5" />
@@ -103,7 +103,7 @@ export function QuizSection({
             <button
               type="button"
               onClick={onResetQuiz}
-              className="w-full py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2 text-gray-600"
+              className="w-full py-3.5 rounded-2xl font-bold flex items-center justify-center gap-2 text-ink-600"
               style={{ background: 'rgba(0,0,0,0.04)', border: '1.5px solid rgba(0,0,0,0.08)' }}
             >
               <RotateCcw className="w-4 h-4" />
@@ -113,7 +113,7 @@ export function QuizSection({
           <button
             type="button"
             onClick={() => onComplete(answers, score)}
-            className="w-full py-4 rounded-2xl font-bold text-lg text-white flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-95"
+            className="w-full py-4 rounded-2xl font-bold text-lg text-on-dark flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-95"
             style={{ background: 'linear-gradient(135deg, #047857, #10b981)', boxShadow: '0 6px 20px rgba(16,185,129,0.3)' }}
           >
             <span>המשך לשלב הבא</span>
@@ -154,10 +154,10 @@ export function QuizSection({
       <div className="text-center">
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-3"
           style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
-          <HelpCircle className="w-4 h-4 text-emerald-600" />
-          <span className="text-sm font-bold text-emerald-700">{copy.quizLetsCheck}</span>
+          <HelpCircle className="w-4 h-4 text-primary-600" />
+          <span className="text-sm font-bold text-primary-700">{copy.quizLetsCheck}</span>
         </div>
-        <p className="text-sm text-emerald-800/75 font-medium">שאלה {currentQ + 1} מתוך {questions.length} · אני איתך שלב שלב</p>
+        <p className="text-sm text-primary-800/75 font-medium">שאלה {currentQ + 1} מתוך {questions.length} · אני איתך שלב שלב</p>
         <QuestionTtsPlayer
           className="mt-3"
           audioUrl={question?.tts?.status === 'ready' ? question.tts.url : null}
@@ -187,7 +187,7 @@ export function QuizSection({
         >
           <div className="px-5 py-4" style={{ background: 'linear-gradient(145deg, #047857, #059669, #10b981)' }}>
             <h3
-              className="text-lg font-black leading-snug text-white tracking-tight"
+              className="text-lg font-black leading-snug text-on-dark tracking-tight"
               style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
             >
               {question.question}
@@ -227,7 +227,7 @@ export function QuizSection({
                     <span className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0"
                       style={{
                         background: showResult && isCorrectAnswer ? '#10b981' : showResult && isSelected ? '#ef4444' : 'rgba(0,0,0,0.06)',
-                        color: (showResult && (isCorrectAnswer || isSelected)) ? '#fff' : '#6b7280',
+                        color: (showResult && (isCorrectAnswer || isSelected)) ? '#cfe9dc' : '#6b7280',
                       }}>
                       {showResult && isCorrectAnswer ? <CheckCircle2 className="w-4 h-4" /> :
                        showResult && isSelected ? <XCircle className="w-4 h-4" /> :
@@ -261,7 +261,7 @@ export function QuizSection({
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           onClick={handleNext}
-          className="w-full py-4 rounded-2xl font-bold text-lg text-white flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-95"
+          className="w-full py-4 rounded-2xl font-bold text-lg text-on-dark flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-95"
           style={{ background: 'linear-gradient(135deg, #047857, #10b981)', boxShadow: '0 6px 20px rgba(16,185,129,0.3)' }}>
           <span>{currentQ < questions.length - 1 ? 'שאלה הבאה' : 'סיום השאלות'}</span>
           <ArrowLeft className="w-5 h-5" />

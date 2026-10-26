@@ -40,7 +40,7 @@ function Toggle({ on, onChange, label, busy }: { on: boolean; onChange: (v: bool
       onClick={() => onChange(!on)}
       className={[
         'relative h-6 w-11 shrink-0 rounded-full transition-colors disabled:opacity-60',
-        on ? 'bg-emerald-500' : 'bg-slate-300/80',
+        on ? 'bg-primary-500' : 'bg-ink-300/80',
       ].join(' ')}
     >
       <span className={['absolute top-0.5 h-5 w-5 rounded-full bg-background-card shadow transition-all', on ? 'right-0.5' : 'right-5.5'].join(' ')} />
@@ -127,11 +127,11 @@ export function AdminNotifyQualityClient() {
         description="כל תיקון ופסילה נרשמים בלי פרטים מזהים. בכל לילה נבנית מהם רשימה קצרה של כללי ניסוח שנכנסת לכתיבת ההתראות."
       />
 
-      {error ? <p className="rounded-xl border border-red-200/70 bg-red-50/70 px-3 py-2 text-sm font-medium text-red-800">{error}</p> : null}
+      {error ? <p className="rounded-xl border border-coral-200/70 bg-coral-50/70 px-3 py-2 text-sm font-medium text-coral-800">{error}</p> : null}
 
       {!data ? (
         <p className="flex justify-center py-10">
-          <Loader2 className="h-7 w-7 animate-spin text-emerald-600" />
+          <Loader2 className="h-7 w-7 animate-spin text-primary-600" />
         </p>
       ) : (
         <>
@@ -143,15 +143,15 @@ export function AdminNotifyQualityClient() {
               { label: 'גרסת הכללים', v: String(data.meta?.version ?? 0), sub: `${data.rules.filter((r) => r.active).length} כללים פעילים` },
             ].map((c) => (
               <div key={c.label} className="rounded-3xl border border-gc/60 bg-background-card/55 p-4 backdrop-blur-xl">
-                <p className="text-xs font-semibold text-slate-500">{c.label}</p>
-                <p className="mt-1 text-2xl font-extrabold text-slate-800">{c.v}</p>
-                <p className="mt-0.5 text-xs text-slate-500">{c.sub}</p>
+                <p className="text-xs font-semibold text-ink-faint">{c.label}</p>
+                <p className="mt-1 text-2xl font-extrabold text-ink">{c.v}</p>
+                <p className="mt-0.5 text-xs text-ink-faint">{c.sub}</p>
               </div>
             ))}
           </section>
 
           <section className="rounded-3xl border border-gc/60 bg-background-card/55 p-4 backdrop-blur-xl">
-            <h2 className="text-sm font-bold text-slate-700">שיעור פסילות ועריכות לפי יום</h2>
+            <h2 className="text-sm font-bold text-ink-soft">שיעור פסילות ועריכות לפי יום</h2>
             <div className="mt-3 flex h-32 items-end gap-1" aria-label="גרף פסילות ועריכות ב-30 הימים האחרונים">
               {data.daily.map((d) => {
                 const rej = d.lint_reject;
@@ -162,58 +162,58 @@ export function AdminNotifyQualityClient() {
                     className="flex flex-1 flex-col-reverse"
                     title={`${d.day}: ${d.notifications} התראות, ${rej} פסילות (${pct(rej, d.notifications)}), ${ed} עריכות (${pct(ed, d.notifications)})`}
                   >
-                    <div className="rounded-t-sm bg-rose-400/80" style={{ height: `${(rej / maxBar) * 100}%` }} />
-                    <div className="bg-amber-400/80" style={{ height: `${(ed / maxBar) * 100}%` }} />
+                    <div className="rounded-t-sm bg-coral-400/80" style={{ height: `${(rej / maxBar) * 100}%` }} />
+                    <div className="bg-accent-400/80" style={{ height: `${(ed / maxBar) * 100}%` }} />
                   </div>
                 );
               })}
             </div>
-            <p className="mt-2 flex gap-4 text-xs text-slate-500">
-              <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-rose-400" />פסילות</span>
-              <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-amber-400" />עריכות</span>
+            <p className="mt-2 flex gap-4 text-xs text-ink-faint">
+              <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-coral-400" />פסילות</span>
+              <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-accent-400" />עריכות</span>
             </p>
           </section>
 
           <section className="rounded-3xl border border-gc/60 bg-background-card/55 p-4 backdrop-blur-xl">
-            <h2 className="text-sm font-bold text-slate-700">כללי ניסוח שנלמדו</h2>
-            <p className="mt-0.5 text-xs text-slate-500">
+            <h2 className="text-sm font-bold text-ink-soft">כללי ניסוח שנלמדו</h2>
+            <p className="mt-0.5 text-xs text-ink-faint">
               רק טעויות שחזרו לפחות פעמיים. &quot;תיקון אוטומטי&quot; מחליף את הביטוי בכל התראה חדשה גם בלי בינה מלאכותית.
             </p>
             {data.rules.length === 0 ? (
-              <p className="py-6 text-center text-sm text-slate-500">עדיין אין כללים. הם ייבנו בסריקת הלילה כשיצטברו טעויות חוזרות.</p>
+              <p className="py-6 text-center text-sm text-ink-faint">עדיין אין כללים. הם ייבנו בסריקת הלילה כשיצטברו טעויות חוזרות.</p>
             ) : (
               <ul className="mt-3 divide-y divide-gc/50">
                 {data.rules.map((r) => (
                   <li key={r.id} className={['flex flex-wrap items-center gap-3 py-3', r.active ? '' : 'opacity-60'].join(' ')}>
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm text-slate-800">
-                        <span className="text-rose-700 line-through decoration-rose-400/70">{r.avoid}</span>
-                        {r.prefer ? <> ← <span className="font-semibold text-emerald-700">{r.prefer}</span></> : null}
+                      <p className="text-sm text-ink">
+                        <span className="text-coral-700 line-through decoration-coral-400/70">{r.avoid}</span>
+                        {r.prefer ? <> ← <span className="font-semibold text-primary-700">{r.prefer}</span></> : null}
                       </p>
-                      <p className="text-xs text-slate-500">
+                      <p className="text-xs text-ink-faint">
                         חזר {r.hits} פעמים · {r.category}
                         {!r.reviewed && r.auto_fix ? ' · הוצע לתיקון אוטומטי' : ''}
                       </p>
                     </div>
-                    <label className="flex items-center gap-2 text-xs text-slate-600">
+                    <label className="flex items-center gap-2 text-xs text-ink-soft">
                       פעיל
                       <Toggle on={r.active} busy={busy === r.id} label="הפעלת הכלל" onChange={(v) => void patch(r.id, { active: v })} />
                     </label>
-                    <label className="flex items-center gap-2 text-xs text-slate-600">
+                    <label className="flex items-center gap-2 text-xs text-ink-soft">
                       <Wand2 className="h-3.5 w-3.5" /> תיקון אוטומטי
                       <Toggle on={r.auto_fix} busy={busy === r.id || !r.prefer} label="תיקון אוטומטי" onChange={(v) => void patch(r.id, { auto_fix: v })} />
                     </label>
                     {confirmDelete === r.id ? (
                       <span className="flex items-center gap-1">
-                        <button type="button" onClick={() => void remove(r.id)} className="rounded-xl bg-rose-600 px-3 py-1.5 text-xs font-bold text-gc">
+                        <button type="button" onClick={() => void remove(r.id)} className="rounded-xl bg-coral-600 px-3 py-1.5 text-xs font-bold text-gc">
                           כן, למחוק
                         </button>
-                        <button type="button" onClick={() => setConfirmDelete(null)} className="rounded-xl px-3 py-1.5 text-xs text-slate-600">
+                        <button type="button" onClick={() => setConfirmDelete(null)} className="rounded-xl px-3 py-1.5 text-xs text-ink-soft">
                           ביטול
                         </button>
                       </span>
                     ) : (
-                      <button type="button" aria-label="מחיקת הכלל" onClick={() => setConfirmDelete(r.id)} className="rounded-xl p-2 text-slate-500 hover:bg-rose-50/60 hover:text-rose-600">
+                      <button type="button" aria-label="מחיקת הכלל" onClick={() => setConfirmDelete(r.id)} className="rounded-xl p-2 text-ink-faint hover:bg-coral-50/60 hover:text-coral-600">
                         <Trash2 className="h-4 w-4" />
                       </button>
                     )}
@@ -224,15 +224,15 @@ export function AdminNotifyQualityClient() {
           </section>
 
           <section className="rounded-3xl border border-gc/60 bg-background-card/55 p-4 backdrop-blur-xl">
-            <h2 className="text-sm font-bold text-slate-700">דוגמאות אחרונות</h2>
+            <h2 className="text-sm font-bold text-ink-soft">דוגמאות אחרונות</h2>
             <ul className="mt-3 space-y-2">
               {data.recent.map((e, i) => (
                 <li key={i} className="rounded-2xl border border-gc/40 bg-background-card/40 p-3 text-sm">
-                  <p className="text-xs font-semibold text-slate-500">
+                  <p className="text-xs font-semibold text-ink-faint">
                     {STAGE_HE[e.stage] ?? e.stage} · {e.category} · {new Date(e.created_at).toLocaleString('he-IL', { timeZone: 'Asia/Jerusalem' })}
                   </p>
-                  <p className="mt-1 text-slate-600">{e.before_text}</p>
-                  {e.after_text ? <p className="mt-1 font-medium text-emerald-800">{e.after_text}</p> : null}
+                  <p className="mt-1 text-ink-soft">{e.before_text}</p>
+                  {e.after_text ? <p className="mt-1 font-medium text-primary-800">{e.after_text}</p> : null}
                 </li>
               ))}
             </ul>

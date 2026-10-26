@@ -355,12 +355,12 @@ export function StepLesson({ step, initialProgress, userId, userGender = null, a
         <div className="relative z-10 px-4 pb-8 pt-3">
           <div className="flex items-center justify-between mb-3">
             <button onClick={() => goBack()} disabled={currentIndex <= 0} aria-label="השלב הקודם"
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/15 text-white ring-1 ring-white/25 backdrop-blur-md transition hover:bg-white/25 active:scale-95 disabled:opacity-0 disabled:pointer-events-none">
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-on-dark/15 text-on-dark ring-1 ring-on-dark/25 backdrop-blur-md transition hover:bg-on-dark/25 active:scale-95 disabled:opacity-0 disabled:pointer-events-none">
               <ChevronRight className="h-5 w-5" strokeWidth={2.4} aria-hidden />
             </button>
             <div className="min-w-0 text-center flex-1 px-3">
-              <p className="text-white/70 text-xs font-medium">צעד {step.step_number}</p>
-              <h1 className="text-white text-lg font-black leading-snug line-clamp-2 wrap-break-word text-balance" style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}>
+              <p className="text-on-dark/70 text-xs font-medium">צעד {step.step_number}</p>
+              <h1 className="text-on-dark text-lg font-black leading-snug line-clamp-2 wrap-break-word text-balance" style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}>
                 {step.title}
               </h1>
             </div>
@@ -372,7 +372,7 @@ export function StepLesson({ step, initialProgress, userId, userGender = null, a
                 !sections[currentIndex + 1] ||
                 !canNavigateToTarget(sections[currentIndex + 1]!)
               }
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/15 text-white ring-1 ring-white/25 backdrop-blur-md transition hover:bg-white/25 active:scale-95 disabled:opacity-0 disabled:pointer-events-none"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-on-dark/15 text-on-dark ring-1 ring-on-dark/25 backdrop-blur-md transition hover:bg-on-dark/25 active:scale-95 disabled:opacity-0 disabled:pointer-events-none"
               aria-label="השלב הבא"
             >
               <ChevronLeft className="h-5 w-5" strokeWidth={2.4} aria-hidden />
@@ -390,7 +390,7 @@ export function StepLesson({ step, initialProgress, userId, userGender = null, a
           marginTop: '-14px',
           position: 'relative',
           zIndex: 3,
-          background: 'linear-gradient(180deg, #ecfdf5 0%, #f0fdf4 35%, #e8f5ef 100%)',
+          background: 'linear-gradient(180deg, #ecfdf5 0%, #cfe9dc 35%, #e8f5ef 100%)',
         }}
       >
         <motion.div

@@ -82,10 +82,10 @@ const SCHEDULE_LABEL: Record<Assignment['schedule'], string> = {
 };
 
 const ASSIGNMENT_STATUS: Record<Assignment['status'], { label: string; cls: string }> = {
-  active: { label: 'פעילה', cls: 'bg-emerald-100/90 text-emerald-900 border-emerald-200/80' },
-  frozen: { label: 'מוקפאת', cls: 'bg-sky-100/90 text-sky-900 border-sky-200/80' },
-  completed: { label: 'הושלמה', cls: 'bg-teal-100/90 text-teal-900 border-teal-200/80' },
-  dropped: { label: 'בוטלה', cls: 'bg-slate-100/90 text-slate-700 border-slate-200/80' },
+  active: { label: 'פעילה', cls: 'bg-primary-100/90 text-primary-900 border-primary-200/80' },
+  frozen: { label: 'מוקפאת', cls: 'bg-secondary-100/90 text-secondary-900 border-secondary-200/80' },
+  completed: { label: 'הושלמה', cls: 'bg-secondary-100/90 text-secondary-900 border-secondary-200/80' },
+  dropped: { label: 'בוטלה', cls: 'bg-surface/90 text-ink-soft border-hairline/80' },
 };
 
 const REMINDER_KIND: Record<Reminder['kind'], string> = {
@@ -95,23 +95,23 @@ const REMINDER_KIND: Record<Reminder['kind'], string> = {
 };
 
 const REMINDER_STATUS: Record<Reminder['status'], { label: string; cls: string }> = {
-  pending: { label: 'ממתינה', cls: 'bg-amber-100/90 text-amber-950 border-amber-200/80' },
-  sent: { label: 'נשלחה', cls: 'bg-emerald-100/90 text-emerald-900 border-emerald-200/80' },
-  cancelled: { label: 'בוטלה', cls: 'bg-slate-100/90 text-slate-700 border-slate-200/80' },
-  skipped: { label: 'דולגה', cls: 'bg-slate-100/90 text-slate-700 border-slate-200/80' },
+  pending: { label: 'ממתינה', cls: 'bg-accent-100/90 text-accent-950 border-accent-200/80' },
+  sent: { label: 'נשלחה', cls: 'bg-primary-100/90 text-primary-900 border-primary-200/80' },
+  cancelled: { label: 'בוטלה', cls: 'bg-surface/90 text-ink-soft border-hairline/80' },
+  skipped: { label: 'דולגה', cls: 'bg-surface/90 text-ink-soft border-hairline/80' },
 };
 
 const FOCUS_STATUS: Record<Focus['status'], { label: string; cls: string }> = {
-  proposed: { label: 'הוצעה', cls: 'bg-amber-100/90 text-amber-950 border-amber-200/80' },
-  active: { label: 'פעיל', cls: 'bg-emerald-100/90 text-emerald-900 border-emerald-200/80' },
-  ended: { label: 'הסתיים', cls: 'bg-slate-100/90 text-slate-700 border-slate-200/80' },
-  declined: { label: 'נדחתה', cls: 'bg-slate-100/90 text-slate-700 border-slate-200/80' },
+  proposed: { label: 'הוצעה', cls: 'bg-accent-100/90 text-accent-950 border-accent-200/80' },
+  active: { label: 'פעיל', cls: 'bg-primary-100/90 text-primary-900 border-primary-200/80' },
+  ended: { label: 'הסתיים', cls: 'bg-surface/90 text-ink-soft border-hairline/80' },
+  declined: { label: 'נדחתה', cls: 'bg-surface/90 text-ink-soft border-hairline/80' },
 };
 
 const BLOCKER_STATUS: Record<Blocker['status'], { label: string; cls: string }> = {
-  open: { label: 'פתוח', cls: 'bg-rose-100/90 text-rose-900 border-rose-200/80' },
-  improving: { label: 'משתפר', cls: 'bg-amber-100/90 text-amber-950 border-amber-200/80' },
-  resolved: { label: 'נפתר', cls: 'bg-emerald-100/90 text-emerald-900 border-emerald-200/80' },
+  open: { label: 'פתוח', cls: 'bg-coral-100/90 text-coral-900 border-coral-200/80' },
+  improving: { label: 'משתפר', cls: 'bg-accent-100/90 text-accent-950 border-accent-200/80' },
+  resolved: { label: 'נפתר', cls: 'bg-primary-100/90 text-primary-900 border-primary-200/80' },
 };
 
 function fmt(iso: string | null): string {
@@ -174,20 +174,20 @@ export function AlmogCommitmentsPanel({ userId }: { userId: string }) {
       <header className="flex items-start justify-between gap-3 px-4 py-3 border-b border-gc/40">
         <div className="flex items-center gap-2">
           <div
-            className="flex h-9 w-9 items-center justify-center rounded-xl text-emerald-700"
+            className="flex h-9 w-9 items-center justify-center rounded-xl text-primary-700"
             style={glassCardStyle}
           >
             <Sparkles className="w-5 h-5" aria-hidden />
           </div>
           <div>
-            <h3 className="text-sm font-black text-slate-900">התחייבויות אלמוג</h3>
-            <p className="text-xs text-slate-600/90 leading-relaxed">
+            <h3 className="text-sm font-black text-ink">התחייבויות אלמוג</h3>
+            <p className="text-xs text-ink-soft/90 leading-relaxed">
               משימות אישיות, תזכורות, מצב פוקוס וחסמים שאלמוג סיכם עם המשתמש
             </p>
           </div>
         </div>
         {!loading && total > 0 ? (
-          <span className="shrink-0 rounded-lg bg-background-card/40 px-2 py-1 text-[10px] font-bold text-emerald-900 border border-gc/50">
+          <span className="shrink-0 rounded-lg bg-background-card/40 px-2 py-1 text-[10px] font-bold text-primary-900 border border-gc/50">
             {total} פריטים
           </span>
         ) : null}
@@ -196,17 +196,17 @@ export function AlmogCommitmentsPanel({ userId }: { userId: string }) {
       <div className="p-4">
         {loading ? (
           <p className="flex justify-center py-8">
-            <Loader2 className="w-6 h-6 animate-spin text-emerald-600" />
+            <Loader2 className="w-6 h-6 animate-spin text-primary-600" />
           </p>
         ) : error ? (
-          <p className="text-sm text-red-700 text-center py-6">{error}</p>
+          <p className="text-sm text-coral-700 text-center py-6">{error}</p>
         ) : !data?.tables_ready ? (
-          <div className="text-sm text-slate-600 text-center py-6 space-y-2">
+          <div className="text-sm text-ink-soft text-center py-6 space-y-2">
             <p>טבלאות ההתחייבויות עדיין לא קיימות ב-DB (הרץ את מיגרציה 000048).</p>
-            {data?.cron_hint ? <p className="text-xs text-slate-500">{data.cron_hint}</p> : null}
+            {data?.cron_hint ? <p className="text-xs text-ink-faint">{data.cron_hint}</p> : null}
           </div>
         ) : total === 0 ? (
-          <p className="text-sm text-slate-500 text-center py-6">
+          <p className="text-sm text-ink-faint text-center py-6">
             אלמוג עדיין לא סיכם עם המשתמש משימות, תזכורות או חסמים.
           </p>
         ) : (
@@ -222,20 +222,20 @@ export function AlmogCommitmentsPanel({ userId }: { userId: string }) {
 
             {/* מצב פוקוס */}
             {data.focus.length > 0 ? (
-              <Group icon={Snowflake} title="מצבי פוקוס" tint="text-sky-700">
+              <Group icon={Snowflake} title="מצבי פוקוס" tint="text-secondary-700">
                 {data.focus.map((f) => (
                   <li key={f.id} className="rounded-xl px-3 py-2.5" style={glassCardStyle}>
                     <div className="flex flex-wrap items-center gap-1.5 mb-1">
                       <Pill {...FOCUS_STATUS[f.status]} />
-                      <span className="text-[10px] text-slate-500">
+                      <span className="text-[10px] text-ink-faint">
                         {f.paused_scope === 'reminders_and_dim' ? 'עצירה + עמעום' : 'עצירת תזכורות'}
                       </span>
                       {f.user_confirmed ? (
-                        <span className="text-[10px] font-bold text-emerald-700">אושר ע״י המשתמש</span>
+                        <span className="text-[10px] font-bold text-primary-700">אושר ע״י המשתמש</span>
                       ) : null}
                     </div>
-                    {f.reason ? <p className="text-sm text-slate-900">{f.reason}</p> : null}
-                    <p className="text-[10px] text-slate-400 mt-1">
+                    {f.reason ? <p className="text-sm text-ink">{f.reason}</p> : null}
+                    <p className="text-[10px] text-ink-faint mt-1">
                       נוצר {fmt(f.created_at)} · עד {fmt(f.ends_at)}
                     </p>
                   </li>
@@ -245,12 +245,12 @@ export function AlmogCommitmentsPanel({ userId }: { userId: string }) {
 
             {/* משימות אישיות */}
             {data.assignments.length > 0 ? (
-              <Group icon={Sparkles} title="משימות אישיות" tint="text-emerald-700">
+              <Group icon={Sparkles} title="משימות אישיות" tint="text-primary-700">
                 {data.assignments.map((a) => (
                   <li key={a.id} className="rounded-xl px-3 py-2.5" style={glassCardStyle}>
                     <div className="flex flex-wrap items-center gap-1.5 mb-1">
                       <Pill {...ASSIGNMENT_STATUS[a.status]} />
-                      <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-slate-600">
+                      <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-ink-soft">
                         {a.schedule === 'one_time' ? (
                           <Sparkles className="w-3 h-3" />
                         ) : (
@@ -259,18 +259,18 @@ export function AlmogCommitmentsPanel({ userId }: { userId: string }) {
                         {SCHEDULE_LABEL[a.schedule]}
                       </span>
                       {a.done_count > 0 ? (
-                        <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-emerald-700">
+                        <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-primary-700">
                           <CheckCircle2 className="w-3 h-3" />
                           בוצע {a.done_count}×
                         </span>
                       ) : null}
                     </div>
-                    <p className="text-sm font-bold text-slate-900 leading-relaxed">{a.title}</p>
+                    <p className="text-sm font-bold text-ink leading-relaxed">{a.title}</p>
                     {a.reason ? (
-                      <p className="text-xs text-slate-600 mt-0.5">למה: {a.reason}</p>
+                      <p className="text-xs text-ink-soft mt-0.5">למה: {a.reason}</p>
                     ) : null}
-                    {a.detail ? <p className="text-xs text-slate-500 mt-0.5">{a.detail}</p> : null}
-                    <p className="text-[10px] text-slate-400 mt-1">
+                    {a.detail ? <p className="text-xs text-ink-faint mt-0.5">{a.detail}</p> : null}
+                    <p className="text-[10px] text-ink-faint mt-1">
                       ניתנה {fmt(a.given_at)}
                       {a.last_done_at ? ` · בוצע לאחרונה ${fmt(a.last_done_at)}` : ''}
                     </p>
@@ -281,31 +281,31 @@ export function AlmogCommitmentsPanel({ userId }: { userId: string }) {
 
             {/* חסמים */}
             {data.blockers.length > 0 ? (
-              <Group icon={AlertTriangle} title="חסמים במעקב" tint="text-rose-700">
+              <Group icon={AlertTriangle} title="חסמים במעקב" tint="text-coral-700">
                 {data.blockers.map((b) => (
                   <li key={b.id} className="rounded-xl px-3 py-2.5" style={glassCardStyle}>
                     <div className="flex flex-wrap items-center gap-1.5 mb-1">
                       <Pill {...BLOCKER_STATUS[b.status]} />
                     </div>
-                    <p className="text-sm font-bold text-slate-900 leading-relaxed">{b.description}</p>
+                    <p className="text-sm font-bold text-ink leading-relaxed">{b.description}</p>
                     {b.strategy ? (
-                      <p className="text-xs text-slate-600 mt-0.5">דרך להתגבר: {b.strategy}</p>
+                      <p className="text-xs text-ink-soft mt-0.5">דרך להתגבר: {b.strategy}</p>
                     ) : null}
                     {Array.isArray(b.history) && b.history.length > 0 ? (
-                      <ul className="mt-2 space-y-1 border-s-2 border-rose-200/70 ps-2">
+                      <ul className="mt-2 space-y-1 border-s-2 border-coral-200/70 ps-2">
                         {b.history
                           .filter((h) => h && (h.note || h.status))
                           .slice(-5)
                           .reverse()
                           .map((h, i) => (
-                            <li key={i} className="text-[11px] text-slate-600">
-                              <span className="text-slate-400">{fmt(h.at)}: </span>
+                            <li key={i} className="text-[11px] text-ink-soft">
+                              <span className="text-ink-faint">{fmt(h.at)}: </span>
                               {h.note ?? h.status}
                             </li>
                           ))}
                       </ul>
                     ) : null}
-                    <p className="text-[10px] text-slate-400 mt-1">
+                    <p className="text-[10px] text-ink-faint mt-1">
                       זוהה {fmt(b.identified_at)}
                       {b.last_checked_at ? ` · נבדק ${fmt(b.last_checked_at)}` : ''}
                       {b.next_check_at ? ` · בדיקה הבאה ${fmt(b.next_check_at)}` : ''}
@@ -317,22 +317,22 @@ export function AlmogCommitmentsPanel({ userId }: { userId: string }) {
 
             {/* תזכורות מתוזמנות */}
             {data.reminders.length > 0 ? (
-              <Group icon={Bell} title="תזכורות מתוזמנות" tint="text-amber-700">
+              <Group icon={Bell} title="תזכורות מתוזמנות" tint="text-accent-700">
                 {data.reminders.map((r) => (
                   <li key={r.id} className="rounded-xl px-3 py-2.5" style={glassCardStyle}>
                     <div className="flex flex-wrap items-center gap-1.5 mb-1">
                       <Pill {...REMINDER_STATUS[r.status]} />
-                      <span className="text-[10px] font-bold text-slate-600">
+                      <span className="text-[10px] font-bold text-ink-soft">
                         {REMINDER_KIND[r.kind]}
                       </span>
-                      <span className="inline-flex items-center gap-0.5 text-[10px] text-slate-500">
+                      <span className="inline-flex items-center gap-0.5 text-[10px] text-ink-faint">
                         <Clock className="w-3 h-3" />
                         {fmt(r.fire_at)}
                       </span>
                     </div>
-                    <p className="text-sm text-slate-900 leading-relaxed">{r.body}</p>
+                    <p className="text-sm text-ink leading-relaxed">{r.body}</p>
                     {r.sent_at ? (
-                      <p className="text-[10px] text-slate-400 mt-1">נשלחה {fmt(r.sent_at)}</p>
+                      <p className="text-[10px] text-ink-faint mt-1">נשלחה {fmt(r.sent_at)}</p>
                     ) : null}
                   </li>
                 ))}
@@ -348,8 +348,8 @@ export function AlmogCommitmentsPanel({ userId }: { userId: string }) {
 function SummaryPill({ label, value }: { label: string; value: number }) {
   return (
     <div className="rounded-xl px-2.5 py-2 text-center" style={glassCardStyle}>
-      <p className="text-lg font-black text-slate-900">{value}</p>
-      <p className="text-[10px] font-bold text-slate-500">{label}</p>
+      <p className="text-lg font-black text-ink">{value}</p>
+      <p className="text-[10px] font-bold text-ink-faint">{label}</p>
     </div>
   );
 }
@@ -367,7 +367,7 @@ function Group({
 }) {
   return (
     <div>
-      <p className="mb-2 flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wide text-slate-500">
+      <p className="mb-2 flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wide text-ink-faint">
         <Icon className={`w-3.5 h-3.5 ${tint}`} aria-hidden />
         {title}
       </p>

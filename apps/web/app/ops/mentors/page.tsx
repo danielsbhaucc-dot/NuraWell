@@ -33,12 +33,12 @@ export default function OpsMentorsPage() {
               className={[
                 'rounded-2xl px-4 py-2.5 text-sm font-bold transition-all border',
                 active
-                  ? 'border-emerald-500 bg-emerald-50 text-emerald-900 shadow-md'
-                  : 'border-slate-200 bg-background-card/60 text-slate-600 hover:border-emerald-300',
+                  ? 'border-primary-500 bg-primary-50 text-primary-900 shadow-md'
+                  : 'border-hairline bg-background-card/60 text-ink-soft hover:border-primary-300',
               ].join(' ')}
             >
               {m.name}
-              <span className="block text-xs font-normal text-slate-500">{m.title}</span>
+              <span className="block text-xs font-normal text-ink-faint">{m.title}</span>
             </button>
           );
         })}

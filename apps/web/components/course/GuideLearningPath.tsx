@@ -121,9 +121,9 @@ export function GuideLearningPath({
             variant="immersive"
           />
           <div className="flex-1 min-w-0">
-            <div className="mb-1 flex items-center justify-between text-[11px] font-bold text-white/60">
+            <div className="mb-1 flex items-center justify-between text-[11px] font-bold text-on-dark/60">
               <span className="inline-flex items-center gap-1 truncate">
-                <Sparkles className="h-3 w-3 shrink-0 text-emerald-300" />
+                <Sparkles className="h-3 w-3 shrink-0 text-primary-300" />
                 {GUIDE_IMMERSIVE_MODE_LABEL}
               </span>
               <span className="shrink-0">{slideIdx + 1} / {totalSlides}</span>
@@ -189,7 +189,7 @@ export function GuideLearningPath({
             'flex items-center gap-1.5 rounded-xl px-4 py-3 text-sm font-bold backdrop-blur-md transition',
             slideIdx === 0 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-background-card/15',
           )}
-          style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.22)', color: '#fff' }}
+          style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.22)', color: '#eef4ea' }}
         >
           <ChevronRight className="h-4 w-4" />
           הקודם
@@ -203,7 +203,7 @@ export function GuideLearningPath({
               onClick={() => goTo(i)}
               className={cn(
                 'rounded-full transition-all',
-                i === slideIdx ? 'h-2 w-5 bg-emerald-400' : 'h-2 w-2 bg-background-card/35 hover:bg-background-card/55',
+                i === slideIdx ? 'h-2 w-5 bg-primary-400' : 'h-2 w-2 bg-background-card/35 hover:bg-background-card/55',
               )}
               aria-label={`שקף ${i + 1}`}
             />
@@ -214,7 +214,7 @@ export function GuideLearningPath({
           <button
             type="button"
             onClick={goNext}
-            className="flex items-center gap-1.5 rounded-xl px-4 py-3 text-sm font-bold text-white transition hover:brightness-110"
+            className="flex items-center gap-1.5 rounded-xl px-4 py-3 text-sm font-bold text-on-dark transition hover:brightness-110"
             style={{
               background: 'linear-gradient(135deg, #047857, #14b8a6)',
               boxShadow: '0 8px 24px rgba(20,184,166,0.35)',
@@ -226,13 +226,13 @@ export function GuideLearningPath({
         ) : (
           <Link
             href={firstIncompleteLessonId ? `/lessons/${firstIncompleteLessonId}` : `/guides/${course.id}`}
-            className="flex items-center gap-1.5 rounded-xl px-4 py-3 text-sm font-bold text-white transition hover:brightness-110"
+            className="flex items-center gap-1.5 rounded-xl px-4 py-3 text-sm font-bold text-on-dark transition hover:brightness-110"
             style={{
               background: 'linear-gradient(135deg, #047857, #14b8a6)',
               boxShadow: '0 8px 24px rgba(20,184,166,0.35)',
             }}
           >
-            <Play className="h-4 w-4" fill="white" />
+            <Play className="h-4 w-4" fill="#eef4ea" />
             {firstIncompleteLessonId ? 'התחל ללמוד' : 'חזרה למדריך'}
           </Link>
         )}
@@ -265,19 +265,19 @@ function PathIntroSlide({
         <GuideImmersiveAlmogHero size={92} />
       </div>
       <h2
-        className="mb-3 text-3xl font-black leading-snug text-white wrap-break-word whitespace-normal px-1"
+        className="mb-3 text-3xl font-black leading-snug text-on-dark wrap-break-word whitespace-normal px-1"
         style={{ textShadow: '0 4px 24px rgba(0,0,0,0.5)' }}
       >
         {title}
       </h2>
       {description ? (
-        <p className="mb-5 text-sm leading-relaxed text-white/75">{description}</p>
+        <p className="mb-5 text-sm leading-relaxed text-on-dark/75">{description}</p>
       ) : null}
       <div className="flex flex-wrap items-center justify-center gap-2">
         <PathStat icon={BookOpen} value={`${lessonCount}`} label="פרקים" />
         {progress > 0 ? <PathStat icon={Award} value={`${progress}%`} label="הושלם" /> : null}
       </div>
-      <p className="mt-6 text-xs font-semibold text-white/50">
+      <p className="mt-6 text-xs font-semibold text-on-dark/50">
         {guidePathIntroHint(gender)}
       </p>
     </motion.div>
@@ -304,41 +304,41 @@ function PathLessonSlide({
       <div className="guide-immersive-slide-card rounded-3xl p-6">
         <div className="mb-4 flex items-center gap-3">
           <span
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-lg font-black text-white"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-lg font-black text-on-dark"
             style={{ background: 'linear-gradient(145deg, rgba(16,185,129,0.5), rgba(20,184,166,0.35))' }}
           >
             {lesson.is_completed ? <CheckCircle2 className="h-5 w-5" /> : index + 1}
           </span>
           <div className="text-start flex-1">
-            <p className="text-[11px] font-bold uppercase tracking-wide text-emerald-300/80">
+            <p className="text-[11px] font-bold uppercase tracking-wide text-primary-300/80">
               פרק {index + 1}
             </p>
             {lesson.duration_minutes ? (
-              <p className="flex items-center gap-1 text-xs text-white/50">
+              <p className="flex items-center gap-1 text-xs text-on-dark/50">
                 <Clock className="h-3 w-3" />
                 {lesson.duration_minutes} דקות
               </p>
             ) : null}
           </div>
           {lesson.is_completed ? (
-            <span className="rounded-full px-2.5 py-1 text-[10px] font-bold text-emerald-200"
+            <span className="rounded-full px-2.5 py-1 text-[10px] font-bold text-primary-200"
               style={{ background: 'rgba(16,185,129,0.25)', border: '1px solid rgba(52,211,153,0.4)' }}>
               הושלם
             </span>
           ) : null}
         </div>
-        <h3 className="mb-3 text-2xl font-black leading-snug text-white">{lesson.title}</h3>
+        <h3 className="mb-3 text-2xl font-black leading-snug text-on-dark">{lesson.title}</h3>
         {lesson.description ? (
-          <p className="text-sm leading-relaxed text-white/70">{lesson.description}</p>
+          <p className="text-sm leading-relaxed text-on-dark/70">{lesson.description}</p>
         ) : (
-          <p className="text-sm italic text-white/45">פרק זה מחכה לך — לחץ על &quot;התחל ללמוד&quot; בסוף המסלול</p>
+          <p className="text-sm italic text-on-dark/45">פרק זה מחכה לך — לחץ על &quot;התחל ללמוד&quot; בסוף המסלול</p>
         )}
         <Link
           href={`/lessons/${lesson.id}`}
-          className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold text-white transition hover:brightness-110"
+          className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold text-on-dark transition hover:brightness-110"
           style={{ background: 'rgba(255,255,255,0.14)', border: '1px solid rgba(255,255,255,0.3)' }}
         >
-          <Play className="h-4 w-4" fill="white" />
+          <Play className="h-4 w-4" fill="#eef4ea" />
           כניסה לפרק
         </Link>
       </div>
@@ -379,12 +379,12 @@ function PathOutroSlide({
           boxShadow: '0 12px 32px rgba(20,184,166,0.35)',
         }}
       >
-        {done ? <Award className="h-8 w-8 text-white" /> : <Sparkles className="h-8 w-8 text-white" />}
+        {done ? <Award className="h-8 w-8 text-on-dark" /> : <Sparkles className="h-8 w-8 text-on-dark" />}
       </motion.div>
-      <h2 className="mb-2 text-2xl font-black text-white">
+      <h2 className="mb-2 text-2xl font-black text-on-dark">
         {done ? 'כל הכבוד! סיימת את המסלול' : 'מוכנים להתחיל?'}
       </h2>
-      <p className="mb-4 text-sm text-white/70">
+      <p className="mb-4 text-sm text-on-dark/70">
         {done
           ? `השלמת ${completedCount} מתוך ${totalLessons} פרקים.`
           : `עברת על ${totalLessons} פרקים במסלול. ${completedCount > 0 ? `כבר השלמת ${completedCount}.` : 'הגיע הזמן לצלול פנימה.'}`}
@@ -392,19 +392,19 @@ function PathOutroSlide({
       {!done && firstLessonId ? (
         <Link
           href={`/lessons/${firstLessonId}`}
-          className="inline-flex items-center gap-2 rounded-2xl px-6 py-3.5 text-base font-black text-white"
+          className="inline-flex items-center gap-2 rounded-2xl px-6 py-3.5 text-base font-black text-on-dark"
           style={{
             background: 'linear-gradient(135deg, #047857, #14b8a6)',
             boxShadow: '0 10px 30px rgba(20,184,166,0.35)',
           }}
         >
-          <Play className="h-5 w-5" fill="white" />
+          <Play className="h-5 w-5" fill="#eef4ea" />
           המשך לפרק הבא
         </Link>
       ) : (
         <Link
           href={`/guides/${courseId}`}
-          className="inline-flex items-center gap-2 rounded-2xl px-6 py-3.5 text-base font-black text-white"
+          className="inline-flex items-center gap-2 rounded-2xl px-6 py-3.5 text-base font-black text-on-dark"
           style={{ background: 'rgba(255,255,255,0.14)', border: '1px solid rgba(255,255,255,0.3)' }}
         >
           חזרה למדריך
@@ -426,9 +426,9 @@ function PathStat({
       className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm backdrop-blur-md whitespace-nowrap"
       style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.25)' }}
     >
-      <Icon className="h-4 w-4 text-emerald-200 shrink-0" />
-      <span className="font-bold text-white">{value}</span>
-      <span className="text-xs text-white/65">{label}</span>
+      <Icon className="h-4 w-4 text-primary-200 shrink-0" />
+      <span className="font-bold text-on-dark">{value}</span>
+      <span className="text-xs text-on-dark/65">{label}</span>
     </span>
   );
 }

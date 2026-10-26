@@ -3,12 +3,14 @@
  * Design guard (DESIGN_SYSTEM.md). Fails when feature code adds:
  *  - hard-coded white (#fff, #ffffff, white, bg-white, rgb(255,255,255), from/via/to-white, border/ring/fill-white)
  *  - raw hex colors or arbitrary Tailwind colors (bg-[#..], text-[#..]) outside token files
+ *  - near-white in any form (scripts/near-white.mjs): light hex/rgb/hsl/oklch (L>96%), bg-white/60+, white aliases
  *  - raw styled <button className=...> in feature folders (use components/ui Button)
  * Ratchet: existing debt is frozen in scripts/design-lint-baseline.json (per file, per rule).
  * A file may only go DOWN. Run `node scripts/design-lint.mjs --update` after you REMOVE debt.
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import { findNearWhite, nearWhiteAliases } from './near-white.mjs';
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const BASELINE = path.join(ROOT, 'scripts/design-lint-baseline.json');
 const DIRS = ['app', 'components', 'lib'];
@@ -27,10 +29,13 @@ const RULES = {
   arbitraryColor: /\b(?:bg|text|from|via|to|border|ring|fill|stroke|shadow)-\[(?:#|rgb|hsl)/g,
   rawButton: /<button\b[^>]*\bclassName=/g,
 };
+const ALIASES = nearWhiteAliases(fs.readFileSync(path.join(ROOT, 'app/globals.css'), 'utf8'));
 const FEATURE_BUTTON_SCOPE = /^components\/(?!ui\/)|^app\//;
 function walk(d, out = []) {
   for (const e of fs.readdirSync(d, { withFileTypes: true })) {
     if (e.name === 'node_modules' || e.name.startsWith('.')) continue;
+    // Coming-soon screen is frozen by owner decision: never lint/codemod it.
+    if (/coming-?soon/i.test(e.name)) continue;
     const p = path.join(d, e.name);
     if (e.isDirectory()) walk(p, out);
     else if (/\.(tsx?|css|mjs)$/.test(e.name) && !/\.test\./.test(e.name)) out.push(p);
@@ -38,6 +43,15 @@ function walk(d, out = []) {
   return out;
 }
 const counts = {};
+// globals.css is the token layer (raw hex allowed) but must not paint near-white fills either.
+{
+  const css = fs.readFileSync(path.join(ROOT, 'app/globals.css'), 'utf8')
+    .replace(/@theme\s*\{[\s\S]*?\n\}/g, '') // token definitions (on-dark text tokens live here)
+    .replace(/@media print\s*\{(?:[^{}]|\{[^{}]*\})*\}/g, '') // print CSS is allowlisted
+    .replace(/(?:^|[;{\s])(?:color|caret-color|-webkit-text-fill-color|text-decoration-color)\s*:[^;]*;/g, ';'); // white TEXT is fine
+  const nw = findNearWhite(css).length;
+  if (nw) counts['app/globals.css'] = { nearWhite: nw };
+}
 for (const d of DIRS) for (const f of walk(path.join(ROOT, d))) {
   const rel = path.relative(ROOT, f).split(path.sep).join('/');
   if (ALLOW.some((r) => r.test(rel))) continue;
@@ -48,6 +62,8 @@ for (const d of DIRS) for (const f of walk(path.join(ROOT, d))) {
     const n = (src.match(re) || []).length;
     if (n) c[k] = n;
   }
+  const nw = findNearWhite(src, ALIASES).length;
+  if (nw) c.nearWhite = nw;
   if (Object.keys(c).length) counts[rel] = c;
 }
 if (process.argv.includes('--update')) {

@@ -39,9 +39,9 @@ export function DeclinedTasksPageClient() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-24 text-emerald-800">
+      <div className="flex flex-col items-center justify-center py-24 text-primary-800">
         <Loader2 className="h-9 w-9 animate-spin" />
-        <p className="mt-3 text-sm font-semibold text-emerald-900/75">טוען משימות…</p>
+        <p className="mt-3 text-sm font-semibold text-primary-900/75">טוען משימות…</p>
       </div>
     );
   }
@@ -49,11 +49,11 @@ export function DeclinedTasksPageClient() {
   if (error) {
     return (
       <div className="max-w-lg mx-auto px-4 py-8 text-center">
-        <p className="text-sm text-red-700 font-semibold">{error}</p>
+        <p className="text-sm text-coral-700 font-semibold">{error}</p>
         <button
           type="button"
           onClick={() => void load()}
-          className="mt-4 text-sm font-bold text-emerald-700 underline"
+          className="mt-4 text-sm font-bold text-primary-700 underline"
         >
           ננסה שוב
         </button>
@@ -71,15 +71,15 @@ export function DeclinedTasksPageClient() {
             border: '1px solid rgba(16,185,129,0.25)',
           }}
         >
-          <UserX className="h-8 w-8 text-emerald-700" strokeWidth={2} />
+          <UserX className="h-8 w-8 text-primary-700" strokeWidth={2} />
         </div>
         <p className="text-[15px] font-black text-[#1A1730]">אין משימות שלא לקחת על עצמך</p>
-        <p className="text-sm text-gray-600 leading-relaxed">
+        <p className="text-sm text-ink-600 leading-relaxed">
           אם סימנת &quot;לא מקובל&quot; בסיכום צעד — המשימות יופיעו כאן. אפשר לחזור לצעד במסע ולעדכן את הבחירה.
         </p>
         <Link
           href="/journey"
-          className="inline-flex items-center gap-2 rounded-2xl px-5 py-3 font-bold text-white text-sm"
+          className="inline-flex items-center gap-2 rounded-2xl px-5 py-3 font-bold text-on-dark text-sm"
           style={{
             background: 'linear-gradient(135deg, #047857, #10b981)',
             boxShadow: '0 6px 20px rgba(16,185,129,0.28)',
@@ -102,7 +102,7 @@ export function DeclinedTasksPageClient() {
         tone="amber"
       />
 
-      <p className="text-xs font-semibold text-emerald-900/75 text-start leading-relaxed">
+      <p className="text-xs font-semibold text-primary-900/75 text-start leading-relaxed">
         רשימה דינמית לפי מה שסימנת במסע. לחיצה על צעד פותחת את השיעור לעדכון.
       </p>
       <ul className="space-y-3">
@@ -120,19 +120,19 @@ export function DeclinedTasksPageClient() {
               <div
                 className="rounded-[21px] px-4 py-3.5 text-start"
                 style={{
-                  background: 'linear-gradient(180deg, rgba(248,251,246,0.78) 0%, rgba(255,241,242,0.38) 100%)',
-                  border: '1px solid rgba(248,251,246,0.65)',
-                  boxShadow: 'inset 0 1px 0 rgba(248,251,246,0.88)',
+                  background: 'linear-gradient(180deg, rgba(207,233,220,0.78) 0%, rgba(255,241,242,0.38) 100%)',
+                  border: '1px solid rgba(207,233,220,0.65)',
+                  boxShadow: 'inset 0 1px 0 rgba(207,233,220,0.88)',
                   backdropFilter: 'blur(12px)',
                 }}
               >
-                <p className="text-[11px] font-bold text-rose-800/85 mb-1">
+                <p className="text-[11px] font-bold text-coral-800/85 mb-1">
                   צעד {row.stepNumber}: {row.stepTitle}
                 </p>
                 <p className="text-[15px] font-black text-[#1A1730] leading-snug wrap-anywhere wrap-break-word">
                   {row.taskTitle}
                 </p>
-                <p className="text-[11px] font-semibold text-emerald-800/70 mt-2">פתיחת השיעור ←</p>
+                <p className="text-[11px] font-semibold text-primary-800/70 mt-2">פתיחת השיעור ←</p>
               </div>
             </Link>
           </li>

@@ -148,12 +148,12 @@ function initialsOf(name: string | null | undefined, fallback = '?'): string {
 
 /** ערכת צבע יציבה לפי מזהה — נותן מראה צבעוני ועקבי לאווטארים */
 const AVATAR_GRADIENTS = [
-  'from-emerald-400 to-teal-500',
-  'from-violet-400 to-fuchsia-500',
-  'from-sky-400 to-cyan-500',
-  'from-amber-400 to-orange-500',
-  'from-rose-400 to-pink-500',
-  'from-indigo-400 to-blue-500',
+  'from-primary-400 to-secondary-500',
+  'from-iris-400 to-iris-500',
+  'from-secondary-400 to-secondary-500',
+  'from-accent-400 to-energy-500',
+  'from-coral-400 to-coral-500',
+  'from-iris-400 to-secondary-500',
 ];
 
 function gradientFor(id: string): string {
@@ -435,14 +435,14 @@ export function AdminUsersClient() {
 
       {/* חיפוש + תוצאות */}
       <div className="relative">
-        <Search className="pointer-events-none absolute inset-s-4 top-1/2 h-5 w-5 -translate-y-1/2 text-emerald-600/70" />
+        <Search className="pointer-events-none absolute inset-s-4 top-1/2 h-5 w-5 -translate-y-1/2 text-primary-600/70" />
         <input
           type="search"
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="חיפוש לפי שם, אימייל או מזהה..."
           dir="rtl"
-          className="w-full rounded-2xl border border-gc/60 bg-background-card/55 py-3.5 ps-12 pe-4 text-sm font-medium text-slate-900 shadow-[0_8px_28px_rgba(16,185,129,0.08)] outline-hidden backdrop-blur-xl transition placeholder:text-slate-400 focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-400/40"
+          className="w-full rounded-2xl border border-gc/60 bg-background-card/55 py-3.5 ps-12 pe-4 text-sm font-medium text-ink shadow-[0_8px_28px_rgba(16,185,129,0.08)] outline-hidden backdrop-blur-xl transition placeholder:text-ink-faint focus:border-primary-300/70 focus:ring-2 focus:ring-primary-400/40"
         />
       </div>
 
@@ -451,8 +451,8 @@ export function AdminUsersClient() {
           className={cn(
             'rounded-2xl border px-4 py-2.5 text-sm font-semibold backdrop-blur-md',
             message.kind === 'ok'
-              ? 'border-emerald-300/60 bg-emerald-50/80 text-emerald-800'
-              : 'border-rose-300/60 bg-rose-50/80 text-rose-800',
+              ? 'border-primary-300/60 bg-primary-50/80 text-primary-800'
+              : 'border-coral-300/60 bg-coral-50/80 text-coral-800',
           )}
         >
           {message.text}
@@ -462,15 +462,15 @@ export function AdminUsersClient() {
       {/* רשת כרטיסי משתמשים */}
       {listLoading ? (
         <div className="flex justify-center py-16">
-          <Loader2 className="h-7 w-7 animate-spin text-emerald-600" />
+          <Loader2 className="h-7 w-7 animate-spin text-primary-600" />
         </div>
       ) : list.length === 0 ? (
         <div
           className="flex flex-col items-center justify-center gap-2 rounded-3xl py-16 text-center"
           style={glassCardStyle}
         >
-          <UserCircle className="h-10 w-10 text-slate-300" />
-          <p className="text-sm font-semibold text-slate-500">לא נמצאו משתמשים</p>
+          <UserCircle className="h-10 w-10 text-ink-300" />
+          <p className="text-sm font-semibold text-ink-faint">לא נמצאו משתמשים</p>
         </div>
       ) : (
         <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -478,7 +478,7 @@ export function AdminUsersClient() {
             const label = u.full_name || u.email || u.id;
             return (
               <li key={u.id}>
-                <div className="group flex items-stretch rounded-2xl border border-gc/60 bg-background-card/45 shadow-[0_8px_24px_rgba(99,102,241,0.07)] backdrop-blur-xl transition-all hover:border-emerald-300/70 hover:bg-background-card/70 hover:shadow-[0_12px_32px_rgba(16,185,129,0.16)]">
+                <div className="group flex items-stretch rounded-2xl border border-gc/60 bg-background-card/45 shadow-[0_8px_24px_rgba(99,102,241,0.07)] backdrop-blur-xl transition-all hover:border-primary-300/70 hover:bg-background-card/70 hover:shadow-[0_12px_32px_rgba(16,185,129,0.16)]">
                   <button
                     type="button"
                     onClick={() => openUser(u.id)}
@@ -486,28 +486,28 @@ export function AdminUsersClient() {
                   >
                     <Avatar id={u.id} name={u.full_name} />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate font-display text-sm font-black text-slate-900">
+                      <p className="truncate font-display text-sm font-black text-ink">
                         {u.full_name || 'ללא שם'}
                       </p>
-                      <p className="truncate text-xs text-slate-500">{u.email ?? u.id}</p>
+                      <p className="truncate text-xs text-ink-faint">{u.email ?? u.id}</p>
                       <div className="mt-1.5 flex flex-wrap gap-1">
                         <span
                           className={cn(
                             'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold',
                             u.onboarding_completed
-                              ? 'bg-emerald-100/90 text-emerald-800'
-                              : 'bg-amber-100/90 text-amber-800',
+                              ? 'bg-primary-100/90 text-primary-800'
+                              : 'bg-accent-100/90 text-accent-800',
                           )}
                         >
                           {u.onboarding_completed ? 'השלים הרשמה' : 'הרשמה חלקית'}
                         </span>
                         {u.email_confirmed ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-sky-100/90 px-2 py-0.5 text-[10px] font-bold text-sky-800">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-secondary-100/90 px-2 py-0.5 text-[10px] font-bold text-secondary-800">
                             <CheckCircle2 className="h-3 w-3" /> מאומת
                           </span>
                         ) : null}
                         {u.role && u.role !== 'user' ? (
-                          <span className="inline-flex items-center rounded-full bg-violet-100/90 px-2 py-0.5 text-[10px] font-bold text-violet-800">
+                          <span className="inline-flex items-center rounded-full bg-iris-100/90 px-2 py-0.5 text-[10px] font-bold text-iris-800">
                             {u.role}
                           </span>
                         ) : null}
@@ -520,7 +520,7 @@ export function AdminUsersClient() {
                     disabled={deleting}
                     aria-label={`מחק את ${label}`}
                     title="מחיקת משתמש"
-                    className="m-2 shrink-0 self-center rounded-xl border border-rose-200/80 bg-rose-50/80 p-2 text-rose-700 transition hover:bg-rose-100 disabled:opacity-50"
+                    className="m-2 shrink-0 self-center rounded-xl border border-coral-200/80 bg-coral-50/80 p-2 text-coral-700 transition hover:bg-coral-100 disabled:opacity-50"
                   >
                     {deleting && pendingDelete?.id === u.id ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -548,7 +548,7 @@ export function AdminUsersClient() {
             type="button"
             aria-label="סגור"
             onClick={() => !saving && !deleting && closeUser()}
-            className="absolute inset-0 cursor-default bg-emerald-950/35 backdrop-blur-[5px]"
+            className="absolute inset-0 cursor-default bg-primary-950/35 backdrop-blur-[5px]"
           />
 
           <div
@@ -560,14 +560,14 @@ export function AdminUsersClient() {
             {detailLoading || !detail ? (
               <div className="flex min-h-[40vh] items-center justify-center p-10">
                 {detailLoading ? (
-                  <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
+                  <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
                 ) : (
-                  <p className="text-sm text-slate-500">לא ניתן לטעון את פרטי המשתמש</p>
+                  <p className="text-sm text-ink-faint">לא ניתן לטעון את פרטי המשתמש</p>
                 )}
                 <button
                   type="button"
                   onClick={closeUser}
-                  className="absolute inset-e-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-gc/55 bg-background-card/45 text-slate-600 backdrop-blur-md hover:bg-background-card/70"
+                  className="absolute inset-e-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-gc/55 bg-background-card/45 text-ink-soft backdrop-blur-md hover:bg-background-card/70"
                   aria-label="סגור"
                 >
                   <X className="h-4 w-4" />
@@ -576,12 +576,12 @@ export function AdminUsersClient() {
             ) : (
               <>
                 {/* כותרת הפופאפ */}
-                <header className="relative shrink-0 border-b border-gc/40 bg-linear-to-l from-emerald-100/50 via-background-card/30 to-cyan-100/40 px-4 pb-3 pt-4 sm:px-6">
+                <header className="relative shrink-0 border-b border-gc/40 bg-linear-to-l from-primary-100/50 via-background-card/30 to-secondary-100/40 px-4 pb-3 pt-4 sm:px-6">
                   <button
                     type="button"
                     onClick={closeUser}
                     disabled={saving || deleting}
-                    className="absolute inset-e-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-gc/55 bg-background-card/45 text-slate-600 backdrop-blur-md transition hover:bg-background-card/70 disabled:opacity-50 sm:inset-e-4 sm:top-4"
+                    className="absolute inset-e-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-gc/55 bg-background-card/45 text-ink-soft backdrop-blur-md transition hover:bg-background-card/70 disabled:opacity-50 sm:inset-e-4 sm:top-4"
                     aria-label="סגור"
                   >
                     <X className="h-4 w-4" />
@@ -590,10 +590,10 @@ export function AdminUsersClient() {
                   <div className="flex items-center gap-3 pe-10">
                     <Avatar id={selectedId} name={form.full_name} size="lg" />
                     <div className="min-w-0">
-                      <h2 className="truncate bg-linear-to-l from-emerald-700 via-teal-600 to-cyan-700 bg-clip-text font-display text-xl font-black text-transparent">
+                      <h2 className="truncate bg-linear-to-l from-primary-700 via-secondary-600 to-secondary-700 bg-clip-text font-display text-xl font-black text-transparent">
                         {form.full_name || 'משתמש'}
                       </h2>
-                      <p className="flex items-center gap-1.5 truncate text-xs text-slate-600">
+                      <p className="flex items-center gap-1.5 truncate text-xs text-ink-soft">
                         <Mail className="h-3.5 w-3.5 shrink-0 opacity-70" />
                         {detail.auth.email ?? '—'}
                       </p>
@@ -622,8 +622,8 @@ export function AdminUsersClient() {
                         className={cn(
                           'flex min-h-10 shrink-0 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold transition-all sm:text-sm',
                           tab === key
-                            ? 'bg-linear-to-br from-emerald-500 to-teal-600 text-gc shadow-md shadow-emerald-600/25'
-                            : 'text-slate-600 hover:bg-background-card/55 hover:text-slate-900',
+                            ? 'bg-linear-to-br from-primary-500 to-secondary-600 text-gc shadow-md shadow-primary-600/25'
+                            : 'text-ink-soft hover:bg-background-card/55 hover:text-ink',
                         )}
                         aria-pressed={tab === key}
                       >
@@ -764,8 +764,8 @@ export function AdminUsersClient() {
                             className={cn(
                               'flex-1 rounded-lg py-1.5 text-xs font-bold transition',
                               costDays === w.days
-                                ? 'bg-emerald-600 text-gc shadow-xs'
-                                : 'text-slate-600 hover:bg-background-card/70',
+                                ? 'bg-primary-600 text-gc shadow-xs'
+                                : 'text-ink-soft hover:bg-background-card/70',
                             )}
                           >
                             {w.label}
@@ -774,77 +774,77 @@ export function AdminUsersClient() {
                       </div>
                       {costLoading ? (
                         <div className="flex justify-center py-12">
-                          <Loader2 className="h-7 w-7 animate-spin text-emerald-600" />
+                          <Loader2 className="h-7 w-7 animate-spin text-primary-600" />
                         </div>
                       ) : cost ? (
                         <>
-                          <div className="rounded-2xl border border-emerald-200/60 bg-linear-to-br from-emerald-50/80 to-teal-50/60 p-4 text-center backdrop-blur-md">
-                            <p className="text-xs font-semibold text-emerald-800/85">
+                          <div className="rounded-2xl border border-primary-200/60 bg-linear-to-br from-primary-50/80 to-secondary-50/60 p-4 text-center backdrop-blur-md">
+                            <p className="text-xs font-semibold text-primary-800/85">
                               סה״כ עלות · {costDays} יום
                             </p>
-                            <p className="mt-1 font-display text-4xl font-black tabular-nums text-emerald-800">
+                            <p className="mt-1 font-display text-4xl font-black tabular-nums text-primary-800">
                               {usdFmt(cost.breakdown.totalUsd)}
                             </p>
-                            <p className="mt-1 text-[11px] text-slate-500">
+                            <p className="mt-1 text-[11px] text-ink-faint">
                               מחירון OpenRouter נוכחי + חיוב ספק כשנשמר
                             </p>
                           </div>
                           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-2">
-                            <div className="rounded-2xl border border-emerald-200/70 bg-emerald-50/60 p-3">
-                              <p className="flex items-center gap-1.5 text-xs font-bold text-emerald-800">
+                            <div className="rounded-2xl border border-primary-200/70 bg-primary-50/60 p-3">
+                              <p className="flex items-center gap-1.5 text-xs font-bold text-primary-800">
                                 <MessageSquare className="h-3.5 w-3.5" /> צ׳אט
                               </p>
-                              <p className="mt-1 font-display text-lg font-black tabular-nums text-slate-900">
+                              <p className="mt-1 font-display text-lg font-black tabular-nums text-ink">
                                 {usdFmt(cost.breakdown.chatUsd)}
                               </p>
-                              <p className="text-[11px] text-slate-500">{cost.counts.chatMessages} הודעות</p>
+                              <p className="text-[11px] text-ink-faint">{cost.counts.chatMessages} הודעות</p>
                             </div>
-                            <div className="rounded-2xl border border-amber-200/70 bg-amber-50/60 p-3">
-                              <p className="flex items-center gap-1.5 text-xs font-bold text-amber-800">
+                            <div className="rounded-2xl border border-accent-200/70 bg-accent-50/60 p-3">
+                              <p className="flex items-center gap-1.5 text-xs font-bold text-accent-800">
                                 <Sparkles className="h-3.5 w-3.5" /> נתב וקובץ חי
                               </p>
-                              <p className="mt-1 font-display text-lg font-black tabular-nums text-slate-900">
+                              <p className="mt-1 font-display text-lg font-black tabular-nums text-ink">
                                 {usdFmt(cost.breakdown.backgroundUsd ?? 0)}
                               </p>
-                              <p className="text-[11px] text-slate-500">אומדן לכל תור</p>
+                              <p className="text-[11px] text-ink-faint">אומדן לכל תור</p>
                             </div>
-                            <div className="rounded-2xl border border-violet-200/70 bg-violet-50/60 p-3">
-                              <p className="flex items-center gap-1.5 text-xs font-bold text-violet-800">
+                            <div className="rounded-2xl border border-iris-200/70 bg-iris-50/60 p-3">
+                              <p className="flex items-center gap-1.5 text-xs font-bold text-iris-800">
                                 <Bell className="h-3.5 w-3.5" /> התראות
                               </p>
-                              <p className="mt-1 font-display text-lg font-black tabular-nums text-slate-900">
+                              <p className="mt-1 font-display text-lg font-black tabular-nums text-ink">
                                 {usdFmt(cost.breakdown.notificationsUsd)}
                               </p>
-                              <p className="text-[11px] text-slate-500">
+                              <p className="text-[11px] text-ink-faint">
                                 {cost.counts.notifications} התראות
                                 {cost.counts.notificationsEstimated > 0
                                   ? ` · ${cost.counts.notificationsEstimated} באומדן`
                                   : ''}
                               </p>
                             </div>
-                            <div className="rounded-2xl border border-sky-200/70 bg-sky-50/60 p-3">
-                              <p className="flex items-center gap-1.5 text-xs font-bold text-sky-800">
+                            <div className="rounded-2xl border border-secondary-200/70 bg-secondary-50/60 p-3">
+                              <p className="flex items-center gap-1.5 text-xs font-bold text-secondary-800">
                                 <Video className="h-3.5 w-3.5" /> וידאו
                               </p>
-                              <p className="mt-1 font-display text-lg font-black tabular-nums text-slate-900">
+                              <p className="mt-1 font-display text-lg font-black tabular-nums text-ink">
                                 {usdFmt(cost.breakdown.videoUsd)}
                               </p>
-                              <p className="text-[11px] text-slate-500">
+                              <p className="text-[11px] text-ink-faint">
                                 {cost.counts.videoViews} צפיות · {Math.round(cost.counts.videoSeconds / 60)} דק׳
                               </p>
                             </div>
                           </div>
                           {cost.byModel && cost.byModel.length > 0 ? (
                             <div className="rounded-2xl border border-gc/45 bg-background-card/40 p-3">
-                              <p className="mb-2 text-xs font-bold text-slate-700">פירוק לפי מודל כותב</p>
+                              <p className="mb-2 text-xs font-bold text-ink-soft">פירוק לפי מודל כותב</p>
                               <ul className="space-y-1.5">
                                 {cost.byModel.map((m) => (
                                   <li
                                     key={m.model}
                                     className="flex items-center justify-between gap-2 text-xs"
                                   >
-                                    <span className="truncate text-slate-700">{shortModelName(m.model)}</span>
-                                    <span className="shrink-0 tabular-nums text-slate-900">
+                                    <span className="truncate text-ink-soft">{shortModelName(m.model)}</span>
+                                    <span className="shrink-0 tabular-nums text-ink">
                                       {usdFmt(m.usd)} · {m.messages}
                                     </span>
                                   </li>
@@ -854,7 +854,7 @@ export function AdminUsersClient() {
                           ) : null}
                         </>
                       ) : (
-                        <p className="py-12 text-center text-sm text-slate-500">
+                        <p className="py-12 text-center text-sm text-ink-faint">
                           לא הצלחנו לטעון עלויות למשתמש זה
                         </p>
                       )}
@@ -877,7 +877,7 @@ export function AdminUsersClient() {
                       type="button"
                       onClick={() => void save()}
                       disabled={saving || deleting}
-                      className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-linear-to-l from-emerald-600 to-teal-500 px-4 py-3 text-sm font-black text-gc shadow-lg shadow-emerald-500/25 transition active:scale-[0.99] disabled:opacity-60"
+                      className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-linear-to-l from-primary-600 to-secondary-500 px-4 py-3 text-sm font-black text-gc shadow-lg shadow-primary-500/25 transition active:scale-[0.99] disabled:opacity-60"
                     >
                       {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                       שמירה ועדכון אלמוג
@@ -891,7 +891,7 @@ export function AdminUsersClient() {
                         )
                       }
                       disabled={saving || deleting}
-                      className="inline-flex items-center justify-center gap-2 rounded-2xl border border-rose-300/70 bg-rose-50/70 px-4 py-3 text-sm font-bold text-rose-700 backdrop-blur-md transition hover:bg-rose-100/80 disabled:opacity-60"
+                      className="inline-flex items-center justify-center gap-2 rounded-2xl border border-coral-300/70 bg-coral-50/70 px-4 py-3 text-sm font-bold text-coral-700 backdrop-blur-md transition hover:bg-coral-100/80 disabled:opacity-60"
                       aria-label="מחיקה מלאה"
                     >
                       {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
@@ -902,7 +902,7 @@ export function AdminUsersClient() {
                     <p
                       className={cn(
                         'mt-2 flex items-center gap-1.5 text-xs font-semibold',
-                        message.kind === 'ok' ? 'text-emerald-700' : 'text-rose-700',
+                        message.kind === 'ok' ? 'text-primary-700' : 'text-coral-700',
                       )}
                     >
                       <Activity className="h-3.5 w-3.5" />
@@ -920,7 +920,7 @@ export function AdminUsersClient() {
 }
 
 const inputClass =
-  'w-full rounded-xl border border-gc/60 bg-background-card/60 px-3 py-2.5 text-sm font-medium text-slate-900 outline-hidden backdrop-blur-sm transition focus:border-emerald-300/70 focus:ring-2 focus:ring-emerald-400/40';
+  'w-full rounded-xl border border-gc/60 bg-background-card/60 px-3 py-2.5 text-sm font-medium text-ink outline-hidden backdrop-blur-sm transition focus:border-primary-300/70 focus:ring-2 focus:ring-primary-400/40';
 
 function SelectInput({
   value,
@@ -951,10 +951,10 @@ function SelectInput({
 }
 
 const SECTION_TONES = {
-  emerald: 'from-emerald-500 to-teal-600 text-emerald-700',
-  sky: 'from-sky-500 to-cyan-600 text-sky-700',
-  violet: 'from-violet-500 to-fuchsia-600 text-violet-700',
-  amber: 'from-amber-500 to-orange-600 text-amber-700',
+  emerald: 'from-primary-500 to-secondary-600 text-primary-700',
+  sky: 'from-secondary-500 to-secondary-600 text-secondary-700',
+  violet: 'from-iris-500 to-iris-600 text-iris-700',
+  amber: 'from-accent-500 to-energy-600 text-accent-700',
 } as const;
 
 function Section({
@@ -979,7 +979,7 @@ function Section({
         >
           <Icon className="h-4 w-4" aria-hidden />
         </span>
-        <h3 className="font-display text-sm font-black text-slate-800">{title}</h3>
+        <h3 className="font-display text-sm font-black text-ink">{title}</h3>
       </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">{children}</div>
     </section>
@@ -989,17 +989,17 @@ function Section({
 function Field({ label, className, children }: { label: string; className?: string; children: ReactNode }) {
   return (
     <label className={cn('block', className)}>
-      <span className="mb-1 block text-xs font-bold text-slate-600">{label}</span>
+      <span className="mb-1 block text-xs font-bold text-ink-soft">{label}</span>
       {children}
     </label>
   );
 }
 
 const CHIP_TONES = {
-  slate: 'border-slate-200/70 bg-slate-50/70 text-slate-700',
-  emerald: 'border-emerald-200/70 bg-emerald-50/80 text-emerald-800',
-  sky: 'border-sky-200/70 bg-sky-50/80 text-sky-800',
-  violet: 'border-violet-200/70 bg-violet-50/80 text-violet-800',
+  slate: 'border-hairline/70 bg-surface-sunken/70 text-ink-soft',
+  emerald: 'border-primary-200/70 bg-primary-50/80 text-primary-800',
+  sky: 'border-secondary-200/70 bg-secondary-50/80 text-secondary-800',
+  violet: 'border-iris-200/70 bg-iris-50/80 text-iris-800',
 } as const;
 
 function StatChip({ label, value, tone }: { label: string; value: number; tone: keyof typeof CHIP_TONES }) {
@@ -1050,15 +1050,15 @@ function NotifyTestToggle({
   };
 
   return (
-    <div className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-gc px-4 py-3 shadow-xs">
+    <div className="flex items-center justify-between gap-3 rounded-2xl border border-hairline bg-gc px-4 py-3 shadow-xs">
       <div className="min-w-0">
-        <p className="text-sm font-semibold text-slate-800">משתמש בדיקה להתראות</p>
-        <p className="text-xs text-slate-500">
+        <p className="text-sm font-semibold text-ink">משתמש בדיקה להתראות</p>
+        <p className="text-xs text-ink-faint">
           {isAdminAccount
             ? 'חשבון אדמין — מקבל התראות אוטומטיות רק כשהמתג פעיל.'
             : 'משתמש רגיל מקבל התראות בכל מקרה; המתג מסמן אותו כחשבון בדיקה.'}
         </p>
-        {err ? <p className="mt-1 text-xs text-rose-600">{err}</p> : null}
+        {err ? <p className="mt-1 text-xs text-coral-600">{err}</p> : null}
       </div>
       <button
         type="button"
@@ -1068,7 +1068,7 @@ function NotifyTestToggle({
         disabled={busy}
         onClick={toggle}
         className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors disabled:opacity-60 ${
-          enabled ? 'bg-emerald-500' : 'bg-slate-300'
+          enabled ? 'bg-primary-500' : 'bg-ink-300'
         }`}
       >
         <span

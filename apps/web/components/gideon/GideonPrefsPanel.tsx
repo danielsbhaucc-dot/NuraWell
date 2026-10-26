@@ -12,8 +12,8 @@ const CITIES: [string, string][] = [['Jerusalem', 'ירושלים'], ['Tel Aviv'
 const TOPICS: [string, string][] = [['daily', 'עדכון יומי'], ['weekly', 'סיכום שבועי'], ['monthly', 'דוח חודשי'], ['cost', 'התראות עלות'], ['owner_tasks', 'תזכורות משימות'], ['agent_report', 'דיווחי סוכן התוכן'], ['dev_forward', 'עדכונים מאורי']];
 const DAYS = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ש׳'];
 const fmt = (s: string) => new Date(s).toLocaleString('he-IL', { timeZone: 'Asia/Jerusalem', weekday: 'short', day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' });
-const card = 'rounded-3xl border border-slate-200 bg-glass/85 backdrop-blur-md p-5';
-const btn = 'rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50';
+const card = 'rounded-3xl border border-ink-200 bg-glass/85 backdrop-blur-md p-5';
+const btn = 'rounded-2xl bg-ink-900 px-4 py-2 text-sm font-semibold text-on-dark disabled:opacity-50';
 
 export function GideonPrefsPanel() {
   const [d, setD] = useState<Data | null>(null);
@@ -55,7 +55,7 @@ export function GideonPrefsPanel() {
   const others = d?.prefs.filter((p) => p.kind !== 'shabbat') ?? [];
   return (
     <div dir="rtl" className="space-y-6">
-      {note ? <p className="rounded-xl bg-slate-100 px-3 py-2 text-sm">{note}</p> : null}
+      {note ? <p className="rounded-xl bg-ink-100 px-3 py-2 text-sm">{note}</p> : null}
 
       <section className={card}>
         <h2 className="text-lg font-bold">מצב עכשיו</h2>
@@ -63,7 +63,7 @@ export function GideonPrefsPanel() {
         {d?.held.length ? (
           <div className="mt-3">
             <p className="text-sm font-semibold">ממתינות לשליחה ({d.held.length}):</p>
-            <ul className="mt-1 space-y-1 text-xs text-slate-700">
+            <ul className="mt-1 space-y-1 text-xs text-ink-700">
               {d.held.map((h) => <li key={h.id}>• {fmt(h.created_at)} · {h.text}</li>)}
             </ul>
             <div className="mt-2 flex gap-2">
@@ -93,7 +93,7 @@ export function GideonPrefsPanel() {
         </fieldset>
         <button className={`${btn} mt-3`} disabled={busy} onClick={() => post({ action: 'save_shabbat', shabbat: sh })}>שמירה</button>
         {d?.nextWindows.length ? (
-          <ul className="mt-3 space-y-0.5 text-xs text-slate-600">
+          <ul className="mt-3 space-y-0.5 text-xs text-ink-600">
             {d.nextWindows.map((w) => <li key={w.start}>{w.reason === 'yom_tov' ? 'חג' : 'שבת'}: {fmt(w.start)} ← {fmt(w.end)}</li>)}
           </ul>
         ) : null}
@@ -105,16 +105,16 @@ export function GideonPrefsPanel() {
           {others.length ? others.map((p) => (
             <li key={p.id} className={`rounded-xl border p-3 ${p.active ? '' : 'opacity-50'}`}>
               <div className="font-semibold">{p.label}</div>
-              <div className="text-xs text-slate-600">{p.description} · {p.source === 'gideon' ? 'נשמר דרך גדעון' : 'נוסף כאן'}</div>
+              <div className="text-xs text-ink-600">{p.description} · {p.source === 'gideon' ? 'נשמר דרך גדעון' : 'נוסף כאן'}</div>
               <div className="mt-2 flex gap-2">
                 <button className="rounded-xl border px-2 py-1 text-xs" disabled={busy} onClick={() => post({ action: 'set_active', id: p.id, active: !p.active })}>{p.active ? 'השבת' : 'הפעל'}</button>
-                <button className="rounded-xl border border-red-200 px-2 py-1 text-xs text-red-700" disabled={busy} onClick={async () => { if (await confirmDialog({ title: 'למחוק את ההוראה?', danger: true, confirmLabel: 'מחק' })) void post({ action: 'delete', id: p.id }, 'נמחק'); }}>מחק</button>
+                <button className="rounded-xl border border-coral-200 px-2 py-1 text-xs text-coral-700" disabled={busy} onClick={async () => { if (await confirmDialog({ title: 'למחוק את ההוראה?', danger: true, confirmLabel: 'מחק' })) void post({ action: 'delete', id: p.id }, 'נמחק'); }}>מחק</button>
               </div>
             </li>
-          )) : <li className="text-slate-500">אין.</li>}
+          )) : <li className="text-ink-500">אין.</li>}
         </ul>
 
-        <div className="mt-4 space-y-2 rounded-2xl bg-slate-50 p-3 text-sm">
+        <div className="mt-4 space-y-2 rounded-2xl bg-ink-50 p-3 text-sm">
           <div className="font-semibold">הוספה</div>
           <select value={kind} onChange={(e) => setKind(e.target.value as typeof kind)} className="w-full rounded-xl border px-3 py-2">
             <option value="quiet_hours">שעות שקט קבועות</option>
@@ -131,7 +131,7 @@ export function GideonPrefsPanel() {
               </div>
               <div className="flex flex-wrap gap-2">{DAYS.map((l, i) => (
                 <label key={l} className="flex items-center gap-1"><input type="checkbox" checked={form.days.includes(i)} onChange={(e) => setForm({ ...form, days: e.target.checked ? [...form.days, i] : form.days.filter((x) => x !== i) })} />{l}</label>
-              ))}<span className="text-xs text-slate-500">(בלי סימון = כל יום)</span></div>
+              ))}<span className="text-xs text-ink-500">(בלי סימון = כל יום)</span></div>
             </>
           ) : null}
           {kind === 'quiet_until' ? <input type="datetime-local" value={form.until} onChange={(e) => setForm({ ...form, until: e.target.value })} className="w-full rounded-xl border px-3 py-2" /> : null}

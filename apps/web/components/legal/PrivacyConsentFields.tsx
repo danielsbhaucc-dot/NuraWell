@@ -25,26 +25,26 @@ export function HealthDataConsentBlock({
   const [open, setOpen] = useState(false);
   return (
     <div
-      className="mt-4 rounded-2xl border border-amber-400/35 bg-amber-950/30 p-4"
+      className="mt-4 rounded-2xl border border-accent-400/35 bg-accent-950/30 p-4"
       role="group"
       aria-labelledby="health-consent-title"
     >
-      <p id="health-consent-title" className="text-sm font-bold text-amber-100 flex items-center gap-2">
+      <p id="health-consent-title" className="text-sm font-bold text-accent-100 flex items-center gap-2">
         <ShieldCheck className="w-4 h-4 shrink-0" aria-hidden />
         מידע בריאותי ומדידות גוף
       </p>
-      <p className="mt-2 text-xs leading-relaxed text-amber-50/85">
+      <p className="mt-2 text-xs leading-relaxed text-accent-50/85">
         נאסוף משקל, גובה ויעדים — <strong>מידע בעל רגישות מיוחדת</strong> — רק כדי להתאים את הליווי.
         המידע נשמר במערכת מאובטחת, לא נמכר, ולא יועבר לצד שלישי למטרות שיווק. ניתן למשוך הסכמה
         זו בהגדרות הפרטיות. ללא הסכמה — לא ניתן להמשיך בשלב זה. פרטים נוספים ב{' '}
-        <Link href="/privacy" className="underline font-semibold text-amber-100" target="_blank">
+        <Link href="/privacy" className="underline font-semibold text-accent-100" target="_blank">
           מדיניות הפרטיות
         </Link>
         . יש לך זכות עיון, תיקון ומחיקה — ראו §10 במדיניות.
       </p>
-      <p className="mt-2 text-xs leading-relaxed text-amber-50/75">{CONSENT_TRANSPARENCY} {CONSENT_WHY}</p>
+      <p className="mt-2 text-xs leading-relaxed text-accent-50/75">{CONSENT_TRANSPARENCY} {CONSENT_WHY}</p>
       {checked ? (
-        <p className="mt-3 flex items-center gap-2 rounded-xl bg-emerald-500/15 px-3 py-2 text-sm font-bold text-emerald-100" role="status">
+        <p className="mt-3 flex items-center gap-2 rounded-xl bg-primary-500/15 px-3 py-2 text-sm font-bold text-primary-100" role="status">
           <Check className="h-4 w-4" aria-hidden /> ההסכמה אושרה
         </p>
       ) : (
@@ -53,7 +53,7 @@ export function HealthDataConsentBlock({
           disabled={disabled}
           onClick={() => setOpen(true)}
           data-testid="onboarding-consent-open"
-          className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-2xl bg-gradient-to-l from-emerald-500 to-teal-500 px-4 py-2.5 text-sm font-bold text-white shadow-lg disabled:opacity-50"
+          className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-2xl bg-gradient-to-l from-primary-500 to-secondary-500 px-4 py-2.5 text-sm font-bold text-on-dark shadow-lg disabled:opacity-50"
         >
           <ShieldCheck className="h-4 w-4" aria-hidden /> לקריאה ואישור ההסכמה
         </button>
@@ -97,16 +97,16 @@ export function LegalConsentCheckbox({
         checked={checked}
         disabled={disabled}
         onChange={(e) => onChange(e.target.checked)}
-        className="mt-1 h-4 w-4 rounded border-white/30 accent-emerald-500"
+        className="mt-1 h-4 w-4 rounded border-on-dark/30 accent-primary-500"
         required
       />
-      <span className="text-xs leading-relaxed text-emerald-50/90">
+      <span className="text-xs leading-relaxed text-primary-50/90">
         קראתי ואישרתי את {' '}
-        <Link href="/terms" className="font-semibold underline underline-offset-2 text-emerald-200" target="_blank">
+        <Link href="/terms" className="font-semibold underline underline-offset-2 text-primary-200" target="_blank">
           תנאי השימוש
         </Link>{' '}
         ול{' '}
-        <Link href="/privacy" className="font-semibold underline underline-offset-2 text-emerald-200" target="_blank">
+        <Link href="/privacy" className="font-semibold underline underline-offset-2 text-primary-200" target="_blank">
           מדיניות הפרטיות
         </Link>
         .

@@ -11,7 +11,7 @@ export const palette = {
   danger950: '#7f1d1d',
   neutral: { 300: '#d1d5db', 400: '#9ca3af' },
   ink: '#1A1730',
-  backgroundCard: '#F2F6EF',
+  backgroundCard: '#cfe9dc',
   mint: '#EDF5F0',
 } as const;
 

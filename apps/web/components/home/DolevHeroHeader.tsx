@@ -91,7 +91,7 @@ export function AlmogHeroHeader({
         <div
           style={{
             fontSize: '20px',
-            color: '#fff',
+            color: '#eef4ea',
             fontWeight: 900,
             fontFamily: "'Rubik','Heebo',sans-serif",
             lineHeight: 1.15,
@@ -108,8 +108,8 @@ export function AlmogHeroHeader({
                 greeting.tone === 'festive'
                   ? '#FFD97D'
                   : greeting.tone === 'solemn'
-                    ? 'rgba(248,251,246,0.78)'
-                    : 'rgba(248,251,246,0.92)',
+                    ? 'rgba(207,233,220,0.78)'
+                    : 'rgba(207,233,220,0.92)',
               fontWeight: greeting.tone === 'solemn' ? 600 : 700,
               fontStyle: greeting.tone === 'solemn' ? 'italic' : 'normal',
               letterSpacing: '0.2px',
@@ -250,7 +250,7 @@ export function AlmogHeroHeader({
                   style={{
                     fontSize: '9px',
                     fontWeight: 800,
-                    color: 'rgba(255,255,255,0.88)',
+                    color: 'rgba(207,233,220,0.88)',
                     background: 'rgba(255,255,255,0.14)',
                     border: '1px solid rgba(255,255,255,0.22)',
                     borderRadius: '999px',
@@ -264,7 +264,7 @@ export function AlmogHeroHeader({
             <div
               style={{
                 fontSize: '14px',
-                color: 'rgba(255,255,255,0.92)',
+                color: 'rgba(207,233,220,0.92)',
                 lineHeight: 1.55,
                 fontWeight: 400,
                 fontFamily: "'Heebo',sans-serif",
@@ -283,7 +283,7 @@ export function AlmogHeroHeader({
                 justifyContent: 'space-between',
                 fontSize: '9px',
                 fontWeight: 700,
-                color: 'rgba(255,255,255,0.72)',
+                color: 'rgba(207,233,220,0.72)',
                 marginBottom: '4px',
               }}
             >
@@ -415,7 +415,7 @@ function TaskBadgeRow({
           המסע שלך מחכה, בלחיצה אתה שם
         </span>
         {onClick ? (
-          <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.7)', fontWeight: 700 }}>
+          <span style={{ fontSize: '10px', color: 'rgba(207,233,220,0.7)', fontWeight: 700 }}>
             פתיחה ›
           </span>
         ) : null}
@@ -447,7 +447,7 @@ function TaskBadgeRow({
           style={{
             fontSize: '12px',
             fontWeight: 800,
-            color: '#FFFFFF',
+            color: '#eef4ea',
             letterSpacing: '0.2px',
             flex: 1,
           }}
@@ -455,7 +455,7 @@ function TaskBadgeRow({
           סגרת היום הכל, {done} מתוך {dueToday || accepted}
         </span>
         {onClick ? (
-          <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.85)', fontWeight: 700 }}>
+          <span style={{ fontSize: '10px', color: 'rgba(207,233,220,0.85)', fontWeight: 700 }}>
             פירוט ›
           </span>
         ) : null}
@@ -496,12 +496,12 @@ function TaskBadgeRow({
         {done > 0 && dueToday > 0 ? (
           <>
             {done}/{dueToday} בוצעו · עוד{' '}
-            <span style={{ color: '#FFFFFF', fontWeight: 900, fontSize: '14px' }}>{pending}</span>
+            <span style={{ color: '#eef4ea', fontWeight: 900, fontSize: '14px' }}>{pending}</span>
           </>
         ) : (
           <>
             יש לך{' '}
-            <span style={{ color: '#FFFFFF', fontWeight: 900, fontSize: '14px' }}>{pending}</span>{' '}
+            <span style={{ color: '#eef4ea', fontWeight: 900, fontSize: '14px' }}>{pending}</span>{' '}
             {pending === 1 ? 'משימה' : 'משימות'} לביצוע היום
           </>
         )}
@@ -529,7 +529,7 @@ function TaskBadgeRow({
                   display: 'block',
                   fontSize: '11px',
                   fontWeight: 800,
-                  color: '#FFFFFF',
+                  color: '#eef4ea',
                   lineHeight: 1.35,
                   wordBreak: 'break-word',
                 }}
@@ -543,7 +543,7 @@ function TaskBadgeRow({
                     marginTop: '2px',
                     fontSize: '9px',
                     fontWeight: 700,
-                    color: 'rgba(255,255,255,0.82)',
+                    color: 'rgba(207,233,220,0.82)',
                     background: 'rgba(0,0,0,0.12)',
                     borderRadius: '999px',
                     padding: '1px 7px',
@@ -571,7 +571,7 @@ function TaskBadgeRow({
             border: '1px solid rgba(255,255,255,0.35)',
             boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.25)',
             fontSize: '14px',
-            color: '#FFFFFF',
+            color: '#eef4ea',
             fontWeight: 900,
           }}
           aria-hidden

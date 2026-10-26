@@ -83,8 +83,8 @@ export function VerificationCodeInput({ value, onChange, disabled }: Verificatio
           onKeyDown={(e) => handleKeyDown(i, e)}
           className={[
             'w-9 h-12 sm:w-10 sm:h-[2.85rem] rounded-xl text-center text-lg font-black',
-            'onboarding-input-dark border-2 border-emerald-500/35',
-            'focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/30 outline-hidden transition-all',
+            'onboarding-input-dark border-2 border-primary-500/35',
+            'focus:border-primary-400 focus:ring-2 focus:ring-primary-400/30 outline-hidden transition-all',
             disabled ? 'opacity-50' : '',
           ].join(' ')}
           aria-label={`ספרה ${i + 1} מתוך ${VERIFICATION_CODE_LENGTH}`}
