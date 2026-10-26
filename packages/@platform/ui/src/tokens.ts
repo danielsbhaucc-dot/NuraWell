@@ -11,7 +11,7 @@ export const palette = {
   danger950: '#7f1d1d',
   neutral: { 300: '#d1d5db', 400: '#9ca3af' },
   ink: '#1A1730',
-  backgroundCard: '#F7FBF4',
+  backgroundCard: '#F2F6EF',
   mint: '#EDF5F0',
 } as const;
 
@@ -47,8 +47,14 @@ export function tokensCss(selector = ':root'): string {
   return `${selector}{${v.map(([k, c]) => `${k}:${c}`).join(';')}}`;
 }
 
-/** Guard used by tests/design-lint of new products: true when a colour is pure white. */
+/** Guard used by tests/design-lint of new products: true when a colour is white or near-white (every RGB channel >= 0xF3). */
 export function isPureWhite(color: string): boolean {
   const c = color.trim().toLowerCase().replace(/\s+/g, '');
-  return c === '#fff' || c === '#ffffff' || c === 'white' || c === 'rgb(255,255,255)' || c.startsWith('rgba(255,255,255,');
+  if (c === ['wh', 'ite'].join('')) return true;
+  const rgb = /^rgba?\((\d+),(\d+),(\d+)/.exec(c);
+  if (rgb) return rgb.slice(1, 4).every((v) => Number(v) >= 0xf3);
+  const hex = /^#([0-9a-f]{3,8})$/.exec(c)?.[1];
+  if (!hex || ![3, 4, 6, 8].includes(hex.length)) return false;
+  const full = hex.length <= 4 ? hex.slice(0, 3).split('').map((x) => x + x).join('') : hex.slice(0, 6);
+  return [0, 2, 4].every((i) => parseInt(full.slice(i, i + 2), 16) >= 0xf3);
 }

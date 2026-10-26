@@ -1,7 +1,8 @@
 -- GATED — DO NOT APPLY YET. Reviewed migration for offline module licensing (packages/@platform/licensing).
 -- Lives outside supabase/migrations/ so no runner picks it up. Apply only after Daniel approves selling.
 -- Licensee identity is stored encrypted by the app (enc:v2 via sealRow/systemDek); revocation reasons too.
--- Nothing here is read by buyers: buyers only see the signed static revocation list (lid + state + until).
+-- Nothing here is read by buyers: buyers only see the signed static status file (lid + state + until + reason code),
+-- polled every ~2 min from free static hosting (no Worker per check). Every block/unblock is audited (reason code only, no PII).
 
 create table if not exists public.platform_licenses (
   lid text primary key,
@@ -23,6 +24,7 @@ create table if not exists public.platform_license_revocations (
   state text not null check (state in ('suspended_until','suspended_until_payment','revoked_permanent')),
   until timestamptz,
   reason_enc text,                       -- enc:v2:... only; never in the public list
+  reason_code text check (reason_code in ('unpaid','terms','buyer_request','other')), -- code only; goes into the signed public status file
   updated_by uuid,
   updated_at timestamptz not null default now(),
   check (state <> 'suspended_until' or until is not null)

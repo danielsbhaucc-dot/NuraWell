@@ -1,4 +1,5 @@
-import { renewLicense, signRevocationList, type License, type RevocationEntry, type RevocationPublisher, type RevocationState, type Transform, type DistributionMode } from '@platform/licensing';
+import { signStatusUpdate, type StatusPusher } from '@platform/licensing/online';
+import { PUBLIC_REASON_CODES, renewLicense, signRevocationList, type License, type RevocationEntry, type RevocationPublisher, type RevocationState, type Transform, type DistributionMode } from '@platform/licensing';
 import type { RegistryModule, LicenseRow } from '../types';
 import { readModuleFiles, sellPackage, sharePackage } from './pack';
 
@@ -9,7 +10,7 @@ export interface LicenseStore {
   saveLicense(l: License, licenseeNameEnc: string | null, actorId: string, supersedes?: string): Promise<void>;
   getLicense(lid: string): Promise<License | null>;
   list(): Promise<LicenseRow[]>;
-  setRevocation(lid: string, e: { state: RevocationState; until: string | null; reasonEnc: string | null }, actorId: string): Promise<void>;
+  setRevocation(lid: string, e: { state: RevocationState; until: string | null; reasonEnc: string | null; reasonCode?: ReasonCode }, actorId: string): Promise<void>;
   clearRevocation(lid: string): Promise<void>;
   revocations(): Promise<RevocationEntry[]>;
   bumpVersion(): Promise<number>;
@@ -17,12 +18,14 @@ export interface LicenseStore {
 export type Deps = {
   registry: RegistryModule[]; root: string; gate: Gate; audit: Audit;
   privatePem: string | null; transform?: Transform; revocationUrl?: string;
-  store: LicenseStore | null; publisher: RevocationPublisher | null; encrypt: (rowId: string, v: string) => Promise<string>;
+  store: LicenseStore | null; publisher: RevocationPublisher | null;
+  /** Optional: shared Worker only for modules with sensitive server-side logic. */
+  statusPusher?: StatusPusher | null; verifierUrl?: string; verifierPublicKeyPem?: string; encrypt: (rowId: string, v: string) => Promise<string>;
 };
 export type Out = { status: number; body: Record<string, unknown> };
 const err = (status: number, error: string): Out => ({ status, body: { error } });
-const NO_KEY = 'מפתח החתימה לרישיונות עוד לא הוגדר בשרת, ולכן מכירה ורישיונות כבויים כרגע.';
-const NO_STORE = 'טבלאות הרישוי עוד לא הופעלו במסד הנתונים (מיגרציה 000216 ממתינה לאישור).';
+const NO_KEY = 'המכירה עוד לא הופעלה: מפתח החתימה לא הוגדר בשרת. אחרי הפעלה חד־פעמית זה יעבוד כאן.';
+const NO_STORE = 'הרישיונות עוד לא הופעלו במערכת (ממתין לאישור). אחרי ההפעלה זה יעבוד כאן.';
 
 type PkgBody = { kind: 'share' | 'sell'; moduleId: string; licenseeName?: string; licenseeRef?: string; domains?: string[]; validDays?: number | null; mode?: DistributionMode };
 
@@ -43,10 +46,10 @@ export async function packageAction(d: Deps, b: PkgBody): Promise<Out> {
   if (!d.store) return err(503, NO_STORE);
   const domains = (b.domains ?? []).map((x) => x.trim().toLowerCase()).filter(Boolean);
   const ref = (b.licenseeRef ?? '').trim();
-  if (!ref || !/^[a-z0-9-]{3,40}$/.test(ref)) return err(400, 'מזהה לקוח צריך להיות 3–40 תווים: אותיות קטנות באנגלית, ספרות ומקף.');
+  if (!ref || !/^[a-z0-9-]{3,40}$/.test(ref)) return err(400, 'צריך כתובת אתר תקינה של הקונה, למשל shop.example.com.');
   const mode = b.mode ?? 'bundle';
-  if (mode === 'bundle' && domains.length === 0) return err(400, 'צריך לפחות דומיין אחד לרישיון.');
-  const r = await sellPackage(files, m, { privatePem: d.privatePem, licensee: { id: ref, name: ref }, domains, validDays: b.validDays ?? 30, mode, transform: d.transform, revocationUrl: d.revocationUrl });
+  if (mode === 'bundle' && domains.length === 0) return err(400, 'צריך את כתובת האתר של הקונה.');
+  const r = await sellPackage(files, m, { privatePem: d.privatePem, licensee: { id: ref, name: ref }, domains, validDays: b.validDays ?? 30, mode, transform: d.transform, revocationUrl: d.revocationUrl, verifierUrl: d.verifierUrl, verifierPublicKeyPem: d.verifierPublicKeyPem });
   if (!r.ok) return err(422, r.error);
   const lic: License = { v: 1, lid: r.lid!, moduleId: m.id, versionRange: `^${m.version}`, licensee: { id: ref, name: ref }, domains, mode, issuedAt: new Date().toISOString(), expiresAt: r.expiresAt ?? null };
   await d.store.saveLicense(lic, b.licenseeName ? await d.encrypt(lic.lid, b.licenseeName.slice(0, 120)) : null, g.actorId);
@@ -54,15 +57,27 @@ export async function packageAction(d: Deps, b: PkgBody): Promise<Out> {
   return { status: 200, body: { fileName: r.fileName, sha256: r.sha256, files: r.files, lid: lic.lid, expiresAt: lic.expiresAt, base64: r.bytes.toString('base64') } };
 }
 
-type LicBody = { op: 'list' } | { op: 'renew'; lid: string; validDays?: number } | { op: 'revoke'; lid: string; state: RevocationState; until?: string | null; reason: string } | { op: 'reinstate'; lid: string } | { op: 'publish' };
+export const REASON_CODES = PUBLIC_REASON_CODES;
+export type ReasonCode = (typeof PUBLIC_REASON_CODES)[number];
+type LicBody = { op: 'list' } | { op: 'renew'; lid: string; validDays?: number } | { op: 'revoke'; lid: string; state: RevocationState; until?: string | null; reason: string; reasonCode?: ReasonCode } | { op: 'reinstate'; lid: string } | { op: 'publish' };
 
-async function publish(d: Deps): Promise<Out | null> {
-  if (!d.publisher) return err(503, 'לא הוגדר יעד לפרסום רשימת החסימות.');
+/** Bumps the monotonic version once, re-signs and publishes the static status file (primary path, no Worker per check). Optional: also push to the shared Worker for modules with server-side logic. */
+async function publish(d: Deps, change?: { lid: string; state: RevocationState | 'active'; until?: string | null }): Promise<Out | null> {
+  if (!d.publisher) return err(503, 'לא הוגדר לאן לפרסם את קובץ הסטטוס.');
   const version = await d.store!.bumpVersion();
-  const doc = signRevocationList(d.privatePem!, { version, issuedAt: new Date().toISOString(), entries: await d.store!.revocations() });
-  const p = await d.publisher.publish(doc);
-  if (!p.ok) return err(502, 'פרסום רשימת החסימות נכשל. השינוי נשמר ויפורסם בפעם הבאה.');
-  await d.audit('revocation_list_published', null, { version, entries: doc.list.entries.length, adapter: d.publisher.name });
+  let pushed: boolean | null = null;
+  if (change && d.statusPusher) {
+    const u = await signStatusUpdate(d.privatePem!, { lid: change.lid, state: change.state, seq: version, ...(change.until ? { until: change.until } : {}) });
+    pushed = (await d.statusPusher.push(u)).ok;
+    await d.audit('license_status_pushed', null, { lid: change.lid, state: change.state, seq: version, ok: pushed, adapter: d.statusPusher.name });
+  }
+  {
+    const doc = signRevocationList(d.privatePem!, { version, issuedAt: new Date().toISOString(), entries: await d.store!.revocations() });
+    const p = await d.publisher!.publish(doc);
+    if (!p.ok) return err(502, 'השינוי נשמר, אבל הפרסום נכשל. נסו שוב בעוד רגע.');
+    await d.audit('revocation_list_published', null, { version, entries: doc.list.entries.length, adapter: d.publisher!.name });
+  }
+  if (pushed === false) return err(502, 'קובץ הסטטוס פורסם, אבל העדכון לשרת הבדיקה המשותף נכשל. נסו שוב בעוד רגע.');
   return null;
 }
 
@@ -83,14 +98,16 @@ export async function licenseAction(d: Deps, b: LicBody): Promise<Out> {
   }
   if (b.op === 'revoke') {
     if (b.state === 'suspended_until' && !(b.until && !Number.isNaN(Date.parse(b.until)))) return err(400, 'להשעיה זמנית צריך תאריך סיום.');
-    if (!b.reason?.trim()) return err(400, 'צריך לכתוב סיבה (נשמרת מוצפנת, רק אצלנו).');
-    await d.store.setRevocation(b.lid, { state: b.state, until: b.state === 'suspended_until' ? new Date(b.until!).toISOString() : null, reasonEnc: await d.encrypt(b.lid, b.reason.slice(0, 500)) }, g.actorId);
-    await d.audit('license_revoked', old.moduleId, { lid: b.lid, state: b.state });
-  } else {
-    await d.store.clearRevocation(b.lid);
-    await d.audit('license_reinstated', old.moduleId, { lid: b.lid });
+    if (!b.reason?.trim()) return err(400, 'צריך לבחור סיבה.');
+    const until = b.state === 'suspended_until' ? new Date(b.until!).toISOString() : null;
+    const reasonCode: ReasonCode = REASON_CODES.includes(b.reasonCode as ReasonCode) ? b.reasonCode! : 'other';
+    await d.store.setRevocation(b.lid, { state: b.state, until, reasonEnc: await d.encrypt(b.lid, b.reason.slice(0, 500)), reasonCode }, g.actorId);
+    await d.audit('license_blocked', old.moduleId, { lid: b.lid, state: b.state, until, reasonCode }); // reason code only: no free text, no PII
+    return (await publish(d, { lid: b.lid, state: b.state, until })) ?? { status: 200, body: { ok: true } };
   }
-  return (await publish(d)) ?? { status: 200, body: { ok: true } };
+  await d.store.clearRevocation(b.lid);
+  await d.audit('license_unblocked', old.moduleId, { lid: b.lid });
+  return (await publish(d, { lid: b.lid, state: 'active' })) ?? { status: 200, body: { ok: true } };
 }
 
 /** Registry says alwaysOn (toggleable:false) → refuse turning it off, before the IAM catalog check. */

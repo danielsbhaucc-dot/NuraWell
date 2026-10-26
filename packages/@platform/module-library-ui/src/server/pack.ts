@@ -42,7 +42,7 @@ export function sharePackage(files: Files, m: RegistryModule): PackResult {
   return { ok: true, fileName: `${prefix}-share.tgz`, bytes, sha256: sha(bytes), files: inner.map((f) => f.path) };
 }
 
-export type SellInput = { privatePem: string | null; licensee: { id: string; name: string }; domains: string[]; validDays: number | null; mode: DistributionMode; transform?: Transform; revocationUrl?: string };
+export type SellInput = { privatePem: string | null; licensee: { id: string; name: string }; domains: string[]; validDays: number | null; mode: DistributionMode; transform?: Transform; revocationUrl?: string; verifierUrl?: string; verifierPublicKeyPem?: string };
 
 /** 'מכירה': signed license + (bundle: minified, watermarked, signed manifest) or (source: full source). */
 export async function sellPackage(files: Files, m: RegistryModule, s: SellInput, now = new Date()): Promise<PackResult> {
@@ -65,7 +65,7 @@ export async function sellPackage(files: Files, m: RegistryModule, s: SellInput,
     { path: 'LICENSE.token', content: token },
     { path: 'license-public-key.pem', content: pub },
     { path: 'LICENSE-TERMS.he.md', content: LICENSE_TERMS_DRAFT_HE },
-    { path: 'license.config.json', content: JSON.stringify({ moduleId: m.id, licenseToken: 'LICENSE.token', revocationUrl: s.revocationUrl ?? null, pollHours: 6 }, null, 1) },
+    { path: 'license.config.json', content: JSON.stringify({ moduleId: m.id, licenseToken: 'LICENSE.token', revocationUrl: s.revocationUrl ?? null, pollMinutes: 2, graceHours: 6, online: s.verifierUrl ? { enabled: true, url: s.verifierUrl, verifierPublicKeyPem: s.verifierPublicKeyPem ?? null, cacheSeconds: 300, blockedRecheckSeconds: 60, graceHours: 6 } : { enabled: false } }, null, 1) },
   );
   const inner = [...payload, ...extra].map((f) => ({ path: `${prefix}/${f.path}`, content: f.content }));
   const integ = integrity(inner);

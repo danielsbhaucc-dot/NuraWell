@@ -35,6 +35,8 @@ async function opsLicensingDeps(request: Request, bucket: string): Promise<{ dep
       audit: (kind, target, detail) => audit(db, kind, uid, null, target, detail),
       privatePem: process.env.LICENSE_SIGNING_KEY?.replace(/\\n/g, '\n') || null,
       revocationUrl: process.env.LICENSE_REVOCATION_URL || undefined,
+      verifierUrl: process.env.LICENSE_VERIFIER_URL || undefined,
+      verifierPublicKeyPem: process.env.LICENSE_VERIFIER_PUBLIC_KEY?.replace(/\\n/g, '\n') || undefined,
       store: await supabaseLicenseStore(db),
       publisher: revFile ? fileRevocationPublisher(revFile, (p, s) => writeFile(p, s, 'utf8')) : null,
       encrypt: async (rowId, v) => String(await encryptValue('platform_licenses', 'licensee_name_enc', uid, rowId, v)),

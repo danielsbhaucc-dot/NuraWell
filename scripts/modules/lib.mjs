@@ -124,6 +124,11 @@ export function hebrewProblem(text) {
   return null;
 }
 
+// Plain-language rule: these fields are shown outside the collapsed "פרטים טכניים" section, so no jargon.
+export const STORE_TECHNICAL = ['installConfig', 'compatibility'];
+const JARGON = /ed25519|manifest|מניפסט|hmac|tarball|\btgz\b|sha-?256|\bjwt\b|\baes\b|\bgcm\b|base64|\b[A-Z][A-Z0-9]*_[A-Z0-9_]+\b|`/i;
+export function jargonProblem(text) { const m = JARGON.exec(String(text)); return m ? `technical jargon "${m[0]}" (move it to the technical section)` : null; }
+
 export function validateStorePage(m, root = ROOT) {
   const e = [];
   const s = m.json.store;
@@ -131,7 +136,7 @@ export function validateStorePage(m, root = ROOT) {
   for (const k of STORE_STRINGS) if (typeof s[k] !== 'string' || s[k].trim().length < 2) e.push(`store.${k} missing`);
   for (const k of STORE_LISTS) if (!Array.isArray(s[k]) || !s[k].length || s[k].some((x) => typeof x !== 'string' || !x.trim())) e.push(`store.${k} must be a non-empty list`);
   if (s.iamModule !== undefined && !/^[a-z][a-z0-9-]*$/.test(s.iamModule)) e.push('store.iamModule bad id');
-  for (const k of [...STORE_STRINGS, ...STORE_LISTS]) for (const v of [].concat(s[k] ?? [])) { const p = hebrewProblem(v); if (p) e.push(`store.${k}: ${p}: "${String(v).slice(0, 60)}"`); }
+  for (const k of [...STORE_STRINGS, ...STORE_LISTS]) for (const v of [].concat(s[k] ?? [])) { const p = hebrewProblem(v) ?? (STORE_TECHNICAL.includes(k) ? null : jargonProblem(v)); if (p) e.push(`store.${k}: ${p}: "${String(v).slice(0, 60)}"`); }
   const cp = join(root, m.dir, 'config.schema.json');
   if (existsSync(cp)) for (const [k, v] of Object.entries(JSON.parse(readFileSync(cp, 'utf8')).properties ?? {})) { const p = v.description_he ? hebrewProblem(v.description_he) : 'missing description_he'; if (p) e.push(`config.schema.json ${k}: ${p}`); }
   const chp = join(root, m.dir, 'CHANGELOG.md');
