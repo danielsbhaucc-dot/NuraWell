@@ -1,6 +1,7 @@
 import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
+import { sealSessionTrailFor } from '@/lib/security/session-trail-seal';
 
 /**
  * After a verified passkey / backup code: mint a normal session for that user, server-side only.
@@ -24,5 +25,6 @@ export async function issueSessionForUser(admin: SupabaseClient, userId: string)
     if (v?.session) await supabase.auth.signOut({ scope: 'local' });
     return { ok: false, error: 'verify' };
   }
+  await sealSessionTrailFor(userId);
   return { ok: true };
 }

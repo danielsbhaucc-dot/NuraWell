@@ -121,7 +121,7 @@ export async function respondWithHealthRedaction(p: {
       .select('id', { count: 'exact', head: true })
       .eq('session_id', p.sessionId)
       .eq('user_id', p.userId)
-      .contains('metadata', { redaction_notice: true });
+      .is('redaction_notice', true); // flag column (000204): metadata is encrypted
     priorNotices = Number(count ?? 0);
   } catch {
     /* treat as first notice */

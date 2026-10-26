@@ -101,7 +101,7 @@ async function mirrorNewestChatHabitToPlan(admin: ReturnType<typeof createAdminC
   const { data: def } = await admin
     .from('task_definitions')
     .upsert(
-      { stable_key: key, source: 'almog', source_ref: a.id, step_id: a.related_step_id ?? null, habit_key: key, title: a.title, description: a.detail ?? null, schedule: a.schedule ?? null, created_by: 'almog', updated_at: new Date().toISOString() },
+      { stable_key: key, source: 'almog', source_ref: a.id, owner_user_id: userId, step_id: a.related_step_id ?? null, habit_key: key, title: a.title, description: a.detail ?? null, schedule: a.schedule ?? null, created_by: 'almog', updated_at: new Date().toISOString() },
       { onConflict: 'stable_key' }
     )
     .select('id')
