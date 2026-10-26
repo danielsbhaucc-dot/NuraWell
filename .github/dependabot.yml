@@ -12,6 +12,10 @@ updates:
       time: "06:00"
       timezone: "Asia/Jerusalem"
     open-pull-requests-limit: 10
+    # Supply-chain: wait a week before proposing a fresh release (most malicious npm versions are pulled within days).
+    # Security updates ignore cooldown, so real fixes still arrive immediately.
+    cooldown:
+      default-days: 7
     labels:
       - "dependencies"
       - "security"
@@ -36,6 +40,10 @@ updates:
       time: "06:00"
       timezone: "Asia/Jerusalem"
     open-pull-requests-limit: 10
+    # Supply-chain: wait a week before proposing a fresh release (most malicious npm versions are pulled within days).
+    # Security updates ignore cooldown, so real fixes still arrive immediately.
+    cooldown:
+      default-days: 7
     labels:
       - "dependencies"
       - "security"
@@ -60,6 +68,8 @@ updates:
       time: "06:00"
       timezone: "Asia/Jerusalem"
     open-pull-requests-limit: 5
+    cooldown:
+      default-days: 7
     labels:
       - "dependencies"
       - "github-actions"

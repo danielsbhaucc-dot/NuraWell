@@ -1,3 +1,4 @@
+import { notificationMetaKeyBidx } from '@/lib/security/blind-index';
 import { insertNotification } from '@/lib/notifications/deliver';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { deliverWebPushAfterAlmogNotification } from '@/lib/push/deliver-after-notification';
@@ -49,11 +50,14 @@ export async function challengeNotificationExists(
   userId: string,
   dedupeKey: string,
 ): Promise<boolean> {
+  // metadata is enc:v2: match on the HMAC blind index (000208); legacy plaintext rows (index still NULL until
+  // the backfill reaches them) are matched on the plain JSON too.
+  const bidx = await notificationMetaKeyBidx(dedupeKey);
   const { data } = await admin
     .from('notifications')
     .select('id')
     .eq('user_id', userId)
-    .contains('metadata', { dedupe_key: dedupeKey })
+    .or(`meta_key_bidx.eq.${bidx},metadata->>dedupe_key.eq.${JSON.stringify(dedupeKey)}`)
     .limit(1)
     .maybeSingle();
   return Boolean(data);

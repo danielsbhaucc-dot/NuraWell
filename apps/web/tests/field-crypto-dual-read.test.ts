@@ -46,7 +46,9 @@ afterEach(() => {
 describe('field registry', () => {
   it('every table has owner + row key and only known kinds', () => {
     for (const [t, spec] of Object.entries(ENCRYPTED_TABLES)) {
-      expect(spec.userCol, t).toBeTruthy();
+      const sys = (spec as { system?: string }).system;
+      if (sys) expect(['audit', 'ops', 'legal'], t).toContain(sys);
+      else expect(spec.userCol, t).toBeTruthy();
       expect(spec.rowCol, t).toBeTruthy();
       for (const k of Object.values(spec.columns)) expect(['text', 'json', 'text[]']).toContain(k);
     }
@@ -94,7 +96,7 @@ describe('AAD binding (user + table.column + row)', () => {
 
 describe('fetch wrapper', () => {
   it('adds owner/row columns to narrow selects and strips them again', async () => {
-    expect(planSelect('notifications', 'title,body')).toEqual({ select: 'title,body,user_id,id', added: ['user_id', 'id'] });
+    expect(planSelect('notifications', 'title,body')).toEqual({ select: 'title,body,user_id,id', added: ['user_id', 'id'], embeds: [] });
     expect(planSelect('notifications', '*').added).toEqual([]);
     expect(planSelect('notifications', 'id,user_id,body').added).toEqual([]);
     expect(planSelect('notifications', 'count()').added).toEqual([]);

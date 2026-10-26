@@ -228,6 +228,12 @@ export async function redeemRecoveryCode(db: SupabaseClient, r: LoginRequest, co
 }
 
 /* ───────────── devices list / revoke ───────────── */
+/** Remember which session entered Ops through which device (best-effort; idempotent). */
+export async function bindDeviceSession(db: SupabaseClient, deviceId: string, userId: string, sessionId: string | null): Promise<void> {
+  if (!sessionId) return;
+  await db.from('ops_device_sessions').upsert({ device_id: deviceId, session_id: sessionId, user_id: userId }, { onConflict: 'device_id,session_id', ignoreDuplicates: true }).then(() => undefined, () => undefined);
+}
+
 export async function listDevices(db: SupabaseClient, userId: string) {
   const { data } = await db.from('ops_trusted_devices').select('id, label, via, created_at, last_seen_at').eq('user_id', userId).is('revoked_at', null).is('parent_id', null).order('last_seen_at', { ascending: false });
   return (data ?? []) as { id: string; label: string; via: string; created_at: string; last_seen_at: string }[];
@@ -235,7 +241,16 @@ export async function listDevices(db: SupabaseClient, userId: string) {
 export async function revokeDevice(db: SupabaseClient, userId: string, id: string, actor: string): Promise<boolean> {
   const { data } = await db.from('ops_trusted_devices').update({ revoked_at: new Date().toISOString() }).eq('id', id).eq('user_id', userId).is('revoked_at', null).select('id');
   await db.from('ops_trusted_devices').update({ revoked_at: new Date().toISOString() }).eq('parent_id', id).is('revoked_at', null);
-  if (data?.length) await audit(db, userId, 'ops_device_revoked', { id, actor });
+  if (data?.length) {
+    // End every session that entered Ops through this device (and its handoff children).
+    const { data: kids } = await db.from('ops_trusted_devices').select('id').eq('parent_id', id);
+    let sessions = 0;
+    for (const dev of [id, ...((kids ?? []) as { id: string }[]).map((k) => k.id)]) {
+      const { data: n } = await db.rpc('ops_revoke_device_sessions', { p_device: dev });
+      sessions += Number(n ?? 0);
+    }
+    await audit(db, userId, 'ops_device_revoked', { id, actor, sessions });
+  }
   return Boolean(data?.length);
 }
 export async function openRequestsFor(db: SupabaseClient, userId: string) {

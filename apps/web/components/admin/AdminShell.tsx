@@ -1,5 +1,6 @@
 'use client';
 
+import { ProductSwitcher } from './ProductSwitcher';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -545,6 +546,7 @@ export function AdminShell({
             </div>
 
             <div className="flex shrink-0 items-center gap-2 sm:gap-2.5">
+              <ProductSwitcher />
               <AdminNotificationsBell opsHref={opsHref} />
 
               <div className="flex items-center gap-2.5 rounded-full bg-gc py-1 pe-1 ps-2.5 shadow-[0_1px_3px_rgba(0,0,0,0.08)] sm:ps-3">

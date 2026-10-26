@@ -202,6 +202,10 @@ export function formatUserMemoryDossierPromptBlock(
 
   const toneWorks = asString(dossier.coaching_profile.tone_works);
   if (toneWorks) candidates.push({ section: 'טון שעובד', text: toneWorks, priority: 0.5 });
+  const toneFails = asString((dossier.coaching_profile as Record<string, unknown>).tone_fails);
+  if (toneFails) candidates.push({ section: 'טון שלא עובד', text: toneFails, priority: 0.5 });
+  const userLanguage = asString((dossier.coaching_profile as Record<string, unknown>).user_language);
+  if (userLanguage) candidates.push({ section: 'השפה של המשתמש', text: userLanguage, priority: 0.52 });
 
   const dropout = asString(dossier.risk_signals.dropout_risk);
   if (dropout && dropout !== 'low') {
