@@ -1,0 +1,77 @@
+{
+  "$schema": "../../../modules/module.schema.json",
+  "id": "licensing",
+  "package": "@platform/licensing",
+  "version": "0.2.0",
+  "distribution": "shareable",
+  "category": "security",
+  "toggleable": false,
+  "description": "Module licensing. Default (monthly): AES-GCM sealed bundle unlocked by an Ed25519 license valid until next billing + 3 grace days; free signed static status file polled ~2 min for mid-period block/unblock; fail-closed after 6h unreachable; tamper detection; per-buyer watermark + signed terms acceptance. Optional premium: server-held core gateway (HMAC-signed requests). No remote deletion.",
+  "provides": {
+    "routes": [],
+    "apis": [],
+    "jobs": [],
+    "ui": [],
+    "tables": []
+  },
+  "requires": {
+    "modules": {}
+  },
+  "env": [],
+  "migrations": [],
+  "conformance": [
+    "fail-closed",
+    "never-throws-into-host",
+    "rollback-rejected",
+    "offline-grace-until-expiry",
+    "web-standard-verifier"
+  ],
+  "tests": [
+    "apps/web/tests/platform-licensing.test.ts"
+  ],
+  "dataPolicy": "הספרייה לא שומרת מידע אישי. ברישיון יש רק מזהה לקוח, דומיינים ותאריכים.",
+  "store": {
+    "name": "רישוי מודולים",
+    "summary": "מוכרים מודול במנוי חודשי: הוא מגיע נעול, עובד רק עם רישיון בתוקף, ואפשר לחסום או לשחרר אותו בלחיצה.",
+    "audience": [
+      "מי שמוכר מודולים לאתרים של אחרים",
+      "מי שקונה מודול ורוצה שהמידע שלו יישאר אצלו"
+    ],
+    "useCases": [
+      "מנוי חודשי עם רישיון עד החיוב הבא ועוד 3 ימי חסד",
+      "חסימה עד תשלום, לזמן מוגבל או לתמיד, ושחרור בלחיצה",
+      "הוכחה ממי דלף עותק, אם צריך"
+    ],
+    "features": [
+      "הקוד מגיע נעול ולא רץ בלי רישיון בתוקף",
+      "חסימה ושחרור נכנסים לתוקף תוך כשתי דקות, בחינם",
+      "בלי חיבור יותר מ-6 שעות, הרכיב נעצר",
+      "מי שמשנה את הקוד, הרכיב מפסיק לעבוד",
+      "סימן נסתר לכל קונה ותיעוד שאישר את התנאים",
+      "תוספת פרימיום: החלק הרגיש רץ אצלנו (לא חובה)"
+    ],
+    "dataTouched": [
+      "הרישיון",
+      "כתובת האתר של הקונה"
+    ],
+    "permissions": [
+      "modules.manage (הנפקה, חידוש, השעיה, ביטול והחזרה, עם אימות נוסף)"
+    ],
+    "security": [
+      "מפתח ההנפקה לא נמצא בקוד ולא בחבילה",
+      "קובץ חסימות מזויף או ישן נדחה",
+      "סיבת החסימה נשמרת מוצפנת רק אצלנו",
+      "חסימה רק עוצרת. לא מוחקים כלום אצל הקונה"
+    ],
+    "whereDataLives": "אצל הקונה: הרכיב והרישיון. אצלנו: פרטי הרישיון והסיבה המוצפנת. קובץ החסימות ציבורי ובלי פרטים אישיים.",
+    "installConfig": "שדה אחד: הרישיון שקיבלתם (`licenseToken` בקובץ `license.config.json`). פרטים טכניים: חבילה AES-GCM, רישיון וקובץ סטטוס חתומים Ed25519, בדיקה כל 2 דקות, נעילה אחרי 6 שעות בלי חיבור.",
+    "compatibility": "Node 20 ומעלה. תוספת הפרימיום (לא חובה): Cloudflare Workers, Node או Vercel.",
+    "limitations": [
+      "מומחה נחוש עדיין יכול לפרוץ, אבל זה דורש הרבה עבודה, והסימן הנסתר מראה ממי העותק דלף",
+      "תנאי הרישיון הם טיוטה שעורך דין צריך לעבור עליה",
+      "תוספת הפרימיום עוד לא הותקנה בשום מקום"
+    ],
+    "support": "תמיכה דרך דניאל (בעל הספרייה). תיקונים חוזרים לספרייה כ-PR לריפו NuraWell, עם בדיקות.",
+    "descriptionHe": "מאפשר למכור מודול במנוי חודשי. הקונה מקבל רכיב נעול שעובד רק עם רישיון בתוקף, עד תאריך החיוב הבא ועוד 3 ימי חסד. באמצע החודש אפשר לחסום או לשחרר בלחיצה, והשינוי נכנס לתוקף תוך כשתי דקות. אם הרכיב לא מצליח לבדוק יותר מ-6 שעות, הוא נעצר. מי שמשנה את הקוד, הרכיב מפסיק לעבוד, ובכל עותק יש סימן נסתר שמזהה את הקונה. אפשר להוסיף פרימיום שבו החלק הרגיש רץ אצלנו, אבל זה לא חובה."
+  }
+}

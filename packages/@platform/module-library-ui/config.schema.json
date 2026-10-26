@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "module-library-ui config",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "off until an admin enables it per product",
+      "description_he": "כבוי עד שמנהל מפעיל אותו לכל מוצר"
+    },
+    "allowedRoles": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [
+        "admin"
+      ],
+      "description": "least privilege by default",
+      "description_he": "מי רשאי להשתמש. ברירת המחדל: מנהלים בלבד"
+    },
+    "logPii": {
+      "const": false,
+      "default": false,
+      "description": "PII never goes to logs",
+      "description_he": "פרטים אישיים אף פעם לא נכתבים ליומנים"
+    },
+    "retentionDays": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 3650,
+      "default": 30,
+      "description_he": "שמור לשימוש עתידי. כרגע הלוח לא שומר נתונים משלו"
+    }
+  }
+}

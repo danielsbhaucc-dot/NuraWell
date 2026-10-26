@@ -15,7 +15,7 @@ import { endSim, getSim, isSimExit, isSimStart, recordSimAttempt, SIM_MINUTES, S
 
 type TgChat = { id: number; type?: string };
 type TgUser = { id: number; is_bot?: boolean };
-type Update = {
+export type Update = {
   message?: { chat: TgChat; from?: TgUser; text?: string; message_id?: number };
   callback_query?: { id: string; from?: TgUser; data?: string; message?: { chat: TgChat; message_id: number } };
 };
@@ -112,6 +112,13 @@ async function handleTelegramUpdateInner(db: SupabaseClient, channel: CeoChannel
     await killSwitch(db, `admin:${chatId}`, 'telegram command');
     await channel.send(chatId, '⛔ גדעון כבוי. כל הפעולות הממתינות בוטלו. הפעלה מחדש: Ops ← גדעון ← אבטחה (דורש Face ID).', undefined, { kind: 'reply' });
     return { killed: true };
+  }
+  // Hidden-admin enrollment + device-notice buttons: env-allowlisted (verified) owner chat only, never the DB-verified set.
+  {
+    const strict = authorizedSender(u, envAllowed);
+    const { handleEnrollUpdate } = await import('@/lib/ops/enroll-telegram');
+    const out = await handleEnrollUpdate(db, channel, u, strict);
+    if (out) return out;
   }
   if (detectDeviceChange(rawText)) {
     const replace = /(החלפתי|חדש|נגנב|איבדתי|אבד)/.test(rawText);

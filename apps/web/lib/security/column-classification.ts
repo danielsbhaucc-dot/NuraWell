@@ -1149,6 +1149,15 @@ export const COLUMN_CLASSIFICATION: Readonly<Record<string, Readonly<Record<stri
     rp_id: ["non_sensitive", "identifier/key or public credential material, no personal content"],
     transports: ["non_sensitive", "identifier/key or public credential material, no personal content"],
   },
+  platform_product_registry: {
+    product_id: ["non_sensitive", "product slug identifier, no personal content"],
+    description: ["non_sensitive", "public product description written by the operator, no personal content"],
+    key_purpose: ["non_sensitive", "encryption key purpose label, no key material or personal content"],
+    tenancy: ["non_sensitive", "enum (tenancy mode), no personal content"],
+  },
+  product_memberships: {
+    product_id: ["non_sensitive", "product slug identifier, no personal content"],
+  },
 };
 
 export function classify(table: string, column: string): ColumnClass | null {

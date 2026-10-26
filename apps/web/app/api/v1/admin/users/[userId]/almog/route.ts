@@ -1,3 +1,4 @@
+import { requirePiiGrant } from '@/lib/platform/access/pii-access';
 import { NextResponse } from 'next/server';
 import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -25,6 +26,8 @@ export async function GET(request: Request, context: RouteContext) {
   if (!rl.ok) return rateLimitResponse(rl);
 
   const { userId } = await context.params;
+  const piiDenied = await requirePiiGrant((await import('@/lib/supabase/admin')).createAdminClient(), request, { productId: 'nurawell', actorId: auth.user.id, subjectId: userId, resource: 'admin.user.almog' });
+  if (piiDenied) return piiDenied;
   const admin = createAdminClient();
 
   const [assignmentsRes, remindersRes, focusRes, blockersRes] = await Promise.all([

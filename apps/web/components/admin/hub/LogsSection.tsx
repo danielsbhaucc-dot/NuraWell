@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, Database, Download, Eye, EyeOff, Loader2, Ro
 import { IncidentSheet } from './IncidentSheet';
 import { opsGlassCardClass } from '@/components/admin/OpsPanel';
 import { cn } from '@/lib/cn';
+import { useStepUpRetry } from '@/components/admin/useStepUpRetry';
 import { LOG_TYPE_HE, type LogInv, type LogRow, type LogType } from '@/lib/logs/query';
 import { ACCOUNT_RETENTION_ROW } from '@/lib/logs/policy';
 
@@ -93,6 +94,20 @@ export function LogsSection() {
     if (reveal) p.set('reveal', '1');
     return p;
   }, [type, page, from, to, actor, result, q, reveal]);
+  const exportStepUp = useStepUpRetry('ייצוא יומנים');
+  const [exporting, setExporting] = useState(false);
+  const exportCsv = async (): Promise<void> => {
+    setExporting(true);
+    try {
+      const r = await fetch(`/api/v1/ops/legal/logs/export?${params({ page: '1' })}`, { cache: 'no-store' });
+      if (await exportStepUp.needsStepUp(r, () => void exportCsv())) return;
+      if (!r.ok) throw new Error();
+      const blob = await r.blob();
+      const name = /filename="([^"]+)"/.exec(r.headers.get('content-disposition') ?? '')?.[1] ?? 'logs.csv';
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    } catch { setErr(true); } finally { setExporting(false); }
+  };
 
   const load = useCallback(() => {
     setLoading(true); setErr(false);
@@ -128,9 +143,10 @@ export function LogsSection() {
           <button type="button" onClick={() => setReveal((v) => !v)} aria-pressed={reveal} className="inline-flex items-center gap-1 rounded-xl border border-hairline/80 px-3 py-1.5 text-[12px] font-semibold text-ink-soft">
             {reveal ? <EyeOff size={14} /> : <Eye size={14} />}{reveal ? 'הסתר פרטים אישיים' : 'הצג פרטים מלאים (נרשם ביומן)'}
           </button>
-          <a href={`/api/v1/ops/legal/logs/export?${params({ page: '1' })}`} className="inline-flex items-center gap-1 rounded-xl border border-secondary-400/50 bg-secondary-500/10 px-3 py-1.5 text-[12px] font-semibold text-secondary-800" download>
-            <Download size={14} />ייצוא CSV
-          </a>
+          <button type="button" onClick={() => void exportCsv()} disabled={exporting} className="inline-flex items-center gap-1 rounded-xl border border-secondary-400/50 bg-secondary-500/10 px-3 py-1.5 text-[12px] font-semibold text-secondary-800 disabled:opacity-50">
+            <Download size={14} />{exporting ? 'מייצא...' : 'ייצוא CSV'}
+          </button>
+          {exportStepUp.dialog}
         </div>
 
         {err && !loading ? <ErrorCard text="לא הצלחנו לטעון את היומן." onRetry={load} /> : null}
