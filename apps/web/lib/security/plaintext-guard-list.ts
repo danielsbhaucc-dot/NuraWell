@@ -7,6 +7,8 @@
  *            created after the table's activation; FAILS on any once active, warning before
  *   sweep    registered column of a SWEEP_TABLES table (SQL trigger writes plaintext, cron seals it) -> FAILS on any
  *            plaintext row older than maxPlainMinutes (5th field)
+ *   owner:<col>  optional 5th field on enforce/pending lines of ownerOptional tables: only rows WITH an owner count
+ *            (shared catalog rows, owner NULL, are plaintext by design — same rule as enc_reject_plaintext_owned)
  *   gap      classified sensitive but not yet in field-registry         -> warning, listed (must become enforce)
  * Plus every classified column (`class` lines) so the monitor can fail on prod columns nobody classified.
  */
@@ -20,7 +22,8 @@ export function plaintextGuardLines(): string[] {
       if (isBlocked(t, c)) continue;
       else if (t in SWEEP_TABLES) out.push(`sweep ${t} ${c} ${k} ${SWEEP_TABLES[t].maxPlainMinutes} ${SWEEP_TABLES[t].tsCol}`);
       else
-        out.push(`${t in APPEND_ONLY_TABLES ? 'append' : FIELD_V2_BACKFILL_COMPLETE.includes(t) ? 'enforce' : 'pending'} ${t} ${c} ${k}`);
+        out.push(`${t in APPEND_ONLY_TABLES ? 'append' : FIELD_V2_BACKFILL_COMPLETE.includes(t) ? 'enforce' : 'pending'} ${t} ${c} ${k}${
+          (v as { ownerOptional?: boolean }).ownerOptional && !(t in APPEND_ONLY_TABLES) ? ` owner:${v.userCol}` : ''}`);
   const reg = ENCRYPTED_TABLES as Record<string, { columns: Record<string, string> }>;
   for (const [t, cs] of Object.entries(COLUMN_CLASSIFICATION))
     for (const [c, [cls]] of Object.entries(cs)) if (cls === 'sensitive' && !reg[t]?.columns[c]) out.push(`gap ${t} ${c} any`);
