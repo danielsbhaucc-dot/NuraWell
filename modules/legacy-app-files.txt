@@ -239,8 +239,12 @@ apps/web/components/ai/SosDialog.tsx
 apps/web/components/ai/SosMemoryCard.tsx
 apps/web/components/ai/useSosTts.ts
 apps/web/components/audio/GlassAudioPlayer.tsx
+apps/web/components/billing/AdminBillingPanel.tsx
+apps/web/components/billing/CheckoutClient.tsx
 apps/web/components/billing/CurrentPlanCard.tsx
+apps/web/components/billing/MySubscriptionClient.tsx
 apps/web/components/billing/PlansGrid.tsx
+apps/web/components/billing/ui.ts
 apps/web/components/challenge/ChallengeCompleteClient.tsx
 apps/web/components/challenge/ChallengeDashboardClient.tsx
 apps/web/components/challenge/ChallengeEatingWindowClient.tsx
@@ -363,6 +367,7 @@ apps/web/components/notifications/NotificationsBellButton.tsx
 apps/web/components/notifications/NotificationsProvider.tsx
 apps/web/components/onboarding/AlmogFirstLoginDrawer.tsx
 apps/web/components/onboarding/AlmogFirstLoginHost.tsx
+apps/web/components/onboarding/AuthBackdrop.tsx
 apps/web/components/onboarding/CheckEmailClient.tsx
 apps/web/components/onboarding/DolevFirstLoginDrawer.tsx
 apps/web/components/onboarding/DolevFirstLoginHost.tsx
@@ -440,6 +445,7 @@ apps/web/components/ui/Button.tsx
 apps/web/components/ui/Card.tsx
 apps/web/components/ui/EmptyState.tsx
 apps/web/components/ui/ErrorState.tsx
+apps/web/components/ui/Glass.tsx
 apps/web/components/ui/Primitives.tsx
 apps/web/components/ui/Sheet.tsx
 apps/web/components/ui/Skeleton.tsx
@@ -522,11 +528,13 @@ apps/web/lib/ai/chat-intent-router.ts
 apps/web/lib/ai/chat-memory/chat-period-keys.ts
 apps/web/lib/ai/chat-memory/chat-periodic-summaries.ts
 apps/web/lib/ai/chat-memory/chat-summary-llm.ts
+apps/web/lib/ai/chat-memory/context-condenser.ts
 apps/web/lib/ai/chat-memory/conversation-vector.ts
 apps/web/lib/ai/chat-memory/fetch-chat-memory-context.ts
 apps/web/lib/ai/chat-memory/fetch-daily-chat-source.ts
 apps/web/lib/ai/chat-memory/session-conversation-file.ts
 apps/web/lib/ai/chat-memory/summarize-conversation-turn.ts
+apps/web/lib/ai/chat-memory/summary-backed-history.ts
 apps/web/lib/ai/chat-sessions/auto-close-stale-sessions.ts
 apps/web/lib/ai/chat-sessions/close-digest.ts
 apps/web/lib/ai/chat-sessions/close-reason.ts
@@ -585,6 +593,7 @@ apps/web/lib/ai/insert-ai-interaction.ts
 apps/web/lib/ai/insights/embed-insight.ts
 apps/web/lib/ai/insights/extract-insights.ts
 apps/web/lib/ai/insights/get-mentor-context.ts
+apps/web/lib/ai/insights/patterns/detect-changes.ts
 apps/web/lib/ai/insights/patterns/detect.ts
 apps/web/lib/ai/insights/patterns/llm.ts
 apps/web/lib/ai/insights/patterns/run-pattern-batch.ts
@@ -657,10 +666,12 @@ apps/web/lib/ai/orchestrator/program-store.ts
 apps/web/lib/ai/orchestrator/run-program-orchestrator.ts
 apps/web/lib/ai/orchestrator/shrink-task-title.ts
 apps/web/lib/ai/parse-llm-json.ts
+apps/web/lib/ai/privacy/name-mask.ts
 apps/web/lib/ai/privacy/outbound-pii-guard.ts
 apps/web/lib/ai/privacy/pii-patterns.ts
 apps/web/lib/ai/privacy/pii-shield.ts
 apps/web/lib/ai/profile-schedule-anchors.ts
+apps/web/lib/ai/prompt-cache.ts
 apps/web/lib/ai/prompts-v2.ts
 apps/web/lib/ai/prompts.ts
 apps/web/lib/ai/provider-factory.ts
@@ -703,6 +714,7 @@ apps/web/lib/ai/vector-memory-ingest.ts
 apps/web/lib/ai/writer-stance-memory.ts
 apps/web/lib/almog/nightly-task-merge.ts
 apps/web/lib/almog/step-story.ts
+apps/web/lib/almog/task-dup-candidates.ts
 apps/web/lib/api/authorize-cron.ts
 apps/web/lib/api/authorize-db-backup.ts
 apps/web/lib/api/cron-idle-guard.ts
@@ -739,6 +751,7 @@ apps/web/lib/billing/plans.ts
 apps/web/lib/billing/platform.ts
 apps/web/lib/billing/provider.ts
 apps/web/lib/billing/retention-job.ts
+apps/web/lib/billing/screens.ts
 apps/web/lib/billing/service.ts
 apps/web/lib/billing/subscription-service.ts
 apps/web/lib/billing/tiers.ts
@@ -969,6 +982,7 @@ apps/web/lib/logging/errors.ts
 apps/web/lib/logging/insights.ts
 apps/web/lib/logging/load.ts
 apps/web/lib/logs/audit-view.ts
+apps/web/lib/logs/facts.ts
 apps/web/lib/logs/policy.ts
 apps/web/lib/logs/query.ts
 apps/web/lib/logs/retention-job.ts
@@ -1042,6 +1056,7 @@ apps/web/lib/ops/enroll-gate.ts
 apps/web/lib/ops/enroll-telegram.ts
 apps/web/lib/ops/enrollment.ts
 apps/web/lib/ops/export-stepup.ts
+apps/web/lib/ops/fresh-entry.ts
 apps/web/lib/ops/handoff.ts
 apps/web/lib/ops/owner-actions.ts
 apps/web/lib/ops/password-rotation.ts
@@ -1104,6 +1119,7 @@ apps/web/lib/security-core/webauthn-policy.ts
 apps/web/lib/security/backup-docs.generated.ts
 apps/web/lib/security/blind-index.ts
 apps/web/lib/security/column-classification.ts
+apps/web/lib/security/column-enums.ts
 apps/web/lib/security/enc-reject-triggers.ts
 apps/web/lib/security/field-backfill.ts
 apps/web/lib/security/field-crypto.ts
@@ -1123,6 +1139,7 @@ apps/web/lib/security/name-match.ts
 apps/web/lib/security/plaintext-guard-list.ts
 apps/web/lib/security/profile-enums.ts
 apps/web/lib/security/scrub-sensitive.ts
+apps/web/lib/security/session-trail-seal.ts
 apps/web/lib/security/tg-actions.ts
 apps/web/lib/storage/apply-source-image.ts
 apps/web/lib/storage/chat-background.ts
@@ -1143,11 +1160,13 @@ apps/web/lib/supabase/service-admin-client.ts
 apps/web/lib/supabase/service-role-jwt.ts
 apps/web/lib/tasks/card.ts
 apps/web/lib/tasks/chat-intent.ts
+apps/web/lib/tasks/guide-reason-cleanup.ts
 apps/web/lib/tasks/history-collapse.ts
 apps/web/lib/tasks/index.ts
 apps/web/lib/tasks/ladder.ts
 apps/web/lib/tasks/monitor-job.ts
 apps/web/lib/tasks/step-sync.ts
+apps/web/lib/tasks/title-normalize.ts
 apps/web/lib/tasks/user-task-ssot.ts
 apps/web/lib/text/hebrew-dashes.ts
 apps/web/lib/text/hebrew-plural.ts
@@ -1207,13 +1226,17 @@ apps/web/playwright.visual.config.ts
 apps/web/proxy.ts
 apps/web/scripts/backfill-insight-vectors-upstash.mjs
 apps/web/scripts/build-auth-email-templates.ts
+apps/web/scripts/codemod-palette.mjs
 apps/web/scripts/design-lint-baseline.json
 apps/web/scripts/design-lint.mjs
 apps/web/scripts/encrypt-existing-pii.ts
 apps/web/scripts/gen-enc-triggers.mts
 apps/web/scripts/gen-plaintext-guard.mts
 apps/web/scripts/gen-security-docs.mjs
+apps/web/scripts/guide-reason-cleanup.ts
 apps/web/scripts/measure-reply-qc.ts
+apps/web/scripts/near-white.mjs
+apps/web/scripts/route-inventory.mjs
 apps/web/scripts/strip-metadata-full-name.ts
 apps/web/scripts/test-ai-chat.mjs
 apps/web/types/css.d.ts
