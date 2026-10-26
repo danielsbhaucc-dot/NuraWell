@@ -624,6 +624,7 @@
     "src/labels.ts",
     "src/registry.generated.json",
     "src/server/actions.ts",
+    "src/server/central-runtime.ts",
     "src/server/central.ts",
     "src/server/hub-data.ts",
     "src/server/index.ts",
