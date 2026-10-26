@@ -251,15 +251,20 @@ export const ENCRYPTED_TABLES = {
   user_journey_step_unlocks: { userCol: 'user_id', rowCol: 'id', guardCols: [], columns: { reason: 'text' } },
   safety_events: { userCol: 'user_id', rowCol: 'id', guardCols: [], columns: { category: 'text', severity: 'text' } },
   enrollments: { userCol: 'user_id', rowCol: 'id', guardCols: [], columns: { granted_reason: 'text' } },
+  // ---- 2026-10-26 enc-close: app-only writers previously mislabelled "written by SQL"
+  almog_kickoff_status: { userCol: 'user_id', rowCol: 'user_id', columns: { last_error: 'text', skip_reason: 'text' } },
   // ---- system-owned, key purpose 'audit'
   ceo_audit_log: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { detail: 'json' } },
   challenge_admin_audit_log: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { payload: 'json', summary: 'text' } },
   chat_transcript_admin_audit_log: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { payload: 'json', reason: 'text', summary: 'text' } },
   delivery_log: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { error: 'text', recipient_mask: 'text' } },
+  billing_events: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { metadata: 'json' } },
   error_events: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { stack: 'text', tags: 'json' } },
   // ---- system-owned, key purpose 'ops'
   ceo_conversations: { system: 'ops', userCol: '', rowCol: 'chat_key', columns: { summary: 'text', turns: 'json' } },
   ceo_dev_forwards: { system: 'ops', userCol: '', rowCol: 'id', columns: { body: 'text', error: 'text', or_notes: 'text', source_text: 'text', title: 'text' } },
+  ceo_pending_actions: { system: 'ops', userCol: '', rowCol: 'id', guardCols: [], columns: { args: 'json', result: 'json', summary: 'text' } },
+  notify_quality_events: { system: 'ops', userCol: '', rowCol: 'id', guardCols: [], columns: { after_text: 'text', before_text: 'text' } },
   ceo_owner_tasks: { system: 'ops', userCol: '', rowCol: 'id', guardCols: [], columns: { detail: 'text', title: 'text' } },
   demo_access_links: { system: 'ops', userCol: '', rowCol: 'id', columns: { guest_name: 'text', reason: 'text' } },
   gideon_outbox: { system: 'ops', userCol: '', rowCol: 'id', guardCols: [], columns: { buttons: 'json', chat_id: 'text', reason: 'text', text: 'text' } },
@@ -304,7 +309,25 @@ export const FIELD_V2_TABLES: readonly string[] = [
   'gideon_telegram_identities', 'gideon_settings', 'notify_style_rules', 'ops_admin_notifications', 'ops_login_requests',
   'ops_trusted_devices', 'ip_blocks', 'security_incidents', 'stepup_requests', 'tg_action_nonces', 'security_signals',
   'legal_export_secrets', 'consent_evidence', 'consent_evidence_attestations', 'legal_access_log', 'media_receipts',
+  // 2026-10-26 enc-close: blind indexes / SQL readers moved (000208) + app-only writers
+  'user_consents', 'journey_task_executions', 'almog_kickoff_status', 'billing_events', 'ceo_pending_actions', 'notify_quality_events',
 ];
+
+/**
+ * GATED — admin/IAM tables created by the unmerged migrations 000191-000201 (#357-#362). NOT live: nothing reads
+ * this constant for sealing or triggers. After those PRs merge, apply supabase/gated/000211_iam_admin_enc_prep.sql,
+ * move these into ENCRYPTED_TABLES + FIELD_V2_TABLES, and regenerate the enc-reject triggers.
+ * Not listed (stay pending): iam_audit_log.detail/target, iam_grants.reason and ops_probe_daily.country are written
+ * by SQL functions in 000191/000198 (iam_audit_log on every grant/revoke inside the same transaction; probe counter
+ * upsert); ops_enroll_blocks.reason has no personal content beyond a fixed code.
+ */
+export const GATED_AFTER_IAM_MERGE: Readonly<Record<string, EncryptedTable>> = {
+  access_audit_findings: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { signals: 'json', summary: 'text' } },
+  access_audit_runs: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { error: 'text' } },
+  ops_device_enrollments: { system: 'ops', userCol: '', rowCol: 'id', guardCols: [], columns: { label: 'text', location: 'text' } },
+  pii_access_grants: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { country: 'text', reason: 'text', ticket_ref: 'text' } },
+  pii_access_log: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { country: 'text', resource: 'text' } },
+};
 
 /**
  * Append-only evidence tables (a trigger rejects UPDATE/DELETE): historical rows stay as written and only rows
@@ -342,17 +365,13 @@ export const BLOCKED: Readonly<Record<string, string>> = {
   'challenge_enrollments.metadata': "ensure_challenge_ops_schema() SQL",
   'churn_feedback.reason': "CHECK enum + index",
   'guardian_sos_events.outcome': "CHECK enum constraint",
-  'notifications.metadata': "unique dedupe index on metadata->>checkpoint_date \u2014 split technical keys out first",
   'task_events.metadata': "mirror_jte_to_task_events/merge_task_assignments SQL",
   'task_events.reason': "merge_task_assignments SQL",
-  'user_consents.metadata': "trg_user_consents_to_history reads metadata->>evidence_id/request_id/choice in SQL (legal consent evidence)",
-  'challenge_success_events.title': "app dedupes with .eq('title', ...) (success-detectors, challenge/tasks) \u2014 needs a blind-index column first",
-  'journey_task_executions.note': "mirror_jte_to_task_events copies note into task_events.metadata (BLOCKED) in SQL; stays enc:v1 until the mirror moves to the app",
 };
 
 /** Personal tables intentionally outside the per-user registry (no owner column), with the reason. */
 export const OUT_OF_REGISTRY: Readonly<Record<string, string>> = {
-  task_definitions: "no owner column; curriculum/system templates (title/description) — user-authored titles are normalized and merged in SQL (normalize_task_title, dedupe/merge functions), pending a title blind index",
+  task_definitions: "owner split done (owner_user_id, migration 000209; RLS = shared or own). Not encrypted yet: normalize_task_title trigger, habit_dedupe_key (md5 of normalized title) and merge_task_assignments/task_dup_candidates read title/ladder/schedule in SQL; register once those move to the app",
   user_task_assignments: "no personal text columns",
 };
 
