@@ -199,7 +199,7 @@ export const ENCRYPTED_TABLES = {
     body: 'text',
     metadata: 'json',
   } },
-  task_events: { userCol: 'user_id', rowCol: 'id', columns: {
+  task_events: { userCol: 'user_id', rowCol: 'id', guardCols: [], columns: {
     reason: 'text',
     metadata: 'json',
   } },
