@@ -75,7 +75,7 @@ export function QuoteSwipe({ children, onQuote, disabled }: { children: ReactNod
     >
       <span
         aria-hidden
-        className="pointer-events-none absolute -left-8 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full border border-amber-200/25 bg-emerald-950/60 text-amber-200 backdrop-blur-md"
+        className="pointer-events-none absolute -left-8 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full border border-accent-200/25 bg-primary-950/60 text-accent-200 backdrop-blur-md"
         style={{ opacity: Math.min(1, dx / SWIPE_PX), transform: `translateY(-50%) scale(${0.6 + Math.min(0.4, dx / (SWIPE_PX * 2.5))})` }}
       >
         <CornerUpLeft className="h-3.5 w-3.5" />
@@ -95,7 +95,7 @@ export function QuoteSwipe({ children, onQuote, disabled }: { children: ReactNod
           }}
           aria-label="הגב להודעה הזו"
           data-testid="quote-almog-btn"
-          className="hidden shrink-0 items-center gap-1 rounded-full border border-emerald-300/20 bg-emerald-950/55 px-2 py-1 text-[11px] font-bold text-emerald-100 opacity-0 backdrop-blur-md transition hover:text-amber-200 focus-visible:opacity-100 group-hover/quote:opacity-100 motion-reduce:transition-none md:inline-flex"
+          className="hidden shrink-0 items-center gap-1 rounded-full border border-primary-300/20 bg-primary-950/55 px-2 py-1 text-[11px] font-bold text-primary-100 opacity-0 backdrop-blur-md transition hover:text-accent-200 focus-visible:opacity-100 group-hover/quote:opacity-100 motion-reduce:transition-none md:inline-flex"
         >
           <CornerUpLeft className="h-3 w-3" aria-hidden />
           הגב
@@ -111,7 +111,7 @@ export function ComposerQuotePreview({ text, onCancel }: { text: string; onCance
     <div
       dir="rtl"
       data-testid="composer-quote"
-      className="mb-2 flex items-stretch overflow-hidden rounded-2xl border border-amber-200/15"
+      className="mb-2 flex items-stretch overflow-hidden rounded-2xl border border-accent-200/15"
       style={{
         background: 'linear-gradient(160deg, rgba(6,78,59,0.55), rgba(2,44,34,0.45))',
         backdropFilter: 'blur(12px)',
@@ -119,19 +119,19 @@ export function ComposerQuotePreview({ text, onCancel }: { text: string; onCance
         boxShadow: 'inset 0 1px 0 rgba(236,253,245,0.08)',
       }}
     >
-      <span aria-hidden className="w-[3px] shrink-0 bg-gradient-to-b from-amber-300 to-emerald-300" />
+      <span aria-hidden className="w-[3px] shrink-0 bg-gradient-to-b from-accent-300 to-primary-300" />
       <div className="min-w-0 flex-1 px-3 py-2">
-        <p className="flex items-center gap-1 text-[11px] font-bold text-amber-200">
+        <p className="flex items-center gap-1 text-[11px] font-bold text-accent-200">
           <CornerUpLeft className="h-3 w-3" aria-hidden />
           תגובה לאלמוג
         </p>
-        <p className="mt-0.5 line-clamp-2 text-[13px] leading-snug text-emerald-50/85">{text}</p>
+        <p className="mt-0.5 line-clamp-2 text-[13px] leading-snug text-primary-50/85">{text}</p>
       </div>
       <button
         type="button"
         onClick={onCancel}
         aria-label="ביטול הציטוט"
-        className="px-3 text-[18px] leading-none text-emerald-100/70 transition hover:text-white motion-reduce:transition-none"
+        className="px-3 text-[18px] leading-none text-primary-100/70 transition hover:text-on-dark motion-reduce:transition-none"
       >
         ×
       </button>

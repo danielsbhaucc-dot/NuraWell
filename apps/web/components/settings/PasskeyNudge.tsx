@@ -89,27 +89,27 @@ export function PasskeyNudgeSheet({ open, apple, busy, onEnable, onLater }: { op
       panelClassName="pk-sheet max-w-md overflow-hidden rounded-t-[28px] p-0 shadow-[0_-12px_48px_rgba(4,18,14,0.45)] sm:rounded-[28px]"
     >
       <div dir="rtl" className="relative px-6 pb-6 pt-3 text-center" style={{ background: 'linear-gradient(165deg,rgba(13,43,37,.94) 0%,rgba(9,32,30,.96) 55%,rgba(7,24,26,.98) 100%)', backdropFilter: 'blur(22px) saturate(160%)', WebkitBackdropFilter: 'blur(22px) saturate(160%)' }}>
-        <div aria-hidden className="pointer-events-none absolute inset-0 rounded-t-[28px] ring-1 ring-inset ring-white/10" />
-        <div aria-hidden className="pointer-events-none absolute -top-24 left-1/2 h-48 w-72 -translate-x-1/2 rounded-full bg-teal-400/20 blur-3xl" />
-        <div aria-hidden className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-white/25 sm:hidden" />
+        <div aria-hidden className="pointer-events-none absolute inset-0 rounded-t-[28px] ring-1 ring-inset ring-on-dark/10" />
+        <div aria-hidden className="pointer-events-none absolute -top-24 left-1/2 h-48 w-72 -translate-x-1/2 rounded-full bg-secondary-400/20 blur-3xl" />
+        <div aria-hidden className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-on-dark/25 sm:hidden" />
         <FaceKeyArt />
-        <h2 id="pk-nudge-h" className="mt-3 text-[22px] font-black leading-tight text-white" style={{ fontFamily: 'Rubik, Heebo, sans-serif' }}>
+        <h2 id="pk-nudge-h" className="mt-3 text-[22px] font-black leading-tight text-on-dark" style={{ fontFamily: 'Rubik, Heebo, sans-serif' }}>
           {g({ m: 'רוצה', f: 'רוצה', n: 'רוצים' })} להיכנס בפעם הבאה עם <span className="whitespace-nowrap"><span className="text-[#F3CF7A]">{apple ? <bdi>Face ID</bdi> : method}</span>?</span>
         </h2>
-        <p className="mx-auto mt-2 max-w-[300px] text-[15px] leading-relaxed text-emerald-50/80">מהיר ובטוח יותר מסיסמה. מבט אחד או נגיעה אחת, ואת הסיסמה אין צורך להקליד.</p>
-        <div className="mx-auto mt-4 flex max-w-[320px] items-center justify-center gap-2 text-[12.5px] font-semibold text-emerald-100/85">
-          <span className="inline-flex items-center gap-1 rounded-full bg-white/[.07] px-3 py-1.5 ring-1 ring-white/10"><Zap className="h-3.5 w-3.5 text-[#F3CF7A]" aria-hidden />שנייה אחת</span>
-          <span className="inline-flex items-center gap-1 rounded-full bg-white/[.07] px-3 py-1.5 ring-1 ring-white/10"><ShieldCheck className="h-3.5 w-3.5 text-[#F3CF7A]" aria-hidden />נשאר רק במכשיר</span>
+        <p className="mx-auto mt-2 max-w-[300px] text-[15px] leading-relaxed text-primary-50/80">מהיר ובטוח יותר מסיסמה. מבט אחד או נגיעה אחת, ואת הסיסמה אין צורך להקליד.</p>
+        <div className="mx-auto mt-4 flex max-w-[320px] items-center justify-center gap-2 text-[12.5px] font-semibold text-primary-100/85">
+          <span className="inline-flex items-center gap-1 rounded-full bg-glass/[.07] px-3 py-1.5 ring-1 ring-on-dark/10"><Zap className="h-3.5 w-3.5 text-[#F3CF7A]" aria-hidden />שנייה אחת</span>
+          <span className="inline-flex items-center gap-1 rounded-full bg-glass/[.07] px-3 py-1.5 ring-1 ring-on-dark/10"><ShieldCheck className="h-3.5 w-3.5 text-[#F3CF7A]" aria-hidden />נשאר רק במכשיר</span>
         </div>
         <div aria-hidden className="mx-auto my-5 h-px w-2/3 bg-[linear-gradient(90deg,transparent,rgba(243,207,122,.55),transparent)]" />
-        <button type="button" onClick={onEnable} disabled={busy} className="flex min-h-[54px] w-full items-center justify-center gap-2 rounded-2xl bg-[linear-gradient(180deg,#14B8A6,#0F8F7E)] text-[17px] font-black text-white shadow-[0_10px_28px_rgba(20,184,166,.35),inset_0_1px_0_rgba(255,255,255,.25)] ring-1 ring-[#F3CF7A]/40 transition active:scale-[.98] disabled:opacity-60">
+        <button type="button" onClick={onEnable} disabled={busy} className="flex min-h-[54px] w-full items-center justify-center gap-2 rounded-2xl bg-[linear-gradient(180deg,#14B8A6,#0F8F7E)] text-[17px] font-black text-on-dark shadow-[0_10px_28px_rgba(20,184,166,.35),inset_0_1px_0_rgba(255,255,255,.25)] ring-1 ring-[#F3CF7A]/40 transition active:scale-[.98] disabled:opacity-60">
           {busy ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden /> : null}
           להפעיל
         </button>
-        <button type="button" onClick={onLater} disabled={busy} className="mt-2 min-h-[46px] w-full rounded-2xl text-[15px] font-bold text-emerald-100/75 transition hover:text-white">
+        <button type="button" onClick={onLater} disabled={busy} className="mt-2 min-h-[46px] w-full rounded-2xl text-[15px] font-bold text-primary-100/75 transition hover:text-on-dark">
           אולי אחר כך
         </button>
-        <p className="mt-1 text-[11.5px] text-emerald-100/45">אפשר לשנות בכל רגע בהגדרות, תחת כניסה ואבטחה</p>
+        <p className="mt-1 text-[11.5px] text-primary-100/45">אפשר לשנות בכל רגע בהגדרות, תחת כניסה ואבטחה</p>
       </div>
     </AnimatedDialog>
   );

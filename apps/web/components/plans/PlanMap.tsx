@@ -52,8 +52,8 @@ export function PlanMap({ stations, startIndex = 0 }: { stations: MapStation[]; 
             s.state === 'locked'
               ? 'bg-cream/80 text-brand-700/70 border border-primary-100 shadow-[0_6px_16px_rgba(11,107,75,0.10)] backdrop-blur-sm opacity-80'
               : s.state === 'current'
-                ? 'bg-brand-700 text-white ring-4 ring-primary-300/70 shadow-[0_0_0_8px_rgba(52,211,153,0.18),0_0_24px_rgba(16,185,129,0.55)]'
-                : 'bg-brand-700 text-white shadow-[0_6px_16px_rgba(11,107,75,0.30)]';
+                ? 'bg-brand-700 text-on-dark ring-4 ring-primary-300/70 shadow-[0_0_0_8px_rgba(52,211,153,0.18),0_0_24px_rgba(16,185,129,0.55)]'
+                : 'bg-brand-700 text-on-dark shadow-[0_6px_16px_rgba(11,107,75,0.30)]';
           return (
             <li
               key={s.id}

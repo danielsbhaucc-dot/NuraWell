@@ -52,16 +52,16 @@ const DIVIDER_COLORS = [
 ] as const;
 
 const MEMORY_CARD_STYLES = [
-  'border-violet-200/60 bg-linear-to-br from-violet-50/95 to-background-card',
-  'border-sky-200/60 bg-linear-to-br from-sky-50/95 to-background-card',
-  'border-amber-200/60 bg-linear-to-br from-amber-50/95 to-background-card',
+  'border-iris-200/60 bg-linear-to-br from-iris-50/95 to-background-card',
+  'border-secondary-200/60 bg-linear-to-br from-secondary-50/95 to-background-card',
+  'border-accent-200/60 bg-linear-to-br from-accent-50/95 to-background-card',
 ] as const;
 
 const EVENT_CARD_STYLES = [
-  'border-violet-200/55 bg-linear-to-br from-violet-50/90 to-indigo-50/40',
-  'border-sky-200/55 bg-linear-to-br from-sky-50/90 to-cyan-50/40',
-  'border-rose-200/55 bg-linear-to-br from-rose-50/90 to-pink-50/40',
-  'border-amber-200/55 bg-linear-to-br from-amber-50/90 to-orange-50/40',
+  'border-iris-200/55 bg-linear-to-br from-iris-50/90 to-iris-50/40',
+  'border-secondary-200/55 bg-linear-to-br from-secondary-50/90 to-secondary-50/40',
+  'border-coral-200/55 bg-linear-to-br from-coral-50/90 to-coral-50/40',
+  'border-accent-200/55 bg-linear-to-br from-accent-50/90 to-energy-50/40',
 ] as const;
 
 function whenYouPress(gender: OnboardingGender | ''): string {
@@ -125,7 +125,7 @@ function outcomeBadge(outcome: string, gender: OnboardingGender | ''): OutcomeBa
   }
   return {
     label: 'נסגר',
-    bg: 'linear-gradient(135deg, #f1f5f9, #e2e8f0)',
+    bg: 'linear-gradient(135deg, #cfe9dc, #e2e8f0)',
     text: '#475569',
     border: 'rgba(100,116,139,0.25)',
   };
@@ -181,27 +181,27 @@ function ListPagination({
 
   return (
     <nav
-      className="flex items-center justify-between gap-2 rounded-2xl border border-slate-200/70 bg-background-card/70 px-3 py-2.5"
+      className="flex items-center justify-between gap-2 rounded-2xl border border-hairline/70 bg-background-card/70 px-3 py-2.5"
       aria-label={label}
     >
       <button
         type="button"
         disabled={page === 0}
         onClick={() => onPageChange(page - 1)}
-        className="inline-flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-bold text-emerald-900 transition disabled:opacity-40"
+        className="inline-flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-bold text-primary-900 transition disabled:opacity-40"
         style={{ background: page === 0 ? 'transparent' : 'rgba(16,185,129,0.12)' }}
       >
         <ChevronRight className="h-3.5 w-3.5" />
         הקודם
       </button>
-      <span className="text-xs font-semibold text-slate-600">
+      <span className="text-xs font-semibold text-ink-soft">
         עמוד {page + 1} מתוך {total}
       </span>
       <button
         type="button"
         disabled={page >= total - 1}
         onClick={() => onPageChange(page + 1)}
-        className="inline-flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-bold text-emerald-900 transition disabled:opacity-40"
+        className="inline-flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-bold text-primary-900 transition disabled:opacity-40"
         style={{ background: page >= total - 1 ? 'transparent' : 'rgba(16,185,129,0.12)' }}
       >
         הבא
@@ -260,7 +260,7 @@ function OutcomeStatus({ outcome, gender }: { outcome: string; gender: Onboardin
         </span>
       </div>
       {showHint && badge.hint ? (
-        <p className="mt-2 rounded-xl bg-indigo-50/90 px-3 py-2 text-[11px] leading-5 text-indigo-950">
+        <p className="mt-2 rounded-xl bg-iris-50/90 px-3 py-2 text-[11px] leading-5 text-iris-950">
           {badge.hint}
         </p>
       ) : null}
@@ -305,7 +305,7 @@ function MomentsPageSkeleton() {
   return (
     <div className="space-y-5" aria-busy="true" aria-label="טוען רגעים">
       <div className="glass-surface-home animate-pulse space-y-4 rounded-[22px] p-5">
-        <div className="mx-auto h-5 w-32 rounded-lg bg-emerald-900/10" />
+        <div className="mx-auto h-5 w-32 rounded-lg bg-primary-900/10" />
         <div className="mx-auto h-3 w-48 rounded-md" />
         <div className="space-y-3 pt-2">
           {[0, 1, 2].map((i) => (
@@ -314,21 +314,21 @@ function MomentsPageSkeleton() {
               className="rounded-2xl border px-4 py-4"
               style={{ animationDelay: `${i * 80}ms` }}
             >
-              <div className="h-4 w-3/4 rounded-lg bg-emerald-900/10" />
+              <div className="h-4 w-3/4 rounded-lg bg-primary-900/10" />
               <div className="mt-2 h-3 w-1/2 rounded-md" />
             </div>
           ))}
         </div>
       </div>
       <div className="glass-surface-home animate-pulse space-y-3 rounded-[22px] p-5">
-        <div className="mx-auto h-5 w-28 rounded-lg bg-emerald-900/10" />
+        <div className="mx-auto h-5 w-28 rounded-lg bg-primary-900/10" />
         {[0, 1].map((i) => (
-          <div key={i} className="rounded-2xl border border-emerald-200/40 bg-emerald-50/50 px-4 py-3">
+          <div key={i} className="rounded-2xl border border-primary-200/40 bg-primary-50/50 px-4 py-3">
             <div className="flex justify-between gap-3">
-              <div className="h-5 w-20 rounded-full bg-emerald-200/60" />
+              <div className="h-5 w-20 rounded-full bg-primary-200/60" />
               <div className="h-3 w-14 rounded-md" />
             </div>
-            <div className="mt-3 h-4 w-2/3 rounded-lg bg-emerald-900/10" />
+            <div className="mt-3 h-4 w-2/3 rounded-lg bg-primary-900/10" />
           </div>
         ))}
       </div>
@@ -404,7 +404,7 @@ export function SosMomentsClient({ firstName, gender = '' }: SosMomentsClientPro
   const visibleEventDays = paginate(groupedEvents, eventsPage, EVENT_DAYS_PAGE_SIZE);
 
   return (
-    <div className="touch-manipulation min-h-screen bg-linear-to-b from-primary-50 via-[#f0fdf9] to-[#f8fafc]">
+    <div className="touch-manipulation min-h-screen bg-linear-to-b from-primary-50 via-[#cfe9dc] to-[#cfe9dc]">
       <div
         className="relative overflow-hidden px-4 pb-10 pt-4"
         style={{ background: HEADER_GRADIENT }}
@@ -451,7 +451,7 @@ export function SosMomentsClient({ firstName, gender = '' }: SosMomentsClientPro
               />
             ) : loading ? (
               <div className="mt-5 w-full max-w-xs space-y-2 animate-pulse" aria-hidden>
-                <div className="mx-auto h-3 w-40 rounded-md bg-emerald-50/25" />
+                <div className="mx-auto h-3 w-40 rounded-md bg-primary-50/25" />
                 <div className="mx-auto h-3 w-56 rounded-md" />
               </div>
             ) : null}
@@ -463,12 +463,12 @@ export function SosMomentsClient({ firstName, gender = '' }: SosMomentsClientPro
         {loading ? (
           <MomentsPageSkeleton />
         ) : error ? (
-          <div className="glass-surface-home rounded-[22px] border border-red-200/60 px-4 py-3 text-sm text-red-800">
+          <div className="glass-surface-home rounded-[22px] border border-coral-200/60 px-4 py-3 text-sm text-coral-800">
             {error}
             <button
               type="button"
               onClick={() => void load()}
-              className="mt-2 block font-bold text-red-900 underline"
+              className="mt-2 block font-bold text-coral-900 underline"
             >
               {gc.press} שוב
             </button>
@@ -476,15 +476,15 @@ export function SosMomentsClient({ firstName, gender = '' }: SosMomentsClientPro
         ) : events.length === 0 && memory.length === 0 ? (
           <div dir="rtl" className="glass-surface-home rounded-[22px] px-5 py-10 text-center">
             <MomentsHeroAvatar size={80} />
-            <p className="mt-2 text-base font-bold text-slate-900" style={HEBREW_HEAD}>
+            <p className="mt-2 text-base font-bold text-ink" style={HEBREW_HEAD}>
               {firstName}, עדיין אין כאן רגעים שמורים
             </p>
-            <p className="mt-2 text-sm leading-relaxed text-slate-600">
+            <p className="mt-2 text-sm leading-relaxed text-ink-soft">
               כשיהיה רגע קשה — {gc.press} על &quot;רגע, קשה לי עכשיו&quot; מהבית. אני אהיה שם, ומה שיעזור יופיע כאן.
             </p>
             <Link
               href={APP_HOME_PATH}
-              className="mt-5 inline-flex rounded-2xl px-5 py-2.5 text-sm font-bold text-white"
+              className="mt-5 inline-flex rounded-2xl px-5 py-2.5 text-sm font-bold text-on-dark"
               style={{
                 background: 'linear-gradient(135deg, #047857, #10b981)',
                 boxShadow: '0 6px 18px rgba(4,120,87,0.22)',
@@ -498,10 +498,10 @@ export function SosMomentsClient({ firstName, gender = '' }: SosMomentsClientPro
             {helpedMemory.length > 0 ? (
               <section dir="rtl" className="glass-surface-home space-y-4 rounded-[22px] p-5">
                 <div className="text-center">
-                  <h2 className="text-lg font-black text-slate-900" style={HEBREW_HEAD}>
+                  <h2 className="text-lg font-black text-ink" style={HEBREW_HEAD}>
                     מה עזר לך
                   </h2>
-                  <p className="mt-1 text-xs text-slate-600">אלה הדברים שעבדו לך</p>
+                  <p className="mt-1 text-xs text-ink-soft">אלה הדברים שעבדו לך</p>
                 </div>
                 <ul className="space-y-0">
                   {visibleHelped.map((m, i) => {
@@ -510,13 +510,13 @@ export function SosMomentsClient({ firstName, gender = '' }: SosMomentsClientPro
                       <li key={`h-${m.strategy}-${m.created_at}-${globalIndex}`}>
                         {i > 0 ? <MomentsColorDivider index={globalIndex} /> : null}
                         <div
-                          className={`rounded-2xl border px-4 py-3 text-sm text-slate-800 ${MEMORY_CARD_STYLES[globalIndex % MEMORY_CARD_STYLES.length]}`}
+                          className={`rounded-2xl border px-4 py-3 text-sm text-ink ${MEMORY_CARD_STYLES[globalIndex % MEMORY_CARD_STYLES.length]}`}
                         >
                           <p className="font-bold leading-snug wrap-break-word">{m.strategy}</p>
                           {m.task_title ? (
-                            <p className="mt-1 text-xs text-slate-600 wrap-break-word">בקשר ל: {m.task_title}</p>
+                            <p className="mt-1 text-xs text-ink-soft wrap-break-word">בקשר ל: {m.task_title}</p>
                           ) : null}
-                          <p className="mt-1.5 text-[11px] text-slate-500">
+                          <p className="mt-1.5 text-[11px] text-ink-faint">
                             {formatHebrewRelative(m.created_at)}
                           </p>
                         </div>
@@ -540,10 +540,10 @@ export function SosMomentsClient({ firstName, gender = '' }: SosMomentsClientPro
             {failedMemory.length > 0 ? (
               <section dir="rtl" className="glass-surface-home space-y-4 rounded-[22px] p-5">
                 <div className="text-center">
-                  <h2 className="text-lg font-black text-amber-950" style={HEBREW_HEAD}>
+                  <h2 className="text-lg font-black text-accent-950" style={HEBREW_HEAD}>
                     מה שפחות התאים
                   </h2>
-                  <p className="mt-1 text-xs text-amber-900/70">כדי שנדע מה לא לחזור עליו</p>
+                  <p className="mt-1 text-xs text-accent-900/70">כדי שנדע מה לא לחזור עליו</p>
                 </div>
                 <ul className="space-y-0">
                   {visibleFailed.map((m, i) => {
@@ -554,7 +554,7 @@ export function SosMomentsClient({ firstName, gender = '' }: SosMomentsClientPro
                           <MomentsColorDivider index={helpedMemory.length + globalIndex} />
                         ) : null}
                         <div
-                          className="rounded-2xl border border-amber-200/50 px-4 py-3 text-sm text-amber-950"
+                          className="rounded-2xl border border-accent-200/50 px-4 py-3 text-sm text-accent-950"
                           style={{
                             background:
                               'linear-gradient(135deg, rgba(254,243,199,0.85), rgba(253,230,138,0.5))',
@@ -562,11 +562,11 @@ export function SosMomentsClient({ firstName, gender = '' }: SosMomentsClientPro
                         >
                           <p className="font-bold leading-snug wrap-break-word">{m.strategy}</p>
                           {m.task_title ? (
-                            <p className="mt-1 text-xs text-amber-900/70 wrap-break-word">
+                            <p className="mt-1 text-xs text-accent-900/70 wrap-break-word">
                               בקשר ל: {m.task_title}
                             </p>
                           ) : null}
-                          <p className="mt-1.5 text-[11px] text-amber-900/55">
+                          <p className="mt-1.5 text-[11px] text-accent-900/55">
                             {formatHebrewRelative(m.created_at)}
                           </p>
                         </div>
@@ -590,10 +590,10 @@ export function SosMomentsClient({ firstName, gender = '' }: SosMomentsClientPro
             {groupedEvents.length > 0 ? (
               <section dir="rtl" className="glass-surface-home space-y-4 rounded-[22px] p-5">
                 <div className="px-1 text-center">
-                  <h2 className="text-lg font-black text-slate-900" style={HEBREW_HEAD}>
+                  <h2 className="text-lg font-black text-ink" style={HEBREW_HEAD}>
                     מתי זה קרה
                   </h2>
-                  <p className="mt-1 text-xs text-slate-600">
+                  <p className="mt-1 text-xs text-ink-soft">
                     {groupedEvents.length} ימים · {events.length} רגעים
                   </p>
                 </div>
@@ -623,17 +623,17 @@ export function SosMomentsClient({ firstName, gender = '' }: SosMomentsClientPro
                             <article className={`rounded-2xl border px-4 py-3 ${cardStyle}`}>
                               <div className="flex flex-wrap items-start justify-between gap-2">
                                 <OutcomeStatus outcome={ev.outcome} gender={gender} />
-                                <span className="shrink-0 text-xs font-semibold text-emerald-800/65">
+                                <span className="shrink-0 text-xs font-semibold text-primary-800/65">
                                   {formatHebrewRelative(ev.created_at)}
                                 </span>
                               </div>
                               {ev.task_title ? (
-                                <p className="mt-2 text-sm font-bold leading-snug text-slate-900">
+                                <p className="mt-2 text-sm font-bold leading-snug text-ink">
                                   {ev.task_title}
                                 </p>
                               ) : null}
                               {humanTrigger ? (
-                                <p className="mt-1.5 text-xs leading-5 text-slate-600">{humanTrigger}</p>
+                                <p className="mt-1.5 text-xs leading-5 text-ink-soft">{humanTrigger}</p>
                               ) : null}
                             </article>
                           </div>
@@ -646,7 +646,7 @@ export function SosMomentsClient({ firstName, gender = '' }: SosMomentsClientPro
                           onClick={() =>
                             setExpandedDays((prev) => ({ ...prev, [day]: true }))
                           }
-                          className="w-full rounded-xl border border-emerald-200/60 bg-emerald-50/70 px-3 py-2 text-xs font-bold text-emerald-900"
+                          className="w-full rounded-xl border border-primary-200/60 bg-primary-50/70 px-3 py-2 text-xs font-bold text-primary-900"
                         >
                           עוד {hiddenInDay} רגעים באותו יום
                         </button>

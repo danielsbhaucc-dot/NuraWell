@@ -133,7 +133,7 @@ function AlmogAvatar({
         width={size}
         height={size}
         className={`relative rounded-full object-cover object-top border-2 ${
-          fun ? 'border-white/35' : 'border-emerald-300/25'
+          fun ? 'border-on-dark/35' : 'border-primary-300/25'
         } ${className}`}
         style={{ width: size, height: size }}
         onError={(e) => {
@@ -160,7 +160,7 @@ function UserAvatar({
   fun?: boolean;
   onImageError?: () => void;
 }) {
-  const borderClass = fun ? 'border-white/30' : 'border-slate-400/25';
+  const borderClass = fun ? 'border-on-dark/30' : 'border-ink-400/25';
 
   if (avatarUrl) {
     return (
@@ -179,7 +179,7 @@ function UserAvatar({
 
   return (
     <div
-      className={`mb-0.5 flex shrink-0 items-center justify-center rounded-full border-2 font-bold text-white ${borderClass} ${className}`}
+      className={`mb-0.5 flex shrink-0 items-center justify-center rounded-full border-2 font-bold text-on-dark ${borderClass} ${className}`}
       style={{
         width: size,
         height: size,
@@ -202,7 +202,7 @@ function AlmogTypingIndicator({ fun = false }: { fun?: boolean }) {
         {fun ? (
           <FunTypingLine />
         ) : (
-          <span className="text-[11px] font-semibold text-emerald-200/85 px-0.5">אלמוג מקליד…</span>
+          <span className="text-[11px] font-semibold text-primary-200/85 px-0.5">אלמוג מקליד…</span>
         )}
         <div
           className="rounded-[20px] rounded-ee-md px-4 py-3"
@@ -255,7 +255,7 @@ function ChatHeader({
   return (
     <div
       dir="rtl"
-      className="shrink-0 rounded-t-[28px] border-b border-white/10"
+      className="shrink-0 rounded-t-[28px] border-b border-on-dark/10"
       style={{
         background: isFun
           ? FUN_HEADER_BG
@@ -275,16 +275,16 @@ function ChatHeader({
               background: 'linear-gradient(140deg, rgba(255,255,255,0.45), rgba(255,255,255,0.1))',
             }}
           >
-            <AlmogAvatar size={40} className="border-white/30" fun={isFun} />
+            <AlmogAvatar size={40} className="border-on-dark/30" fun={isFun} />
           </div>
           <div className="text-start min-w-0">
-            <p className="text-[16px] font-black leading-none text-white">אלמוג</p>
+            <p className="text-[16px] font-black leading-none text-on-dark">אלמוג</p>
             {typing ? (
-              <p className="mt-1 text-[11px] font-semibold text-white/90">
+              <p className="mt-1 text-[11px] font-semibold text-on-dark/90">
                 <HeaderTypingDots />
               </p>
             ) : (
-              <p className="mt-1 text-[11px] font-medium text-white/75 truncate">{subtitle}</p>
+              <p className="mt-1 text-[11px] font-medium text-on-dark/75 truncate">{subtitle}</p>
             )}
           </div>
         </div>
@@ -298,7 +298,7 @@ function ChatHeader({
         <button
           type="button"
           onClick={onClose}
-          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-background-card/10 text-white/90 border border-white/15"
+          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-background-card/10 text-on-dark/90 border border-on-dark/15"
           aria-label="סגירה"
         >
           <X className="h-5 w-5" />
@@ -331,22 +331,22 @@ function ProfileUpdateIntentScreen({
   return (
     <div dir="rtl" className="relative min-h-0 flex-1 overflow-y-auto px-5 py-5">
       <div className="flex flex-col items-center gap-4">
-        <AlmogAvatar size={72} className="border-white/40" />
+        <AlmogAvatar size={72} className="border-on-dark/40" />
         <div className="text-center">
-          <p className="text-white text-[17px] font-black leading-tight">{prompt} ✓</p>
-          <p className="mt-2 text-white/75 text-[13px] leading-relaxed">
+          <p className="text-on-dark text-[17px] font-black leading-tight">{prompt} ✓</p>
+          <p className="mt-2 text-on-dark/75 text-[13px] leading-relaxed">
             רוצה לעדכן פרטים שכבר שמורים, או שהגעת בטעות?
           </p>
         </div>
 
         {savedLabels.length > 0 ? (
-          <div className="w-full rounded-2xl border border-white/10 bg-background-card/6 px-4 py-3 backdrop-blur-sm">
-            <p className="text-[11px] font-bold text-emerald-200/90 mb-2">מה שכבר שמור אצלי:</p>
+          <div className="w-full rounded-2xl border border-on-dark/10 bg-background-card/6 px-4 py-3 backdrop-blur-sm">
+            <p className="text-[11px] font-bold text-primary-200/90 mb-2">מה שכבר שמור אצלי:</p>
             <div className="flex flex-wrap gap-1.5">
               {savedLabels.map((label) => (
                 <span
                   key={label}
-                  className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold text-emerald-100"
+                  className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold text-primary-100"
                   style={{ background: 'rgba(16,185,129,0.2)', border: '1px solid rgba(52,211,153,0.3)' }}
                 >
                   <Check className="h-3 w-3" strokeWidth={3} />
@@ -360,7 +360,7 @@ function ProfileUpdateIntentScreen({
         <button
           type="button"
           onClick={onConfirm}
-          className="w-full rounded-2xl px-4 py-3.5 text-sm font-black text-white active:scale-[0.98]"
+          className="w-full rounded-2xl px-4 py-3.5 text-sm font-black text-on-dark active:scale-[0.98]"
           style={{ background: 'linear-gradient(135deg, #1f453c, #2d5a4a)' }}
         >
           כן, לעדכן פרטים
@@ -368,7 +368,7 @@ function ProfileUpdateIntentScreen({
         <button
           type="button"
           onClick={onDismiss}
-          className="w-full rounded-2xl border border-white/15 bg-background-card/8 px-4 py-3 text-sm font-semibold text-slate-200 active:scale-[0.98]"
+          className="w-full rounded-2xl border border-on-dark/15 bg-background-card/8 px-4 py-3 text-sm font-semibold text-ink-200 active:scale-[0.98]"
         >
           לא עכשיו
         </button>
@@ -707,7 +707,7 @@ export function OnboardingChat({
   return (
     <Drawer.Root open={open} onOpenChange={onOpenChange} direction="bottom" shouldScaleBackground={false}>
       <Drawer.Portal>
-        <Drawer.Overlay className="fixed inset-0 z-200 bg-black/55" />
+        <Drawer.Overlay className="fixed inset-0 z-200 bg-forest-950/55" />
         <Drawer.Content
           className="fixed inset-x-0 bottom-0 z-210 mx-auto flex w-full max-w-md flex-col rounded-t-[28px] outline-hidden overflow-hidden"
           style={{
@@ -783,11 +783,11 @@ export function OnboardingChat({
                     animate={{ y: [0, -4, 0] }}
                     transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' as const }}
                   >
-                    <AlmogAvatar size={72} className="border-white/40" />
+                    <AlmogAvatar size={72} className="border-on-dark/40" />
                   </motion.div>
                   <div className="text-center">
-                    <p className="text-white text-[17px] font-black leading-tight">איך בא לך לעדכן?</p>
-                    <p className="mt-1 text-white/70 text-[12px] font-medium">
+                    <p className="text-on-dark text-[17px] font-black leading-tight">איך בא לך לעדכן?</p>
+                    <p className="mt-1 text-on-dark/70 text-[12px] font-medium">
                       בחר מסלול — אחד מהם עם קונפטי 🎊
                     </p>
                   </div>
@@ -800,11 +800,11 @@ export function OnboardingChat({
             ) : (
               <>
                 {(collectedFlagKeys.length > 0 || collectedPublicKeys.length > 0) && (
-                  <div dir="rtl" className="shrink-0 flex flex-wrap gap-1.5 px-4 py-2 border-b border-white/5">
+                  <div dir="rtl" className="shrink-0 flex flex-wrap gap-1.5 px-4 py-2 border-b border-on-dark/5">
                     {collectedFlagKeys.map((k) => (
                       <span
                         key={k}
-                        className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold text-emerald-100"
+                        className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold text-primary-100"
                         style={{ background: 'rgba(16,185,129,0.2)', border: '1px solid rgba(52,211,153,0.3)' }}
                       >
                         <Check className="h-3 w-3" strokeWidth={3} />
@@ -814,7 +814,7 @@ export function OnboardingChat({
                     {collectedPublicKeys.map((k) => (
                       <span
                         key={k}
-                        className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold text-emerald-100"
+                        className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold text-primary-100"
                         style={{ background: 'rgba(16,185,129,0.2)', border: '1px solid rgba(52,211,153,0.3)' }}
                       >
                         <Check className="h-3 w-3" strokeWidth={3} />
@@ -853,7 +853,7 @@ export function OnboardingChat({
                           style={isFun ? FUN_ASSISTANT_BUBBLE : QUICK_ASSISTANT_BUBBLE}
                         >
                           {m.secret ? (
-                            <span className="flex items-center gap-1.5 text-amber-200 text-[13px]">
+                            <span className="flex items-center gap-1.5 text-accent-200 text-[13px]">
                               <span aria-hidden>🔐</span>
                               {m.content}
                             </span>
@@ -869,7 +869,7 @@ export function OnboardingChat({
                           style={isFun ? FUN_USER_BUBBLE : QUICK_USER_BUBBLE}
                         >
                           {m.secret ? (
-                            <span className="flex items-center gap-1.5 text-amber-200 text-[13px]">
+                            <span className="flex items-center gap-1.5 text-accent-200 text-[13px]">
                               <span aria-hidden>🔐</span>
                               {m.content}
                             </span>
@@ -881,7 +881,7 @@ export function OnboardingChat({
                       {m.role === 'assistant' ? (
                         <AlmogAvatar
                           size={28}
-                          className={`mb-0.5 shrink-0 ${isFun ? 'border-white/40' : 'border-emerald-500/30'}`}
+                          className={`mb-0.5 shrink-0 ${isFun ? 'border-on-dark/40' : 'border-primary-500/30'}`}
                           fun={isFun}
                         />
                       ) : null}
@@ -904,19 +904,19 @@ export function OnboardingChat({
                   }}
                 >
                   {pendingDiscrete ? (
-                    <div className="px-4 pt-3 pb-3 space-y-3 border-b border-amber-400/20 bg-amber-950/30">
-                      <p className="text-[13px] font-bold text-amber-200 flex items-center gap-1.5">
+                    <div className="px-4 pt-3 pb-3 space-y-3 border-b border-accent-400/20 bg-accent-950/30">
+                      <p className="text-[13px] font-bold text-accent-200 flex items-center gap-1.5">
                         <span aria-hidden>🔐</span>
                         ערוץ פרטי — {DISCRETE_FIELD_LABELS[pendingDiscrete]}
                       </p>
-                      <p className="text-[13px] leading-relaxed text-amber-100/95">
+                      <p className="text-[13px] leading-relaxed text-accent-100/95">
                         {discreteFieldPrivacyIntro(pendingDiscrete, profileGender)}
                       </p>
                       <div className="flex flex-col gap-2 sm:flex-row">
                         <button
                           type="button"
                           onClick={openDiscreteChannel}
-                          className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-bold text-white"
+                          className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-bold text-on-dark"
                           style={{ background: 'linear-gradient(135deg, #b45309, #f59e0b)' }}
                         >
                           <span aria-hidden>🔐</span>
@@ -925,7 +925,7 @@ export function OnboardingChat({
                         <button
                           type="button"
                           onClick={goToMainChat}
-                          className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-background-card/8 px-3 py-2.5 text-sm font-semibold text-slate-200"
+                          className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-on-dark/15 bg-background-card/8 px-3 py-2.5 text-sm font-semibold text-ink-200"
                         >
                           <MessageCircle className="h-4 w-4" />
                           המשך בצ&apos;אט הרגיל
@@ -955,7 +955,7 @@ export function OnboardingChat({
                         type="button"
                         onClick={() => void handleSave()}
                         disabled={loading}
-                        className="w-full inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-white"
+                        className="w-full inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-on-dark"
                         style={{ background: 'linear-gradient(145deg, #b45309, #f59e0b)' }}
                       >
                         <Check className="h-4 w-4" />
@@ -965,7 +965,7 @@ export function OnboardingChat({
                   ) : null}
 
                   {saved ? (
-                    <p className="px-4 pb-2 text-center text-[13px] font-bold text-emerald-300">
+                    <p className="px-4 pb-2 text-center text-[13px] font-bold text-primary-300">
                       עודכן בהצלחה
                     </p>
                   ) : null}
@@ -984,7 +984,7 @@ export function OnboardingChat({
                           }
                         }}
                         placeholder="כתוב לאלמוג…"
-                        className="min-w-0 flex-1 rounded-2xl px-4 py-2.5 text-base text-slate-100 outline-hidden placeholder:text-slate-500"
+                        className="min-w-0 flex-1 rounded-2xl px-4 py-2.5 text-base text-ink-100 outline-hidden placeholder:text-ink-500"
                         style={{
                           background: isFun ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.07)',
                           border: isFun
@@ -996,7 +996,7 @@ export function OnboardingChat({
                         type="button"
                         onClick={() => void handleSend()}
                         disabled={loading || !input.trim()}
-                        className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white disabled:opacity-40"
+                        className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-on-dark disabled:opacity-40"
                         style={{
                           background: isFun ? FUN_SEND_BUTTON : QUICK_SEND_BUTTON,
                         }}

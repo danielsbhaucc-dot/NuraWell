@@ -64,3 +64,39 @@ Before shipping, compare each new or changed screen with **the landing page** an
 - [ ] Contrast at WCAG AA.
 - [ ] "Would this impress someone who has seen Apple, Linear or Stripe?"
 - [ ] New creative ideas beyond the canonical style ship as a **sketch for approval first**, not as code.
+
+## Palette reset (root cause of the "white debt")
+`app/globals.css` starts `@theme` with `--color-*: initial;`. Tailwind's generic palette (`white`, `black`, `gray`, `slate`, `zinc`, `neutral`, `stone`, `red`, `emerald`, `teal`, `amber`, `violet`, …) **no longer exists** — `bg-white`, `text-slate-600`, `bg-emerald-50` will not generate CSS. Only NuraWell tokens exist:
+
+| Need | Token |
+|---|---|
+| Dark shells | `forest-600…950` |
+| Product surfaces | `glass`, `glass-hi`, `surface`, `surface-elevated`, `surface-sunken`, `canvas`, `hairline` |
+| Text on light | `ink`, `ink-soft`, `ink-faint`, `ink-50…950` (forest-tinted neutrals, replaces slate/gray) |
+| Text on dark | `on-dark`, `on-dark-soft` (the **only** white) |
+| Brand ramps | `primary` (mint/emerald), `secondary` (teal), `brand`, `glow`, `glow-teal` |
+| Accent | `accent` (amber), `energy` (orange) |
+| Semantic | `success*`, `warning*`, `coral` (error/rose), `iris` (premium/violet) |
+| Utility | `transparent`, `current`, `inherit` |
+
+Ramp steps 50/100 were lifted to tinted values (L ≤ ~94%) so no ramp can produce a flat near-white fill.
+Codemod used once: `scripts/codemod-palette.mjs` (emerald→primary, teal/cyan/sky/blue→secondary, amber/yellow→accent, orange→energy, rose/red/pink→coral, violet/indigo/purple/fuchsia→iris, slate/gray/zinc/neutral/stone→ink, black→forest-950, text-white→text-on-dark, bg-white→bg-glass, bg-white/≤30→bg-on-dark/N).
+
+## Near-white guard
+`scripts/near-white.mjs` (tested in `tests/near-white.test.ts`) is part of design-lint (`nearWhite` rule). It flags: `#fff`-like hex/rgb/hsl/oklch with lightness > 96% and alpha ≥ 0.6, `bg-white`, `bg-white/60+`, `bg-on-dark/60+`, gradients ending in white, `background: white` / `'white'` in inline styles, and any theme alias whose value is near-white. Translucent highlights (`rgba(255,255,255,<0.6)`, `bg-on-dark/5…30` on dark) stay allowed.
+
+## iOS-refined primitives (`components/ui`) — build only from these
+| Primitive | Use | Do | Don't |
+|---|---|---|---|
+| `GlassCard` (`tone="light"｜"dark"`, `accent`) | Any card | `<GlassCard className="p-4">` | `<div className="rounded-xl bg-glass shadow">` hand-rolled |
+| `Tile` (`tone="glass"｜"forest"`, `accent="glow"｜"amber"`, `label`) | Small fact tiles in cards ("הצעד הבא", "ביום קשה") | `<Tile accent="amber" label="ביום קשה">…</Tile>` | Flat cream/mint boxes |
+| `Pill` (`forest｜mint｜amber｜glass`) | Static status ("המיקוד", "הותאם") | `<Pill tone="mint">הותאם</Pill>` | `bg-cream` / `bg-primary-50` pills |
+| `Chip` (`mint｜amber｜forest`) | Tappable choices ≥ 40px ("קל לי", "גם זה קשה לי") | `<Chip tone="amber">…</Chip>` | `active:scale` without `motion-safe:` |
+| `SectionHeader` | Section title + caption + action | `<SectionHeader title="התוכנית" />` | Ad-hoc `h2` sizes |
+| `Sheet` / `Dialog` | Bottom sheet / modal | `<Sheet open title>` | `window.alert/confirm/prompt` |
+| `Input` | Fields (dark well inside `.surface-dark` / `.onboarding-shell-dark`) | `<Input />` | White inputs |
+| `Button` variants | All actions | `<Button variant="primary">` | Raw `<button className=…>` |
+| `EmptyState`, `ErrorState`, `LoadingState`, `Skeleton` | Empty/error/loading | — | Spinners on white |
+| `Toast` | Transient status (`role=status`) | `<Toast tone="success">נשמר</Toast>` | Native alerts |
+
+Shared rules: radii 16–28px, `backdrop-blur-xl`, inner highlight `inset 0 1px 0 rgba(238,244,234,.4–.55)`, layered shadows (1–2px contact + soft 10–36px), press = `motion-safe:active:scale-[0.97]` + `motion-reduce:transition-none`. Contrast AA: `text-ink*` on glass, `text-on-dark*` on forest.

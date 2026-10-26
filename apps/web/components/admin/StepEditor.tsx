@@ -160,16 +160,16 @@ function TtsStatusBadge({ text, tts }: { text: string; tts?: QuestionTtsMeta | n
   const trimmed = text.trim();
   if (!trimmed) {
     return (
-      <span className="text-[11px] font-semibold text-gray-400">אין טקסט להקראה</span>
+      <span className="text-[11px] font-semibold text-ink-faint">אין טקסט להקראה</span>
     );
   }
   if (tts?.status === 'ready' && tts.url) {
     return (
-      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700">
+      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-primary-700">
         <Volume2 className="w-3 h-3" />
         הקראה מוכנה
         {tts.size_bytes ? (
-          <span className="font-normal text-emerald-600/80">
+          <span className="font-normal text-primary-600/80">
             ({Math.max(1, Math.round(tts.size_bytes / 1024))}KB)
           </span>
         ) : null}
@@ -178,13 +178,13 @@ function TtsStatusBadge({ text, tts }: { text: string; tts?: QuestionTtsMeta | n
   }
   if (tts?.status === 'error') {
     return (
-      <span className="text-[11px] font-bold text-red-600" title={tts.error}>
+      <span className="text-[11px] font-bold text-coral-600" title={tts.error}>
         שגיאת הקראה — ינסה שוב בשמירה
       </span>
     );
   }
   return (
-    <span className="text-[11px] font-semibold text-amber-700">יווצר/יעודכן בשמירה</span>
+    <span className="text-[11px] font-semibold text-accent-700">יווצר/יעודכן בשמירה</span>
   );
 }
 
@@ -954,7 +954,7 @@ export function StepEditor({ step }: StepEditorProps) {
       {/* Header */}
       <div
         className="mb-5 flex flex-col gap-3 rounded-3xl px-3 py-3 backdrop-blur-md sm:flex-row sm:items-center"
-        style={{ background: 'rgba(248,251,246,0.62)', border: '1px solid rgba(248,251,246,0.65)', boxShadow: '0 10px 24px rgba(16,24,40,0.08)' }}
+        style={{ background: 'rgba(207,233,220,0.62)', border: '1px solid rgba(207,233,220,0.65)', boxShadow: '0 10px 24px rgba(16,24,40,0.08)' }}
       >
         <div className="flex min-w-0 items-center gap-3">
         <button onClick={() => router.push(journeyListPath)}
@@ -995,10 +995,10 @@ export function StepEditor({ step }: StepEditorProps) {
               </span>
               <span className="flex flex-col">
                 <span className="text-sm font-black" style={{ color: '#3730a3' }}>סוכן AI למילוי הצעד</span>
-                <span className="text-[11px] font-semibold text-violet-700/80">קורא, אומר מה הוא חושב, שואל אם צריך, כותב ובודק את עצמו — בלייב</span>
+                <span className="text-[11px] font-semibold text-iris-700/80">קורא, אומר מה הוא חושב, שואל אם צריך, כותב ובודק את עצמו — בלייב</span>
               </span>
             </span>
-            {aiPanelOpen ? <ChevronUp className="h-4 w-4 text-violet-700" /> : <ChevronDown className="h-4 w-4 text-violet-700" />}
+            {aiPanelOpen ? <ChevronUp className="h-4 w-4 text-iris-700" /> : <ChevronDown className="h-4 w-4 text-iris-700" />}
           </button>
 
           {aiPanelOpen && (
@@ -1016,8 +1016,8 @@ export function StepEditor({ step }: StepEditorProps) {
         <div
           className="rounded-2xl p-4 space-y-3 backdrop-blur-md"
           style={{
-            background: 'linear-gradient(135deg, rgba(248,251,246,0.75), rgba(241,245,249,0.75))',
-            border: '1px solid rgba(248,251,246,0.9)',
+            background: 'linear-gradient(135deg, rgba(207,233,220,0.75), rgba(207,233,220,0.75))',
+            border: '1px solid rgba(207,233,220,0.9)',
             boxShadow: '0 14px 32px rgba(15,23,42,0.12)',
           }}
         >
@@ -1028,7 +1028,7 @@ export function StepEditor({ step }: StepEditorProps) {
             >
               מבנה הצעד
             </h2>
-            <span className="text-xs text-gray-600">החליקו הצידה במובייל ובחרו את החלק לעריכה</span>
+            <span className="text-xs text-ink-soft">החליקו הצידה במובייל ובחרו את החלק לעריכה</span>
           </div>
           <div className="-mx-1 flex snap-x gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0">
             <SectionTab
@@ -1119,7 +1119,7 @@ export function StepEditor({ step }: StepEditorProps) {
             </Field>
             <Field label="סטטוס">
               <button onClick={() => setIsPublished(!isPublished)}
-                className={`w-full py-2.5 rounded-xl font-bold text-sm transition-all ${isPublished ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
+                className={`w-full py-2.5 rounded-xl font-bold text-sm transition-all ${isPublished ? 'bg-primary-100 text-primary-700' : 'bg-surface text-ink-faint'}`}>
                 {isPublished ? '✓ פורסם' : 'טיוטה'}
               </button>
             </Field>
@@ -1137,7 +1137,7 @@ export function StepEditor({ step }: StepEditorProps) {
                 </option>
               ))}
             </select>
-            <p className="mt-1.5 text-xs text-gray-500 leading-relaxed">
+            <p className="mt-1.5 text-xs text-ink-faint leading-relaxed">
               תחנה מקבצת צעדים לוגית (ללא הגבלת כמות). ניתן לנהל תחנות במסך &quot;מסע ותחנות&quot;.
             </p>
           </Field>
@@ -1154,7 +1154,7 @@ export function StepEditor({ step }: StepEditorProps) {
                 </option>
               ))}
             </select>
-            <p className="mt-1.5 text-xs text-gray-500 leading-relaxed">
+            <p className="mt-1.5 text-xs text-ink-faint leading-relaxed">
               הפלייליסט ינוגן ברקע לאורך כל הצעד (מהשלב הראשון ועד הסיכום), יונמך בזמן וידאו, ויוצג לו
               קרדיט. ניתן לנהל פלייליסטים במסך &quot;מוזיקת רקע&quot;. רק פלייליסט מפורסם זמין לבחירה.
             </p>
@@ -1182,7 +1182,7 @@ export function StepEditor({ step }: StepEditorProps) {
                 },
               })
             }
-            className="mb-3 rounded-xl border border-blue-300/60 bg-blue-500/10 px-4 py-2 text-sm font-bold text-blue-900"
+            className="mb-3 rounded-xl border border-secondary-300/60 bg-secondary-500/10 px-4 py-2 text-sm font-bold text-secondary-900"
           >
             העלאת וידאו
           </button>
@@ -1213,7 +1213,7 @@ export function StepEditor({ step }: StepEditorProps) {
             <Field label="כתובת HLS (Pull Zone — video.nurawell.ai)">
               <input value={videoExternalUrl} onChange={e => setVideoExternalUrl(e.target.value)}
                 className="input-field" placeholder="https://video.nurawell.ai/{מזהה-וידאו}/playlist.m3u8" dir="ltr" />
-              <p className="text-xs text-gray-500 mt-1.5 leading-relaxed">
+              <p className="text-xs text-ink-faint mt-1.5 leading-relaxed">
                 זה הדומיין המחובר ל־Bunny Stream אצלכם. אפשר להדביק את ה־URL המלא, או רק את הנתיב (למשל{' '}
                 <span dir="ltr" className="font-mono text-[11px]">/uuid/playlist.m3u8</span>
                 ). אפשר גם להזין <strong>רק UUID</strong> של הסרטון בשדה &quot;מזהה&quot; למעלה — יבנה אוטומטית ל־playlist ב־video.nurawell.ai.
@@ -1230,21 +1230,21 @@ export function StepEditor({ step }: StepEditorProps) {
 
           <div className="rounded-2xl p-4 space-y-3" style={{ background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.15)' }}>
             <div className="flex items-center gap-2">
-              <Brain className="w-4 h-4 text-blue-600" />
-              <h3 className="text-sm font-black text-blue-800">
+              <Brain className="w-4 h-4 text-secondary-600" />
+              <h3 className="text-sm font-black text-secondary-800">
                 נקודות קשב במסך מלא ({immersiveAttentionStops.length})
               </h3>
             </div>
-            <p className="text-xs text-blue-900/80 leading-relaxed">
+            <p className="text-xs text-secondary-900/80 leading-relaxed">
               יופיע רק בנגן מסך מלא: הסרטון יעצור בזמן שתבחרו, תוצג שאלה קצרה, ואז משוב והמשך אוטומטי או ידני.
             </p>
             {immersiveAttentionStops.map((stop, si) => (
-              <div key={stop.id || si} className="p-3 rounded-xl bg-background-card border border-blue-100 space-y-2.5">
+              <div key={stop.id || si} className="p-3 rounded-xl bg-background-card border border-secondary-100 space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-blue-700">נקודה {si + 1}</span>
+                  <span className="text-xs font-bold text-secondary-700">נקודה {si + 1}</span>
                   <button
                     onClick={() => setImmersiveAttentionStops(prev => prev.filter((_, i) => i !== si))}
-                    className="text-red-400 hover:text-red-600"
+                    className="text-coral-400 hover:text-coral-600"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -1302,8 +1302,8 @@ export function StepEditor({ step }: StepEditorProps) {
                           }}
                           className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[11px] font-bold ${
                             stop.correct_option_index === oi
-                              ? 'border-emerald-500 bg-emerald-500 text-gc'
-                              : 'border-gray-300 text-gray-400'
+                              ? 'border-primary-500 bg-primary-500 text-gc'
+                              : 'border-ink-300 text-ink-faint'
                           }`}
                         >
                           {stop.correct_option_index === oi ? '✓' : oi + 1}
@@ -1341,7 +1341,7 @@ export function StepEditor({ step }: StepEditorProps) {
                             };
                             setImmersiveAttentionStops(arr);
                           }}
-                          className="text-red-400 hover:text-red-600"
+                          className="text-coral-400 hover:text-coral-600"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -1356,7 +1356,7 @@ export function StepEditor({ step }: StepEditorProps) {
                           arr[si] = { ...arr[si], options };
                           setImmersiveAttentionStops(arr);
                         }}
-                        className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-800"
+                        className="inline-flex items-center gap-1 text-xs font-bold text-secondary-600 hover:text-secondary-800"
                       >
                         <Plus className="h-3.5 w-3.5" /> הוסף אפשרות
                       </button>
@@ -1409,23 +1409,23 @@ export function StepEditor({ step }: StepEditorProps) {
 
         {/* ═══ QUIZ ═══ */}
         <Section title={`שאלות הבנה (${quizQuestions.length})`} icon={HelpCircle} color="#10b981" sectionNumber={3} isVisible={activeSection === 'quiz'}>
-          <p className="text-xs text-emerald-900/80 leading-relaxed rounded-xl px-3 py-2" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.15)' }}>
+          <p className="text-xs text-primary-900/80 leading-relaxed rounded-xl px-3 py-2" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.15)' }}>
             בשמירה, טקסט השאלה יומר אוטומטית לקול Liam (ElevenLabs v3), יידחס, יועלה ל-R2 ויישמר בספריית המדיה.
             קובץ קיים לא ייווצר מחדש אם הטקסט לא השתנה.
           </p>
           {ttsSaveMessage && activeSection === 'quiz' && (
-            <p className="rounded-xl px-3 py-2 text-xs font-semibold text-emerald-800" style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.2)' }}>
+            <p className="rounded-xl px-3 py-2 text-xs font-semibold text-primary-800" style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.2)' }}>
               {ttsSaveMessage}
             </p>
           )}
           {quizQuestions.map((q, qi) => (
-            <div key={q.id || qi} className="rounded-xl border border-emerald-100 overflow-hidden" style={{ background: 'rgba(248,251,246,0.85)' }}>
+            <div key={q.id || qi} className="rounded-xl border border-primary-100 overflow-hidden" style={{ background: 'rgba(207,233,220,0.85)' }}>
               <button
                 type="button"
                 onClick={() => setExpandedQuiz(expandedQuiz === qi ? null : qi)}
-                className="w-full p-3 flex items-center justify-between gap-2 text-right transition-colors hover:bg-emerald-50/80"
+                className="w-full p-3 flex items-center justify-between gap-2 text-right transition-colors hover:bg-primary-50/80"
               >
-                <span className="text-sm font-bold text-gray-800 min-w-0 flex-1 truncate">
+                <span className="text-sm font-bold text-ink min-w-0 flex-1 truncate">
                   שאלה {qi + 1}
                   {q.question.trim() ? ` — ${q.question.trim().slice(0, 72)}${q.question.trim().length > 72 ? '…' : ''}` : ''}
                 </span>
@@ -1437,16 +1437,16 @@ export function StepEditor({ step }: StepEditorProps) {
                       setQuizQuestions(prev => prev.filter((_, i) => i !== qi));
                       setExpandedQuiz((ex) => (ex === qi ? null : ex));
                     }}
-                    className="p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50"
+                    className="p-1.5 rounded-lg text-coral-400 hover:text-coral-600 hover:bg-coral-50"
                     aria-label="מחק שאלה"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
-                  <ChevronDown className={`w-4 h-4 text-emerald-700 transition-transform ${expandedQuiz === qi ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`w-4 h-4 text-primary-700 transition-transform ${expandedQuiz === qi ? 'rotate-180' : ''}`} />
                 </div>
               </button>
               {expandedQuiz === qi && (
-                <div className="p-4 pt-0 space-y-3 border-t border-emerald-100/80 bg-background-card/90">
+                <div className="p-4 pt-0 space-y-3 border-t border-primary-100/80 bg-background-card/90">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <TtsStatusBadge text={q.question} tts={q.tts} />
                     {q.tts?.status === 'ready' && q.tts.url ? (
@@ -1460,7 +1460,7 @@ export function StepEditor({ step }: StepEditorProps) {
                     <div key={oi} className="flex items-center gap-2">
                       <button type="button" onClick={() => {
                         const arr = [...quizQuestions]; arr[qi] = { ...arr[qi], correct_index: oi }; setQuizQuestions(arr);
-                      }} className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0 ${q.correct_index === oi ? 'bg-emerald-500 text-gc' : 'bg-gray-200 text-gray-500'}`}>
+                      }} className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0 ${q.correct_index === oi ? 'bg-primary-500 text-gc' : 'bg-hairline text-ink-faint'}`}>
                         {String.fromCharCode(1488 + oi)}
                       </button>
                       <input value={opt} onChange={e => {
@@ -1484,17 +1484,17 @@ export function StepEditor({ step }: StepEditorProps) {
 
         {/* ═══ GAME ═══ */}
         <Section title={`משחק נכון/לא נכון (${gameItems.length})`} icon={Gamepad2} color="#f59e0b" sectionNumber={4} isVisible={activeSection === 'game'}>
-          <p className="text-xs text-amber-900/80 leading-relaxed rounded-xl px-3 py-2" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.15)' }}>
+          <p className="text-xs text-accent-900/80 leading-relaxed rounded-xl px-3 py-2" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.15)' }}>
             רק טקסט הטענה יוקרא — לא תשובות ולא הסברים. הקובץ נוצר פעם אחת ונשמר ב-R2 תחת תחנה + צעד.
           </p>
           {gameItems.map((g, gi) => (
-            <div key={g.id || gi} className="rounded-xl border border-amber-100 overflow-hidden" style={{ background: 'rgba(248,251,246,0.88)' }}>
+            <div key={g.id || gi} className="rounded-xl border border-accent-100 overflow-hidden" style={{ background: 'rgba(207,233,220,0.88)' }}>
               <button
                 type="button"
                 onClick={() => setExpandedGame(expandedGame === gi ? null : gi)}
-                className="w-full p-3 flex items-center justify-between gap-2 text-right transition-colors hover:bg-amber-50/90"
+                className="w-full p-3 flex items-center justify-between gap-2 text-right transition-colors hover:bg-accent-50/90"
               >
-                <span className="text-sm font-bold text-gray-800 min-w-0 flex-1 truncate">
+                <span className="text-sm font-bold text-ink min-w-0 flex-1 truncate">
                   טענה {gi + 1}
                   {g.statement.trim() ? ` — ${g.statement.trim().slice(0, 72)}${g.statement.trim().length > 72 ? '…' : ''}` : ''}
                 </span>
@@ -1506,16 +1506,16 @@ export function StepEditor({ step }: StepEditorProps) {
                       setGameItems(prev => prev.filter((_, i) => i !== gi));
                       setExpandedGame((ex) => (ex === gi ? null : ex));
                     }}
-                    className="p-1.5 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50"
+                    className="p-1.5 rounded-lg text-coral-400 hover:text-coral-600 hover:bg-coral-50"
                     aria-label="מחק טענה"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
-                  <ChevronDown className={`w-4 h-4 text-amber-700 transition-transform ${expandedGame === gi ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`w-4 h-4 text-accent-700 transition-transform ${expandedGame === gi ? 'rotate-180' : ''}`} />
                 </div>
               </button>
               {expandedGame === gi && (
-                <div className="p-4 pt-0 space-y-3 border-t border-amber-100/90 bg-background-card/90">
+                <div className="p-4 pt-0 space-y-3 border-t border-accent-100/90 bg-background-card/90">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <TtsStatusBadge text={g.statement} tts={g.tts} />
                     {g.tts?.status === 'ready' && g.tts.url ? (
@@ -1527,11 +1527,11 @@ export function StepEditor({ step }: StepEditorProps) {
                   }} className="input-field" placeholder="טקסט הטענה" />
                   <div className="flex items-center gap-3">
                     <button type="button" onClick={() => { const arr = [...gameItems]; arr[gi] = { ...arr[gi], is_true: true }; setGameItems(arr); }}
-                      className={`px-4 py-2 rounded-lg font-bold text-sm ${g.is_true ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
+                      className={`px-4 py-2 rounded-lg font-bold text-sm ${g.is_true ? 'bg-primary-100 text-primary-700' : 'bg-surface text-ink-faint'}`}>
                       ✓ נכון
                     </button>
                     <button type="button" onClick={() => { const arr = [...gameItems]; arr[gi] = { ...arr[gi], is_true: false }; setGameItems(arr); }}
-                      className={`px-4 py-2 rounded-lg font-bold text-sm ${!g.is_true ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-500'}`}>
+                      className={`px-4 py-2 rounded-lg font-bold text-sm ${!g.is_true ? 'bg-coral-100 text-coral-600' : 'bg-surface text-ink-faint'}`}>
                       ✗ לא נכון
                     </button>
                   </div>
@@ -1552,11 +1552,11 @@ export function StepEditor({ step }: StepEditorProps) {
         {/* ═══ COMMITMENT ═══ */}
         <Section title="התחייבות" icon={Heart} color="#ec4899" sectionNumber={5} isVisible={activeSection === 'commitment'}>
           {commitment ? (
-            <div className="p-4 rounded-xl bg-gray-50 border border-gray-100 space-y-3">
+            <div className="p-4 rounded-xl bg-surface-sunken border border-hairline/60 space-y-3">
               <Field label="טקסט ההתחייבות">
                 <input value={commitment.text} onChange={e => setCommitment({ ...commitment, text: e.target.value })}
                   className="input-field" placeholder="למשל: לשתות 2 כוסות מים לפני כל ארוחה" />
-                <p className="mt-1.5 text-xs text-gray-500 leading-relaxed">
+                <p className="mt-1.5 text-xs text-ink-faint leading-relaxed">
                   אל תכתבו &quot;אני מתחייב&quot; — המערכת מוסיפה אוטומטית פתיח מותאם מגדר
                   (&quot;אני מתחייב&quot; / &quot;אני מתחייבת&quot;) לפי פרופיל המשתמש. כתבו רק את ההמשך.
                 </p>
@@ -1573,7 +1573,7 @@ export function StepEditor({ step }: StepEditorProps) {
                   </Field>
                 </div>
               </div>
-              <button onClick={() => setCommitment(null)} className="text-sm text-red-500 hover:text-red-700">
+              <button onClick={() => setCommitment(null)} className="text-sm text-coral-500 hover:text-coral-700">
                 הסר התחייבות
               </button>
             </div>
@@ -1604,15 +1604,15 @@ export function StepEditor({ step }: StepEditorProps) {
             </button>
           )}
           {researches.map((r, ri) => (
-            <div key={r.id || ri} className="rounded-xl border overflow-hidden" style={{ borderColor: 'rgba(139,92,246,0.18)', background: 'rgba(248,251,246,0.72)' }}>
+            <div key={r.id || ri} className="rounded-xl border overflow-hidden" style={{ borderColor: 'rgba(139,92,246,0.18)', background: 'rgba(207,233,220,0.72)' }}>
               <button
                 type="button"
                 onClick={() => setExpandedResearch(expandedResearch === ri ? null : ri)}
                 className="w-full p-3 flex items-center justify-between text-right"
                 style={{ background: 'linear-gradient(135deg, rgba(139,92,246,0.12), rgba(99,102,241,0.08))' }}
               >
-                <span className="text-sm font-bold text-violet-900">מחקר {ri + 1}</span>
-                <ChevronDown className={`w-4 h-4 text-violet-700 transition-transform ${expandedResearch === ri ? 'rotate-180' : ''}`} />
+                <span className="text-sm font-bold text-iris-900">מחקר {ri + 1}</span>
+                <ChevronDown className={`w-4 h-4 text-iris-700 transition-transform ${expandedResearch === ri ? 'rotate-180' : ''}`} />
               </button>
               {expandedResearch === ri && (
                 <div className="p-3 space-y-3">
@@ -1659,40 +1659,40 @@ export function StepEditor({ step }: StepEditorProps) {
                       {researchSyncing === ri ? 'מסנכרן...' : 'סנכרן לאלמוג'}
                     </button>
                     {r.rag_doc_id && (
-                      <span className="rounded-lg bg-emerald-50 px-2 py-1 text-xs font-bold text-emerald-800 border border-emerald-200">
+                      <span className="rounded-lg bg-primary-50 px-2 py-1 text-xs font-bold text-primary-800 border border-primary-200">
                         מסונכרן ל-RAG
                       </span>
                     )}
                     {r.scan_status === 'ready' && !r.rag_doc_id && (
-                      <span className="rounded-lg bg-amber-50 px-2 py-1 text-xs font-bold text-amber-800 border border-amber-200">
+                      <span className="rounded-lg bg-accent-50 px-2 py-1 text-xs font-bold text-accent-800 border border-accent-200">
                         נסרק, ממתין לשמירה/סנכרון
                       </span>
                     )}
                   </div>
 
                   {(r.ai_summary || r.key_findings?.length || r.practical_takeaway || r.limitations) && (
-                    <div className="rounded-xl p-3 space-y-2 text-sm" style={{ background: 'rgba(248,251,246,0.72)', border: '1px solid rgba(124,58,237,0.16)' }}>
-                      <p className="text-xs font-black text-violet-900">מה אלמוג יקבל מהמחקר</p>
-                      {r.ai_summary && <p className="leading-relaxed text-slate-700">{r.ai_summary}</p>}
+                    <div className="rounded-xl p-3 space-y-2 text-sm" style={{ background: 'rgba(207,233,220,0.72)', border: '1px solid rgba(124,58,237,0.16)' }}>
+                      <p className="text-xs font-black text-iris-900">מה אלמוג יקבל מהמחקר</p>
+                      {r.ai_summary && <p className="leading-relaxed text-ink-soft">{r.ai_summary}</p>}
                       {r.key_findings?.length ? (
-                        <ul className="list-disc pr-5 text-slate-700 space-y-1">
+                        <ul className="list-disc pr-5 text-ink-soft space-y-1">
                           {r.key_findings.map((finding, idx) => <li key={`${r.id}-finding-${idx}`}>{finding}</li>)}
                         </ul>
                       ) : null}
-                      {r.practical_takeaway && <p className="text-slate-700"><strong>משמעות לשיעור:</strong> {r.practical_takeaway}</p>}
-                      {r.limitations && <p className="text-slate-600"><strong>סייגים:</strong> {r.limitations}</p>}
-                      <p className="text-xs text-slate-500">רמת ראיות: {r.evidence_level ?? 'unknown'}</p>
+                      {r.practical_takeaway && <p className="text-ink-soft"><strong>משמעות לשיעור:</strong> {r.practical_takeaway}</p>}
+                      {r.limitations && <p className="text-ink-soft"><strong>סייגים:</strong> {r.limitations}</p>}
+                      <p className="text-xs text-ink-faint">רמת ראיות: {r.evidence_level ?? 'unknown'}</p>
                     </div>
                   )}
 
                   {r.scan_error && (
-                    <p className="rounded-lg bg-red-50 px-2 py-1 text-xs font-semibold text-red-700 border border-red-200">
+                    <p className="rounded-lg bg-coral-50 px-2 py-1 text-xs font-semibold text-coral-700 border border-coral-200">
                       {r.scan_error}
                     </p>
                   )}
 
                   <button type="button" onClick={() => setResearches(prev => prev.filter((_, i) => i !== ri))}
-                    className="text-red-500 hover:text-red-700 text-sm font-semibold">מחק מחקר</button>
+                    className="text-coral-500 hover:text-coral-700 text-sm font-semibold">מחק מחקר</button>
                 </div>
               )}
             </div>
@@ -1727,15 +1727,15 @@ export function StepEditor({ step }: StepEditorProps) {
               t.meal_timing === 'after' ? 'after' : t.meal_timing === 'during' ? 'during' : 'before';
             const mealTarget: 'fixed' | 'all' = t.meal_target === 'all' ? 'all' : 'fixed';
             return (
-            <div key={t.id || ti} className="rounded-xl border overflow-hidden" style={{ borderColor: 'rgba(249,115,22,0.2)', background: 'rgba(248,251,246,0.75)' }}>
+            <div key={t.id || ti} className="rounded-xl border overflow-hidden" style={{ borderColor: 'rgba(249,115,22,0.2)', background: 'rgba(207,233,220,0.75)' }}>
               <button
                 type="button"
                 onClick={() => setExpandedTask(expandedTask === ti ? null : ti)}
                 className="w-full p-3 flex items-center justify-between text-right"
                 style={{ background: 'linear-gradient(135deg, rgba(249,115,22,0.15), rgba(251,146,60,0.10))' }}
               >
-                <span className="text-sm font-bold text-orange-900">משימה {ti + 1}: {t.title || 'ללא כותרת'}</span>
-                <ChevronDown className={`w-4 h-4 text-orange-700 transition-transform ${expandedTask === ti ? 'rotate-180' : ''}`} />
+                <span className="text-sm font-bold text-energy-900">משימה {ti + 1}: {t.title || 'ללא כותרת'}</span>
+                <ChevronDown className={`w-4 h-4 text-energy-700 transition-transform ${expandedTask === ti ? 'rotate-180' : ''}`} />
               </button>
               {expandedTask === ti && (
                 <div className="p-3 space-y-2">
@@ -1825,7 +1825,7 @@ export function StepEditor({ step }: StepEditorProps) {
                           }}
                           className="input-field"
                         />
-                        <p className="text-[10px] text-slate-500 mt-1">
+                        <p className="text-[10px] text-ink-faint mt-1">
                           שלילי = לפני, 0 = בזמן, חיובי = אחרי. מסתנכרן עם שעות הארוחות מהפרופיל של המשתמש.
                         </p>
                       </Field>
@@ -1963,7 +1963,7 @@ export function StepEditor({ step }: StepEditorProps) {
                   {/* ── שכבות קושי ── */}
                   <div className="rounded-lg p-3 space-y-2" style={{ background: 'rgba(249,115,22,0.06)', border: '1px solid rgba(249,115,22,0.15)' }}>
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs font-bold text-orange-900">סולם רמות קושי</span>
+                      <span className="text-xs font-bold text-energy-900">סולם רמות קושי</span>
                       <button
                         type="button"
                         onClick={() => {
@@ -1975,7 +1975,7 @@ export function StepEditor({ step }: StepEditorProps) {
                           }
                           setTasks(arr);
                         }}
-                        className="text-[11px] font-semibold text-orange-700 hover:text-orange-900"
+                        className="text-[11px] font-semibold text-energy-700 hover:text-energy-900"
                       >
                         {t.leveling ? 'הסר סולם' : 'הוסף סולם'}
                       </button>
@@ -2006,7 +2006,7 @@ export function StepEditor({ step }: StepEditorProps) {
                           <div
                             key={lvl.id || li}
                             className="rounded-lg p-2 space-y-1"
-                            style={{ background: 'rgba(248,251,246,0.7)', border: '1px solid rgba(249,115,22,0.12)' }}
+                            style={{ background: 'rgba(207,233,220,0.7)', border: '1px solid rgba(249,115,22,0.12)' }}
                           >
                             <div className="flex flex-wrap items-center gap-2">
                               <input
@@ -2023,7 +2023,7 @@ export function StepEditor({ step }: StepEditorProps) {
                                 className="input-field flex-1 min-w-[120px]"
                                 placeholder="שם הרמה"
                               />
-                              <label className="flex items-center gap-1 text-[10px] font-semibold text-orange-800">
+                              <label className="flex items-center gap-1 text-[10px] font-semibold text-energy-800">
                                 <input
                                   type="radio"
                                   name={`start-${t.id}`}
@@ -2039,7 +2039,7 @@ export function StepEditor({ step }: StepEditorProps) {
                                 />
                                 התחלה
                               </label>
-                              <label className="flex items-center gap-1 text-[10px] font-semibold text-orange-800">
+                              <label className="flex items-center gap-1 text-[10px] font-semibold text-energy-800">
                                 <input
                                   type="radio"
                                   name={`rec-${t.id}`}
@@ -2074,7 +2074,7 @@ export function StepEditor({ step }: StepEditorProps) {
                                     })
                                   );
                                 }}
-                                className="text-red-500 text-[10px] font-semibold"
+                                className="text-coral-500 text-[10px] font-semibold"
                               >
                                 מחק
                               </button>
@@ -2116,18 +2116,18 @@ export function StepEditor({ step }: StepEditorProps) {
                               })
                             );
                           }}
-                          className="text-[11px] font-semibold text-orange-700"
+                          className="text-[11px] font-semibold text-energy-700"
                         >
                           + הוסף רמה
                         </button>
                       </div>
                     ) : (
-                      <p className="text-[10px] text-orange-800/70">ללא סולם — המשימה תוצג ברמה אחת בלבד.</p>
+                      <p className="text-[10px] text-energy-800/70">ללא סולם — המשימה תוצג ברמה אחת בלבד.</p>
                     )}
                   </div>
 
                   <button onClick={() => setTasks(prev => prev.filter((_, i) => i !== ti))}
-                    className="text-red-500 hover:text-red-700 text-sm font-semibold">מחק משימה</button>
+                    className="text-coral-500 hover:text-coral-700 text-sm font-semibold">מחק משימה</button>
                 </div>
               )}
             </div>
@@ -2144,15 +2144,15 @@ export function StepEditor({ step }: StepEditorProps) {
             דוגמה: &quot;לפני כל ארוחה שותה כוס מים&quot;.
           </div>
           {habits.map((h, hi) => (
-            <div key={h.id || hi} className="rounded-xl border overflow-hidden" style={{ borderColor: 'rgba(16,185,129,0.24)', background: 'rgba(248,251,246,0.76)' }}>
+            <div key={h.id || hi} className="rounded-xl border overflow-hidden" style={{ borderColor: 'rgba(16,185,129,0.24)', background: 'rgba(207,233,220,0.76)' }}>
               <button
                 type="button"
                 onClick={() => setExpandedHabit(expandedHabit === hi ? null : hi)}
                 className="w-full p-3 flex items-center justify-between text-right"
                 style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.16), rgba(6,182,212,0.10))' }}
               >
-                <span className="text-sm font-bold text-emerald-900">הרגל {hi + 1}: {h.title || 'ללא כותרת'}</span>
-                <ChevronDown className={`w-4 h-4 text-emerald-700 transition-transform ${expandedHabit === hi ? 'rotate-180' : ''}`} />
+                <span className="text-sm font-bold text-primary-900">הרגל {hi + 1}: {h.title || 'ללא כותרת'}</span>
+                <ChevronDown className={`w-4 h-4 text-primary-700 transition-transform ${expandedHabit === hi ? 'rotate-180' : ''}`} />
               </button>
               {expandedHabit === hi && (
                 <div className="p-3 space-y-2">
@@ -2233,7 +2233,7 @@ export function StepEditor({ step }: StepEditorProps) {
                     </Field>
                   ) : null}
                   <button onClick={() => setHabits(prev => prev.filter((_, i) => i !== hi))}
-                    className="text-red-500 hover:text-red-700 text-sm font-semibold">מחק הרגל</button>
+                    className="text-coral-500 hover:text-coral-700 text-sm font-semibold">מחק הרגל</button>
                 </div>
               )}
             </div>
@@ -2257,7 +2257,7 @@ export function StepEditor({ step }: StepEditorProps) {
                 },
               })
             }
-            className="mb-3 rounded-xl border border-red-300/60 bg-red-500/10 px-4 py-2 text-sm font-bold text-red-900"
+            className="mb-3 rounded-xl border border-coral-300/60 bg-coral-500/10 px-4 py-2 text-sm font-bold text-coral-900"
           >
             העלאת קובץ
           </button>
@@ -2271,17 +2271,17 @@ export function StepEditor({ step }: StepEditorProps) {
           </Field>
         </Section>
 
-        <div className="flex items-center justify-between gap-3 rounded-2xl p-3 backdrop-blur-sm" style={{ background: 'rgba(248,251,246,0.68)', border: '1px solid rgba(248,251,246,0.9)' }}>
+        <div className="flex items-center justify-between gap-3 rounded-2xl p-3 backdrop-blur-sm" style={{ background: 'rgba(207,233,220,0.68)', border: '1px solid rgba(207,233,220,0.9)' }}>
           <button
             type="button"
             onClick={goPrevSection}
             disabled={!canGoBack}
             className="px-4 py-2.5 rounded-xl font-bold text-sm border transition disabled:opacity-40"
-            style={{ borderColor: 'rgba(0,0,0,0.12)', background: '#F7FBF4', color: '#374151' }}
+            style={{ borderColor: 'rgba(0,0,0,0.12)', background: '#cfe9dc', color: '#374151' }}
           >
             שלב קודם
           </button>
-          <span className="text-xs text-gray-500">שלב {activeSectionIndex + 1} מתוך {sectionOrder.length}</span>
+          <span className="text-xs text-ink-faint">שלב {activeSectionIndex + 1} מתוך {sectionOrder.length}</span>
           <button
             type="button"
             onClick={goNextSection}
@@ -2308,10 +2308,10 @@ export function StepEditor({ step }: StepEditorProps) {
 
       {/* Save progress overlay */}
       {saving && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center bg-slate-900/45 backdrop-blur-sm px-4" dir="rtl">
+        <div className="fixed inset-0 z-60 flex items-center justify-center bg-ink-900/45 backdrop-blur-sm px-4" dir="rtl">
           <div
             className="w-full max-w-sm rounded-3xl p-6 text-center"
-            style={{ background: 'rgba(248,251,246,0.97)', border: '1px solid rgba(248,251,246,0.9)', boxShadow: '0 24px 60px rgba(15,23,42,0.35)' }}
+            style={{ background: 'rgba(207,233,220,0.97)', border: '1px solid rgba(207,233,220,0.9)', boxShadow: '0 24px 60px rgba(15,23,42,0.35)' }}
           >
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl" style={{ background: 'linear-gradient(135deg, #047857, #10b981)' }}>
               <Loader2 className="h-7 w-7 animate-spin text-gc" />
@@ -2320,12 +2320,12 @@ export function StepEditor({ step }: StepEditorProps) {
             <h3 className="text-lg font-black" style={{ color: '#1A1730' }}>
               {saveHasTts ? 'שומר ויוצר הקראות' : 'שומר צעד'}
             </h3>
-            <p className="mt-1 text-sm font-bold text-emerald-700">
+            <p className="mt-1 text-sm font-bold text-primary-700">
               {saveHasTts ? `${SAVE_STAGES[saveStageIndex]?.label}…` : 'שומר את הצעד…'}
             </p>
 
             {/* Progress bar */}
-            <div className="mt-4 h-3 w-full overflow-hidden rounded-full bg-emerald-100/70">
+            <div className="mt-4 h-3 w-full overflow-hidden rounded-full bg-primary-100/70">
               <div
                 className="h-full rounded-full transition-all duration-200"
                 style={{ width: `${saveProgress}%`, background: 'linear-gradient(90deg, #047857, #10b981, #34d399)' }}
@@ -2360,7 +2360,7 @@ export function StepEditor({ step }: StepEditorProps) {
               </ul>
             )}
 
-            <p className="mt-4 text-xs text-slate-500 leading-relaxed">
+            <p className="mt-4 text-xs text-ink-faint leading-relaxed">
               {saveHasTts
                 ? 'יצירת אודיו ב-ElevenLabs עשויה לקחת מספר שניות לכל שאלה. לא לסגור את החלון.'
                 : 'רק רגע, שומר את הצעד…'}
@@ -2371,10 +2371,10 @@ export function StepEditor({ step }: StepEditorProps) {
 
       {/* AI fill progress overlay */}
       {aiFilling && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center bg-slate-900/45 backdrop-blur-sm px-4" dir="rtl">
+        <div className="fixed inset-0 z-60 flex items-center justify-center bg-ink-900/45 backdrop-blur-sm px-4" dir="rtl">
           <div
             className="w-full max-w-sm rounded-3xl p-6 text-center"
-            style={{ background: 'rgba(248,251,246,0.97)', border: '1px solid rgba(248,251,246,0.9)', boxShadow: '0 24px 60px rgba(76,29,149,0.35)' }}
+            style={{ background: 'rgba(207,233,220,0.97)', border: '1px solid rgba(207,233,220,0.9)', boxShadow: '0 24px 60px rgba(76,29,149,0.35)' }}
           >
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl" style={{ background: 'linear-gradient(135deg, #7c3aed, #2563eb)' }}>
               <Loader2 className="h-7 w-7 animate-spin text-gc" />
@@ -2383,11 +2383,11 @@ export function StepEditor({ step }: StepEditorProps) {
             <h3 className="text-lg font-black" style={{ color: '#1A1730' }}>
               מילוי אוטומטי עם AI
             </h3>
-            <p className="mt-1 text-sm font-bold text-violet-700">
+            <p className="mt-1 text-sm font-bold text-iris-700">
               {AIFILL_STAGES[aiStageIndex]?.label}…
             </p>
 
-            <div className="mt-4 h-3 w-full overflow-hidden rounded-full bg-violet-100/70">
+            <div className="mt-4 h-3 w-full overflow-hidden rounded-full bg-iris-100/70">
               <div
                 className="h-full rounded-full transition-all duration-200"
                 style={{ width: `${aiProgress}%`, background: 'linear-gradient(90deg, #7c3aed, #6366f1, #2563eb)' }}
@@ -2420,7 +2420,7 @@ export function StepEditor({ step }: StepEditorProps) {
               })}
             </ul>
 
-            <p className="mt-4 text-xs text-slate-500 leading-relaxed">
+            <p className="mt-4 text-xs text-ink-faint leading-relaxed">
               סריקת קישורי המחקרים עשויה לקחת מספר שניות. אל תסגור/י את החלון.
             </p>
           </div>
@@ -2469,7 +2469,7 @@ function Section({
 }) {
   if (!isVisible) return null;
   return (
-    <div className="rounded-2xl p-4 sm:p-5 space-y-4 backdrop-blur-md" style={{ background: 'rgba(248,251,246,0.74)', border: '1px solid rgba(248,251,246,0.95)', boxShadow: '0 12px 28px rgba(6,78,59,0.10)' }}>
+    <div className="rounded-2xl p-4 sm:p-5 space-y-4 backdrop-blur-md" style={{ background: 'rgba(207,233,220,0.74)', border: '1px solid rgba(207,233,220,0.95)', boxShadow: '0 12px 28px rgba(6,78,59,0.10)' }}>
       <div className="flex items-center gap-2">
         <div className="w-7 h-7 rounded-full text-gc text-xs font-black flex items-center justify-center" style={{ background: color }}>
           {sectionNumber}
@@ -2510,7 +2510,7 @@ function SectionTab({
           ? `1px solid ${color}55`
           : '1px solid rgba(248,251,246,0.55)',
         boxShadow: active
-          ? `0 8px 24px ${color}22, inset 0 1px 0 rgba(248,251,246,0.65)`
+          ? `0 8px 24px ${color}22, inset 0 1px 0 rgba(207,233,220,0.65)`
           : '0 2px 10px rgba(15,23,42,0.06), inset 0 1px 0 rgba(241,244,234,0.45)',
       }}
     >
@@ -2537,7 +2537,7 @@ function SectionTab({
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="text-xs font-bold text-gray-600 mb-1.5 block">{label}</label>
+      <label className="text-xs font-bold text-ink-soft mb-1.5 block">{label}</label>
       {children}
     </div>
   );
@@ -2546,7 +2546,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 function AddButton({ label, onClick }: { label: string; onClick: () => void }) {
   return (
     <button onClick={onClick}
-      className="w-full py-3 rounded-xl border-2 border-dashed border-gray-200 text-gray-400 font-bold text-sm flex items-center justify-center gap-2 hover:border-emerald-300 hover:text-emerald-600 transition-all">
+      className="w-full py-3 rounded-xl border-2 border-dashed border-hairline text-ink-faint font-bold text-sm flex items-center justify-center gap-2 hover:border-primary-300 hover:text-primary-600 transition-all">
       <Plus className="w-4 h-4" /> {label}
     </button>
   );

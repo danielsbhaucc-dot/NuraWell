@@ -47,11 +47,11 @@ function FeatureTile({
       className={cn(
         'a11y-feature-tile flex flex-col items-center justify-center gap-1.5 rounded-xl border px-2 py-3 text-center transition-all',
         pressed
-          ? 'border-emerald-500/70 bg-linear-to-b from-emerald-700 to-teal-700 text-white shadow-md'
-          : 'border-white/70 bg-background-card/75 text-slate-700 hover:border-emerald-200 hover:bg-background-card',
+          ? 'border-primary-500/70 bg-linear-to-b from-primary-700 to-secondary-700 text-on-dark shadow-md'
+          : 'border-on-dark/70 bg-background-card/75 text-ink-700 hover:border-primary-200 hover:bg-background-card',
       )}
     >
-      <span className={cn('flex h-8 w-8 items-center justify-center rounded-lg', pressed ? 'bg-background-card/15' : 'bg-emerald-50 text-emerald-700')} aria-hidden>
+      <span className={cn('flex h-8 w-8 items-center justify-center rounded-lg', pressed ? 'bg-background-card/15' : 'bg-primary-50 text-primary-700')} aria-hidden>
         {icon}
       </span>
       <span className="text-[10px] font-bold leading-tight">{label}</span>
@@ -73,7 +73,7 @@ function AccordionSection({
   children: ReactNode;
 }) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-white/60 bg-background-card/35">
+    <div className="overflow-hidden rounded-2xl border border-on-dark/60 bg-background-card/35">
       <button
         type="button"
         id={`${id}-btn`}
@@ -82,11 +82,11 @@ function AccordionSection({
         onClick={onToggle}
         className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-start"
       >
-        <span className="text-xs font-black text-slate-900">{title}</span>
-        <ChevronDown className={cn('h-4 w-4 text-slate-500 transition-transform', open && '-rotate-180')} aria-hidden />
+        <span className="text-xs font-black text-ink-900">{title}</span>
+        <ChevronDown className={cn('h-4 w-4 text-ink-500 transition-transform', open && '-rotate-180')} aria-hidden />
       </button>
       {open ? (
-        <div id={`${id}-panel`} role="region" aria-labelledby={`${id}-btn`} className="space-y-2 border-t border-white/50 px-3 pb-3 pt-2">
+        <div id={`${id}-panel`} role="region" aria-labelledby={`${id}-btn`} className="space-y-2 border-t border-on-dark/50 px-3 pb-3 pt-2">
           {children}
         </div>
       ) : null}
@@ -107,7 +107,7 @@ function ScalePicker<T extends string>({
 }) {
   return (
     <div>
-      <p className="mb-2 text-[11px] font-bold text-slate-700">{label}</p>
+      <p className="mb-2 text-[11px] font-bold text-ink-700">{label}</p>
       <div className="grid grid-cols-3 gap-1.5" role="group" aria-label={label}>
         {options.map((option) => (
           <button
@@ -118,8 +118,8 @@ function ScalePicker<T extends string>({
             className={cn(
               'rounded-lg border px-2 py-2 text-[10px] font-bold transition-colors',
               value === option.key
-                ? 'border-emerald-600 bg-emerald-700 text-white'
-                : 'border-white/70 bg-background-card/70 text-slate-700 hover:bg-background-card',
+                ? 'border-primary-600 bg-primary-700 text-on-dark'
+                : 'border-on-dark/70 bg-background-card/70 text-ink-700 hover:bg-background-card',
             )}
           >
             {option.label}
@@ -177,19 +177,19 @@ export function AccessibilityWidget() {
           role="dialog"
           aria-modal="false"
           aria-labelledby={`${panelId}-title`}
-          className="a11y-widget-panel mb-3 w-[min(94vw,24rem)] overflow-hidden rounded-[1.35rem] border border-white/75 shadow-[0_24px_60px_rgba(6,78,59,0.22)] backdrop-blur-2xl"
+          className="a11y-widget-panel mb-3 w-[min(94vw,24rem)] overflow-hidden rounded-[1.35rem] border border-on-dark/75 shadow-[0_24px_60px_rgba(6,78,59,0.22)] backdrop-blur-2xl"
         >
-          <div className="a11y-widget-header relative px-4 py-4 text-white">
+          <div className="a11y-widget-header relative px-4 py-4 text-on-dark">
             <div className="relative flex items-start justify-between gap-3">
               <div className="flex items-start gap-3">
-                <span className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/25 bg-background-card/15 shadow-xs">
+                <span className="flex h-11 w-11 items-center justify-center rounded-2xl border border-on-dark/25 bg-background-card/15 shadow-xs">
                   <Accessibility className="h-5 w-5" aria-hidden />
                 </span>
                 <div>
                   <h2 id={`${panelId}-title`} className="text-base font-black">
                     נגישות
                   </h2>
-                  <p className="mt-0.5 text-[11px] leading-snug text-emerald-50/90">
+                  <p className="mt-0.5 text-[11px] leading-snug text-primary-50/90">
                     התאמות אישיות — נשמרות בדפדפן
                   </p>
                 </div>
@@ -200,7 +200,7 @@ export function AccessibilityWidget() {
                   setOpen(false);
                   toggleRef.current?.focus();
                 }}
-                className="rounded-xl border border-white/25 bg-background-card/10 p-2 transition hover:bg-background-card/20"
+                className="rounded-xl border border-on-dark/25 bg-background-card/10 p-2 transition hover:bg-background-card/20"
                 aria-label="סגור תפריט נגישות"
               >
                 <X className="h-4 w-4" aria-hidden />
@@ -362,11 +362,11 @@ export function AccessibilityWidget() {
             </AccordionSection>
           </div>
 
-          <div className="space-y-2 border-t border-white/50 bg-background-card/30 px-3 py-3">
+          <div className="space-y-2 border-t border-on-dark/50 bg-background-card/30 px-3 py-3">
             <button
               type="button"
               onClick={resetPreferences}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-linear-to-l from-slate-700 to-slate-900 px-4 py-3 text-sm font-black text-white shadow-md transition hover:brightness-110"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-linear-to-l from-ink-700 to-ink-900 px-4 py-3 text-sm font-black text-on-dark shadow-md transition hover:brightness-110"
             >
               <RotateCcw className="h-4 w-4" aria-hidden />
               איפוס כל ההתאמות
@@ -378,14 +378,14 @@ export function AccessibilityWidget() {
                   hideWidget();
                   setOpen(false);
                 }}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-white/70 bg-background-card/60 px-3 py-2 text-[11px] font-bold text-slate-700 transition hover:bg-background-card"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-on-dark/70 bg-background-card/60 px-3 py-2 text-[11px] font-bold text-ink-700 transition hover:bg-background-card"
               >
                 <Minus className="h-3.5 w-3.5" aria-hidden />
                 הסתר תפריט
               </button>
               <Link
                 href="/accessibility"
-                className="ms-auto inline-flex items-center gap-1.5 rounded-xl border border-emerald-200/80 bg-emerald-50 px-3 py-2 text-[11px] font-bold text-emerald-900 transition hover:bg-emerald-100"
+                className="ms-auto inline-flex items-center gap-1.5 rounded-xl border border-primary-200/80 bg-primary-50 px-3 py-2 text-[11px] font-bold text-primary-900 transition hover:bg-primary-100"
               >
                 <FileText className="h-3.5 w-3.5" aria-hidden />
                 הצהרת נגישות
@@ -403,19 +403,19 @@ export function AccessibilityWidget() {
         aria-haspopup="dialog"
         onClick={() => setOpen((value) => !value)}
         className={cn(
-          'a11y-widget-fab relative inline-flex h-13 w-13 items-center justify-center rounded-full border border-white/75 text-white shadow-[0_14px_34px_rgba(6,78,59,0.35)] transition-all duration-200 hover:scale-[1.04] focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300',
+          'a11y-widget-fab relative inline-flex h-13 w-13 items-center justify-center rounded-full border border-on-dark/75 text-on-dark shadow-[0_14px_34px_rgba(6,78,59,0.35)] transition-all duration-200 hover:scale-[1.04] focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-300',
           open
-            ? 'bg-linear-to-br from-slate-700 to-slate-900'
-            : 'bg-linear-to-br from-emerald-700 via-teal-600 to-emerald-500',
+            ? 'bg-linear-to-br from-ink-700 to-ink-900'
+            : 'bg-linear-to-br from-primary-700 via-secondary-600 to-primary-500',
         )}
         aria-label={open ? 'סגור תפריט נגישות' : 'פתח תפריט נגישות'}
       >
         {!open ? (
-          <span className="pointer-events-none absolute -inset-1 rounded-full bg-emerald-400/30 blur-md" aria-hidden />
+          <span className="pointer-events-none absolute -inset-1 rounded-full bg-primary-400/30 blur-md" aria-hidden />
         ) : null}
         <Accessibility className="relative h-5 w-5" aria-hidden />
         {!open && activeCount > 0 ? (
-          <span className="absolute -top-1 -inset-e-1 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-white bg-amber-400 px-1 text-[10px] font-black text-amber-950">
+          <span className="absolute -top-1 -inset-e-1 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-on-dark bg-accent-400 px-1 text-[10px] font-black text-accent-950">
             {activeCount}
           </span>
         ) : null}

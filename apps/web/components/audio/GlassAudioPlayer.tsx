@@ -78,10 +78,10 @@ export function GlassAudioPlayer({ src, title }: GlassAudioPlayerProps) {
   return (
     <div
       dir="ltr"
-      className="group relative mt-2 flex items-center gap-3 overflow-hidden rounded-2xl border border-white/30 bg-background-card/10 px-3 py-2.5 shadow-[0_10px_30px_-6px_rgba(6,78,59,0.35)] ring-1 ring-inset ring-white/25 backdrop-blur-2xl backdrop-saturate-150"
+      className="group relative mt-2 flex items-center gap-3 overflow-hidden rounded-2xl border border-on-dark/30 bg-background-card/10 px-3 py-2.5 shadow-[0_10px_30px_-6px_rgba(6,78,59,0.35)] ring-1 ring-inset ring-on-dark/25 backdrop-blur-2xl backdrop-saturate-150"
     >
       {/* גוון זכוכית צבעוני שמבליט את האפקט על רקע בהיר */}
-      <div className="pointer-events-none absolute inset-0 -z-10 bg-linear-to-br from-emerald-300/30 via-teal-200/15 to-sky-300/25" />
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-linear-to-br from-primary-300/30 via-secondary-200/15 to-secondary-300/25" />
       {/* נצנוץ רך בפינה — מראה של זכוכית אמיתית */}
       <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(80%_140%_at_0%_-10%,rgba(248,251,246,0.55),transparent_45%)]" />
       {/* קו הדגשה עליון (גימור זכוכית) */}
@@ -94,10 +94,10 @@ export function GlassAudioPlayer({ src, title }: GlassAudioPlayerProps) {
         type="button"
         onClick={toggle}
         aria-label={playing ? 'השהה' : 'נגן'}
-        className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/30 ring-1 ring-white/40 transition-transform active:scale-95"
+        className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-primary-500 to-secondary-500 text-on-dark shadow-lg shadow-primary-500/30 ring-1 ring-on-dark/40 transition-transform active:scale-95"
       >
         {playing && (
-          <span className="absolute inset-0 animate-ping rounded-full bg-emerald-400/40" />
+          <span className="absolute inset-0 animate-ping rounded-full bg-primary-400/40" />
         )}
         {loading ? (
           <Loader2 className="h-5 w-5 animate-spin" />
@@ -123,7 +123,7 @@ export function GlassAudioPlayer({ src, title }: GlassAudioPlayerProps) {
 
       <div className="min-w-0 flex-1">
         {title && (
-          <div dir="rtl" className="mb-1 truncate text-[11px] font-semibold text-slate-700">
+          <div dir="rtl" className="mb-1 truncate text-[11px] font-semibold text-ink-700">
             {title}
           </div>
         )}
@@ -140,7 +140,7 @@ export function GlassAudioPlayer({ src, title }: GlassAudioPlayerProps) {
             background: `linear-gradient(to right, rgb(16 185 129), rgb(45 212 191) ${pct}%, rgba(15,23,42,0.1) ${pct}%)`,
           }}
         />
-        <div className="mt-1 flex justify-between text-[10px] font-semibold tabular-nums text-slate-500">
+        <div className="mt-1 flex justify-between text-[10px] font-semibold tabular-nums text-ink-500">
           <span>{fmt(current)}</span>
           <span>{fmt(duration)}</span>
         </div>

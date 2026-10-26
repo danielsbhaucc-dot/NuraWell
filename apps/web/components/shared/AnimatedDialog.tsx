@@ -165,7 +165,7 @@ export function AnimatedDialog({
           <motion.button
             type="button"
             aria-label="סגירה"
-            className={backdropClassName ?? 'absolute inset-0 bg-slate-950/50 backdrop-blur-sm'}
+            className={backdropClassName ?? 'absolute inset-0 bg-ink-950/50 backdrop-blur-sm'}
             onClick={dismissOnBackdrop ? onClose : undefined}
             tabIndex={dismissOnBackdrop ? 0 : -1}
             initial={{ opacity: 0 }}

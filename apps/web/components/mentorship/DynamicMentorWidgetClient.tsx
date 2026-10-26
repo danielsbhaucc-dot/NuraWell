@@ -90,25 +90,25 @@ export function DynamicMentorWidgetClient({
             boxShadow: '0 6px 16px rgba(4,120,87,0.22), inset 0 1px 0 rgba(255,255,255,0.25)',
           }}
         >
-          <Sparkles className="h-5 w-5 text-white" strokeWidth={2.2} aria-hidden />
+          <Sparkles className="h-5 w-5 text-on-dark" strokeWidth={2.2} aria-hidden />
         </div>
 
         <div className="min-w-0 flex-1 text-start">
           <p
-            className="text-[10px] font-bold uppercase tracking-wider text-emerald-900/55"
+            className="text-[10px] font-bold uppercase tracking-wider text-primary-900/55"
             style={{ letterSpacing: '1px' }}
           >
             {subtitle}
           </p>
           {loading ? (
             <div className="mt-2 space-y-2">
-              <div className="h-4 w-4/5 animate-pulse rounded-lg bg-emerald-900/10" />
+              <div className="h-4 w-4/5 animate-pulse rounded-lg bg-primary-900/10" />
               <div className="h-3 w-full animate-pulse rounded-lg" />
             </div>
           ) : (
             <>
               <p
-                className="mt-1.5 text-[15px] font-extrabold leading-snug text-emerald-950"
+                className="mt-1.5 text-[15px] font-extrabold leading-snug text-primary-950"
                 style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
               >
                 {title}

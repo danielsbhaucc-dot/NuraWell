@@ -57,13 +57,13 @@ export function CommitmentSection({
           className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-3"
           style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)' }}
         >
-          <Heart className="w-4 h-4 text-amber-600" />
-          <span className="text-sm font-bold text-amber-700">התחייבות</span>
+          <Heart className="w-4 h-4 text-accent-600" />
+          <span className="text-sm font-bold text-accent-700">התחייבות</span>
         </div>
         <h2 className="text-2xl font-black" style={{ color: '#1A1730', fontFamily: "'Rubik','Heebo',sans-serif" }}>
           {lessonCopy.commitmentLetsTalk}
         </h2>
-        <p className="text-sm text-amber-900/75 mt-2 max-w-xs mx-auto font-medium leading-relaxed">
+        <p className="text-sm text-accent-900/75 mt-2 max-w-xs mx-auto font-medium leading-relaxed">
           אני יודע שזה לא תמיד קל — אבל התחייבות קטנה וברורה יכולה לשנות הכל.
         </p>
       </div>
@@ -83,11 +83,11 @@ export function CommitmentSection({
           style={{ background: 'linear-gradient(145deg, #047857, #059669, #10b981)' }}
         >
           <div className="text-5xl mb-3">{commitment.emoji}</div>
-          <p className="text-sm font-bold text-white/85 mb-1">{copy.prefix}:</p>
-          <p className="text-lg font-black leading-relaxed text-white">{commitment.text}</p>
+          <p className="text-sm font-bold text-on-dark/85 mb-1">{copy.prefix}:</p>
+          <p className="text-lg font-black leading-relaxed text-on-dark">{commitment.text}</p>
         </div>
         <div className="p-6 bg-background-card text-center">
-          <p className="text-sm text-gray-500 leading-relaxed mb-6">{commitment.description}</p>
+          <p className="text-sm text-ink-500 leading-relaxed mb-6">{commitment.description}</p>
 
           {accepted ? (
             <motion.div
@@ -99,8 +99,8 @@ export function CommitmentSection({
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-xl"
                 style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)' }}
               >
-                <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                <span className="text-emerald-700 font-bold">קיבלת על עצמך! 🌟</span>
+                <CheckCircle2 className="w-5 h-5 text-primary-600" />
+                <span className="text-primary-700 font-bold">קיבלת על עצמך! 🌟</span>
               </motion.div>
               <AlmogLessonFeedback
                 isCorrect
@@ -109,7 +109,7 @@ export function CommitmentSection({
                 commitmentText={commitment.text}
                 stepId={stepId}
                 fallback={
-                  <span className="text-sm text-gray-600">
+                  <span className="text-sm text-ink-600">
                     התחייבות חזקה — צעד קטן היום מספיק לנעוץ את זה.
                   </span>
                 }
@@ -120,19 +120,19 @@ export function CommitmentSection({
               <button
                 type="button"
                 onClick={handleAccept}
-                className="w-full py-4 rounded-2xl font-bold text-lg text-white flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-95"
+                className="w-full py-4 rounded-2xl font-bold text-lg text-on-dark flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-95"
                 style={{
                   background: 'linear-gradient(135deg, #047857, #10b981)',
                   boxShadow: '0 6px 20px rgba(16,185,129,0.3)',
                 }}
               >
-                <Heart className="w-5 h-5" fill="white" />
+                <Heart className="w-5 h-5" fill="#eef4ea" />
                 <span>{copy.button}</span>
               </button>
               <button
                 type="button"
                 onClick={handleContinueWithoutCommitment}
-                className="w-full py-3 rounded-xl text-sm text-gray-500 hover:text-gray-700 transition-colors"
+                className="w-full py-3 rounded-xl text-sm text-ink-500 hover:text-ink-700 transition-colors"
                 style={{ background: 'rgba(0,0,0,0.03)', border: '1px solid rgba(0,0,0,0.08)' }}
               >
                 להמשיך בלי התחייבות כרגע
@@ -152,7 +152,7 @@ export function CommitmentSection({
           <button
             type="button"
             onClick={handleUndoCommitment}
-            className="text-sm text-gray-500 hover:text-gray-700 transition-colors underline underline-offset-2"
+            className="text-sm text-ink-500 hover:text-ink-700 transition-colors underline underline-offset-2"
           >
             התחרטתי — ביטול התחייבות
           </button>

@@ -205,20 +205,20 @@ export function AlmogNudgeSettingsClient({
   }
 
   return (
-    <div className="min-h-screen bg-linear-to-b from-[#f2fbf8] via-[#f8fafc] to-background-card">
+    <div className="min-h-screen bg-linear-to-b from-[#cfe9dc] via-[#cfe9dc] to-background-card">
       <div className="container-mobile py-6 pb-10 space-y-5">
         <motion.div
           initial={{ opacity: 0, y: -6 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-2 text-sm text-slate-500"
+          className="flex items-center gap-2 text-sm text-ink-faint"
         >
           <PageBackButton href="/profile" label="לפרופיל" ariaLabel="חזרה לפרופיל" variant="onLight" />
-          <span className="text-slate-700">התראות מאלמוג</span>
+          <span className="text-ink-soft">התראות מאלמוג</span>
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-          <h1 className="text-2xl font-black text-slate-900">איך אלמוג נוגע בך מחוץ לצ׳אט</h1>
-          <p className="mt-2 text-[15px] leading-relaxed text-slate-600">
+          <h1 className="text-2xl font-black text-ink">איך אלמוג נוגע בך מחוץ לצ׳אט</h1>
+          <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">
             אלמוג יכול לשלוח עדכונים קצרים באפליקציה — כשמפספסים יום במסע, כשנותנים רצף ימים,
             או כשחסר עדכון משקל. כאן אפשר להרגיע או לכוון בלי מילים טכניות.
           </p>
@@ -228,11 +228,11 @@ export function AlmogNudgeSettingsClient({
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
-          className="rounded-3xl border-2 border-amber-400 bg-linear-to-br from-amber-50 via-orange-50 to-amber-50 p-5 shadow-[0_10px_30px_rgba(217,119,6,0.15)] space-y-3"
+          className="rounded-3xl border-2 border-accent-400 bg-linear-to-br from-accent-50 via-energy-50 to-accent-50 p-5 shadow-[0_10px_30px_rgba(217,119,6,0.15)] space-y-3"
         >
           <div className="flex gap-3">
             <div
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-white"
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-on-dark"
               style={{
                 background: 'linear-gradient(145deg, #f59e0b, #f97316)',
                 boxShadow: '0 6px 18px rgba(217,119,6,0.32)',
@@ -241,8 +241,8 @@ export function AlmogNudgeSettingsClient({
               <Send className="h-5 w-5" aria-hidden />
             </div>
             <div className="min-w-0">
-              <h2 className="text-base font-black text-slate-900">בדיקת התראה עכשיו</h2>
-              <p className="mt-1 text-sm text-slate-700 leading-relaxed">
+              <h2 className="text-base font-black text-ink">בדיקת התראה עכשיו</h2>
+              <p className="mt-1 text-sm text-ink-soft leading-relaxed">
                 לחיצה כאן שולחת מיד התראה אמיתית מאלמוג לפעמון שלך — בלי להמתין לתזמון.
                 מתאים לוודא שהזרימה עובדת אחרי שינוי או בדיקה ראשונה.
               </p>
@@ -254,10 +254,10 @@ export function AlmogNudgeSettingsClient({
             disabled={testing}
             onClick={() => void sendTestNotification()}
             className={cn(
-              'inline-flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3.5 text-sm font-black text-white transition',
+              'inline-flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3.5 text-sm font-black text-on-dark transition',
               testing
-                ? 'bg-amber-400/70 cursor-wait'
-                : 'bg-linear-to-l from-amber-500 to-orange-500 hover:brightness-105 shadow-lg shadow-amber-500/30 active:scale-[0.98]'
+                ? 'bg-accent-400/70 cursor-wait'
+                : 'bg-linear-to-l from-accent-500 to-energy-500 hover:brightness-105 shadow-lg shadow-accent-500/30 active:scale-[0.98]'
             )}
           >
             {testing ? (
@@ -274,19 +274,19 @@ export function AlmogNudgeSettingsClient({
           </button>
 
           {avoidPush ? (
-            <p className="text-xs text-amber-800 bg-amber-100/70 rounded-xl px-3 py-2">
+            <p className="text-xs text-accent-800 bg-accent-100/70 rounded-xl px-3 py-2">
               שימו לב: ההעדפה &quot;פחות הודעות מעודדות&quot; דלוקה, ולכן ה-CRON האוטומטי
               מדלג עליכם. הבדיקה הידנית כאן עוקפת את ההעדפה כדי לוודא שהזרימה עובדת.
             </p>
           ) : null}
 
           {testResult?.kind === 'ok' ? (
-            <div className="rounded-2xl border-2 border-emerald-400 bg-background-card px-4 py-3 text-start space-y-2">
-              <p className="text-xs font-black text-emerald-700">
+            <div className="rounded-2xl border-2 border-primary-400 bg-background-card px-4 py-3 text-start space-y-2">
+              <p className="text-xs font-black text-primary-700">
                 ✓ ההתראה נשלחה ({testResult.slot}
                 {testResult.usedFallback ? ' · פלייסהולדר' : ''})
               </p>
-              <p className="text-[11px] font-semibold text-slate-500">
+              <p className="text-[11px] font-semibold text-ink-faint">
                 {testResult.pendingTasksCount > 0
                   ? `${testResult.pendingTasksCount} משימות פתוחות`
                   : 'אין משימות פתוחות'}
@@ -295,30 +295,30 @@ export function AlmogNudgeSettingsClient({
                   ? `${testResult.eligibleHabitsCount} הרגלים`
                   : 'אין הרגלים תואמים'}
               </p>
-              <p className="text-[13px] leading-relaxed text-slate-800 whitespace-pre-wrap pt-1 border-t border-emerald-100 pt-2">
+              <p className="text-[13px] leading-relaxed text-ink whitespace-pre-wrap pt-1 border-t border-primary-100 pt-2">
                 {testResult.body}
               </p>
 
-              <div className="mt-3 pt-3 border-t border-emerald-100 space-y-1.5">
-                <p className="text-[11px] font-black text-slate-700">
+              <div className="mt-3 pt-3 border-t border-primary-100 space-y-1.5">
+                <p className="text-[11px] font-black text-ink-soft">
                   בדיקה — מה ב-DB עכשיו (admin, עוקף RLS):
                 </p>
-                <p className="text-[10px] text-slate-600 font-mono break-all">
+                <p className="text-[10px] text-ink-soft font-mono break-all">
                   inserted_id: {testResult.insertedId ?? '(לא הוחזר)'}
                 </p>
                 {testResult.insertedArchivedAt ? (
-                  <p className="text-[11px] font-bold text-red-600">
+                  <p className="text-[11px] font-bold text-coral-600">
                     ⚠️ ההתראה נוצרה עם archived_at — לא תופיע בפעמון!
                   </p>
                 ) : null}
-                <p className="text-[10px] text-slate-600">
+                <p className="text-[10px] text-ink-soft">
                   סך התראות אחרונות שלך ב-DB: <strong>{testResult.recentCount}</strong>
                 </p>
                 {testResult.recent.length > 0 ? (
-                  <ul className="text-[10px] text-slate-600 space-y-0.5">
+                  <ul className="text-[10px] text-ink-soft space-y-0.5">
                     {testResult.recent.map((r) => (
                       <li key={r.id} className="font-mono flex gap-1">
-                        <span className={r.archived_at ? 'text-red-500' : 'text-emerald-700'}>
+                        <span className={r.archived_at ? 'text-coral-500' : 'text-primary-700'}>
                           {r.archived_at ? '🗄️' : '📬'}
                         </span>
                         <span className="truncate">
@@ -334,28 +334,28 @@ export function AlmogNudgeSettingsClient({
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-[11px] font-bold text-red-600">
+                  <p className="text-[11px] font-bold text-coral-600">
                     ⚠️ אין שום התראה ב-DB עבור המשתמש שלך! משהו מוחק אותן.
                   </p>
                 )}
-                <p className="text-[10px] text-slate-500 pt-1">
+                <p className="text-[10px] text-ink-faint pt-1">
                   user_id: <span className="font-mono">{testResult.targetUserId}</span>
                 </p>
               </div>
 
-              <p className="text-[11px] text-emerald-700 pt-2 font-bold">
+              <p className="text-[11px] text-primary-700 pt-2 font-bold">
                 פתחו את הפעמון עכשיו — אמורה להופיע ההתראה האחרונה.
               </p>
             </div>
           ) : null}
 
           {testResult?.kind === 'blocked' ? (
-            <div className="rounded-2xl border border-amber-300 bg-amber-50/90 px-4 py-3 text-start">
-              <p className="text-xs font-bold text-amber-800">
+            <div className="rounded-2xl border border-accent-300 bg-accent-50/90 px-4 py-3 text-start">
+              <p className="text-xs font-bold text-accent-800">
                 נחסם על-ידי gate ({testResult.reason})
               </p>
               {testResult.hint ? (
-                <p className="mt-1.5 text-[13px] leading-relaxed text-amber-900">
+                <p className="mt-1.5 text-[13px] leading-relaxed text-accent-900">
                   {testResult.hint}
                 </p>
               ) : null}
@@ -363,11 +363,11 @@ export function AlmogNudgeSettingsClient({
           ) : null}
 
           {testResult?.kind === 'error' ? (
-            <div className="rounded-2xl border border-red-300 bg-red-50/90 px-4 py-3 text-start">
-              <p className="text-sm font-bold text-red-700" role="alert">
+            <div className="rounded-2xl border border-coral-300 bg-coral-50/90 px-4 py-3 text-start">
+              <p className="text-sm font-bold text-coral-700" role="alert">
                 ✗ {testResult.message}
               </p>
-              <p className="text-[11px] text-red-600 mt-1">
+              <p className="text-[11px] text-coral-600 mt-1">
                 בדקו את הקונסול ב-DevTools (Network) לפרטים נוספים.
               </p>
             </div>
@@ -378,11 +378,11 @@ export function AlmogNudgeSettingsClient({
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.04 }}
-          className="rounded-3xl border border-violet-100 bg-background-card p-5 shadow-[0_10px_30px_rgba(139,92,246,0.08)] space-y-4"
+          className="rounded-3xl border border-iris-100 bg-background-card p-5 shadow-[0_10px_30px_rgba(139,92,246,0.08)] space-y-4"
         >
           <div className="flex gap-3">
             <motion.div
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-white"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-on-dark"
               style={{
                 background: 'linear-gradient(145deg, #7c3aed, #a855f7)',
                 boxShadow: '0 6px 18px rgba(124,58,237,0.35)',
@@ -391,8 +391,8 @@ export function AlmogNudgeSettingsClient({
               <MessageCircle className="h-5 w-5" aria-hidden />
             </motion.div>
             <div>
-              <h2 className="font-bold text-slate-900">איך אלמוג מדבר איתכם</h2>
-              <p className="mt-1 text-sm text-slate-600 leading-relaxed">
+              <h2 className="font-bold text-ink">איך אלמוג מדבר איתכם</h2>
+              <p className="mt-1 text-sm text-ink-soft leading-relaxed">
                 בוחרים טון — חבר, עדין, או ישיר. משפיע על התראות ועל הצ׳אט.
               </p>
               <details className="group mt-2 text-xs text-slate-500" data-testid="quality-check-info">
@@ -422,26 +422,26 @@ export function AlmogNudgeSettingsClient({
                 className={cn(
                   'rounded-2xl border px-3 py-3 text-start transition',
                   coachingStyle === opt.id
-                    ? 'border-violet-400 bg-violet-50 ring-2 ring-violet-300/60'
-                    : 'border-slate-200 bg-slate-50/80 hover:border-violet-200'
+                    ? 'border-iris-400 bg-iris-50 ring-2 ring-iris-300/60'
+                    : 'border-hairline bg-surface-sunken/80 hover:border-iris-200'
                 )}
               >
-                <span className="block text-sm font-bold text-slate-900">{opt.label}</span>
-                <span className="mt-0.5 block text-xs text-slate-600">{opt.hint}</span>
+                <span className="block text-sm font-bold text-ink">{opt.label}</span>
+                <span className="mt-0.5 block text-xs text-ink-soft">{opt.hint}</span>
               </button>
             ))}
           </motion.div>
 
           <label className="block space-y-1.5">
-            <span className="text-sm font-semibold text-slate-800">שעת הגעה לעבודה (אופציונלי)</span>
-            <span className="block text-xs text-slate-500 leading-relaxed">
+            <span className="text-sm font-semibold text-ink">שעת הגעה לעבודה (אופציונלי)</span>
+            <span className="block text-xs text-ink-faint leading-relaxed">
               מגע קצר לפני ההגעה. התזמון מקורב (בדיקה כל ~30 דק׳).
             </span>
             <input
               type="time"
               value={workArrivalTime}
               onChange={(e) => setWorkArrivalTime(e.target.value)}
-              className="w-full max-w-40 rounded-xl border border-slate-200 bg-background-card px-3 py-2.5 text-sm font-medium text-slate-900"
+              className="w-full max-w-40 rounded-xl border border-hairline bg-background-card px-3 py-2.5 text-sm font-medium text-ink"
             />
           </label>
         </motion.section>
@@ -450,11 +450,11 @@ export function AlmogNudgeSettingsClient({
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
-          className="rounded-3xl border border-emerald-100 bg-background-card p-5 shadow-[0_10px_30px_rgba(16,185,129,0.08)] space-y-4"
+          className="rounded-3xl border border-primary-100 bg-background-card p-5 shadow-[0_10px_30px_rgba(16,185,129,0.08)] space-y-4"
         >
           <div className="flex gap-3">
             <div
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-white"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-on-dark"
               style={{
                 background: 'linear-gradient(145deg, #059669, #14b8a6)',
                 boxShadow: '0 6px 18px rgba(5,150,105,0.35)',
@@ -463,8 +463,8 @@ export function AlmogNudgeSettingsClient({
               <Sparkles className="h-5 w-5" aria-hidden />
             </div>
             <div>
-              <h2 className="font-bold text-slate-900">פחות הודעות מעודדות</h2>
-              <p className="mt-1 text-sm text-slate-600 leading-relaxed">
+              <h2 className="font-bold text-ink">פחות הודעות מעודדות</h2>
+              <p className="mt-1 text-sm text-ink-soft leading-relaxed">
                 כשמופעל — אלמוג לא ישלח תזכורות חיצוניות (חגיגות רצף, בדיקת חזרה למסע, ניצחון קטן).
                 הצ׳אט עם אלמוג נשאר זמין תמיד.
               </p>
@@ -479,15 +479,15 @@ export function AlmogNudgeSettingsClient({
             className={cn(
               'flex w-full items-center justify-between rounded-2xl border px-4 py-3.5 text-start transition-colors',
               avoidPush
-                ? 'border-emerald-300 bg-emerald-50/80'
-                : 'border-slate-200 bg-slate-50/80 hover:bg-slate-50'
+                ? 'border-primary-300 bg-primary-50/80'
+                : 'border-hairline bg-surface-sunken/80 hover:bg-surface-sunken'
             )}
           >
-            <span className="text-sm font-semibold text-slate-800">להפחית תזכורות מאלמוג</span>
+            <span className="text-sm font-semibold text-ink">להפחית תזכורות מאלמוג</span>
             <span
               className={cn(
                 'relative h-8 w-14 shrink-0 rounded-full transition-colors',
-                avoidPush ? 'bg-emerald-500' : 'bg-slate-300'
+                avoidPush ? 'bg-primary-500' : 'bg-ink-300'
               )}
             >
               <span
@@ -506,16 +506,16 @@ export function AlmogNudgeSettingsClient({
           transition={{ delay: 0.1 }}
           className={cn(
             'rounded-3xl border p-5 shadow-[0_10px_30px_rgba(16,185,129,0.06)] space-y-4',
-            avoidPush ? 'border-slate-200 bg-slate-50/60 opacity-75' : 'border-teal-100 bg-background-card'
+            avoidPush ? 'border-hairline bg-surface-sunken/60 opacity-75' : 'border-secondary-100 bg-background-card'
           )}
         >
           <div className="flex gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-teal-100 text-teal-800">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-secondary-100 text-secondary-800">
               <Scale className="h-5 w-5" aria-hidden />
             </div>
             <div>
-              <h2 className="font-bold text-slate-900">תזכורות לעדכון משקל</h2>
-              <p className="mt-1 text-sm text-slate-600 leading-relaxed">
+              <h2 className="font-bold text-ink">תזכורות לעדכון משקל</h2>
+              <p className="mt-1 text-sm text-ink-soft leading-relaxed">
                 לפעמים אלמוג מזכיר בעדינות לעדכן משקל אחרי כמה ימים בלי דיווח — רק אם זה רלוונטי למסע שלך.
               </p>
             </div>
@@ -532,15 +532,15 @@ export function AlmogNudgeSettingsClient({
               avoidPush && 'cursor-not-allowed opacity-60',
               !avoidPush &&
                 (weightReminders
-                  ? 'border-teal-200 bg-teal-50/70'
-                  : 'border-slate-200 bg-slate-50/80 hover:bg-slate-50')
+                  ? 'border-secondary-200 bg-secondary-50/70'
+                  : 'border-hairline bg-surface-sunken/80 hover:bg-surface-sunken')
             )}
           >
-            <span className="text-sm font-semibold text-slate-800">לאפשר תזכורות משקל</span>
+            <span className="text-sm font-semibold text-ink">לאפשר תזכורות משקל</span>
             <span
               className={cn(
                 'relative h-8 w-14 shrink-0 rounded-full transition-colors',
-                weightReminders ? 'bg-teal-500' : 'bg-slate-300'
+                weightReminders ? 'bg-secondary-500' : 'bg-ink-300'
               )}
             >
               <span
@@ -552,7 +552,7 @@ export function AlmogNudgeSettingsClient({
             </span>
           </button>
           {avoidPush ? (
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-ink-faint">
               כש&quot;פחות הודעות&quot; דלוק — כל סוגי ההתראות האלה כבויות, כולל משקל.
             </p>
           ) : null}
@@ -562,15 +562,15 @@ export function AlmogNudgeSettingsClient({
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.12 }}
-          className="rounded-3xl border border-emerald-100 bg-background-card p-5 shadow-[0_10px_30px_rgba(16,185,129,0.06)] space-y-4"
+          className="rounded-3xl border border-primary-100 bg-background-card p-5 shadow-[0_10px_30px_rgba(16,185,129,0.06)] space-y-4"
         >
           <div className="flex gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-800">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary-100 text-primary-800">
               <Shield className="h-5 w-5" aria-hidden />
             </div>
             <div>
-              <h2 className="font-bold text-slate-900">רגע לפני — מגע עדין מראש</h2>
-              <p className="mt-1 text-sm text-slate-600 leading-relaxed">
+              <h2 className="font-bold text-ink">רגע לפני — מגע עדין מראש</h2>
+              <p className="mt-1 text-sm text-ink-soft leading-relaxed">
                 אלמוג יכול לשלוח הודעה קטנה <strong>לפני</strong> חלונות שקשה לך — לא במקום SOS,
                 אלא כדי לעזור לעצור רגע לפני ש&quot;בורחים&quot;. רק אם אתה מאשר, ובלי יותר מ-3 בשבוע.
               </p>
@@ -586,18 +586,18 @@ export function AlmogNudgeSettingsClient({
             className={cn(
               'flex w-full items-center justify-between rounded-2xl border px-4 py-3.5 text-start transition-colors',
               guardianOptedIn
-                ? 'border-emerald-300 bg-emerald-50/80'
-                : 'border-slate-200 bg-slate-50/80 hover:bg-slate-50',
+                ? 'border-primary-300 bg-primary-50/80'
+                : 'border-hairline bg-surface-sunken/80 hover:bg-surface-sunken',
               guardianSaving && 'opacity-70'
             )}
           >
-            <span className="text-sm font-semibold text-slate-800">
+            <span className="text-sm font-semibold text-ink">
               {guardianSaving ? 'שומר…' : 'לאפשר מגע &quot;רגע לפני&quot;'}
             </span>
             <span
               className={cn(
                 'relative h-8 w-14 shrink-0 rounded-full transition-colors',
-                guardianOptedIn ? 'bg-emerald-500' : 'bg-slate-300'
+                guardianOptedIn ? 'bg-primary-500' : 'bg-ink-300'
               )}
             >
               <span
@@ -610,12 +610,12 @@ export function AlmogNudgeSettingsClient({
           </button>
 
           {guardianError ? (
-            <p className="text-xs font-medium text-red-600" role="alert">
+            <p className="text-xs font-medium text-coral-600" role="alert">
               {guardianError}
             </p>
           ) : null}
 
-          <p className="text-xs text-slate-500 leading-relaxed">
+          <p className="text-xs text-ink-faint leading-relaxed">
             SOS (&quot;רגע… קשה לי&quot;) תמיד זמין — גם כשהמגע היזום כבוי. אפשר גם להפעיל אחרי SOS ראשון
             מהפופאפ.
           </p>
@@ -631,22 +631,22 @@ export function AlmogNudgeSettingsClient({
             type="button"
             disabled={saving || !dirty}
             onClick={() => void save()}
-            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-linear-to-l from-emerald-600 to-teal-600 px-6 py-3.5 text-base font-bold text-white shadow-lg shadow-emerald-600/25 transition hover:brightness-105 disabled:opacity-45"
+            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-linear-to-l from-primary-600 to-secondary-600 px-6 py-3.5 text-base font-bold text-on-dark shadow-lg shadow-primary-600/25 transition hover:brightness-105 disabled:opacity-45"
           >
             <Bell className="h-5 w-5" aria-hidden />
             {saving ? 'שומרים…' : 'שמירת העדפות'}
           </button>
           {savedAt && !dirty ? (
-            <p className="text-center text-sm font-medium text-emerald-700 sm:text-start">נשמר בהצלחה</p>
+            <p className="text-center text-sm font-medium text-primary-700 sm:text-start">נשמר בהצלחה</p>
           ) : null}
           {error ? (
-            <p className="text-center text-sm font-medium text-red-600 sm:text-start" role="alert">
+            <p className="text-center text-sm font-medium text-coral-600 sm:text-start" role="alert">
               {error}
             </p>
           ) : null}
         </motion.div>
 
-        <p className="text-xs leading-relaxed text-slate-500 px-1">
+        <p className="text-xs leading-relaxed text-ink-faint px-1">
           שינויים נכנסים לתוקף בתזמון הריצה היומית של המערכת ובהתאם לפעילות האחרונה שלך.
           אין להתראות האלה השפעה על שיעורים, מסע או צ׳אט ישיר עם אלמוג.
         </p>

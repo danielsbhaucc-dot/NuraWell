@@ -64,7 +64,7 @@ function InboxTabBar({
 
   return (
     <div
-      className="shrink-0 border-b border-emerald-400/10 bg-[#0f172a] px-3 pb-3 pt-2"
+      className="shrink-0 border-b border-primary-400/10 bg-[#0f172a] px-3 pb-3 pt-2"
       role="tablist"
       aria-label="ניווט שיחות"
     >
@@ -79,14 +79,14 @@ function InboxTabBar({
               aria-selected={active}
               onClick={() => onTab(item.id)}
               className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2.5 text-[13px] font-bold transition active:scale-[0.98] ${
-                active ? 'bg-emerald-600 text-white shadow-md shadow-emerald-900/30' : 'text-slate-400'
+                active ? 'bg-primary-600 text-on-dark shadow-md shadow-primary-900/30' : 'text-ink-400'
               }`}
             >
               {item.label}
               {item.badge != null && item.badge > 0 ? (
                 <span
                   className={`rounded-full px-1.5 py-px text-[10px] font-black ${
-                    active ? 'bg-background-card/25 text-white' : 'bg-background-card/10 text-slate-300'
+                    active ? 'bg-background-card/25 text-on-dark' : 'bg-background-card/10 text-ink-300'
                   }`}
                 >
                   {item.badge}
@@ -134,17 +134,17 @@ function SessionRow({
         }}
       >
         <div className="flex items-start gap-2">
-          <Lock className="mt-1 h-3.5 w-3.5 shrink-0 text-amber-400/90" aria-hidden />
+          <Lock className="mt-1 h-3.5 w-3.5 shrink-0 text-accent-400/90" aria-hidden />
           <span className="min-w-0 flex-1">
             <span className="flex items-baseline justify-between gap-2">
-              <span className="line-clamp-2 text-[12px] font-semibold text-amber-100/95">
+              <span className="line-clamp-2 text-[12px] font-semibold text-accent-100/95">
                 {session.summary ?? title}
               </span>
-              <span className="shrink-0 text-[10px] text-slate-500">
+              <span className="shrink-0 text-[10px] text-ink-500">
                 {formatSessionRelativeTime(session.updated_at)}
               </span>
             </span>
-            <span className="mt-0.5 block text-[10px] text-amber-200/70">
+            <span className="mt-0.5 block text-[10px] text-accent-200/70">
               תיעוד עדכון פרופיל · סגור · ללא פרטים אישיים
             </span>
           </span>
@@ -178,13 +178,13 @@ function SessionRow({
         </span>
         <span className="min-w-0 flex-1">
           <span className="flex items-baseline justify-between gap-2">
-            <RetypingTitle text={title} className="line-clamp-1 text-[13.5px] font-bold text-slate-50" />
-            <span className="shrink-0 text-[10px] text-slate-400">
+            <RetypingTitle text={title} className="line-clamp-1 text-[13.5px] font-bold text-ink-50" />
+            <span className="shrink-0 text-[10px] text-ink-400">
               {formatSessionRelativeTime(session.updated_at)}
             </span>
           </span>
           {preview ? (
-            <span className="mt-0.5 line-clamp-1 text-[11.5px] text-slate-300/80">{preview}</span>
+            <span className="mt-0.5 line-clamp-1 text-[11.5px] text-ink-300/80">{preview}</span>
           ) : null}
           <span className="mt-1.5 flex flex-wrap items-center gap-1.5">
             {topic ? (
@@ -196,12 +196,12 @@ function SessionRow({
               </span>
             ) : null}
             {isOpen ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-[1px] text-[10px] font-bold text-emerald-300">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" aria-hidden />
+              <span className="inline-flex items-center gap-1 rounded-full bg-primary-500/15 px-2 py-[1px] text-[10px] font-bold text-primary-300">
+                <span className="h-1.5 w-1.5 rounded-full bg-primary-400" aria-hidden />
                 פתוחה
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1 rounded-full bg-slate-400/10 px-2 py-[1px] text-[10px] font-semibold text-slate-400">
+              <span className="inline-flex items-center gap-1 rounded-full bg-ink-400/10 px-2 py-[1px] text-[10px] font-semibold text-ink-400">
                 <Lock className="h-2.5 w-2.5" aria-hidden />
                 {closeReasonLabel(session.close_reason)}
               </span>
@@ -258,15 +258,15 @@ function AccordionSection({
         >
           {emoji ?? <span className="h-2.5 w-2.5 rounded-full bg-glass/90 backdrop-blur-md" />}
         </span>
-        <span className="flex-1 text-[14px] font-black text-white">{label}</span>
+        <span className="flex-1 text-[14px] font-black text-on-dark">{label}</span>
         <span
           className="rounded-full px-2 py-px text-[11px] font-black"
-          style={{ background: glassTint(tone, 0.3), color: '#fff' }}
+          style={{ background: glassTint(tone, 0.3), color: '#eef4ea' }}
         >
           {sessions.length}
         </span>
         <motion.span animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.22 }} className="shrink-0">
-          <ChevronDown className="h-4 w-4 text-white/70" aria-hidden />
+          <ChevronDown className="h-4 w-4 text-on-dark/70" aria-hidden />
         </motion.span>
       </button>
 
@@ -370,17 +370,17 @@ export function ChatSessionInbox({
           style={{ WebkitOverflowScrolling: 'touch' }}
         >
           <div className="mx-auto flex w-full max-w-sm flex-1 flex-col items-center justify-center text-center">
-            <p className="text-[15px] font-bold text-slate-200">
+            <p className="text-[15px] font-bold text-ink-200">
               {firstName ? `${firstName}, ` : ''}רוצה לדבר?
             </p>
-            <p className="mt-2 text-[13px] leading-relaxed text-slate-400">
+            <p className="mt-2 text-[13px] leading-relaxed text-ink-400">
               אלמוג כאן — בקצב שלך, בלי לחץ. התחל שיחה חדשה או בחר נקודת פתיחה.
             </p>
             <button
               type="button"
               disabled={startingNew}
               onClick={onStartNewChat}
-              className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3.5 text-[15px] font-black text-emerald-50 transition active:scale-[0.98] disabled:opacity-60"
+              className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3.5 text-[15px] font-black text-primary-50 transition active:scale-[0.98] disabled:opacity-60"
               style={greenGlassButtonStyle()}
             >
               {startingNew ? (
@@ -391,7 +391,7 @@ export function ChatSessionInbox({
               התחל שיחה חדשה
             </button>
             <div className="mt-5 w-full space-y-2">
-              <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">או להתחיל מ...</p>
+              <p className="text-[11px] font-bold uppercase tracking-wide text-ink-500">או להתחיל מ...</p>
               {QUICK_STARTERS.map((chip) => (
                 <button
                   key={chip.label}
@@ -404,7 +404,7 @@ export function ChatSessionInbox({
                       onStartNewChat();
                     }
                   }}
-                  className="w-full rounded-xl border border-emerald-400/15 bg-background-card/4 px-3 py-3 text-[13px] font-semibold text-slate-200 transition active:scale-[0.98] hover:border-emerald-400/25 hover:bg-emerald-500/10 disabled:opacity-60"
+                  className="w-full rounded-xl border border-primary-400/15 bg-background-card/4 px-3 py-3 text-[13px] font-semibold text-ink-200 transition active:scale-[0.98] hover:border-primary-400/25 hover:bg-primary-500/10 disabled:opacity-60"
                 >
                   {chip.label}
                 </button>
@@ -419,21 +419,21 @@ export function ChatSessionInbox({
         >
           <div className="space-y-2.5 pb-3 pt-2">
             <div className="relative">
-              <Search className="pointer-events-none absolute inset-s-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+              <Search className="pointer-events-none absolute inset-s-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-500" />
               <input
                 type="search"
                 dir="rtl"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="חיפוש בשיחות..."
-                className="w-full rounded-xl border border-emerald-400/15 bg-background-card/4 py-2.5 pe-8 ps-9 text-[13px] text-white outline-hidden placeholder:text-slate-500 focus:border-emerald-400/35"
+                className="w-full rounded-xl border border-primary-400/15 bg-background-card/4 py-2.5 pe-8 ps-9 text-[13px] text-on-dark outline-hidden placeholder:text-ink-500 focus:border-primary-400/35"
               />
               {searchQuery ? (
                 <button
                   type="button"
                   aria-label="נקה חיפוש"
                   onClick={() => setSearchQuery('')}
-                  className="absolute inset-e-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                  className="absolute inset-e-2 top-1/2 -translate-y-1/2 text-ink-400 hover:text-on-dark"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
@@ -464,23 +464,23 @@ export function ChatSessionInbox({
             ) : null}
 
             {!trimmedSearch && topicChips.length > 0 ? (
-              <div className="rounded-xl border border-white/5 bg-background-card/2">
+              <div className="rounded-xl border border-on-dark/5 bg-background-card/2">
                 <button
                   type="button"
                   aria-expanded={topicsOpen}
                   onClick={() => setTopicsOpen((v) => !v)}
                   className="flex w-full items-center gap-2 px-3 py-2.5 text-start"
                 >
-                  <span className="flex-1 text-[12px] font-bold text-slate-400">
+                  <span className="flex-1 text-[12px] font-bold text-ink-400">
                     לפי נושא
                     {activeTopicChip ? (
-                      <span className="ms-1.5 text-emerald-300/90">
+                      <span className="ms-1.5 text-primary-300/90">
                         · {TOPIC_EMOJIS[activeTopicChip.id] ?? '💬'} {activeTopicChip.label}
                       </span>
                     ) : null}
                   </span>
                   <motion.span animate={{ rotate: topicsOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
-                    <ChevronDown className="h-4 w-4 text-slate-500" aria-hidden />
+                    <ChevronDown className="h-4 w-4 text-ink-500" aria-hidden />
                   </motion.span>
                 </button>
                 <AnimatePresence initial={false}>
@@ -491,7 +491,7 @@ export function ChatSessionInbox({
                       animate={{ height: 'auto', opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
                       transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] as const }}
-                      className="overflow-hidden border-t border-white/5"
+                      className="overflow-hidden border-t border-on-dark/5"
                     >
                       <div className="px-1 py-2">
                         <HorizontalChipRow>
@@ -511,7 +511,7 @@ export function ChatSessionInbox({
                                     ? {
                                         background: `${accent}33`,
                                         border: `1px solid ${accent}88`,
-                                        color: '#fff',
+                                        color: '#eef4ea',
                                       }
                                     : {
                                         background: 'rgba(255,255,255,0.05)',
@@ -538,10 +538,10 @@ export function ChatSessionInbox({
           <div className="min-h-0 flex-1">
             {loading ? (
               <div className="flex justify-center py-8">
-                <Loader2 className="h-5 w-5 animate-spin text-emerald-400/80" />
+                <Loader2 className="h-5 w-5 animate-spin text-primary-400/80" />
               </div>
             ) : sessions.length === 0 ? (
-              <p className="py-8 text-center text-[13px] text-slate-400">
+              <p className="py-8 text-center text-[13px] text-ink-400">
                 עדיין אין שיחות קודמות. אפשר לעבור לטאב &quot;שיחה חדשה&quot; כדי להתחיל.
               </p>
             ) : groupedSections.length > 0 ? (
@@ -561,11 +561,11 @@ export function ChatSessionInbox({
                 ))}
               </div>
             ) : flatSessions.length === 0 ? (
-              <p className="py-8 text-center text-[13px] text-slate-400">לא נמצאו שיחות.</p>
+              <p className="py-8 text-center text-[13px] text-ink-400">לא נמצאו שיחות.</p>
             ) : (
               <ul className="space-y-1.5">
                 {trimmedSearch ? (
-                  <li className="mb-1 px-0.5 text-[11px] text-slate-500">
+                  <li className="mb-1 px-0.5 text-[11px] text-ink-500">
                     {flatSessions.length} תוצאות
                   </li>
                 ) : null}

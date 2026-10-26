@@ -284,13 +284,13 @@ export function VideoSection({
       <div className="text-center">
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-3"
           style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
-          <Play className="w-4 h-4 text-emerald-600" />
-          <span className="text-sm font-bold text-emerald-700">{copy.letsStartTogether}</span>
+          <Play className="w-4 h-4 text-primary-600" />
+          <span className="text-sm font-bold text-primary-700">{copy.letsStartTogether}</span>
         </div>
         <h2 className="text-2xl font-black" style={{ color: '#1A1730', fontFamily: "'Rubik','Heebo',sans-serif" }}>
           {title}
         </h2>
-        <p className="text-sm text-emerald-800/80 font-semibold mt-2 max-w-sm mx-auto leading-relaxed">
+        <p className="text-sm text-primary-800/80 font-semibold mt-2 max-w-sm mx-auto leading-relaxed">
           {copy.videoIntro}
         </p>
       </div>
@@ -304,10 +304,10 @@ export function VideoSection({
             style={{ background: 'linear-gradient(135deg, #064e3b, #047857, #10b981)' }}>
             <div className="w-20 h-20 rounded-full flex items-center justify-center mb-4"
               style={{ background: 'rgba(255,255,255,0.15)', border: '2px solid rgba(255,255,255,0.3)' }}>
-              <Play className="w-10 h-10 text-white me-1" fill="white" />
+              <Play className="w-10 h-10 text-on-dark me-1" fill="#eef4ea" />
             </div>
-            <p className="text-white/90 text-lg font-bold mb-1">{title}</p>
-            <p className="text-white/60 text-sm">הסרטון יהיה זמין בקרוב 🎬</p>
+            <p className="text-on-dark/90 text-lg font-bold mb-1">{title}</p>
+            <p className="text-on-dark/60 text-sm">הסרטון יהיה זמין בקרוב 🎬</p>
           </div>
         ) : showBunnyReplayGate ? (
           <button
@@ -318,9 +318,9 @@ export function VideoSection({
           >
             <div className="w-20 h-20 rounded-full flex items-center justify-center transition-transform group-active:scale-95"
               style={{ background: 'rgba(16,185,129,0.35)', border: '2px solid rgba(52,211,153,0.5)' }}>
-              <Play className="w-10 h-10 text-white me-1" fill="white" />
+              <Play className="w-10 h-10 text-on-dark me-1" fill="#eef4ea" />
             </div>
-            <span className="text-white font-bold text-sm">צפה שוב</span>
+            <span className="text-on-dark font-bold text-sm">צפה שוב</span>
           </button>
         ) : null}
 
@@ -331,7 +331,7 @@ export function VideoSection({
                 style={{ background: 'rgba(0,0,0,0.7)' }}>
                 <div className="w-16 h-16 rounded-full flex items-center justify-center animate-pulse"
                   style={{ background: 'rgba(16,185,129,0.3)', border: '2px solid rgba(16,185,129,0.5)' }}>
-                  <Play className="w-7 h-7 text-emerald-400 me-0.5" fill="currentColor" />
+                  <Play className="w-7 h-7 text-primary-400 me-0.5" fill="currentColor" />
                 </div>
               </div>
             )}
@@ -354,7 +354,7 @@ export function VideoSection({
                 style={{ background: 'rgba(0,0,0,0.7)' }}>
                 <div className="w-16 h-16 rounded-full flex items-center justify-center animate-pulse"
                   style={{ background: 'rgba(16,185,129,0.3)', border: '2px solid rgba(16,185,129,0.5)' }}>
-                  <Play className="w-7 h-7 text-emerald-400 me-0.5" fill="currentColor" />
+                  <Play className="w-7 h-7 text-primary-400 me-0.5" fill="currentColor" />
                 </div>
               </div>
             )}
@@ -378,7 +378,7 @@ export function VideoSection({
                 style={{ background: 'rgba(0,0,0,0.7)' }}>
                 <div className="w-16 h-16 rounded-full flex items-center justify-center animate-pulse"
                   style={{ background: 'rgba(16,185,129,0.3)', border: '2px solid rgba(16,185,129,0.5)' }}>
-                  <Play className="w-7 h-7 text-emerald-400 me-0.5" fill="currentColor" />
+                  <Play className="w-7 h-7 text-primary-400 me-0.5" fill="currentColor" />
                 </div>
               </div>
             )}
@@ -387,7 +387,7 @@ export function VideoSection({
               src={bunnyHlsSrc!}
               autoPlay={true}
               controls={true}
-              className="absolute inset-0 w-full h-full object-contain bg-black"
+              className="absolute inset-0 w-full h-full object-contain bg-forest-950"
               onLoaded={() => setInlineLoaded(true)}
               onError={() => {
                 if (bunnyEmbedId) {
@@ -408,7 +408,7 @@ export function VideoSection({
       <div className="text-center transition-opacity duration-300 ease-out">
         {isWatched ? (
           <div className="space-y-2.5">
-            <div className="inline-flex items-center gap-2 px-5 py-3 rounded-xl text-emerald-700 font-bold"
+            <div className="inline-flex items-center gap-2 px-5 py-3 rounded-xl text-primary-700 font-bold"
               style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)' }}>
               <CheckCircle2 className="w-5 h-5" />
               <span>צפית בסרטון ✓</span>
@@ -425,7 +425,7 @@ export function VideoSection({
                   בטל סימון צפייה
                 </button>
                 {!canResetVideoWatch && (
-                  <p className="text-[11px] text-gray-500 mt-1.5">
+                  <p className="text-[11px] text-ink-500 mt-1.5">
                     {videoResetNote || 'איפוס צפייה זמין רק באיפוס מלא של כל השיעור.'}
                   </p>
                 )}
@@ -434,7 +434,7 @@ export function VideoSection({
           </div>
         ) : null}
         <button onClick={onComplete}
-          className="mt-3 w-full py-4 rounded-2xl font-bold text-lg text-white flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-95"
+          className="mt-3 w-full py-4 rounded-2xl font-bold text-lg text-on-dark flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-95"
           style={{ background: 'linear-gradient(135deg, #047857, #10b981)', boxShadow: '0 6px 20px rgba(16,185,129,0.3)' }}>
           <span>{isWatched ? copy.watchedToQuestions : copy.watchedContinue}</span>
           <ArrowLeft className="w-5 h-5" />
@@ -445,7 +445,7 @@ export function VideoSection({
 
       {debugVideoOverlay && (
         <div
-          className="fixed inset-e-0 inset-s-0 z-99999 px-2 py-2 text-[10px] leading-tight font-mono text-white text-end break-all pointer-events-none"
+          className="fixed inset-e-0 inset-s-0 z-99999 px-2 py-2 text-[10px] leading-tight font-mono text-on-dark text-end break-all pointer-events-none"
           style={{
             top: 'calc(4.25rem + env(safe-area-inset-top, 0px))',
             background: 'rgba(0,0,0,0.92)',
@@ -454,7 +454,7 @@ export function VideoSection({
             overflow: 'auto',
           }}
         >
-          <div className="font-bold text-emerald-300 mb-1">debugVideo=1 · VideoSection (no console needed)</div>
+          <div className="font-bold text-primary-300 mb-1">debugVideo=1 · VideoSection (no console needed)</div>
           <div>path: {pathname}</div>
           <div>host: {typeof window !== 'undefined' ? window.location.host : '—'}</div>
           <div>search: {typeof window !== 'undefined' ? window.location.search || '(empty)' : '—'}</div>

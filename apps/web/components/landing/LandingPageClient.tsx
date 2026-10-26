@@ -674,7 +674,7 @@ export function LandingPageClient() {
                   {['תחנות ושלבים מסודרים', 'משימות יומיות חכמות', 'מעקב בלי מספרים מעיקים'].map(
                     (t) => (
                       <li key={t}>
-                        <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" aria-hidden />
+                        <CheckCircle2 className="w-5 h-5 text-primary-600 shrink-0" aria-hidden />
                         {t}
                       </li>
                     ),
@@ -946,7 +946,7 @@ export function LandingPageClient() {
                 <ul className="landing-checklist">
                   {['אנרגיה לאורך כל היום', 'שינה איכותית באמת', 'תנועה בכיף, לא כעונש', 'יחס בריא לאוכל'].map((t) => (
                     <li key={t}>
-                      <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" aria-hidden />
+                      <CheckCircle2 className="w-5 h-5 text-primary-600 shrink-0" aria-hidden />
                       {t}
                     </li>
                   ))}
@@ -1002,7 +1002,7 @@ export function LandingPageClient() {
               >
                 <MentorBubble mentorId="dolev" theme="dark">
                   <p>
-                    אני <strong className="text-emerald-300">דולב</strong> — מקבל אתכם בהרשמה,
+                    אני <strong className="text-primary-300">דולב</strong> — מקבל אתכם בהרשמה,
                     שואל רק מה שחשוב, ומעביר אתכם לאלמוג כשמוכנים להתחיל.
                   </p>
                 </MentorBubble>
@@ -1017,7 +1017,7 @@ export function LandingPageClient() {
               >
                 <MentorBubble mentorId="almog" theme="dark">
                   <p>
-                    אני <strong className="text-emerald-300">אלמוג</strong> — המנטור שלכם בקורסים,
+                    אני <strong className="text-primary-300">אלמוג</strong> — המנטור שלכם בקורסים,
                     משימות והרגלים. לומד את הקצב ונותן עידוד כשצריך.
                   </p>
                 </MentorBubble>
@@ -1296,7 +1296,7 @@ export function LandingPageClient() {
               </h2>
               <p className="landing-cta-text">
                 כמה דקות להירשם — עם פס התקדמות ברור. גישה מלאה למסע, לקורסים ולמנטור AI שלכם.
-                <strong className="block mt-2 text-white">בלי דיאטה. בלי איסורים. בלי שיפוטיות.</strong>
+                <strong className="block mt-2 text-on-dark">בלי דיאטה. בלי איסורים. בלי שיפוטיות.</strong>
               </p>
               <div className="landing-cta-actions">
                 <Link href="/register" className="landing-btn-primary landing-btn-primary-lg">

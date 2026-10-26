@@ -74,7 +74,7 @@ export function TaskLadderCard({ task, onChanged }: { task: LadderCardTask; onCh
             <li
               key={l.level}
               title={l.title}
-              className={`h-2 flex-1 rounded-full ${l.level === task.currentLevel ? 'bg-accent-500' : l.level < task.currentLevel ? 'bg-primary-300' : 'bg-slate-200'}`}
+              className={`h-2 flex-1 rounded-full ${l.level === task.currentLevel ? 'bg-accent-500' : l.level < task.currentLevel ? 'bg-primary-300' : 'bg-ink-200'}`}
             >
               <span className="sr-only">{`${l.title}${l.level === task.currentLevel ? ' (הרמה הנוכחית)' : ''}${l.level === 0 ? ' (המשימה המקורית)' : ''}`}</span>
             </li>
@@ -82,15 +82,15 @@ export function TaskLadderCard({ task, onChanged }: { task: LadderCardTask; onCh
         </ol>
       ) : null}
       <div className="flex flex-wrap gap-2">
-        <button type="button" disabled={!task.canStepDown} onClick={() => setSheet('easier')} className="inline-flex min-h-10 flex-auto items-center justify-center gap-1 whitespace-nowrap rounded-xl bg-amber-50 px-2 text-[13px] font-bold text-amber-800 ring-1 ring-amber-200 transition hover:bg-amber-100 active:scale-[0.98] disabled:opacity-40">
+        <button type="button" disabled={!task.canStepDown} onClick={() => setSheet('easier')} className="inline-flex min-h-10 flex-auto items-center justify-center gap-1 whitespace-nowrap rounded-full bg-accent-400/16 px-3 text-[13px] font-bold text-accent-800 ring-1 ring-inset ring-accent-600/25 backdrop-blur-md shadow-[inset_0_1px_0_rgba(238,244,234,0.4),0_4px_14px_-6px_rgba(4,20,14,0.25)] transition duration-200 hover:bg-accent-400/24 motion-safe:active:scale-[0.97] motion-reduce:transition-none disabled:opacity-40">
           <span aria-hidden>🌱</span>
           {easierLabel}
         </button>
-        <button type="button" disabled={!task.canStepUp} onClick={() => setSheet('harder')} className="inline-flex min-h-10 flex-auto items-center justify-center gap-1 whitespace-nowrap rounded-xl bg-emerald-50 px-2 text-[13px] font-bold text-emerald-800 ring-1 ring-emerald-200 transition hover:bg-emerald-100 active:scale-[0.98] disabled:opacity-40">
+        <button type="button" disabled={!task.canStepUp} onClick={() => setSheet('harder')} className="inline-flex min-h-10 flex-auto items-center justify-center gap-1 whitespace-nowrap rounded-full bg-primary-500/12 px-3 text-[13px] font-bold text-primary-800 ring-1 ring-inset ring-primary-600/20 backdrop-blur-md shadow-[inset_0_1px_0_rgba(238,244,234,0.4),0_4px_14px_-6px_rgba(4,20,14,0.25)] transition duration-200 hover:bg-primary-500/18 motion-safe:active:scale-[0.97] motion-reduce:transition-none disabled:opacity-40">
           <span aria-hidden>💪</span>
           קל לי
         </button>
-        <button type="button" onClick={() => dispatchOpenAlmogChatWithPrefill(`לגבי המשימה "${task.title}" — `)} className="inline-flex min-h-10 flex-auto items-center justify-center gap-1 whitespace-nowrap rounded-xl bg-linear-to-br from-emerald-600 to-teal-500 px-2 text-[13px] font-bold text-white shadow-[0_4px_12px_rgba(5,150,105,0.25)] transition hover:brightness-105 active:scale-[0.98]">
+        <button type="button" onClick={() => dispatchOpenAlmogChatWithPrefill(`לגבי המשימה "${task.title}" — `)} className="inline-flex min-h-10 flex-auto items-center justify-center gap-1 whitespace-nowrap rounded-full bg-linear-to-br from-forest-700 to-primary-700 px-3 text-[13px] font-bold text-on-dark ring-1 ring-inset ring-glow/25 shadow-[inset_0_1px_0_rgba(238,244,234,0.2),0_6px_16px_-6px_rgba(4,20,14,0.45)] transition duration-200 hover:brightness-110 motion-safe:active:scale-[0.97] motion-reduce:transition-none">
           <MessageCircle className="h-3.5 w-3.5" aria-hidden />
           לאלמוג
         </button>

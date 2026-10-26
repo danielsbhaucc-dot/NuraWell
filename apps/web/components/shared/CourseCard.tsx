@@ -149,7 +149,7 @@ export function CourseCard({ course, progress, isEnrolled, accentIndex = 0 }: Co
                 style={{ borderRadius: '14px', width: '100%', height: '100%' }}
               />
             ) : (
-              <BookOpen className="w-6 h-6" style={{ color: 'rgba(255,255,255,0.9)' }} />
+              <BookOpen className="w-6 h-6" style={{ color: 'rgba(207,233,220,0.9)' }} />
             )}
           </div>
 
@@ -158,7 +158,7 @@ export function CourseCard({ course, progress, isEnrolled, accentIndex = 0 }: Co
             <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.55)', fontWeight: 600, letterSpacing: '0.5px', marginBottom: '4px' }}>
               {chaptersLabel} · {hebrewMinutesLabel(totalMinutes, { approx: true })}
             </div>
-            <div className="line-clamp-1" style={{ fontSize: '16px', fontWeight: 800, color: '#fff', fontFamily: "'Rubik','Heebo',sans-serif", lineHeight: 1.3 }}>
+            <div className="line-clamp-1" style={{ fontSize: '16px', fontWeight: 800, color: '#eef4ea', fontFamily: "'Rubik','Heebo',sans-serif", lineHeight: 1.3 }}>
               {course.title}
             </div>
           </div>
@@ -172,9 +172,9 @@ export function CourseCard({ course, progress, isEnrolled, accentIndex = 0 }: Co
             backdropFilter: 'blur(8px)',
           }}>
             {isEnrolled ? (
-              <Play className=" text-white" style={{ marginRight: '-2px' }} fill="white" />
+              <Play className=" text-on-dark" style={{ marginRight: '-2px' }} fill="#eef4ea" />
             ) : (
-              <Lock className="w-4 h-4 text-white/60" />
+              <Lock className="w-4 h-4 text-on-dark/60" />
             )}
           </div>
 
@@ -189,7 +189,7 @@ export function CourseCard({ course, progress, isEnrolled, accentIndex = 0 }: Co
               )}
               {course.is_premium && (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold"
-                  style={{ background: 'rgba(245,166,35,0.7)', backdropFilter: 'blur(6px)', color: '#fff' }}>
+                  style={{ background: 'rgba(245,166,35,0.7)', backdropFilter: 'blur(6px)', color: '#eef4ea' }}>
                   <Crown className="w-3 h-3" /> פרימיום
                 </span>
               )}
@@ -199,7 +199,7 @@ export function CourseCard({ course, progress, isEnrolled, accentIndex = 0 }: Co
 
         {/* ── White Footer ── */}
         <div style={{
-          background: 'rgba(248,251,246,0.97)',
+          background: 'rgba(207,233,220,0.97)',
           padding: isEnrolled ? '10px 16px 14px' : '12px 16px',
           borderTop: '1px solid rgba(6,78,59,0.06)',
         }}>

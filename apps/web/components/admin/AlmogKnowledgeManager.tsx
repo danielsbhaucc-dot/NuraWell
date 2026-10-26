@@ -742,7 +742,7 @@ export function AlmogKnowledgeManager() {
               <button
                 type="button"
                 onClick={startNew}
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-linear-to-l from-emerald-600 to-teal-600 px-4 py-2 text-sm font-bold text-gc shadow-md hover:brightness-105"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-linear-to-l from-primary-600 to-secondary-600 px-4 py-2 text-sm font-bold text-gc shadow-md hover:brightness-105"
               >
                 <Plus className="w-4 h-4" />
                 הוספת ידע
@@ -756,8 +756,8 @@ export function AlmogKnowledgeManager() {
         <p
           className={`text-sm font-medium rounded-xl px-3 py-2 ${
             messageErr
-              ? 'text-red-800 bg-red-50 border border-red-200'
-              : 'text-emerald-800 bg-emerald-50 border border-emerald-200'
+              ? 'text-coral-800 bg-coral-50 border border-coral-200'
+              : 'text-primary-800 bg-primary-50 border border-primary-200'
           }`}
         >
           {message}
@@ -768,7 +768,7 @@ export function AlmogKnowledgeManager() {
         <section className="rounded-3xl border border-gc/60 bg-background-card/55 backdrop-blur-md shadow-lg overflow-hidden flex flex-col">
           <div className="p-3 border-b border-gc/50 space-y-3">
             <div className="relative">
-              <Search className="absolute inset-s-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Search className="absolute inset-s-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-faint" />
               <input
                 type="search"
                 value={searchQ}
@@ -794,8 +794,8 @@ export function AlmogKnowledgeManager() {
                   className={cn(
                     'flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-xl px-2 py-1.5 text-xs font-bold transition-all sm:text-sm',
                     viewMode === key
-                      ? 'bg-linear-to-l from-sky-500 to-cyan-600 text-gc shadow-md shadow-sky-500/25'
-                      : 'text-slate-600 hover:bg-background-card/55',
+                      ? 'bg-linear-to-l from-secondary-500 to-secondary-600 text-gc shadow-md shadow-secondary-500/25'
+                      : 'text-ink-soft hover:bg-background-card/55',
                   )}
                 >
                   <Icon className="h-4 w-4" aria-hidden />
@@ -807,16 +807,16 @@ export function AlmogKnowledgeManager() {
 
           {listLoading ? (
             <p className="p-8 flex justify-center">
-              <Loader2 className="w-6 h-6 animate-spin text-emerald-600" />
+              <Loader2 className="w-6 h-6 animate-spin text-primary-600" />
             </p>
           ) : items.length === 0 ? (
-            <p className="p-6 text-center text-sm text-slate-500">
+            <p className="p-6 text-center text-sm text-ink-faint">
               אין עדיין ידע שמור. הוסיפו מסמך או ייבאו מהאינדקס הישן.
             </p>
           ) : viewMode === 'organized' ? (
             <div className="overflow-y-auto flex-1 p-2 sm:p-3 space-y-3">
               {organizedStations.length === 0 ? (
-                <p className="p-6 text-center text-sm text-slate-500">
+                <p className="p-6 text-center text-sm text-ink-faint">
                   אין ידע משויך לשלבים. עברו לתצוגת רשימה כדי לראות ידע לפי קורס.
                 </p>
               ) : (
@@ -825,21 +825,21 @@ export function AlmogKnowledgeManager() {
                     key={station.stationKey}
                     className="rounded-2xl border border-gc/70 bg-background-card/55 backdrop-blur-md overflow-hidden"
                   >
-                    <div className="flex items-center gap-2 px-3 py-2 bg-linear-to-l from-sky-100/70 to-emerald-100/50 border-b border-gc/60">
-                      <MapPin className="h-4 w-4 text-sky-700" aria-hidden />
-                      <h3 className="text-sm font-black text-slate-800">{station.stationTitle}</h3>
-                      <span className="ms-auto text-[10px] font-bold text-slate-500">
+                    <div className="flex items-center gap-2 px-3 py-2 bg-linear-to-l from-secondary-100/70 to-primary-100/50 border-b border-gc/60">
+                      <MapPin className="h-4 w-4 text-secondary-700" aria-hidden />
+                      <h3 className="text-sm font-black text-ink">{station.stationTitle}</h3>
+                      <span className="ms-auto text-[10px] font-bold text-ink-faint">
                         {station.steps.length} צעדים
                       </span>
                     </div>
-                    <div className="divide-y divide-slate-100/80">
+                    <div className="divide-y divide-ink-100/80">
                       {station.steps.map((step) => (
                         <div key={step.stepId ?? `n-${step.stepNumber}`} className="px-3 py-2">
                           <div className="flex items-center gap-1.5 mb-1.5">
-                            <span className="flex h-5 min-w-5 items-center justify-center rounded-md bg-emerald-600/90 px-1.5 text-[10px] font-black text-gc">
+                            <span className="flex h-5 min-w-5 items-center justify-center rounded-md bg-primary-600/90 px-1.5 text-[10px] font-black text-gc">
                               {step.stepNumber ?? '?'}
                             </span>
-                            <p className="text-xs font-bold text-slate-700 truncate">
+                            <p className="text-xs font-bold text-ink-soft truncate">
                               {step.stepTitle || `שלב ${step.stepNumber ?? ''}`}
                             </p>
                           </div>
@@ -852,31 +852,31 @@ export function AlmogKnowledgeManager() {
                                   className={cn(
                                     'rounded-xl border px-3 py-2',
                                     research
-                                      ? 'border-violet-200/80 bg-violet-50/50'
-                                      : 'border-slate-200/70 bg-background-card/60',
+                                      ? 'border-iris-200/80 bg-iris-50/50'
+                                      : 'border-hairline/70 bg-background-card/60',
                                   )}
                                 >
                                   <div className="flex items-start gap-2">
                                     <div className="min-w-0 flex-1">
                                       <div className="flex items-center gap-1.5">
                                         {research ? (
-                                          <FlaskConical className="h-3.5 w-3.5 shrink-0 text-violet-600" aria-hidden />
+                                          <FlaskConical className="h-3.5 w-3.5 shrink-0 text-iris-600" aria-hidden />
                                         ) : (
-                                          <FileText className="h-3.5 w-3.5 shrink-0 text-slate-400" aria-hidden />
+                                          <FileText className="h-3.5 w-3.5 shrink-0 text-ink-faint" aria-hidden />
                                         )}
-                                        <p className="truncate text-sm font-bold text-slate-900">
+                                        <p className="truncate text-sm font-bold text-ink">
                                           {research ? researchName(item) : item.title}
                                         </p>
                                       </div>
-                                      <p className="mt-1 text-xs leading-relaxed text-slate-600 line-clamp-3">
-                                        <span className="font-bold text-slate-500">
+                                      <p className="mt-1 text-xs leading-relaxed text-ink-soft line-clamp-3">
+                                        <span className="font-bold text-ink-faint">
                                           {research ? 'מה ידוע מהמחקר: ' : ''}
                                         </span>
                                         {research
                                           ? researchKnownSummary(item)
                                           : item.body.replace(/\s+/g, ' ').trim().slice(0, 200)}
                                       </p>
-                                      <p className="mt-1 text-[10px] text-slate-400">
+                                      <p className="mt-1 text-[10px] text-ink-faint">
                                         {item.chunk_count} חלקים · {formatDate(item.updated_at)}
                                       </p>
                                     </div>
@@ -886,7 +886,7 @@ export function AlmogKnowledgeManager() {
                                         onClick={() => selectItem(item.id)}
                                         title="דיוק / עריכה"
                                         aria-label="דיוק / עריכה"
-                                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-sky-200/80 bg-sky-50/80 text-sky-700 transition hover:bg-sky-100"
+                                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-secondary-200/80 bg-secondary-50/80 text-secondary-700 transition hover:bg-secondary-100"
                                       >
                                         <Pencil className="h-3.5 w-3.5" />
                                       </button>
@@ -898,7 +898,7 @@ export function AlmogKnowledgeManager() {
                                         }}
                                         title="מחיקה"
                                         aria-label="מחיקה"
-                                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-rose-200/80 bg-rose-50/80 text-rose-600 transition hover:bg-rose-100"
+                                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-coral-200/80 bg-coral-50/80 text-coral-600 transition hover:bg-coral-100"
                                       >
                                         <Trash2 className="h-3.5 w-3.5" />
                                       </button>
@@ -917,15 +917,15 @@ export function AlmogKnowledgeManager() {
             </div>
           ) : viewMode === 'research' ? (
             <div className="overflow-y-auto flex-1 p-2 sm:p-3 space-y-3">
-              <div className="flex items-center gap-2 rounded-2xl border border-violet-200/80 bg-violet-50/60 px-3 py-2">
-                <FlaskConical className="h-4 w-4 shrink-0 text-violet-600" aria-hidden />
-                <p className="text-xs font-bold text-violet-900">
+              <div className="flex items-center gap-2 rounded-2xl border border-iris-200/80 bg-iris-50/60 px-3 py-2">
+                <FlaskConical className="h-4 w-4 shrink-0 text-iris-600" aria-hidden />
+                <p className="text-xs font-bold text-iris-900">
                   אלמוג מכיר {researchItems.length} מחקרים
                   {searchQ.trim() ? ' התואמים לחיפוש' : ''}. אלה המחקרים שהמודל יכול להישען עליהם בשיחות.
                 </p>
               </div>
               {researchItems.length === 0 ? (
-                <p className="p-6 text-center text-sm text-slate-500">
+                <p className="p-6 text-center text-sm text-ink-faint">
                   אין עדיין מחקרים מסונכרנים. הוסיפו מחקרים לשלבי המסע וסנכרנו אותם לאלמוג.
                 </p>
               ) : (
@@ -934,21 +934,21 @@ export function AlmogKnowledgeManager() {
                     key={station.stationKey}
                     className="rounded-2xl border border-gc/70 bg-background-card/55 backdrop-blur-md overflow-hidden"
                   >
-                    <div className="flex items-center gap-2 px-3 py-2 bg-linear-to-l from-violet-100/70 to-sky-100/50 border-b border-gc/60">
-                      <MapPin className="h-4 w-4 text-violet-700" aria-hidden />
-                      <h3 className="text-sm font-black text-slate-800">{station.stationTitle}</h3>
-                      <span className="ms-auto text-[10px] font-bold text-slate-500">
+                    <div className="flex items-center gap-2 px-3 py-2 bg-linear-to-l from-iris-100/70 to-secondary-100/50 border-b border-gc/60">
+                      <MapPin className="h-4 w-4 text-iris-700" aria-hidden />
+                      <h3 className="text-sm font-black text-ink">{station.stationTitle}</h3>
+                      <span className="ms-auto text-[10px] font-bold text-ink-faint">
                         {station.steps.reduce((n, s) => n + s.items.length, 0)} מחקרים
                       </span>
                     </div>
-                    <div className="divide-y divide-slate-100/80">
+                    <div className="divide-y divide-ink-100/80">
                       {station.steps.map((step) => (
                         <div key={step.stepKey} className="px-3 py-2">
                           <div className="flex items-center gap-1.5 mb-1.5">
-                            <span className="flex h-5 min-w-5 items-center justify-center rounded-md bg-violet-600/90 px-1.5 text-[10px] font-black text-gc">
+                            <span className="flex h-5 min-w-5 items-center justify-center rounded-md bg-iris-600/90 px-1.5 text-[10px] font-black text-gc">
                               {step.stepNumber ?? '?'}
                             </span>
-                            <p className="text-xs font-bold text-slate-700 truncate">
+                            <p className="text-xs font-bold text-ink-soft truncate">
                               {step.stepTitle || `שלב ${step.stepNumber ?? ''}`}
                             </p>
                           </div>
@@ -959,24 +959,24 @@ export function AlmogKnowledgeManager() {
                               return (
                                 <li
                                   key={item.id}
-                                  className="rounded-xl border border-violet-200/80 bg-violet-50/40 px-3 py-2.5"
+                                  className="rounded-xl border border-iris-200/80 bg-iris-50/40 px-3 py-2.5"
                                 >
                                   <div className="flex items-start gap-2">
                                     <div className="min-w-0 flex-1">
                                       <div className="flex items-start gap-1.5">
-                                        <FlaskConical className="mt-0.5 h-3.5 w-3.5 shrink-0 text-violet-600" aria-hidden />
-                                        <p className="text-sm font-black text-slate-900">
+                                        <FlaskConical className="mt-0.5 h-3.5 w-3.5 shrink-0 text-iris-600" aria-hidden />
+                                        <p className="text-sm font-black text-ink">
                                           {researchName(item)}
                                         </p>
                                       </div>
                                       {citation ? (
-                                        <p className="mt-0.5 ps-5 text-[11px] font-medium text-violet-800/80">
+                                        <p className="mt-0.5 ps-5 text-[11px] font-medium text-iris-800/80">
                                           {citation}
                                         </p>
                                       ) : null}
                                       <div className="mt-1.5 flex flex-wrap gap-1.5 ps-5">
                                         {meta.evidenceLevel ? (
-                                          <span className="inline-flex items-center rounded-full border border-emerald-300/70 bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
+                                          <span className="inline-flex items-center rounded-full border border-primary-300/70 bg-primary-50 px-2 py-0.5 text-[10px] font-bold text-primary-800">
                                             ראיות: {meta.evidenceLevel}
                                           </span>
                                         ) : null}
@@ -985,24 +985,24 @@ export function AlmogKnowledgeManager() {
                                             href={meta.url}
                                             target="_blank"
                                             rel="noreferrer noopener"
-                                            className="inline-flex items-center rounded-full border border-sky-300/70 bg-sky-50 px-2 py-0.5 text-[10px] font-bold text-sky-800 hover:bg-sky-100"
+                                            className="inline-flex items-center rounded-full border border-secondary-300/70 bg-secondary-50 px-2 py-0.5 text-[10px] font-bold text-secondary-800 hover:bg-secondary-100"
                                           >
                                             מקור ↗
                                           </a>
                                         ) : null}
                                       </div>
-                                      <p className="mt-1.5 ps-5 text-xs leading-relaxed text-slate-700">
-                                        <span className="font-bold text-slate-500">מה אלמוג יודע: </span>
+                                      <p className="mt-1.5 ps-5 text-xs leading-relaxed text-ink-soft">
+                                        <span className="font-bold text-ink-faint">מה אלמוג יודע: </span>
                                         {meta.summary}
                                       </p>
                                       {meta.findings.length ? (
-                                        <ul className="mt-1.5 list-disc space-y-0.5 ps-9 text-[11px] leading-relaxed text-slate-600">
+                                        <ul className="mt-1.5 list-disc space-y-0.5 ps-9 text-[11px] leading-relaxed text-ink-soft">
                                           {meta.findings.slice(0, 3).map((f, idx) => (
                                             <li key={idx}>{f}</li>
                                           ))}
                                         </ul>
                                       ) : null}
-                                      <p className="mt-1.5 ps-5 text-[10px] text-slate-400">
+                                      <p className="mt-1.5 ps-5 text-[10px] text-ink-faint">
                                         {item.chunk_count} חלקים · עודכן {formatDate(item.updated_at)}
                                       </p>
                                     </div>
@@ -1012,7 +1012,7 @@ export function AlmogKnowledgeManager() {
                                         onClick={() => selectItem(item.id)}
                                         title="דיוק / עריכה"
                                         aria-label="דיוק / עריכה"
-                                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-sky-200/80 bg-sky-50/80 text-sky-700 transition hover:bg-sky-100"
+                                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-secondary-200/80 bg-secondary-50/80 text-secondary-700 transition hover:bg-secondary-100"
                                       >
                                         <Pencil className="h-3.5 w-3.5" />
                                       </button>
@@ -1024,7 +1024,7 @@ export function AlmogKnowledgeManager() {
                                         }}
                                         title="מחיקה"
                                         aria-label="מחיקה"
-                                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-rose-200/80 bg-rose-50/80 text-rose-600 transition hover:bg-rose-100"
+                                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-coral-200/80 bg-coral-50/80 text-coral-600 transition hover:bg-coral-100"
                                       >
                                         <Trash2 className="h-3.5 w-3.5" />
                                       </button>
@@ -1043,15 +1043,15 @@ export function AlmogKnowledgeManager() {
             </div>
           ) : viewMode === 'principles' ? (
             <div className="overflow-y-auto flex-1 p-2 sm:p-3 space-y-3">
-              <div className="flex items-start gap-2 rounded-2xl border border-indigo-200/80 bg-indigo-50/60 px-3 py-2">
-                <ScrollText className="mt-0.5 h-4 w-4 shrink-0 text-indigo-600" aria-hidden />
-                <p className="text-xs font-bold text-indigo-900">
+              <div className="flex items-start gap-2 rounded-2xl border border-iris-200/80 bg-iris-50/60 px-3 py-2">
+                <ScrollText className="mt-0.5 h-4 w-4 shrink-0 text-iris-600" aria-hidden />
+                <p className="text-xs font-bold text-iris-900">
                   עקרונות וחוקי תוכנית שאלמוג שולף מהשיחה לפי הצורך. כתבו בשפה טבעית
                   (חוקי התוכנית, איך להתמודד עם מצבים) — כל שמירה מעדכנת את האינדקס.
                 </p>
               </div>
               {principleItems.length === 0 ? (
-                <p className="p-6 text-center text-sm text-slate-500">
+                <p className="p-6 text-center text-sm text-ink-faint">
                   אין עדיין עקרונות. הוסיפו ידע ובחרו שיוך &quot;עיקרון / חוק תוכנית&quot;.
                 </p>
               ) : (
@@ -1059,23 +1059,23 @@ export function AlmogKnowledgeManager() {
                   {principleItems.map((item) => (
                     <li
                       key={item.id}
-                      className="rounded-xl border border-indigo-200/70 bg-background-card/65 px-3 py-2"
+                      className="rounded-xl border border-iris-200/70 bg-background-card/65 px-3 py-2"
                     >
                       <div className="flex items-start gap-2">
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1.5">
-                            <ScrollText className="h-3.5 w-3.5 shrink-0 text-indigo-500" aria-hidden />
-                            <p className="truncate text-sm font-bold text-slate-900">{item.title}</p>
+                            <ScrollText className="h-3.5 w-3.5 shrink-0 text-iris-500" aria-hidden />
+                            <p className="truncate text-sm font-bold text-ink">{item.title}</p>
                             {item.access_level === 'premium' ? (
-                              <span className="inline-flex items-center rounded-full border border-amber-300/70 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-800">
+                              <span className="inline-flex items-center rounded-full border border-accent-300/70 bg-accent-50 px-2 py-0.5 text-[10px] font-bold text-accent-800">
                                 פרימיום
                               </span>
                             ) : null}
                           </div>
-                          <p className="mt-1 text-xs leading-relaxed text-slate-600 line-clamp-3">
+                          <p className="mt-1 text-xs leading-relaxed text-ink-soft line-clamp-3">
                             {item.body.replace(/\s+/g, ' ').trim().slice(0, 240)}
                           </p>
-                          <p className="mt-1 text-[10px] text-slate-400">
+                          <p className="mt-1 text-[10px] text-ink-faint">
                             {item.chunk_count} חלקים · {formatDate(item.updated_at)}
                           </p>
                         </div>
@@ -1085,7 +1085,7 @@ export function AlmogKnowledgeManager() {
                             onClick={() => selectItem(item.id)}
                             title="דיוק / עריכה"
                             aria-label="דיוק / עריכה"
-                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-sky-200/80 bg-sky-50/80 text-sky-700 transition hover:bg-sky-100"
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-secondary-200/80 bg-secondary-50/80 text-secondary-700 transition hover:bg-secondary-100"
                           >
                             <Pencil className="h-3.5 w-3.5" />
                           </button>
@@ -1097,7 +1097,7 @@ export function AlmogKnowledgeManager() {
                             }}
                             title="מחיקה"
                             aria-label="מחיקה"
-                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-rose-200/80 bg-rose-50/80 text-rose-600 transition hover:bg-rose-100"
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-coral-200/80 bg-coral-50/80 text-coral-600 transition hover:bg-coral-100"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
@@ -1109,10 +1109,10 @@ export function AlmogKnowledgeManager() {
               )}
             </div>
           ) : (
-            <ul className="overflow-y-auto flex-1 divide-y divide-slate-100/80">
+            <ul className="overflow-y-auto flex-1 divide-y divide-ink-100/80">
               {groupedItems.stepItems.length > 0 ? (
                 <li>
-                  <p className="px-3 py-2 text-[10px] font-black uppercase tracking-wide text-emerald-800/70 bg-emerald-50/50">
+                  <p className="px-3 py-2 text-[10px] font-black uppercase tracking-wide text-primary-800/70 bg-primary-50/50">
                     לפי שלב במסע
                   </p>
                   <ul>
@@ -1122,13 +1122,13 @@ export function AlmogKnowledgeManager() {
                           type="button"
                           onClick={() => selectItem(item.id)}
                           className={[
-                            'w-full text-start px-3 py-2.5 hover:bg-emerald-50/80 transition-colors',
-                            selectedId === item.id && !isNew ? 'bg-emerald-50' : '',
+                            'w-full text-start px-3 py-2.5 hover:bg-primary-50/80 transition-colors',
+                            selectedId === item.id && !isNew ? 'bg-primary-50' : '',
                           ].join(' ')}
                         >
-                          <p className="font-bold text-sm text-slate-900 truncate">{item.title}</p>
-                          <p className="text-xs text-slate-500">{itemListLabel(item, guideTitleById)}</p>
-                          <p className="text-[10px] text-slate-400 mt-0.5">
+                          <p className="font-bold text-sm text-ink truncate">{item.title}</p>
+                          <p className="text-xs text-ink-faint">{itemListLabel(item, guideTitleById)}</p>
+                          <p className="text-[10px] text-ink-faint mt-0.5">
                             {item.chunk_count} חלקים · {formatDate(item.updated_at)}
                           </p>
                         </button>
@@ -1139,7 +1139,7 @@ export function AlmogKnowledgeManager() {
               ) : null}
               {groupedItems.courseItems.length > 0 ? (
                 <li>
-                  <p className="px-3 py-2 text-[10px] font-black uppercase tracking-wide text-amber-900/70 bg-amber-50/50">
+                  <p className="px-3 py-2 text-[10px] font-black uppercase tracking-wide text-accent-900/70 bg-accent-50/50">
                     לפי מדריך
                   </p>
                   <ul>
@@ -1149,13 +1149,13 @@ export function AlmogKnowledgeManager() {
                           type="button"
                           onClick={() => selectItem(item.id)}
                           className={[
-                            'w-full text-start px-3 py-2.5 hover:bg-amber-50/80 transition-colors',
-                            selectedId === item.id && !isNew ? 'bg-amber-50' : '',
+                            'w-full text-start px-3 py-2.5 hover:bg-accent-50/80 transition-colors',
+                            selectedId === item.id && !isNew ? 'bg-accent-50' : '',
                           ].join(' ')}
                         >
-                          <p className="font-bold text-sm text-slate-900 truncate">{item.title}</p>
-                          <p className="text-xs text-slate-500">{itemListLabel(item, guideTitleById)}</p>
-                          <p className="text-[10px] text-slate-400 mt-0.5">
+                          <p className="font-bold text-sm text-ink truncate">{item.title}</p>
+                          <p className="text-xs text-ink-faint">{itemListLabel(item, guideTitleById)}</p>
+                          <p className="text-[10px] text-ink-faint mt-0.5">
                             {item.chunk_count} חלקים · {formatDate(item.updated_at)}
                           </p>
                         </button>
@@ -1166,7 +1166,7 @@ export function AlmogKnowledgeManager() {
               ) : null}
               {groupedItems.principleItems.length > 0 ? (
                 <li>
-                  <p className="px-3 py-2 text-[10px] font-black uppercase tracking-wide text-indigo-900/70 bg-indigo-50/50">
+                  <p className="px-3 py-2 text-[10px] font-black uppercase tracking-wide text-iris-900/70 bg-iris-50/50">
                     עקרונות וחוקי תוכנית
                   </p>
                   <ul>
@@ -1176,13 +1176,13 @@ export function AlmogKnowledgeManager() {
                           type="button"
                           onClick={() => selectItem(item.id)}
                           className={[
-                            'w-full text-start px-3 py-2.5 hover:bg-indigo-50/80 transition-colors',
-                            selectedId === item.id && !isNew ? 'bg-indigo-50' : '',
+                            'w-full text-start px-3 py-2.5 hover:bg-iris-50/80 transition-colors',
+                            selectedId === item.id && !isNew ? 'bg-iris-50' : '',
                           ].join(' ')}
                         >
-                          <p className="font-bold text-sm text-slate-900 truncate">{item.title}</p>
-                          <p className="text-xs text-slate-500">{itemListLabel(item, guideTitleById)}</p>
-                          <p className="text-[10px] text-slate-400 mt-0.5">
+                          <p className="font-bold text-sm text-ink truncate">{item.title}</p>
+                          <p className="text-xs text-ink-faint">{itemListLabel(item, guideTitleById)}</p>
+                          <p className="text-[10px] text-ink-faint mt-0.5">
                             {item.chunk_count} חלקים · {formatDate(item.updated_at)}
                           </p>
                         </button>
@@ -1209,40 +1209,40 @@ export function AlmogKnowledgeManager() {
             type="button"
             aria-label="סגור"
             onClick={() => !saving && !deleting && closeEditor()}
-            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+            className="absolute inset-0 bg-ink-900/40 backdrop-blur-sm"
           />
           <div
             className="relative flex max-h-[94dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-[1.75rem] shadow-[0_28px_80px_-16px_rgba(14,116,144,0.45)] ring-1 ring-gc/50 sm:rounded-[1.75rem]"
             style={glassPanelStyle}
           >
-            <div className="pointer-events-none absolute -inset-e-16 -top-20 h-48 w-48 rounded-full bg-sky-400/25 blur-3xl" aria-hidden />
-            <div className="pointer-events-none absolute -bottom-10 -inset-s-10 h-40 w-40 rounded-full bg-emerald-400/20 blur-3xl" aria-hidden />
+            <div className="pointer-events-none absolute -inset-e-16 -top-20 h-48 w-48 rounded-full bg-secondary-400/25 blur-3xl" aria-hidden />
+            <div className="pointer-events-none absolute -bottom-10 -inset-s-10 h-40 w-40 rounded-full bg-primary-400/20 blur-3xl" aria-hidden />
             <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-linear-to-r from-transparent via-background-card/90 to-transparent" />
 
             {/* כותרת + טאבים */}
-            <header className="relative shrink-0 border-b border-gc/40 bg-linear-to-bl from-sky-100/55 via-background-card/25 to-emerald-100/45 px-4 pb-3 pt-4 sm:px-6">
+            <header className="relative shrink-0 border-b border-gc/40 bg-linear-to-bl from-secondary-100/55 via-background-card/25 to-primary-100/45 px-4 pb-3 pt-4 sm:px-6">
               <button
                 type="button"
                 onClick={() => !saving && !deleting && closeEditor()}
                 disabled={saving || deleting}
-                className="absolute inset-e-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-gc/55 bg-background-card/35 text-slate-600 backdrop-blur-md transition hover:bg-background-card/55 disabled:opacity-50 sm:inset-e-4 sm:top-4"
+                className="absolute inset-e-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-gc/55 bg-background-card/35 text-ink-soft backdrop-blur-md transition hover:bg-background-card/55 disabled:opacity-50 sm:inset-e-4 sm:top-4"
                 aria-label="סגור"
               >
                 <X className="h-4 w-4" />
               </button>
 
               <div className="flex items-center gap-3 pe-10">
-                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-sky-500 to-cyan-600 text-gc shadow-lg shadow-sky-500/30 ring-1 ring-gc/55">
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-linear-to-br from-secondary-500 to-secondary-600 text-gc shadow-lg shadow-secondary-500/30 ring-1 ring-gc/55">
                   <FileText className="h-5 w-5" aria-hidden />
                 </span>
                 <div className="min-w-0">
-                  <p className="text-[10px] font-bold uppercase tracking-wide text-sky-700/85">
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-secondary-700/85">
                     {isNew ? 'מסמך חדש' : 'עריכה'}
                   </p>
-                  <h2 className="truncate bg-linear-to-l from-sky-800 via-cyan-700 to-emerald-700 bg-clip-text font-display text-xl font-black text-transparent">
+                  <h2 className="truncate bg-linear-to-l from-secondary-800 via-secondary-700 to-primary-700 bg-clip-text font-display text-xl font-black text-transparent">
                     {isNew ? 'הוספת ידע לאלמוג' : form.title || 'עריכת ידע'}
                   </h2>
-                  <p className="truncate text-xs text-slate-600">שמירה מפצלת ומטמיעה מחדש באינדקס</p>
+                  <p className="truncate text-xs text-ink-soft">שמירה מפצלת ומטמיעה מחדש באינדקס</p>
                 </div>
               </div>
 
@@ -1260,8 +1260,8 @@ export function AlmogKnowledgeManager() {
                     className={cn(
                       'flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-xl px-2 py-2 text-xs font-bold transition-all sm:text-sm',
                       editorTab === key
-                        ? 'bg-linear-to-l from-sky-500 to-cyan-600 text-gc shadow-md shadow-sky-500/25'
-                        : 'text-slate-600 hover:bg-background-card/50',
+                        ? 'bg-linear-to-l from-secondary-500 to-secondary-600 text-gc shadow-md shadow-secondary-500/25'
+                        : 'text-ink-soft hover:bg-background-card/50',
                     )}
                   >
                     <Icon className="h-4 w-4" aria-hidden />
@@ -1275,14 +1275,14 @@ export function AlmogKnowledgeManager() {
             <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6">
               {detailLoading && !isNew ? (
                 <p className="flex justify-center py-20">
-                  <Loader2 className="w-7 h-7 animate-spin text-sky-600" />
+                  <Loader2 className="w-7 h-7 animate-spin text-secondary-600" />
                 </p>
               ) : (
                 <>
                   {editorTab === 'content' ? (
                     <div className="space-y-4">
                       <label className="block">
-                        <span className="text-xs font-bold text-slate-700">כותרת (לניהול)</span>
+                        <span className="text-xs font-bold text-ink-soft">כותרת (לניהול)</span>
                         <input
                           value={form.title}
                           onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
@@ -1291,7 +1291,7 @@ export function AlmogKnowledgeManager() {
                         />
                       </label>
                       <label className="block">
-                        <span className="text-xs font-bold text-slate-700">תוכן לאימון</span>
+                        <span className="text-xs font-bold text-ink-soft">תוכן לאימון</span>
                         <textarea
                           value={form.body}
                           onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))}
@@ -1308,7 +1308,7 @@ export function AlmogKnowledgeManager() {
                     <div className="space-y-4">
                       <div className="grid gap-3 sm:grid-cols-2">
                         <label className="block">
-                          <span className="text-xs font-bold text-slate-700">שיוך</span>
+                          <span className="text-xs font-bold text-ink-soft">שיוך</span>
                           <select
                             value={form.dataType}
                             onChange={(e) =>
@@ -1322,7 +1322,7 @@ export function AlmogKnowledgeManager() {
                           </select>
                         </label>
                         <label className="block">
-                          <span className="text-xs font-bold text-slate-700">גישה</span>
+                          <span className="text-xs font-bold text-ink-soft">גישה</span>
                           <select
                             value={form.accessLevel}
                             onChange={(e) =>
@@ -1337,23 +1337,23 @@ export function AlmogKnowledgeManager() {
                       </div>
 
                       {form.dataType === 'principle' ? (
-                        <div className="rounded-2xl border border-indigo-200/80 bg-indigo-50/50 p-3">
-                          <p className="text-xs font-bold text-indigo-950">עיקרון / חוק תוכנית</p>
-                          <p className="mt-1 text-xs leading-relaxed text-indigo-900/80">
+                        <div className="rounded-2xl border border-iris-200/80 bg-iris-50/50 p-3">
+                          <p className="text-xs font-bold text-iris-950">עיקרון / חוק תוכנית</p>
+                          <p className="mt-1 text-xs leading-relaxed text-iris-900/80">
                             כתבו בשפה טבעית חוק או הנחיה — למשל &quot;חוקי התוכנית&quot; או &quot;איך
                             להתמודד עם X&quot;. העיקרון גלובלי (לא משויך לשלב/קורס) ואלמוג שולף אותו
                             מהשיחה לפי הרלוונטיות. גישה &quot;פרימיום&quot; תוצג רק למשתמשים רשומים לקורס.
                           </p>
                         </div>
                       ) : form.dataType === 'step' ? (
-                        <div className="rounded-2xl border border-emerald-200/80 bg-emerald-50/40 p-3">
-                          <label htmlFor="almog-knowledge-step" className="block text-xs font-bold text-emerald-950">
+                        <div className="rounded-2xl border border-primary-200/80 bg-primary-50/40 p-3">
+                          <label htmlFor="almog-knowledge-step" className="block text-xs font-bold text-primary-950">
                             שלב
                           </label>
                           {stepsLoading ? (
                             <p className="text-sm mt-1">טוען...</p>
                           ) : stepsError ? (
-                            <p className="text-sm text-red-700 mt-1">{stepsError}</p>
+                            <p className="text-sm text-coral-700 mt-1">{stepsError}</p>
                           ) : (
                             <select
                               id="almog-knowledge-step"
@@ -1372,8 +1372,8 @@ export function AlmogKnowledgeManager() {
                           )}
                         </div>
                       ) : (
-                        <div className="rounded-2xl border border-amber-200/70 bg-amber-50/50 p-3 space-y-2">
-                          <span className="text-xs font-bold text-amber-950">מדריך</span>
+                        <div className="rounded-2xl border border-accent-200/70 bg-accent-50/50 p-3 space-y-2">
+                          <span className="text-xs font-bold text-accent-950">מדריך</span>
                           <div className="flex flex-wrap gap-2">
                             <button
                               type="button"
@@ -1381,7 +1381,7 @@ export function AlmogKnowledgeManager() {
                               className={cn(
                                 opsGlassBtnClass,
                                 'px-3 py-1',
-                                form.courseMode === 'guide' && 'border-amber-400/60 bg-amber-500/20 text-amber-900',
+                                form.courseMode === 'guide' && 'border-accent-400/60 bg-accent-500/20 text-accent-900',
                               )}
                             >
                               מהרשימה
@@ -1392,7 +1392,7 @@ export function AlmogKnowledgeManager() {
                               className={cn(
                                 opsGlassBtnClass,
                                 'px-3 py-1',
-                                form.courseMode === 'custom' && 'border-amber-400/60 bg-amber-500/20 text-amber-900',
+                                form.courseMode === 'custom' && 'border-accent-400/60 bg-accent-500/20 text-accent-900',
                               )}
                             >
                               מזהה מותאם
@@ -1402,7 +1402,7 @@ export function AlmogKnowledgeManager() {
                             guidesLoading ? (
                               <p className="text-sm">טוען מדריכים…</p>
                             ) : guides.length === 0 ? (
-                              <p className="text-xs text-amber-900/80">
+                              <p className="text-xs text-accent-900/80">
                                 אין מדריכים עדיין. צרו מדריך במסך &quot;מדריכים&quot;, או השתמשו במזהה מותאם.
                               </p>
                             ) : (
@@ -1446,7 +1446,7 @@ export function AlmogKnowledgeManager() {
                   type="button"
                   onClick={() => void save()}
                   disabled={saving || deleting}
-                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-linear-to-l from-sky-600 to-cyan-600 px-4 py-3 text-sm font-black text-gc shadow-lg shadow-sky-500/25 transition active:scale-[0.99] disabled:opacity-60"
+                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-linear-to-l from-secondary-600 to-secondary-600 px-4 py-3 text-sm font-black text-gc shadow-lg shadow-secondary-500/25 transition active:scale-[0.99] disabled:opacity-60"
                 >
                   {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                   {saving ? 'שומר ומטמיע…' : 'שמירה והטמעה'}
@@ -1459,7 +1459,7 @@ export function AlmogKnowledgeManager() {
                       setDeleteOpen(true);
                     }}
                     disabled={saving || deleting}
-                    className="inline-flex items-center justify-center gap-2 rounded-2xl border border-rose-300/70 bg-rose-50/70 px-4 py-3 text-sm font-bold text-rose-700 backdrop-blur-md transition hover:bg-rose-100/80 disabled:opacity-60"
+                    className="inline-flex items-center justify-center gap-2 rounded-2xl border border-coral-300/70 bg-coral-50/70 px-4 py-3 text-sm font-bold text-coral-700 backdrop-blur-md transition hover:bg-coral-100/80 disabled:opacity-60"
                   >
                     {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                     <span className="hidden sm:inline">מחיקה</span>

@@ -33,21 +33,21 @@ export function ChallengeCompleteClient({ firstName, initialSummary }: Props) {
 
   return (
     <div
-      className="relative min-h-dvh overflow-hidden bg-linear-to-b from-[#0a1628] via-[#1a1035] to-[#05010f] px-4 py-10 text-white"
+      className="relative min-h-dvh overflow-hidden bg-linear-to-b from-[#0a1628] via-[#1a1035] to-[#05010f] px-4 py-10 text-on-dark"
       dir="rtl"
     >
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute left-1/2 top-20 h-80 w-80 -translate-x-1/2 rounded-full bg-emerald-500/20 blur-3xl" />
-        <div className="absolute bottom-20 inset-s-1/4 h-64 w-64 rounded-full bg-amber-500/15 blur-3xl" />
+        <div className="absolute left-1/2 top-20 h-80 w-80 -translate-x-1/2 rounded-full bg-primary-500/20 blur-3xl" />
+        <div className="absolute bottom-20 inset-s-1/4 h-64 w-64 rounded-full bg-accent-500/15 blur-3xl" />
       </div>
 
       <div className="relative z-10 mx-auto max-w-lg text-center">
         <DemoExitBanner />
         <motion.div
           {...challengeFadeUp(reducedMotion, 0)}
-          className="mb-6 inline-flex h-20 w-20 items-center justify-center rounded-full bg-linear-to-br from-amber-400 to-emerald-500 shadow-lg shadow-emerald-600/30"
+          className="mb-6 inline-flex h-20 w-20 items-center justify-center rounded-full bg-linear-to-br from-accent-400 to-primary-500 shadow-lg shadow-primary-600/30"
         >
-          <Award className="h-10 w-10 text-white" />
+          <Award className="h-10 w-10 text-on-dark" />
         </motion.div>
 
         <motion.h1
@@ -59,7 +59,7 @@ export function ChallengeCompleteClient({ firstName, initialSummary }: Props) {
 
         <motion.p
           {...challengeFadeUp(reducedMotion, 0.2)}
-          className="mt-4 leading-relaxed text-white/75"
+          className="mt-4 leading-relaxed text-on-dark/75"
         >
           {summary?.message ??
             '14 יום של צעדים קטנים — וכל אחד מהם נספר. אלמוג גאה בך.'}
@@ -77,11 +77,11 @@ export function ChallengeCompleteClient({ firstName, initialSummary }: Props) {
             ].map(({ label, value, icon: Icon }) => (
               <div
                 key={label}
-                className="rounded-2xl border border-white/10 bg-background-card/10 p-4 backdrop-blur-md"
+                className="rounded-2xl border border-on-dark/10 bg-background-card/10 p-4 backdrop-blur-md"
               >
-                <Icon className="mx-auto mb-2 h-5 w-5 text-emerald-300" />
+                <Icon className="mx-auto mb-2 h-5 w-5 text-primary-300" />
                 <div className="font-display text-2xl font-black">{value}</div>
-                <div className="mt-1 text-xs text-white/45">{label}</div>
+                <div className="mt-1 text-xs text-on-dark/45">{label}</div>
               </div>
             ))}
           </motion.div>
@@ -95,11 +95,11 @@ export function ChallengeCompleteClient({ firstName, initialSummary }: Props) {
             {summary.top_successes.map((s) => (
               <li
                 key={s.title}
-                className="rounded-xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-sm"
+                className="rounded-xl border border-primary-400/20 bg-primary-500/10 px-4 py-3 text-sm"
               >
-                <span className="font-semibold text-emerald-200">{s.title}</span>
+                <span className="font-semibold text-primary-200">{s.title}</span>
                 {s.description ? (
-                  <p className="mt-1 text-white/50">{s.description}</p>
+                  <p className="mt-1 text-on-dark/50">{s.description}</p>
                 ) : null}
               </li>
             ))}
@@ -113,7 +113,7 @@ export function ChallengeCompleteClient({ firstName, initialSummary }: Props) {
           disabled={finishing}
           onClick={finish}
           {...challengeFadeUp(reducedMotion, 0.5)}
-          className="mt-10 w-full rounded-2xl bg-emerald-500 py-4 font-bold shadow-lg shadow-emerald-600/25 disabled:opacity-60"
+          className="mt-10 w-full rounded-2xl bg-primary-500 py-4 font-bold shadow-lg shadow-primary-600/25 disabled:opacity-60"
         >
           {finishing ? 'רגע...' : 'המשך ל-NuraWell'}
         </motion.button>

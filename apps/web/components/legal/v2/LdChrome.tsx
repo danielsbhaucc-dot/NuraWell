@@ -30,7 +30,7 @@ export function LdChrome({
   children: ReactNode;
 }) {
   return (
-    <div className="ld" data-theme={LEGAL_THEME} dir="rtl" lang="he">
+    <div className="ld public-dark" data-theme={LEGAL_THEME} dir="rtl" lang="he">
       <PrintExpand />
       <a href="#ld-main" className="ld-skip">דילוג לתוכן</a>
       <header className="ld-top ld-glass">

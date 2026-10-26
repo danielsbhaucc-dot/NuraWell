@@ -35,7 +35,7 @@ export default function ContactPage() {
         <LegalSection num="1" title="ערוצי יצירת קשר">
           <ul>
             <li>
-              <MessageCircle className="inline w-4 h-4 me-1 text-emerald-600" aria-hidden />
+              <MessageCircle className="inline w-4 h-4 me-1 text-primary-600" aria-hidden />
               <strong>תמיכה כללית:</strong>{' '}
               <a href="mailto:support@nurawell.ai">support@nurawell.ai</a>
             </li>
@@ -48,7 +48,7 @@ export default function ContactPage() {
               <a href="mailto:accessibility@nurawell.ai">accessibility@nurawell.ai</a>
             </li>
             <li>
-              <ShieldCheck className="inline w-4 h-4 me-1 text-emerald-600" aria-hidden />
+              <ShieldCheck className="inline w-4 h-4 me-1 text-primary-600" aria-hidden />
               <strong>אבטחת מידע:</strong>{' '}
               <a href="mailto:security@nurawell.ai">security@nurawell.ai</a>
             </li>
@@ -58,11 +58,11 @@ export default function ContactPage() {
         <LegalSection num="2" title="לפני שפונים">
           <p>
             אם כבר יש לכם חשבון — אפשר גם לפנות לאלמוג בתוך האפליקציה, או לבדוק את{' '}
-            <Link href="/safety" className="font-semibold text-emerald-700 underline">
+            <Link href="/safety" className="font-semibold text-primary-700 underline">
               מרכז הבטיחות
             </Link>{' '}
             ואת{' '}
-            <Link href="/accessibility" className="font-semibold text-emerald-700 underline">
+            <Link href="/accessibility" className="font-semibold text-primary-700 underline">
               הצהרת הנגישות
             </Link>
             . למשתמשי קצה בלי חשבון — המיילים למעלה הם הנתיב הנכון.
