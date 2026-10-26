@@ -55,14 +55,15 @@ describe('write sealing (server fetch wrapper)', () => {
     expect(back[0]).toMatchObject({ title: 'שלום דני', body: 'גוף ההודעה' });
   });
 
-  it('update seals per row and round-trips; blocked columns stay plaintext', async () => {
+  it('update seals per row and round-trips; metadata now sealed with blind index', async () => {
     const store: Row[] = [{ id: R1, user_id: U1, body: 'old', metadata: { source: 'a' } }];
     const { fn } = fakeRest(store);
     await withFieldDecryption(fn)(`${BASE}/notifications?id=eq.${R1}`, {
       method: 'PATCH', body: JSON.stringify({ body: 'new text', metadata: { source: 'b' } }),
     });
     expect(String(store[0].body)).toMatch(/^enc:v2:/);
-    expect(store[0].metadata).toEqual({ source: 'b' }); // notifications.metadata is BLOCKED
+    expect(String(store[0].metadata)).toMatch(/^enc:v2:/); // notifications.metadata sealed (000208 blind index)
+    expect(store[0]).toHaveProperty('meta_key_bidx', null);
     expect(await decryptValue('notifications', 'body', U1, R1, store[0].body)).toBe('new text');
     const res = await withFieldDecryption(fn)(`${BASE}/notifications?select=body&id=eq.${R1}`, { method: 'GET' });
     expect(((await res.json()) as Row[])[0].body).toBe('new text');

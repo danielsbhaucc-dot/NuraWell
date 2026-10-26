@@ -11,6 +11,9 @@
 import { createHash } from 'node:crypto';
 import { encryptedTable, isBlocked } from '@/lib/security/field-registry';
 import { isV2 } from '@/lib/security/field-crypto';
+import { BLIND_INDEX_SOURCES, blindIndexPatch } from '@/lib/security/blind-index';
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 type Row = Record<string, unknown>;
 
@@ -75,6 +78,16 @@ export async function prepareWriteRow(table: string, row: Row): Promise<Row> {
     if (table === 'ai_interactions' && !('redaction_notice' in r)) r = { ...r, redaction_notice: plainMeta?.redaction_notice === true };
     if (table === 'scheduled_reminders' && !('source' in r))
       r = { ...r, source: typeof plainMeta?.source === 'string' ? plainMeta.source : null };
+    // consent evidence links read by trg_user_consents_to_history (migration 000208) instead of metadata->>…
+    if (table === 'user_consents') {
+      const str = (k: string) => (typeof plainMeta?.[k] === 'string' && plainMeta[k] ? (plainMeta[k] as string) : null);
+      const uuid = str('evidence_id');
+      if (!('evidence_id' in r)) r = { ...r, evidence_id: uuid && UUID_RE.test(uuid) ? uuid : null };
+      if (!('request_id' in r)) r = { ...r, request_id: str('request_id') };
+      if (!('choice' in r)) r = { ...r, choice: str('choice') };
+    }
   }
+  // HMAC blind-index columns for lookups/dedupe on encrypted values (migration 000208)
+  if (BLIND_INDEX_SOURCES[table]?.some((c) => c in r)) r = { ...r, ...(await blindIndexPatch(table, r)) };
   return r;
 }
