@@ -8,6 +8,7 @@ import { ModuleIcon } from './ModuleIcon';
 import { postJson } from './api';
 import { ShareDialog, SellDialog, type PackOut } from './Dialogs';
 import { LicensesView } from './LicensesView';
+import type { ActivityItem, CostTrend } from './OverviewExtras';
 import { Overview, CostsView, SecurityView, LegalView, ProductCard, type Deployment } from './HubViews';
 
 export const API = { toggle: '/api/v1/ops/iam/modules', pack: '/api/v1/ops/modules/package', licensing: '/api/v1/ops/licensing' };
@@ -15,7 +16,7 @@ type Sel = HubSection | `product:${string}`;
 type DialogInit = { s: 'done'; out: PackOut } | { s: 'error'; msg: string };
 
 export interface FinderDashboardProps {
-  registry: RegistryModule[]; products: ProductRow[]; summaries: ProductSummary[]; deployment: Deployment; metricsError: string | null; signingReady: boolean;
+  registry: RegistryModule[]; products: ProductRow[]; summaries: ProductSummary[]; deployment: Deployment; metricsError: string | null; signingReady: boolean; activity?: ActivityItem[] | null; costTrend?: CostTrend;
   initialSection?: Sel; initialView?: 'icons' | 'list'; initialSelected?: string | null;
   initialDialog?: { kind: 'share' | 'sell'; state?: DialogInit }; licensesInitial?: Parameters<typeof LicensesView>[0]['initial'];
   moduleHref?: (id: string) => string;
@@ -66,7 +67,7 @@ export function FinderDashboard(p: FinderDashboardProps) {
         </aside>
         <main className="fd-main">
           {toast ? <div className={`fd-toast ${toast.ok ? 'is-ok' : 'is-err'}`} role={toast.ok ? 'status' : 'alert'}>{toast.msg}<button type="button" onClick={() => setToast(null)} aria-label="סגירה">×</button></div> : null}
-          {sec === 'overview' ? <Overview products={products} summaries={p.summaries} deployment={p.deployment} metricsError={p.metricsError} registry={registry} onOpen={(id) => setSec(`product:${id}`)} /> : null}
+          {sec === 'overview' ? <Overview products={products} summaries={p.summaries} deployment={p.deployment} metricsError={p.metricsError} registry={registry} onOpen={(id) => setSec(`product:${id}`)} onNav={(k) => { setSec(k); setSel(null); }} activity={p.activity ?? null} costTrend={p.costTrend ?? null} href={href} /> : null}
           {sec === 'costs' ? <CostsView products={products} summaries={p.summaries} metricsError={p.metricsError} /> : null}
           {sec === 'security' ? <SecurityView deployment={p.deployment} registry={registry} /> : null}
           {sec === 'legal' ? <LegalView deployment={p.deployment} /> : null}
