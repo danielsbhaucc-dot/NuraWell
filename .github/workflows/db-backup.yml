@@ -28,6 +28,14 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq postgresql-client-17 age >/dev/null
           echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
+      - name: Keep platform-central awake (free tier pauses after 7 idle days)
+        continue-on-error: true
+        env:
+          CENTRAL_URL: ${{ secrets.CENTRAL_SUPABASE_URL }}
+          CENTRAL_KEY: ${{ secrets.CENTRAL_SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          [ -n "$CENTRAL_URL" ] || exit 0
+          curl -fsS -o /dev/null -H "apikey: $CENTRAL_KEY" "$CENTRAL_URL/auth/v1/health" && echo "central ok"
       - name: Dump, encrypt, upload, verify, prune
         env:
           DATABASE_URL: ${{ secrets.SUPABASE_DB_URL }}
