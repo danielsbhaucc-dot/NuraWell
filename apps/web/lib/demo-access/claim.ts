@@ -1,4 +1,5 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { sealSessionTrailFor } from '@/lib/security/session-trail-seal';
 import { createClient } from '@supabase/supabase-js';
 import type { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -133,6 +134,7 @@ export async function claimDemoAccessLink(
     console.error('[demo-access] verifyOtp', otpErr?.message);
     return { ok: false, status: 500, error: 'אימות סשן הדמו נכשל.' };
   }
+  await sealSessionTrailFor(sessionData.user?.id);
 
   const expiresAt = link.expires_at;
   const nowIso = new Date().toISOString();

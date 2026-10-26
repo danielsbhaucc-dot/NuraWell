@@ -8,6 +8,9 @@ import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { hashIp } from '@/lib/logs/signals';
 import { isUuid } from './ir';
+import { sessionTrailIpBidx } from './blind-index';
+import { decryptRow } from './field-crypto';
+import { logDetail } from '@/lib/logs/facts';
 import { methodHe, verdictFor, type Facts } from '@/lib/security-core/verdict';
 export { methodHe, verdictFor, type Facts, type Verdict } from '@/lib/security-core/verdict';
 
@@ -54,16 +57,17 @@ export async function investigate(db: SupabaseClient, input: InvestigateInput) {
 
   const [{ data: prof }, auditQ, sigQ, { data: known }, { data: incidents }, authQ, trailQ] = await Promise.all([
     user ? db.from('profiles').select('role').eq('id', user).maybeSingle() : Promise.resolve({ data: null }),
-    user ? db.from('admin_audit_log').select('created_at, method, path, ip, detail').eq('actor_id', user).gte('created_at', start.toISOString()).order('created_at', { ascending: true }).limit(1000)
-      : ip ? db.from('admin_audit_log').select('created_at, method, path, ip, detail, actor_id').eq('ip', ip).gte('created_at', start.toISOString()).order('created_at', { ascending: true }).limit(1000) : Promise.resolve({ data: [] }),
+    user ? db.from('admin_audit_log').select('created_at, method, path, ip, facts, detail').eq('actor_id', user).gte('created_at', start.toISOString()).order('created_at', { ascending: true }).limit(1000)
+      : ip ? db.from('admin_audit_log').select('created_at, method, path, ip, facts, detail, actor_id').eq('ip', ip).gte('created_at', start.toISOString()).order('created_at', { ascending: true }).limit(1000) : Promise.resolve({ data: [] }),
     h ? db.from('security_signals').select('created_at, kind, path, country, actor_id').eq('ip_hash', h).gte('created_at', new Date(end.getTime() - 90 * 86_400_000).toISOString()).order('created_at', { ascending: true }).limit(1000) : Promise.resolve({ data: [] }),
     h ? db.from('ops_known_places').select('ip_hash, created_at, via').eq('ip_hash', h).maybeSingle() : Promise.resolve({ data: null }),
     db.from('security_incidents').select('id, created_at, opened_via, status, actions').or([user ? `subject_user.eq.${user}` : '', h ? `ip_hash.eq.${h}` : ''].filter(Boolean).join(',') || 'id.is.null').order('created_at', { ascending: false }).limit(10),
     (user || ip) ? db.rpc('ops_auth_events', { p_user: user, p_ip: ip, p_start: start.toISOString(), p_end: end.toISOString() }) : Promise.resolve({ data: [] }),
-    (user || ip) ? db.rpc('ops_session_trail', { p_user: user, p_ip: ip, p_start: start.toISOString(), p_end: end.toISOString() }) : Promise.resolve({ data: [] }),
+    // ip/user_agent are enc:v2 (swept by cron, 000214): look the IP up by its blind index (+ plain arm for rows <5 min old)
+    (user || ip) ? (async () => db.rpc('ops_session_trail', { p_user: user, p_ip: ip, p_ip_bidx: ip ? await sessionTrailIpBidx(ip) : null, p_start: start.toISOString(), p_end: end.toISOString() }))() : Promise.resolve({ data: [] }),
   ]);
   type A = { created_at: string; method: string; path: string; ip: string | null; detail: Record<string, unknown> | null };
-  const auditAll = ((auditQ as { data: A[] | null }).data ?? []);
+  const auditAll = ((auditQ as { data: (A & { facts?: unknown })[] | null }).data ?? []).map((a) => ({ ...a, detail: logDetail(a) }));
   const audit = auditAll.filter((a) => !input.session || (a.detail?.session ?? null) === input.session || (!a.detail?.session && (!ip || a.ip === ip)));
   type S = { created_at: string; kind: string; path: string | null; country: string | null };
   const sig = ((sigQ as { data: S[] | null }).data ?? []);
@@ -100,7 +104,8 @@ export async function investigate(db: SupabaseClient, input: InvestigateInput) {
   // Server-side trail of every session ever opened (survives logout/revoke/expiry; see migration 000189).
   type T = { ts: string; session_id: string; aal: string | null; ip: string | null; user_agent: string | null };
   const liveIds = new Set(linked.map((s) => s.id));
-  for (const t of ((trailQ as { data: T[] | null }).data ?? [])) if (!liveIds.has(t.session_id)) timeline.push({ ts: t.ts, kind: 'session', title: `נפתח חיבור (כבר לא פעיל)${t.aal === 'aal2' ? ' · דו-שלבי' : ''}`, detail: t.user_agent ?? undefined, ip: t.ip });
+  const trailRows = await Promise.all(((trailQ as { data: T[] | null }).data ?? []).map((r) => (decryptRow('auth_session_trail', r as unknown as Record<string, unknown>) as unknown as Promise<T>).catch(() => ({ ...r, ip: null, user_agent: null }))));
+  for (const t of trailRows) if (!liveIds.has(t.session_id)) timeline.push({ ts: t.ts, kind: 'session', title: `נפתח חיבור (כבר לא פעיל)${t.aal === 'aal2' ? ' · דו-שלבי' : ''}`, detail: t.user_agent ?? undefined, ip: t.ip });
   for (const e of authEvents) timeline.push({ ts: e.ts, kind: 'auth', title: `אירוע התחברות: ${e.action}`, detail: e.provider ?? undefined, ip: e.ip });
   // collapse routes: one row per distinct path per hour
   const seen = new Set<string>();
