@@ -1,5 +1,6 @@
 'use client';
 
+import { piiFetch } from '@/lib/platform/access/pii-fetch';
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { UserQuickActions } from './UserQuickActions';
 import { useSearchParams } from 'next/navigation';
@@ -231,7 +232,7 @@ export function AdminUsersClient() {
     setDetailLoading(true);
     setMessage(null);
     try {
-      const res = await fetch(`/api/v1/admin/users/${userId}`, { cache: 'no-store' });
+      const res = await piiFetch(`/api/v1/admin/users/${userId}`, { cache: 'no-store' });
       const data = (await res.json()) as UserDetail & { error?: string };
       if (!res.ok) throw new Error(data.error ?? 'שגיאה');
       setDetail(data);

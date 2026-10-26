@@ -16,7 +16,13 @@ function routes(dir: string): string[] {
 describe('admin API guard coverage', () => {
   const files = ROOTS.flatMap((r) => routes(join(__dirname, '..', r)));
   it('finds routes', () => expect(files.length).toBeGreaterThan(50));
-  it.each(files)('%s is guarded server-side', (f) => {
+  // Pre-auth device enrollment: gated by single-use hashed link + password + strong factor + number match (lib/ops/enrollment.ts).
+  const PRE_AUTH = /app\/api\/v1\/ops\/enroll\/route\.ts$/;
+  it('pre-auth enroll route enforces its own gates', () => {
+    const src = readFileSync(join(__dirname, '..', 'app/api/v1/ops/enroll/route.ts'), 'utf8');
+    expect(src).toMatch(/loadByCookie|openEnrollment/);
+  });
+  it.each(files.filter((f) => !PRE_AUTH.test(f)))('%s is guarded server-side', (f) => {
     expect(readFileSync(f, 'utf8')).toMatch(GUARDS);
   });
   it('requireApiAdmin writes the access log for every method', () => {

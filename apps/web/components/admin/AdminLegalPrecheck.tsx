@@ -1,5 +1,6 @@
 'use client';
 
+import { piiFetch } from '@/lib/platform/access/pii-fetch';
 import { useCallback, useEffect, useState } from 'react';
 import { AlertOctagon, AlertTriangle, CheckCircle2, ChevronDown, Loader2, RefreshCw, Wrench } from 'lucide-react';
 import { opsGlassBtnClass, opsGlassCardClass } from '@/components/admin/OpsPanel';
@@ -29,7 +30,7 @@ export function AdminLegalPrecheck({ userId, onChange }: { userId: string; onCha
   const run = useCallback(async () => {
     setLoading(true); setNote(null);
     try {
-      const r = await fetch(`/api/v1/ops/legal/user/${userId}/precheck`, { cache: 'no-store' });
+      const r = await piiFetch(`/api/v1/ops/legal/user/${userId}/precheck`, { cache: 'no-store' });
       if (!r.ok) throw new Error();
       set(await r.json());
     } catch { setNote('הבדיקה לא הצליחה. אפשר לנסות שוב.'); set(null); } finally { setLoading(false); }
@@ -40,7 +41,7 @@ export function AdminLegalPrecheck({ userId, onChange }: { userId: string; onCha
     if (!it.fix) return;
     setFixing(it.key); setNote(null);
     try {
-      const r = await fetch(`/api/v1/ops/legal/user/${userId}/precheck`, {
+      const r = await piiFetch(`/api/v1/ops/legal/user/${userId}/precheck`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: it.fix, event_ids: it.events.length ? it.events.map((e) => e.id) : undefined }),
       });

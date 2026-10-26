@@ -19,7 +19,7 @@ function fix(src) {
 }
 let files = 0;
 (function walk(d) { for (const e of fs.readdirSync(d, { withFileTypes: true })) { if (e.name === 'node_modules' || e.name.startsWith('.')) continue; const p = path.join(d, e.name); const rel = path.relative(ROOT, p);
-  if (e.isDirectory()) walk(p); else if (/\.(tsx?|css)$/.test(e.name) && !/\.test\./.test(e.name) && !MINT_ALLOW.some((r) => r.test(rel))) { const s = fs.readFileSync(p, 'utf8'), o = fix(s); if (o !== s) { fs.writeFileSync(p, o); files++; } } } })(ROOT + '/app'), walk(ROOT + '/components'), walk(ROOT + '/lib');
+  if (e.isDirectory()) walk(p); else if (/\.(tsx?|css)$/.test(e.name) && !/\.test\./.test(e.name) && !MINT_ALLOW.some((r) => r.test(rel))) { const s = fs.readFileSync(p, 'utf8'), o = fix(s); if (o !== s) { fs.writeFileSync(p, o); files++; } } } })(ROOT + '/app'), walk(ROOT + '/components'), walk(ROOT + '/lib'), fs.existsSync(ROOT + '/../../packages') && walk(ROOT + '/../../packages');
 function walk(d) { for (const e of fs.readdirSync(d, { withFileTypes: true })) { if (e.name === 'node_modules' || e.name.startsWith('.')) continue; const p = path.join(d, e.name); const rel = path.relative(ROOT, p);
   if (e.isDirectory()) walk(p); else if (/\.(tsx?|css)$/.test(e.name) && !/\.test\./.test(e.name) && !MINT_ALLOW.some((r) => r.test(rel))) { const s = fs.readFileSync(p, 'utf8'), o = fix(s); if (o !== s) { fs.writeFileSync(p, o); files++; } } } }
 console.log('codemod-neutral: files changed', files);

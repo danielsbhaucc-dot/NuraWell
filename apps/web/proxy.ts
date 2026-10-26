@@ -18,7 +18,8 @@ import {
 import { handleChallengeMiddleware } from './lib/challenge/middleware-challenge';
 import { isDeviceCheckPath, opsDeviceGate } from './lib/ops/device-gate';
 import { consumeRateLimit } from './lib/api/rate-limit';
-import { DEVICE_COOKIE } from './lib/ops/device-trust';
+import { DEVICE_COOKIE, liveDeviceCookie } from './lib/ops/device-trust';
+import { adminHostOnly, enrollOnly, exemptFromDeviceGate } from './lib/ops/enroll-gate';
 import { DEMO_ACCESS_COOKIE, clearDemoAccessCookieOptions, parseDemoAccessCookie } from './lib/demo-access/cookie';
 import { killDeadDemoAuthSessions } from './lib/demo-access/active-session';
 import { hasActiveDemoAccessSession } from './lib/demo-access/active-session';
@@ -239,6 +240,19 @@ export async function proxy(request: NextRequest) {
   const isOpsDeviceCheck = isDeviceCheckPath(pathname);
   if (effectiveOpsHost && (pathname === '/login' || isOpsDeviceCheck)) return stealthNotFound();
 
+  /** Hidden admin (OPS_ENROLL_ONLY=on): no enrolled-device cookie → the same 404 as any missing page, before any login. */
+  const adminSurface = effectiveOpsHost || (isAppHostOpsFallback(incomingHost) && (pathname === '/ops' || pathname.startsWith('/ops/') || pathname === '/device-check'));
+  if (enrollOnly() && adminSurface && !exemptFromDeviceGate(pathname)) {
+    const { createAdminClient } = await import('./lib/supabase/admin');
+    const adb = createAdminClient();
+    if (!(await liveDeviceCookie(adb, request.cookies.get(DEVICE_COOKIE)?.value).catch(() => false))) {
+      const { clientIp, ipHash, country } = await import('./lib/platform/access/request-facts');
+      await adb.rpc('ops_probe_hit', { p_ip_hash: ipHash(clientIp(request.headers)) || 'unknown', p_country: country(request.headers) || null }).then(() => null, () => null);
+      return stealthNotFound();
+    }
+  }
+  if (adminHostOnly() && !effectiveOpsHost && isAppHostOpsFallback(incomingHost) && (pathname === '/ops' || pathname.startsWith('/ops/'))) return stealthNotFound();
+
   /** דומיין Ops משרת רק את הפאנל (+ /login משלו); /guides וכו׳ → דף הבית של הפאנל */
   /** Old Ops URLs → their merged pages, as one server redirect (no client double-load, no `/ops/...` leak). */
   const OPS_ALIASES: Record<string, string> = { '/almog': '/mentors', '/journey-hub': '/journey' };
@@ -249,7 +263,7 @@ export async function proxy(request: NextRequest) {
   if (effectiveOpsHost) {
     const skipPanelGate =
       pathname.startsWith('/api') || pathname.startsWith('/_next') ||
-      pathname === '/gideon' || pathname.startsWith('/gideon/'); // passkey step-up pages (Telegram Mini App biometrics; host-independent)
+      pathname === '/gideon' || pathname.startsWith('/gideon/') || pathname.startsWith('/k/'); // passkey step-up pages (Telegram Mini App biometrics; host-independent)
     if (!skipPanelGate && !isOpsPanelBrowserPath(pathname)) {
       return stealthNotFound();
     }
@@ -341,7 +355,7 @@ export async function proxy(request: NextRequest) {
   const isGideonStepup = pathname === '/gideon' || pathname.startsWith('/gideon/');
 
   const needsOpsGate =
-    !isGideonStepup &&
+    !isGideonStepup && !pathname.startsWith('/k/') &&
     (devOpsPath ||
       (effectiveOpsHost && !pathname.startsWith('/api') && !pathname.startsWith('/_next')));
 
@@ -391,10 +405,10 @@ export async function proxy(request: NextRequest) {
     {
       const { createAdminClient } = await import('./lib/supabase/admin');
       const { data: sess } = await supabase.auth.getSession();
-      const gate = await opsDeviceGate(createAdminClient(), user.id, request.cookies.get(DEVICE_COOKIE)?.value, sess.session?.access_token, request.headers.get('user-agent'), { allowBootstrap: true });
+      const gate = await opsDeviceGate(createAdminClient(), user.id, request.cookies.get(DEVICE_COOKIE)?.value, sess.session?.access_token, request.headers.get('user-agent'), { allowBootstrap: !enrollOnly() });
       // Internal Ops (app host): role already verified as admin → send to new-device approval; Ops host stays a plain 404.
       if (!gate.ok) {
-        if (appHostOpsPath) return applySecurityHeaders(NextResponse.redirect(new URL('/device-check', request.url)));
+        if (appHostOpsPath && !enrollOnly()) return applySecurityHeaders(NextResponse.redirect(new URL('/device-check', request.url)));
         return stealthNotFound();
       }
       if (gate.setCookie) {
@@ -408,7 +422,7 @@ export async function proxy(request: NextRequest) {
   }
 
   /** Rewrite: ops.nurawell.ai/ → /ops, ops.nurawell.ai/journey → /ops/journey */
-  if (effectiveOpsHost && !isGideonStepup && !pathname.startsWith('/api') && !pathname.startsWith('/_next')) {
+  if (effectiveOpsHost && !isGideonStepup && !pathname.startsWith('/api') && !pathname.startsWith('/_next') && !pathname.startsWith('/k/')) {
     const url = request.nextUrl.clone();
     if (pathname === '/' || pathname === '') {
       url.pathname = '/ops';

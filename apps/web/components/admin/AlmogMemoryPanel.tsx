@@ -1,5 +1,6 @@
 'use client';
 
+import { piiFetch } from '@/lib/platform/access/pii-fetch';
 import { useCallback, useEffect, useState } from 'react';
 import { Brain, Loader2, Trash2, Sparkles } from 'lucide-react';
 import { glassCardStyle, glassPanelStyle } from '@/components/media-manager/glass-styles';
@@ -106,7 +107,7 @@ export function AlmogMemoryPanel({ userId }: Props) {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/v1/admin/users/${userId}/memory`, {
+      const res = await piiFetch(`/api/v1/admin/users/${userId}/memory`, {
         credentials: 'include',
         cache: 'no-store',
       });
@@ -136,7 +137,7 @@ export function AlmogMemoryPanel({ userId }: Props) {
     setDeletingId(id);
     setError(null);
     try {
-      const res = await fetch(`/api/v1/admin/users/${userId}/memory`, {
+      const res = await piiFetch(`/api/v1/admin/users/${userId}/memory`, {
         method: 'DELETE',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },

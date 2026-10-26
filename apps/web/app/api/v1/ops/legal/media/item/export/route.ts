@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireApiAdmin } from '@/lib/api/route-guards';
+import { exportStepUpRefusal } from '@/lib/ops/export-stepup';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { auditLegalAccess } from '@/lib/legal/evidence-verify';
 import { buildMediaEvidencePackage } from '@/lib/legal/media/export';
@@ -13,6 +14,8 @@ export const maxDuration = 60;
 export async function GET(request: Request) {
   const auth = await requireApiAdmin(request);
   if (!auth.ok) return auth.response;
+  const stepUp = await exportStepUpRefusal(auth.supabase, auth.user.id, request);
+  if (stepUp) return stepUp;
   const u = new URL(request.url);
   const key = u.searchParams.get('key') ?? '';
   const admin = createAdminClient();

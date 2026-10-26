@@ -1,8 +1,13 @@
+import { PiiJustificationHost } from '@/components/ops/access/PiiJustificationHost';
+import { StepUpEventHost } from '@/components/admin/useStepUpRetry';
 import type { Metadata } from 'next';
 import { ensureOpsAdminServer, getOpsSessionContext } from '@/lib/auth/ensure-ops-admin-server';
 import { AdminShell } from '@/components/admin/AdminShell';
 import { OpsPendingLoginAlert } from '@/components/ops-access/OpsDevicesPanel';
 import { publicAppBaseNoSlashSync } from '@/lib/public-app-url';
+import { ForcePasswordRotation } from '@/components/ops-access/ForcePasswordRotation';
+import { passwordRotationRequired } from '@/lib/ops/password-rotation';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 export const metadata: Metadata = {
   title: 'פאנל ניהול',
@@ -18,7 +23,11 @@ function firstNameFromFullName(fullName: string | null | undefined): string {
 export default async function OpsLayout({ children }: { children: React.ReactNode }) {
   await ensureOpsAdminServer();
 
-  const { profile } = await getOpsSessionContext();
+  const { profile, user } = await getOpsSessionContext();
+  // Break-glass: nothing in Ops renders until a new password is set (the API gate enforces the same).
+  if (user && (await passwordRotationRequired(createAdminClient(), user.id))) {
+    return <ForcePasswordRotation />;
+  }
   // perf: env value (no DB round-trip on every Ops page) — only used for the "back to app" link.
   const mainAppBase = publicAppBaseNoSlashSync();
   const adminFirstName = firstNameFromFullName(profile?.full_name ?? null);
@@ -34,6 +43,8 @@ export default async function OpsLayout({ children }: { children: React.ReactNod
     >
       {children}
       <OpsPendingLoginAlert />
+      <PiiJustificationHost />
+      <StepUpEventHost />
     </AdminShell>
   );
 }

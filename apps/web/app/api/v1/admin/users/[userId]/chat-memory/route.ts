@@ -1,3 +1,4 @@
+import { requirePiiGrant } from '@/lib/platform/access/pii-access';
 import { sealTableRow } from '@/lib/crypto/pii-seal';
 import { decProfileResult, decTableResult } from '@/lib/crypto/pii-fields';
 import { NextResponse } from 'next/server';
@@ -140,6 +141,11 @@ export async function GET(request: Request, context: RouteContext) {
   if (!auth.ok) return auth.response;
 
   const rl = await rateLimitAdmin(auth.user.id);
+  {
+    const { userId: piiSubject } = await context.params;
+    const piiDenied = await requirePiiGrant((await import('@/lib/supabase/admin')).createAdminClient(), request, { productId: 'nurawell', actorId: auth.user.id, subjectId: piiSubject, resource: 'admin.user.chat_memory' });
+    if (piiDenied) return piiDenied;
+  }
   if (!rl.ok) return rateLimitResponse(rl);
 
   const { userId } = await context.params;

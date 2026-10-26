@@ -154,12 +154,12 @@
    "subject": "feat(ai): Almog mentor, lesson feedback, streaming chat, and docs"
   },
   "last_commit": {
-   "sha": "f8c236bcf7e5220d3ba6462b81c8e8f3ef72fc0a",
-   "date": "2026-10-25T20:27:42+02:00",
-   "author": "Daniel Rahman",
-   "subject": "design: palette reset to brand tokens, near-white guard + lint, real logo, iOS Glass primitives, plans pass, route inventory"
+   "sha": "4cf5a2f86aa11d54aeef6d65ee7afc26805f0084",
+   "date": "2026-10-26T16:55:46+02:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "design: neutral surfaces, no-mint guard, solid dark cards, brand-green accents"
   },
-  "commits": 120
+  "commits": 121
  },
  {
   "asset_key": "inline:apps/web/components/ai/DeletedMessageBubble.tsx#0",
@@ -209,12 +209,12 @@
    "subject": "Secure vault: AES-256-GCM (SECURE_VAULT_KEY, owner-bound AAD), owner-only RLS (000126), /api/v1/secure-vault returns [[VAULT:x]] + type-only chat notice; approved vault UI in Almog chat (lock button) and unified with onboarding secure channel"
   },
   "last_commit": {
-   "sha": "f8c236bcf7e5220d3ba6462b81c8e8f3ef72fc0a",
-   "date": "2026-10-25T20:27:42+02:00",
-   "author": "Daniel Rahman",
-   "subject": "design: palette reset to brand tokens, near-white guard + lint, real logo, iOS Glass primitives, plans pass, route inventory"
+   "sha": "4cf5a2f86aa11d54aeef6d65ee7afc26805f0084",
+   "date": "2026-10-26T16:55:46+02:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "design: neutral surfaces, no-mint guard, solid dark cards, brand-green accents"
   },
-  "commits": 3
+  "commits": 4
  },
  {
   "asset_key": "inline:apps/web/components/ai/SecureVaultBox.tsx#1",
@@ -237,12 +237,12 @@
    "subject": "Secure vault: AES-256-GCM (SECURE_VAULT_KEY, owner-bound AAD), owner-only RLS (000126), /api/v1/secure-vault returns [[VAULT:x]] + type-only chat notice; approved vault UI in Almog chat (lock button) and unified with onboarding secure channel"
   },
   "last_commit": {
-   "sha": "f8c236bcf7e5220d3ba6462b81c8e8f3ef72fc0a",
-   "date": "2026-10-25T20:27:42+02:00",
-   "author": "Daniel Rahman",
-   "subject": "design: palette reset to brand tokens, near-white guard + lint, real logo, iOS Glass primitives, plans pass, route inventory"
+   "sha": "4cf5a2f86aa11d54aeef6d65ee7afc26805f0084",
+   "date": "2026-10-26T16:55:46+02:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "design: neutral surfaces, no-mint guard, solid dark cards, brand-green accents"
   },
-  "commits": 3
+  "commits": 4
  },
  {
   "asset_key": "inline:apps/web/components/journey/JourneyPage.tsx#0",
@@ -264,12 +264,12 @@
    "subject": "Force sync local code to GitHub"
   },
   "last_commit": {
-   "sha": "31ad91bb707503d16561b54cecc5f9a808ede52b",
-   "date": "2026-10-25T20:47:03+02:00",
-   "author": "Daniel Rahman",
-   "subject": "design: dark forest public pages, premium pricing, clean login logo, retuned glass surfaces, flat-cream pixel check"
+   "sha": "4cf5a2f86aa11d54aeef6d65ee7afc26805f0084",
+   "date": "2026-10-26T16:55:46+02:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "design: neutral surfaces, no-mint guard, solid dark cards, brand-green accents"
   },
-  "commits": 39
+  "commits": 40
  },
  {
   "asset_key": "inline:apps/web/components/journey/SummarySection.tsx#0",
@@ -291,12 +291,12 @@
    "subject": "Force sync local code to GitHub"
   },
   "last_commit": {
-   "sha": "31ad91bb707503d16561b54cecc5f9a808ede52b",
-   "date": "2026-10-25T20:47:03+02:00",
-   "author": "Daniel Rahman",
-   "subject": "design: dark forest public pages, premium pricing, clean login logo, retuned glass surfaces, flat-cream pixel check"
+   "sha": "4cf5a2f86aa11d54aeef6d65ee7afc26805f0084",
+   "date": "2026-10-26T16:55:46+02:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "design: neutral surfaces, no-mint guard, solid dark cards, brand-green accents"
   },
-  "commits": 29
+  "commits": 30
  },
  {
   "asset_key": "inline:apps/web/components/legal/cookies/CookieNotice.tsx#0",
@@ -346,12 +346,12 @@
    "subject": "Public pages: C3 glass design system + legal copy compliance (#212)"
   },
   "last_commit": {
-   "sha": "31ad91bb707503d16561b54cecc5f9a808ede52b",
-   "date": "2026-10-25T20:47:03+02:00",
-   "author": "Daniel Rahman",
-   "subject": "design: dark forest public pages, premium pricing, clean login logo, retuned glass surfaces, flat-cream pixel check"
+   "sha": "4cf5a2f86aa11d54aeef6d65ee7afc26805f0084",
+   "date": "2026-10-26T16:55:46+02:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "design: neutral surfaces, no-mint guard, solid dark cards, brand-green accents"
   },
-  "commits": 3
+  "commits": 4
  },
  {
   "asset_key": "inline:apps/web/components/legal/v2/LegalDoc.tsx#0",
@@ -430,12 +430,12 @@
    "subject": "התוכנית שלי כתוכנית כתובה וחיה של אלמוג (#104)"
   },
   "last_commit": {
-   "sha": "f8c236bcf7e5220d3ba6462b81c8e8f3ef72fc0a",
-   "date": "2026-10-25T20:27:42+02:00",
-   "author": "Daniel Rahman",
-   "subject": "design: palette reset to brand tokens, near-white guard + lint, real logo, iOS Glass primitives, plans pass, route inventory"
+   "sha": "4cf5a2f86aa11d54aeef6d65ee7afc26805f0084",
+   "date": "2026-10-26T16:55:46+02:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "design: neutral surfaces, no-mint guard, solid dark cards, brand-green accents"
   },
-  "commits": 8
+  "commits": 9
  },
  {
   "asset_key": "inline:apps/web/components/plans/PlanMap.tsx#0",
@@ -512,12 +512,12 @@
    "subject": "Post-login Face ID offer sheet + privacy biometric line (#242)"
   },
   "last_commit": {
-   "sha": "f8c236bcf7e5220d3ba6462b81c8e8f3ef72fc0a",
-   "date": "2026-10-25T20:27:42+02:00",
-   "author": "Daniel Rahman",
-   "subject": "design: palette reset to brand tokens, near-white guard + lint, real logo, iOS Glass primitives, plans pass, route inventory"
+   "sha": "4cf5a2f86aa11d54aeef6d65ee7afc26805f0084",
+   "date": "2026-10-26T16:55:46+02:00",
+   "author": "danielsbhaucc-dot",
+   "subject": "design: neutral surfaces, no-mint guard, solid dark cards, brand-green accents"
   },
-  "commits": 4
+  "commits": 5
  },
  {
   "asset_key": "library:lucide-react",
