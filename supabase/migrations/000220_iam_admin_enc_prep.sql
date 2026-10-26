@@ -1,9 +1,5 @@
--- GATED — DO NOT APPLY until #357, #358, #359 and #362 are merged (they create these tables in
--- migrations 000191-000201). Then: move this file to supabase/migrations/ (keep or re-claim the number),
--- move GATED_AFTER_IAM_MERGE entries in apps/web/lib/security/field-registry.ts into ENCRYPTED_TABLES +
--- FIELD_V2_TABLES, and regenerate the enc-reject triggers into a NEW migration
--- (node --experimental-strip-types apps/web/scripts/gen-enc-triggers.mts supabase/migrations/000NNN_enc_reject_triggers_sync.sql).
--- It sits outside supabase/migrations/ on purpose so no runner can pick it up early.
+-- IAM/admin enc prep (was supabase/gated/000211). Requires #357, #358, #359, #362 (000191-000201) merged and applied first.
+-- Registry entries moved from GATED_AFTER_IAM_MERGE into ENCRYPTED_TABLES + FIELD_V2_TABLES; triggers regenerated in 000221.
 --
 -- Drops plaintext-only CHECK constraints on app-written columns (ciphertext is longer / not matching a regex);
 -- the app (lib/platform/access/pii-access.ts, lib/ops/enrollment.ts, lib/platform/access/audit-job.ts) already
