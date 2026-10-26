@@ -127,7 +127,17 @@ export async function backfillFieldV2(
         // (values too long for a URL filter skip the CAS; the re-read verification below still runs)
         if (!guardCols.length && Object.keys(hashes).every((c) => JSON.stringify(r[c]).length <= CAS_MAX))
           for (const c of Object.keys(hashes)) u = casEq(u, spec.columns[c], c, r[c]);
-        const { data: upd, error: uErr } = await u.select(keyCols.join(','));
+        let { data: upd, error: uErr } = await u.select(keyCols.join(','));
+        // historical duplicate notifications (written before the unique scope covered them) collide on
+        // meta_unique_bidx: the first row keeps the index, later duplicates are sealed without it
+        if (uErr?.code === '23505' && table === 'notifications' && patch.meta_unique_bidx != null) {
+          delete patch.meta_unique_bidx;
+          let u2 = byKey(db.from(table).update(patch));
+          for (const g of guardCols) u2 = r[g] == null ? u2.is(g, null) : u2.eq(g, r[g] as string);
+          if (!guardCols.length && Object.keys(hashes).every((c) => JSON.stringify(r[c]).length <= CAS_MAX))
+            for (const c of Object.keys(hashes)) u2 = casEq(u2, spec.columns[c], c, r[c]);
+          ({ data: upd, error: uErr } = await u2.select(keyCols.join(',')));
+        }
         if (uErr) throw new Error(`${table} update: ${uErr.code ?? uErr.message}`);
         if (!upd?.length) {
           stat.skippedRace++;
