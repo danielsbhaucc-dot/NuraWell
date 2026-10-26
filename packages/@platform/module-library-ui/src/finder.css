@@ -281,3 +281,55 @@
 .fd-row-more{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp2);padding:var(--sp3) var(--sp2) var(--sp1);border-top:1px dashed var(--line2,#c4c6cd);margin-top:var(--sp2)}
 .fd-row-lic{padding-block:var(--sp3)}
 @media (max-width:640px){.fd-row-more{justify-content:flex-start}}
+/* ── v9: more dividers, fewer boxes. Divider = 1px #cfd0d6 (light) / #c4c6cd (strong). ── */
+.fd-root{--dv:#cfd0d6;--dv2:#c4c6cd}
+/* top nav / tab bar */
+.fd-toolbar{border-bottom:1px solid var(--dv2)}
+@media (max-width:640px){
+  .fd-sidebar{border-bottom:1px solid var(--dv2)}
+  .fd-side-title{border-top:1px solid var(--dv);padding-top:6px;margin-top:6px}
+  .fd-products+.fd-side-title{margin-top:8px}
+}
+/* hub groups with labeled header + underline */
+.hb-group{padding:var(--sp4) 0 var(--sp5);border-bottom:1px solid var(--dv)}
+.hb-group:last-child{border-bottom:0}
+.hb-group-h{margin:0 0 var(--sp3);padding-bottom:var(--sp2);border-bottom:1px solid var(--dv2);font-size:13px;font-weight:800;color:#3b3f48;letter-spacing:.01em}
+.hb-group>.hb-stats,.hb-group>.hb-quick,.hb-group>.hb-cards,.hb-group>.hb-grid,.hb-group>.hb-panel{margin-top:0}
+/* tiles: rule between value/title and caption */
+.hb-stat-l,.hb-q span{border-top:1px solid var(--dv);padding-top:6px;margin-top:6px;display:block}
+.hb-stat-v+.hb-stat-l{margin-top:6px}
+.hb-q b{display:block}
+/* product cards: header | body | footer separated by rules, footer inside card */
+.hb-card>header{border-bottom:1px solid var(--dv);padding-bottom:var(--sp3);margin-bottom:var(--sp3)}
+.hb-card .hb-stat{box-shadow:none}
+.hb-card-foot{border-top:1px solid var(--dv);margin-top:var(--sp3);padding-top:var(--sp3)}
+.hb-card-foot .fd-link{padding:0}
+.hb-wrap{display:block}
+/* accordions: rule between header and content, and between list items */
+.fd-acc.is-open>.fd-acc-h{border-bottom:1px solid var(--dv)}
+.fd-acc-in ul,.fd-acc-in ol{list-style:none;padding:0;margin:var(--sp2) 0}
+.fd-acc-in li{padding:var(--sp2) 0;border-bottom:1px solid var(--dv)}
+.fd-acc-in li:last-child{border-bottom:0}
+.fd-acc-in h3{margin:var(--sp4) 0 var(--sp1);padding-bottom:var(--sp1);border-bottom:1px solid var(--dv2);font-size:14px}
+.fd-acc-in h3:first-child{margin-top:0}
+/* module page: title | summary | badges | rows */
+.sp-hero h1{padding-bottom:var(--sp2);border-bottom:1px solid var(--dv)}
+.sp-summary{padding-bottom:var(--sp2);margin-bottom:var(--sp2);border-bottom:1px solid var(--dv)}
+.sp-sec.sp-acc{border-bottom:1px solid var(--dv)}
+.sp-sec.sp-acc>.fd-acc{border:0}
+.sp-sec#what h2{padding-bottom:var(--sp2);border-bottom:1px solid var(--dv2)}
+/* licences: row separators; rule between main action and "עוד" */
+.fd-row-lic{border-bottom:1px solid var(--dv)}
+.fd-row-lic .fd-actions .fd-btn-ghost{border-inline-start:1px solid var(--dv);border-radius:0;padding-inline-start:10px;margin-inline-start:4px}
+.fd-row-more{border-top:1px solid var(--dv)}
+.fd-list{box-shadow:none}
+/* sheets */
+.fd-sheet-title{border-bottom:1px solid var(--dv2);padding-bottom:var(--sp3);margin-bottom:var(--sp3)}
+.fd-modal .fd-btn-primary,.fd-modal .fd-btn-danger{margin-top:var(--sp3)}
+.fd-modal .fd-modal-actions,.fd-modal .fd-actions{border-top:1px solid var(--dv);padding-top:var(--sp3)}
+@media (max-width:640px){
+  .fd-row-lic>span.fd-actions:nth-child(n){display:flex}
+  .fd-row-lic>span.fd-row-more:nth-child(n){display:flex}
+  .fd-acc-hint{display:none}
+  .hb-group-h{font-size:12.5px}
+}
