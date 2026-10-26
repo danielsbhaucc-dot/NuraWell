@@ -1,13 +1,14 @@
 import { serverAuth } from '@/lib/server-auth';
 import { AskForm } from './AskForm';
-import { sampleLicenseFromEnv } from '@/lib/license';
+import { productLicenseFromEnv } from '@platform/licensing/product';
+import { PRODUCT_ID } from '@/lib/platform';
 
 export const dynamic = 'force-dynamic';
 
 export default async function Home() {
   const { auth, mode } = await serverAuth();
   // Real deployments must hold a valid license from the central control plane; local demo mode skips it.
-  const license = mode === 'demo' ? null : await sampleLicenseFromEnv().status();
+  const license = mode === 'demo' ? null : await productLicenseFromEnv({ productId: PRODUCT_ID, moduleId: 'sample-product', version: '0.1.0' }, process.env).status();
   if (license && license.state !== 'active') {
     return <main style={{ maxWidth: 640, margin: '48px auto', padding: '0 16px' }}><p className="card">{license.message}</p></main>;
   }

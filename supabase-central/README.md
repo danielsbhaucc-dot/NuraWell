@@ -38,5 +38,5 @@ Risks: two DBs to keep consistent during dual-run; extra env secret on Vercel; f
 - הקטלוג, מצבי המודולים, הרישיונות והחסימות נשמרים עכשיו ב-`central` (סכמה פרטית, RLS כפוי, ללא anon, יומן ביקורת על כל שינוי).
 - גישה רק דרך פונקציות `public.central_*` עם service_role.
 - **הפעלה:** להגדיר ב-Vercel את `CENTRAL_SUPABASE_URL` ואת `CENTRAL_SUPABASE_SECRET_KEY` (רגיש). בלי המשתנים האלה ה-Hub ממשיך לקרוא מה-DB של NuraWell.
-- המוצר לדוגמה (`apps/sample-product`) נרשם, מקבל טוקן רישיון (עד מועד החיוב הבא + 3 ימי חסד), בודק קובץ סטטוס חתום כל 2 דקות, וננעל אחרי 6 שעות בלי קובץ מאומת.
+- המוצר לדוגמה (`apps/sample-product`, דרך `@platform/licensing/product`) נרשם, מקבל טוקן רישיון (עד מועד החיוב הבא + 3 ימי חסד), בודק קובץ סטטוס חתום כל 2 דקות, וננעל אחרי 6 שעות בלי קובץ מאומת.
 - ידוע: שינוי מצב מודול מה-Hub עדיין נכתב ל-DB של NuraWell (רק הקריאה עברה).

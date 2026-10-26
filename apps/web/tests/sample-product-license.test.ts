@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { generateSigningKeyPair, issueLicense, renewLicense, signRevocationList, type RevocationEntry } from '@platform/licensing';
 import { centralLicenseStore, loadHubData, type CentralSnapshot } from '../../../packages/@platform/module-library-ui/src/server';
-import { createSampleLicense, newInstanceId, registerWithControlPlane, sampleLicenseFromEnv, SAMPLE_MODULE_ID, SAMPLE_VERSION } from '../../sample-product/lib/license';
+import * as P from '../../../packages/@platform/licensing/src/product';
+const SAMPLE_MODULE_ID = 'sample-product', SAMPLE_VERSION = '0.1.0', ID = { productId: 'sample', moduleId: SAMPLE_MODULE_ID, version: SAMPLE_VERSION };
+const { newInstanceId } = P;
+const createSampleLicense = (c: P.ProductLicenseConfig) => P.createProductLicense(ID, c);
+const registerWithControlPlane = (r: Parameters<typeof P.registerWithControlPlane>[0], a: { instanceId: string; host: string }) => P.registerWithControlPlane(r, ID, a);
+const sampleLicenseFromEnv = (env: Record<string, string | undefined>) => P.productLicenseFromEnv(ID, env);
 
 const { privatePem, publicPem } = generateSigningKeyPair();
 const HOST = 'sample.local';
