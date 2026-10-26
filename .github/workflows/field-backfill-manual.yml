@@ -18,11 +18,11 @@ jobs:
       - name: Trigger scoped backfill (counts only)
         env:
           TABLES: ${{ inputs.tables }}
-          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          FIELD_BACKFILL_SECRET: ${{ secrets.FIELD_BACKFILL_SECRET }}
           APP_URL: ${{ secrets.VERCEL_APP_URL }}
         run: |
           [[ "$TABLES" =~ ^[a-z_,]+$ ]] || { echo "bad tables"; exit 1; }
-          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST -H "Authorization: Bearer $CRON_SECRET" -H "Content-Length: 0" "$APP_URL/api/v1/ai/cron/field-backfill?tables=$TABLES")
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST -H "Authorization: Bearer $FIELD_BACKFILL_SECRET" -H "Content-Length: 0" "$APP_URL/api/v1/ai/cron/field-backfill?tables=$TABLES")
           CODE=$(echo "$RESPONSE" | tail -n1)
           echo "$RESPONSE" | head -n-1
           echo "HTTP $CODE"
