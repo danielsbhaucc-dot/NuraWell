@@ -1,4 +1,7 @@
 import { signStatusUpdate, type StatusPusher } from '@platform/licensing/online';
+import type { GatewayAdmin } from '@platform/licensing/gateway';
+/** One install per license in the server-held-core gateway. */
+export const installIdFor = (lid: string) => `ins_${lid.replace(/[^A-Za-z0-9_-]/g, '')}`;
 import { PUBLIC_REASON_CODES, renewLicense, signRevocationList, type License, type RevocationEntry, type RevocationPublisher, type RevocationState, type Transform, type DistributionMode } from '@platform/licensing';
 import type { RegistryModule, LicenseRow } from '../types';
 import { readModuleFiles, sellPackage, sharePackage } from './pack';
@@ -20,7 +23,9 @@ export type Deps = {
   privatePem: string | null; transform?: Transform; revocationUrl?: string;
   store: LicenseStore | null; publisher: RevocationPublisher | null;
   /** Optional: shared Worker only for modules with sensitive server-side logic. */
-  statusPusher?: StatusPusher | null; verifierUrl?: string; verifierPublicKeyPem?: string; encrypt: (rowId: string, v: string) => Promise<string>;
+  statusPusher?: StatusPusher | null;
+  /** Server-held core (default protection for sold modules): shared Worker store admin. Null until the Worker store is wired. */
+  gateway?: GatewayAdmin | null; verifierUrl?: string; verifierPublicKeyPem?: string; encrypt: (rowId: string, v: string) => Promise<string>;
 };
 export type Out = { status: number; body: Record<string, unknown> };
 const err = (status: number, error: string): Out => ({ status, body: { error } });
@@ -54,12 +59,14 @@ export async function packageAction(d: Deps, b: PkgBody): Promise<Out> {
   const lic: License = { v: 1, lid: r.lid!, moduleId: m.id, versionRange: `^${m.version}`, licensee: { id: ref, name: ref }, domains, mode, issuedAt: new Date().toISOString(), expiresAt: r.expiresAt ?? null };
   await d.store.saveLicense(lic, b.licenseeName ? await d.encrypt(lic.lid, b.licenseeName.slice(0, 120)) : null, g.actorId);
   await d.audit('license_issued', m.id, { lid: lic.lid, mode, domains: domains.length, expiresAt: lic.expiresAt });
-  return { status: 200, body: { fileName: r.fileName, sha256: r.sha256, files: r.files, lid: lic.lid, expiresAt: lic.expiresAt, base64: r.bytes.toString('base64') } };
+  const access = d.gateway ? await d.gateway.issue({ lid: lic.lid, moduleId: m.id, domains, iid: installIdFor(lic.lid) }) : null;
+  if (access) await d.audit('license_install_issued', m.id, { lid: lic.lid, keyVersion: access.keyVersion });
+  return { status: 200, body: { ...(access ? { installId: access.iid, secret: access.secret, keyVersion: access.keyVersion } : {}), fileName: r.fileName, sha256: r.sha256, files: r.files, lid: lic.lid, expiresAt: lic.expiresAt, base64: r.bytes.toString('base64') } };
 }
 
 export const REASON_CODES = PUBLIC_REASON_CODES;
 export type ReasonCode = (typeof PUBLIC_REASON_CODES)[number];
-type LicBody = { op: 'list' } | { op: 'renew'; lid: string; validDays?: number } | { op: 'revoke'; lid: string; state: RevocationState; until?: string | null; reason: string; reasonCode?: ReasonCode } | { op: 'reinstate'; lid: string } | { op: 'publish' };
+type LicBody = { op: 'list' } | { op: 'renew'; lid: string; validDays?: number } | { op: 'revoke'; lid: string; state: RevocationState; until?: string | null; reason: string; reasonCode?: ReasonCode } | { op: 'reinstate'; lid: string } | { op: 'rotate'; lid: string } | { op: 'publish' };
 
 /** Bumps the monotonic version once, re-signs and publishes the static status file (primary path, no Worker per check). Optional: also push to the shared Worker for modules with server-side logic. */
 async function publish(d: Deps, change?: { lid: string; state: RevocationState | 'active'; until?: string | null }): Promise<Out | null> {
@@ -96,16 +103,25 @@ export async function licenseAction(d: Deps, b: LicBody): Promise<Out> {
     await d.audit('license_renewed', old.moduleId, { lid: old.lid, expiresAt: license.expiresAt });
     return { status: 200, body: { token, expiresAt: license.expiresAt } };
   }
+  if (b.op === 'rotate') {
+    if (!d.gateway) return err(503, 'שרת הליבה עוד לא חובר, אין מפתח להחליף.');
+    const r = await d.gateway.rotate(installIdFor(b.lid));
+    if (!r) return err(404, 'לרישיון הזה אין התקנה מוגנת.');
+    await d.audit('license_key_rotated', old.moduleId, { lid: b.lid, keyVersion: r.keyVersion });
+    return { status: 200, body: { installId: r.iid, secret: r.secret, keyVersion: r.keyVersion } };
+  }
   if (b.op === 'revoke') {
     if (b.state === 'suspended_until' && !(b.until && !Number.isNaN(Date.parse(b.until)))) return err(400, 'להשעיה זמנית צריך תאריך סיום.');
     if (!b.reason?.trim()) return err(400, 'צריך לבחור סיבה.');
     const until = b.state === 'suspended_until' ? new Date(b.until!).toISOString() : null;
     const reasonCode: ReasonCode = REASON_CODES.includes(b.reasonCode as ReasonCode) ? b.reasonCode! : 'other';
     await d.store.setRevocation(b.lid, { state: b.state, until, reasonEnc: await d.encrypt(b.lid, b.reason.slice(0, 500)), reasonCode }, g.actorId);
+    await d.gateway?.setStatus(installIdFor(b.lid), { state: b.state, until, reason: reasonCode });
     await d.audit('license_blocked', old.moduleId, { lid: b.lid, state: b.state, until, reasonCode }); // reason code only: no free text, no PII
     return (await publish(d, { lid: b.lid, state: b.state, until })) ?? { status: 200, body: { ok: true } };
   }
   await d.store.clearRevocation(b.lid);
+  await d.gateway?.setStatus(installIdFor(b.lid), { state: 'active' });
   await d.audit('license_unblocked', old.moduleId, { lid: b.lid });
   return (await publish(d, { lid: b.lid, state: 'active' })) ?? { status: 200, body: { ok: true } };
 }

@@ -47,3 +47,12 @@ language sql security definer set search_path = public as $$
   update public.platform_revocation_list_state set version = version + 1, published_at = now() where id = 1 returning version;
 $$;
 revoke all on function public.platform_bump_revocation_version() from public, anon, authenticated;
+
+-- Server-held core: which gateway install belongs to which license. The key hash lives only in the gateway KV, never here.
+create table if not exists public.platform_license_installs (
+  lid text primary key references public.platform_licenses(lid) on delete cascade,
+  install_id text not null unique,
+  key_version int not null default 1,
+  updated_at timestamptz not null default now()
+);
+alter table public.platform_license_installs enable row level security; -- no policies: service role only

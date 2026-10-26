@@ -205,3 +205,6 @@
 .hb-cat-h{color:color-mix(in srgb,var(--tint) 80%,#1d1d1f)}
 .hb-cat{border-top:3px solid var(--tint)}
 .fd-icon-body{background:linear-gradient(160deg,color-mix(in srgb,var(--tint) 70%,#ececf0),var(--tint) 55%,color-mix(in srgb,var(--tint) 80%,#000))}
+/* one-time key */
+.fd-key{display:flex;flex-direction:column;gap:8px;background:#e6efe6;border:1px solid #b9d6bb;border-radius:12px;padding:12px}
+.fd-key code{display:block;background:#ececf0;color:#1d1d1f;border-radius:8px;padding:8px 10px;word-break:break-all;font-size:13px;text-align:left}
