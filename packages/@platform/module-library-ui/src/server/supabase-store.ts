@@ -22,11 +22,11 @@ export async function supabaseLicenseStore(db: Db): Promise<LicenseStore | null>
       const [{ data: ls }, { data: rs }] = await Promise.all([db.from('platform_licenses').select('lid, module_id, licensee_ref, mode, domains, issued_at, expires_at').not('lid', 'like', '%~%').order('issued_at', { ascending: false }).limit(500), db.from('platform_license_revocations').select('lid, state, until')]);
       return ((ls ?? []) as any[]).map((l): LicenseRow => { const r = ((rs ?? []) as any[]).find((x) => x.lid === l.lid); return { lid: l.lid, moduleId: l.module_id, licensee: l.licensee_ref, mode: l.mode, domains: l.domains, issuedAt: l.issued_at, expiresAt: l.expires_at, state: r?.state ?? 'active', until: r?.until ?? null }; }); // eslint-disable-line @typescript-eslint/no-explicit-any
     },
-    async setRevocation(lid, e, actorId) { must(await db.from('platform_license_revocations').upsert({ lid, state: e.state, until: e.until, reason_enc: e.reasonEnc, updated_by: actorId, updated_at: new Date().toISOString() })); },
+    async setRevocation(lid, e, actorId) { must(await db.from('platform_license_revocations').upsert({ lid, state: e.state, until: e.until, reason_enc: e.reasonEnc, reason_code: e.reasonCode ?? null, updated_by: actorId, updated_at: new Date().toISOString() })); },
     async clearRevocation(lid) { must(await db.from('platform_license_revocations').delete().eq('lid', lid)); },
     async revocations() {
-      const { data } = await db.from('platform_license_revocations').select('lid, state, until');
-      return ((data ?? []) as { lid: string; state: RevocationEntry['state']; until: string | null }[]).map((r) => (r.until ? { lid: r.lid, state: r.state, until: r.until } : { lid: r.lid, state: r.state }));
+      const { data } = await db.from('platform_license_revocations').select('lid, state, until, reason_code');
+      return ((data ?? []) as { lid: string; state: RevocationEntry['state']; until: string | null; reason_code: RevocationEntry['reason'] | null }[]).map((r) => ({ lid: r.lid, state: r.state, ...(r.until ? { until: r.until } : {}), ...(r.reason_code ? { reason: r.reason_code } : {}) }));
     },
     async bumpVersion() { const r = await db.rpc('platform_bump_revocation_version'); must(r); return Number(r.data); },
   };

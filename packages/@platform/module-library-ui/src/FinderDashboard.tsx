@@ -3,7 +3,7 @@
 // Product view = Finder-style module grid with real per-product toggles (server: IAM + step-up + audit).
 import { useMemo, useState } from 'react';
 import type { HubSection, ProductRow, ProductSummary, RegistryModule } from './types';
-import { CAT_LABEL, TIER_LABEL, fmtNum, fmtUsd } from './labels';
+import { CAT_LABEL, TIER_LABEL, fmtNum, fmtUsd , CAT_TINT } from './labels';
 import { ModuleIcon } from './ModuleIcon';
 import { postJson } from './api';
 import { ShareDialog, SellDialog, type PackOut } from './Dialogs';
@@ -18,7 +18,7 @@ type DialogInit = { s: 'done'; out: PackOut } | { s: 'error'; msg: string };
 export interface FinderDashboardProps {
   registry: RegistryModule[]; products: ProductRow[]; summaries: ProductSummary[]; deployment: Deployment; metricsError: string | null; signingReady: boolean; activity?: ActivityItem[] | null; costTrend?: CostTrend;
   initialSection?: Sel; initialView?: 'icons' | 'list'; initialSelected?: string | null;
-  initialDialog?: { kind: 'share' | 'sell'; state?: DialogInit }; licensesInitial?: Parameters<typeof LicensesView>[0]['initial'];
+  initialDialog?: { kind: 'share' | 'sell'; state?: DialogInit }; licensesInitial?: Parameters<typeof LicensesView>[0]['initial']; licensesRevoke?: string; licensesUnblock?: string;
   moduleHref?: (id: string) => string;
 }
 
@@ -71,7 +71,7 @@ export function FinderDashboard(p: FinderDashboardProps) {
           {sec === 'costs' ? <CostsView products={products} summaries={p.summaries} metricsError={p.metricsError} /> : null}
           {sec === 'security' ? <SecurityView deployment={p.deployment} registry={registry} /> : null}
           {sec === 'legal' ? <LegalView deployment={p.deployment} /> : null}
-          {sec === 'licenses' ? <LicensesView api={API.licensing} initial={p.licensesInitial} /> : null}
+          {sec === 'licenses' ? <LicensesView api={API.licensing} initial={p.licensesInitial} initialRevoke={p.licensesRevoke} initialUnblock={p.licensesUnblock} moduleName={(id) => registry.find((m) => m.id === id)?.store.name ?? id} /> : null}
           {showModules ? (
             <>
               <header className="fd-toolbar">
@@ -88,7 +88,7 @@ export function FinderDashboard(p: FinderDashboardProps) {
               <div className="fd-status">{product ? `${registry.filter((m) => isOn(m, product)).length} פעילים מתוך ${registry.length} ב-${product.name}` : `${registry.length} מודולים בספרייה`}</div>
               {list.length === 0 ? <div className="fd-empty">לא נמצאו מודולים.</div> : view === 'icons' ? (
                 <div className="fd-grid">{list.map((m) => (
-                  <button key={m.id} type="button" className={`fd-tile ${sel === m.id ? 'is-sel' : ''}`} onClick={() => setSel(m.id)}>
+                  <button key={m.id} type="button" className={`fd-tile ${sel === m.id ? 'is-sel' : ''}`} style={{ ['--tint' as string]: CAT_TINT[m.category] }} onClick={() => setSel(m.id)}>
                     <ModuleIcon m={m} on={isOn(m, product)} /><span className="fd-tile-name">{m.store.name}</span><span className={`fd-tier fd-tier-${m.distribution}`}>{TIER_LABEL[m.distribution]}</span>
                   </button>))}</div>
               ) : (
@@ -96,7 +96,7 @@ export function FinderDashboard(p: FinderDashboardProps) {
                   <div className="fd-row fd-head" role="row"><span>שם</span><span>קטגוריה</span><span>הפצה</span><span>גרסה</span><span>מצב</span></div>
                   {list.map((m) => (
                     <div key={m.id} role="row" className={`fd-row ${sel === m.id ? 'is-sel' : ''}`} onClick={() => setSel(m.id)}>
-                      <span className="fd-row-name"><ModuleIcon m={m} on={isOn(m, product)} small />{m.store.name}</span><span>{CAT_LABEL[m.category]}</span>
+                      <span className="fd-row-name"><ModuleIcon m={m} on={isOn(m, product)} small />{m.store.name}</span><span><span className="fd-chip fd-chip-cat" style={{ ['--tint' as string]: CAT_TINT[m.category] }}>{CAT_LABEL[m.category]}</span></span>
                       <span><span className={`fd-tier fd-tier-${m.distribution}`}>{TIER_LABEL[m.distribution]}</span></span><span className="fd-mono">{m.version}</span>
                       <span onClick={(e) => e.stopPropagation()}><Switch m={m} on={isOn(m, product)} product={product} busy={busy === m.id} onToggle={() => toggle(m)} /></span>
                     </div>))}
@@ -110,17 +110,16 @@ export function FinderDashboard(p: FinderDashboardProps) {
             <button type="button" className="fd-close" onClick={() => setSel(null)} aria-label="סגירה">×</button>
             <ModuleIcon m={selected} on={isOn(selected, product)} big />
             <h2>{selected.store.name}</h2>
-            <div className="fd-mono fd-dim">{selected.id}@{selected.version}</div>
-            <div className="fd-badges"><span className={`fd-tier fd-tier-${selected.distribution}`}>{TIER_LABEL[selected.distribution]}</span><span className="fd-chip">{CAT_LABEL[selected.category]}</span></div>
+            <div className="fd-badges"><span className={`fd-tier fd-tier-${selected.distribution}`}>{TIER_LABEL[selected.distribution]}</span><span className="fd-chip fd-chip-cat" style={{ ['--tint' as string]: CAT_TINT[selected.category] }}>{CAT_LABEL[selected.category]}</span></div>
             <p>{selected.store.summary}</p>
             {product ? <div className="fd-toggle-row"><span>{!selected.toggleable ? 'תמיד פועל (אבטחה ופרטיות)' : !selected.store.iamModule ? 'אין מתג במוצר עדיין' : `פעיל ב-${product.name}`}</span><Switch m={selected} on={isOn(selected, product)} product={product} busy={busy === selected.id} onToggle={() => toggle(selected)} /></div> : null}
             <dl>
               <dt>תלויות</dt><dd>{Object.keys(selected.requires.modules).join(', ') || 'אין'}</dd>
               <dt>בשימוש במוצרים</dt><dd>{products.filter((x) => selected.usedBy.includes(x.id)).map((x) => x.name).join(', ') || 'אף מוצר'}</dd>
             </dl>
-            <div className="fd-detail-actions">
-              <button type="button" className="fd-btn" disabled={selected.distribution === 'internal'} onClick={() => setDialog({ kind: 'share' })} title={selected.distribution === 'internal' ? 'מודול פנימי לא יוצא מהמערכת' : undefined}>שיתוף</button>
-              <button type="button" className="fd-btn" disabled={selected.distribution !== 'sellable'} onClick={() => setDialog({ kind: 'sell' })} title={selected.distribution !== 'sellable' ? 'המודול לא מסומן למכירה' : undefined}>מכירה</button>
+            <div className="fd-detail-actions fd-act-list">
+              <div className="fd-act"><button type="button" className="fd-btn" disabled={selected.distribution === 'internal'} onClick={() => setDialog({ kind: 'share' })}>שיתוף</button><small>{selected.distribution === 'internal' ? 'רכיב פנימי, לא יוצא מהמערכת.' : 'מוריד קובץ לשליחה, בלי רישיון.'}</small></div>
+              <div className="fd-act"><button type="button" className="fd-btn" disabled={selected.distribution !== 'sellable'} onClick={() => setDialog({ kind: 'sell' })}>מכירה</button><small>{selected.distribution !== 'sellable' ? 'הרכיב לא מסומן למכירה.' : 'רישיון לקונה אחד, לתקופה שתבחרו.'}</small></div>
             </div>
             <a className="fd-more" href={href(selected.id)}>לפרטים המלאים ‹</a>
           </aside>

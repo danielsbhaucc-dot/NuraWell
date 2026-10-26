@@ -3,6 +3,7 @@ import { hostMatches } from '../match';
 import { satisfies } from '../semver';
 import type { License } from '../license';
 import type { VerifierStorage } from './storage';
+import { applyStatusUpdate, type StatusStore } from './status';
 import type { SignedVerdict, VerifyRequest, VerifyVerdict } from './protocol';
 import { b64uDecode, importPrivate, importPublic, signStr, verifyStr } from './webcrypto';
 
@@ -13,6 +14,8 @@ export type VerifierConfig = {
   verifierPrivateKeyPem: string;
   storage: VerifierStorage;
   /** moduleId → enabled. Modules not listed are refused (the online check is opt-in per module). */
+  /** Optional writable status store: enables POST /status (signed, seq-monotonic pushes from the hub). */
+  statusStore?: StatusStore;
   modules: Record<string, { enabled: boolean; cores?: Record<string, ServerCore> }>;
   now?: () => Date;
 };
@@ -24,6 +27,12 @@ export function createVerifierHandler(cfg: VerifierConfig): (req: Request) => Pr
   return async (req) => {
     if (req.method === 'GET' && new URL(req.url).pathname.endsWith('/health')) return json({ ok: true });
     if (req.method !== 'POST') return json({ error: 'method' }, 405);
+    if (new URL(req.url).pathname.endsWith('/status')) {
+      if (!cfg.statusStore) return json({ error: 'not_enabled' }, 404);
+      let doc: unknown; try { doc = await req.json(); } catch { return json({ error: 'bad_request' }, 400); }
+      const r = await applyStatusUpdate(cfg.statusStore, cfg.licensePublicKeyPem, doc);
+      return r.ok ? json({ ok: true }) : json({ error: r.error }, r.error === 'stale_seq' ? 409 : 400);
+    }
     let body: VerifyRequest;
     try { body = (await req.json()) as VerifyRequest; } catch { return json({ error: 'bad_request' }, 400); }
     if (!body || typeof body.token !== 'string' || typeof body.nonce !== 'string' || body.nonce.length > 64 || typeof body.host !== 'string') return json({ error: 'bad_request' }, 400);

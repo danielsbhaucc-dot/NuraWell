@@ -1,4 +1,5 @@
 // Glue only: issue/renew/revoke/reinstate/publish live in @platform/module-library-ui/server.
+import { httpStatusPusher } from '@platform/licensing/online';
 import path from 'node:path';
 import { writeFile } from 'node:fs/promises';
 import { NextResponse } from 'next/server';
@@ -35,6 +36,9 @@ async function opsLicensingDeps(request: Request, bucket: string): Promise<{ dep
       audit: (kind, target, detail) => audit(db, kind, uid, null, target, detail),
       privatePem: process.env.LICENSE_SIGNING_KEY?.replace(/\\n/g, '\n') || null,
       revocationUrl: process.env.LICENSE_REVOCATION_URL || undefined,
+      verifierUrl: process.env.LICENSE_VERIFIER_URL || undefined,
+      verifierPublicKeyPem: process.env.LICENSE_VERIFIER_PUBLIC_KEY?.replace(/\\n/g, '\n') || undefined,
+      statusPusher: process.env.LICENSE_VERIFIER_URL ? httpStatusPusher(`${process.env.LICENSE_VERIFIER_URL.replace(/\/$/, '')}/status`) : null,
       store: await supabaseLicenseStore(db),
       publisher: revFile ? fileRevocationPublisher(revFile, (p, s) => writeFile(p, s, 'utf8')) : null,
       encrypt: async (rowId, v) => String(await encryptValue('platform_licenses', 'licensee_name_enc', uid, rowId, v)),

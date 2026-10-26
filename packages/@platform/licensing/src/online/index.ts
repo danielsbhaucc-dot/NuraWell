@@ -4,3 +4,4 @@ export * from './storage';
 export * from './protocol';
 export * from './hosts';
 export * from './client';
+export * from './status';

@@ -13,27 +13,38 @@ export type GuardConfig = {
   instance?: string;
   /** Public static file (free static hosting). Omit = license expiry is the only control. */
   revocationUrl?: string;
+  /** @deprecated use pollMinutes. */
   pollHours?: number;
+  /** Status file poll interval (default 2). */
+  pollMinutes?: number;
+  /** Keep working this long when the status file can't be fetched (default 6). A block already seen always stays. */
+  graceHours?: number;
   fetch?: (url: string) => Promise<unknown>;
   /** Persists the highest list version seen (rollback protection) and the last good list. */
   cache?: { get(): Promise<RevocationList | null> | RevocationList | null; set(l: RevocationList): Promise<void> | void };
   /** Bundle integrity result computed at boot (verifyBundle). */
   integrityOk?: boolean;
   lockedMessage?: string;
-  /** Optional per-module online verifier (any host). Unreachable → offline license still decides, until it expires. */
-  online?: OnlineConfig & { enabled: boolean; cacheSeconds?: number };
+  /** Online verifier (default for sold modules; any host, Cloudflare Worker recommended). Checks ~5 min, recheck ~1 min while blocked, 6h outage grace. */
+  online?: OnlineConfig & { enabled: boolean; cacheSeconds?: number; blockedRecheckSeconds?: number; graceHours?: number };
   now?: () => Date;
 };
 export type GuardStatus =
   | { state: 'active'; license: License; expiresAt: string | null }
   | { state: 'locked'; reason: LockReason; message: string; revocation?: RevocationEntry };
-export type LockReason = Extract<LicenseCheck, { ok: false }>['reason'] | 'revoked' | 'suspended' | 'tampered' | 'no_license' | 'online_refused';
+export type LockReason = Extract<LicenseCheck, { ok: false }>['reason'] | 'revoked' | 'suspended' | 'tampered' | 'no_license' | 'online_refused' | 'offline_too_long';
 
 export const DEFAULT_LOCKED_MESSAGE = 'הרכיב הזה נעול כרגע. פנו למי שמכר לכם את הרישיון כדי לחדש אותו.';
 
+export const OFFLINE_MESSAGE = 'לא הצלחנו לבדוק את הרישיון כבר כמה שעות. בדקו את החיבור לאינטרנט; הרכיב יחזור לעבוד מיד כשהבדיקה תצליח.';
+
 export function createLicenseGuard(cfg: GuardConfig) {
   const now = () => (cfg.now ? cfg.now() : new Date());
-  const pollMs = Math.max(1, cfg.pollHours ?? 6) * 3_600_000;
+  // Primary path: signed static status file (free static hosting, ~60s cache). Poll ~2 min; 6h grace if it can't be fetched.
+  const pollMs = cfg.pollHours != null ? Math.max(1, cfg.pollHours) * 3_600_000 : Math.max(0.5, cfg.pollMinutes ?? 2) * 60_000;
+  const listGraceMs = (cfg.graceHours ?? 6) * 3_600_000;
+  const startedAt = now().getTime();
+  let lastListOkAt: number | null = null;
   let list: RevocationList | null = null;
   let lastPoll = 0;
   const msg = cfg.lockedMessage ?? DEFAULT_LOCKED_MESSAGE;
@@ -47,21 +58,36 @@ export function createLicenseGuard(cfg: GuardConfig) {
     lastPoll = now().getTime();
     try {
       const fresh = verifyRevocationList(await cfg.fetch(cfg.revocationUrl), cfg.publicKeyPem);
-      if (!fresh) return; // tampered or unsigned list: ignore, keep the last good one
+      if (!fresh) return;
+      lastListOkAt = now().getTime(); // tampered or unsigned list: ignore, keep the last good one
       if (list && fresh.version < list.version) return; // rollback attempt: reject
       list = fresh;
       await cfg.cache?.set(fresh);
     } catch { /* unreachable: keep working until license expiry (the backstop) */ }
   }
 
-  let lastOnline: { at: number; v: { ok: boolean; reason?: string } } | null = null;
-  async function onlineVerdict() {
-    const ttl = (cfg.online!.cacheSeconds ?? 60) * 1000;
-    if (lastOnline && now().getTime() - lastOnline.at < ttl) return lastOnline.v;
-    const r = await checkOnline(cfg.online!, { token: cfg.licenseToken, moduleId: cfg.moduleId, version: cfg.version, host: cfg.host ?? '' }, now());
-    if (r.kind === 'unreachable') return null; // offline fallback
-    lastOnline = { at: now().getTime(), v: r.verdict };
-    return r.verdict;
+  // Online check (default for sold modules): ask every ~5 min; while blocked ask every ~1 min so unblock lands fast.
+  // Outage: a seen block always wins; otherwise keep working for graceHours since the last good answer.
+  type V = { ok: boolean; reason?: string; until?: string };
+  let lastOnline: { at: number; v: V } | null = null;
+  let lastGoodAt: number | null = null;
+  const firstAt = now().getTime();
+  const tempExpired = (v: V) => v.reason === 'suspended' && Boolean(v.until) && Date.parse(v.until!) <= now().getTime();
+  async function onlineVerdict(): Promise<V | null> {
+    const o = cfg.online!;
+    const okTtl = (o.cacheSeconds ?? 300) * 1000; const blockedTtl = (o.blockedRecheckSeconds ?? 60) * 1000;
+    const t = now().getTime();
+    if (lastOnline && t - lastOnline.at < (lastOnline.v.ok ? okTtl : blockedTtl) && !tempExpired(lastOnline.v)) return lastOnline.v.ok ? null : lastOnline.v;
+    const r = await checkOnline(o, { token: cfg.licenseToken, moduleId: cfg.moduleId, version: cfg.version, host: cfg.host ?? '' }, now());
+    if (r.kind === 'verdict') {
+      lastOnline = { at: t, v: r.verdict };
+      if (r.verdict.ok) { lastGoodAt = t; return null; }
+      return r.verdict;
+    }
+    if (lastOnline && !lastOnline.v.ok && !tempExpired(lastOnline.v)) return lastOnline.v; // explicit block wins during an outage
+    const graceMs = (o.graceHours ?? 6) * 3_600_000;
+    if (t - (lastGoodAt ?? firstAt) <= graceMs) return null;
+    return { ok: false, reason: 'offline_too_long' };
   }
 
   /** Optional server-core call (only when the module opted in). Locked or unreachable → null, never a throw. */
@@ -81,10 +107,11 @@ export function createLicenseGuard(cfg: GuardConfig) {
       if (!c.ok) return { state: 'locked', reason: c.reason, message: msg };
       await refresh();
       const r = revocationFor(list, c.license.lid, now());
+      if (!r && cfg.revocationUrl && cfg.fetch && now().getTime() - (lastListOkAt ?? startedAt) > listGraceMs) return { state: 'locked', reason: 'offline_too_long', message: OFFLINE_MESSAGE };
       if (r) return { state: 'locked', reason: r.state === 'revoked_permanent' ? 'revoked' : 'suspended', message: msg, revocation: r };
       if (cfg.online?.enabled) {
         const v = await onlineVerdict();
-        if (v && !v.ok) return { state: 'locked', reason: v.reason === 'revoked' ? 'revoked' : v.reason === 'suspended' ? 'suspended' : v.reason === 'domain_mismatch' ? 'domain_mismatch' : 'online_refused', message: msg };
+        if (v) return { state: 'locked', reason: v.reason === 'revoked' ? 'revoked' : v.reason === 'suspended' ? 'suspended' : v.reason === 'domain_mismatch' ? 'domain_mismatch' : v.reason === 'offline_too_long' ? 'offline_too_long' : 'online_refused', message: v.reason === 'offline_too_long' ? OFFLINE_MESSAGE : msg };
       }
       return { state: 'active', license: c.license, expiresAt: c.license.expiresAt };
     } catch {
