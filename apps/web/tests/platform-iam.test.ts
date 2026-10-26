@@ -132,7 +132,9 @@ describe('route → permission map', () => {
 
 describe('migration seed mirrors the TS catalog', () => {
   const sql = readFileSync(path.resolve(__dirname, '../../../supabase/migrations/000191_platform_iam.sql'), 'utf8');
-  const seed = sql.slice(sql.indexOf('-- IAM-SEED-BEGIN'), sql.indexOf('-- IAM-SEED-END'));
+  const slice = (t: string) => t.slice(t.indexOf('-- IAM-SEED-BEGIN'), t.indexOf('-- IAM-SEED-END'));
+  // Products added later (000207: sample product) carry their own seed block; the union must equal the TS catalog.
+  const seed = slice(sql) + slice(readFileSync(path.resolve(__dirname, '../../../supabase/migrations/000207_modular_platform_registry.sql'), 'utf8'));
   it('same roles and permissions', () => {
     for (const role of CATALOG.roles) {
       expect(seed).toContain(`('${role.id}',`);

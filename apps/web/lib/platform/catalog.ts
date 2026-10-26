@@ -1,7 +1,11 @@
 import { defineCatalog, type ModuleManifest } from '@platform/iam';
 
 /** Products registered in this deployment's console. A new product = one line here + its migration row. */
-export const PRODUCTS = [{ id: 'nurawell', name: 'NuraWell', status: 'active' as const }];
+export const PRODUCTS = [
+  { id: 'nurawell', name: 'NuraWell', status: 'active' as const },
+  // Sample product proving the shared platform end-to-end (apps/sample-product). Seeded in migration 000207.
+  { id: 'sample', name: 'מוצר לדוגמה', status: 'active' as const },
+];
 export const DEFAULT_PRODUCT = 'nurawell';
 export const PRODUCT_COOKIE = 'nw_product';
 

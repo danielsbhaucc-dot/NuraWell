@@ -1,0 +1,29 @@
+{
+  "name": "sample-product",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Minimal product proving the shared platform (auth, AI engine, tokens, console). Not deployed.",
+  "scripts": {
+    "dev": "next dev -p 3100",
+    "build": "next build",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@platform/ai-engine": "*",
+    "@platform/auth": "*",
+    "@platform/ui": "*",
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.49.0",
+    "next": "^16.4.3",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/react": "^19.3.0",
+    "typescript": "^6.0.3",
+    "vite": "^8.3.4",
+    "vitest": "^5.0.3"
+  }
+}
