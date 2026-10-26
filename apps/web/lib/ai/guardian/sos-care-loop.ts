@@ -87,7 +87,7 @@ export async function cancelPendingSosFollowUps(
     .select('id, metadata')
     .eq('user_id', userId)
     .eq('status', 'pending')
-    .eq('metadata->>source', 'sos_followup')
+    .eq('source', 'sos_followup') // plain column mirrored from metadata.source (000204); metadata is encrypted
     .limit(500);
 
   const ids = ((rows ?? []) as Array<{ id: string; metadata: Record<string, unknown> | null }>)

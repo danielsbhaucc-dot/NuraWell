@@ -46,7 +46,9 @@ afterEach(() => {
 describe('field registry', () => {
   it('every table has owner + row key and only known kinds', () => {
     for (const [t, spec] of Object.entries(ENCRYPTED_TABLES)) {
-      expect(spec.userCol, t).toBeTruthy();
+      const sys = (spec as { system?: string }).system;
+      if (sys) expect(['audit', 'ops', 'legal'], t).toContain(sys);
+      else expect(spec.userCol, t).toBeTruthy();
       expect(spec.rowCol, t).toBeTruthy();
       for (const k of Object.values(spec.columns)) expect(['text', 'json', 'text[]']).toContain(k);
     }
