@@ -1,0 +1,33 @@
+name: Sample product + shared packages
+
+on:
+  pull_request:
+    paths: ['apps/sample-product/**', 'packages/@platform/**', 'package-lock.json', '.github/workflows/sample-product.yml']
+  push:
+    branches: [main, master]
+    paths: ['apps/sample-product/**', 'packages/@platform/**']
+
+permissions:
+  contents: read
+
+jobs:
+  test-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm install
+      - name: No pure white in the sample product
+        run: "! grep -rniE \"#fff\\b|#ffffff|\\bwhite\\b|rgb\\(255, ?255, ?255\\)\" apps/sample-product/app apps/sample-product/lib"
+      - name: Unit tests (mock AI only, no network, no spend)
+        run: npm test
+        working-directory: apps/sample-product
+      - name: Build (not deployed)
+        run: npm run build
+        working-directory: apps/sample-product
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'
