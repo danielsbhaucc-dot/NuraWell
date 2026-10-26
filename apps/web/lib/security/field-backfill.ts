@@ -47,9 +47,34 @@ export async function backfillFieldV2(budgetMs = 30_000, tables: readonly string
   const deadline = Date.now() + budgetMs;
   const out: Record<string, { rows: number; skippedRace: number; verifyFail: number; remaining?: number; error?: string }> = {};
   for (const table of tables) {
-   try {
+    try {
+      await backfillTable(db, table, deadline, out);
+    } catch (e) {
+      // one table failing must not stop the others; error text is a code/table/column only, never a value
+      out[table] = { ...(out[table] ?? { rows: 0, skippedRace: 0, verifyFail: 0 }), error: (e instanceof Error ? e.message : 'error').slice(0, 200) };
+    }
+  }
+  return out;
+}
+
+/** Persist a counts-only summary of a run (best effort; never throws). */
+export async function recordBackfillRun(source: 'vercel_cron' | 'master' | 'manual', durationMs: number, result: unknown) {
+  try {
+    await createRawAdminClient().from('field_backfill_runs').insert({ source, duration_ms: durationMs, result: result as never });
+  } catch {
+    /* ignore */
+  }
+}
+
+async function backfillTable(
+  db: ReturnType<typeof createRawAdminClient>,
+  table: string,
+  deadline: number,
+  out: Record<string, { rows: number; skippedRace: number; verifyFail: number; remaining?: number; error?: string }>
+) {
+  {
     const spec = encryptedTable(table);
-    if (!spec) continue;
+    if (!spec) return;
     const cols = Object.keys(spec.columns).filter((c) => !isBlocked(table, c));
     const stat = (out[table] = { rows: 0, skippedRace: 0, verifyFail: 0 });
     const keyCols = keyColumns(spec);
@@ -124,10 +149,5 @@ export async function backfillFieldV2(budgetMs = 30_000, tables: readonly string
         stat.rows++;
       }
     }
-   } catch (e) {
-    // one table failing (schema drift, URL too long, ...) must not stop the others; counts only, no values
-    out[table] = { ...(out[table] ?? { rows: 0, skippedRace: 0, verifyFail: 0 }), error: e instanceof Error ? e.message.slice(0, 200) : 'error' };
-   }
   }
-  return out;
 }
