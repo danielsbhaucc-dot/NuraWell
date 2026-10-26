@@ -92,8 +92,10 @@ export function openBackup(file: string, passphrase: string): Record<string, str
   const f = JSON.parse(file) as { v: number; N: number; r: number; p: number; salt: string; iv: string; tag: string; ct: string };
   if (f.v !== 1) throw new Error('unknown backup version');
   const key = scryptSync(passphrase.normalize('NFC'), Buffer.from(f.salt, 'base64'), 32, { N: f.N, r: f.r, p: f.p, maxmem: SCRYPT.maxmem });
-  const d = createDecipheriv('aes-256-gcm', key, Buffer.from(f.iv, 'base64'));
+  const tag = Buffer.from(f.tag, 'base64');
+  if (tag.length !== 16) throw new Error('backup auth tag malformed');
+  const d = createDecipheriv('aes-256-gcm', key, Buffer.from(f.iv, 'base64'), { authTagLength: 16 });
   d.setAAD(Buffer.from('nurawell-key-backup-v1'));
-  d.setAuthTag(Buffer.from(f.tag, 'base64'));
+  d.setAuthTag(tag);
   return JSON.parse(Buffer.concat([d.update(Buffer.from(f.ct, 'base64')), d.final()]).toString('utf8')) as Record<string, string>;
 }

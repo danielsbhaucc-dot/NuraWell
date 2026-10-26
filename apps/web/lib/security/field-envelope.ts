@@ -25,7 +25,7 @@ function seal(key: Buffer, plain: Buffer, aad: string): Buffer {
 function open(key: Buffer, blob: Buffer, aad: string): Buffer {
   if (key.length !== 32) throw new Error('key must be 32 bytes');
   if (blob.length < 29) throw new Error('ciphertext too short');
-  const d = createDecipheriv('aes-256-gcm', key, blob.subarray(0, 12));
+  const d = createDecipheriv('aes-256-gcm', key, blob.subarray(0, 12), { authTagLength: 16 });
   d.setAAD(Buffer.from(aad, 'utf8'));
   d.setAuthTag(blob.subarray(blob.length - 16));
   return Buffer.concat([d.update(blob.subarray(12, blob.length - 16)), d.final()]);
