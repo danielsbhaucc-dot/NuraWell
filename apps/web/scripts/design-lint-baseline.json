@@ -295,13 +295,28 @@
   "white": 3,
   "rawButton": 1
  },
+ "components/billing/AdminBillingPanel.tsx": {
+  "white": 2,
+  "rawButton": 1
+ },
+ "components/billing/CheckoutClient.tsx": {
+  "white": 4,
+  "rawButton": 1
+ },
  "components/billing/CurrentPlanCard.tsx": {
   "rawHex": 6,
   "arbitraryColor": 6
  },
+ "components/billing/MySubscriptionClient.tsx": {
+  "white": 1,
+  "rawButton": 1
+ },
  "components/billing/PlansGrid.tsx": {
   "rawHex": 30,
   "arbitraryColor": 30
+ },
+ "components/billing/ui.ts": {
+  "white": 2
  },
  "components/challenge/ChallengeCompleteClient.tsx": {
   "white": 1,
@@ -848,11 +863,17 @@
  "lib/legal/record-evidence.ts": {
   "rawHex": 9
  },
+ "lib/legal/security-docs.generated.ts": {
+  "rawHex": 5
+ },
  "lib/notifications/inactivity-fade.ts": {
   "rawHex": 1
  },
  "lib/security/backup-docs.generated.ts": {
   "rawHex": 62
+ },
+ "lib/security/field-registry.ts": {
+  "rawHex": 2
  },
  "lib/theme/tokens.ts": {
   "rawHex": 22
