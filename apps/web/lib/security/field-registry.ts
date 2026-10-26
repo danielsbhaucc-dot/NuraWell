@@ -274,7 +274,7 @@ export const ENCRYPTED_TABLES = {
   chat_transcript_admin_audit_log: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { payload: 'json', reason: 'text', summary: 'text' } },
   delivery_log: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { error: 'text', recipient_mask: 'text' } },
   billing_events: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { metadata: 'json' } },
-  error_events: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { stack: 'text', tags: 'json' } },
+  error_events: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { message: 'text', stack: 'text', tags: 'json' } },
   // ---- system-owned, key purpose 'ops'
   ceo_conversations: { system: 'ops', userCol: '', rowCol: 'chat_key', columns: { summary: 'text', turns: 'json' } },
   ceo_dev_forwards: { system: 'ops', userCol: '', rowCol: 'id', columns: { body: 'text', error: 'text', or_notes: 'text', source_text: 'text', title: 'text' } },

@@ -71,10 +71,11 @@ export async function loadByCookie(db: SupabaseClient, cookie: string | null | u
   return r;
 }
 
-export async function ipBlocked(db: SupabaseClient, ipHash: string | null): Promise<boolean> {
-  if (!ipHash) return false;
-  const { data } = await db.from('ops_enroll_blocks').select('blocked_until').eq('ip_hash', ipHash).maybeSingle();
-  return Boolean(data && Date.parse((data as { blocked_until: string }).blocked_until) > Date.now());
+export async function ipBlocked(db: SupabaseClient, ipHash: string | readonly string[] | null): Promise<boolean> {
+  const hs = (Array.isArray(ipHash) ? ipHash : [ipHash]).filter((x): x is string => Boolean(x));
+  if (!hs.length) return false;
+  const { data } = await db.from('ops_enroll_blocks').select('blocked_until').in('ip_hash', hs);
+  return ((data ?? []) as { blocked_until: string }[]).some((r) => Date.parse(r.blocked_until) > Date.now());
 }
 
 /* ── 2. password + strong factor ── */

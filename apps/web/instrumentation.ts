@@ -6,6 +6,7 @@ export async function onRequestError(
   request: { path: string; method: string },
   context: { routerKind: string; routePath: string; routeType: string }
 ) {
+  if (process.env.NEXT_RUNTIME !== 'nodejs') return; // sealing needs node:crypto (field-fetch)
   const { reportError } = await import('./lib/monitoring/report-error');
   await reportError(err, {
     source: context.routePath,
