@@ -1,6 +1,6 @@
 import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { decide, isModuleEnabled, moduleForPath, permittedProducts, isFounder, type Actor, type Decision, type Grant, type ModuleState } from '@platform/iam';
+import { ALL_PRODUCTS, decide, isModuleEnabled, moduleForPath, permittedProducts, isFounder, type Actor, type Decision, type Grant, type ModuleState } from '@platform/iam';
 import { CATALOG, DEFAULT_PRODUCT, MODULES, PRODUCT_COOKIE } from './catalog';
 
 type Row = { id: string; user_id: string; role_id: string; product_id: string; expires_at: string | null; revoked_at: string | null };
@@ -25,6 +25,9 @@ export async function loadModuleStates(db: SupabaseClient, product: string): Pro
 export function selectedProduct(request: Request): string {
   const h = request.headers.get('x-nw-product');
   const raw = h ?? readCookie(request, PRODUCT_COOKIE) ?? DEFAULT_PRODUCT;
+  // Founder "all products" view ('*'): per-request checks run against the default product. The grant is still
+  // verified by decide() (only a founder '*' grant or a nurawell grant passes), so this never widens access.
+  if (raw === ALL_PRODUCTS) return DEFAULT_PRODUCT;
   return /^[a-z][a-z0-9-]{1,30}$/.test(raw) ? raw : '';
 }
 
