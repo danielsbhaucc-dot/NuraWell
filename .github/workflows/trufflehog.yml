@@ -29,7 +29,7 @@ jobs:
           fetch-depth: 0
 
       - name: Run TruffleHog
-        uses: trufflesecurity/trufflehog@main
+        uses: trufflesecurity/trufflehog@e63326d6545de8f425d93ce24078c6e68d83f70e # v3.99.3 (pinned: a mutable @main ref runs whatever lands upstream with repo access)
         with:
           path: ./
           # On PRs scan only the diff; on push/schedule scan the whole repo.
