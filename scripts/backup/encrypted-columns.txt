@@ -99,10 +99,10 @@ enforce scheduled_reminders body text
 enforce scheduled_reminders metadata json
 enforce task_events reason text
 enforce task_events metadata json
-enforce task_definitions title text
-enforce task_definitions description text
-enforce task_definitions ladder json
-enforce task_definitions schedule text
+enforce task_definitions title text owner:owner_user_id
+enforce task_definitions description text owner:owner_user_id
+enforce task_definitions ladder json owner:owner_user_id
+enforce task_definitions schedule text owner:owner_user_id
 enforce user_task_assignments reason text
 enforce admin_audit_log ip text
 enforce admin_audit_log detail json
