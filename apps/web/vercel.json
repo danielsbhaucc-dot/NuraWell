@@ -19,6 +19,10 @@
       "schedule": "40 11 * * *"
     },
     {
+      "path": "/api/v1/ai/cron/session-trail-seal",
+      "schedule": "*/5 * * * *"
+    },
+    {
       "path": "/api/v1/legal/anchor",
       "schedule": "17 2 * * *"
     },

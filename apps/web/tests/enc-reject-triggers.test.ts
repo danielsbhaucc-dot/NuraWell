@@ -2,7 +2,8 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { ENC_TRIGGER_MARK, encRejectSpec, encRejectTriggersSql } from '@/lib/security/enc-reject-triggers';
-import { ENCRYPTED_TABLES, FIELD_V2_TABLES, isBlocked } from '@/lib/security/field-registry';
+import { ENCRYPTED_TABLES, FIELD_V2_TABLES, SWEEP_TABLES, isBlocked } from '@/lib/security/field-registry';
+import { plaintextGuardLines } from '@/lib/security/plaintext-guard-list';
 
 const DIR = join(__dirname, '../../../supabase/migrations');
 const files = readdirSync(DIR).filter((f) => /^\d+_.*\.sql$/.test(f)).sort();
@@ -18,8 +19,16 @@ describe('enc-reject triggers stay in sync with field-registry', () => {
   it('every registered, non-BLOCKED column of a v2 table is covered by its trigger', () => {
     const spec = new Map(encRejectSpec());
     const reg = ENCRYPTED_TABLES as Record<string, { columns: Record<string, string> }>;
-    for (const t of FIELD_V2_TABLES)
+    for (const t of FIELD_V2_TABLES) {
+      if (t in SWEEP_TABLES) { expect(spec.has(t), `${t} is swept, no reject trigger`).toBe(false); continue; }
       for (const c of Object.keys(reg[t]?.columns ?? {})) if (!isBlocked(t, c)) expect(spec.get(t), `${t}.${c}`).toContain(c);
+    }
+  });
+
+  it('swept tables get an age-bounded nightly enforce line', () => {
+    const lines = plaintextGuardLines().filter((l) => l.startsWith('sweep auth_session_trail '));
+    expect(lines.map((l) => l.split(' ')[2]).sort()).toEqual(['ip', 'user_agent']);
+    for (const l of lines) expect(l.endsWith(' 15 created_at')).toBe(true);
   });
 
   it('the enforcement function and one-way activation flag exist in the migrations', () => {

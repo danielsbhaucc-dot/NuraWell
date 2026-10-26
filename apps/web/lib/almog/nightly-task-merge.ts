@@ -5,12 +5,13 @@ import { meteredFetch, withAiUser } from '@/lib/ai/usage-meter';
 import { gateAlmogUserFacingTouch } from '@/lib/notifications/almog-touch-send-gate';
 import { insertNotification } from '@/lib/notifications/deliver';
 import { levelInfo, resolveLadder, type TaskDefinitionLike } from '@/lib/tasks/ladder';
+import { loadDupCandidates, mergeTaskAssignments } from '@/lib/almog/task-dup-candidates';
 
 /**
  * Nightly "Almog checks": merge near-identical live tasks.
- *  1. SQL pre-filter (free): task_dup_candidates() flags users with likely duplicates.
+ *  1. App pre-filter (free, on decrypted titles): loadDupCandidates() flags users with likely duplicates.
  *  2. Only flagged users go to one cheap model call each (gpt-5.4-mini, static prompt first for caching).
- *  3. Merge by behavior via merge_task_assignments(); the model may set the kept task's ladder level (e.g. an easier step
+ *  3. Merge by behavior via mergeTaskAssignments() (SQL moves state only; sealed text written by the app); the model may set the kept task's ladder level (e.g. an easier step
  *     that existed because the main task was hard). Moves history, logs level_change + 'merged' with the reason.
  *  4. One factual Almog notification through the unified gate + dedupe (no extra AI call).
  */
@@ -176,11 +177,15 @@ async function loadPreviousFingerprints(db: SupabaseClient): Promise<Record<stri
 
 export async function runNightlyTaskMerge(
   db: SupabaseClient,
-  deps: { decide?: (c: Cand[]) => Promise<unknown>; previousFingerprints?: Record<string, string> } = {}
+  deps: {
+    decide?: (c: Cand[]) => Promise<unknown>;
+    previousFingerprints?: Record<string, string>;
+    candidates?: () => Promise<{ user_id: string; tasks: Cand[] }[]>;
+    merge?: typeof mergeTaskAssignments;
+  } = {}
 ) {
-  const { data, error } = await db.rpc('task_dup_candidates', { p_limit: 200 });
-  if (error) throw new Error(error.message);
-  const rows = (data ?? []) as { user_id: string; tasks: Cand[] }[];
+  const rows = deps.candidates ? await deps.candidates() : ((await loadDupCandidates(db, 200)) as unknown as { user_id: string; tasks: Cand[] }[]);
+  const merge = deps.merge ?? mergeTaskAssignments;
   const decide =
     deps.decide ??
     (async (c: Cand[]) => {
@@ -218,9 +223,15 @@ export async function runNightlyTaskMerge(
     let mainCount = 0;
     let mainChange: { fromLevel: number; toLevel: number; mergedTitles: string[] } | undefined;
     for (const d of decisions) {
-      const { data: n, error: e } = await db.rpc('merge_task_assignments', { p_user: row.user_id, p_keep: d.keep, p_drop: d.drop, p_reason: d.reason ?? null, p_level: d.level ?? null });
-      if (e) summary.errors.push(`merge: ${e.message.slice(0, 150)}`);
-      else {
+      let n = 0;
+      let failed = false;
+      try {
+        n = await merge(db, { user: row.user_id, keep: d.keep, drop: d.drop, reason: d.reason ?? null, level: d.level ?? null });
+      } catch (e) {
+        failed = true;
+        summary.errors.push(`merge: ${String((e as Error)?.message ?? e).slice(0, 150)}`);
+      }
+      if (!failed) {
         const k = Number(n) || 0;
         merged += k;
         if (k > mainCount) {
