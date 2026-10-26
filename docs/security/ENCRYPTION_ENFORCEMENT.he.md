@@ -27,3 +27,12 @@
 ## עדיין לא מוצפן (ממתין, עם סיבה)
 ר' `column-classification.ts` — כל עמודה "pending" עם הסיבה (כותבי SQL, מפתח/סינון שדורש blind index, טבלאות מחוץ לענף).
 עמודות BLOCKED ב-field-registry לא מכוסות בטריגר עד שהחסם יוסר.
+
+## סגירת עמודות ממתינות (000208–000210, gated 000211)
+
+- **אינדקס עיוור (HMAC, מפתח HKDF מ-PII_ENCRYPTION_KEY, לא מודפס לעולם):** `challenge_success_events.title_bidx`, `notifications.meta_key_bidx` / `meta_unique_bidx` (מחליפים את אינדקסי הביטוי על metadata). מסנני `eq` על title נכתבים מחדש אוטומטית ב-`withFieldDecryption`.
+- **נרשמו להצפנה:** notifications.metadata, challenge_success_events.title, user_consents.metadata (evidence_id/request_id/choice שוכפלו לעמודות רגילות לטריגר ההיסטוריה), journey_task_executions.note (הטריגר לא מעתיק עוד את ההערה ל-task_events), almog_kickoff_status, billing_events.metadata, ceo_pending_actions, notify_quality_events.
+- **task_definitions:** נוספה owner_user_id (000209) + RLS. ההצפנה עצמה ממתינה לפורט של normalize_task_title / habit_dedupe_key / merge_task_assignments לאפליקציה.
+- **ממצא פרטיות:** offerGuideTask כותב את params.reason של משתמש לתיאור של שורת guide משותפת.
+- **IAM/admin:** `supabase/gated/000211_iam_admin_enc_prep.sql` + `GATED_AFTER_IAM_MERGE` — להחיל רק אחרי מיזוג #357–#362.
+- **נשאר ממתין (SQL כותב/קורא):** almog_assignments.*, task_events.reason/metadata (+ עותקי note ישנים — ניקוי דורש אישור), admin_audit_log.detail/ip, ops_security_events.detail, auth_session_trail.ip/user_agent, עמודות CHECK/enum ב-BLOCKED, iam_audit_log, iam_grants.reason, ops_probe_daily.country.

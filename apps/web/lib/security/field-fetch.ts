@@ -13,6 +13,7 @@
  */
 import { aadColumns, encryptedTable, FIELD_V2_TABLES, keyColumns, ownerOf, rowKeyOf, SYSTEM_ROW } from '@/lib/security/field-registry';
 import { prepareWriteRow, sealedWriteCols } from '@/lib/security/field-write';
+import { rewriteBlindFilters } from '@/lib/security/blind-index';
 // field-crypto (node:crypto, KMS key) is loaded lazily, only when a response really holds enc:v2 values.
 const FIELD_PREFIX_MARK = 'enc:v2:';
 
@@ -71,6 +72,8 @@ export function withFieldDecryption(base: FetchFn = fetch): FetchFn {
     const table = tableFromUrl(url);
     if (!table || !encryptedTable(table)) return base(input, init);
     const method = (init?.method ?? (input instanceof Request ? input.method : 'GET')).toUpperCase();
+    const rewrote = await rewriteBlindFilters(table, url);
+    if (rewrote) input = url.toString();
     if (method === 'HEAD' || method === 'DELETE' && !url.searchParams.has('select')) return base(input, init);
 
     // write path: seal registered columns of live tables before PostgREST sees them
