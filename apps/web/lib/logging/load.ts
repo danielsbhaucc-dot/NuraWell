@@ -1,5 +1,6 @@
 /** Server-only loaders for the Ops logs: redact on the way out (allow-listed detail keys only). */
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { logDetail } from '@/lib/logs/facts';
 import { createHash } from 'node:crypto';
 import type { LogEvent } from './insights';
 import type { ErrRow, IssueStatus } from './errors';
@@ -18,12 +19,13 @@ export function redactDetail(d: Record<string, unknown> | null): Record<string, 
 }
 
 export async function loadEvents(db: SupabaseClient, sinceIso: string, beforeIso?: string, limit = 400): Promise<LogEvent[]> {
-  let a = db.from('admin_audit_log').select('id, created_at, actor_id, path, detail').eq('method', 'SECURITY').gte('created_at', sinceIso).order('created_at', { ascending: false }).limit(limit);
+  let a = db.from('admin_audit_log').select('id, created_at, actor_id, path, facts, detail').eq('method', 'SECURITY').gte('created_at', sinceIso).order('created_at', { ascending: false }).limit(limit);
   let d = db.from('delivery_log').select('id, created_at, channel, purpose, ok, provider_id, error').gte('created_at', sinceIso).order('created_at', { ascending: false }).limit(limit);
   if (beforeIso) { a = a.lt('created_at', beforeIso); d = d.lt('created_at', beforeIso); }
   const [{ data: au }, { data: de }] = await Promise.all([a, d]);
   const out: LogEvent[] = [];
-  for (const r of (au ?? []) as { id: number; created_at: string; actor_id: string | null; path: string; detail: Record<string, unknown> }[]) {
+  for (const r0 of (au ?? []) as { id: number; created_at: string; actor_id: string | null; path: string; facts?: unknown; detail: Record<string, unknown> }[]) {
+    const r = { ...r0, detail: logDetail(r0) ?? {} };
     const fid = typeof r.detail?.id === 'string' ? `flow-${createHash('sha256').update(r.detail.id).digest('hex').slice(0, 10)}` : null;
     out.push({ id: `a${r.id}`, at: r.created_at, source: 'audit', event: r.path, actor: tag(r.actor_id), flowId: fid, detail: redactDetail(r.detail) });
   }

@@ -136,7 +136,7 @@ const EXTRACTION_SYSTEM = `אתה מנוע חילוץ זיכרון מובנה ל
   "personal_context": { "work": "", "family": "", "events": [], "stressors": [] },
   "health_context": { "conditions_mentioned": [], "fatigue": "", "pain": "" },
   "psychology": { "motivation": "", "resistance": "", "beliefs": [], "fears": [] },
-  "coaching_profile": { "tone_works": "", "tone_fails": "", "push_level": "gentle|normal|direct" },
+  "coaching_profile": { "tone_works": "", "tone_fails": "", "push_level": "gentle|normal|direct", "user_language": "how the user writes: register, recurring words/phrases they use, emoji/slang, short or long messages" },
   "risk_signals": { "dropout_risk": "low|medium|high", "overwhelm": false, "burnout": false },
   "inferred_insights": [{ "text": "תובנה בעברית", "category": "insight", "confidence": 0.8 }],
   "ai_context_patch": {

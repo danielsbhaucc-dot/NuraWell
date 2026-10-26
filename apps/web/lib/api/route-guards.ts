@@ -103,6 +103,8 @@ async function requireApiAdminInner(request: Request, opts: { skipDeviceGate?: b
   }
   const locked = await lockdownRefusal(request, user.id, accessToken);
   if (locked) return { ok: false, response: locked };
+  const iamDenied = await iamRefusal(request, user.id);
+  if (iamDenied) return { ok: false, response: iamDenied };
   await auditAdminApiAccess(request, user.id, accessToken);
   return { ok: true, supabase, user };
 }
@@ -159,6 +161,26 @@ export async function auditAdminApiAccess(request: Request, actorId: string, acc
     await recordAdminSuccess(db, request, actorId, session);
   } catch {
     /* best-effort */
+  }
+}
+
+/**
+ * Platform IAM (lib/platform): every admin API call needs a grant for the selected product and the route's
+ * permission. Fails CLOSED. Step-up for sensitive permissions is enforced by the routes that own those flows
+ * and by the IAM routes themselves; here we check the grant only, so existing step-up UX is unchanged.
+ */
+async function iamRefusal(request: Request, userId: string): Promise<NextResponse | null> {
+  try {
+    const { createAdminClient } = await import('@/lib/supabase/admin');
+    const { authorize, loadActor, selectedProduct } = await import('@/lib/platform/authorize');
+    const { permissionFor } = await import('@/lib/platform/route-permissions');
+    const db = createAdminClient();
+    const path = new URL(request.url).pathname;
+    const r = await authorize(db, await loadActor(db, userId), selectedProduct(request), permissionFor(path, request.method), { steppedUp: true, path });
+    if (r.allow) return null;
+    return NextResponse.json({ error: 'אין לך הרשאה לפעולה הזו במוצר הזה', code: 'iam_denied' }, { status: 403 });
+  } catch {
+    return NextResponse.json({ error: 'Forbidden', code: 'iam_unavailable' }, { status: 403 });
   }
 }
 

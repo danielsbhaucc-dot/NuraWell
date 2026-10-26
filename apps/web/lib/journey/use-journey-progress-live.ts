@@ -9,7 +9,7 @@ function mapProgressRow(row: Record<string, unknown>): JourneyStepProgress | nul
   const userId = typeof row.user_id === 'string' ? row.user_id : null;
   if (!stepId || !userId) return null;
 
-  return {
+  const out: JourneyStepProgress = {
     step_id: stepId,
     user_id: userId,
     video_watched: Boolean(row.video_watched),
@@ -28,7 +28,13 @@ function mapProgressRow(row: Record<string, unknown>): JourneyStepProgress | nul
         ? (row.last_section as JourneyStepProgress['last_section'])
         : 'video',
   };
+  // answer/habit json is stored sealed (enc:v2); realtime carries the raw value, so drop those keys and let the
+  // caller's `{ ...prev, ...remote }` merge keep the decrypted values it already has
+  for (const k of SEALED_KEYS) if (typeof row[k] === 'string' && (row[k] as string).startsWith('enc:')) delete (out as Partial<JourneyStepProgress>)[k];
+  return out;
 }
+
+const SEALED_KEYS = ['quiz_answers', 'game_answers', 'habits_progress'] as const;
 
 /** האזנה לעדכוני journey_progress בזמן אמת (INSERT/UPDATE). */
 export function useJourneyProgressLive(

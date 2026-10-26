@@ -3,6 +3,7 @@
  * (the API logs every view, reveal and export to admin_audit_log).
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { logDetail } from '@/lib/logs/facts';
 
 export type LogType = 'admin' | 'security' | 'signals' | 'errors' | 'legal' | 'gideon' | 'retention';
 export type LogRow = { id: string; at: string; type: LogType; actor: string | null; action: string; target: string | null; result: string | null; ip: string | null; country: string | null; detail: string; inv?: LogInv };
@@ -16,10 +17,10 @@ const s = (v: unknown) => (v == null ? null : String(v));
 const j = (v: unknown) => (v == null ? '' : typeof v === 'string' ? v : JSON.stringify(v));
 
 export const LOG_SOURCES: Record<LogType, Src> = {
-  admin: { table: 'admin_audit_log', select: 'id,created_at,actor_id,method,path,ip,detail', actorCol: 'actor_id', resultCol: 'method', searchCols: ['path'],
-    map: (r) => ({ id: s(r.id)!, at: s(r.created_at)!, actor: s(r.actor_id), action: s(r.method) ?? '', target: s(r.path), result: s(r.method), ip: s(r.ip), country: s((r.detail as { country?: string } | null)?.country), detail: j(r.detail), inv: { user: s(r.actor_id), session: s((r.detail as { session?: string } | null)?.session), ipRaw: s(r.ip) } }) },
-  security: { table: 'ops_security_events', select: 'id,created_at,kind,detail,alerted_at', actorCol: null, resultCol: 'kind', searchCols: ['kind'],
-    map: (r) => ({ id: s(r.id)!, at: s(r.created_at)!, actor: null, action: s(r.kind) ?? '', target: null, result: r.alerted_at ? 'נשלחה התראה' : 'ממתין', ip: null, country: s((r.detail as { country?: string } | null)?.country), detail: j(r.detail) }) },
+  admin: { table: 'admin_audit_log', select: 'id,created_at,actor_id,method,path,ip,facts,detail', actorCol: 'actor_id', resultCol: 'method', searchCols: ['path'],
+    map: (r) => ({ id: s(r.id)!, at: s(r.created_at)!, actor: s(r.actor_id), action: s(r.method) ?? '', target: s(r.path), result: s(r.method), ip: s(r.ip), country: s((logDetail(r) as { country?: string } | null)?.country), detail: j(logDetail(r)), inv: { user: s(r.actor_id), session: s((logDetail(r) as { session?: string } | null)?.session), ipRaw: s(r.ip) } }) },
+  security: { table: 'ops_security_events', select: 'id,created_at,kind,facts,detail,alerted_at', actorCol: null, resultCol: 'kind', searchCols: ['kind'],
+    map: (r) => ({ id: s(r.id)!, at: s(r.created_at)!, actor: null, action: s(r.kind) ?? '', target: null, result: r.alerted_at ? 'נשלחה התראה' : 'ממתין', ip: null, country: s((logDetail(r) as { country?: string } | null)?.country), detail: j(logDetail(r)) }) },
   signals: { table: 'security_signals', select: 'id,created_at,kind,ip_hash,actor_id,path,country,n', actorCol: 'actor_id', resultCol: 'kind', searchCols: ['path', 'kind'],
     map: (r) => ({ id: s(r.id)!, at: s(r.created_at)!, actor: s(r.actor_id), action: s(r.kind) ?? '', target: s(r.path), result: s(r.kind), ip: s(r.ip_hash), country: s(r.country), detail: r.n && Number(r.n) > 1 ? `n=${r.n}` : '', inv: { user: s(r.actor_id), ipHash: s(r.ip_hash) } }) },
   errors: { table: 'error_events', select: 'id,created_at,severity,source,route,message,user_id', actorCol: 'user_id', resultCol: 'severity', searchCols: ['message', 'route', 'source'],

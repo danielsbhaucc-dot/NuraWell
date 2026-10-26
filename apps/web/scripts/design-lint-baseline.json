@@ -46,9 +46,6 @@
  "app/challenge/page.tsx": {
   "rawHex": 1
  },
- "app/coming-soon/page.tsx": {
-  "rawHex": 1
- },
  "app/demo/[token]/page.tsx": {
   "rawHex": 1,
   "arbitraryColor": 1
@@ -103,14 +100,6 @@
   "rawButton": 2
  },
  "components/admin/AdminChallengeTasksEditor.tsx": {
-  "rawButton": 1
- },
- "components/admin/AdminComingSoonLyricsEditor.tsx": {
-  "rawHex": 5,
-  "arbitraryColor": 5,
-  "rawButton": 8
- },
- "components/admin/AdminComingSoonPanel.tsx": {
   "rawButton": 1
  },
  "components/admin/AdminDemoAccessPanel.tsx": {
@@ -271,9 +260,28 @@
  "components/audio/GlassAudioPlayer.tsx": {
   "rawButton": 1
  },
+ "components/billing/AdminBillingPanel.tsx": {
+  "white": 2,
+  "rawButton": 1,
+  "nearWhite": 2
+ },
+ "components/billing/CheckoutClient.tsx": {
+  "white": 4,
+  "rawButton": 1,
+  "nearWhite": 4
+ },
  "components/billing/CurrentPlanCard.tsx": {
   "rawHex": 6,
   "arbitraryColor": 6
+ },
+ "components/billing/MySubscriptionClient.tsx": {
+  "white": 1,
+  "rawButton": 1,
+  "nearWhite": 1
+ },
+ "components/billing/ui.ts": {
+  "white": 2,
+  "nearWhite": 2
  },
  "components/challenge/ChallengeCompleteClient.tsx": {
   "rawHex": 3,
@@ -307,12 +315,6 @@
  },
  "components/challenge/DemoExitBanner.tsx": {
   "rawButton": 1
- },
- "components/coming-soon/ComingSoonExperience.tsx": {
-  "white": 4,
-  "rawHex": 49,
-  "arbitraryColor": 6,
-  "rawButton": 3
  },
  "components/course/AudioPlayer.tsx": {
   "rawHex": 4,
@@ -756,11 +758,17 @@
  "lib/legal/record-evidence.ts": {
   "rawHex": 9
  },
+ "lib/legal/security-docs.generated.ts": {
+  "rawHex": 5
+ },
  "lib/notifications/inactivity-fade.ts": {
   "rawHex": 1
  },
  "lib/security/backup-docs.generated.ts": {
   "rawHex": 62
+ },
+ "lib/security/field-registry.ts": {
+  "rawHex": 2
  },
  "lib/theme/tokens.ts": {
   "rawHex": 22

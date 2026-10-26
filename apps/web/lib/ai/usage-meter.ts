@@ -90,6 +90,29 @@ async function record(row: Record<string, unknown>) {
   }).catch(() => {});
 }
 
+/**
+ * For calls that bypass meteredFetch (OpenRouter Batch API): record the usage a batch result carries,
+ * so batch jobs (periodic chat summaries) show up in ai_usage_events instead of looking like they never ran.
+ */
+export async function recordBatchUsage(params: {
+  feature: string;
+  model: string | null;
+  usage: { prompt_tokens?: number; completion_tokens?: number; cost?: number; prompt_tokens_details?: { cached_tokens?: number } } | null | undefined;
+}): Promise<void> {
+  const u = params.usage;
+  if (!u) return;
+  const userId = currentAiUserId();
+  await record({
+    user_id: userId && UUID.test(userId) ? userId : null,
+    feature: params.feature.slice(0, 60),
+    model: params.model,
+    prompt_tokens: u.prompt_tokens ?? null,
+    completion_tokens: u.completion_tokens ?? null,
+    cached_tokens: u.prompt_tokens_details?.cached_tokens ?? null,
+    cost_usd: typeof u.cost === 'number' ? u.cost : 0,
+  });
+}
+
 function schedule(p: Promise<unknown>) {
   const safe = p.catch(() => {});
   try {

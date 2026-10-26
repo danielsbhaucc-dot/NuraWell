@@ -51,9 +51,9 @@ export async function runLogRetentionJob(db: SupabaseClient, opts: { dryRun?: bo
   const alert = storageAlert(storage);
   if (alert) {
     const day = new Date().toISOString().slice(0, 10);
-    const { data: prev } = await db.from('ops_security_events').select('id').eq('kind', 'storage_alert').contains('detail', { day }).limit(1);
+    const { data: prev } = await db.from('ops_security_events').select('id').eq('kind', 'storage_alert').contains('facts', { day }).limit(1);
     if (!prev?.length) {
-      await db.from('ops_security_events').insert({ kind: 'storage_alert', detail: { day, db_bytes: storage.db_bytes }, alerted_at: new Date().toISOString() });
+      await db.from('ops_security_events').insert({ kind: 'storage_alert', facts: { day, db_bytes: storage.db_bytes }, alerted_at: new Date().toISOString() });
       const { alertOwnerSecurity } = await import('@/lib/ops/device-notify');
       await alertOwnerSecurity(db, null, alert, 'אזהרת נפח במסד הנתונים').catch(() => undefined);
     }

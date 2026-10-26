@@ -92,6 +92,9 @@ import { scanChallengeSuccessFromChat } from '../../../../../lib/challenge/scan-
 import { fetchUserEnrolledCourseIds } from '../../../../../lib/api/rag-chat-access';
 import { isUpstashVectorConfigured } from '../../../../../lib/ai/upstash-vector-rest';
 import { createPiiShield, type PiiShield } from '../../../../../lib/ai/privacy/pii-shield';
+import { openAiLongCacheBreakpoint } from '../../../../../lib/ai/prompt-cache';
+import { condenseContextSections, contextCondenserEnabled } from '../../../../../lib/ai/chat-memory/context-condenser';
+import { keepVerbatimTailWhenSummarized } from '../../../../../lib/ai/chat-memory/summary-backed-history';
 import { fetchUserMemoryDossier } from '../../../../../lib/ai/memory-dossier/fetch-dossier';
 import { formatUserMemoryDossierPromptBlock } from '../../../../../lib/ai/memory-dossier/format-dossier-prompt';
 import { ingestChatTurnIntoMemoryDossier } from '../../../../../lib/ai/memory-dossier/ingest-chat-turn';
@@ -117,7 +120,7 @@ import {
   formatChatTurnForPendingLog,
 } from '../../../../../lib/ai/memory-consolidation/enqueue-pending-log';
 import { getActiveContext } from '../../../../../lib/ai/mentorship/get-active-context';
-import { getMentorContext } from '../../../../../lib/ai/insights/get-mentor-context';
+import { getMentorContext, getNotableChangesBlock } from '../../../../../lib/ai/insights/get-mentor-context';
 import {
   fetchAlmogCommitmentContext,
   EMPTY_ALMOG_COMMITMENT_CONTEXT,
@@ -687,6 +690,8 @@ function openRouterMessagesWithCachedSystem(
             cache_control: staticSystemPrompt && cacheTtlSupported
               ? { type: 'ephemeral', ttl: CHAT_PROMPT_CACHE_TTL }
               : { type: 'ephemeral' },
+            // OpenAI drops cache_control.ttl; its own breakpoint carries the long TTL (see prompt-cache.ts)
+            ...(!cacheTtlSupported ? openAiLongCacheBreakpoint() : {}),
           },
           { type: 'text', text: dynamicSystemPrompt },
         ],
@@ -818,6 +823,9 @@ async function createOpenRouterTextStreamResponse({
             },
           }
         : {}),
+      // explicit sticky key: the dynamic tail changes every turn, so OpenRouter's default
+      // (hash of first system + first user message) would not keep a session on one warm cache
+      ...(cacheConvId ? { session_id: String(cacheConvId).slice(0, 256) } : {}),
       stream: true,
       stream_options: { include_usage: true },
       usage: { include: true },
@@ -2679,6 +2687,9 @@ async function handleChatPost(request: Request) {
   const mentorStrategyPromise = trivialBypass
     ? Promise.resolve('')
     : getActiveContext(supabase, user.id).catch(() => '');
+  const notableChangesPromise = trivialBypass
+    ? Promise.resolve('')
+    : getNotableChangesBlock(supabase, user.id).catch(() => '');
   const mentorUserContextPromise = trivialBypass
     ? Promise.resolve('')
     : getMentorContext(supabase, user.id).catch((mentorCtxErr) => {
@@ -2905,10 +2916,12 @@ async function handleChatPost(request: Request) {
     const spent = (spendRows ?? []).reduce((n, r) => n + Number(r.cost_usd ?? 0), 0);
     if (spent > dailySoftCapUsd()) v3 = { writer: v3.writer === 'grok' ? 'grok' : v3.writer, slug: 'openai/gpt-5.6-luna', lane: 'soft_cap_luna', light: true };
   }
+  let internalTestAccount = false;
   {
-    // cost guard: internal test accounts (prod e2e) never hit premium writers
+    // cost guard: internal accounts (role test/admin, @test.com) never hit premium writers
     const { data: roleRow } = await createAdminClient().from('profiles').select('role').eq('id', user.id).maybeSingle();
-    const testLane = testAccountWriterOverride((roleRow as { role?: string } | null)?.role);
+    const testLane = testAccountWriterOverride((roleRow as { role?: string } | null)?.role, user.email ?? null);
+    internalTestAccount = testLane !== null;
     if (testLane) v3 = testLane;
   }
   const routedWriter = v3?.writer ?? stickyResult.writer;
@@ -3190,7 +3203,10 @@ async function handleChatPost(request: Request) {
   const cleanHistory = mergedMessages.map((m) =>
     m.role === 'assistant' ? { ...m, content: stripReplyQuoteMarker(stripRawChatUi(stripEmojiReactionMarker(m.content)).replace(/⟦NW_UIR?:[^⟧]*⟧/g, '')) } : m
   );
-  const recentMessages = almogPromptV2Enabled() ? budgetHistoryV2(cleanHistory) : cleanHistory;
+  const recentMessages = almogPromptV2Enabled()
+    ? budgetHistoryV2(cleanHistory)
+    : // older turns are carried by the session's rolling summary (live file) → only the tail goes verbatim
+      keepVerbatimTailWhenSummarized(cleanHistory, Boolean(chatSession?.live_conversation_file?.trim()));
 
   const genderCorrection = detectGenderCorrectionFromRecentMessages(recentMessages);
   const profileGender = genderCorrection ?? profileRow.gender;
@@ -3547,6 +3563,9 @@ async function handleChatPost(request: Request) {
     if (principlesBlock) contextSections.push(principlesBlock);
     if (workingMemoryBlock) contextSections.push(workingMemoryBlock);
     if (memoryDossierBlock) contextSections.push(memoryDossierBlock);
+    // always-on core state: recent deviations (streak broken / unusual success / SOS after quiet)
+    const notableChangesBlock = await notableChangesPromise;
+    if (notableChangesBlock) contextSections.push(notableChangesBlock);
     if (mentorStrategyBlock && !leanLightTurn) contextSections.push(mentorStrategyBlock);
     if (mentorUserContextBlock && !leanLightTurn) contextSections.push(mentorUserContextBlock);
     /**
@@ -3721,6 +3740,30 @@ async function handleChatPost(request: Request) {
       const kept = contextSections.filter((x) => !terraHeavy.has(x) && !terraHeavy.has(x.trim()));
       contextSections.splice(0, contextSections.length, ...kept);
     }
+    // Internal/test accounts only (same rule as the Luna test lane); real users stay OFF unless the global flag is set.
+    if ((contextCondenserEnabled() || internalTestAccount) && openrouterKey) {
+      // Off by default. Rewrites only recall blocks (vector memories + cross-session summaries); dossier/core state, safety, commitments untouched. Fail-safe → full context.
+      const condensable = new Set([ragMemoryBlock, crossSessionBlock].filter(Boolean));
+      const c = await condenseContextSections({
+        sections: contextSections,
+        userMessage: lastUserText,
+        condensable: (x) => condensable.has(x),
+        timeoutMs: Number(process.env.ALMOG_CONTEXT_CONDENSER_TIMEOUT_MS) || 700,
+        call: async (p, signal) => {
+          const r = await meteredFetch(fetch, { userId: user.id, feature: 'almog_context_condenser' })('https://openrouter.ai/api/v1/chat/completions', {
+            method: 'POST',
+            signal,
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${openrouterKey}` },
+            body: JSON.stringify({ model: process.env.ALMOG_CONTEXT_CONDENSER_MODEL || 'openai/gpt-5.6-luna', max_tokens: 400, messages: [{ role: 'system', content: p.system }, { role: 'user', content: p.user }] }),
+          });
+          if (!r.ok) throw new Error(`condenser_${r.status}`);
+          const j = (await r.json()) as { choices?: Array<{ message?: { content?: string } }> };
+          return j.choices?.[0]?.message?.content ?? '';
+        },
+      });
+      console.info('[ai/chat]', { debug_id: debugId, stage: 'context_condenser', condensed: c.condensed, reason: c.reason, saved_chars: c.savedChars });
+      contextSections.splice(0, contextSections.length, ...c.sections);
+    }
     if (almogPromptV2Enabled()) {
       const b = budgetContextSectionsV2(contextSections);
       console.info('[ai/chat]', { debug_id: debugId, stage: 'context_budget_v2', before: b.before, after: b.after, trimmed: b.trimmed, dropped: b.dropped, sizes: sectionSizes(contextSections) });
@@ -3784,6 +3827,14 @@ async function handleChatPost(request: Request) {
         debug_id: debugId,
         stage: 'system_prompt_size',
         chars: systemPromptCharCount,
+        // per-part breakdown (chars; ~4.2 chars/token for this Hebrew prompt) for cost audits
+        parts: {
+          static_cached: mcfg.mainWriterSystemPrompt.length,
+          dynamic_tail: dynamicSystemPrompt.length,
+          guardrails: mcfg.finalGuardrails.length,
+          history: recentMessages.reduce((n, m) => n + m.content.length, 0),
+          sections: sectionSizes(contextSections),
+        },
         history_msgs: recentMessages.length,
         prompt_cache_enabled: mcfg.supportsPromptCache,
         heavy_context: useHeavyContext,
@@ -4010,6 +4061,7 @@ async function handleChatPost(request: Request) {
               gender: profileGender,
               healthConsentOff,
               crisis: crisisSignal.redFlag,
+              firstName,
             });
             if (qc.status !== 'disabled') {
               console.info('[ai/chat]', { debug_id: debugId, stage: 'reply_qc', status: qc.status, ...('reason' in qc ? { reason: qc.reason } : {}) });
@@ -4519,6 +4571,7 @@ async function handleChatPost(request: Request) {
           temperature: CHAT_TEMPERATURE,
           maxOutputTokens: effectiveMaxOutputTokens,
           headers: upstreamHeaders,
+          sessionId,
           piiShield,
           providerOptions: {},
           debugId,

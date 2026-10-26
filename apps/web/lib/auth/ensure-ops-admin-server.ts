@@ -69,9 +69,25 @@ export const ensureOpsAdminServer = cache(async (): Promise<void> => {
   const { data: sess } = await supabase.auth.getSession();
   const gate = await opsDeviceGate(createAdminClient(), user.id, (await cookies()).get(DEVICE_COOKIE)?.value, sess.session?.access_token, h.get('user-agent'));
   if (!gate.ok) notFound();
+  // Fresh-entry requirement (OPS_REQUIRE_FRESH_ENTRY=on; off by default until backup codes exist):
+  // the session must have (re)authenticated within 15 min, or hold an ops.sensitive step-up grant.
+  const { opsFreshEntryRequired } = await import('../ops/fresh-entry');
+  if (opsFreshEntryRequired()) {
+    const { hasSensitiveStepUp } = await import('../ops/sensitive-stepup');
+    const req = new Request('https://ops.local/', { headers: { cookie: h.get('cookie') ?? '' } });
+    if (!(await hasSensitiveStepUp({ accessToken: sess.session?.access_token, userId: user.id, req }))) notFound();
+  }
+  // Platform IAM: the console opens only for a grant of admin.access on the selected product.
+  const { decide } = await import('@platform/iam');
+  const { CATALOG, DEFAULT_PRODUCT, PRODUCT_COOKIE } = await import('../platform/catalog');
+  const { loadActor } = await import('../platform/authorize');
+  const product = (await cookies()).get(PRODUCT_COOKIE)?.value || DEFAULT_PRODUCT;
+  const actor = await loadActor(createAdminClient(), user.id);
+  if (!decide(CATALOG, actor, product, 'admin.access', { steppedUp: true }).allow && !decide(CATALOG, actor, DEFAULT_PRODUCT, 'admin.access', { steppedUp: true }).allow) notFound();
 });
 
 /** Current Ops admin id (for audit rows written from server actions). */
 export async function opsActorId(): Promise<string | null> {
   return (await getOpsSessionContext()).user?.id ?? null;
 }
+
