@@ -22,7 +22,7 @@ import {
   unwrapDataKey,
   type WrappedDek,
 } from '@/lib/security/field-envelope';
-import { encryptedTable, isBlocked, keyColumns, rowKeyOf, type FieldKind } from '@/lib/security/field-registry';
+import { encryptedTable, isBlocked, keyColumns, ownerOf, rowKeyOf, type FieldKind } from '@/lib/security/field-registry';
 
 export const FIELD_KEK_VERSION = 1;
 
@@ -102,8 +102,30 @@ function dekStore(): DekStore {
   return (store ??= supabaseDekStore());
 }
 
-/** Returns the user's DEK; with create=true makes one on first use (writes only). */
+const SYSTEM_OWNER = /^system:(audit|ops|legal)$/;
+export const isSystemOwner = (owner: string) => owner.startsWith('system:');
+
+/**
+ * System data key for a purpose: HKDF(root, info `nurawell:system-dek:<purpose>:v1`). Deterministic, held only in
+ * memory, never stored in user_data_keys (so account deletion does not shred legal/audit evidence), and each
+ * purpose gets an independent key.
+ */
+export function systemDek(owner: string): Buffer {
+  const m = owner.match(SYSTEM_OWNER);
+  if (!m) throw new Error('unknown system key purpose');
+  const ikm = rootKey();
+  return Buffer.from(hkdfSync('sha256', ikm, Buffer.from('nurawell'), Buffer.from(`nurawell:system-dek:${m[1]}:v1`), 32));
+}
+
+/** Returns the user's DEK; with create=true makes one on first use (writes only). `system:<purpose>` -> system key. */
 export async function userDek(userId: string, opts: { create: boolean }): Promise<Buffer | null> {
+  if (isSystemOwner(userId)) {
+    const hit = dekCache.get(userId);
+    if (hit) return hit.dek;
+    const dek = systemDek(userId);
+    dekCache.set(userId, { dek, at: Date.now() });
+    return dek;
+  }
   const hit = dekCache.get(userId);
   if (hit && Date.now() - hit.at < DEK_TTL_MS) return hit.dek;
   const { fieldKek } = derive();
@@ -168,7 +190,7 @@ export async function decryptRow<T extends Record<string, unknown>>(table: strin
   if (!spec || !row || typeof row !== 'object') return row;
   const cols = Object.keys(spec.columns).filter((c) => c in row && (isV2(row[c]) || (Array.isArray(row[c]) && (row[c] as unknown[]).some(isV2))));
   if (!cols.length) return row;
-  const userId = row[spec.userCol];
+  const userId = ownerOf(spec, row);
   const rowId = rowKeyOf(spec, row);
   if (typeof userId !== 'string' || typeof rowId !== 'string') {
     throw new FieldDecryptError(`${table}: select must include ${keyColumns(spec).join(', ')} to read encrypted columns`);
@@ -195,7 +217,8 @@ export async function sealRow<T extends Record<string, unknown>>(table: string, 
     if (!(c in out) || isBlocked(table, c)) continue;
     let v = out[c];
     if (v === null || v === undefined || isV2(v)) continue;
-    if (Array.isArray(v) && kind === 'text[]') v = v.map((x) => (isEncrypted(x) ? decryptString(x, userId) : x));
+    if (isSystemOwner(userId)) { /* system tables never held enc:v1 */ }
+    else if (Array.isArray(v) && kind === 'text[]') v = v.map((x) => (isEncrypted(x) ? decryptString(x, userId) : x));
     else if (isEncrypted(v)) v = kind === 'text' ? decryptString(v, userId) : decryptJson(v, userId);
     out[c] = await encryptValue(table, c, userId, rowId, v);
   }

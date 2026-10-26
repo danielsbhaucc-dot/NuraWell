@@ -13,10 +13,22 @@ import { createHash } from 'node:crypto';
 import { decryptString, isEncrypted } from '@/lib/crypto/pii';
 import { createRawAdminClient } from '@/lib/supabase/admin';
 import { decryptValue, encryptValue, isV2 } from '@/lib/security/field-crypto';
-import { encryptedTable, isBlocked, keyColumns, rowKeyOf } from '@/lib/security/field-registry';
+import { BLIND_INDEX_SOURCES, blindIndexPatch } from '@/lib/security/blind-index';
+import { APPEND_ONLY_TABLES, encryptedTable, FIELD_V2_TABLES, isBlocked, keyColumns, ownerOf, rowKeyOf } from '@/lib/security/field-registry';
 
-/** staged rollout list — a table is added only after its blocker-fix PR is merged and verified on prod */
-export const FIELD_V2_BACKFILL_TABLES: readonly string[] = ['user_memory_dossier', 'profiles', 'user_memories', 'journey_next_step_cache'];
+/** staged rollout list (defined in field-registry so the write path can read it without a cycle) */
+// append-only evidence tables reject UPDATE by design: only rows written after go-live are encrypted (see APPEND_ONLY_TABLES)
+export const FIELD_V2_BACKFILL_TABLES: readonly string[] = FIELD_V2_TABLES.filter((t) => !(t in APPEND_ONLY_TABLES));
+
+const CAS_MAX = 2000;
+
+/** CAS filter on a stored value: text by equality, json by jsonb equality, text[] by array equality. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- PostgREST builder
+export function casEq(u: any, kind: string, col: string, stored: unknown): any {
+  if (kind === 'text') return u.eq(col, String(stored));
+  if (kind === 'text[]') return u.eq(col, `{${(stored as unknown[]).map((x) => JSON.stringify(String(x))).join(',')}}`);
+  return u.eq(col, JSON.stringify(stored));
+}
 
 const canon = (v: unknown) => createHash('sha256').update(JSON.stringify(v ?? null)).digest('hex');
 
@@ -33,8 +45,9 @@ const needs = (v: unknown) =>
 export async function backfillFieldV2(budgetMs = 30_000, tables: readonly string[] = FIELD_V2_BACKFILL_TABLES) {
   const db = createRawAdminClient();
   const deadline = Date.now() + budgetMs;
-  const out: Record<string, { rows: number; skippedRace: number; verifyFail: number; remaining?: number }> = {};
+  const out: Record<string, { rows: number; skippedRace: number; verifyFail: number; remaining?: number; error?: string }> = {};
   for (const table of tables) {
+   try {
     const spec = encryptedTable(table);
     if (!spec) continue;
     const cols = Object.keys(spec.columns).filter((c) => !isBlocked(table, c));
@@ -63,9 +76,9 @@ export async function backfillFieldV2(budgetMs = 30_000, tables: readonly string
       offset += rows.length;
       for (const r of rows) {
         if (Date.now() >= deadline) break;
-        const userId = String(r[spec.userCol]);
+        const userId = ownerOf(spec, r);
         const rowId = rowKeyOf(spec, r);
-        if (!rowId) continue;
+        if (!rowId || !userId) continue;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any -- PostgREST builder types recurse too deep here
         const byKey = (qq: any): any => {
           let x = qq;
@@ -83,23 +96,38 @@ export async function backfillFieldV2(budgetMs = 30_000, tables: readonly string
           hashes[c] = canon(plain);
         }
         if (!Object.keys(patch).length) continue;
+        // blind-index columns (migration 000208) are filled from the same plaintext in the same CAS update
+        if (BLIND_INDEX_SOURCES[table]?.some((c) => c in patch)) {
+          const plainRow: Record<string, unknown> = { ...r };
+          for (const c of Object.keys(patch)) plainRow[c] = legacyPlain(spec.columns[c], r[c], userId);
+          for (const c of BLIND_INDEX_SOURCES[table]) if (!(c in patch)) delete plainRow[c];
+          Object.assign(patch, await blindIndexPatch(table, plainRow));
+        }
         let u = byKey(db.from(table).update(patch));
         for (const g of guardCols) u = r[g] == null ? u.is(g, null) : u.eq(g, r[g] as string);
+        // no updated_at (guardCols: []): compare-and-swap on the exact stored values being replaced
+        // (values too long for a URL filter skip the CAS; the re-read verification below still runs)
+        if (!guardCols.length && Object.keys(hashes).every((c) => JSON.stringify(r[c]).length <= CAS_MAX))
+          for (const c of Object.keys(hashes)) u = casEq(u, spec.columns[c], c, r[c]);
         const { data: upd, error: uErr } = await u.select(keyCols.join(','));
         if (uErr) throw new Error(`${table} update: ${uErr.code ?? uErr.message}`);
         if (!upd?.length) {
           stat.skippedRace++;
           continue;
         }
-        const { data: back, error: bErr } = await byKey(db.from(table).select(Object.keys(patch).join(','))).single();
+        const { data: back, error: bErr } = await byKey(db.from(table).select(Object.keys(hashes).join(','))).single();
         if (bErr || !back) throw new Error(`${table} verify read: ${bErr?.code ?? 'missing'}`);
-        for (const c of Object.keys(patch)) {
+        for (const c of Object.keys(hashes)) {
           const v = (back as unknown as Record<string, unknown>)[c];
           if (canon(await decryptValue(table, c, userId, rowId, v)) !== hashes[c]) stat.verifyFail++;
         }
         stat.rows++;
       }
     }
+   } catch (e) {
+    // one table failing (schema drift, URL too long, ...) must not stop the others; counts only, no values
+    out[table] = { ...(out[table] ?? { rows: 0, skippedRace: 0, verifyFail: 0 }), error: e instanceof Error ? e.message.slice(0, 200) : 'error' };
+   }
   }
   return out;
 }

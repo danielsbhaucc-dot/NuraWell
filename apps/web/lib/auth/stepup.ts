@@ -1,5 +1,5 @@
 import 'server-only';
-import { createHash, randomBytes } from 'node:crypto';
+import { createHash, randomBytes, randomInt } from 'node:crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { decryptString, encryptString } from '@/lib/crypto/pii';
 import { newTotpSecret, otpauthUri, verifyTotp } from './totp';
@@ -52,11 +52,18 @@ export type RequestKind = 'ops' | 'user' | 'login';
 export const MATCH_MAX_MISSES = 3;
 export const sessionHash = (sessionId: string | null | undefined) => (sessionId ? sha(`sess:${sessionId}`) : null);
 export const ipHash = (ip: string) => sha(`ip:${ip}`);
-const matchCode = () => String(10 + (randomBytes(1)[0] % 90));
+// Uniform 10..99 (randomInt rejects biased draws; `byte % 90` favoured 10..75).
+export const matchCode = () => String(randomInt(10, 100));
 export function matchChoices(code: string): string[] {
   const set = new Set([code]);
   while (set.size < 3) set.add(matchCode());
-  return [...set].sort(() => (randomBytes(1)[0] & 1 ? 1 : -1));
+  const out = [...set];
+  // Fisher–Yates: an unbiased shuffle (sort with a random comparator is not), so the real code's position leaks nothing.
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = randomInt(i + 1);
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
 }
 async function securityEvent(db: SupabaseClient, kind: string, detail: Record<string, unknown>) {
   await db.from('ops_security_events').insert({ kind, detail }).then(() => undefined, () => undefined);

@@ -63,3 +63,14 @@ describe('backfillFieldV2', () => {
     expect(r3.user_memory_dossier.rows).toBe(0);
   });
 });
+
+describe('backfillFieldV2 CAS mode (tables without updated_at)', () => {
+  it('converts notifications text by compare-and-swap and verifies', async () => {
+    table.push({ id: 'n1', user_id: U1, title: 'hi', body: 'plain body' });
+    const r = await backfillFieldV2(5000, ['notifications']);
+    expect(r.notifications).toMatchObject({ rows: 1, verifyFail: 0 });
+    expect(String(table[0].body)).toMatch(/^enc:v2:/);
+    expect(await decryptValue('notifications', 'body', U1, 'n1', table[0].body)).toBe('plain body');
+    expect((await backfillFieldV2(5000, ['notifications'])).notifications.rows).toBe(0);
+  });
+});

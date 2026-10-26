@@ -22,7 +22,18 @@ export type EncryptedTable = {
   /** optimistic-concurrency columns for the backfill (default ['updated_at']). */
   guardCols?: readonly string[];
   columns: Record<string, FieldKind>;
+  /**
+   * System-owned table (no per-user owner): values are sealed under a system data key for this purpose
+   * (HKDF `nurawell:system-dek:<purpose>:v1` under the KMS root key; no user_data_keys row, never shredded by
+   * account deletion). userCol is unused (''); rowCol/rowCols only address rows for the backfill, the AAD row id is
+   * the constant SYSTEM_ROW, so inserts need no id and an update is sealed once for every matched row.
+   */
+  system?: SystemPurpose;
 };
+
+/** Separate key purposes for system-owned data. */
+export type SystemPurpose = 'audit' | 'ops' | 'legal';
+export const SYSTEM_ROW = '-';
 
 export const ENCRYPTED_TABLES = {
   profiles: { userCol: 'id', rowCol: 'id', columns: {
@@ -47,11 +58,12 @@ export const ENCRYPTED_TABLES = {
     activity_level: 'text',
     weakest_time_of_day: 'text',
   } },
-  ai_interactions: { userCol: 'user_id', rowCol: 'id', columns: {
+  ai_interactions: { userCol: 'user_id', rowCol: 'id', guardCols: [], columns: {
     content: 'text',
     metadata: 'json',
   } },
-  ai_interaction_edits: { userCol: 'user_id', rowCol: 'id', columns: {
+  ai_interaction_edits: { userCol: 'user_id', rowCol: 'interaction_id', // id is a bigint identity; interaction_id is a unique uuid
+    guardCols: [], columns: {
     original_content: 'text',
     edited_content: 'text',
   } },
@@ -75,13 +87,13 @@ export const ENCRYPTED_TABLES = {
     reason: 'text',
     metadata: 'json',
   } },
-  almog_interventions: { userCol: 'user_id', rowCol: 'id', columns: {
+  almog_interventions: { userCol: 'user_id', rowCol: 'id', guardCols: [], columns: {
     outcome: 'text',
     strategy: 'text',
     metadata: 'json',
     barrier_type: 'text',
   } },
-  challenge_enrollments: { userCol: 'user_id', rowCol: 'id', columns: {
+  challenge_enrollments: { userCol: 'user_id', rowCol: 'id', guardCols: [], columns: {
     completion_summary: 'json',
     eating_window: 'json',
     metadata: 'json',
@@ -90,12 +102,12 @@ export const ENCRYPTED_TABLES = {
     transcript: 'json',
     extracted_insights: 'json',
   } },
-  challenge_success_events: { userCol: 'user_id', rowCol: 'id', columns: {
+  challenge_success_events: { userCol: 'user_id', rowCol: 'id', guardCols: [], columns: {
     title: 'text',
     description: 'text',
     evidence: 'json',
   } },
-  challenge_task_completions: { userCol: 'user_id', rowCol: 'id', columns: {
+  challenge_task_completions: { userCol: 'user_id', rowCol: 'id', guardCols: [], columns: {
     metadata: 'json',
   } },
   chat_periodic_summaries: { userCol: 'user_id', rowCol: 'id', columns: {
@@ -109,16 +121,16 @@ export const ENCRYPTED_TABLES = {
     preview_text: 'text',
     live_conversation_file: 'text',
   } },
-  chat_task_proposals: { userCol: 'user_id', rowCol: 'id', columns: {
+  chat_task_proposals: { userCol: 'user_id', rowCol: 'id', guardCols: [], columns: {
     title: 'text',
     reason: 'text',
   } },
-  chat_transcript_access_requests: { userCol: 'user_id', rowCol: 'id', columns: {
+  chat_transcript_access_requests: { userCol: 'user_id', rowCol: 'id', guardCols: [], columns: {
     reason: 'text',
     admin_note: 'text',
     user_response_note: 'text',
   } },
-  churn_feedback: { userCol: 'user_id', rowCol: 'id', columns: {
+  churn_feedback: { userCol: 'user_id', rowCol: 'id', guardCols: [], columns: {
     detail: 'text',
     reason: 'text',
   } },
@@ -127,13 +139,13 @@ export const ENCRYPTED_TABLES = {
     original_title: 'text',
     metadata: 'json',
   } },
-  guardian_sos_events: { userCol: 'user_id', rowCol: 'id', columns: {
+  guardian_sos_events: { userCol: 'user_id', rowCol: 'id', guardCols: [], columns: {
     trigger: 'text',
     outcome: 'text',
     strategy_offered: 'text',
     metadata: 'json',
   } },
-  guide_access_grants: { userCol: 'user_id', rowCol: 'id', columns: {
+  guide_access_grants: { userCol: 'user_id', rowCol: 'id', guardCols: [], columns: {
     signal_text: 'text',
     granted_reason: 'text',
   } },
@@ -147,10 +159,10 @@ export const ENCRYPTED_TABLES = {
     habits_progress: 'json',
     task_level_meta: 'json',
   } },
-  journey_task_executions: { userCol: 'user_id', rowCol: 'id', columns: {
+  journey_task_executions: { userCol: 'user_id', rowCol: 'id', guardCols: [], columns: {
     note: 'text',
   } },
-  lesson_progress: { userCol: 'user_id', rowCol: 'id', columns: {
+  lesson_progress: { userCol: 'user_id', rowCol: 'id', guardCols: [], columns: {
     habit_progress: 'json',
     task_progress: 'json',
   } },
@@ -158,22 +170,25 @@ export const ENCRYPTED_TABLES = {
     reason_summary: 'text',
     metadata: 'json',
   } },
-  notification_logs: { userCol: 'user_id', rowCol: 'id', columns: {
+  notification_logs: { userCol: 'user_id', rowCol: 'id', guardCols: [], columns: {
     body: 'text',
+    task_name: 'text',
     metadata: 'json',
   } },
-  notifications: { userCol: 'user_id', rowCol: 'id', columns: {
+  notifications: { userCol: 'user_id', rowCol: 'id', guardCols: [], columns: {
     title: 'text',
     body: 'text',
     metadata: 'json',
   } },
-  pending_almog_commitment_jobs: { userCol: 'user_id', rowCol: 'id', columns: {
+  pending_almog_commitment_jobs: { userCol: 'user_id', rowCol: 'id', guardCols: [], columns: {
     user_message: 'text',
     assistant_message: 'text',
     rolling_summary: 'text',
     habit_titles: 'json',
+    habit_title_to_id: 'json',
+    last_error: 'text',
   } },
-  pending_chat_logs: { userCol: 'user_id', rowCol: 'id', columns: {
+  pending_chat_logs: { userCol: 'user_id', rowCol: 'id', guardCols: [], columns: {
     raw_chat_text: 'text',
   } },
   periodic_summaries: { userCol: 'user_id', rowCol: 'id', columns: {
@@ -193,7 +208,7 @@ export const ENCRYPTED_TABLES = {
     insight_text: 'text',
     metadata: 'json',
   } },
-  user_measurements: { userCol: 'user_id', rowCol: 'id', columns: {
+  user_measurements: { userCol: 'user_id', rowCol: 'id', guardCols: [], columns: {
     notes: 'text',
     weight_kg: 'text',
     bmi: 'text',
@@ -228,10 +243,110 @@ export const ENCRYPTED_TABLES = {
     description: 'text',
     plan_data: 'json',
   } },
-  user_consents: { userCol: 'user_id', rowCol: 'id', columns: {
+  user_consents: { userCol: 'user_id', rowCol: 'id', guardCols: [], columns: {
     metadata: 'json',
   } },
+  // ---- per-user additions (2026-10-26, enc-enforce)
+  task_logs: { userCol: 'user_id', rowCol: 'id', guardCols: [], columns: { task_name: 'text' } },
+  user_journey_step_unlocks: { userCol: 'user_id', rowCol: 'id', guardCols: [], columns: { reason: 'text' } },
+  safety_events: { userCol: 'user_id', rowCol: 'id', guardCols: [], columns: { category: 'text', severity: 'text' } },
+  enrollments: { userCol: 'user_id', rowCol: 'id', guardCols: [], columns: { granted_reason: 'text' } },
+  // ---- 2026-10-26 enc-close: app-only writers previously mislabelled "written by SQL"
+  almog_kickoff_status: { userCol: 'user_id', rowCol: 'user_id', columns: { last_error: 'text', skip_reason: 'text' } },
+  // ---- system-owned, key purpose 'audit'
+  ceo_audit_log: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { detail: 'json' } },
+  challenge_admin_audit_log: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { payload: 'json', summary: 'text' } },
+  chat_transcript_admin_audit_log: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { payload: 'json', reason: 'text', summary: 'text' } },
+  delivery_log: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { error: 'text', recipient_mask: 'text' } },
+  billing_events: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { metadata: 'json' } },
+  error_events: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { stack: 'text', tags: 'json' } },
+  // ---- system-owned, key purpose 'ops'
+  ceo_conversations: { system: 'ops', userCol: '', rowCol: 'chat_key', columns: { summary: 'text', turns: 'json' } },
+  ceo_dev_forwards: { system: 'ops', userCol: '', rowCol: 'id', columns: { body: 'text', error: 'text', or_notes: 'text', source_text: 'text', title: 'text' } },
+  ceo_pending_actions: { system: 'ops', userCol: '', rowCol: 'id', guardCols: [], columns: { args: 'json', result: 'json', summary: 'text' } },
+  notify_quality_events: { system: 'ops', userCol: '', rowCol: 'id', guardCols: [], columns: { after_text: 'text', before_text: 'text' } },
+  ceo_owner_tasks: { system: 'ops', userCol: '', rowCol: 'id', guardCols: [], columns: { detail: 'text', title: 'text' } },
+  demo_access_links: { system: 'ops', userCol: '', rowCol: 'id', columns: { guest_name: 'text', reason: 'text' } },
+  gideon_outbox: { system: 'ops', userCol: '', rowCol: 'id', guardCols: [], columns: { buttons: 'json', chat_id: 'text', reason: 'text', text: 'text' } },
+  gideon_telegram_identities: { system: 'ops', userCol: '', rowCol: 'from_id', guardCols: [], columns: { reason: 'text' } },
+  gideon_settings: { system: 'ops', userCol: '', rowCol: 'id', columns: { recipients: 'json' } },
+  notify_style_rules: { system: 'ops', userCol: '', rowCol: 'id', columns: { avoid: 'text', prefer: 'text' } },
+  ops_admin_notifications: { system: 'ops', userCol: '', rowCol: 'id', guardCols: [], columns: { body: 'text', metadata: 'json', title: 'text' } },
+  ops_login_requests: { system: 'ops', userCol: '', rowCol: 'id', guardCols: [], columns: { label: 'text', location: 'text' } },
+  ops_trusted_devices: { system: 'ops', userCol: '', rowCol: 'id', guardCols: [], columns: { browser: 'text', countries_seen: 'text[]', label: 'text', last_country: 'text', last_ip_masked: 'text' } },
+  ip_blocks: { system: 'ops', userCol: '', rowCol: 'ip_hash', guardCols: [], columns: { note: 'text', reason: 'text' } },
+  security_incidents: { system: 'ops', userCol: '', rowCol: 'id', guardCols: [], columns: { actions: 'json' } },
+  stepup_requests: { system: 'ops', userCol: '', rowCol: 'id', guardCols: [], columns: { approver_device_label: 'text', requester_city: 'text', requester_label: 'text' } },
+  tg_action_nonces: { system: 'ops', userCol: '', rowCol: 'id', guardCols: [], columns: { country: 'text' } },
+  security_signals: { system: 'ops', userCol: '', rowCol: 'id', guardCols: [], columns: { country: 'text', path: 'text' } },
+  // ---- system-owned, key purpose 'legal'
+  legal_export_secrets: { system: 'legal', userCol: '', rowCol: 'id', guardCols: [], columns: { case_ref: 'text', file_name: 'text', label: 'text', subject: 'text' } },
+  consent_evidence: { system: 'legal', userCol: '', rowCol: 'id', guardCols: [], columns: { payload_json: 'text', rendered_html: 'text', screenshot_segments: 'json', typed_word: 'text', user_agent: 'text' } },
+  consent_evidence_attestations: { system: 'legal', userCol: '', rowCol: 'id', guardCols: [], columns: { payload: 'json' } },
+  legal_access_log: { system: 'legal', userCol: '', rowCol: 'id', guardCols: [], columns: { detail: 'json' } },
+  media_receipts: { system: 'legal', userCol: '', rowCol: 'id', columns: { attachments: 'json', confirmation_code: 'text', confirmation_link: 'text', original_from: 'text', subject: 'text' } },
 } as const satisfies Record<string, EncryptedTable>;
+
+/**
+ * Tables whose registered, non-BLOCKED columns are live on enc:v2: the server fetch wrapper seals every
+ * write to them (field-fetch.ts) and the backfill converts what is left (field-backfill.ts).
+ * The backup plaintext guard fails on any non-enc value in these tables.
+ */
+export const FIELD_V2_TABLES: readonly string[] = [
+  'user_memory_dossier', 'profiles', 'user_memories', 'journey_next_step_cache',
+  // 2026-10-26: every remaining registered table with at least one non-BLOCKED column
+  'ai_interactions', 'ai_interaction_edits', 'almog_assignments', 'almog_blockers', 'almog_focus_periods',
+  'almog_interventions', 'challenge_interview_sessions', 'challenge_success_events', 'challenge_task_completions',
+  'chat_periodic_summaries', 'chat_sessions', 'chat_task_proposals', 'chat_transcript_access_requests',
+  'churn_feedback', 'daily_action_instances', 'guardian_sos_events', 'guide_access_grants', 'journey_progress',
+  'lesson_progress', 'notification_fall_episodes', 'notification_logs', 'notifications',
+  'pending_almog_commitment_jobs', 'pending_chat_logs', 'periodic_summaries', 'scheduled_reminders',
+  'user_insights', 'user_measurements', 'user_mentorship_strategy', 'user_plans',
+  // 2026-10-26 enc-enforce: new per-user tables + system-owned tables (system data keys)
+  'task_logs', 'user_journey_step_unlocks', 'safety_events', 'enrollments',
+  'ceo_audit_log', 'challenge_admin_audit_log', 'chat_transcript_admin_audit_log', 'delivery_log', 'error_events',
+  'ceo_conversations', 'ceo_dev_forwards', 'ceo_owner_tasks', 'demo_access_links', 'gideon_outbox',
+  'gideon_telegram_identities', 'gideon_settings', 'notify_style_rules', 'ops_admin_notifications', 'ops_login_requests',
+  'ops_trusted_devices', 'ip_blocks', 'security_incidents', 'stepup_requests', 'tg_action_nonces', 'security_signals',
+  'legal_export_secrets', 'consent_evidence', 'consent_evidence_attestations', 'legal_access_log', 'media_receipts',
+  // 2026-10-26 enc-close: blind indexes / SQL readers moved (000208) + app-only writers
+  'user_consents', 'journey_task_executions', 'almog_kickoff_status', 'billing_events', 'ceo_pending_actions', 'notify_quality_events',
+];
+
+/**
+ * GATED — admin/IAM tables created by the unmerged migrations 000191-000201 (#357-#362). NOT live: nothing reads
+ * this constant for sealing or triggers. After those PRs merge, apply supabase/gated/000211_iam_admin_enc_prep.sql,
+ * move these into ENCRYPTED_TABLES + FIELD_V2_TABLES, and regenerate the enc-reject triggers.
+ * Not listed (stay pending): iam_audit_log.detail/target, iam_grants.reason and ops_probe_daily.country are written
+ * by SQL functions in 000191/000198 (iam_audit_log on every grant/revoke inside the same transaction; probe counter
+ * upsert); ops_enroll_blocks.reason has no personal content beyond a fixed code.
+ */
+export const GATED_AFTER_IAM_MERGE: Readonly<Record<string, EncryptedTable>> = {
+  access_audit_findings: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { signals: 'json', summary: 'text' } },
+  access_audit_runs: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { error: 'text' } },
+  ops_device_enrollments: { system: 'ops', userCol: '', rowCol: 'id', guardCols: [], columns: { label: 'text', location: 'text' } },
+  pii_access_grants: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { country: 'text', reason: 'text', ticket_ref: 'text' } },
+  pii_access_log: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { country: 'text', resource: 'text' } },
+};
+
+/**
+ * Append-only evidence tables (a trigger rejects UPDATE/DELETE): historical rows stay as written and only rows
+ * inserted after go-live are enc:v2 ("row format v2" = the value carries the enc:v2 prefix). The consent hash chain
+ * is computed over the canonical PLAINTEXT payload before sealing, and verification decrypts then rehashes, so the
+ * chain verifies across both row formats. The backfill skips these; the reject trigger enforces new rows.
+ */
+export const APPEND_ONLY_TABLES: Readonly<Record<string, string>> = {
+  consent_evidence: 'append-only legal evidence (trg_consent_evidence_append_only)',
+  consent_evidence_attestations: 'append-only legal evidence (trg_consent_evidence_append_only)',
+  legal_access_log: 'append-only legal access log (trg_consent_evidence_append_only)',
+};
+
+/**
+ * Tables whose v2 backfill has completed and been verified on prod (0 non-enc values). The nightly plaintext monitor
+ * FAILS (and alerts) on any plaintext in these; other FIELD_V2 tables warn until their backfill completes — move a
+ * table here once `backfillFieldV2` reports it done and the nightly count shows 0.
+ */
+export const FIELD_V2_BACKFILL_COMPLETE: readonly string[] = ['user_memory_dossier', 'profiles', 'user_memories', 'journey_next_step_cache'];
 
 /** Registered but not yet safe to encrypt: a DB object reads/constrains the plaintext. Writes/backfill skip these. */
 export const BLOCKED: Readonly<Record<string, string>> = {
@@ -244,23 +359,19 @@ export const BLOCKED: Readonly<Record<string, string>> = {
   'almog_interventions.outcome': "CHECK enum + index",
   'almog_interventions.barrier_type': "indexed category used for filtering",
   'chat_sessions.topic': "CHECK enum constraint",
-  'chat_sessions.preview_text': "bump_chat_session_turn() writes it in SQL (already enc:v1 from the app \u2014 keep v1 until the RPC passes ciphertext)",
   'chat_task_proposals.title': "unique index on lower(title) \u2014 needs blind index column first",
   'challenge_enrollments.completion_summary': "ensure_challenge_ops_schema() SQL",
   'challenge_enrollments.eating_window': "ensure_challenge_ops_schema() SQL",
   'challenge_enrollments.metadata': "ensure_challenge_ops_schema() SQL",
   'churn_feedback.reason': "CHECK enum + index",
   'guardian_sos_events.outcome': "CHECK enum constraint",
-  'notifications.metadata': "unique dedupe index on metadata->>checkpoint_date \u2014 split technical keys out first",
   'task_events.metadata': "mirror_jte_to_task_events/merge_task_assignments SQL",
   'task_events.reason': "merge_task_assignments SQL",
 };
 
 /** Personal tables intentionally outside the per-user registry (no owner column), with the reason. */
 export const OUT_OF_REGISTRY: Readonly<Record<string, string>> = {
-  chat_transcript_admin_audit_log: "no owner column (admin audit log); owner decision needed",
-  demo_access_links: "no owner column (demo guest name); owner decision needed",
-  task_definitions: "no owner column; shared/system task content",
+  task_definitions: "owner split done (owner_user_id, migration 000209; RLS = shared or own). Not encrypted yet: normalize_task_title trigger, habit_dedupe_key (md5 of normalized title) and merge_task_assignments/task_dup_candidates read title/ladder/schedule in SQL; register once those move to the app",
   user_task_assignments: "no personal text columns",
 };
 
@@ -270,11 +381,13 @@ export function encryptedTable(table: string): EncryptedTable | undefined {
 
 /** Columns that identify a row (owner + row key columns), deduplicated. */
 export function keyColumns(spec: EncryptedTable): string[] {
+  if (spec.system) return [...(spec.rowCols ?? [spec.rowCol])];
   return [...new Set([spec.userCol, ...(spec.rowCols ?? [spec.rowCol])])];
 }
 
 /** Row key bound into the AAD: the single primary key, or the composite key columns joined with '|'. Null if missing. */
 export function rowKeyOf(spec: EncryptedTable, row: Record<string, unknown>): string | null {
+  if (spec.system) return SYSTEM_ROW;
   if (!spec.rowCols) {
     const v = row[spec.rowCol];
     return typeof v === 'string' && v ? v : null;
@@ -288,6 +401,18 @@ export function rowKeyOf(spec: EncryptedTable, row: Record<string, unknown>): st
     parts.push(s);
   }
   return parts.join('|');
+}
+
+/** Columns a read must return to decrypt (owner + AAD row key); none for system tables. */
+export function aadColumns(spec: EncryptedTable): string[] {
+  return spec.system ? [] : keyColumns(spec);
+}
+
+/** Key owner id for a row: the user id, or `system:<purpose>` for system tables. Null when missing. */
+export function ownerOf(spec: EncryptedTable, row: Record<string, unknown>): string | null {
+  if (spec.system) return `system:${spec.system}`;
+  const v = row[spec.userCol];
+  return typeof v === 'string' && v ? v : null;
 }
 
 /** Row key for a table by name (throws when the table is not registered or the key is incomplete). */
