@@ -1,128 +1,142 @@
 'use client';
-// Mac Finder-style module library: products in the sidebar, modules in the main pane (icon/list views),
-// per-product enable/disable, distribution-tier badges and a detail panel. Mock: state is local only.
+// Ops hub: every product in the sidebar plus Overview / Module library / Costs / Security / Legal / Licenses.
+// Product view = Finder-style module grid with real per-product toggles (server: IAM + step-up + audit).
 import { useMemo, useState } from 'react';
-import { MODULES, PRODUCTS, type LibModule, type Product, type Tier } from './mock-data';
+import type { HubSection, ProductRow, ProductSummary, RegistryModule } from './types';
+import { CAT_LABEL, TIER_LABEL, fmtNum, fmtUsd } from './labels';
+import { ModuleIcon } from './ModuleIcon';
+import { postJson } from './api';
+import { ShareDialog, SellDialog, type PackOut } from './Dialogs';
+import { LicensesView } from './LicensesView';
+import { Overview, CostsView, SecurityView, LegalView, ProductCard, type Deployment } from './HubViews';
 
-const TIER_LABEL: Record<Tier, string> = { internal: 'פנימי', shareable: 'לשיתוף', sellable: 'למכירה' };
-const CAT_LABEL = { security: 'אבטחה', privacy: 'פרטיות', platform: 'פלטפורמה', feature: 'פיצ׳ר', ui: 'ממשק', ops: 'תפעול' } as const;
-// Finder-tag style category colors; all keep >= 4.5:1 with the light glyph (WCAG AA).
-const CAT_TINT = { security: '#3f5b9a', privacy: '#7b4fa8', platform: '#1f7896', feature: '#b9532c', ui: '#b03f78', ops: '#86661c' } as const;
+export const API = { toggle: '/api/v1/ops/iam/modules', pack: '/api/v1/ops/modules/package', licensing: '/api/v1/ops/licensing' };
+type Sel = HubSection | `product:${string}`;
+type DialogInit = { s: 'done'; out: PackOut } | { s: 'error'; msg: string };
 
-export interface FinderDashboardProps { initialProduct?: string; initialView?: 'icons' | 'list'; initialSelected?: string | null }
+export interface FinderDashboardProps {
+  registry: RegistryModule[]; products: ProductRow[]; summaries: ProductSummary[]; deployment: Deployment; metricsError: string | null; signingReady: boolean;
+  initialSection?: Sel; initialView?: 'icons' | 'list'; initialSelected?: string | null;
+  initialDialog?: { kind: 'share' | 'sell'; state?: DialogInit }; licensesInitial?: Parameters<typeof LicensesView>[0]['initial'];
+  moduleHref?: (id: string) => string;
+}
 
-export function FinderDashboard({ initialProduct = 'nurawell', initialView = 'icons', initialSelected = null }: FinderDashboardProps) {
-  const [products, setProducts] = useState<Product[]>(PRODUCTS);
-  const [pid, setPid] = useState(initialProduct);
-  const [view, setView] = useState(initialView);
-  const [sel, setSel] = useState<string | null>(initialSelected);
+export function FinderDashboard(p: FinderDashboardProps) {
+  const { registry } = p;
+  const [products, setProducts] = useState(p.products);
+  const [sec, setSec] = useState<Sel>(p.initialSection ?? 'overview');
+  const [view, setView] = useState(p.initialView ?? 'icons');
+  const [sel, setSel] = useState<string | null>(p.initialSelected ?? null);
+  const [dialog, setDialog] = useState(p.initialDialog ?? null);
   const [q, setQ] = useState('');
-  const product = products.find((p) => p.id === pid) ?? products[0];
-  const isOn = (m: LibModule) => m.alwaysOn || product.enabled.includes(m.id);
-  const list = useMemo(() => MODULES.filter((m) => !q || (m.name + m.id).toLowerCase().includes(q.toLowerCase())), [q]);
-  const selected = MODULES.find((m) => m.id === sel) ?? null;
-  const toggle = (m: LibModule) => {
-    if (m.alwaysOn) return;
-    setProducts((ps) => ps.map((p) => (p.id !== pid ? p : { ...p, enabled: p.enabled.includes(m.id) ? p.enabled.filter((x) => x !== m.id) : [...p.enabled, m.id] })));
+  const [busy, setBusy] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ ok: boolean; msg: string } | null>(null);
+  const href = p.moduleHref ?? ((id) => `/ops/modules/${id}`);
+  const product = sec.startsWith('product:') ? products.find((x) => `product:${x.id}` === sec) ?? null : null;
+  const isOn = (m: RegistryModule, pr: ProductRow | null) => !m.toggleable || Boolean(pr && m.store.iamModule && pr.enabled.includes(m.store.iamModule)) || !pr;
+  const list = useMemo(() => registry.filter((m) => !q || `${m.store.name} ${m.id} ${m.description}`.toLowerCase().includes(q.toLowerCase())), [q, registry]);
+  const selected = registry.find((m) => m.id === sel) ?? null;
+
+  const toggle = (m: RegistryModule) => {
+    if (!product || !m.toggleable || !m.store.iamModule || busy) return;
+    const iam = m.store.iamModule; const next = !product.enabled.includes(iam);
+    setBusy(m.id); setToast(null);
+    postJson(API.toggle, { productId: product.id, moduleId: iam, enabled: next }, `${next ? 'הפעלת' : 'כיבוי'} ${m.store.name}`, (r) => {
+      setBusy(null);
+      if (r.ok) { setProducts((ps) => ps.map((x) => (x.id !== product.id ? x : { ...x, enabled: next ? [...x.enabled, iam] : x.enabled.filter((e) => e !== iam) }))); setToast({ ok: true, msg: `${m.store.name} ${next ? 'הופעל' : 'כובה'} ב-${product.name}.` }); }
+      else setToast({ ok: false, msg: r.error });
+    });
   };
-  const onCount = MODULES.filter(isOn).length;
+  const nav = (id: Sel, label: string, extra?: React.ReactNode) => (
+    <button key={id} type="button" className={`fd-prod ${sec === id ? 'is-active' : ''}`} onClick={() => { setSec(id); setSel(null); }} aria-current={sec === id}>{extra}<span className="fd-prod-name">{label}</span></button>
+  );
+  const sum = (id: string) => p.summaries.find((s) => s.productId === id) ?? null;
+  const showModules = sec === 'library' || !!product;
 
   return (
-    <div className="fd-root" dir="rtl" style={{ ['--pa' as string]: product.color }}>
+    <div className="fd-root" dir="rtl" style={{ ['--pa' as string]: product?.color ?? '#2f9e6b' }}>
       <div className="fd-window">
-        <aside className="fd-sidebar" aria-label="מוצרים">
+        <aside className="fd-sidebar" aria-label="ניווט">
           <div className="fd-lights" aria-hidden><span /><span /><span /></div>
+          <nav className="fd-products">{nav('overview', 'סקירה')}</nav>
           <div className="fd-side-title">מוצרים</div>
-          <nav className="fd-products">
-            {products.map((p) => (
-              <button key={p.id} type="button" className={`fd-prod ${p.id === pid ? 'is-active' : ''}`} onClick={() => setPid(p.id)} aria-current={p.id === pid}>
-                <span className="fd-prod-dot" style={{ background: p.color }} />
-                <span className="fd-prod-name">{p.name}</span>
-                <span className="fd-prod-count">{MODULES.filter((m) => m.alwaysOn || p.enabled.includes(m.id)).length}</span>
-              </button>
-            ))}
-          </nav>
-          <div className="fd-side-title">ספרייה</div>
-          <div className="fd-side-static">כל המודולים <b>{MODULES.length}</b></div>
-          <div className="fd-side-static">ממוצרים אחרים <b>{MODULES.filter((m) => m.origin !== 'NuraWell').length}</b></div>
+          <nav className="fd-products">{products.map((x) => nav(`product:${x.id}`, x.name, <span className="fd-prod-dot" style={{ background: x.color }} />))}</nav>
+          <div className="fd-side-title">כללי</div>
+          <nav className="fd-products">{nav('library', `ספריית מודולים (${registry.length})`)}{nav('costs', 'עלויות')}{nav('security', 'אבטחה')}{nav('legal', 'משפטי')}{nav('licenses', 'רישיונות')}</nav>
         </aside>
-
         <main className="fd-main">
-          <header className="fd-toolbar">
-            <div className="fd-path"><span>ספריית מודולים</span><span className="fd-sep">›</span><b>{product.name}</b></div>
-            <div className="fd-tools">
-              <input className="fd-search" placeholder="חיפוש מודול" value={q} onChange={(e) => setQ(e.target.value)} aria-label="חיפוש מודול" />
-              <div className="fd-seg" role="group" aria-label="תצוגה">
-                <button type="button" className={view === 'icons' ? 'is-on' : ''} onClick={() => setView('icons')} aria-pressed={view === 'icons'} aria-label="תצוגת סמלים">▦</button>
-                <button type="button" className={view === 'list' ? 'is-on' : ''} onClick={() => setView('list')} aria-pressed={view === 'list'} aria-label="תצוגת רשימה">☰</button>
-              </div>
-            </div>
-          </header>
-          <div className="fd-status">{onCount} פעילים מתוך {MODULES.length} ב-{product.name}</div>
-
-          {view === 'icons' ? (
-            <div className="fd-grid">
-              {list.map((m) => (
-                <button key={m.id} type="button" className={`fd-tile ${sel === m.id ? 'is-sel' : ''}`} onClick={() => setSel(m.id)}>
-                  <ModuleIcon m={m} on={isOn(m)} />
-                  <span className="fd-tile-name">{m.name}</span>
-                  <span className={`fd-tier fd-tier-${m.tier}`}>{TIER_LABEL[m.tier]}</span>
-                </button>
-              ))}
-            </div>
-          ) : (
-            <div className="fd-list" role="table">
-              <div className="fd-row fd-head" role="row"><span>שם</span><span>קטגוריה</span><span>הפצה</span><span>גרסה</span><span>מצב</span></div>
-              {list.map((m) => (
-                <div key={m.id} role="row" className={`fd-row ${sel === m.id ? 'is-sel' : ''}`} onClick={() => setSel(m.id)}>
-                  <span className="fd-row-name"><ModuleIcon m={m} on={isOn(m)} small />{m.name}</span>
-                  <span>{CAT_LABEL[m.category]}</span>
-                  <span><span className={`fd-tier fd-tier-${m.tier}`}>{TIER_LABEL[m.tier]}</span></span>
-                  <span className="fd-mono">{m.version}</span>
-                  <span onClick={(e) => e.stopPropagation()}><Switch m={m} on={isOn(m)} onToggle={() => toggle(m)} /></span>
+          {toast ? <div className={`fd-toast ${toast.ok ? 'is-ok' : 'is-err'}`} role={toast.ok ? 'status' : 'alert'}>{toast.msg}<button type="button" onClick={() => setToast(null)} aria-label="סגירה">×</button></div> : null}
+          {sec === 'overview' ? <Overview products={products} summaries={p.summaries} deployment={p.deployment} metricsError={p.metricsError} registry={registry} onOpen={(id) => setSec(`product:${id}`)} /> : null}
+          {sec === 'costs' ? <CostsView products={products} summaries={p.summaries} metricsError={p.metricsError} /> : null}
+          {sec === 'security' ? <SecurityView deployment={p.deployment} registry={registry} /> : null}
+          {sec === 'legal' ? <LegalView deployment={p.deployment} /> : null}
+          {sec === 'licenses' ? <LicensesView api={API.licensing} initial={p.licensesInitial} /> : null}
+          {showModules ? (
+            <>
+              <header className="fd-toolbar">
+                <div className="fd-path"><span>ספריית מודולים</span>{product ? <><span className="fd-sep">›</span><b>{product.name}</b></> : null}</div>
+                <div className="fd-tools">
+                  <input className="fd-search" placeholder="חיפוש מודול" value={q} onChange={(e) => setQ(e.target.value)} aria-label="חיפוש מודול" />
+                  <div className="fd-seg" role="group" aria-label="תצוגה">
+                    <button type="button" className={view === 'icons' ? 'is-on' : ''} onClick={() => setView('icons')} aria-pressed={view === 'icons'} aria-label="תצוגת סמלים">▦</button>
+                    <button type="button" className={view === 'list' ? 'is-on' : ''} onClick={() => setView('list')} aria-pressed={view === 'list'} aria-label="תצוגת רשימה">☰</button>
+                  </div>
                 </div>
-              ))}
-            </div>
-          )}
+              </header>
+              {product ? <ProductCard product={product} summary={sum(product.id)} metricsError={p.metricsError} /> : null}
+              <div className="fd-status">{product ? `${registry.filter((m) => isOn(m, product)).length} פעילים מתוך ${registry.length} ב-${product.name}` : `${registry.length} מודולים בספרייה`}</div>
+              {list.length === 0 ? <div className="fd-empty">לא נמצאו מודולים.</div> : view === 'icons' ? (
+                <div className="fd-grid">{list.map((m) => (
+                  <button key={m.id} type="button" className={`fd-tile ${sel === m.id ? 'is-sel' : ''}`} onClick={() => setSel(m.id)}>
+                    <ModuleIcon m={m} on={isOn(m, product)} /><span className="fd-tile-name">{m.store.name}</span><span className={`fd-tier fd-tier-${m.distribution}`}>{TIER_LABEL[m.distribution]}</span>
+                  </button>))}</div>
+              ) : (
+                <div className="fd-list" role="table">
+                  <div className="fd-row fd-head" role="row"><span>שם</span><span>קטגוריה</span><span>הפצה</span><span>גרסה</span><span>מצב</span></div>
+                  {list.map((m) => (
+                    <div key={m.id} role="row" className={`fd-row ${sel === m.id ? 'is-sel' : ''}`} onClick={() => setSel(m.id)}>
+                      <span className="fd-row-name"><ModuleIcon m={m} on={isOn(m, product)} small />{m.store.name}</span><span>{CAT_LABEL[m.category]}</span>
+                      <span><span className={`fd-tier fd-tier-${m.distribution}`}>{TIER_LABEL[m.distribution]}</span></span><span className="fd-mono">{m.version}</span>
+                      <span onClick={(e) => e.stopPropagation()}><Switch m={m} on={isOn(m, product)} product={product} busy={busy === m.id} onToggle={() => toggle(m)} /></span>
+                    </div>))}
+                </div>
+              )}
+            </>
+          ) : null}
         </main>
-
-        {selected ? (
+        {showModules && selected ? (
           <aside className="fd-detail" aria-label="פרטי מודול">
             <button type="button" className="fd-close" onClick={() => setSel(null)} aria-label="סגירה">×</button>
-            <ModuleIcon m={selected} on={isOn(selected)} big />
-            <h2>{selected.name}</h2>
+            <ModuleIcon m={selected} on={isOn(selected, product)} big />
+            <h2>{selected.store.name}</h2>
             <div className="fd-mono fd-dim">{selected.id}@{selected.version}</div>
-            <div className="fd-badges"><span className={`fd-tier fd-tier-${selected.tier}`}>{TIER_LABEL[selected.tier]}</span><span className="fd-chip">{CAT_LABEL[selected.category]}</span><span className="fd-chip">מקור: {selected.origin}</span></div>
-            <p>{selected.description}</p>
-            <div className="fd-toggle-row">
-              <span>{selected.alwaysOn ? 'תמיד פועל (אבטחה/פרטיות)' : `פעיל ב-${product.name}`}</span>
-              <Switch m={selected} on={isOn(selected)} onToggle={() => toggle(selected)} />
-            </div>
+            <div className="fd-badges"><span className={`fd-tier fd-tier-${selected.distribution}`}>{TIER_LABEL[selected.distribution]}</span><span className="fd-chip">{CAT_LABEL[selected.category]}</span></div>
+            <p>{selected.store.summary}</p>
+            {product ? <div className="fd-toggle-row"><span>{!selected.toggleable ? 'תמיד פועל (אבטחה ופרטיות)' : !selected.store.iamModule ? 'אין מתג במוצר עדיין' : `פעיל ב-${product.name}`}</span><Switch m={selected} on={isOn(selected, product)} product={product} busy={busy === selected.id} onToggle={() => toggle(selected)} /></div> : null}
             <dl>
-              <dt>תלויות</dt><dd>{selected.deps.length ? selected.deps.join(', ') : 'אין'}</dd>
-              <dt>פעיל במוצרים</dt><dd>{products.filter((p) => selected.alwaysOn || p.enabled.includes(selected.id)).map((p) => p.name).join(', ') || 'אף מוצר'}</dd>
+              <dt>תלויות</dt><dd>{Object.keys(selected.requires.modules).join(', ') || 'אין'}</dd>
+              <dt>בשימוש במוצרים</dt><dd>{products.filter((x) => selected.usedBy.includes(x.id)).map((x) => x.name).join(', ') || 'אף מוצר'}</dd>
             </dl>
+            <div className="fd-detail-actions">
+              <button type="button" className="fd-btn" disabled={selected.distribution === 'internal'} onClick={() => setDialog({ kind: 'share' })} title={selected.distribution === 'internal' ? 'מודול פנימי לא יוצא מהמערכת' : undefined}>שיתוף</button>
+              <button type="button" className="fd-btn" disabled={selected.distribution !== 'sellable'} onClick={() => setDialog({ kind: 'sell' })} title={selected.distribution !== 'sellable' ? 'המודול לא מסומן למכירה' : undefined}>מכירה</button>
+            </div>
+            <a className="fd-more" href={href(selected.id)}>לפרטים המלאים ‹</a>
           </aside>
         ) : null}
       </div>
+      {dialog && selected ? (dialog.kind === 'share'
+        ? <ShareDialog m={selected} api={API.pack} onClose={() => setDialog(null)} initial={dialog.state} />
+        : <SellDialog m={selected} api={API.pack} signingReady={p.signingReady} onClose={() => setDialog(null)} initial={dialog.state} />) : null}
     </div>
   );
 }
 
-function Switch({ m, on, onToggle }: { m: LibModule; on: boolean; onToggle: () => void }) {
+function Switch({ m, on, product, busy, onToggle }: { m: RegistryModule; on: boolean; product: ProductRow | null; busy: boolean; onToggle: () => void }) {
+  const locked = !product || !m.toggleable || !m.store.iamModule;
   return (
-    <button type="button" role="switch" aria-checked={on} aria-label={`${m.name}: ${on ? 'פעיל' : 'כבוי'}`} disabled={m.alwaysOn} onClick={onToggle} className={`fd-switch ${on ? 'is-on' : ''} ${m.alwaysOn ? 'is-locked' : ''}`}>
+    <button type="button" role="switch" aria-checked={on} aria-busy={busy} aria-label={`${m.store.name}: ${on ? 'פעיל' : 'כבוי'}${!m.toggleable ? ' (תמיד פועל)' : !m.store.iamModule ? ' (אין מתג במוצר עדיין)' : ''}`} disabled={locked || busy} onClick={onToggle} className={`fd-switch ${on ? 'is-on' : ''} ${locked ? 'is-locked' : ''} ${busy ? 'is-busy' : ''}`}>
       <span />
     </button>
-  );
-}
-
-function ModuleIcon({ m, on, small, big }: { m: LibModule; on: boolean; small?: boolean; big?: boolean }) {
-  return (
-    <span className={`fd-icon ${small ? 'is-small' : ''} ${big ? 'is-big' : ''} ${on ? '' : 'is-off'}`} style={{ ['--tint' as string]: CAT_TINT[m.category] }} aria-hidden>
-      <span className="fd-icon-tab" />
-      <span className="fd-icon-body">{m.name.slice(0, 1)}</span>
-      {on ? <span className="fd-icon-on" /> : null}
-    </span>
   );
 }

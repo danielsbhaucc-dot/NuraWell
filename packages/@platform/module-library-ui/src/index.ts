@@ -1,3 +1,5 @@
 export * from './config';
-export { FinderDashboard, type FinderDashboardProps } from './FinderDashboard';
-export { MODULES, PRODUCTS, type LibModule, type Product, type Tier } from './mock-data';
+export * from './types';
+export { FinderDashboard, API, type FinderDashboardProps } from './FinderDashboard';
+export { ModuleStorePage } from './ModuleStorePage';
+export { TIER_LABEL, TIER_MEANING, CAT_LABEL } from './labels';

@@ -1,0 +1,4 @@
+# @platform/access (access)
+Product-agnostic admin access policy: justification-gated PII grants, device enrollment tokens, access-log pre-filter and pseudonymisation for AI audit. Pure logic, no I/O.
+Install: node scripts/modules/install.mjs access --target <repo>
+Read README.he.md for the full page. Do not add env reads or app imports.

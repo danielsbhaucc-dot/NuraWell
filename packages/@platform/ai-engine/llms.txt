@@ -1,0 +1,4 @@
+# @platform/ai-engine (ai-engine)
+Product-agnostic AI engine: provider client (OpenAI-compatible or mock), mandatory privacy guard, cost logging tagged by product and feature. No env reads.
+Install: node scripts/modules/install.mjs ai-engine --target <repo>
+Read README.he.md for the full page. Do not add env reads or app imports.

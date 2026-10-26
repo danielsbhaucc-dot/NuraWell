@@ -1,0 +1,4 @@
+# @platform/auth (auth)
+Product-agnostic auth helpers: session lookup through an injected adapter, product membership, admin gating. Fails closed. No env reads.
+Install: node scripts/modules/install.mjs auth --target <repo>
+Read README.he.md for the full page. Do not add env reads or app imports.

@@ -8,6 +8,7 @@ import { alertOwnerSecurity } from '@/lib/ops/device-notify';
 import { loadActor, loadModuleStates, selectedProduct } from '@/lib/platform/authorize';
 import { toggleModule } from '@/lib/platform/iam-admin';
 import { MODULES } from '@/lib/platform/catalog';
+import { REGISTRY, registryLocked } from '@platform/module-library-ui/server';
 
 export const dynamic = 'force-dynamic';
 const json = (b: unknown, s = 200) => NextResponse.json(b, { status: s, headers: { 'Cache-Control': 'no-store' } });
@@ -26,6 +27,7 @@ export async function POST(request: Request) {
   if (!g.ok) return g.response;
   const p = Body.safeParse(await request.json().catch(() => null));
   if (!p.success) return json({ error: 'בקשה לא תקינה' }, 400);
+  if (registryLocked(REGISTRY, p.data.moduleId, p.data.enabled)) return json({ error: 'המודול הזה תמיד פועל ואי אפשר לכבות אותו.' }, 409);
   const uid = g.user.id;
   const rl = await consumeMultiRateLimits(uid, 'ops-iam-modules', [{ limit: 30, windowSeconds: 600 }]);
   if (!rl.ok) return rateLimitResponse(rl);

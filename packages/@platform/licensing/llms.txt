@@ -1,0 +1,5 @@
+# @platform/licensing (licensing)
+Offline Ed25519 licenses, signed revocation list (monotonic version), signed bundle manifest, watermark. Optional online verifier at '@platform/licensing/online': createVerifierHandler(cfg) is a Web-standard (Request)=>Response; wrap with toHost('cloudflare'|'vercel'|'node', handler).
+Guard: createLicenseGuard({moduleId, version, publicKeyPem, licenseToken, host, revocationUrl?, online?}).run(fn, lockedFallback). Never throws.
+Install: node scripts/modules/install.mjs licensing --target <repo>
+Read README.he.md for the full page. Do not add env reads or app imports. Never commit a private key.
