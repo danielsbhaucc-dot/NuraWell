@@ -18,7 +18,7 @@ type DialogInit = { s: 'done'; out: PackOut } | { s: 'error'; msg: string };
 export interface FinderDashboardProps {
   registry: RegistryModule[]; products: ProductRow[]; summaries: ProductSummary[]; deployment: Deployment; metricsError: string | null; signingReady: boolean; activity?: ActivityItem[] | null; costTrend?: CostTrend;
   initialSection?: Sel; initialView?: 'icons' | 'list'; initialSelected?: string | null;
-  initialDialog?: { kind: 'share' | 'sell'; state?: DialogInit }; licensesInitial?: Parameters<typeof LicensesView>[0]['initial']; licensesRevoke?: string; licensesUnblock?: string;
+  initialDialog?: { kind: 'share' | 'sell'; state?: DialogInit }; licensesInitial?: Parameters<typeof LicensesView>[0]['initial']; licensesRevoke?: string; licensesUnblock?: string; licensesRotate?: { lid: string; secret?: string };
   moduleHref?: (id: string) => string;
 }
 
@@ -71,7 +71,7 @@ export function FinderDashboard(p: FinderDashboardProps) {
           {sec === 'costs' ? <CostsView products={products} summaries={p.summaries} metricsError={p.metricsError} /> : null}
           {sec === 'security' ? <SecurityView deployment={p.deployment} registry={registry} /> : null}
           {sec === 'legal' ? <LegalView deployment={p.deployment} /> : null}
-          {sec === 'licenses' ? <LicensesView api={API.licensing} initial={p.licensesInitial} initialRevoke={p.licensesRevoke} initialUnblock={p.licensesUnblock} moduleName={(id) => registry.find((m) => m.id === id)?.store.name ?? id} /> : null}
+          {sec === 'licenses' ? <LicensesView api={API.licensing} initial={p.licensesInitial} initialRevoke={p.licensesRevoke} initialUnblock={p.licensesUnblock} initialRotate={p.licensesRotate} moduleName={(id) => registry.find((m) => m.id === id)?.store.name ?? id} /> : null}
           {showModules ? (
             <>
               <header className="fd-toolbar">

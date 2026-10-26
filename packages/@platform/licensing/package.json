@@ -4,6 +4,6 @@
   "private": true,
   "description": "Offline module licensing: Ed25519-signed licenses bound to domain/instance, signed revocation list with rollback protection, signed bundle integrity, per-buyer watermark. Baseline needs zero server; optional portable online verifier (Web-standard fetch handler, any host). Fails closed.",
   "main": "src/index.ts",
-  "exports": { ".": "./src/index.ts", "./online": "./src/online/index.ts" },
+  "exports": { ".": "./src/index.ts", "./online": "./src/online/index.ts", "./gateway": "./src/gateway/index.ts" },
   "types": "src/index.ts"
 }

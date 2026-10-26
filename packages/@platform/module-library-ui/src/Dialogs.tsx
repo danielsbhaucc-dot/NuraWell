@@ -4,8 +4,9 @@ import type { RegistryModule } from './types';
 import { downloadBase64, postJson } from './api';
 import { fmtDate } from './labels';
 import { TechDetails } from './TechDetails';
+import { OneTimeKey } from './OneTimeKey';
 
-export type PackOut = { fileName: string; sha256: string; files: string[]; base64?: string; lid?: string; expiresAt?: string | null };
+export type PackOut = { fileName: string; sha256: string; files: string[]; base64?: string; lid?: string; expiresAt?: string | null; installId?: string; secret?: string };
 type Phase = { s: 'idle' } | { s: 'busy' } | { s: 'error'; msg: string } | { s: 'done'; out: PackOut };
 
 function Shell({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
@@ -25,9 +26,10 @@ function Done({ out, note }: { out: PackOut; note: string }) {
     <div className="fd-result">
       <p className="fd-ok">✓ {note}</p>
       {out.lid ? <p>הרישיון בתוקף עד <b>{fmtDate(out.expiresAt ?? null)}</b>. אפשר לחדש או לחסום אותו בעמוד &quot;רישיונות&quot;.</p> : null}
+      {out.secret ? <OneTimeKey secret={out.secret} installId={out.installId} /> : null}
       {out.base64 ? <button type="button" className="fd-btn" onClick={() => downloadBase64(out.fileName, out.base64!)}>להוריד שוב</button> : null}
       <TechDetails>
-        <dl><dt>קובץ</dt><dd className="fd-mono">{out.fileName}</dd><dt>טביעת אצבע</dt><dd className="fd-mono fd-wrap">{out.sha256}</dd>{out.lid ? <><dt>מספר רישיון</dt><dd className="fd-mono">{out.lid}</dd></> : null}</dl>
+        <dl><dt>קובץ</dt><dd className="fd-mono">{out.fileName}</dd><dt>טביעת אצבע</dt><dd className="fd-mono fd-wrap">{out.sha256}</dd>{out.lid ? <><dt>מספר רישיון</dt><dd className="fd-mono">{out.lid}</dd></> : null}{out.installId ? <><dt>מספר התקנה</dt><dd className="fd-mono">{out.installId}</dd></> : null}</dl>
         <ul className="fd-files">{out.files.map((f) => <li key={f} className="fd-mono">{f}</li>)}</ul>
       </TechDetails>
     </div>
