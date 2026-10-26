@@ -116,4 +116,15 @@ const nextConfig = {
   },
 };
 
+// Local demo screenshots only (NURAWELL_LOCAL_DEMO=1). Same-origin proxy so the
+// browser can reach a local PostgREST + auth stand-in without relaxing CSP.
+// Inert unless that env is set. Not for production.
+if (process.env.NURAWELL_LOCAL_DEMO === '1') {
+  nextConfig.devIndicators = false;
+  nextConfig.rewrites = async () => [
+    { source: '/auth/v1/:path*', destination: 'http://127.0.0.1:54321/auth/v1/:path*' },
+    { source: '/rest/v1/:path*', destination: 'http://127.0.0.1:3001/:path*' },
+  ];
+}
+
 module.exports = nextConfig;
