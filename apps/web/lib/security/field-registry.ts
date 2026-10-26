@@ -51,7 +51,8 @@ export const ENCRYPTED_TABLES = {
     content: 'text',
     metadata: 'json',
   } },
-  ai_interaction_edits: { userCol: 'user_id', rowCol: 'id', guardCols: [], columns: {
+  ai_interaction_edits: { userCol: 'user_id', rowCol: 'interaction_id', // id is a bigint identity; interaction_id is a unique uuid
+    guardCols: [], columns: {
     original_content: 'text',
     edited_content: 'text',
   } },
