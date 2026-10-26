@@ -20,6 +20,17 @@
     "conformance": { "type": "array", "items": { "type": "string" } },
     "tests": { "type": "array", "items": { "type": "string" } },
     "dataPolicy": { "type": "string" },
-    "frozen": { "type": "array", "items": { "type": "string" } }
+    "frozen": { "type": "array", "items": { "type": "string" } },
+    "sale": {
+      "type": "object",
+      "description": "Only for distribution=sellable. bundle = minified, watermarked, signed (default); source = full-source buyout. serverCore is reserved (documented, not implemented).",
+      "properties": { "modes": { "type": "array", "items": { "enum": ["bundle", "source"] } }, "serverCore": { "type": "array", "items": { "type": "string" } } }
+    },
+    "store": {
+      "type": "object",
+      "description": "Plugin-store page in plain Hebrew (required by modules check)",
+      "required": ["name", "summary", "audience", "useCases", "features", "dataTouched", "permissions", "security", "whereDataLives", "installConfig", "compatibility", "limitations", "support"],
+      "properties": { "iamModule": { "type": "string", "description": "id in the product IAM module registry that this package's per-product switch controls" } }
+    }
   }
 }

@@ -106,3 +106,83 @@ export function renderLlms(mods) {
     '',
   ].join('\n');
 }
+
+// ---------- Plugin-store page (מודול כמו תוסף בחנות) ----------
+// Every module must carry enough for a non-technical Hebrew page. `modules check` fails when anything is missing.
+export const STORE_STRINGS = ['name', 'summary', 'whereDataLives', 'compatibility', 'support', 'installConfig'];
+export const STORE_LISTS = ['audience', 'useCases', 'features', 'dataTouched', 'permissions', 'security', 'limitations'];
+export const README_HEADINGS = ['## מה זה עושה', '## התקנה', '## הגדרות', '## אבטחה ופרטיות', '## מגבלות ידועות'];
+
+export function validateStorePage(m, root = ROOT) {
+  const e = [];
+  const s = m.json.store;
+  if (!s || typeof s !== 'object') return ['missing "store" (plugin-page fields)'];
+  for (const k of STORE_STRINGS) if (typeof s[k] !== 'string' || s[k].trim().length < 2) e.push(`store.${k} missing`);
+  for (const k of STORE_LISTS) if (!Array.isArray(s[k]) || !s[k].length || s[k].some((x) => typeof x !== 'string' || !x.trim())) e.push(`store.${k} must be a non-empty list`);
+  if (s.iamModule !== undefined && !/^[a-z][a-z0-9-]*$/.test(s.iamModule)) e.push('store.iamModule bad id');
+  const rp = join(root, m.dir, 'README.he.md');
+  const readme = existsSync(rp) ? readFileSync(rp, 'utf8') : '';
+  for (const h of README_HEADINGS) if (!readme.includes(h)) e.push(`README.he.md missing section "${h}"`);
+  return e;
+}
+
+const APP_PRODUCT = { web: 'nurawell', 'sample-product': 'sample' };
+
+/** Which product apps import this module's package (static scan; no runtime state). */
+export function usedByProducts(pkg, root = ROOT) {
+  const out = [];
+  const apps = join(root, 'apps');
+  if (!existsSync(apps)) return out;
+  for (const app of readdirSync(apps)) {
+    const product = APP_PRODUCT[app];
+    if (!product) continue;
+    for (const f of walkApp(join(apps, app))) {
+      if (readFileSync(f, 'utf8').includes(`'${pkg}`)) { out.push(product); break; }
+    }
+  }
+  return out;
+}
+function* walkApp(dir) {
+  for (const e of readdirSync(dir, { withFileTypes: true })) {
+    if (['node_modules', '.next', 'tests', 'e2e'].includes(e.name)) continue;
+    const p = join(dir, e.name);
+    if (e.isDirectory()) yield* walkApp(p);
+    else if (/\.(ts|tsx)$/.test(e.name)) yield p;
+  }
+}
+
+/** Packable files of a module (what a buyer gets). Never: env files, keys, node_modules, build output. */
+export const PACK_DENY = /(^|\/)(\.env[^/]*|node_modules|\.next|dist|secrets?|.*\.(pem|key|p12|pfx|crt)|id_[a-z0-9]+)(\/|$)/i;
+export function packFiles(m, root = ROOT) {
+  const base = join(root, m.dir);
+  const out = [];
+  const rec = (d, rel) => {
+    for (const e of readdirSync(d, { withFileTypes: true })) {
+      const r = rel ? `${rel}/${e.name}` : e.name;
+      if (PACK_DENY.test(r)) continue;
+      if (e.isDirectory()) rec(join(d, e.name), r);
+      else out.push(r);
+    }
+  };
+  rec(base, '');
+  return out.sort();
+}
+
+/** Generated registry consumed by the dashboard (no fs at request time for listing). */
+export function renderRegistry(mods, root = ROOT) {
+  const read = (m, f) => (existsSync(join(root, m.dir, f)) ? readFileSync(join(root, m.dir, f), 'utf8') : null);
+  const list = mods.map((m) => {
+    const cfg = read(m, 'config.schema.json');
+    return {
+      ...m.json,
+      $schema: undefined,
+      dir: m.dir,
+      usedBy: usedByProducts(m.json.package, root),
+      readme: read(m, 'README.he.md') ?? '',
+      changelog: read(m, 'CHANGELOG.md') ?? '',
+      configSchema: cfg ? JSON.parse(cfg) : null,
+      files: packFiles(m, root),
+    };
+  });
+  return JSON.stringify({ generatedBy: 'node scripts/modules/index.mjs', modules: list }, null, 1) + '\n';
+}

@@ -1,0 +1,32 @@
+{
+  "$schema": "../../../modules/module.schema.json",
+  "id": "licensing",
+  "package": "@platform/licensing",
+  "version": "0.1.0",
+  "distribution": "shareable",
+  "category": "security",
+  "toggleable": false,
+  "description": "Module licensing. Baseline: offline Ed25519 licenses + signed static revocation list + signed bundle manifest + watermark (zero server). Optional: portable online verifier (Web-standard fetch handler) for Cloudflare Workers, a VPS or Vercel.",
+  "provides": { "routes": [], "apis": [], "jobs": [], "ui": [], "tables": [] },
+  "requires": { "modules": {} },
+  "env": [],
+  "migrations": [],
+  "conformance": ["fail-closed", "never-throws-into-host", "rollback-rejected", "offline-grace-until-expiry", "web-standard-verifier"],
+  "tests": ["apps/web/tests/platform-licensing.test.ts"],
+  "dataPolicy": "הספרייה לא שומרת מידע אישי. ברישיון יש רק מזהה לקוח שבחרנו, דומיינים ותאריכים. השרת המקוון (אם מופעל) שומר רק מזהה רישיון ומצב.",
+  "store": {
+    "name": "רישוי מודולים",
+    "summary": "נותן למודול שנמכר רישיון חתום: עובד בלי שרת, ננעל כשהרישיון פג או בוטל, ויכול גם לבדוק מול שרת אימות על כל אחסון שתבחרו.",
+    "audience": ["מי שמוכר מודולים לאתרים של אחרים", "מי שקונה מודול ורוצה שהמידע שלו יישאר אצלו"],
+    "useCases": ["מכירת מודול כחבילה מכווצת עם רישיון ל-30 יום", "השעיה עד תשלום, או ביטול לצמיתות", "בדיקה מיידית מול שרת אימות למודולים רגישים"],
+    "features": ["רישיון חתום Ed25519 עם דומיינים, טווח גרסאות ותאריך תפוגה", "רשימת חסימות חתומה עם מספר גרסה עולה (דוחה חזרה לגרסה ישנה)", "מניפסט חתום לקבצי החבילה: שינוי קובץ נועל את המודול", "סימן מים בלתי נראה לכל קונה", "שרת אימות אופציונלי שרץ בלי שינוי על Cloudflare Workers, שרת משלכם או Vercel", "כשהשרת לא זמין, הרישיון המקומי ממשיך לעבוד עד שהוא פג"],
+    "dataTouched": ["טוקן הרישיון", "שם הדומיין של ההתקנה", "מזהה רישיון ומצב בשרת האימות (אם מופעל)"],
+    "permissions": ["modules.manage (הנפקה, חידוש, השעיה, ביטול והחזרה, עם אימות נוסף)"],
+    "security": ["מפתח החתימה נקרא רק מהסביבה ולעולם לא נכנס לריפו או לחבילה", "לשרת האימות יש מפתח נפרד, שלא יכול להנפיק רישיונות", "תשובה מזויפת או ממוחזרת מהשרת נחשבת לא זמינה", "סיבת החסימה נשמרת מוצפנת רק אצלנו", "בלי מחיקה מרחוק של קבצים אצל הקונה"],
+    "whereDataLives": "אצל הקונה: הרישיון והקוד, על השרתים שלו. אצלנו: רשומת הרישיון והסיבה המוצפנת. רשימת החסימות היא קובץ סטטי ציבורי בלי פרטים אישיים.",
+    "installConfig": "LICENSE_TOKEN אחד בהגדרות של המודול (license.config.json). מצב מקוון: עוד שדה online.url.",
+    "compatibility": "Node 20 ומעלה. שרת האימות: כל סביבה עם fetch, Request/Response ו-crypto.subtle (Workers, Node 20, Vercel).",
+    "limitations": ["הגנה מקומית מרתיעה העתקה אבל לא עוצרת מי שמתעקש לפרק את הקוד", "הכיווץ והערפול דורשים כלי בנייה; בשרת עצמו אין כיווץ", "server-core מתועד ומוכן בפרוטוקול, אבל אף מודול לא משתמש בו עדיין", "שרת האימות עוד לא הותקן בשום מקום; בחירת האחסון ממתינה להחלטה"],
+    "support": "תמיכה דרך דניאל (בעל הספרייה). תיקונים חוזרים לספרייה כ-PR לריפו NuraWell, עם בדיקות."
+  }
+}

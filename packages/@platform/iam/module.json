@@ -1,0 +1,71 @@
+{
+  "$schema": "../../../modules/module.schema.json",
+  "id": "iam",
+  "package": "@platform/iam",
+  "version": "0.1.0",
+  "distribution": "shareable",
+  "category": "security",
+  "toggleable": false,
+  "description": "Product-agnostic access control for the multi-product console: products, roles, permissions, just-in-time elevation, anti-escalation rules. Pure logic.",
+  "provides": {
+    "routes": [],
+    "apis": [],
+    "jobs": [],
+    "ui": [],
+    "tables": []
+  },
+  "requires": {
+    "modules": {}
+  },
+  "env": [],
+  "migrations": [],
+  "conformance": [
+    "default-deny",
+    "anti-escalation"
+  ],
+  "tests": [
+    "apps/web/tests/platform-iam.test.ts",
+    "apps/web/tests/platform-iam-admin.test.ts"
+  ],
+  "dataPolicy": "ההרשאות נשמרות במסד של המוצר המתקין, על השרתים שלו.",
+  "store": {
+    "name": "הרשאות ותפקידים",
+    "summary": "קובע מי רשאי לעשות מה, בכל מוצר בנפרד. ברירת המחדל היא סירוב, ואף אחד לא יכול לתת לעצמו הרשאות.",
+    "audience": [
+      "מוצרים עם כמה מנהלים או צוות",
+      "מי שמנהל כמה מוצרים מלוח בקרה אחד"
+    ],
+    "useCases": [
+      "תפקיד \"תמיכה\" שרואה משתמשים אבל לא עלויות",
+      "הרשאה זמנית לבעל מקצוע אבטחה עם תאריך תפוגה",
+      "הפעלה וכיבוי של רכיבים לכל מוצר"
+    ],
+    "features": [
+      "תפקידים והרשאות לכל מוצר",
+      "הרשאות זמניות עם תפוגה חובה",
+      "כללי מניעת הסלמה: לא לעצמך, לא יותר ממה שיש לך",
+      "דרישת אימות נוסף לפעולות רגישות",
+      "רשימת רכיבים עם תלויות ובדיקת מסלולים"
+    ],
+    "dataTouched": [
+      "תפקידים והרשאות של מנהלים (לא של משתמשי הקצה)"
+    ],
+    "permissions": [
+      "iam.read, iam.grant, modules.manage"
+    ],
+    "security": [
+      "ברירת מחדל: סירוב",
+      "אותם כללים נאכפים שוב במסד הנתונים, כך שגם קוד שבור לא עוקף אותם",
+      "כל שינוי נרשם ביומן ביקורת"
+    ],
+    "whereDataLives": "ההרשאות נשמרות במסד של המוצר המתקין, על השרתים שלו.",
+    "installConfig": "המוצר מגדיר את רשימת המוצרים שלו בשורה אחת: defineCatalog(PRODUCTS).",
+    "compatibility": "TypeScript, Node 20 ומעלה. בלי תלויות חיצוניות.",
+    "limitations": [
+      "האכיפה הכפולה במסד דורשת להריץ את המיגרציה של המוצר",
+      "לא נבדק עדיין בהתקנה אצל קונה חיצוני; הבדיקה היחידה היא בתוך NuraWell ובמוצר הדוגמה."
+    ],
+    "support": "תמיכה דרך דניאל (בעל הספרייה). תיקונים חוזרים לספרייה כ-PR לריפו NuraWell, עם בדיקות.",
+    "iamModule": "iam"
+  }
+}

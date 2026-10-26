@@ -1,0 +1,68 @@
+{
+  "$schema": "../../../modules/module.schema.json",
+  "id": "auth",
+  "package": "@platform/auth",
+  "version": "0.1.0",
+  "distribution": "shareable",
+  "category": "platform",
+  "toggleable": false,
+  "description": "Product-agnostic auth helpers: session lookup through an injected adapter, product membership, admin gating. Fails closed. No env reads.",
+  "provides": {
+    "routes": [],
+    "apis": [],
+    "jobs": [],
+    "ui": [],
+    "tables": []
+  },
+  "requires": {
+    "modules": {}
+  },
+  "env": [],
+  "migrations": [],
+  "conformance": [
+    "fail-closed-on-error",
+    "server-verified-user"
+  ],
+  "tests": [
+    "apps/web/tests/platform-packages.test.ts"
+  ],
+  "dataPolicy": "המשתמשים נשמרים במערכת ההתחברות של המוצר המתקין, על השרתים שלו.",
+  "store": {
+    "name": "כניסה וחברות במוצר",
+    "summary": "בודק מי המשתמש המחובר והאם הוא שייך למוצר. כל תקלה נחשבת כ\"לא מחובר\", כך שתקלה אף פעם לא פותחת גישה.",
+    "audience": [
+      "כל מוצר שיש בו התחברות",
+      "מוצרים שחולקים התחברות אחת אבל צריכים להפריד בין משתמשי מוצרים שונים"
+    ],
+    "useCases": [
+      "דף שרק משתמש מחובר רואה",
+      "מוצר שני שמשתמש באותה מערכת התחברות, ומכניס רק את מי שהצטרף אליו"
+    ],
+    "features": [
+      "זיהוי משתמש שאומת מול השרת, לא לפי עוגייה בלבד",
+      "בדיקת חברות במוצר",
+      "סגירה בכל שגיאה",
+      "מתאם לבדיקות בלי שרת"
+    ],
+    "dataTouched": [
+      "מזהה משתמש ומייל מהתחברות קיימת",
+      "טבלת החברות במוצרים (קריאה בלבד)"
+    ],
+    "permissions": [
+      "קריאה של החברות של המשתמש עצמו"
+    ],
+    "security": [
+      "שימוש באימות שרת ולא בנתוני סשן מהדפדפן",
+      "שגיאה = אין גישה",
+      "המייל לא נשלח ל-AI; משתמשים במזהה בלבד"
+    ],
+    "whereDataLives": "המשתמשים נשמרים במערכת ההתחברות של המוצר המתקין, על השרתים שלו.",
+    "installConfig": "המוצר יוצר אובייקט אחד עם מזהה המוצר ומתאם התחברות.",
+    "compatibility": "TypeScript, Node 20 ומעלה. מתאם מובנה למסד Postgres מנוהל עם התחברות, או מתאם משלכם.",
+    "limitations": [
+      "לא כולל מסכי הרשמה או כניסה; רק את הבדיקות",
+      "לא נבדק עדיין בהתקנה אצל קונה חיצוני; הבדיקה היחידה היא בתוך NuraWell ובמוצר הדוגמה."
+    ],
+    "support": "תמיכה דרך דניאל (בעל הספרייה). תיקונים חוזרים לספרייה כ-PR לריפו NuraWell, עם בדיקות."
+  }
+}

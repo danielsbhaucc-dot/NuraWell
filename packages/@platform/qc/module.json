@@ -1,0 +1,68 @@
+{
+  "$schema": "../../../modules/module.schema.json",
+  "id": "qc",
+  "package": "@platform/qc",
+  "version": "0.1.0",
+  "distribution": "shareable",
+  "category": "ops",
+  "toggleable": true,
+  "description": "Product-agnostic quality control: a product registers checks, the console runs them isolated with timeouts and shows one screen. Pure logic.",
+  "provides": {
+    "routes": [],
+    "apis": [],
+    "jobs": [],
+    "ui": [],
+    "tables": []
+  },
+  "requires": {
+    "modules": {}
+  },
+  "env": [],
+  "migrations": [],
+  "conformance": [
+    "isolated-checks",
+    "timeout-becomes-fail"
+  ],
+  "tests": [
+    "apps/web/tests/platform-qc.test.ts"
+  ],
+  "dataPolicy": "המודול לא שומר כלום. הבדיקות קוראות מהמסד של המוצר המתקין.",
+  "store": {
+    "name": "בקרת איכות",
+    "summary": "מסך אחד שמראה אם המוצר תקין: כל מוצר מגדיר בדיקות, והמודול מריץ אותן ומציג תקין, אזהרה או תקלה.",
+    "audience": [
+      "כל מוצר שרוצה לדעת מהר אם משהו נשבר",
+      "מי שמנהל כמה מוצרים ורוצה אותו מסך בכולם"
+    ],
+    "useCases": [
+      "בדיקה שזמני התגובה של ה-AI לא חרגו",
+      "בדיקה שאין עלייה חדה בשגיאות",
+      "דוח בוקר אחד לכל מוצר"
+    ],
+    "features": [
+      "בדיקה שקורסת או נתקעת הופכת ל\"תקלה\" ולא מפילה את המסך",
+      "מגבלת זמן לכל בדיקה (8 שניות כברירת מחדל)",
+      "סף אזהרה וסף תקלה לכל מדד",
+      "בדיקת תקינות של רשימת הבדיקות"
+    ],
+    "dataTouched": [
+      "רק מספרים מצטברים שהבדיקות מחזירות"
+    ],
+    "permissions": [
+      "qc.read, qc.manage"
+    ],
+    "security": [
+      "אין מידע אישי בתוצאות",
+      "הבדיקות רצות בצד השרת בלבד"
+    ],
+    "whereDataLives": "המודול לא שומר כלום. הבדיקות קוראות מהמסד של המוצר המתקין.",
+    "installConfig": "המוצר מעביר רשימת בדיקות (מזהה, שם בעברית, תיאור ופונקציה).",
+    "compatibility": "TypeScript, Node 20 ומעלה. בלי תלויות חיצוניות.",
+    "limitations": [
+      "הבדיקות עצמן נכתבות בכל מוצר",
+      "לא נבדק עדיין בהתקנה אצל קונה חיצוני; הבדיקה היחידה היא בתוך NuraWell ובמוצר הדוגמה."
+    ],
+    "support": "תמיכה דרך דניאל (בעל הספרייה). תיקונים חוזרים לספרייה כ-PR לריפו NuraWell, עם בדיקות.",
+    "iamModule": "qc"
+  }
+}

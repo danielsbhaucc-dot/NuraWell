@@ -1,0 +1,4 @@
+# @platform/ui (ui)
+Shared design tokens for every product (canonical NuraWell palette and console surfaces). Pure data, no React.
+Install: node scripts/modules/install.mjs ui --target <repo>
+Read README.he.md for the full page. Do not add env reads or app imports.

@@ -12,14 +12,21 @@ describe('module-library-ui conformance', () => {
 
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { FinderDashboard, MODULES } from '@platform/module-library-ui';
-describe('module-library-ui render', () => {
-  it('renders products, tier badges, and locks always-on modules', () => {
-    const html = renderToStaticMarkup(createElement(FinderDashboard, { initialView: 'list' }));
+import { FinderDashboard } from '../../../packages/@platform/module-library-ui/src/FinderDashboard';
+import { REGISTRY_LITE, toProductRows } from '../../../packages/@platform/module-library-ui/src/server/hub-data';
+const products = toProductRows([{ id: 'nurawell', name: 'NuraWell' }, { id: 'sample', name: 'מוצר לדוגמה' }]);
+const base = { registry: REGISTRY_LITE, products, summaries: [], deployment: { securityOpen: null, tasksOpen: null }, metricsError: null, signingReady: false };
+describe('module-library-ui render (real registry)', () => {
+  it('library list: one switch per module, always-on locked', () => {
+    const html = renderToStaticMarkup(createElement(FinderDashboard, { ...base, initialSection: 'product:nurawell' as const, initialView: 'list' }));
     expect(html).toContain('dir="rtl"');
-    expect(html).toContain('NuraWell');
-    expect(html).toContain('למכירה');
-    expect((html.match(/role="switch"/g) ?? []).length).toBe(MODULES.length);
-    expect((html.match(/disabled=""/g) ?? []).length).toBe(MODULES.filter((m) => m.alwaysOn).length);
+    expect((html.match(/role="switch"/g) ?? []).length).toBe(REGISTRY_LITE.length);
+    expect(html).not.toMatch(/background:\s*#fff\b/i);
+  });
+  it('overview never invents numbers: no data → Hebrew empty states', () => {
+    const html = renderToStaticMarkup(createElement(FinderDashboard, { ...base, initialSection: 'overview' as const }));
+    expect(html).toContain('אין נתון');
+    expect(html).toContain('עוד אין נתונים למוצר הזה');
+    expect(html).toContain('עוד לא נבנה');
   });
 });
