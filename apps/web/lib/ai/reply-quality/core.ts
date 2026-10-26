@@ -2,6 +2,8 @@
  * Almog post-send reply quality check — pure logic (prompt, verdict parsing, guardrails).
  * Runs only after the reply was streamed and persisted (zero added latency); see ./run.ts.
  */
+import { applyPiiDetectors } from '../privacy/pii-patterns';
+import { maskName, unmaskName } from '../privacy/name-mask';
 import { isHealthChatMessage, isRedactedContent } from '../../privacy/health-chat-redaction';
 
 export const REPLY_QC_FEATURE = 'almog_reply_qc';
@@ -66,6 +68,33 @@ If there is no clear defect, answer {"ok":true}. Style preferences are NOT defec
 If there is a defect, answer {"ok":false,"fixed":"<the full corrected reply>"} with the SMALLEST possible edit:
 change or remove only the defective words/sentence; keep everything else verbatim (wording, emojis, line breaks, markdown,
 and any tokens like [NAME] or ⟦...⟧ exactly). Never add new content, advice, facts or numbers. Hebrew only. JSON only.`;
+
+/**
+ * Privacy: before the QC call, mask the user's first name as [NAME] and every PII match
+ * (same detectors as notifications) as ⟦P1⟧, ⟦P2⟧… The model is told to keep tokens verbatim;
+ * restore() puts the real values back into the fixed text.
+ */
+export function maskReplyQcInput(
+  input: ReplyQcInput,
+  firstName?: string | null
+): { masked: ReplyQcInput; restore: (text: string) => string } {
+  const values: string[] = [];
+  const mask = (t: string) =>
+    applyPiiDetectors(maskName(t ?? '', firstName), (v) => {
+      let i = values.indexOf(v);
+      if (i < 0) i = values.push(v) - 1;
+      return `⟦P${i + 1}⟧`;
+    });
+  const masked: ReplyQcInput = {
+    ...input,
+    reply: mask(input.reply),
+    lastUserText: mask(input.lastUserText),
+    previousReplies: input.previousReplies.map(mask),
+  };
+  const restore = (text: string) =>
+    unmaskName(text.replace(/⟦P(\d+)⟧/g, (m, n) => values[Number(n) - 1] ?? m), firstName);
+  return { masked, restore };
+}
 
 export function buildReplyQcMessages(input: ReplyQcInput): Array<{ role: 'system' | 'user'; content: string }> {
   const prev = input.previousReplies.slice(-2);
