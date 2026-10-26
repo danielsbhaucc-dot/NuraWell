@@ -80,12 +80,13 @@ describe('nightly merge change gate', () => {
   it('skips users whose candidate set is unchanged', async () => {
     const { runNightlyTaskMerge, taskSetFingerprint } = await import('@/lib/almog/nightly-task-merge');
     const tasks = [{ id: 'a', title: 'x', level: 0, main: true, source: 'step', done: 1 }];
-    const db = { rpc: async () => ({ data: [{ user_id: 'u1', tasks }], error: null }) } as never;
+    const db = {} as never;
+    const candidates = async () => [{ user_id: 'u1', tasks }];
     let calls = 0;
-    const r = await runNightlyTaskMerge(db, { decide: async () => { calls++; return { merges: [] }; }, previousFingerprints: { u1: taskSetFingerprint(tasks) } });
+    const r = await runNightlyTaskMerge(db, { decide: async () => { calls++; return { merges: [] }; }, previousFingerprints: { u1: taskSetFingerprint(tasks) }, candidates });
     expect(calls).toBe(0);
     expect(r.skippedUnchanged).toBe(1);
-    const r2 = await runNightlyTaskMerge(db, { decide: async () => { calls++; return { merges: [] }; }, previousFingerprints: {} });
+    const r2 = await runNightlyTaskMerge(db, { decide: async () => { calls++; return { merges: [] }; }, previousFingerprints: {}, candidates });
     expect(calls).toBe(1);
     expect(r2.fingerprints.u1).toHaveLength(16);
   });

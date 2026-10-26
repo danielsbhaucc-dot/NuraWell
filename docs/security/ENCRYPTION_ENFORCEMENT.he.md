@@ -36,3 +36,11 @@
 - **ממצא פרטיות:** offerGuideTask כותב את params.reason של משתמש לתיאור של שורת guide משותפת.
 - **IAM/admin:** `supabase/gated/000211_iam_admin_enc_prep.sql` + `GATED_AFTER_IAM_MERGE` — להחיל רק אחרי מיזוג #357–#362.
 - **נשאר ממתין (SQL כותב/קורא):** almog_assignments.*, task_events.reason/metadata (+ עותקי note ישנים — ניקוי דורש אישור), admin_audit_log.detail/ip, ops_security_events.detail, auth_session_trail.ip/user_agent, עמודות CHECK/enum ב-BLOCKED, iam_audit_log, iam_grants.reason, ops_probe_daily.country.
+
+## 000212 — סגירת עמודות המשימות (sec/enc-close-2)
+- offerGuideTask כבר לא כותב את סיבת המשתמש לשורת מדריך משותפת; הסיבה נשמרת מוצפנת ב-user_task_assignments.reason. שורות guide קיימות שכבר מכילות טקסט משתמש — נדרש אישור דניאל לניקוי (לא בוצע).
+- task_dup_candidates / merge_task_assignments הועברו לאפליקציה (lib/almog/task-dup-candidates.ts); ב-SQL נשאר רק merge_task_assignment_state (מזהים ורמות בלבד).
+- dedupe/דמיון כותרות: title_bidx / title_tok_bidx (HMAC). task_definitions (שורות בעלים), almog_assignments, task_events, challenge_enrollments, chat_task_proposals.title — מוצפנים; שורות משותפות (owner NULL) נשארות תוכן צוות גלוי.
+- עמודות קוד קבוע שנשארות גלויות: almog_assignments.schedule, almog_interventions.barrier_type, chat_sessions.topic (CHECK NOT VALID חדש), churn_feedback.reason (CHECK קיים), outcome של sos/interventions, ops_enroll_blocks.reason ('wrong_number' בלבד).
+- admin_audit_log.ip מוצפן עם ip_bidx.
+- עדיין פתוח: admin_audit_log.detail, ops_security_events.detail, auth_session_trail.ip/user_agent, habit_key/stable_key ישנים של ai_daily (000092) שמכילים כותרת.

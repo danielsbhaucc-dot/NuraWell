@@ -13,7 +13,7 @@ import { createHash } from 'node:crypto';
 import { decryptString, isEncrypted } from '@/lib/crypto/pii';
 import { createRawAdminClient } from '@/lib/supabase/admin';
 import { decryptValue, encryptValue, isV2 } from '@/lib/security/field-crypto';
-import { BLIND_INDEX_SOURCES, blindIndexPatch } from '@/lib/security/blind-index';
+import { BLIND_INDEX_COLUMNS, BLIND_INDEX_SOURCES, blindIndexPatch } from '@/lib/security/blind-index';
 import { APPEND_ONLY_TABLES, encryptedTable, FIELD_V2_TABLES, isBlocked, keyColumns, ownerOf, rowKeyOf } from '@/lib/security/field-registry';
 
 /** staged rollout list (defined in field-registry so the write path can read it without a cycle) */
@@ -54,7 +54,9 @@ export async function backfillFieldV2(budgetMs = 30_000, tables: readonly string
     const stat = (out[table] = { rows: 0, skippedRace: 0, verifyFail: 0 });
     const keyCols = keyColumns(spec);
     const guardCols = [...(spec.guardCols ?? ['updated_at'])];
-    const selectCols = [...new Set([...keyCols, ...guardCols, ...cols])].join(',');
+    // owner-optional tables: shared (owner NULL) rows stay plaintext but still need their blind index (dedupe keys)
+    const sharedBidx = spec.ownerOptional ? [...(BLIND_INDEX_COLUMNS[table] ?? [])] : [];
+    const selectCols = [...new Set([...keyCols, ...guardCols, ...cols, ...sharedBidx])].join(',');
     const composite = Boolean(spec.rowCols);
     let after: string | null = null;
     let offset = 0;
@@ -78,6 +80,16 @@ export async function backfillFieldV2(budgetMs = 30_000, tables: readonly string
         if (Date.now() >= deadline) break;
         const userId = ownerOf(spec, r);
         const rowId = rowKeyOf(spec, r);
+        if (rowId && !userId && sharedBidx.length && sharedBidx.some((c) => r[c] == null)) {
+          const bi = await blindIndexPatch(table, r);
+          const set = Object.fromEntries(Object.entries(bi).filter(([k, v]) => v != null && r[k] == null));
+          if (Object.keys(set).length) {
+            const { error: sErr } = await db.from(table).update(set).eq(spec.rowCol, r[spec.rowCol] as string).is(spec.userCol, null);
+            if (sErr) throw new Error(`${table} shared bidx: ${sErr.code ?? sErr.message}`);
+            stat.rows++;
+          }
+          continue;
+        }
         if (!rowId || !userId) continue;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any -- PostgREST builder types recurse too deep here
         const byKey = (qq: any): any => {
