@@ -23,6 +23,7 @@ import { queueTaskProposals } from '../../chat-ui/task-proposals';
 import { titlesAreSimilar } from '../../almog-commitments/title-similarity';
 import { hasPlaceholderCorruption } from '../../safety/memory-text-guard';
 import { INSIGHT_STATUS } from '../status';
+import { detectNotableChanges } from './detect-changes';
 import { daysUntilWeekday, detectPatternCandidates, israelParts, type BehaviourEvent } from './detect';
 import { phrasePatterns, type PatternInsight } from './llm';
 
@@ -220,6 +221,25 @@ export async function runPatternInsightsBatch(
           if (error) res.errors += 1;
           else res.upserted += 1;
         }
+      }
+
+      // notable changes: deterministic ($0), stored as change:<kind> (one live row per kind, read only if seen ≤7d)
+      for (const c of detectNotableChanges(g.events, now)) {
+        const row = {
+          user_id: userId,
+          category: 'blocker',
+          insight_text: c.summaryHe,
+          actionability_score: 7 + c.risk,
+          confidence: 0.9,
+          is_active: true,
+          status: INSIGHT_STATUS.ACTIVE,
+          dedupe_key: `change:${c.kind}`,
+          last_seen_at: nowIso,
+          metadata: { kind: 'notable_change', change_kind: c.kind, date: c.dateKey, risk: c.risk },
+        };
+        const { error } = await admin.from('user_insights').upsert(await sealTableRow('user_insights', row, userId), { onConflict: 'user_id,dedupe_key' });
+        if (error) res.errors += 1;
+        else res.upserted += 1;
       }
 
       // proactive plan card

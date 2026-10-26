@@ -143,10 +143,18 @@ export function fillNamePlaceholders(text: string, firstName?: string | null): s
   return text.replace(NAME_PLACEHOLDER_FILL_RE, name ? name : '');
 }
 
+/** Echoed context-condenser markers (current delimiters + legacy heading). */
+const CONDENSER_ECHO_RE = /^[ \t]*(?:\[תקציר הקשר רלוונטי\]|<<<רקע פנימי[^\n]*>>>|<<<סוף רקע>>>)[ \t]*$\n?/gm;
+export function looksLikeCondenserEcho(text: string): boolean {
+  CONDENSER_ECHO_RE.lastIndex = 0;
+  return CONDENSER_ECHO_RE.test(text ?? '');
+}
+
 export function sanitizeWriterOutput(text: string, opts?: { firstName?: string | null }): string {
   if (!text) return '';
   let next = stripThinkBlocks(opts?.firstName ? fillNamePlaceholders(text, opts.firstName) : text)
     .replace(/<\|[a-z_]{2,24}\|>/gi, '')
+    .replace(CONDENSER_ECHO_RE, '')
     .replace(DOUBLE_PLACEHOLDER_RE, '')
     .replace(SINGLE_CAPS_PLACEHOLDER_RE, '')
     .replace(NAMED_PLACEHOLDER_RE, '')

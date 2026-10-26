@@ -170,12 +170,12 @@ export async function learnStyleRules(admin: SupabaseClient, opts: { fetchImpl?:
   const since = new Date(Date.now() - 14 * 86_400_000).toISOString();
   const { data: ev } = await admin
     .from('notify_quality_events')
-    .select('stage, category, before_text, after_text')
+    .select('stage, category, source, before_text, after_text')
     .gte('created_at', since)
     .neq('category', 'structure')
     .order('created_at', { ascending: false })
     .limit(400);
-  const events = (ev ?? []) as Array<{ stage: string; category: string; before_text: string; after_text: string | null }>;
+  const events = (ev ?? []) as Array<{ stage: string; category: string; source?: string | null; before_text: string; after_text: string | null }>;
   const befores = events.map((e) => e.before_text);
   const out: LearnResult = { samples: events.length, candidates: 0, upserted: 0, auto_fix: 0, version: null };
   if (events.length < STYLE_RULE_MIN_HITS) return { ...out, skipped: 'not_enough_events' };
@@ -186,7 +186,7 @@ export async function learnStyleRules(admin: SupabaseClient, opts: { fetchImpl?:
   let candidates: LearnCandidate[] = [];
   const key = process.env.OPENROUTER_API_KEY?.trim();
   if (key) {
-    const sample = events.slice(0, 60).map((e, i) => `${i + 1}. [${e.category}] BEFORE: ${e.before_text}${e.after_text ? `\n   AFTER: ${e.after_text}` : ''}`);
+    const sample = events.slice(0, 60).map((e, i) => `${i + 1}. [${e.source === 'almog_reply' ? 'chat reply · ' : ''}${e.category}] BEFORE: ${e.before_text}${e.after_text ? `\n   AFTER: ${e.after_text}` : ''}`);
     const current = existing.filter((r) => !r.deleted).map((r) => `- avoid "${r.avoid}" → "${r.prefer}"`).join('\n') || '(none)';
     try {
       const f = opts.fetchImpl ?? meteredFetch(fetch, { userId: null, feature: LEARN_FEATURE });
