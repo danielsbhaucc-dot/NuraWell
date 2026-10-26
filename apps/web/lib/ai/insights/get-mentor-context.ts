@@ -1,3 +1,4 @@
+import { formatNotableChangesBlock } from './patterns/detect-changes';
 import { decTableResult } from '@/lib/crypto/pii-fields';
 import { hasPlaceholderCorruption } from '../safety/memory-text-guard';
 /**
@@ -33,7 +34,7 @@ export async function getMentorContext(
       .eq('user_id', userId)
       .eq('status', INSIGHT_STATUS.ACTIVE)
       .neq('category', 'missing_info')
-      .or('dedupe_key.is.null,dedupe_key.not.like.pattern:*')
+      .or('dedupe_key.is.null,and(dedupe_key.not.like.pattern:*,dedupe_key.not.like.change:*)')
       .order('actionability_score', { ascending: false })
       .order('mention_count', { ascending: false })
       .order('last_seen_at', { ascending: false })
@@ -158,4 +159,21 @@ export function formatBehaviorPatterns(
 
 function formatMentionSuffix(mentionCount: number): string {
   return mentionCount > 1 ? ` (Mentioned: ${mentionCount}x)` : '';
+}
+
+/** Always-on notable changes (nightly deterministic detector), risk first, seen ≤7 days. */
+export async function getNotableChangesBlock(supabase: SupabaseClient, userId: string): Promise<string> {
+  const since = new Date(Date.now() - 7 * 86_400_000).toISOString();
+  const res = await supabase
+    .from('user_insights')
+    .select('insight_text, actionability_score')
+    .eq('user_id', userId)
+    .eq('status', INSIGHT_STATUS.ACTIVE)
+    .like('dedupe_key', 'change:%')
+    .gte('last_seen_at', since)
+    .order('actionability_score', { ascending: false })
+    .limit(3)
+    .returns<Array<{ insight_text: string }>>()
+    .then(decTableResult('user_insights', userId));
+  return res.error ? '' : formatNotableChangesBlock(res.data ?? []);
 }
