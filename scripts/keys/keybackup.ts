@@ -53,7 +53,7 @@ function drill() {
   const pass = randomBytes(24).toString('base64url');
   backup(dir, { PII_ENCRYPTION_KEY: pii }, pass);
   const check = (keys: Record<string, string>, how: string) => {
-    const d = createDecipheriv('aes-256-gcm', Buffer.from(keys.PII_ENCRYPTION_KEY, 'base64'), iv);
+    const d = createDecipheriv('aes-256-gcm', Buffer.from(keys.PII_ENCRYPTION_KEY, 'base64'), iv, { authTagLength: 16 });
     d.setAAD(Buffer.from('user-1'));
     d.setAuthTag(tag);
     const ok = Buffer.concat([d.update(ct), d.final()]).toString('utf8') === 'sample PII שלום';
