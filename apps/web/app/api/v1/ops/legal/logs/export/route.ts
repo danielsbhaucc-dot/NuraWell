@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireApiAdmin } from '@/lib/api/route-guards';
+import { exportStepUpRefusal } from '@/lib/ops/export-stepup';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { filtersFrom, queryLogs, toCsv } from '@/lib/logs/query';
 import { logLogsAccess } from '@/lib/logs/audit-view';
@@ -12,6 +13,8 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: Request) {
   const auth = await requireApiAdmin(request);
   if (!auth.ok) return auth.response;
+  const stepUp = await exportStepUpRefusal(auth.supabase, auth.user.id, request);
+  if (stepUp) return stepUp;
   const f = { ...filtersFrom(new URL(request.url)), page: 1, pageSize: 5000 };
   const db = createAdminClient();
   try {

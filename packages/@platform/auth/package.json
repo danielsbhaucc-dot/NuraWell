@@ -1,0 +1,8 @@
+{
+  "name": "@platform/auth",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Product-agnostic auth helpers: session lookup through an injected adapter, product membership, admin gating. Fails closed. No product imports, no env reads.",
+  "main": "src/index.ts",
+  "types": "src/index.ts"
+}

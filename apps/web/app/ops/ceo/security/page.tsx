@@ -2,6 +2,7 @@ import { ensureOpsAdminServer } from '@/lib/auth/ensure-ops-admin-server';
 import { GideonSecurityPanel } from '@/components/gideon/GideonSecurityPanel';
 import { OpsDevicesPanel } from '@/components/ops-access/OpsDevicesPanel';
 import { SecurityKeysPanel } from '@/components/ops-access/SecurityKeysPanel';
+import { AccessAuditFindings } from '@/components/ops/access/AccessAuditFindings';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'גדעון · אבטחה' };
@@ -14,6 +15,7 @@ export default async function Page() {
       <p className="text-sm text-ink-soft">אישורים רגילים: הקשה אחת בטלגרם. פעולות רגישות (מחיקות, הרשאות, פעולות גורפות, הפעלה מחדש): Face ID בתוך טלגרם בלבד.</p>
       <SecurityKeysPanel />
       <OpsDevicesPanel />
+      <AccessAuditFindings />
       <GideonSecurityPanel />
     </div>
   );

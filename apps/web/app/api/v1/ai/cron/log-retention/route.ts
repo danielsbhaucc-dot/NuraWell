@@ -38,8 +38,19 @@ export async function POST(request: Request) {
     } catch (e) {
       subscription_retention = { error: e instanceof Error ? e.message.slice(0, 120) : 'error' };
     }
-    console.log('[cron/log-retention]', JSON.stringify({ deleted: out.deleted, db_bytes: out.db_bytes, alert: out.alert, dunning, subscription_retention }));
-    return NextResponse.json({ ok: true, ...out, dunning, subscription_retention });
+    // Nightly admin-access audit (rule prefilter → cheap model only when something is flagged). Pseudonymous payload.
+    let access_audit: unknown = { skipped: 'dry_run' };
+    if (!dryRun) {
+      try {
+        const { runAccessAudit } = await import('@/lib/platform/access/audit-job');
+        const { alertOwnerSecurity } = await import('@/lib/ops/device-notify');
+        access_audit = await runAccessAudit(admin, { alert: async (t) => { await alertOwnerSecurity(admin, null, t, 'ביקורת גישה לילית'); } });
+      } catch (e) {
+        access_audit = { error: e instanceof Error ? e.message.slice(0, 120) : 'error' };
+      }
+    }
+    console.log('[cron/log-retention]', JSON.stringify({ deleted: out.deleted, db_bytes: out.db_bytes, alert: out.alert, dunning, subscription_retention, access_audit }));
+    return NextResponse.json({ ok: true, ...out, dunning, subscription_retention, access_audit });
   } catch (e) {
     console.error('[cron/log-retention] failed', e instanceof Error ? e.message : 'error');
     return NextResponse.json({ ok: false, error: 'retention_failed' }, { status: 500 });

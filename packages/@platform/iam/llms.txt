@@ -1,0 +1,4 @@
+# @platform/iam (iam)
+Product-agnostic access control for the multi-product console: products, roles, permissions, just-in-time elevation, anti-escalation rules. Pure logic.
+Install: node scripts/modules/install.mjs iam --target <repo>
+Read README.he.md for the full page. Do not add env reads or app imports.

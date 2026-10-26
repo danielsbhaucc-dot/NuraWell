@@ -1,0 +1,10 @@
+# @platform/licensing (licensing)
+Model: sold modules are closed-source. Each buyer gets a signed (Ed25519) monthly license token valid until the next billing date + 3 grace days (DEFAULT_GRACE_DAYS).
+Status: a signed static status file with a monotonic sequence (older sequence = rejected, no rollback). The guard polls it about every 2 min (pollMinutes, default 2) and fails closed after 6h without a valid fetch (graceHours, default 6) with a Hebrew "offline" message.
+States: active | suspended_until (temporary, auto-lifts at `until`) | suspended_until_payment | revoked_permanent. Public reason codes only: unpaid | terms | buyer_request | key_leak | other (free text never leaves our DB).
+Watermark: every bundle carries a per-buyer watermark + signed manifest, so a leaked copy traces to its license; key_leak revokes it and a new key can be issued (rotate).
+Premium: '@platform/licensing/gateway' keeps a server-held core behind a gateway (gatewayAdmin.setStatus/kill); '@platform/licensing/online' is an optional Web-standard verifier, wrap with toHost('cloudflare'|'vercel'|'node', handler).
+No remote deletion: a blocked module only locks itself (lockedFallback); it never deletes buyer files or data.
+Guard: createLicenseGuard({moduleId, version, publicKeyPem, licenseToken, host, revocationUrl?, online?}).run(fn, lockedFallback). Never throws.
+Install: node scripts/modules/install.mjs licensing --target <repo>
+Read README.he.md for the full page. Do not add env reads or app imports. Never commit a private key.

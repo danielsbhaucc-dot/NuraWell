@@ -1,0 +1,7 @@
+{
+  "name": "@platform/modules",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Module system CLI (new, list, index, check, pack, install, verify, boundaries). Tooling only, not a module.",
+  "bin": { "platform-modules": "bin/platform-modules.mjs" }
+}

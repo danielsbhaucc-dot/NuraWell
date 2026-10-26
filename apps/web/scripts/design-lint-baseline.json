@@ -608,11 +608,6 @@
   "arbitraryColor": 24,
   "rawButton": 6
  },
- "components/ops-access/OpsDevicesPanel.tsx": {
-  "rawHex": 12,
-  "arbitraryColor": 12,
-  "rawButton": 2
- },
  "components/ops-access/SecurityKeysPanel.tsx": {
   "rawHex": 11,
   "arbitraryColor": 11,

@@ -1,0 +1,8 @@
+{
+  "name": "@platform/ai-engine",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Product-agnostic AI engine interfaces: provider client (OpenAI-compatible / mock), mandatory privacy guard, cost logging sink tagged by product. No product imports, no env reads, no I/O except the injected fetch.",
+  "main": "src/index.ts",
+  "types": "src/index.ts"
+}
