@@ -5,7 +5,7 @@ import { consumeMultiRateLimits } from '@/lib/api/rate-limit';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { resolveRp } from '@/lib/auth/passkeys';
 import { cookieOpts, DEVICE_COOKIE, DEVICE_MAX_AGE_S, deviceLabel, approxLocation } from '@/lib/ops/device-trust';
-import { clientIp, country, ipHash, maskIp } from '@/lib/platform/access/request-facts';
+import { clientIp, country, ipHash, ipHashCandidates, maskIp } from '@/lib/platform/access/request-facts';
 import { enrollStage } from '@platform/access';
 import {
   ENROLL_COOKIE, completeFactor, factorPasskeyOptions, finishEnrollment, ipBlocked, loadByCookie, openEnrollment, registrationOptions, stateOf,
@@ -48,7 +48,7 @@ export async function POST(request: Request) {
   const rl = await consumeMultiRateLimits(ih ?? 'noip', 'ops-enroll', [{ limit: 30, windowSeconds: 600 }, { limit: 100, windowSeconds: 86_400 }]);
   if (!rl.ok) return nf();
   const db = createAdminClient();
-  if (await ipBlocked(db, ih)) return nf();
+  if (await ipBlocked(db, ipHashCandidates(ip))) return nf();
   const p = Body.safeParse(await request.json().catch(() => null));
   if (!p.success) return nf();
   const a = p.data;

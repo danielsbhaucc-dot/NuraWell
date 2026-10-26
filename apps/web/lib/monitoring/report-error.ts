@@ -10,6 +10,10 @@
  */
 
 import { scrubTelemetry } from '@/lib/security/scrub-sensitive';
+import { withFieldDecryption } from '@/lib/security/field-fetch';
+
+// error_events.message/stack/tags are sealed (field-registry); the raw REST POST must go through the sealing fetch
+const sealedFetch = withFieldDecryption(fetch);
 
 export type Severity = 'info' | 'warning' | 'error' | 'fatal';
 
@@ -57,7 +61,7 @@ async function storeInSupabase(payload: MonitoringPayload): Promise<void> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 3000);
   try {
-    await fetch(`${url}/rest/v1/error_events`, {
+    await sealedFetch(`${url}/rest/v1/error_events`, {
       method: 'POST',
       headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
       body: JSON.stringify({
