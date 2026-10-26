@@ -14,6 +14,7 @@
 import { aadColumns, encryptedTable, FIELD_V2_TABLES, keyColumns, ownerOf, rowKeyOf, SYSTEM_ROW } from '@/lib/security/field-registry';
 import { prepareWriteRow, sealedWriteCols } from '@/lib/security/field-write';
 import { rewriteBlindFilters } from '@/lib/security/blind-index';
+import { COLUMN_ENUMS, enumViolation } from '@/lib/security/column-enums';
 // field-crypto (node:crypto, KMS key) is loaded lazily, only when a response really holds enc:v2 values.
 const FIELD_PREFIX_MARK = 'enc:v2:';
 
@@ -120,6 +121,22 @@ export function withFieldDecryption(base: FetchFn = fetch): FetchFn {
     const table = tableFromUrl(url);
     if (!table || !encryptedTable(table)) return base(input, init);
     const method = (init?.method ?? (input instanceof Request ? input.method : 'GET')).toUpperCase();
+    if ((method === 'POST' || method === 'PATCH' || method === 'PUT') && COLUMN_ENUMS[table] && typeof init?.body === 'string') {
+      let parsed: unknown = null;
+      try {
+        parsed = JSON.parse(init.body);
+      } catch {
+        parsed = null;
+      }
+      const bad = enumViolation(table, parsed);
+      if (bad) {
+        // same shape/code PostgREST returns for a CHECK violation, so callers' error handling is unchanged
+        return new Response(
+          JSON.stringify({ code: '23514', details: null, hint: null, message: `new row for relation "${table}" violates check constraint "${table}_${bad.column}_check"` }),
+          { status: 400, headers: { 'content-type': 'application/json' } },
+        );
+      }
+    }
     const rewrote = await rewriteBlindFilters(table, url);
     if (rewrote) input = url.toString();
     if (method === 'HEAD' || method === 'DELETE' && !url.searchParams.has('select')) return base(input, init);

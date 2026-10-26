@@ -143,3 +143,12 @@ export async function backfillFieldV2(budgetMs = 30_000, tables: readonly string
   }
   return out;
 }
+
+/** Persist a counts-only summary of a run (best effort; never throws). */
+export async function recordBackfillRun(source: 'vercel_cron' | 'master' | 'manual', durationMs: number, result: unknown) {
+  try {
+    await createRawAdminClient().from('field_backfill_runs').insert({ source, duration_ms: durationMs, result: result as never });
+  } catch {
+    /* ignore */
+  }
+}

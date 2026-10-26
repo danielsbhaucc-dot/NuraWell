@@ -43,20 +43,8 @@ Light natural slang ("וואלה", "סבבה", "יאללה") is the intended sty
 Do not touch correct greetings ("בוקר אור", "וואלה") or anything that is already fine. Keep meaning, length, emojis and tokens like [NAME] exactly. Never add advice, facts or numbers. If it is already natural and correct, answer {"ok":true}. When unsure: {"ok":true}.
 Otherwise answer {"ok":false,"fixed":"<the full corrected notification>"}. Hebrew only. JSON only.`;
 
-function escapeRe(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-export function maskName(text: string, firstName?: string | null): string {
-  const n = firstName?.trim();
-  if (!n || n.length < 2) return text;
-  return text.replace(new RegExp(escapeRe(n), 'gu'), '[NAME]');
-}
-
-export function unmaskName(text: string, firstName?: string | null): string {
-  const n = firstName?.trim();
-  return n ? text.replace(/\[NAME\]/g, n) : text;
-}
+export { maskName, unmaskName } from '@/lib/ai/privacy/name-mask';
+import { maskName, unmaskName } from '@/lib/ai/privacy/name-mask';
 
 let capCache: { day: string; spent: number; at: number } | null = null;
 
