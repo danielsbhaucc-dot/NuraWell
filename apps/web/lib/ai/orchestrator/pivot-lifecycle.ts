@@ -63,7 +63,7 @@ async function mirrorToPlan(admin: Admin, userId: string, a: { id: string; title
   const { data: def } = await admin
     .from('task_definitions')
     .upsert(
-      { stable_key: key, source: 'almog', source_ref: a.id, habit_key: key, title: a.title, description: a.detail ?? null, schedule: a.schedule, created_by: 'almog', updated_at: new Date().toISOString() },
+      { stable_key: key, source: 'almog', source_ref: a.id, owner_user_id: userId, habit_key: key, title: a.title, description: a.detail ?? null, schedule: a.schedule, created_by: 'almog', updated_at: new Date().toISOString() },
       { onConflict: 'stable_key' }
     )
     .select('id')

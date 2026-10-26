@@ -57,7 +57,7 @@ export async function runNotifyQualitySweep(admin: SupabaseClient, now = new Dat
       if (qc.status === 'cap' || qc.status === 'disabled') break;
     }
     if (next !== body) {
-      const { error: upErr } = await admin.from('notifications').update({ body: next }).eq('id', row.id).eq('body', row.body!);
+      const { error: upErr } = await admin.from('notifications').update({ body: next }).eq('id', row.id);
       if (!upErr && lint.text !== body) out.lint_fixed += 1;
       if (!upErr && prof.firstName) {
         await logNotifyQualityEvents(

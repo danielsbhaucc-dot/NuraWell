@@ -81,8 +81,8 @@ describe('respondWithHealthRedaction — no leakage', () => {
     const chain: Record<string, unknown> = {};
     for (const k of ['select', 'eq']) chain[k] = () => chain;
     chain.maybeSingle = async () => ({ data: { gender: 'male' } });
-    chain.contains = (_c: string, v: unknown) => {
-      expect(v).toEqual({ redaction_notice: true });
+    chain.is = (c: string, v: unknown) => {
+      expect([c, v]).toEqual(['redaction_notice', true]);
       return Promise.resolve({ count });
     };
     const admin = { from: () => chain };
