@@ -1,0 +1,29 @@
+name: Manual field backfill (scoped)
+
+on:
+  workflow_dispatch:
+    inputs:
+      tables:
+        description: 'Comma-separated backfill tables (required)'
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Trigger scoped backfill (counts only)
+        env:
+          TABLES: ${{ inputs.tables }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          APP_URL: ${{ secrets.VERCEL_APP_URL }}
+        run: |
+          [[ "$TABLES" =~ ^[a-z_,]+$ ]] || { echo "bad tables"; exit 1; }
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST -H "Authorization: Bearer $CRON_SECRET" -H "Content-Length: 0" "$APP_URL/api/v1/ai/cron/field-backfill?tables=$TABLES")
+          CODE=$(echo "$RESPONSE" | tail -n1)
+          echo "$RESPONSE" | head -n-1
+          echo "HTTP $CODE"
+          [ "$CODE" = "200" ]
