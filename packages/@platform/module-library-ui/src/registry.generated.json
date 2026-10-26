@@ -473,6 +473,7 @@
     "src/online/status.ts",
     "src/online/storage.ts",
     "src/online/webcrypto.ts",
+    "src/product/index.ts",
     "src/publish.ts",
     "src/revocation.ts",
     "src/semver.ts"
