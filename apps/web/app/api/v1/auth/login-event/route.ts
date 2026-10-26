@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { consumeRateLimit } from '@/lib/api/rate-limit';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { sealSessionTrailFor } from '@/lib/security/session-trail-seal';
 import { hashIp, requestCountry, requestIp } from '@/lib/logs/signals';
 
 export const runtime = 'nodejs';
@@ -28,6 +29,7 @@ export async function POST(request: Request) {
       if (!actor) return done;
     }
     await db.from('security_signals').insert({ kind: actor ? 'login_ok' : 'login_fail', ip_hash: hashIp(ip), actor_id: actor, path: '/login', country: requestCountry(request) });
+    if (actor) await sealSessionTrailFor(actor);
   } catch { /* best-effort */ }
   return done;
 }

@@ -9,7 +9,8 @@ export const maxDuration = 60;
 
 /**
  * Seals SWEEP_TABLES (auth_session_trail ip/user_agent, written in plaintext by the auth.sessions trigger, 000189)
- * every 5 minutes: enc:v2 under the user's DEK + ip_bidx in one verified CAS update (field-backfill).
+ * BACKSTOP, once daily (Vercel Hobby allows daily crons only); sign-in paths seal at write time via
+ * sealSessionTrailFor (lib/security/session-trail-seal). enc:v2 under the user's DEK + ip_bidx in one verified CAS update (field-backfill).
  * The nightly plaintext monitor FAILS on any plaintext row older than 15 minutes. Counts only — never values.
  */
 export async function POST(request: Request) {

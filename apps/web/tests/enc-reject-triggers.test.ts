@@ -28,7 +28,7 @@ describe('enc-reject triggers stay in sync with field-registry', () => {
   it('swept tables get an age-bounded nightly enforce line', () => {
     const lines = plaintextGuardLines().filter((l) => l.startsWith('sweep auth_session_trail '));
     expect(lines.map((l) => l.split(' ')[2]).sort()).toEqual(['ip', 'user_agent']);
-    for (const l of lines) expect(l.endsWith(' 15 created_at')).toBe(true);
+    for (const l of lines) expect(l.endsWith(' 1500 created_at')).toBe(true);
   });
 
   it('the enforcement function and one-way activation flag exist in the migrations', () => {
