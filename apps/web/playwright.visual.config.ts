@@ -17,7 +17,8 @@ export default defineConfig({
     locale: 'he-IL',
     timezoneId: 'Asia/Jerusalem',
     colorScheme: 'light',
-    reducedMotion: 'reduce',
+    // reducedMotion is a context option, not a top-level `use` key (fixes TS2769 that failed next build).
+    contextOptions: { reducedMotion: 'reduce' },
   },
   projects: [
     { name: 'mobile-390', use: { viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true } },
