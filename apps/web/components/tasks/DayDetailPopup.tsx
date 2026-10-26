@@ -49,7 +49,7 @@ const sourceLabel: Record<DayExecRow['source'], string> = {
  * Popup ידידותי שמראה את כל המשימות שבוצעו ביום מסוים.
  *
  * עיצוב:
- *  - שכבת glass עם רקע ירוק-קרם, ללא #cfe9dc.
+ *  - שכבת glass עם רקע ירוק-קרם, ללא #f2f2f6.
  *  - כרטיס פר-משימה: אמוג'י, שם, צעד, סלוט (בוקר/ארוחה/...) ושעה.
  *  - אם אין רשומות + זה היום → "היום עוד פתוח לפנינו" (עידוד, לא פספוס).
  *  - אם אין רשומות + זה בעבר → טקסט עדין "לא תועד ביצוע" — לא דרמטי.
@@ -128,10 +128,10 @@ export function DayDetailPopup({ open, dateKey, todayKey, rows, onClose }: Props
             style={{
               maxHeight: '100%',
               background:
-                'linear-gradient(168deg, rgba(236,253,245,0.9) 0%, rgba(220,252,231,0.82) 48%, rgba(254,252,232,0.82) 100%)',
+                'linear-gradient(168deg, rgba(242,242,246,0.9) 0%, rgba(232,232,237,0.82) 48%, rgba(242,242,246,0.82) 100%)',
               border: '1px solid rgba(248,251,246,0.55)',
               boxShadow:
-                '0 36px 90px rgba(6,78,59,0.4), 0 0 0 1px rgba(167,243,208,0.45), inset 0 1px 1px rgba(207,233,220,0.95)',
+                '0 36px 90px rgba(6,78,59,0.4), 0 0 0 1px rgba(207,208,214,0.45), inset 0 1px 1px rgba(242,242,246,0.95)',
               backdropFilter: 'blur(36px) saturate(1.45)',
               WebkitBackdropFilter: 'blur(36px) saturate(1.45)',
             }}
@@ -141,8 +141,8 @@ export function DayDetailPopup({ open, dateKey, todayKey, rows, onClose }: Props
               onClick={onClose}
               className="absolute top-3 inset-e-3 z-10 flex h-8 w-8 items-center justify-center rounded-full text-primary-900/80 hover:text-primary-900"
               style={{
-                background: 'rgba(220,252,231,0.6)',
-                border: '1px solid rgba(167,243,208,0.6)',
+                background: 'rgba(232,232,237,0.6)',
+                border: '1px solid rgba(207,208,214,0.6)',
               }}
               aria-label="סגירה"
             >
@@ -153,8 +153,8 @@ export function DayDetailPopup({ open, dateKey, todayKey, rows, onClose }: Props
               className="px-5 pt-5 pb-4 text-center shrink-0"
               style={{
                 background:
-                  'linear-gradient(150deg, rgba(167,243,208,0.55) 0%, rgba(204,251,241,0.35) 70%)',
-                borderBottom: '1px solid rgba(167,243,208,0.45)',
+                  'linear-gradient(150deg, rgba(207,208,214,0.55) 0%, rgba(232,232,237,0.35) 70%)',
+                borderBottom: '1px solid rgba(207,208,214,0.45)',
               }}
             >
               <p className="text-[11px] font-bold text-primary-900/75 mb-0.5">פירוט יום</p>
@@ -175,8 +175,8 @@ export function DayDetailPopup({ open, dateKey, todayKey, rows, onClose }: Props
                   className="rounded-2xl p-4 text-start"
                   style={{
                     background:
-                      'linear-gradient(180deg, rgba(204,251,241,0.45) 0%, rgba(254,252,232,0.4) 100%)',
-                    border: '1px solid rgba(167,243,208,0.4)',
+                      'linear-gradient(180deg, rgba(232,232,237,0.45) 0%, rgba(242,242,246,0.4) 100%)',
+                    border: '1px solid rgba(207,208,214,0.4)',
                   }}
                 >
                   {isFuture ? (
@@ -221,10 +221,10 @@ export function DayDetailPopup({ open, dateKey, todayKey, rows, onClose }: Props
                     className="rounded-2xl p-3"
                     style={{
                       background:
-                        'linear-gradient(170deg, rgba(236,253,245,0.75) 0%, rgba(209,250,229,0.5) 100%)',
-                      border: '1px solid rgba(167,243,208,0.5)',
+                        'linear-gradient(170deg, rgba(242,242,246,0.75) 0%, rgba(232,232,237,0.5) 100%)',
+                      border: '1px solid rgba(207,208,214,0.5)',
                       boxShadow:
-                        '0 6px 18px rgba(6,78,59,0.06), inset 0 1px 0 rgba(236,253,245,0.85)',
+                        '0 6px 18px rgba(6,78,59,0.06), inset 0 1px 0 rgba(242,242,246,0.85)',
                     }}
                   >
                     <div className="flex items-start gap-2.5 flex-row-reverse">
@@ -232,8 +232,8 @@ export function DayDetailPopup({ open, dateKey, todayKey, rows, onClose }: Props
                         className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xl"
                         style={{
                           background:
-                            'linear-gradient(145deg, rgba(220,252,231,0.85), rgba(254,252,232,0.65))',
-                          border: '1px solid rgba(167,243,208,0.6)',
+                            'linear-gradient(145deg, rgba(232,232,237,0.85), rgba(242,242,246,0.65))',
+                          border: '1px solid rgba(207,208,214,0.6)',
                         }}
                       >
                         {row.task_emoji}
@@ -253,7 +253,7 @@ export function DayDetailPopup({ open, dateKey, todayKey, rows, onClose }: Props
                           <span
                             className="text-[10px] font-bold px-2 py-0.5 rounded-full text-primary-900 inline-flex items-center gap-1"
                             style={{
-                              background: 'rgba(167,243,208,0.55)',
+                              background: 'rgba(207,208,214,0.55)',
                               border: '1px solid rgba(110,231,183,0.45)',
                             }}
                           >
@@ -263,8 +263,8 @@ export function DayDetailPopup({ open, dateKey, todayKey, rows, onClose }: Props
                           <span
                             className="text-[10px] font-bold px-2 py-0.5 rounded-full text-primary-900/85 tabular-nums"
                             style={{
-                              background: 'rgba(254,252,232,0.7)',
-                              border: '1px solid rgba(254,240,138,0.55)',
+                              background: 'rgba(242,242,246,0.7)',
+                              border: '1px solid rgba(207,208,214,0.55)',
                             }}
                           >
                             {timeOnly(row.completed_at)}
@@ -293,8 +293,8 @@ export function DayDetailPopup({ open, dateKey, todayKey, rows, onClose }: Props
                 className="px-4 py-3 text-center text-[11px] font-semibold text-primary-900/85 shrink-0"
                 style={{
                   background:
-                    'linear-gradient(180deg, rgba(204,251,241,0.4) 0%, rgba(220,252,231,0.55) 100%)',
-                  borderTop: '1px solid rgba(167,243,208,0.45)',
+                    'linear-gradient(180deg, rgba(232,232,237,0.4) 0%, rgba(232,232,237,0.55) 100%)',
+                  borderTop: '1px solid rgba(207,208,214,0.45)',
                 }}
               >
                 {sortedRows.length === 1

@@ -42,11 +42,11 @@ export function JourneyStationCard({ group, index, onSelect }: JourneyStationCar
       className={cn(
         'group relative block w-full overflow-hidden rounded-[28px] text-start',
         'transition-shadow duration-300',
-        'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary-400/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[#EDF5F0]'
+        'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary-400/80 focus-visible:ring-offset-2 focus-visible:ring-offset-[#f2f2f6]'
       )}
       style={{
         boxShadow:
-          '0 10px 28px rgba(6, 78, 59, 0.14), 0 2px 8px rgba(15, 23, 42, 0.06), inset 0 1px 0 rgba(207,233,220,0.6)',
+          '0 10px 28px rgba(6, 78, 59, 0.14), 0 2px 8px rgba(15, 23, 42, 0.06), inset 0 1px 0 rgba(242,242,246,0.6)',
       }}
       aria-label={`כניסה לתחנה ${index + 1}: ${group.title}`}
     >
@@ -86,7 +86,7 @@ export function JourneyStationCard({ group, index, onSelect }: JourneyStationCar
           className="absolute -top-12 -inset-e-12 h-40 w-40 rounded-full opacity-60"
           style={{
             background:
-              'radial-gradient(circle, rgba(167,243,208,0.55) 0%, transparent 70%)',
+              'radial-gradient(circle, rgba(207,208,214,0.55) 0%, transparent 70%)',
             filter: 'blur(22px)',
           }}
         />
@@ -153,8 +153,8 @@ export function JourneyStationCard({ group, index, onSelect }: JourneyStationCar
                   className="h-full rounded-full"
                   style={{
                     background:
-                      'linear-gradient(90deg, #a7f3d0, #34d399 60%, #fbbf24)',
-                    boxShadow: '0 0 10px rgba(167,243,208,0.6)',
+                      'linear-gradient(90deg, #cfd0d6, #34d399 60%, #fbbf24)',
+                    boxShadow: '0 0 10px rgba(207,208,214,0.6)',
                   }}
                 />
               </div>
@@ -176,7 +176,7 @@ export function JourneyStationCard({ group, index, onSelect }: JourneyStationCar
                 className="pointer-events-none absolute inset-x-2 top-px h-px"
                 style={{
                   background:
-                    'linear-gradient(90deg, transparent, rgba(207,233,220,0.75), transparent)',
+                    'linear-gradient(90deg, transparent, rgba(242,242,246,0.75), transparent)',
                 }}
               />
               {isCompleted ? (

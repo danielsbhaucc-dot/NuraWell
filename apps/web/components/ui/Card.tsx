@@ -32,5 +32,5 @@ export function Card(props: SurfaceProps) {
 }
 
 export function CardTitle({ className, ...rest }: HTMLAttributes<HTMLHeadingElement>) {
-  return <h2 className={cn('font-display text-[17px] font-extrabold leading-snug text-primary-900 border-b border-hairline pb-2 mb-3', className)} {...rest} />;
+  return <h2 className={cn('font-display text-[17px] font-extrabold leading-snug text-brand border-b border-brand-accent/20 pb-2 mb-3', className)} {...rest} />;
 }

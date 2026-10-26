@@ -181,7 +181,7 @@ export function HomeClient({
                 marginBottom: '4px',
                 fontSize: '13px',
                 fontWeight: 600,
-                color: 'rgba(207,233,220,0.88)',
+                color: 'rgba(242,242,246,0.88)',
                 lineHeight: 1.5,
               }}
             >
@@ -283,7 +283,7 @@ export function HomeClient({
       <div
         className="relative z-3 -mt-7 min-h-[55vh] rounded-t-[28px] border-t border-on-dark/50 px-4 pb-6 pt-6"
         style={{
-          background: 'linear-gradient(180deg, #cfe9dc 0%, #edf5f0 45%, #e8f2ec 100%)',
+          background: 'linear-gradient(180deg, #f2f2f6 0%, #f2f2f6 45%, #e8e8ed 100%)',
           boxShadow: '0 -16px 48px rgba(6,78,59,0.12)',
         }}
       >
@@ -320,10 +320,10 @@ export function HomeClient({
                     boxShadow: '0 4px 12px rgba(4,120,87,0.2)',
                   }}
                 >
-                  <span style={{ fontSize: '22px', fontWeight: 900, color: '#eef4ea', lineHeight: 1 }}>
+                  <span style={{ fontSize: '22px', fontWeight: 900, color: '#f2f2f6', lineHeight: 1 }}>
                     {taskLoading ? '…' : taskCounts.done}
                   </span>
-                  <span style={{ fontSize: '9px', color: 'rgba(207,233,220,0.75)', fontWeight: 600 }}>
+                  <span style={{ fontSize: '9px', color: 'rgba(242,242,246,0.75)', fontWeight: 600 }}>
                     מתוך{' '}
                     {taskLoading
                       ? '…'
@@ -439,7 +439,7 @@ export function HomeClient({
                       boxShadow: '0 4px 14px rgba(245,166,35,0.45)',
                     }}
                   >
-                    <span style={{ fontSize: '18px', fontWeight: 900, color: '#eef4ea', lineHeight: 1 }}>
+                    <span style={{ fontSize: '18px', fontWeight: 900, color: '#f2f2f6', lineHeight: 1 }}>
                       {stats.avgProgress}%
                     </span>
                   </div>
@@ -569,7 +569,7 @@ export function FeaturedTaskChip({
             display: 'block',
             fontSize: '13px',
             fontWeight: 800,
-            color: '#eef4ea',
+            color: '#f2f2f6',
             lineHeight: 1.4,
             wordBreak: 'break-word',
           }}
@@ -583,7 +583,7 @@ export function FeaturedTaskChip({
               marginTop: '3px',
               fontSize: '10px',
               fontWeight: 700,
-              color: 'rgba(207,233,220,0.78)',
+              color: 'rgba(242,242,246,0.78)',
               background: 'rgba(255,255,255,0.12)',
               borderRadius: '999px',
               padding: '2px 8px',

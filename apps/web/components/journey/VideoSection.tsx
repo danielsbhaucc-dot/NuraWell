@@ -304,7 +304,7 @@ export function VideoSection({
             style={{ background: 'linear-gradient(135deg, #064e3b, #047857, #10b981)' }}>
             <div className="w-20 h-20 rounded-full flex items-center justify-center mb-4"
               style={{ background: 'rgba(255,255,255,0.15)', border: '2px solid rgba(255,255,255,0.3)' }}>
-              <Play className="w-10 h-10 text-on-dark me-1" fill="#eef4ea" />
+              <Play className="w-10 h-10 text-on-dark me-1" fill="#f2f2f6" />
             </div>
             <p className="text-on-dark/90 text-lg font-bold mb-1">{title}</p>
             <p className="text-on-dark/60 text-sm">הסרטון יהיה זמין בקרוב 🎬</p>
@@ -318,7 +318,7 @@ export function VideoSection({
           >
             <div className="w-20 h-20 rounded-full flex items-center justify-center transition-transform group-active:scale-95"
               style={{ background: 'rgba(16,185,129,0.35)', border: '2px solid rgba(52,211,153,0.5)' }}>
-              <Play className="w-10 h-10 text-on-dark me-1" fill="#eef4ea" />
+              <Play className="w-10 h-10 text-on-dark me-1" fill="#f2f2f6" />
             </div>
             <span className="text-on-dark font-bold text-sm">צפה שוב</span>
           </button>

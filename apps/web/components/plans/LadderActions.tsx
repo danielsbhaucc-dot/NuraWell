@@ -52,11 +52,11 @@ export function LadderActions({
   return (
     <>
       <div className="flex flex-wrap gap-2">
-        <button type="button" disabled={!canStepDown} onClick={() => setSheet('easier')} className="inline-flex min-h-10 flex-auto items-center justify-center gap-1 whitespace-nowrap rounded-full bg-accent-400/16 px-3 text-[13px] font-bold text-accent-800 ring-1 ring-inset ring-accent-600/25 backdrop-blur-md shadow-[inset_0_1px_0_rgba(238,244,234,0.4),0_4px_14px_-6px_rgba(4,20,14,0.25)] transition duration-200 hover:bg-accent-400/24 motion-safe:active:scale-[0.97] motion-reduce:transition-none disabled:opacity-40">
+        <button type="button" disabled={!canStepDown} onClick={() => setSheet('easier')} className="inline-flex min-h-10 flex-auto items-center justify-center gap-1 whitespace-nowrap rounded-full bg-accent-400/16 px-3 text-[13px] font-bold text-accent-800 ring-1 ring-inset ring-accent-600/25 backdrop-blur-md shadow-[inset_0_1px_0_rgba(242,242,246,0.4),0_4px_14px_-6px_rgba(4,20,14,0.25)] transition duration-200 hover:bg-accent-400/24 motion-safe:active:scale-[0.97] motion-reduce:transition-none disabled:opacity-40">
           <span aria-hidden>🌱</span>
           {easierLabel}
         </button>
-        <button type="button" disabled={!canStepUp} onClick={() => setSheet('harder')} className="inline-flex min-h-10 flex-auto items-center justify-center gap-1 whitespace-nowrap rounded-full bg-primary-500/12 px-3 text-[13px] font-bold text-primary-800 ring-1 ring-inset ring-primary-600/20 backdrop-blur-md shadow-[inset_0_1px_0_rgba(238,244,234,0.4),0_4px_14px_-6px_rgba(4,20,14,0.25)] transition duration-200 hover:bg-primary-500/18 motion-safe:active:scale-[0.97] motion-reduce:transition-none disabled:opacity-40">
+        <button type="button" disabled={!canStepUp} onClick={() => setSheet('harder')} className="inline-flex min-h-10 flex-auto items-center justify-center gap-1 whitespace-nowrap rounded-full bg-primary-500/12 px-3 text-[13px] font-bold text-primary-800 ring-1 ring-inset ring-primary-600/20 backdrop-blur-md shadow-[inset_0_1px_0_rgba(242,242,246,0.4),0_4px_14px_-6px_rgba(4,20,14,0.25)] transition duration-200 hover:bg-primary-500/18 motion-safe:active:scale-[0.97] motion-reduce:transition-none disabled:opacity-40">
           <span aria-hidden>💪</span>
           קל לי
         </button>

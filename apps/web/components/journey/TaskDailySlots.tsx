@@ -481,7 +481,7 @@ export function TaskDailySlots({
         className="pointer-events-none absolute inset-x-3 top-px h-px"
         style={{
           background:
-            'linear-gradient(90deg, transparent, rgba(207,233,220,0.8), transparent)',
+            'linear-gradient(90deg, transparent, rgba(242,242,246,0.8), transparent)',
         }}
       />
       <div className="relative flex items-center justify-between">
@@ -502,7 +502,7 @@ export function TaskDailySlots({
               ? {
                   background:
                     'linear-gradient(135deg, rgba(16,185,129,0.95), rgba(52,211,153,0.85))',
-                  color: '#eef4ea',
+                  color: '#f2f2f6',
                   border: '1px solid rgba(52,211,153,0.50)',
                   boxShadow:
                     '0 2px 8px rgba(16,185,129,0.30), inset 0 1px 0 rgba(255,255,255,0.35)',
@@ -551,7 +551,7 @@ export function TaskDailySlots({
                     ? {
                         minHeight: 56,
                         background: 'linear-gradient(135deg, #047857 0%, #10b981 100%)',
-                        border: '1px solid rgba(167,243,208,0.55)',
+                        border: '1px solid rgba(207,208,214,0.55)',
                         boxShadow:
                           '0 6px 16px rgba(6,78,59,0.25), inset 0 1px 0 rgba(255,255,255,0.30)',
                       }
@@ -630,7 +630,7 @@ export function TaskDailySlots({
         <div
           role="alert"
           className="flex items-start gap-2 rounded-xl px-3 py-2 text-[11px] font-semibold leading-relaxed text-accent-900"
-          style={{ background: 'rgba(254, 243, 199, 0.85)', border: '1px solid rgba(217,119,6,0.45)' }}
+          style={{ background: 'rgba(242,242,246,0.85)', border: '1px solid rgba(217,119,6,0.45)' }}
         >
           <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0 text-accent-700" aria-hidden />
           <span className="wrap-break-word">{errMsg}</span>

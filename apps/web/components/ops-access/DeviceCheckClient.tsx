@@ -18,7 +18,7 @@ export function GideonAvatar({ state }: { state: Phase }) {
   const tone = state === 'approved' ? 'from-primary-400 to-secondary-600' : state === 'denied' ? 'from-iris-500 to-iris-700' : state === 'error' || state === 'expired' ? 'from-accent-400 to-energy-600' : 'from-[#1d5c46] to-[#0f3d2e]';
   return (
     <div className="relative">
-      <div className={cn('grid h-16 w-16 place-items-center rounded-[22px] bg-gradient-to-br font-display text-3xl font-black text-[#f6f1e7] shadow-[0_10px_30px_-8px_rgba(15,61,46,0.55)] transition-colors duration-500', tone)} aria-hidden>ג</div>
+      <div className={cn('grid h-16 w-16 place-items-center rounded-[22px] bg-gradient-to-br font-display text-3xl font-black text-[#f2f2f6] shadow-[0_10px_30px_-8px_rgba(15,61,46,0.55)] transition-colors duration-500', tone)} aria-hidden>ג</div>
       <span className="absolute -bottom-1 -start-1 grid h-7 w-7 place-items-center rounded-full bg-gc shadow ring-2 ring-gc">
         {state === 'approved' ? <ShieldCheck className="h-4 w-4 text-primary-600" /> : state === 'denied' ? <ShieldAlert className="h-4 w-4 text-iris-600" /> : <span className={cn('h-2.5 w-2.5 rounded-full', state === 'waiting' || state === 'starting' ? 'animate-pulse bg-primary-500' : 'bg-accent-500')} />}
       </span>
@@ -28,7 +28,7 @@ export function GideonAvatar({ state }: { state: Phase }) {
 
 const Bubble = ({ children, tone = 'plain' }: { children: React.ReactNode; tone?: 'plain' | 'ok' | 'warn' | 'bad' }) => (
   <div className={cn('animate-in fade-in slide-in-from-bottom-1 rounded-3xl rounded-ss-md px-4 py-3 text-[15px] leading-7 duration-300',
-    tone === 'ok' ? 'bg-primary-50 text-primary-900' : tone === 'warn' ? 'bg-accent-50 text-accent-900' : tone === 'bad' ? 'bg-coral-50 text-coral-900' : 'bg-[#f6f1e7] text-ink')}>{children}</div>
+    tone === 'ok' ? 'bg-primary-50 text-primary-900' : tone === 'warn' ? 'bg-accent-50 text-accent-900' : tone === 'bad' ? 'bg-coral-50 text-coral-900' : 'bg-[#f2f2f6] text-ink')}>{children}</div>
 );
 
 function useCountdown(until: number | null) {
@@ -124,7 +124,7 @@ export function DeviceCheckClient({ initialError }: { initialError: string | nul
   const headline = phase === 'approved' ? 'מאושר. נכנסים.' : phase === 'denied' ? 'עצרתי את הכניסה.' : phase === 'expired' ? 'הבקשה פגה.' : phase === 'error' ? 'משהו לא הסתדר.' : 'רגע, אני מוודא שזה אתה.';
 
   return (
-    <div dir="rtl" className="relative flex min-h-[100dvh] items-center justify-center overflow-hidden bg-gradient-to-b from-[#eef4ef] via-[#f7f3ea] to-[#efe8da] px-4 py-8">
+    <div dir="rtl" className="relative flex min-h-[100dvh] items-center justify-center overflow-hidden bg-gradient-to-b from-[#f2f2f6] via-[#f7f3ea] to-[#e8e8ed] px-4 py-8">
       <div className="pointer-events-none absolute -top-24 end-[-4rem] h-72 w-72 rounded-full bg-primary-300/30 blur-3xl" />
       <div className="pointer-events-none absolute bottom-[-6rem] start-[-4rem] h-72 w-72 rounded-full bg-accent-200/40 blur-3xl" />
 
@@ -162,7 +162,7 @@ export function DeviceCheckClient({ initialError }: { initialError: string | nul
                   onChange={(e) => setCode(mode === 'email' ? e.target.value.replace(/\D/g, '') : e.target.value)} onKeyDown={(e) => e.key === 'Enter' && code && void submit()}
                   maxLength={mode === 'email' ? 6 : 11} placeholder={mode === 'email' ? '••••••' : 'XXXXX-XXXXX'}
                   className="w-full rounded-2xl border border-hairline bg-gc px-4 py-3.5 text-center font-mono text-2xl tracking-[0.35em] outline-none transition focus:border-[#0b6b4b] focus:ring-4 focus:ring-primary-100" />
-                <button type="button" disabled={!!busy || !code} onClick={submit} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#0f3d2e] py-3.5 font-bold text-[#f6f1e7] shadow-lg shadow-primary-900/20 transition active:scale-[0.99] disabled:opacity-50">
+                <button type="button" disabled={!!busy || !code} onClick={submit} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#0f3d2e] py-3.5 font-bold text-[#f2f2f6] shadow-lg shadow-primary-900/20 transition active:scale-[0.99] disabled:opacity-50">
                   {busy === 'code' ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}אשר את המכשיר
                 </button>
               </div>
@@ -182,7 +182,7 @@ export function DeviceCheckClient({ initialError }: { initialError: string | nul
           {(phase === 'waiting' || phase === 'expired' || phase === 'error') && (
             <>
               <p className="mb-2 mt-6 px-1 text-xs font-semibold text-ink-faint">אין לך טלגרם בהישג יד?</p>
-              <button type="button" onClick={tapKey} disabled={!!busy || phase !== 'waiting'} className="mb-2 flex w-full items-center justify-center gap-2.5 rounded-2xl bg-[#0f3d2e] py-3.5 font-bold text-[#f6f1e7] shadow-lg shadow-primary-900/20 transition active:scale-[0.99] disabled:opacity-50">
+              <button type="button" onClick={tapKey} disabled={!!busy || phase !== 'waiting'} className="mb-2 flex w-full items-center justify-center gap-2.5 rounded-2xl bg-[#0f3d2e] py-3.5 font-bold text-[#f2f2f6] shadow-lg shadow-primary-900/20 transition active:scale-[0.99] disabled:opacity-50">
                 {busy === 'key' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Usb className="h-4 w-4" />}נגיעה במפתח האבטחה
               </button>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">

@@ -42,20 +42,20 @@ import {
 /* ── Design tokens ───────────────────────────────────────────────── */
 const glassCard = {
   background:
-    'linear-gradient(170deg, rgba(236,253,245,0.82) 0%, rgba(220,252,231,0.72) 55%, rgba(254,252,232,0.68) 100%)',
-  border: '1px solid rgba(167,243,208,0.55)',
+    'linear-gradient(170deg, rgba(242,242,246,0.82) 0%, rgba(232,232,237,0.72) 55%, rgba(242,242,246,0.68) 100%)',
+  border: '1px solid rgba(207,208,214,0.55)',
   boxShadow:
-    '0 12px 40px rgba(6,78,59,0.08), inset 0 1px 0 rgba(236,253,245,0.9)',
+    '0 12px 40px rgba(6,78,59,0.08), inset 0 1px 0 rgba(242,242,246,0.9)',
   backdropFilter: 'blur(20px) saturate(1.2)',
   WebkitBackdropFilter: 'blur(20px) saturate(1.2)',
 } as const;
 
 const glassTaskCard = {
   background:
-    'linear-gradient(165deg, rgba(236,253,245,0.88) 0%, rgba(209,250,229,0.65) 45%, rgba(254,252,232,0.55) 100%)',
+    'linear-gradient(165deg, rgba(242,242,246,0.88) 0%, rgba(232,232,237,0.65) 45%, rgba(242,242,246,0.55) 100%)',
   border: '1px solid rgba(110,231,183,0.45)',
   boxShadow:
-    '0 18px 48px rgba(6,78,59,0.1), 0 0 0 1px rgba(167,243,208,0.35) inset, inset 0 1px 1px rgba(236,253,245,0.95)',
+    '0 18px 48px rgba(6,78,59,0.1), 0 0 0 1px rgba(207,208,214,0.35) inset, inset 0 1px 1px rgba(242,242,246,0.95)',
   backdropFilter: 'blur(24px) saturate(1.35)',
   WebkitBackdropFilter: 'blur(24px) saturate(1.35)',
 } as const;
@@ -87,7 +87,7 @@ const DAY_STATUS: Record<
   done: {
     label: 'הושלם',
     dot: 'bg-primary-500',
-    bg: 'rgba(209,250,229,0.75)',
+    bg: 'rgba(232,232,237,0.75)',
     text: 'text-primary-900',
     border: 'border-primary-300/60',
   },
@@ -101,7 +101,7 @@ const DAY_STATUS: Record<
   partial: {
     label: 'חלקי',
     dot: 'bg-accent-500',
-    bg: 'rgba(254,243,199,0.8)',
+    bg: 'rgba(242,242,246,0.8)',
     text: 'text-accent-900',
     border: 'border-accent-300/60',
   },
@@ -334,7 +334,7 @@ function PeriodTimeline({
   if (dateKeys.length === 0) return null;
 
   return (
-    <div className="rounded-2xl p-3" style={{ background: 'rgba(220,252,231,0.45)', border: '1px solid rgba(167,243,208,0.45)' }}>
+    <div className="rounded-2xl p-3" style={{ background: 'rgba(232,232,237,0.45)', border: '1px solid rgba(207,208,214,0.45)' }}>
       <p className="text-[10px] font-bold text-primary-900/75 mb-2 text-start">
         ציר זמן · {dateKeys.length} ימים
       </p>
@@ -397,7 +397,7 @@ function DayRow({ day, todayKey }: { day: TaskHistoryDay; todayKey: string }) {
           </span>
           <span
             className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${st.text}`}
-            style={{ background: 'rgba(167,243,208,0.35)', border: '1px solid rgba(110,231,183,0.35)' }}
+            style={{ background: 'rgba(207,208,214,0.35)', border: '1px solid rgba(110,231,183,0.35)' }}
           >
             {st.label}
           </span>
@@ -423,7 +423,7 @@ function DayRow({ day, todayKey }: { day: TaskHistoryDay; todayKey: string }) {
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <ul className="mt-2 space-y-1.5 pt-2" style={{ borderTop: '1px solid rgba(167,243,208,0.4)' }}>
+            <ul className="mt-2 space-y-1.5 pt-2" style={{ borderTop: '1px solid rgba(207,208,214,0.4)' }}>
               {day.executions.map((ex, i) => (
                 <li key={`${ex.slot}-${ex.completed_at}-${i}`} className="flex items-center justify-between gap-2 text-[11px]">
                   <span className="font-bold text-primary-800 flex items-center gap-1">
@@ -489,8 +489,8 @@ function TaskCard({
           <div
             className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-2xl"
             style={{
-              background: 'linear-gradient(145deg, rgba(220,252,231,0.9), rgba(254,252,232,0.65))',
-              border: '1px solid rgba(167,243,208,0.6)',
+              background: 'linear-gradient(145deg, rgba(232,232,237,0.9), rgba(242,242,246,0.65))',
+              border: '1px solid rgba(207,208,214,0.6)',
               boxShadow: '0 6px 20px rgba(6,78,59,0.08)',
             }}
           >
@@ -515,14 +515,14 @@ function TaskCard({
             <div className="flex flex-wrap gap-1.5 mt-2 justify-end">
               <span
                 className="text-[10px] font-bold px-2 py-0.5 rounded-full text-primary-900"
-                style={{ background: 'rgba(167,243,208,0.55)', border: '1px solid rgba(110,231,183,0.4)' }}
+                style={{ background: 'rgba(207,208,214,0.55)', border: '1px solid rgba(110,231,183,0.4)' }}
               >
                 {task.schedule_label}
               </span>
               {task.schedule === 'one_time' && task.execution_done ? (
                 <span
                   className="text-[10px] font-bold px-2 py-0.5 rounded-full text-secondary-900"
-                  style={{ background: 'rgba(153,246,228,0.55)', border: '1px solid rgba(94,234,212,0.45)' }}
+                  style={{ background: 'rgba(207,208,214,0.55)', border: '1px solid rgba(94,234,212,0.45)' }}
                 >
                   בוצע ✓
                 </span>
@@ -530,7 +530,7 @@ function TaskCard({
               {task.current_streak > 0 ? (
                 <span
                   className="text-[10px] font-bold px-2 py-0.5 rounded-full text-energy-900 inline-flex items-center gap-0.5"
-                  style={{ background: 'rgba(254,215,170,0.55)', border: '1px solid rgba(251,191,36,0.45)' }}
+                  style={{ background: 'rgba(207,208,214,0.55)', border: '1px solid rgba(251,191,36,0.45)' }}
                 >
                   <Flame className="w-3 h-3" />
                   רצף {task.current_streak}
@@ -550,7 +550,7 @@ function TaskCard({
         {encouragement ? (
           <p
             className="text-[11px] font-semibold text-primary-900/85 mt-2.5 text-start rounded-xl px-3 py-2"
-            style={{ background: 'rgba(236,253,245,0.7)', border: '1px solid rgba(167,243,208,0.4)' }}
+            style={{ background: 'rgba(242,242,246,0.7)', border: '1px solid rgba(207,208,214,0.4)' }}
           >
             {encouragement}
           </p>
@@ -566,13 +566,13 @@ function TaskCard({
             transition={{ duration: 0.25 }}
             className="overflow-hidden"
           >
-            <div className="px-4 pb-4 space-y-3 pt-3" style={{ borderTop: '1px solid rgba(167,243,208,0.35)' }}>
+            <div className="px-4 pb-4 space-y-3 pt-3" style={{ borderTop: '1px solid rgba(207,208,214,0.35)' }}>
               <div
                 className="rounded-2xl p-3 space-y-2"
                 style={{
-                  background: 'linear-gradient(170deg, rgba(220,252,231,0.65) 0%, rgba(254,252,232,0.45) 100%)',
-                  border: '1px solid rgba(167,243,208,0.5)',
-                  boxShadow: 'inset 0 1px 0 rgba(236,253,245,0.85)',
+                  background: 'linear-gradient(170deg, rgba(232,232,237,0.65) 0%, rgba(242,242,246,0.45) 100%)',
+                  border: '1px solid rgba(207,208,214,0.5)',
+                  boxShadow: 'inset 0 1px 0 rgba(242,242,246,0.85)',
                   backdropFilter: 'blur(12px)',
                 }}
               >
@@ -587,7 +587,7 @@ function TaskCard({
               {task.task_description ? (
                 <p
                   className="text-xs text-primary-900/75 leading-relaxed rounded-xl px-3 py-2"
-                  style={{ background: 'rgba(220,252,231,0.45)', border: '1px solid rgba(167,243,208,0.4)' }}
+                  style={{ background: 'rgba(232,232,237,0.45)', border: '1px solid rgba(207,208,214,0.4)' }}
                 >
                   {task.task_description}
                 </p>
@@ -605,7 +605,7 @@ function TaskCard({
               ) : (
                 <p
                   className="text-xs text-primary-900/70 text-center py-3 rounded-xl"
-                  style={{ background: 'rgba(220,252,231,0.45)', border: '1px solid rgba(167,243,208,0.35)' }}
+                  style={{ background: 'rgba(232,232,237,0.45)', border: '1px solid rgba(207,208,214,0.35)' }}
                 >
                   אין ביצועים מתועדים בתקופה זו
                 </p>
@@ -622,7 +622,7 @@ function MetaRow({ icon, label, value }: { icon: React.ReactNode; label: string;
   return (
     <div
       className="flex items-center justify-between gap-2 text-xs rounded-xl px-3 py-2"
-      style={{ background: 'rgba(236,253,245,0.55)', border: '1px solid rgba(167,243,208,0.35)' }}
+      style={{ background: 'rgba(242,242,246,0.55)', border: '1px solid rgba(207,208,214,0.35)' }}
     >
       <span className="font-bold tabular-nums text-primary-900">{value}</span>
       <span className="flex items-center gap-1.5 text-primary-900/75 font-semibold">
@@ -634,7 +634,7 @@ function MetaRow({ icon, label, value }: { icon: React.ReactNode; label: string;
 }
 
 function StatCell({ label, value, accent }: { label: string; value: string; accent: 'emerald' | 'amber' | 'rose' }) {
-  const bg: Record<string, string> = { emerald: 'rgba(209,250,229,0.65)', amber: 'rgba(254,243,199,0.65)', rose: 'rgba(255,228,230,0.55)' };
+  const bg: Record<string, string> = { emerald: 'rgba(232,232,237,0.65)', amber: 'rgba(242,242,246,0.65)', rose: 'rgba(255,228,230,0.55)' };
   const border: Record<string, string> = { emerald: 'rgba(110,231,183,0.4)', amber: 'rgba(251,191,36,0.4)', rose: 'rgba(251,113,133,0.35)' };
   const text: Record<string, string> = { emerald: 'text-primary-900', amber: 'text-accent-900', rose: 'text-coral-800/90' };
   return (
@@ -836,8 +836,8 @@ export function TaskHistoryClient({
                       greeting.tone === 'festive'
                         ? '#FFD97D'
                         : greeting.tone === 'solemn'
-                          ? 'rgba(207,233,220,0.78)'
-                          : 'rgba(207,233,220,0.92)',
+                          ? 'rgba(242,242,246,0.78)'
+                          : 'rgba(242,242,246,0.92)',
                     fontStyle: greeting.tone === 'solemn' ? 'italic' : 'normal',
                   }}
                 >
@@ -856,7 +856,7 @@ export function TaskHistoryClient({
               </h1>
               <p
                 className="mt-2 text-sm font-black leading-relaxed wrap-break-word"
-                style={{ color: '#FFFDE7', fontFamily: "'Rubik', 'Heebo', sans-serif" }}
+                style={{ color: '#f2f2f6', fontFamily: "'Rubik', 'Heebo', sans-serif" }}
               >
                 {almogHeroBody}
               </p>
@@ -904,7 +904,7 @@ export function TaskHistoryClient({
               transition={{ delay: 0.3, duration: 0.3 }}
               className="mt-3 rounded-2xl px-4 py-3 text-start text-sm font-bold text-secondary-900"
               style={{
-                background: 'linear-gradient(135deg, rgba(167,243,208,0.7), rgba(110,231,183,0.5))',
+                background: 'linear-gradient(135deg, rgba(207,208,214,0.7), rgba(110,231,183,0.5))',
                 border: '1px solid rgba(52,211,153,0.4)',
                 boxShadow: '0 4px 16px rgba(6,78,59,0.08)',
               }}
@@ -948,13 +948,13 @@ export function TaskHistoryClient({
                     style={
                       active
                         ? {
-                            background: 'linear-gradient(135deg, rgba(167,243,208,0.9), rgba(110,231,183,0.75))',
+                            background: 'linear-gradient(135deg, rgba(207,208,214,0.9), rgba(110,231,183,0.75))',
                             border: '1px solid rgba(52,211,153,0.5)',
                             boxShadow: '0 4px 14px rgba(6,78,59,0.15)',
                           }
                         : {
-                            background: 'rgba(220,252,231,0.55)',
-                            border: '1px solid rgba(167,243,208,0.4)',
+                            background: 'rgba(232,232,237,0.55)',
+                            border: '1px solid rgba(207,208,214,0.4)',
                           }
                     }
                   >
@@ -1043,7 +1043,7 @@ export function TaskHistoryClient({
                 href="/journey"
                 className="inline-flex items-center justify-center px-6 py-3 rounded-2xl font-bold text-primary-950"
                 style={{
-                  background: 'linear-gradient(135deg, rgba(167,243,208,0.9), rgba(110,231,183,0.8))',
+                  background: 'linear-gradient(135deg, rgba(207,208,214,0.9), rgba(110,231,183,0.8))',
                   boxShadow: '0 8px 24px rgba(16,185,129,0.25)',
                   border: '1px solid rgba(52,211,153,0.45)',
                 }}

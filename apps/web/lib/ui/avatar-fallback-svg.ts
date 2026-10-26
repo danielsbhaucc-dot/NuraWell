@@ -17,7 +17,7 @@ export function avatarFallbackSvg(initial: string): string {
       </defs>
       <rect width="256" height="256" rx="32" fill="url(#g)"/>
       <text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle"
-        font-family="Rubik, Heebo, Arial" font-size="92" font-weight="700" fill="#eef4ea">${initial}</text>
+        font-family="Rubik, Heebo, Arial" font-size="92" font-weight="700" fill="#f2f2f6">${initial}</text>
     </svg>`
     )
   );

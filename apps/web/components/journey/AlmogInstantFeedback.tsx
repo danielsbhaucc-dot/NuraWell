@@ -13,15 +13,15 @@ const toneStyles: Record<
 > = {
   quiz: {
     okBar: 'linear-gradient(135deg, #047857 0%, #10b981 100%)',
-    okAccent: '#ecfdf5',
+    okAccent: '#f2f2f6',
     badBar: 'linear-gradient(135deg, #b45309 0%, #f59e0b 100%)',
-    badAccent: '#cfe9dc',
+    badAccent: '#f2f2f6',
   },
   game: {
     okBar: 'linear-gradient(135deg, #047857 0%, #10b981 100%)',
-    okAccent: '#ecfdf5',
+    okAccent: '#f2f2f6',
     badBar: 'linear-gradient(135deg, #c2410c 0%, #ea580c 100%)',
-    badAccent: '#cfe9dc',
+    badAccent: '#f2f2f6',
   },
 };
 

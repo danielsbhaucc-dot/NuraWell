@@ -77,7 +77,7 @@ export function TranscriptAccessRequestDialog({
       backdropClassName="absolute inset-0 bg-ink-900/45 backdrop-blur-sm"
       panelClassName="crystal-surface max-w-md overflow-hidden rounded-2xl p-0 shadow-2xl sm:rounded-2xl"
     >
-      <div className="border-b border-[#E8D5B5] bg-linear-to-l from-[#cfe9dc] to-[#cfe9dc] px-5 py-4">
+      <div className="border-b border-[#cfd0d6] bg-linear-to-l from-[#f2f2f6] to-[#f2f2f6] px-5 py-4">
         <div className="flex items-start gap-3">
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-iris-200 bg-iris-50 text-iris-700">
             <Lock className="h-5 w-5" />
@@ -94,7 +94,7 @@ export function TranscriptAccessRequestDialog({
       </div>
 
       <div className="space-y-4 px-5 py-4" dir="rtl">
-        <div className="rounded-xl border border-[#E8D5B5] bg-glass/80 p-3 text-sm">
+        <div className="rounded-xl border border-[#cfd0d6] bg-glass/80 p-3 text-sm">
           <p className="mb-1 text-xs font-bold text-ink-500">סיבת הבקשה</p>
           <p className="leading-relaxed text-ink-800">{request.reason}</p>
         </div>
@@ -139,7 +139,7 @@ export function TranscriptAccessRequestDialog({
               onChange={(e) => setDenyReason(e.target.value)}
               rows={2}
               disabled={busy}
-              className="w-full rounded-xl border border-[#E8D5B5] bg-glass/80 px-3 py-2 text-sm text-ink-800"
+              className="w-full rounded-xl border border-[#cfd0d6] bg-glass/80 px-3 py-2 text-sm text-ink-800"
               placeholder="למשל: עדיף לי לא לשתף את השיחה הזו"
             />
             <div className="flex gap-2">

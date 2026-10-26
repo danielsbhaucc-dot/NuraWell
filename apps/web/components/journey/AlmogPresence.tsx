@@ -21,11 +21,11 @@ export function AlmogCompletionHero({
       <div
         className="relative p-[3px] rounded-full mb-3"
         style={{
-          background: 'linear-gradient(145deg, rgba(207,233,220,0.95), rgba(16,185,129,0.55), rgba(4,120,87,0.85))',
+          background: 'linear-gradient(145deg, rgba(242,242,246,0.95), rgba(16,185,129,0.55), rgba(4,120,87,0.85))',
           boxShadow: '0 12px 40px rgba(4,120,87,0.22), 0 0 0 1px rgba(255,255,255,0.35) inset',
         }}
       >
-        <div className="rounded-full p-0.5" style={{ background: 'linear-gradient(180deg, #ecfdf5 0%, #d1fae5 100%)' }}>
+        <div className="rounded-full p-0.5" style={{ background: 'linear-gradient(180deg, #f2f2f6 0%, #e8e8ed 100%)' }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={avatarUrl}
@@ -131,13 +131,13 @@ export function MomentsHeroAvatar({ size = 96, name = 'אלמוג' }: { size?: n
         className="relative rounded-full p-[3px]"
         style={{
           background:
-            'linear-gradient(145deg, rgba(207,233,220,0.95), rgba(167,243,208,0.55), rgba(4,120,87,0.85))',
+            'linear-gradient(145deg, rgba(242,242,246,0.95), rgba(207,208,214,0.55), rgba(4,120,87,0.85))',
           boxShadow: '0 12px 40px rgba(4,120,87,0.22), 0 0 0 1px rgba(255,255,255,0.35) inset',
         }}
       >
         <div
           className="rounded-full p-0.5"
-          style={{ background: 'linear-gradient(180deg, #ecfdf5 0%, #d1fae5 100%)' }}
+          style={{ background: 'linear-gradient(180deg, #f2f2f6 0%, #e8e8ed 100%)' }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img

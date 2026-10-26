@@ -261,7 +261,7 @@ function AccordionSection({
         <span className="flex-1 text-[14px] font-black text-on-dark">{label}</span>
         <span
           className="rounded-full px-2 py-px text-[11px] font-black"
-          style={{ background: glassTint(tone, 0.3), color: '#eef4ea' }}
+          style={{ background: glassTint(tone, 0.3), color: '#f2f2f6' }}
         >
           {sessions.length}
         </span>
@@ -511,7 +511,7 @@ export function ChatSessionInbox({
                                     ? {
                                         background: `${accent}33`,
                                         border: `1px solid ${accent}88`,
-                                        color: '#eef4ea',
+                                        color: '#f2f2f6',
                                       }
                                     : {
                                         background: 'rgba(255,255,255,0.05)',

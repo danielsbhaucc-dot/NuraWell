@@ -25,7 +25,7 @@ export function AssetSheet({ assetKey, hub, onClose, onChanged }: { assetKey: st
   const st = hub ? statusChip(hub) : null;
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-primary-950/35 backdrop-blur-[2px]" role="dialog" aria-modal="true" aria-label="פרטי קובץ" dir="rtl" onClick={onClose} data-testid="asset-sheet">
-      <div onClick={(e) => e.stopPropagation()} className="mt-auto max-h-[94dvh] w-full overflow-y-auto rounded-t-[30px] border border-accent-200/40 bg-[linear-gradient(165deg,rgba(214,238,230,0.97),rgba(232,226,206,0.95))] p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-2xl backdrop-blur-xl sm:mt-0 sm:h-full sm:max-h-none sm:max-w-xl sm:rounded-none sm:rounded-l-[30px] sm:p-6">
+      <div onClick={(e) => e.stopPropagation()} className="mt-auto max-h-[94dvh] w-full overflow-y-auto rounded-t-[30px] border border-accent-200/40 bg-[linear-gradient(165deg,rgba(242,242,246,0.97),rgba(242,242,246,0.95))] p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-2xl backdrop-blur-xl sm:mt-0 sm:h-full sm:max-h-none sm:max-w-xl sm:rounded-none sm:rounded-l-[30px] sm:p-6">
         <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-primary-900/15 sm:hidden" />
         <div className="flex items-start gap-4">
           {hub ? <AssetThumb thumb={hub.thumb} kind={hub.kind} size="lg" className="h-24 w-24 shrink-0 rounded-[22px] sm:h-28 sm:w-28" /> : <div className="h-24 w-24 shrink-0 animate-pulse rounded-[22px] bg-primary-900/10" />}

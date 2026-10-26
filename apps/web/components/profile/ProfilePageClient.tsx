@@ -500,7 +500,7 @@ export function ProfilePageClient({
             disabled={isSigningOut}
             className="w-full flex items-center justify-center gap-2 rounded-2xl p-4 font-bold text-coral-700 transition-all active:scale-98"
             style={{
-              background: 'linear-gradient(135deg, rgba(254,226,226,0.95), rgba(254,202,202,0.88))',
+              background: 'linear-gradient(135deg, rgba(242,242,246,0.95), rgba(232,232,237,0.88))',
               border: '1px solid rgba(248,113,113,0.35)',
             }}
           >

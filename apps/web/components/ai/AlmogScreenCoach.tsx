@@ -23,7 +23,7 @@ const toneMap = {
     title: '#1A1730',
     body: '#3A3654',
     cardBg:
-      'linear-gradient(170deg, rgba(236,253,245,0.88) 0%, rgba(220,252,231,0.76) 55%, rgba(254,252,232,0.72) 100%)',
+      'linear-gradient(170deg, rgba(242,242,246,0.88) 0%, rgba(232,232,237,0.76) 55%, rgba(242,242,246,0.72) 100%)',
   },
   amber: {
     bg: 'linear-gradient(145deg, #b45309, #f59e0b)',
@@ -33,7 +33,7 @@ const toneMap = {
     title: '#451a03',
     body: '#57534e',
     cardBg:
-      'linear-gradient(170deg, rgba(207,233,220,0.92) 0%, rgba(254,243,199,0.78) 55%, rgba(207,233,220,0.88) 100%)',
+      'linear-gradient(170deg, rgba(242,242,246,0.92) 0%, rgba(242,242,246,0.78) 55%, rgba(242,242,246,0.88) 100%)',
   },
   violet: {
     bg: 'linear-gradient(145deg, #6d28d9, #a855f7)',
@@ -43,7 +43,7 @@ const toneMap = {
     title: '#3b0764',
     body: '#4c1d95',
     cardBg:
-      'linear-gradient(170deg, rgba(207,233,220,0.92) 0%, rgba(237,233,254,0.78) 55%, rgba(236,253,245,0.72) 100%)',
+      'linear-gradient(170deg, rgba(242,242,246,0.92) 0%, rgba(237,233,254,0.78) 55%, rgba(242,242,246,0.72) 100%)',
   },
   teal: {
     bg: 'linear-gradient(145deg, #0f766e, #14b8a6)',
@@ -53,7 +53,7 @@ const toneMap = {
     title: '#134e4a',
     body: '#3A3654',
     cardBg:
-      'linear-gradient(170deg, rgba(207,233,220,0.92) 0%, rgba(204,251,241,0.76) 55%, rgba(236,253,245,0.80) 100%)',
+      'linear-gradient(170deg, rgba(242,242,246,0.92) 0%, rgba(232,232,237,0.76) 55%, rgba(242,242,246,0.80) 100%)',
   },
 } as const;
 
@@ -85,13 +85,13 @@ export function AlmogScreenCoach({
         borderRadius: 22,
         background: palette.cardBg,
         border: `1px solid ${palette.border}`,
-        boxShadow: '0 12px 34px rgba(6,78,59,0.10), inset 0 1px 0 rgba(207,233,220,0.72)',
+        boxShadow: '0 12px 34px rgba(6,78,59,0.10), inset 0 1px 0 rgba(242,242,246,0.72)',
       }}
     >
       <div
         aria-hidden
         className="pointer-events-none absolute inset-x-4 top-px h-px"
-        style={{ background: 'linear-gradient(90deg, transparent, rgba(207,233,220,0.9), transparent)' }}
+        style={{ background: 'linear-gradient(90deg, transparent, rgba(242,242,246,0.9), transparent)' }}
       />
       <div className="flex items-start gap-3">
         <AlmogAvatarChipWithNameTag size={48} />

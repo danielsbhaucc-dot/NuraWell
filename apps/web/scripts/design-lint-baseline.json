@@ -395,7 +395,7 @@
   "rawButton": 1
  },
  "components/home/DolevHeroHeader.tsx": {
-  "white": 20,
+  "white": 16,
   "rawHex": 24,
   "rawButton": 1
  },
@@ -518,7 +518,7 @@
   "rawHex": 23
  },
  "components/legal/ConsentEvidenceSheet.tsx": {
-  "white": 4,
+  "white": 3,
   "rawHex": 1,
   "rawButton": 2
  },
