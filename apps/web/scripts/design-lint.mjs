@@ -13,8 +13,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { findNearWhite, nearWhiteAliases } from './near-white.mjs';
-import { findMintSurfaces } from './mint-surface.mjs';
-import { MINT_ALLOW } from './mint-allow.mjs';
+import { findMintSurfaces } from '../../../scripts/design/mint-surface.mjs';
+import { MINT_ALLOW } from '../../../scripts/design/mint-allow.mjs';
 const MINT_CLASS = /\b(?:bg|from|via|to)-(?:emerald|green|teal|lime|mint|sage)-(?:50|100|200)\b/g;
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const BASELINE = path.join(ROOT, 'scripts/design-lint-baseline.json');
