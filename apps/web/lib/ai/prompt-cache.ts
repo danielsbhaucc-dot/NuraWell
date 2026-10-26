@@ -11,6 +11,18 @@
  * two content blocks at the end of a registered static prefix.
  */
 const cacheablePrefixes = new Set<string>();
+
+/**
+ * Long cache life for OpenAI (Terra/Luna): `cache_control.ttl` is dropped toward OpenAI, so the static block
+ * also carries OpenAI's own breakpoint with a 12h TTL. Tradeoff: a 12h write costs 2.5x input once instead of
+ * 1.25x per 30-minute expiry; reads are the same 0.1x. The static prefix is identical for every user, so one
+ * write can serve many sessions for 12h. Disable with AI_CHAT_OPENAI_CACHE_TTL=30m.
+ */
+export function openAiLongCacheBreakpoint(): { prompt_cache_breakpoint?: { mode: 'explicit'; ttl: string } } {
+  const ttl = process.env.AI_CHAT_OPENAI_CACHE_TTL?.trim() || '12h';
+  if (ttl !== '12h') return {};
+  return { prompt_cache_breakpoint: { mode: 'explicit', ttl } };
+}
 const MIN_PREFIX_CHARS = 4000;
 
 export function registerCacheablePrefix(prefix: string): void {
@@ -35,7 +47,14 @@ export function applyPromptCacheToBody(body: Record<string, unknown>): Record<st
   for (const p of cacheablePrefixes) if (p.length > best.length && content.startsWith(p)) best = p;
   if (!best) return null;
   const rest = content.slice(best.length);
-  const blocks: Array<Record<string, unknown>> = [{ type: 'text', text: best, cache_control: { type: 'ephemeral' } }];
+  const blocks: Array<Record<string, unknown>> = [
+    {
+      type: 'text',
+      text: best,
+      cache_control: { type: 'ephemeral' },
+      ...(String(body.model).startsWith('openai/') ? openAiLongCacheBreakpoint() : {}),
+    },
+  ];
   if (rest) blocks.push({ type: 'text', text: rest });
   const next = messages.slice();
   next[idx] = { ...messages[idx], content: blocks };

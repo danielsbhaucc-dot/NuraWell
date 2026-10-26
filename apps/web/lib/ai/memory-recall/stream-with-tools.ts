@@ -52,6 +52,8 @@ export async function createMemoryRecallStreamResponse(params: {
   maxOutputTokens: number;
   headers: HeadersInit;
   piiShield?: PiiShield | null;
+  /** chat session id → OpenRouter sticky routing key (x-session-id) */
+  sessionId?: string | null;
   providerOptions?: Record<string, Record<string, string>>;
   debugId?: string;
   onFinish: (payload: MemoryRecallStreamFinishPayload) => Promise<void>;
@@ -97,6 +99,8 @@ export async function createMemoryRecallStreamResponse(params: {
     temperature: params.temperature,
     maxOutputTokens: params.maxOutputTokens,
     providerOptions: params.providerOptions,
+    // OpenRouter sticky routing per chat session (keeps the prompt cache warm across turns)
+    ...(params.sessionId ? { headers: { 'x-session-id': String(params.sessionId).slice(0, 256) } } : {}),
     onStepFinish: (step) => {
       const recallCalls = (step.toolCalls ?? []).filter(
         (tc) => tc.toolName === RECALL_TOOL_NAME
