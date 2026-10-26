@@ -45,7 +45,16 @@ describe('store pages are Hebrew-only', () => {
 
 describe('plain-language UI (no jargon outside "פרטים טכניים")', () => {
   const JARGON = /ed25519|manifest|מניפסט|hmac|tarball|\.tgz|sha-?256|LICENSE_[A-Z_]+|[A-Z]{3,}_[A-Z_]+|base64|\bjwt\b/i;
-  const visible = (html: string) => html.replace(/<details class="fd-tech">[\s\S]*?<\/details>/g, '').replace(/<[^>]+>/g, ' ');
+  // Collapsed accordion panels (TechDetails / secondary content) are not visible text: drop each hidden panel (balanced <div>).
+  const dropHidden = (html: string) => {
+    for (let i = html.search(/<div class="fd-acc-p"[^>]*hidden/); i !== -1; i = html.search(/<div class="fd-acc-p"[^>]*hidden/)) {
+      let depth = 0; const re = /<\/?div\b[^>]*>/g; re.lastIndex = i; let m: RegExpExecArray | null; let end = html.length;
+      while ((m = re.exec(html))) { depth += m[0][1] === '/' ? -1 : 1; if (depth === 0) { end = re.lastIndex; break; } }
+      html = html.slice(0, i) + html.slice(end);
+    }
+    return html;
+  };
+  const visible = (html: string) => dropHidden(html.replace(/<details class="fd-tech">[\s\S]*?<\/details>/g, '')).replace(/<[^>]+>/g, ' ');
   it('hub, dialogs, licenses and store pages', async () => {
     const { ShareDialog, SellDialog } = await import('../../../packages/@platform/module-library-ui/src/Dialogs');
     const { LicensesView } = await import('../../../packages/@platform/module-library-ui/src/LicensesView');
