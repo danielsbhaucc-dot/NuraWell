@@ -16,7 +16,7 @@ type Sel = HubSection | `product:${string}`;
 type DialogInit = { s: 'done'; out: PackOut } | { s: 'error'; msg: string };
 
 export interface FinderDashboardProps {
-  registry: RegistryModule[]; products: ProductRow[]; summaries: ProductSummary[]; deployment: Deployment; metricsError: string | null; signingReady: boolean; activity?: ActivityItem[] | null; costTrend?: CostTrend;
+  registry: RegistryModule[]; products: ProductRow[]; summaries: ProductSummary[]; deployment: Deployment; metricsError: string | null; statesError?: string | null; signingReady: boolean; activity?: ActivityItem[] | null; costTrend?: CostTrend;
   initialSection?: Sel; initialView?: 'icons' | 'list'; initialSelected?: string | null;
   initialDialog?: { kind: 'share' | 'sell'; state?: DialogInit }; licensesInitial?: Parameters<typeof LicensesView>[0]['initial']; licensesRevoke?: string; licensesUnblock?: string; licensesRotate?: { lid: string; secret?: string };
   moduleHref?: (id: string) => string;
@@ -67,6 +67,7 @@ export function FinderDashboard(p: FinderDashboardProps) {
         </aside>
         <main className="fd-main">
           {toast ? <div className={`fd-toast ${toast.ok ? 'is-ok' : 'is-err'}`} role={toast.ok ? 'status' : 'alert'}>{toast.msg}<button type="button" onClick={() => setToast(null)} aria-label="סגירה">×</button></div> : null}
+          {p.statesError ? <p className="fd-warn" role="status">מרכז המודולים עוד לא הופעל במלואו בשרת. מצב הרכיבים בכל מוצר יוצג כאן אחרי ההפעלה.</p> : null}
           {sec === 'overview' ? <Overview products={products} summaries={p.summaries} deployment={p.deployment} metricsError={p.metricsError} registry={registry} onOpen={(id) => setSec(`product:${id}`)} onNav={(k) => { setSec(k); setSel(null); }} activity={p.activity ?? null} costTrend={p.costTrend ?? null} href={href} /> : null}
           {sec === 'costs' ? <CostsView products={products} summaries={p.summaries} metricsError={p.metricsError} /> : null}
           {sec === 'security' ? <SecurityView deployment={p.deployment} registry={registry} /> : null}
