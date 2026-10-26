@@ -34,6 +34,7 @@ jobs:
           CRON_SECRET: ${{ secrets.DB_BACKUP_SECRET }}
           BACKUP_API_URL: ${{ secrets.VERCEL_APP_URL }}
           OUT_DIR: ${{ runner.temp }}/backup
+          PLAINTEXT_SUMMARY: ${{ runner.temp }}/plaintext-summary.json
         run: bash scripts/backup/db-backup.sh
       - name: Alert owner on failure
         if: failure()
@@ -44,3 +45,17 @@ jobs:
         run: |
           curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" -H 'Content-Type: application/json' \
             -d "{\"run_url\":\"$RUN_URL\"}" "$APP_URL/api/v1/ops/backup-alert" >/dev/null || echo "alert call failed"
+      - name: Alert owner on any plaintext in sensitive columns (counts only)
+        if: always()
+        env:
+          CRON_SECRET: ${{ secrets.DB_BACKUP_SECRET }}
+          APP_URL: ${{ secrets.VERCEL_APP_URL }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SUMMARY_FILE: ${{ runner.temp }}/plaintext-summary.json
+        run: |
+          [ -s "$SUMMARY_FILE" ] || exit 0
+          s="$(cat "$SUMMARY_FILE")"
+          if echo "$s" | grep -qE '"(enforce|pending|gap|unclassified)_(rows|cols)":[1-9]'; then
+            curl -fsS -X POST -H "Authorization: Bearer $CRON_SECRET" -H 'Content-Type: application/json' \
+              -d "{\"run_url\":\"$RUN_URL\",\"plaintext\":$s}" "$APP_URL/api/v1/ops/backup-alert" >/dev/null || echo "alert call failed"
+          fi
