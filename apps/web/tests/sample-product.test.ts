@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createMemoryCostSink, createMockProvider } from '@platform/ai-engine';
 import { memoryAuthAdapter } from '@platform/auth';
-import { DEMO_USER, PRODUCT_ID, makeAuth, makeEngine, pickProvider } from '@/lib/platform';
+import { DEMO_USER, PRODUCT_ID, makeAuth, makeEngine, pickProvider } from '../../sample-product/lib/platform';
 
 describe('sample product on the shared platform', () => {
   it('defaults to the free mock provider', () => {
