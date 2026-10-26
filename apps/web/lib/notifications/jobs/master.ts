@@ -810,8 +810,11 @@ async function runMasterCron() {
 
   // --- Field envelope (enc:v2) backfill for tables listed in FIELD_V2_BACKFILL_TABLES (code constant, staged)
   try {
-    const { backfillFieldV2 } = await import('@/lib/security/field-backfill');
-    console.log('[cron/master] field_v2_backfill', JSON.stringify(await backfillFieldV2(30_000)));
+    const { backfillFieldV2, recordBackfillRun } = await import('@/lib/security/field-backfill');
+    const t0 = Date.now();
+    const fb = await backfillFieldV2(30_000);
+    console.log('[cron/master] field_v2_backfill', JSON.stringify(fb));
+    await recordBackfillRun('master', Date.now() - t0, fb);
   } catch (e) {
     errors.push(`field_v2_backfill: ${e instanceof Error ? e.message : String(e)}`);
   }

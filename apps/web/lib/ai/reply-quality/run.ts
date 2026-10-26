@@ -16,9 +16,14 @@ import {
   replyQcEnabled,
   replyQcSkipReason,
   validateReplyQcFix,
+  maskReplyQcInput,
   type ReplyQcInput,
   type ReplyQcVerdict,
 } from './core';
+import { logNotifyQualityEvents } from '@/lib/notifications/quality-learning';
+
+/** source tag in notify_quality_events so nightly rules learn from chat replies too */
+export const REPLY_QC_LEARN_SOURCE = 'almog_reply';
 
 export type ReplyQcCallResult = {
   verdict: ReplyQcVerdict | null;
@@ -105,7 +110,7 @@ export type ReplyQcOutcome =
  */
 export async function runAlmogReplyQualityCheck(
   admin: SupabaseClient,
-  p: Omit<ReplyQcInput, 'reply'> & { userId: string; sessionId: string; crisis?: boolean }
+  p: Omit<ReplyQcInput, 'reply'> & { userId: string; sessionId: string; crisis?: boolean; firstName?: string | null }
 ): Promise<ReplyQcOutcome> {
   try {
     if (!replyQcEnabled()) return { status: 'disabled' };
@@ -131,12 +136,22 @@ export async function runAlmogReplyQualityCheck(
     const skip = replyQcSkipReason({ ...input, crisis: p.crisis });
     if (skip) return { status: 'skipped', reason: skip };
 
-    const r = await callReplyQcModel(input, { userId: p.userId });
+    const { firstName, userId: _u, sessionId: _s, crisis: _c, ...qcBase } = p;
+    const { masked, restore } = maskReplyQcInput({ ...qcBase, reply }, firstName);
+    // userId only feeds our internal usage meter; the request body carries masked text only
+    const r = await callReplyQcModel(masked, { userId: p.userId });
     if (r.costUsd && capCache) capCache.spent += r.costUsd;
     if (!r.verdict) return { status: 'no_verdict' };
     if (r.verdict.ok) return { status: 'ok' };
-    const v = validateReplyQcFix(reply, r.verdict.fixed, { healthConsentOff: p.healthConsentOff });
-    if (!v.ok) return { status: 'rejected', reason: v.reason };
+    const vm = validateReplyQcFix(masked.reply, r.verdict.fixed, { healthConsentOff: p.healthConsentOff });
+    if (!vm.ok) {
+      void logNotifyQualityEvents(
+        [{ stage: 'qc_reject', category: vm.reason, source: REPLY_QC_LEARN_SOURCE, before: masked.reply, after: null }],
+        { firstName, admin }
+      );
+      return { status: 'rejected', reason: vm.reason };
+    }
+    const v = { ok: true as const, fixed: restore(vm.fixed) };
     if (Date.now() - createdAt > REPLY_QC_MAX_AGE_MS) return { status: 'too_old' };
 
     // audit first (original kept, encrypted like chat) — unique(interaction_id) enforces max 1 edit
@@ -163,6 +178,11 @@ export async function runAlmogReplyQualityCheck(
       await admin.from('ai_interaction_edits').delete().eq('interaction_id', row.id);
       return { status: 'error' };
     }
+    // anonymized learning (no name, no user id; PII already tokenized) → nightly style rules
+    void logNotifyQualityEvents(
+      [{ stage: 'qc_edit', category: 'reply_fix', source: REPLY_QC_LEARN_SOURCE, before: masked.reply, after: vm.fixed }],
+      { firstName, admin }
+    );
     return { status: 'edited', interactionId: String(row.id) };
   } catch {
     return { status: 'error' };
