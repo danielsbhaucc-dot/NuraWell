@@ -68,5 +68,13 @@ export async function prepareWriteRow(table: string, row: Row): Promise<Row> {
     // insert only: an update without dedupe_key keeps the stored key (the trigger only fills NULL)
     if ('source' in r && 'title' in r && 'body' in r) r = { ...r, dedupe_key: notificationDedupeKey(r) };
   }
+  // technical filter keys mirrored out of encrypted metadata into plain columns (migration 000204)
+  const meta = r.metadata;
+  const plainMeta = meta && typeof meta === 'object' && !Array.isArray(meta) ? (meta as Row) : null;
+  if ('metadata' in r && !isV2(meta)) {
+    if (table === 'ai_interactions' && !('redaction_notice' in r)) r = { ...r, redaction_notice: plainMeta?.redaction_notice === true };
+    if (table === 'scheduled_reminders' && !('source' in r))
+      r = { ...r, source: typeof plainMeta?.source === 'string' ? plainMeta.source : null };
+  }
   return r;
 }
