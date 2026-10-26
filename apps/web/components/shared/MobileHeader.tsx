@@ -39,7 +39,7 @@ export function MobileHeader({ user, profileFullName }: MobileHeaderProps) {
     <>
       <header
         className="fixed top-0 inset-e-0 inset-s-0 z-50 safe-area-top overflow-hidden"
-        style={{ background: 'linear-gradient(160deg, #047857 0%, #059669 50%, #10b981 100%)' }}
+        style={{ background: 'linear-gradient(160deg, var(--color-header-from) 0%, var(--color-header-to) 100%)' }}
       >
         <div className="container-mobile h-16 flex items-center justify-between gap-3 relative z-10">
           {/* RTL: הילד הראשון בצד ימין — ההמבורגר בימין */}

@@ -39,8 +39,8 @@ export function EditedBadge() {
         aria-expanded={open}
         aria-controls={popId}
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex min-h-[22px] items-center rounded-full px-2 py-0.5 text-[11px] font-semibold not-italic leading-none focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#fef3c7]"
-        style={{ background: '#064e3b', color: '#fef3c7', border: '1px solid rgba(254,243,199,0.35)' }}
+        className="inline-flex min-h-[22px] items-center rounded-full px-2 py-0.5 text-[11px] font-semibold not-italic leading-none focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#f2f2f6]"
+        style={{ background: '#064e3b', color: '#f2f2f6', border: '1px solid rgba(242,242,246,0.35)' }}
       >
         נערכה
       </button>
@@ -49,7 +49,7 @@ export function EditedBadge() {
           id={popId}
           role="status"
           className="absolute bottom-full start-0 z-20 mb-1.5 w-max max-w-[220px] rounded-xl px-3 py-2 text-[12px] font-medium leading-snug shadow-lg"
-          style={{ background: '#cfe9dc', color: '#064e3b', border: '1px solid #a7f3d0' }}
+          style={{ background: '#f2f2f6', color: '#064e3b', border: '1px solid #cfd0d6' }}
         >
           {EDITED_EXPLANATION}
         </span>

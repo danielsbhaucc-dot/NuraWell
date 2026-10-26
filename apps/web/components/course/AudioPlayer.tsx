@@ -136,9 +136,9 @@ export function AudioPlayer({ src, title, duration }: AudioPlayerProps) {
             aria-label={isPlaying ? 'השהה' : 'נגן'}
           >
             {isPlaying ? (
-              <Pause className="w-7 h-7" fill="#eef4ea" />
+              <Pause className="w-7 h-7" fill="#f2f2f6" />
             ) : (
-              <Play className="w-7 h-7 translate-x-px" fill="#eef4ea" />
+              <Play className="w-7 h-7 translate-x-px" fill="#f2f2f6" />
             )}
           </button>
 

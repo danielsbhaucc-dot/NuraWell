@@ -88,7 +88,7 @@ export function StepUpDialog({ open, purpose, reason, onClose, onVerified, varia
 
   return (
     <div className="fixed inset-0 z-[60] grid place-items-end bg-primary-950/45 backdrop-blur-sm sm:place-items-center" role="dialog" aria-modal="true" aria-label="אימות זהות" dir="rtl" data-testid="stepup-dialog">
-      <div className="max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-[30px] border border-accent-200/40 bg-[linear-gradient(160deg,rgba(220,240,233,0.95),rgba(233,226,205,0.93))] p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-2xl backdrop-blur-xl sm:rounded-[30px]">
+      <div className="max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-[30px] border border-accent-200/40 bg-[linear-gradient(160deg,rgba(232,232,237,0.95),rgba(242,242,246,0.93))] p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-2xl backdrop-blur-xl sm:rounded-[30px]">
         <div className="mb-3 flex items-start justify-between gap-3">
           <div>
             <p className="text-[11px] font-bold tracking-wide text-accent-700">{eyebrow ?? (variant === 'login' ? 'כניסה עם הטלפון' : 'אימות לפני פעולה רגישה')}</p>

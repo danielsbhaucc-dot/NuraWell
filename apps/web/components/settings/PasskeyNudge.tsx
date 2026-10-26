@@ -25,7 +25,7 @@ export function FaceKeyArt() {
             <stop offset="1" stopColor="#10B981" />
           </linearGradient>
           <linearGradient id="pkGold" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stopColor="#F6D58E" />
+            <stop offset="0" stopColor="#cfd0d6" />
             <stop offset="1" stopColor="#C8973A" />
           </linearGradient>
           <clipPath id="pkClip"><rect x="30" y="26" width="88" height="88" rx="26" /></clipPath>
@@ -40,9 +40,9 @@ export function FaceKeyArt() {
         {/* face = key bow */}
         <g className="pk-face">
           <circle cx="74" cy="70" r="27" fill="rgba(16,185,129,0.12)" stroke="url(#pkFace)" strokeWidth="3.5" />
-          <circle cx="64.5" cy="65" r="3.2" fill="#A7F3D0" />
-          <circle cx="83.5" cy="65" r="3.2" fill="#A7F3D0" />
-          <path d="M63 77 q11 10 22 0" fill="none" stroke="#A7F3D0" strokeWidth="3.2" strokeLinecap="round" />
+          <circle cx="64.5" cy="65" r="3.2" fill="#cfd0d6" />
+          <circle cx="83.5" cy="65" r="3.2" fill="#cfd0d6" />
+          <path d="M63 77 q11 10 22 0" fill="none" stroke="#cfd0d6" strokeWidth="3.2" strokeLinecap="round" />
         </g>
         {/* key shaft + teeth (gold), hanging from the face */}
         <g className="pk-key" stroke="#D9AE57" strokeWidth="4" strokeLinecap="round" fill="none">
@@ -53,8 +53,8 @@ export function FaceKeyArt() {
         <g clipPath="url(#pkClip)">
           <rect className="pk-scan" x="30" y="26" width="88" height="3" rx="1.5" fill="#5EEAD4" opacity="0.85" />
         </g>
-        <circle className="pk-spark" cx="120" cy="22" r="3" fill="#F6D58E" />
-        <circle className="pk-spark pk-spark2" cx="24" cy="120" r="2.2" fill="#F6D58E" />
+        <circle className="pk-spark" cx="120" cy="22" r="3" fill="#cfd0d6" />
+        <circle className="pk-spark pk-spark2" cx="24" cy="120" r="2.2" fill="#cfd0d6" />
       </svg>
       <style>{`
         .pk-halo{background:radial-gradient(circle at 50% 45%,rgba(45,212,191,.35),rgba(16,185,129,.08) 55%,transparent 70%);animation:pkPulse 3.2s ease-in-out infinite}

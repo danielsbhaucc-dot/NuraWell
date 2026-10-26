@@ -13,7 +13,7 @@ export function ConsentChatButton({ action, onOpen }: { action: 'grant' | 'withd
           onOpen();
           openConsentSheet({ action, source: 'chat' });
         }}
-        className="group inline-flex min-h-11 items-center gap-2 rounded-2xl border border-accent-200/80 bg-[linear-gradient(135deg,rgba(207,233,220,0.95),rgba(236,250,243,0.95))] px-4 py-2.5 text-sm font-bold text-primary-800 shadow-md shadow-accent-900/5 backdrop-blur transition hover:shadow-lg active:scale-[0.98]"
+        className="group inline-flex min-h-11 items-center gap-2 rounded-2xl border border-accent-200/80 bg-[linear-gradient(135deg,rgba(242,242,246,0.95),rgba(242,242,246,0.95))] px-4 py-2.5 text-sm font-bold text-primary-800 shadow-md shadow-accent-900/5 backdrop-blur transition hover:shadow-lg active:scale-[0.98]"
       >
         <span className="grid h-7 w-7 place-items-center rounded-xl bg-gradient-to-br from-primary-500 to-secondary-500 text-on-dark">
           {action === 'withdraw' ? <ShieldCheck className="h-4 w-4" aria-hidden /> : <HeartPulse className="h-4 w-4" aria-hidden />}

@@ -132,8 +132,8 @@ export function ProfilePageClient({
     : [];
 
   const stats = [
-    { label: 'פרקים הושלמו', value: totalCompleted, icon: Award, color: '#10b981' },
-    { label: 'מדריכים פעילים', value: enrolledCount, icon: BookOpen, color: '#14b8a6' },
+    { label: 'פרקים הושלמו', value: totalCompleted, icon: Award, color: '#047857' },
+    { label: 'מדריכים פעילים', value: enrolledCount, icon: BookOpen, color: '#047857' },
     { label: 'רצף ימים', value: profile?.streak_days ?? 0, icon: Flame, color: '#f97316' },
   ];
 
@@ -284,7 +284,7 @@ export function ProfilePageClient({
                   src={avatarUrl}
                   alt={profile?.full_name ?? 'פרופיל'}
                   className="w-[72px] h-[72px] rounded-2xl object-cover shadow-lg"
-                  style={{ boxShadow: '0 8px 24px rgba(20,184,166,0.35)' }}
+                  style={{ boxShadow: '0 8px 24px rgba(11,51,38,0.3)' }}
                   onError={() => {
                     void refreshAvatar();
                   }}
@@ -293,8 +293,8 @@ export function ProfilePageClient({
                 <div
                   className="w-[72px] h-[72px] rounded-2xl flex items-center justify-center text-2xl font-black text-on-dark"
                   style={{
-                    background: 'linear-gradient(135deg, #14b8a6, #10b981)',
-                    boxShadow: '0 8px 24px rgba(20,184,166,0.35)',
+                    background: 'linear-gradient(135deg, var(--color-header-from), var(--color-header-to))',
+                    boxShadow: '0 8px 24px rgba(11,51,38,0.3)',
                   }}
                 >
                   {initials}
@@ -366,8 +366,8 @@ export function ProfilePageClient({
               <div
                 className="w-9 h-9 rounded-xl mx-auto mb-1.5 flex items-center justify-center"
                 style={{
-                  background: `linear-gradient(135deg, ${s.color}22, ${s.color}11)`,
-                  border: `1px solid ${s.color}44`,
+                  background: 'var(--color-background-soft)',
+                  border: '1px solid var(--color-hairline)',
                 }}
               >
                 <s.icon className="w-4 h-4" style={{ color: s.color }} strokeWidth={2.4} />
@@ -500,7 +500,7 @@ export function ProfilePageClient({
             disabled={isSigningOut}
             className="w-full flex items-center justify-center gap-2 rounded-2xl p-4 font-bold text-coral-700 transition-all active:scale-98"
             style={{
-              background: 'linear-gradient(135deg, rgba(254,226,226,0.95), rgba(254,202,202,0.88))',
+              background: 'linear-gradient(135deg, rgba(242,242,246,0.95), rgba(232,232,237,0.88))',
               border: '1px solid rgba(248,113,113,0.35)',
             }}
           >

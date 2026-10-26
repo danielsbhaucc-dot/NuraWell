@@ -80,7 +80,7 @@ export function StepUpApprove({ id, demo }: { id: string; demo?: ApproveInfo }) 
 
   return (
     <main dir="rtl" className="mx-auto grid min-h-[90dvh] w-full max-w-md place-items-center p-4">
-      <section className="w-full rounded-[30px] border border-accent-200/50 bg-[linear-gradient(160deg,rgba(214,238,229,0.92),rgba(236,228,206,0.9))] p-5 shadow-[0_24px_60px_-28px_rgba(6,78,59,0.55)] backdrop-blur-xl" data-testid="stepup-approve">
+      <section className="w-full rounded-[30px] border border-accent-200/50 bg-[linear-gradient(160deg,rgba(242,242,246,0.92),rgba(242,242,246,0.9))] p-5 shadow-[0_24px_60px_-28px_rgba(6,78,59,0.55)] backdrop-blur-xl" data-testid="stepup-approve">
         {state === 'loading' ? <Loader2 className="mx-auto my-10 animate-spin text-ink-faint" />
           : state === 'signin' ? (
             <>

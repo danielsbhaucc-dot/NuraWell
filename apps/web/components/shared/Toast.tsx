@@ -23,8 +23,8 @@ const config = {
     icon: CheckCircle2,
     iconBg: 'linear-gradient(135deg, rgba(16,185,129,0.35), rgba(5,150,105,0.25))',
     iconColor: '#34d399',
-    titleColor: '#ecfdf5',
-    msgColor: '#a7f3d0',
+    titleColor: '#f2f2f6',
+    msgColor: '#cfd0d6',
     border: 'rgba(16,185,129,0.45)',
     glow: 'rgba(16,185,129,0.22)',
     bar: 'linear-gradient(90deg, #059669, #10b981, #34d399)',
@@ -36,9 +36,9 @@ const config = {
   error: {
     icon: XCircle,
     iconBg: 'linear-gradient(135deg, rgba(239,68,68,0.35), rgba(185,28,28,0.25))',
-    iconColor: '#fca5a5',
-    titleColor: '#cfe9dc',
-    msgColor: '#fecaca',
+    iconColor: '#cfd0d6',
+    titleColor: '#f2f2f6',
+    msgColor: '#e8e8ed',
     border: 'rgba(239,68,68,0.5)',
     glow: 'rgba(239,68,68,0.25)',
     bar: 'linear-gradient(90deg, #b91c1c, #ef4444, #f87171)',
@@ -51,7 +51,7 @@ const config = {
     icon: Info,
     iconBg: 'linear-gradient(135deg, rgba(59,130,246,0.35), rgba(29,78,216,0.25))',
     iconColor: '#93c5fd',
-    titleColor: '#cfe9dc',
+    titleColor: '#f2f2f6',
     msgColor: '#bfdbfe',
     border: 'rgba(59,130,246,0.45)',
     glow: 'rgba(59,130,246,0.22)',
@@ -65,8 +65,8 @@ const config = {
     icon: AlertTriangle,
     iconBg: 'linear-gradient(135deg, rgba(234,179,8,0.35), rgba(161,98,7,0.25))',
     iconColor: '#fde047',
-    titleColor: '#fefce8',
-    msgColor: '#fef08a',
+    titleColor: '#f2f2f6',
+    msgColor: '#cfd0d6',
     border: 'rgba(234,179,8,0.45)',
     glow: 'rgba(234,179,8,0.22)',
     bar: 'linear-gradient(90deg, #a16207, #eab308, #fbbf24)',
@@ -150,7 +150,7 @@ function Toast({ toast, onDismiss }: ToastProps) {
           onClick={() => onDismiss(toast.id)}
           className="flex-shrink-0 w-7 h-7 rounded-xl flex items-center justify-center transition-all mt-0.5"
           style={{ color: 'rgba(255,255,255,0.4)', background: 'rgba(255,255,255,0.05)' }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; e.currentTarget.style.color = 'rgba(207,233,220,0.8)'; }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; e.currentTarget.style.color = 'rgba(242,242,246,0.8)'; }}
           onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.color = 'rgba(255,255,255,0.4)'; }}
         >
           <X className="w-3.5 h-3.5" />

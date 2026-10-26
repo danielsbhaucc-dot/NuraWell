@@ -81,7 +81,7 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
 
   const glassPanelStyle: CSSProperties = {
     background:
-      'linear-gradient(165deg, rgba(236,253,245,0.92) 0%, rgba(209,250,229,0.55) 38%, rgba(207,233,220,0.88) 100%)',
+      'linear-gradient(165deg, rgba(242,242,246,0.92) 0%, rgba(232,232,237,0.55) 38%, rgba(242,242,246,0.88) 100%)',
     backdropFilter: 'blur(28px) saturate(1.35)',
     WebkitBackdropFilter: 'blur(28px) saturate(1.35)',
     boxShadow:
@@ -163,8 +163,8 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
               <div
                 className="px-3 py-2.5 rounded-2xl flex-1 min-w-[calc(50%-6px)] sm:min-w-[120px] text-center border border-primary-900/10 shadow-xs"
                 style={{
-                  background: 'rgba(207,233,220,0.72)',
-                  boxShadow: '0 4px 14px rgba(6,78,59,0.06), inset 0 1px 0 rgba(207,233,220,0.9)',
+                  background: 'rgba(242,242,246,0.72)',
+                  boxShadow: '0 4px 14px rgba(6,78,59,0.06), inset 0 1px 0 rgba(242,242,246,0.9)',
                 }}
               >
                 <span className="text-ink-600 block text-xs mb-0.5">שאלות</span>
@@ -173,8 +173,8 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
               <div
                 className="px-3 py-2.5 rounded-2xl flex-1 min-w-[calc(50%-6px)] sm:min-w-[120px] text-center border border-primary-900/10 shadow-xs"
                 style={{
-                  background: 'rgba(207,233,220,0.68)',
-                  boxShadow: '0 4px 14px rgba(6,78,59,0.06), inset 0 1px 0 rgba(207,233,220,0.88)',
+                  background: 'rgba(242,242,246,0.68)',
+                  boxShadow: '0 4px 14px rgba(6,78,59,0.06), inset 0 1px 0 rgba(242,242,246,0.88)',
                 }}
               >
                 <span className="text-ink-600 block text-xs mb-0.5">משחק</span>
@@ -185,9 +185,9 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                   className="px-3 py-2.5 rounded-2xl flex-1 min-w-full sm:min-w-[120px] text-center border border-primary-900/10 shadow-xs"
                   style={{
                     background: progress.commitment_accepted
-                      ? 'rgba(236,253,245,0.92)'
-                      : 'rgba(207,233,220,0.92)',
-                    boxShadow: '0 4px 14px rgba(6,78,59,0.06), inset 0 1px 0 rgba(207,233,220,0.85)',
+                      ? 'rgba(242,242,246,0.92)'
+                      : 'rgba(242,242,246,0.92)',
+                    boxShadow: '0 4px 14px rgba(6,78,59,0.06), inset 0 1px 0 rgba(242,242,246,0.85)',
                   }}
                 >
                   {progress.commitment_accepted ? (
@@ -274,16 +274,16 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
 
                 const ringGradient =
                   status === 'accepted'
-                    ? 'linear-gradient(135deg, rgba(16,185,129,0.55), rgba(110,231,183,0.35), rgba(207,233,220,0.7))'
+                    ? 'linear-gradient(135deg, rgba(16,185,129,0.55), rgba(110,231,183,0.35), rgba(242,242,246,0.7))'
                     : status === 'rejected'
-                      ? 'linear-gradient(135deg, rgba(251,113,133,0.5), rgba(253,186,116,0.35), rgba(207,233,220,0.65))'
-                      : 'linear-gradient(135deg, rgba(207,233,220,0.95), rgba(167,243,208,0.4), rgba(204,251,241,0.5))';
+                      ? 'linear-gradient(135deg, rgba(251,113,133,0.5), rgba(253,186,116,0.35), rgba(242,242,246,0.65))'
+                      : 'linear-gradient(135deg, rgba(242,242,246,0.95), rgba(207,208,214,0.4), rgba(232,232,237,0.5))';
 
                 const innerBg =
                   status === 'accepted'
-                    ? 'linear-gradient(180deg, rgba(207,233,220,0.72) 0%, rgba(209,250,229,0.38) 100%)'
+                    ? 'linear-gradient(180deg, rgba(242,242,246,0.72) 0%, rgba(232,232,237,0.38) 100%)'
                     : status === 'rejected'
-                      ? 'linear-gradient(180deg, rgba(207,233,220,0.68) 0%, rgba(255,241,242,0.42) 100%)'
+                      ? 'linear-gradient(180deg, rgba(242,242,246,0.68) 0%, rgba(255,241,242,0.42) 100%)'
                       : 'linear-gradient(180deg, rgba(248,251,246,0.58) 0%, rgba(236,253,245,0.28) 100%)';
 
                 const accentBar =
@@ -306,7 +306,7 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                         backdropFilter: 'blur(22px) saturate(1.25)',
                         WebkitBackdropFilter: 'blur(22px) saturate(1.25)',
                         boxShadow:
-                          '0 18px 48px rgba(6,78,59,0.11), 0 0 0 1px rgba(255,255,255,0.5) inset, inset 0 1px 1px rgba(207,233,220,0.9)',
+                          '0 18px 48px rgba(6,78,59,0.11), 0 0 0 1px rgba(255,255,255,0.5) inset, inset 0 1px 1px rgba(242,242,246,0.9)',
                       }}
                     >
                       <div
@@ -318,9 +318,9 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                             <div
                               className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-[18px] text-[26px]"
                               style={{
-                                background: 'linear-gradient(145deg, rgba(207,233,220,0.92), rgba(236,253,245,0.5))',
-                                border: '1px solid rgba(207,233,220,0.85)',
-                                boxShadow: '0 6px 20px rgba(6,78,59,0.08), inset 0 1px 0 rgba(207,233,220,0.95)',
+                                background: 'linear-gradient(145deg, rgba(242,242,246,0.92), rgba(242,242,246,0.5))',
+                                border: '1px solid rgba(242,242,246,0.85)',
+                                boxShadow: '0 6px 20px rgba(6,78,59,0.08), inset 0 1px 0 rgba(242,242,246,0.95)',
                               }}
                               aria-hidden
                             >
@@ -333,8 +333,8 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                                     className="text-[10px] font-bold tracking-wide px-2 py-0.5 rounded-full border border-primary-400/45 text-primary-900"
                                     style={{
                                       background:
-                                        'linear-gradient(135deg, rgba(209,250,229,0.95), rgba(167,243,208,0.4))',
-                                      boxShadow: 'inset 0 1px 0 rgba(207,233,220,0.7)',
+                                        'linear-gradient(135deg, rgba(232,232,237,0.95), rgba(207,208,214,0.4))',
+                                      boxShadow: 'inset 0 1px 0 rgba(242,242,246,0.7)',
                                     }}
                                   >
                                     תזמון · {scheduleText}
@@ -398,7 +398,7 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                             {status === 'accepted' && (
                               <span
                                 className="text-[10px] sm:text-[11px] font-bold tracking-wide text-primary-900 bg-linear-to-r from-primary-50 to-secondary-50/90 border border-primary-300/50 rounded-full px-3 py-1.5 shadow-xs shadow-primary-900/5"
-                                style={{ boxShadow: 'inset 0 1px 0 rgba(207,233,220,0.65)' }}
+                                style={{ boxShadow: 'inset 0 1px 0 rgba(242,242,246,0.65)' }}
                               >
                                 נשמר · מקובל
                               </span>
@@ -406,7 +406,7 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                             {status === 'rejected' && (
                               <span
                                 className="text-[10px] sm:text-[11px] font-bold tracking-wide text-coral-900 bg-linear-to-r from-coral-50 to-energy-50/90 border border-coral-300/45 rounded-full px-3 py-1.5 shadow-xs shadow-coral-900/5"
-                                style={{ boxShadow: 'inset 0 1px 0 rgba(207,233,220,0.65)' }}
+                                style={{ boxShadow: 'inset 0 1px 0 rgba(242,242,246,0.65)' }}
                               >
                                 נשמר · לא מקובל כרגע
                               </span>
@@ -464,7 +464,7 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                     className="w-full rounded-[22px] p-px shrink-0 overflow-hidden"
                     style={{
                       background:
-                        'linear-gradient(135deg, rgba(16,185,129,0.5), rgba(167,243,208,0.35), rgba(248,251,246,0.55))',
+                        'linear-gradient(135deg, rgba(16,185,129,0.5), rgba(207,208,214,0.35), rgba(248,251,246,0.55))',
                       boxShadow: '0 12px 36px rgba(6,78,59,0.1)',
                     }}
                   >
@@ -495,7 +495,7 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                       <div
                         className="min-w-0 flex-1 px-4 py-3.5 flex flex-col justify-center text-start"
                         style={{
-                          background: 'linear-gradient(180deg, rgba(207,233,220,0.78) 0%, rgba(240,253,250,0.5) 100%)',
+                          background: 'linear-gradient(180deg, rgba(242,242,246,0.78) 0%, rgba(240,253,250,0.5) 100%)',
                         }}
                       >
                         <p
@@ -513,8 +513,8 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                           <span
                             className="inline-flex items-center gap-1.5 text-[11px] font-bold tracking-wide px-3 py-1.5 rounded-full border border-primary-400/35 text-primary-900"
                             style={{
-                              background: 'linear-gradient(135deg, rgba(209,250,229,0.95), rgba(167,243,208,0.35))',
-                              boxShadow: '0 4px 14px rgba(16,185,129,0.12), inset 0 1px 0 rgba(207,233,220,0.75)',
+                              background: 'linear-gradient(135deg, rgba(232,232,237,0.95), rgba(207,208,214,0.35))',
+                              boxShadow: '0 4px 14px rgba(16,185,129,0.12), inset 0 1px 0 rgba(242,242,246,0.75)',
                             }}
                           >
                             תדירות · {getHabitFrequencyLabel(habit.frequency)}
@@ -578,10 +578,10 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
               rel="noopener noreferrer"
               className="flex items-center gap-3 p-4 rounded-2xl transition-all hover:scale-[1.01] border border-on-dark/55 shadow-md"
               style={{
-                background: 'rgba(207,233,220,0.62)',
+                background: 'rgba(242,242,246,0.62)',
                 backdropFilter: 'blur(14px)',
                 WebkitBackdropFilter: 'blur(14px)',
-                boxShadow: 'inset 0 1px 0 rgba(207,233,220,0.85), 0 8px 24px rgba(6,78,59,0.08)',
+                boxShadow: 'inset 0 1px 0 rgba(242,242,246,0.85), 0 8px 24px rgba(6,78,59,0.08)',
               }}
             >
               <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
@@ -611,10 +611,10 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
             className="max-w-lg mx-auto w-full rounded-[24px] overflow-hidden space-y-3 p-4"
             style={{
               border: '1px solid rgba(248,251,246,0.55)',
-              background: 'linear-gradient(165deg, rgba(255,255,255,0.48) 0%, rgba(236,253,245,0.4) 100%)',
+              background: 'linear-gradient(165deg, rgba(255,255,255,0.48) 0%, rgba(242,242,246,0.4) 100%)',
               backdropFilter: 'blur(22px)',
               WebkitBackdropFilter: 'blur(22px)',
-              boxShadow: '0 14px 40px rgba(6,78,59,0.12), inset 0 1px 0 rgba(207,233,220,0.75)',
+              boxShadow: '0 14px 40px rgba(6,78,59,0.12), inset 0 1px 0 rgba(242,242,246,0.75)',
             }}
           >
           <p className="text-center text-[11px] font-bold text-primary-900/80">רוצה לעבור שוב? אני איתך.</p>
@@ -623,7 +623,7 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
             onClick={onReplay}
             className="w-full py-3.5 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all hover:scale-[1.01] active:scale-95"
             style={{
-              background: 'linear-gradient(145deg, rgba(209,250,229,0.95), rgba(167,243,208,0.65))',
+              background: 'linear-gradient(145deg, rgba(232,232,237,0.95), rgba(207,208,214,0.65))',
               color: '#065f46',
               border: '1.5px solid rgba(16,185,129,0.35)',
               boxShadow: '0 4px 16px rgba(6,78,59,0.1)',
@@ -717,11 +717,11 @@ function SummaryGlassSection({
         className="px-3.5 py-4 sm:px-4 sm:py-[18px]"
         style={{
           background:
-            'linear-gradient(165deg, rgba(248,251,246,0.58) 0%, rgba(236,253,245,0.4) 52%, rgba(255,255,255,0.52) 100%)',
+            'linear-gradient(165deg, rgba(248,251,246,0.58) 0%, rgba(242,242,246,0.4) 52%, rgba(255,255,255,0.52) 100%)',
           backdropFilter: 'blur(24px) saturate(1.25)',
           WebkitBackdropFilter: 'blur(24px) saturate(1.25)',
-          borderTop: '1px solid rgba(207,233,220,0.62)',
-          boxShadow: 'inset 0 1px 0 rgba(207,233,220,0.75)',
+          borderTop: '1px solid rgba(242,242,246,0.62)',
+          boxShadow: 'inset 0 1px 0 rgba(242,242,246,0.75)',
         }}
       >
         {children}
@@ -764,7 +764,7 @@ function TimelineStepBadge({ step, accent }: { step: number; accent: TimelineAcc
       className="relative z-10 flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-full text-[19px] font-black tabular-nums tracking-tight text-on-dark"
       style={{
         background: gradient,
-        boxShadow: `${shadow}, 0 0 0 3px rgba(167,243,208,0.55)`,
+        boxShadow: `${shadow}, 0 0 0 3px rgba(207,208,214,0.55)`,
         textShadow: '0 1px 2px rgba(0,0,0,0.18)',
       }}
       aria-hidden
@@ -881,11 +881,11 @@ function AccordionSummarySection({
               style={{
                 fontFamily: "'Rubik','Heebo',sans-serif",
                 background:
-                  'linear-gradient(165deg, rgba(207,233,220,0.78) 0%, rgba(207,233,220,0.92) 40%, rgba(236,253,245,0.45) 100%)',
+                  'linear-gradient(165deg, rgba(242,242,246,0.78) 0%, rgba(242,242,246,0.92) 40%, rgba(242,242,246,0.45) 100%)',
                 backdropFilter: 'blur(24px) saturate(1.25)',
                 WebkitBackdropFilter: 'blur(24px) saturate(1.25)',
-                borderTop: '1px solid rgba(207,233,220,0.62)',
-                boxShadow: 'inset 0 1px 0 rgba(207,233,220,0.85)',
+                borderTop: '1px solid rgba(242,242,246,0.62)',
+                boxShadow: 'inset 0 1px 0 rgba(242,242,246,0.85)',
               }}
             >
               {children}
@@ -956,11 +956,11 @@ function ResearchItem({ research, isExpanded, onToggle }: { research: Research; 
       className="rounded-[18px] overflow-hidden border border-on-dark/70 ring-1 ring-primary-900/5"
       style={{
         background:
-          'linear-gradient(165deg, rgba(207,233,220,0.62) 0%, rgba(239,246,255,0.48) 40%, rgba(255,255,255,0.45) 100%)',
+          'linear-gradient(165deg, rgba(242,242,246,0.62) 0%, rgba(239,246,255,0.48) 40%, rgba(255,255,255,0.45) 100%)',
         backdropFilter: 'blur(16px)',
         WebkitBackdropFilter: 'blur(16px)',
         boxShadow:
-          '0 8px 28px rgba(6,78,59,0.08), inset 0 1px 0 rgba(207,233,220,0.85)',
+          '0 8px 28px rgba(6,78,59,0.08), inset 0 1px 0 rgba(242,242,246,0.85)',
       }}
     >
       <button

@@ -95,7 +95,7 @@ export async function captureSheet(node: HTMLElement, identity?: IdentityStrip |
     const raw = await toCanvas(node, {
       pixelRatio: ratio,
       cacheBust: true,
-      backgroundColor: '#eef3e4',
+      backgroundColor: '#e8e8ed',
       width: w0,
       height: fullH,
       canvasWidth: w0,
@@ -202,7 +202,7 @@ export function ConsentEvidenceSheet({ open, action, gender, onClose, mode = 'su
     }
   };
 
-  const accent = withdraw ? 'from-coral-500 to-accent-500' : 'from-primary-600 to-secondary-500';
+  const accent = withdraw ? 'from-coral-500 to-accent-500' : 'from-brand-accent to-brand';
   const hair = 'border-primary-900/10 contrast-more:border-ink-700';
 
   return (
@@ -221,29 +221,29 @@ export function ConsentEvidenceSheet({ open, action, gender, onClose, mode = 'su
         ref={panel}
         dir="rtl"
         data-testid="consent-evidence-sheet"
-        className="relative max-h-[86dvh] overflow-y-auto overscroll-contain [&[data-capturing]::-webkit-scrollbar]:hidden [&[data-capturing]]:[scrollbar-width:none] bg-[linear-gradient(180deg,rgba(238,243,228,0.96),rgba(207,233,220,0.95)_60%,rgba(243,236,220,0.96))] px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-2.5 text-right font-[family-name:var(--font-assistant,inherit)] text-ink-800 backdrop-blur-2xl backdrop-saturate-150 contrast-more:bg-glass-hi sm:px-6 sm:pt-5"
+        className="relative max-h-[86dvh] overflow-y-auto overscroll-contain [&[data-capturing]::-webkit-scrollbar]:hidden [&[data-capturing]]:[scrollbar-width:none] bg-canvas border-t-[3px] border-brand-accent px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-2.5 text-right font-[family-name:var(--font-assistant,inherit)] text-ink-800 contrast-more:bg-glass-hi sm:px-6 sm:pt-5"
       >
         <div className="mx-auto mb-4 h-[5px] w-9 rounded-full bg-primary-950/20 contrast-more:bg-ink-700 sm:hidden" aria-hidden />
         <div className="flex flex-col items-center px-2 text-center">
           <span className={`grid h-14 w-14 place-items-center rounded-[18px] bg-gradient-to-br ${accent} text-on-dark shadow-[0_8px_20px_-6px_rgba(4,120,87,0.45),inset_0_1px_0_rgba(255,255,255,0.35)] ring-1 ring-accent-300/50`}>
             {withdraw ? <Trash2 className="h-6 w-6" aria-hidden /> : <HeartPulse className="h-6 w-6" aria-hidden />}
           </span>
-          <h2 id="consent-ev-title" className="mt-3 font-[family-name:var(--font-rubik,inherit)] text-[22px] font-bold leading-tight tracking-[-0.01em] text-primary-950 contrast-more:text-forest-950">
+          <h2 id="consent-ev-title" className="mt-3 font-[family-name:var(--font-rubik,inherit)] text-[22px] font-bold leading-tight tracking-[-0.01em] text-brand contrast-more:text-forest-950">
             {t.title}
           </h2>
           <p className="mt-1.5 max-w-md text-[15px] leading-relaxed text-ink-600 contrast-more:text-ink-900">{t.intro}</p>
         </div>
 
-        <div className={`mt-5 overflow-hidden rounded-[20px] border ${hair} bg-glass-hi/80 shadow-[0_1px_2px_rgba(6,40,30,0.06)]`}>
+        <div className={`mt-5 overflow-hidden rounded-[20px] border ${hair} bg-surface shadow-[0_1px_2px_rgba(6,40,30,0.08)]`}>
           {t.sections.map((s, i) => (
             <section key={s.heading} className={`relative px-4 py-3.5 ${i > 0 ? 'before:absolute before:left-0 before:right-12 before:top-0 before:h-px before:bg-primary-900/10 contrast-more:before:bg-ink-700' : ''}`}>
-              <h3 className="mb-1 flex items-center gap-2.5 font-[family-name:var(--font-rubik,inherit)] text-[15px] font-semibold text-primary-950 contrast-more:text-forest-950">
-                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-gradient-to-br from-accent-200 to-accent-400 text-[12px] font-bold text-accent-900 shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]">{i + 1}</span>
+              <h3 className="mb-1 flex items-center gap-2.5 font-[family-name:var(--font-rubik,inherit)] text-[15px] font-semibold text-brand contrast-more:text-forest-950">
+                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-brand-accent text-[12px] font-bold text-on-dark">{i + 1}</span>
                 {s.heading}
               </h3>
               <ul className="space-y-1 pr-[2.6rem] text-[14px] leading-relaxed text-ink-700 contrast-more:text-ink-900">
                 {s.items.map((it) => (
-                  <li key={it} className="list-disc marker:text-accent-600">{it}</li>
+                  <li key={it} className="list-disc marker:text-brand-accent">{it}</li>
                 ))}
               </ul>
             </section>
@@ -251,13 +251,13 @@ export function ConsentEvidenceSheet({ open, action, gender, onClose, mode = 'su
         </div>
 
         <p className="mt-3 flex items-start gap-2 px-3 text-[13px] leading-relaxed text-ink-500 contrast-more:text-ink-900">
-          <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary-600" aria-hidden />
+          <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-brand-accent" aria-hidden />
           <span>
             {t.transparency} {t.why}
           </span>
         </p>
 
-        <div className={`mt-4 overflow-hidden rounded-[20px] border ${hair} bg-glass-hi/80 shadow-[0_1px_2px_rgba(6,40,30,0.06)]`}>
+        <div className={`mt-4 overflow-hidden rounded-[20px] border ${hair} bg-surface shadow-[0_1px_2px_rgba(6,40,30,0.08)]`}>
           <label className="flex min-h-[52px] cursor-pointer items-start gap-3 px-4 py-3.5 active:bg-primary-900/[0.04]">
             <input
               type="checkbox"
@@ -268,7 +268,7 @@ export function ConsentEvidenceSheet({ open, action, gender, onClose, mode = 'su
             />
             <span
               aria-hidden
-              className={`mt-0.5 grid h-[26px] w-[26px] shrink-0 place-items-center rounded-full border-[1.5px] transition-all duration-200 motion-reduce:transition-none ${checked ? 'scale-100 border-primary-600 bg-gradient-to-br from-primary-500 to-secondary-600 text-on-dark shadow-[0_3px_8px_-2px_rgba(4,120,87,0.5)]' : 'border-primary-900/30 bg-glass contrast-more:border-ink-800'} peer-focus-visible:ring-2 peer-focus-visible:ring-primary-400 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-glass-hi`}
+              className={`mt-0.5 grid h-[26px] w-[26px] shrink-0 place-items-center rounded-full border-[1.5px] transition-all duration-200 motion-reduce:transition-none ${checked ? 'scale-100 border-brand-accent bg-brand-accent text-on-dark shadow-[0_3px_8px_-2px_rgba(4,120,87,0.5)]' : 'border-brand-accent/50 bg-surface contrast-more:border-ink-800'} peer-focus-visible:ring-2 peer-focus-visible:ring-primary-400 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-glass-hi`}
             >
               {checked ? <Check className="h-4 w-4" strokeWidth={3} /> : null}
             </span>
@@ -290,7 +290,7 @@ export function ConsentEvidenceSheet({ open, action, gender, onClose, mode = 'su
               inputMode="text"
               data-testid="consent-typed"
               aria-invalid={typed.length > 2 && !wordOk}
-              className={`mt-2 w-full rounded-[14px] border bg-glass px-4 py-3 text-[17px] font-semibold text-primary-950 outline-none transition placeholder:font-normal placeholder:text-ink-400 focus:ring-4 motion-reduce:transition-none contrast-more:border-ink-800 ${typed && wordOk ? 'border-primary-500 focus:ring-primary-300/50' : 'border-primary-900/15 focus:border-accent-400 focus:ring-accent-300/40'}`}
+              className={`mt-2 w-full rounded-[14px] border bg-glass px-4 py-3 text-[17px] font-semibold text-primary-950 outline-none transition placeholder:font-normal placeholder:text-ink-400 focus:ring-4 motion-reduce:transition-none contrast-more:border-ink-800 ${typed && wordOk ? 'border-primary-500 focus:ring-brand-accent/30' : 'border-primary-900/15 focus:border-accent-400 focus:ring-accent-300/40'}`}
               placeholder={t.expectedWord}
             />
           </label>
