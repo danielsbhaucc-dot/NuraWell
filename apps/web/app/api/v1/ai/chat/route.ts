@@ -2906,9 +2906,9 @@ async function handleChatPost(request: Request) {
     if (spent > dailySoftCapUsd()) v3 = { writer: v3.writer === 'grok' ? 'grok' : v3.writer, slug: 'openai/gpt-5.6-luna', lane: 'soft_cap_luna', light: true };
   }
   {
-    // cost guard: internal test accounts (prod e2e) never hit premium writers
+    // cost guard: internal accounts (role test/admin, @test.com) never hit premium writers
     const { data: roleRow } = await createAdminClient().from('profiles').select('role').eq('id', user.id).maybeSingle();
-    const testLane = testAccountWriterOverride((roleRow as { role?: string } | null)?.role);
+    const testLane = testAccountWriterOverride((roleRow as { role?: string } | null)?.role, user.email ?? null);
     if (testLane) v3 = testLane;
   }
   const routedWriter = v3?.writer ?? stickyResult.writer;

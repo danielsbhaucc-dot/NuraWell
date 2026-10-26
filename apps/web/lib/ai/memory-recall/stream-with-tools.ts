@@ -1,3 +1,4 @@
+import { registerCacheablePrefix } from '../prompt-cache';
 /**
  * סטרימינג צ'אט עם כלי recall — Vercel AI SDK streamText + stopWhen מרובה-שלבים.
  * מחזיר UI message stream כדי שהלקוח יראה tool parts (recall_past_memory).
@@ -56,10 +57,15 @@ export async function createMemoryRecallStreamResponse(params: {
   onFinish: (payload: MemoryRecallStreamFinishPayload) => Promise<void>;
   onEmptyRetry?: () => Promise<string>;
 }): Promise<Response> {
-  const systemContent = [
+  const staticPart = [
     params.staticSystemPrompt,
     MEMORY_RECALL_TOOL_PROMPT,
     'כלי adjust_task_level: כשהמשתמש אומר במפורש שמשימה בתוכנית קשה לו מדי ("קשה לי") או קלה מדי — הקל/הקשה ברמה אחת בלבד, ואז ספר לו בחום מה המשימה החדשה. אל תשתמש בו בלי בקשה ברורה.',
+  ].join('\n\n');
+  // byte-identical text; the transport splits it here so the static part is prompt-cached (see prompt-cache.ts)
+  registerCacheablePrefix(`${staticPart}\n\n`);
+  const systemContent = [
+    staticPart,
     params.piiShield
       ? params.piiShield.tokenizeText(params.dynamicSystemPrompt)
       : params.dynamicSystemPrompt,
