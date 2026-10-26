@@ -23,9 +23,11 @@ export function encryptVault(plain: string, userId: string) {
 }
 
 export function decryptVault(row: { ciphertext: string; iv: string; tag: string }, userId: string): string {
-  const d = createDecipheriv('aes-256-gcm', key(), Buffer.from(row.iv, 'base64'));
+  const tag = Buffer.from(row.tag, 'base64');
+  if (tag.length !== 16) throw new Error('vault auth tag malformed');
+  const d = createDecipheriv('aes-256-gcm', key(), Buffer.from(row.iv, 'base64'), { authTagLength: 16 });
   d.setAAD(Buffer.from(userId));
-  d.setAuthTag(Buffer.from(row.tag, 'base64'));
+  d.setAuthTag(tag);
   return Buffer.concat([d.update(Buffer.from(row.ciphertext, 'base64')), d.final()]).toString('utf8');
 }
 

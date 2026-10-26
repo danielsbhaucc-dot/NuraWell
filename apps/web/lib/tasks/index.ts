@@ -27,6 +27,8 @@ export type TaskAssignment = {
   original_level: number;
   accepted_at: string | null;
   last_level_change_at: string | null;
+  /** per-user note (e.g. why a guide was offered); encrypted */
+  reason?: string | null;
   definition: TaskDefinition;
 };
 
@@ -51,13 +53,20 @@ const DEF_COLS = 'id, stable_key, source, step_id, habit_key, title, description
 export async function listAssignments(admin: SupabaseClient, userId: string, statuses: TaskAssignment['status'][] = ['accepted']) {
   const { data, error } = await admin
     .from('user_task_assignments')
-    .select(`id, user_id, definition_id, status, is_main, current_level, original_level, accepted_at, last_level_change_at, definition:task_definitions(${DEF_COLS})`)
+    .select(`id, user_id, definition_id, status, is_main, current_level, original_level, accepted_at, last_level_change_at, reason, definition:task_definitions(${DEF_COLS})`)
     .eq('user_id', userId)
     .in('status', statuses)
     .order('is_main', { ascending: false })
     .order('accepted_at', { ascending: true });
   if (error) throw new Error(`[tasks] list: ${error.message}`);
-  return (data ?? []) as unknown as TaskAssignment[];
+  return ((data ?? []) as unknown as TaskAssignment[]).map(withUserDescription);
+}
+
+/** Guide rows are shared: the description shown is the user's own reason, never a shared-row text. */
+export function withUserDescription(a: TaskAssignment): TaskAssignment {
+  if (!a.definition) return a;
+  if (a.definition.source === 'guide') return { ...a, definition: { ...a.definition, description: a.reason ?? null } };
+  return a;
 }
 
 const SOURCE_RANK: Record<string, number> = { step: 0, guide: 1, almog: 2, ai_daily: 3 };
@@ -295,7 +304,8 @@ export async function offerGuideTask(
         source_ref: params.courseId,
         habit_key: key,
         title: `לעבור על המדריך "${params.courseTitle}" — שיעור אחד ביום`,
-        description: params.reason ?? null,
+        // Shared row (one per course, all users): never per-user text here. The user's reason goes on their
+        // own assignment (user_task_assignments.reason, encrypted).
         emoji: '📘',
         times_per_day: 1,
         ladder: [
@@ -318,10 +328,14 @@ export async function offerGuideTask(
     .eq('user_id', params.userId)
     .eq('definition_id', def.id)
     .maybeSingle();
-  if (existing) return existing.id as string;
+  const reason = params.reason?.trim() ? params.reason.trim().slice(0, 500) : null;
+  if (existing) {
+    if (reason) await admin.from('user_task_assignments').update({ reason }).eq('id', existing.id).eq('user_id', params.userId);
+    return existing.id as string;
+  }
   const { data: asg } = await admin
     .from('user_task_assignments')
-    .insert({ user_id: params.userId, definition_id: def.id, status: 'offered', is_main: false })
+    .insert({ user_id: params.userId, definition_id: def.id, status: 'offered', is_main: false, reason })
     .select('id')
     .single();
   return (asg?.id as string) ?? null;
