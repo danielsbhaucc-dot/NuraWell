@@ -7,6 +7,7 @@ import { guardOutboundBody, restoreAiResponse } from '@/lib/ai/privacy/outbound-
  * Attribution: explicit `meta` arg, else the async context set by `withAiUsage()`, else body.user.
  */
 import { after } from 'next/server';
+import { checkSpendBreaker, noteSpend } from './spend-breaker';
 
 /** `feature` is required: every metered AI call must say what it is for (cost breakdown). */
 export type AiUsageMeta = { userId?: string | null; feature: string };
@@ -144,12 +145,15 @@ export function meteredFetch(baseFetch?: typeof fetch, fixedMeta?: { userId?: st
     }
     const feature = ctx.feature ?? (url.endsWith('embeddings') ? 'embeddings' : untaggedFeature(url));
     const reqModel = typeof body.model === 'string' ? body.model : null;
+    const blocked = await checkSpendBreaker(feature);
+    if (blocked) return blocked;
     if (!url.endsWith('embeddings')) body.usage = { include: true };
     const res = restoreAiResponse(await base(input, { ...init, body: JSON.stringify(body) }), shield);
     if (!res.ok || !res.body) return res;
 
-    const save = (u: Usage | null, model: string | null) =>
-      u && record({
+    const save = (u: Usage | null, model: string | null) => {
+      if (u && typeof u.cost === 'number') noteSpend(u.cost);
+      return u && record({
         user_id: userId && UUID.test(userId) ? userId : null,
         feature: feature.slice(0, 60),
         model: model ?? reqModel,
@@ -158,6 +162,7 @@ export function meteredFetch(baseFetch?: typeof fetch, fixedMeta?: { userId?: st
         cached_tokens: u.prompt_tokens_details?.cached_tokens ?? null,
         cost_usd: typeof u.cost === 'number' ? u.cost : 0,
       });
+    };
 
     const isStream = (res.headers.get('content-type') ?? '').includes('event-stream');
     if (!isStream) {

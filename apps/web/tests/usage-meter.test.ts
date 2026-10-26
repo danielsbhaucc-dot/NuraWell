@@ -26,7 +26,7 @@ describe('usage meter', () => {
     expect((await res.json()).usage.cost).toBe(0.5);
     await new Promise((r) => setTimeout(r, 20));
     expect(JSON.parse(calls.find((c) => c.url.includes('openrouter'))!.body).usage).toEqual({ include: true });
-    const rec = calls.find((c) => c.url.includes('ai_usage_events'));
+    const rec = calls.find((c) => c.url.endsWith('/rest/v1/ai_usage_events'));
     expect(rec).toBeTruthy();
     expect(JSON.parse(rec!.body)).toMatchObject({ feature: 'test_feat', cost_usd: 0.5 });
     vi.unstubAllGlobals();
