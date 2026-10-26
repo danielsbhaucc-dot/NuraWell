@@ -214,7 +214,11 @@ export const ENCRYPTED_TABLES = {
   user_task_assignments: { userCol: 'user_id', rowCol: 'id', columns: {
     reason: 'text',
   } },
-  admin_audit_log: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { ip: 'text' } },
+  admin_audit_log: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { ip: 'text', detail: 'json' } },
+  // facts (plain jsonb, 000214): ids/codes/counts used by SQL writers + dedupe; detail: everything else, sealed
+  ops_security_events: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { detail: 'json' } },
+  // written plaintext by the auth.sessions trigger (000189, cannot hold a key); SWEPT within minutes (SWEEP_TABLES)
+  auth_session_trail: { userCol: 'user_id', rowCol: 'session_id', guardCols: [], columns: { ip: 'text', user_agent: 'text' } },
   user_insights: { userCol: 'user_id', rowCol: 'id', columns: {
     insight_text: 'text',
     metadata: 'json',
@@ -324,7 +328,18 @@ export const FIELD_V2_TABLES: readonly string[] = [
   'user_consents', 'journey_task_executions', 'almog_kickoff_status', 'billing_events', 'ceo_pending_actions', 'notify_quality_events',
   // 2026-10-26 enc-close-2: SQL dedupe/merge moved to the app + blind indexes (000212)
   'task_events', 'task_definitions', 'user_task_assignments', 'challenge_enrollments', 'admin_audit_log',
+  // 000214: audit/security detail split (plain facts + sealed detail); session trail swept by cron
+  'ops_security_events', 'auth_session_trail',
 ];
+
+/**
+ * Tables a SQL trigger must write in plaintext (no key in the DB). No reject trigger (it would drop the row);
+ * instead the session-trail-seal cron (every 5 min) seals new rows and the nightly monitor FAILS on any plaintext
+ * row older than maxPlainMinutes.
+ */
+export const SWEEP_TABLES: Readonly<Record<string, { maxPlainMinutes: number; tsCol: string }>> = {
+  auth_session_trail: { maxPlainMinutes: 15, tsCol: 'created_at' },
+};
 
 /**
  * GATED — admin/IAM tables created by the unmerged migrations 000191-000201 (#357-#362). NOT live: nothing reads

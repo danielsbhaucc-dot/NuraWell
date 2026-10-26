@@ -5,6 +5,7 @@
 #   enforce  backfill completed  -> any non-enc value FAILS (exit 1 -> Gideon/Telegram owner alert)
 #   pending  backfill running    -> reported (warning); promoted to enforce when field_enc_enforcement.active
 #   append   append-only evidence table: only rows created after activation count; enforce once active
+#   sweep    SQL-trigger-written table sealed by cron: plaintext rows older than N minutes FAIL (fields 5-6: minutes, ts col)
 #   gap      sensitive, not yet encryptable (not in field-registry) -> reported (warning)
 #   class    every classified column; a prod text/json/bytea column missing from it FAILS (unclassified)
 set -euo pipefail
@@ -16,9 +17,13 @@ active="$(psql "$DATABASE_URL" -X -A -t -F' ' -c "select table_name, floor(extra
 declare -A act=()
 while read -r at ae; do [ -n "${at:-}" ] && act[$at]="$ae"; done <<<"$active"
 q=""
-while read -r mode t c k; do
-  case "$mode" in enforce|pending|gap|append) ;; *) continue ;; esac
+while read -r mode t c k mins tscol; do
+  case "$mode" in enforce|pending|gap|append|sweep) ;; *) continue ;; esac
   extra=""
+  if [ "$mode" = sweep ]; then
+    case "$mins" in ""|*[!0-9]*) echo "plaintext-guard: bad sweep line for $t.$c"; exit 2 ;; esac
+    mode=enforce; extra=" and \"${tscol:-created_at}\" < now() - interval '$mins minutes'"
+  fi
   if [ "$mode" = append ]; then
     if [ -n "${act[$t]:-}" ]; then mode=enforce; extra=" and created_at >= to_timestamp(${act[$t]})"; else mode=pending; fi
   elif [ "$mode" = pending ] && [ -n "${act[$t]:-}" ]; then mode=enforce; fi
