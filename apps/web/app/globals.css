@@ -112,15 +112,15 @@
   --color-warning-light: #f3e4b5;
   --color-warning-dark: #a16207;
 
-  --color-cream: oklch(91% 0.042 160);
+  --color-cream: #e8e8ed;
 
   /* ── Signature semantic tokens (DESIGN_SYSTEM.md). Feature code uses ONLY these, never raw hex/white. ── */
   /* Canvas & materials (light-leaning glass over a sage canvas) */
-  --color-canvas: oklch(90% 0.04 168);            /* app background */
-  --color-surface: oklch(91% 0.042 165);           /* default card material (use with /85 + backdrop-blur) */
-  --color-surface-elevated: oklch(93% 0.035 160);  /* raised sheet / popover */
-  --color-surface-sunken: oklch(87% 0.045 168);    /* wells, inputs, tiles inside cards */
-  --color-hairline: #c9d6c3;          /* 1px borders */
+  --color-canvas: #dedee3;            /* app background */
+  --color-surface: #f2f2f6;           /* default card material (use with /85 + backdrop-blur) */
+  --color-surface-elevated: #f0f0f4;  /* raised sheet / popover */
+  --color-surface-sunken: #e6e6eb;    /* wells, inputs, tiles inside cards */
+  --color-hairline: #cfd0d6;          /* 1px borders */
   /* Deep forest (dark-leaning signature: hero bands, primary buttons, admin chrome) */
   --color-forest-950: #04140e;
   --color-forest-900: #072219;
@@ -144,14 +144,14 @@
 
   --color-brand-700: #0b6b4b;
 
-  --color-background: oklch(90% 0.04 168);
-  --color-background-soft: oklch(91% 0.042 165);
-  --color-background-card: oklch(92% 0.04 165);
+  --color-background: #dedee3;
+  --color-background-soft: #e8e8ed;
+  --color-background-card: #f2f2f6;
   --color-text-primary: #1a2e23;
   --color-text-secondary: #4a6354;
   --color-text-muted: #7a9185;
-  --color-border: #e2ebe5;
-  --color-input: oklch(94% 0.035 165);
+  --color-border: #cfd0d6;
+  --color-input: #ebebf0;
   --color-ring: #10b981;
 
   --radius-lg: 1rem;
@@ -7942,4 +7942,19 @@ html.a11y-reduce-motion .nw-chat-receive {
       linear-gradient(180deg, #0b1412, #0a1a15 50%, #071210);
     background-attachment: fixed;
   }
+}
+
+/* Coming-soon is frozen: keep main's pre-Apple neutral token values inside its root. */
+:is(html:has(.cs-orb), [data-cs-legacy]) {
+  --color-canvas: oklch(90% 0.04 168);
+  --color-surface: oklch(91% 0.042 165);
+  --color-surface-elevated: oklch(93% 0.035 160);
+  --color-surface-sunken: oklch(87% 0.045 168);
+  --color-hairline: #c9d6c3;
+  --color-background: oklch(90% 0.04 168);
+  --color-background-soft: oklch(91% 0.042 165);
+  --color-background-card: oklch(92% 0.04 165);
+  --color-border: #e2ebe5;
+  --color-input: oklch(94% 0.035 165);
+  --color-cream: oklch(91% 0.042 160);
 }
