@@ -33,3 +33,9 @@ Create `packages/@platform/<name>/` with `module.json`, `package.json` (same nam
 `CHANGELOG.md` (an entry for the version), `llms.txt`, `src/`, tests. Bump semver (breaking = major), tag
 `mod/<id>@x.y.z`, run `node scripts/modules/index.mjs` and `verify.mjs`. A module from another repo comes back as a PR
 that passes `verify.mjs` plus a security review.
+
+## Module-first (all products)
+- Every new feature, in any product, starts as a module: `npx @platform/modules new <id> --tier internal|shareable|sellable [--category feature|ui|ops|platform|security|privacy]`
+  (same as `node scripts/modules/new.mjs`). It creates module.json, README.he.md, llms.txt, CHANGELOG, config.schema.json (secure defaults), migrations/, conformance test stubs, and regenerates the index.
+- App shells (`apps/*`) only compose modules. CI runs `node scripts/modules/boundaries.mjs`: new files under `apps/*` fail unless they are thin routing/layout glue (page/layout/route/... ≤ 80 lines), tests, config or assets.
+- `modules/legacy-app-files.txt` lists existing NuraWell feature files "to be modularized". It may only shrink; never add to it.

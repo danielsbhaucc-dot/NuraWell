@@ -29,7 +29,7 @@ jobs:
         run: npm run lint:design
         working-directory: ${{ github.workspace }}/apps/web
       - name: Module system check (metadata, docs index, coupling rules)
-        run: node scripts/modules/check.mjs && node scripts/modules/index.mjs --check
+        run: node scripts/modules/check.mjs && node scripts/modules/index.mjs --check && node scripts/modules/boundaries.mjs
         working-directory: ${{ github.workspace }}
       - name: Run unit tests
         run: npm run test
