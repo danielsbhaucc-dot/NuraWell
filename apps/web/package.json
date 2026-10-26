@@ -19,7 +19,9 @@
     "playwright:install": "npx playwright install chromium",
     "test:watch": "vitest",
     "backfill:insight-vectors": "node --env-file=.env.local scripts/backfill-insight-vectors-upstash.mjs",
-    "test:e2e:signed-in": "PLAYWRIGHT_SKIP_WEBSERVER=1 PLAYWRIGHT_BASE_URL=${PLAYWRIGHT_BASE_URL:-https://nurawell.vercel.app} playwright test --project=signed-in-mobile"
+    "test:e2e:signed-in": "PLAYWRIGHT_SKIP_WEBSERVER=1 PLAYWRIGHT_BASE_URL=${PLAYWRIGHT_BASE_URL:-https://nurawell.vercel.app} playwright test --project=signed-in-mobile",
+    "depcruise": "cd ../.. && depcruise --config .dependency-cruiser.cjs --output-type err packages apps/web/lib",
+    "pretest": "npm run depcruise"
   },
   "dependencies": {
     "@ai-sdk/openai": "^4.0.91",
@@ -28,6 +30,15 @@
     "@hebcal/core": "^6.5.1",
     "@pdf-lib/fontkit": "^1.1.1",
     "@pdfsmaller/pdf-encrypt": "^1.2.0",
+    "@platform/iam": "*",
+    "@platform/qc": "*",
+    "@platform/access": "*",
+    "@platform/ai-engine": "*",
+    "@platform/auth": "*",
+    "@platform/security-crypto": "*",
+    "@platform/module-library-ui": "*",
+    "@platform/ui": "*",
+    "@saas/billing": "*",
     "@simplewebauthn/browser": "^14.0.0",
     "@simplewebauthn/server": "^14.0.3",
     "@supabase/ssr": "^0.12.7",
@@ -64,7 +75,8 @@
     "web-push": "^3.6.7",
     "zod": "^4.6.7",
     "@saas/billing": "*",
-    "@platform/iam": "*"
+    "@platform/iam": "*",
+    "@platform/licensing": "*"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
@@ -75,6 +87,7 @@
     "@types/react-dom": "^19.3.0",
     "@typescript-eslint/eslint-plugin": "^8.71.1",
     "axe-core": "^4.10.3",
+    "dependency-cruiser": "^18.7.0",
     "eslint": "^10.12.0",
     "eslint-config-next": "^16.4.3",
     "jsdom": "^30.1.2",

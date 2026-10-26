@@ -28,7 +28,7 @@ import {
   UserCircle,
   X,
   Bot,
-  ShieldCheck, Scale } from 'lucide-react';
+  ShieldCheck, Scale, Boxes } from 'lucide-react';
 import { cn } from '../../lib/cn';
 import { OpsSessionGuard } from './OpsSessionGuard';
 import { AdminAiAssistantCard } from './AdminAiAssistantCard';
@@ -268,6 +268,26 @@ export function AdminShell({
             >
               <DollarSign size={20} className={cn('shrink-0', isCosts && 'text-primary-600')} />
               <span className={cn('truncate', !showNavLabels && 'lg:sr-only')}>עלויות</span>
+            </Link>
+
+            <Link prefetch={false}
+              href={opsHref('/products')}
+              onClick={() => setSidebarOpen(false)}
+              className={navBtn(np === '/ops/products', 'emerald')}
+              title="כל המוצרים"
+            >
+              <Boxes size={20} className={cn('shrink-0', np === '/ops/products' && 'text-emerald-600')} />
+              <span className={cn('truncate', !showNavLabels && 'lg:sr-only')}>כל המוצרים</span>
+            </Link>
+
+            <Link prefetch={false}
+              href={opsHref('/qc')}
+              onClick={() => setSidebarOpen(false)}
+              className={navBtn(np === '/ops/qc', 'emerald')}
+              title="בקרת איכות"
+            >
+              <ShieldCheck size={20} className={cn('shrink-0', np === '/ops/qc' && 'text-emerald-600')} />
+              <span className={cn('truncate', !showNavLabels && 'lg:sr-only')}>בקרת איכות</span>
             </Link>
 
             <Link prefetch={false}

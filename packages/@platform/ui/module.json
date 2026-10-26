@@ -1,0 +1,64 @@
+{
+  "$schema": "../../../modules/module.schema.json",
+  "id": "ui",
+  "package": "@platform/ui",
+  "version": "0.1.0",
+  "distribution": "internal",
+  "category": "ui",
+  "toggleable": false,
+  "description": "Shared design tokens for every product (canonical NuraWell palette and console surfaces). Pure data, no React.",
+  "provides": {
+    "routes": [],
+    "apis": [],
+    "jobs": [],
+    "ui": [],
+    "tables": []
+  },
+  "requires": {
+    "modules": {}
+  },
+  "env": [],
+  "migrations": [],
+  "conformance": [
+    "no-pure-white"
+  ],
+  "tests": [
+    "apps/web/tests/platform-packages.test.ts"
+  ],
+  "dataPolicy": "אין מידע.",
+  "store": {
+    "name": "צבעים ועיצוב משותף",
+    "summary": "פלטת הצבעים והמשטחים של NuraWell במקום אחד, כך שכל מוצר חדש נראה עקבי. כולל בדיקה שאין רקע לבן טהור.",
+    "audience": [
+      "מוצרים חדשים בתוך המשפחה של NuraWell"
+    ],
+    "useCases": [
+      "מוצר חדש שמקבל את אותם צבעים בשורה אחת",
+      "בדיקה אוטומטית שאין רקע לבן"
+    ],
+    "features": [
+      "פלטת צבעים ראשית",
+      "משטחי זכוכית ללוח הבקרה",
+      "יצירה אוטומטית של הגדרות העיצוב לכל מוצר",
+      "בדיקת \"לבן טהור\""
+    ],
+    "dataTouched": [
+      "אין"
+    ],
+    "permissions": [
+      "אין"
+    ],
+    "security": [
+      "אין מידע ואין קוד שרת"
+    ],
+    "whereDataLives": "אין מידע.",
+    "installConfig": "מייבאים את הצבעים, או מוסיפים את משתני ה-CSS לדף.",
+    "compatibility": "TypeScript, כל דפדפן.",
+    "limitations": [
+      "פנימי: זהות המותג של NuraWell, לא מיועד למכירה או לשיתוף",
+      "ערכים חייבים להשתנות יחד עם globals.css"
+    ],
+    "support": "תמיכה דרך דניאל (בעל הספרייה). תיקונים חוזרים לספרייה כ-PR לריפו NuraWell, עם בדיקות.",
+    "descriptionHe": "פלטת הצבעים והמשטחים של NuraWell במקום אחד, כך שכל מוצר חדש במשפחה נראה עקבי. רק נתונים, בלי רכיבי מסך."
+  }
+}

@@ -1,0 +1,4 @@
+# @platform/qc (qc)
+Product-agnostic quality control: a product registers checks, the console runs them isolated with timeouts and shows one screen. Pure logic.
+Install: node scripts/modules/install.mjs qc --target <repo>
+Read README.he.md for the full page. Do not add env reads or app imports.

@@ -7,11 +7,14 @@ type Rule = { prefix: string; read: Permission; write: Permission };
  * (founder / product owner only): deny by default, least privilege.
  */
 export const ROUTE_RULES: Rule[] = [
+  { prefix: '/api/v1/ops/security/rotate-password', read: 'admin.access', write: 'admin.access' },
   { prefix: '/api/v1/ops/iam/products', read: 'admin.access', write: 'admin.access' },
+  { prefix: '/api/v1/ops/iam/modules', read: 'iam.read', write: 'modules.manage' },
   { prefix: '/api/v1/ops/iam', read: 'iam.read', write: 'iam.grant' },
   { prefix: '/api/v1/ops/stepup', read: 'admin.access', write: 'admin.access' },
   { prefix: '/api/v1/ops/device', read: 'admin.access', write: 'admin.access' },
   { prefix: '/api/v1/ops/security', read: 'security.read', write: 'security.manage' },
+  { prefix: '/api/v1/ops/qc', read: 'qc.read', write: 'qc.manage' },
   { prefix: '/api/v1/ops/legal', read: 'legal.read', write: 'legal.write' },
   { prefix: '/api/v1/ops/legal/logs/export', read: 'data.export', write: 'data.export' },
   { prefix: '/api/v1/ops/legal/media/item/export', read: 'data.export', write: 'data.export' },

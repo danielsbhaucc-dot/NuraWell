@@ -1,0 +1,8 @@
+{
+  "name": "@platform/access",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Product-agnostic admin access policy: justification-gated PII grants, device enrollment tokens, access-log pre-filter and pseudonymisation for AI audit. Pure logic, no I/O, no product imports.",
+  "main": "src/index.ts",
+  "types": "src/index.ts"
+}

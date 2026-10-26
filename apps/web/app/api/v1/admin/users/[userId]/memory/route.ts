@@ -1,3 +1,4 @@
+import { requirePiiGrant } from '@/lib/platform/access/pii-access';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import {
@@ -25,6 +26,8 @@ export async function GET(request: Request, context: RouteContext) {
   if (!rl.ok) return rateLimitResponse(rl);
 
   const { userId } = await context.params;
+  const piiDenied = await requirePiiGrant((await import('@/lib/supabase/admin')).createAdminClient(), request, { productId: 'nurawell', actorId: auth.user.id, subjectId: userId, resource: 'admin.user.memory' });
+  if (piiDenied) return piiDenied;
 
   if (!isUpstashVectorConfigured()) {
     return NextResponse.json({
@@ -62,6 +65,8 @@ export async function DELETE(request: Request, context: RouteContext) {
   }
 
   const { userId } = await context.params;
+  const piiDenied = await requirePiiGrant((await import('@/lib/supabase/admin')).createAdminClient(), request, { productId: 'nurawell', actorId: auth.user.id, subjectId: userId, resource: 'admin.user.memory.delete' });
+  if (piiDenied) return piiDenied;
   const raw = await readJsonBody(request);
   if (!raw.ok) return raw.response;
 

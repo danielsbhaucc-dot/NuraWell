@@ -71,10 +71,11 @@ for (const d of DIRS) for (const f of walk(path.join(ROOT, d))) {
   if (nw) c.nearWhite = nw;
   if (Object.keys(c).length) counts[rel] = c;
 }
-// Zero-tolerance mint/sage/cream surface check (all of app/components/lib incl. globals.css + ui/).
+// Zero-tolerance mint/sage/cream surface check (app/components/lib incl. globals.css + ui/, plus ../../packages).
 const mintFails = [];
 function walkAll(d, out = []) { for (const e of fs.readdirSync(d, { withFileTypes: true })) { if (e.name === 'node_modules' || e.name.startsWith('.')) continue; const p = path.join(d, e.name); if (e.isDirectory()) walkAll(p, out); else if (/\.(tsx?|css)$/.test(e.name) && !/\.test\./.test(e.name)) out.push(p); } return out; }
-for (const d of DIRS) for (const f of walkAll(path.join(ROOT, d))) {
+const PKGS = path.join(ROOT, '../../packages'); // shared @platform/* packages (tokens, ui, sheets)
+for (const f of [...DIRS.flatMap((d) => walkAll(path.join(ROOT, d))), ...(fs.existsSync(PKGS) ? walkAll(PKGS) : [])]) {
   const rel = path.relative(ROOT, f).split(path.sep).join('/');
   if (MINT_ALLOW.some((r) => r.test(rel))) continue;
   let src = fs.readFileSync(f, 'utf8');

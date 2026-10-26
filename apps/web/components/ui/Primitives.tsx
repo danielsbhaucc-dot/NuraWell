@@ -23,9 +23,16 @@ const bannerTones: Record<BannerTone, string> = {
   warn: 'bg-accent-500/12 text-accent-900 ring-accent-500/30',
   danger: 'bg-energy-500/12 text-energy-700 ring-energy-500/30',
 };
-export function Banner({ tone = 'info', icon, title, children, action, className }: { tone?: BannerTone; icon?: ReactNode; title: ReactNode; children?: ReactNode; action?: ReactNode; className?: string }) {
+// Same tones over a forest band / dark card (pearl text, glass tint).
+const bannerTonesOnDark: Record<BannerTone, string> = {
+  info: 'bg-forest-950/40 text-on-dark ring-glow/20',
+  success: 'bg-primary-500/20 text-on-dark ring-glow/30',
+  warn: 'bg-accent-500/20 text-on-dark ring-accent-500/40',
+  danger: 'bg-energy-500/25 text-on-dark ring-energy-500/50',
+};
+export function Banner({ tone = 'info', icon, title, children, action, className, onDark }: { tone?: BannerTone; icon?: ReactNode; title: ReactNode; children?: ReactNode; action?: ReactNode; className?: string; onDark?: boolean }) {
   return (
-    <div role={tone === 'danger' ? 'alert' : 'status'} className={cn('flex items-start gap-3 rounded-2xl p-3.5 ring-1 backdrop-blur-md', bannerTones[tone], className)}>
+    <div role={tone === 'danger' ? 'alert' : 'status'} className={cn('flex items-start gap-3 rounded-2xl p-3.5 ring-1 backdrop-blur-md', (onDark ? bannerTonesOnDark : bannerTones)[tone], className)}>
       {icon ? <span className="mt-0.5 shrink-0 text-lg" aria-hidden>{icon}</span> : null}
       <div className="min-w-0 flex-1">
         <p className="text-sm font-extrabold">{title}</p>

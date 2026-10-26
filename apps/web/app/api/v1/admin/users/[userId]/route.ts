@@ -1,3 +1,4 @@
+import { requirePiiGrant } from '@/lib/platform/access/pii-access';
 import { decProfileResult } from '@/lib/crypto/pii-fields';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -28,6 +29,8 @@ export async function GET(request: Request, context: RouteContext) {
 
   const { userId } = await context.params;
   const admin = createAdminClient();
+  const piiDenied = await requirePiiGrant(admin, request, { productId: 'nurawell', actorId: auth.user.id, subjectId: userId, resource: 'admin.user.detail' });
+  if (piiDenied) return piiDenied;
 
   const { data: profile, error } = await admin
     .from('profiles')

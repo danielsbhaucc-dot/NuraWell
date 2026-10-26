@@ -1,0 +1,76 @@
+{
+  "$schema": "../../../modules/module.schema.json",
+  "id": "security-crypto",
+  "package": "@platform/security-crypto",
+  "version": "0.1.0",
+  "distribution": "shareable",
+  "category": "security",
+  "toggleable": false,
+  "description": "Per-user envelope field encryption (enc:v2): AES-256-GCM, per-user data keys wrapped by an injected master key, AAD binding to table/column/row, blind indexes for equality search.",
+  "provides": {
+    "routes": [],
+    "apis": [],
+    "jobs": [],
+    "ui": [],
+    "tables": []
+  },
+  "requires": {
+    "modules": {}
+  },
+  "env": [],
+  "migrations": [],
+  "conformance": [
+    "encrypted-roundtrip",
+    "no-plaintext-in-sensitive-columns"
+  ],
+  "tests": [
+    "apps/web/tests/platform-security-crypto.test.ts"
+  ],
+  "dataPolicy": "Holds no data. Losing the master key makes data unrecoverable; deleting a user's wrapped key crypto-shreds that user.",
+  "frozen": [
+    "enc:v2 wire format",
+    "AAD strings (nurawell: namespace)"
+  ],
+  "store": {
+    "name": "הצפנת שדות",
+    "summary": "מצפין מידע רגיש במסד. לכל משתמש מפתח משלו, וכל ערך קשור לטבלה, לעמודה ולשורה שלו. מחיקת המפתח של משתמש מוחקת את כל המידע שלו, גם מגיבויים.",
+    "audience": [
+      "כל מוצר ששומר מידע אישי או בריאותי",
+      "מי שצריך \"מחיקה אמיתית\" של משתמש"
+    ],
+    "useCases": [
+      "הצפנת הערות, תמלולים ופרטים אישיים",
+      "חיפוש לפי ערך מוצפן בלי לפענח (אינדקס עיוור)",
+      "מחיקה קריפטוגרפית של משתמש"
+    ],
+    "features": [
+      "הצפנה חזקה ברמה המקובלת בבנקים",
+      "מפתח נתונים לכל משתמש, עטוף במפתח-אב",
+      "קשירה לטבלה, עמודה ושורה",
+      "החלפת מפתח-אב בלי לפענח את כל המידע",
+      "אינדקס עיוור לחיפוש שוויון",
+      "המרה מפורמטים ישנים"
+    ],
+    "dataTouched": [
+      "הערכים שהמוצר מבקש להצפין או לפענח, בזיכרון בלבד"
+    ],
+    "permissions": [
+      "אין הרשאות משלו"
+    ],
+    "security": [
+      "המפתחות מוזרקים מהמוצר; המודול לא קורא משתני סביבה ולא פונה למסד",
+      "קונה מקבל קוד בלבד ויוצר את המפתחות שלו אצלו",
+      "איבוד מפתח-האב = המידע לא ניתן לשחזור"
+    ],
+    "whereDataLives": "המידע המוצפן נשמר במסד של המוצר המתקין, והמפתחות אצלו בלבד.",
+    "installConfig": "המוצר מזריק מפתח-אב של 32 בתים מניהול המפתחות שלו.",
+    "compatibility": "Node 20 ומעלה (מודול crypto מובנה).",
+    "limitations": [
+      "הטריגרים שדוחים טקסט גלוי והבדיקה הלילית עוד לא בחבילה (שלב 2b)",
+      "פורמט enc:v2 קפוא; שינוי שלו דורש תוכנית המרה"
+    ],
+    "support": "תמיכה דרך דניאל (בעל הספרייה). תיקונים חוזרים לספרייה כ-PR לריפו NuraWell, עם בדיקות.",
+    "iamModule": "field-encryption",
+    "descriptionHe": "מצפין מידע רגיש בטבלאות, כך שגם מי שמשיג עותק של בסיס הנתונים לא יכול לקרוא אותו. לכל משתמש יש מפתח משלו, שמוגן בעצמו על ידי מפתח ראשי. כל ערך מוצפן קשור לשורה ולעמודה שלו, אז אי אפשר להעתיק אותו למקום אחר. אפשר גם לחפש התאמה מדויקת בלי לפענח את המידע."
+  }
+}

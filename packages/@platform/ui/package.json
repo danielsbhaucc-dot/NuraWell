@@ -1,0 +1,8 @@
+{
+  "name": "@platform/ui",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Shared design tokens for every product (canonical NuraWell palette). Pure data, no React, no product imports.",
+  "main": "src/index.ts",
+  "types": "src/index.ts"
+}

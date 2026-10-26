@@ -1,0 +1,8 @@
+{
+  "name": "@platform/qc",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Product-agnostic quality control (בקרת איכות): a product registers checks, the console runs them isolated with timeouts and shows one screen. Pure logic, no I/O, no product imports.",
+  "main": "src/index.ts",
+  "types": "src/index.ts"
+}
