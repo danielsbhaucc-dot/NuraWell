@@ -1,0 +1,63 @@
+# Deploy the GCP KMS Cloud Run functions (kms-rotator, billing-killswitch) via Workload Identity Federation.
+# Manual only. No JSON keys. Runtime pinned in infra/gcp-kms/RUNTIME.
+# One-time setup required (repo variables): GCP_WIF_PROVIDER, GCP_DEPLOY_SA  — see docs/KMS_ENVELOPE.md "CI deploy".
+name: deploy-kms-functions
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: which function(s)
+        type: choice
+        options: [both, rotator, killswitch]
+        default: both
+permissions:
+  contents: read
+  id-token: write
+concurrency: { group: deploy-kms-functions, cancel-in-progress: false }
+env:
+  PROJECT: nurawell-kms-2610
+  REGION: europe-west3
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - run: |
+          pip install -r infra/gcp-kms/rotator/requirements.txt pytest
+          cd infra/gcp-kms/rotator && python -m pytest -q
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    environment: gcp-kms
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check one-time setup
+        run: |
+          [ -n "${{ vars.GCP_WIF_PROVIDER }}" ] && [ -n "${{ vars.GCP_DEPLOY_SA }}" ] || { echo "::error::Missing repo vars GCP_WIF_PROVIDER / GCP_DEPLOY_SA (see docs/KMS_ENVELOPE.md)"; exit 1; }
+          echo "RUNTIME=$(tr -d '[:space:]' < infra/gcp-kms/RUNTIME)" >> "$GITHUB_ENV"
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOY_SA }}
+      - uses: google-github-actions/setup-gcloud@v2
+      - name: Deploy kms-rotator
+        if: inputs.target != 'killswitch'
+        run: |
+          gcloud functions deploy kms-rotator --gen2 --project "$PROJECT" --region "$REGION" \
+            --runtime "$RUNTIME" --source infra/gcp-kms/rotator --entry-point rotate \
+            --trigger-http --no-allow-unauthenticated --max-instances 1 \
+            --service-account "kms-rotator@$PROJECT.iam.gserviceaccount.com" --quiet
+      - name: Deploy billing-killswitch
+        if: inputs.target != 'rotator'
+        run: |
+          gcloud functions deploy billing-killswitch --gen2 --project "$PROJECT" --region "$REGION" \
+            --runtime "$RUNTIME" --source infra/gcp-kms/killswitch --entry-point stop_billing \
+            --trigger-topic billing-killswitch --max-instances 1 --quiet
+      - name: Verify runtime
+        run: |
+          for f in kms-rotator billing-killswitch; do
+            r=$(gcloud functions describe "$f" --gen2 --project "$PROJECT" --region "$REGION" --format='value(buildConfig.runtime,state)')
+            echo "$f: $r"; case "$r" in "$RUNTIME"*ACTIVE*) ;; *) echo "::error::$f not on $RUNTIME/ACTIVE"; exit 1;; esac
+          done

@@ -55,3 +55,7 @@ elif [ -n "${R2_BUCKET:-}" ]; then
   done
   echo "uploaded to $pfx/"
 fi
+
+# After the backup is safely stored: fail the job (-> owner alert) if encrypted columns hold plaintext.
+# Runs last on purpose so a guard failure never costs us the night's backup.
+bash "$here/plaintext-check.sh"
