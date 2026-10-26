@@ -1,5 +1,5 @@
 import { guardOutboundBody } from '@/lib/ai/privacy/outbound-pii-guard';
-import { currentAiUserId } from '@/lib/ai/usage-meter';
+import { currentAiUserId, recordBatchUsage } from '@/lib/ai/usage-meter';
 /**
  * סיכום שיחות — מודל זול OpenRouter (או Batch API אם מוגדר).
  */
@@ -62,6 +62,7 @@ async function callOpenRouterSync(params: {
       model: CHAT_SUMMARY_MODEL,
       temperature: 0.2,
       max_tokens: params.maxTokens,
+      usage: { include: true },
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: params.userContent },
@@ -143,8 +144,13 @@ async function callOpenRouterBatch(params: {
         const line = text.split('\n').find(Boolean);
         if (!line) return null;
         const parsed = JSON.parse(line) as {
-          response?: { body?: { choices?: Array<{ message?: { content?: string } }> } };
+          response?: { body?: { model?: string; usage?: Parameters<typeof recordBatchUsage>[0]['usage']; choices?: Array<{ message?: { content?: string } }> } };
         };
+        await recordBatchUsage({
+          feature: 'chat_periodic_summary',
+          model: parsed.response?.body?.model ?? CHAT_SUMMARY_MODEL,
+          usage: parsed.response?.body?.usage,
+        }).catch(() => {});
         const out = parsed.response?.body?.choices?.[0]?.message?.content?.trim();
         return out ? shield.detokenizeText(out) : null;
       }

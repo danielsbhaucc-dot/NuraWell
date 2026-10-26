@@ -18,3 +18,22 @@ describe('prompt cache transport', () => {
     expect(applyPromptCacheToBody({ model: 'x-ai/grok-4.5', messages: [{ role: 'system', content: `${STATIC}x` }] })).toBeNull();
   });
 });
+
+describe('long cache life + summary-backed history', () => {
+  it('adds a 12h OpenAI breakpoint on openai/ models only', async () => {
+    const sys = `${STATIC}dyn`;
+    const o = applyPromptCacheToBody({ model: 'openai/gpt-5.6-terra', messages: [{ role: 'system', content: sys }] });
+    expect((o!.messages as any)[0].content[0].prompt_cache_breakpoint).toEqual({ mode: 'explicit', ttl: '12h' });
+    const a = applyPromptCacheToBody({ model: 'anthropic/claude-sonnet-5', messages: [{ role: 'system', content: sys }] });
+    expect((a!.messages as any)[0].content[0].prompt_cache_breakpoint).toBeUndefined();
+  });
+  it('keeps full history without a session summary, tail only with one', async () => {
+    const { keepVerbatimTailWhenSummarized } = await import('../lib/ai/chat-memory/summary-backed-history');
+    const msgs = Array.from({ length: 30 }, (_, i) => ({ role: i % 2 ? 'assistant' : 'user', content: String(i) }));
+    expect(keepVerbatimTailWhenSummarized(msgs, false)).toHaveLength(30);
+    const t = keepVerbatimTailWhenSummarized(msgs, true, 16);
+    expect(t[0]!.role).toBe('user');
+    expect(t.at(-1)!.content).toBe('29');
+    expect(t.length).toBeLessThanOrEqual(16);
+  });
+});

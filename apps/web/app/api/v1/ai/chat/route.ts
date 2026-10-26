@@ -92,6 +92,8 @@ import { scanChallengeSuccessFromChat } from '../../../../../lib/challenge/scan-
 import { fetchUserEnrolledCourseIds } from '../../../../../lib/api/rag-chat-access';
 import { isUpstashVectorConfigured } from '../../../../../lib/ai/upstash-vector-rest';
 import { createPiiShield, type PiiShield } from '../../../../../lib/ai/privacy/pii-shield';
+import { openAiLongCacheBreakpoint } from '../../../../../lib/ai/prompt-cache';
+import { keepVerbatimTailWhenSummarized } from '../../../../../lib/ai/chat-memory/summary-backed-history';
 import { fetchUserMemoryDossier } from '../../../../../lib/ai/memory-dossier/fetch-dossier';
 import { formatUserMemoryDossierPromptBlock } from '../../../../../lib/ai/memory-dossier/format-dossier-prompt';
 import { ingestChatTurnIntoMemoryDossier } from '../../../../../lib/ai/memory-dossier/ingest-chat-turn';
@@ -687,6 +689,8 @@ function openRouterMessagesWithCachedSystem(
             cache_control: staticSystemPrompt && cacheTtlSupported
               ? { type: 'ephemeral', ttl: CHAT_PROMPT_CACHE_TTL }
               : { type: 'ephemeral' },
+            // OpenAI drops cache_control.ttl; its own breakpoint carries the long TTL (see prompt-cache.ts)
+            ...(!cacheTtlSupported ? openAiLongCacheBreakpoint() : {}),
           },
           { type: 'text', text: dynamicSystemPrompt },
         ],
@@ -818,6 +822,9 @@ async function createOpenRouterTextStreamResponse({
             },
           }
         : {}),
+      // explicit sticky key: the dynamic tail changes every turn, so OpenRouter's default
+      // (hash of first system + first user message) would not keep a session on one warm cache
+      ...(cacheConvId ? { session_id: String(cacheConvId).slice(0, 256) } : {}),
       stream: true,
       stream_options: { include_usage: true },
       usage: { include: true },
@@ -3190,7 +3197,10 @@ async function handleChatPost(request: Request) {
   const cleanHistory = mergedMessages.map((m) =>
     m.role === 'assistant' ? { ...m, content: stripReplyQuoteMarker(stripRawChatUi(stripEmojiReactionMarker(m.content)).replace(/⟦NW_UIR?:[^⟧]*⟧/g, '')) } : m
   );
-  const recentMessages = almogPromptV2Enabled() ? budgetHistoryV2(cleanHistory) : cleanHistory;
+  const recentMessages = almogPromptV2Enabled()
+    ? budgetHistoryV2(cleanHistory)
+    : // older turns are carried by the session's rolling summary (live file) → only the tail goes verbatim
+      keepVerbatimTailWhenSummarized(cleanHistory, Boolean(chatSession?.live_conversation_file?.trim()));
 
   const genderCorrection = detectGenderCorrectionFromRecentMessages(recentMessages);
   const profileGender = genderCorrection ?? profileRow.gender;
@@ -3784,6 +3794,14 @@ async function handleChatPost(request: Request) {
         debug_id: debugId,
         stage: 'system_prompt_size',
         chars: systemPromptCharCount,
+        // per-part breakdown (chars; ~4.2 chars/token for this Hebrew prompt) for cost audits
+        parts: {
+          static_cached: mcfg.mainWriterSystemPrompt.length,
+          dynamic_tail: dynamicSystemPrompt.length,
+          guardrails: mcfg.finalGuardrails.length,
+          history: recentMessages.reduce((n, m) => n + m.content.length, 0),
+          sections: sectionSizes(contextSections),
+        },
         history_msgs: recentMessages.length,
         prompt_cache_enabled: mcfg.supportsPromptCache,
         heavy_context: useHeavyContext,
@@ -4519,6 +4537,7 @@ async function handleChatPost(request: Request) {
           temperature: CHAT_TEMPERATURE,
           maxOutputTokens: effectiveMaxOutputTokens,
           headers: upstreamHeaders,
+          sessionId,
           piiShield,
           providerOptions: {},
           debugId,
