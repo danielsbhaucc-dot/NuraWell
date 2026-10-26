@@ -12,6 +12,7 @@ import { createHash } from 'node:crypto';
 import { encryptedTable, isBlocked } from '@/lib/security/field-registry';
 import { isV2 } from '@/lib/security/field-crypto';
 import { BLIND_INDEX_SOURCES, blindIndexPatch } from '@/lib/security/blind-index';
+import { normalizeTaskTitle } from '@/lib/tasks/title-normalize';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -87,7 +88,10 @@ export async function prepareWriteRow(table: string, row: Row): Promise<Row> {
       if (!('choice' in r)) r = { ...r, choice: str('choice') };
     }
   }
-  // HMAC blind-index columns for lookups/dedupe on encrypted values (migration 000208)
+  // ex-SQL title normalization (normalize_task_title triggers skip enc values since 000212)
+  if ((table === 'task_definitions' || table === 'almog_assignments') && typeof r.title === 'string' && !isV2(r.title))
+    r = { ...r, title: normalizeTaskTitle(r.title) };
+  // HMAC blind-index columns for lookups/dedupe on encrypted values (migrations 000208, 000212)
   if (BLIND_INDEX_SOURCES[table]?.some((c) => c in r)) r = { ...r, ...(await blindIndexPatch(table, r)) };
   return r;
 }

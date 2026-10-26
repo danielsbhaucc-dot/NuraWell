@@ -24,7 +24,12 @@ pending ai_interactions content text
 pending ai_interactions metadata json
 pending ai_interaction_edits original_content text
 pending ai_interaction_edits edited_content text
+pending almog_assignments title text
 pending almog_assignments detail text
+pending almog_assignments reason text
+pending almog_assignments source_excerpt text
+pending almog_assignments history json
+pending almog_assignments metadata json
 pending almog_blockers description text
 pending almog_blockers current_options json
 pending almog_blockers strategy text
@@ -34,6 +39,9 @@ pending almog_focus_periods reason text
 pending almog_focus_periods metadata json
 pending almog_interventions strategy text
 pending almog_interventions metadata json
+pending challenge_enrollments completion_summary json
+pending challenge_enrollments eating_window json
+pending challenge_enrollments metadata json
 pending challenge_interview_sessions transcript json
 pending challenge_interview_sessions extracted_insights json
 pending challenge_success_events title text
@@ -46,6 +54,7 @@ pending chat_sessions summary text
 pending chat_sessions title text
 pending chat_sessions preview_text text
 pending chat_sessions live_conversation_file text
+pending chat_task_proposals title text
 pending chat_task_proposals reason text
 pending chat_transcript_access_requests reason text
 pending chat_transcript_access_requests admin_note text
@@ -88,6 +97,18 @@ pending periodic_summaries metrics json
 pending scheduled_reminders title text
 pending scheduled_reminders body text
 pending scheduled_reminders metadata json
+pending task_events reason text
+pending task_events metadata json
+pending task_definitions title text
+pending task_definitions description text
+pending task_definitions ladder json
+pending task_definitions schedule text
+pending user_task_assignments reason text
+pending admin_audit_log ip text
+pending admin_audit_log detail json
+pending ops_security_events detail json
+sweep auth_session_trail ip text 15 created_at
+sweep auth_session_trail user_agent text 15 created_at
 pending user_insights insight_text text
 pending user_insights metadata json
 pending user_measurements notes text
@@ -196,11 +217,7 @@ pending media_receipts subject text
 gap access_audit_findings signals any
 gap access_audit_findings summary any
 gap access_audit_runs error any
-gap admin_audit_log detail any
-gap admin_audit_log ip any
 gap admin_passkeys telegram_user_id any
-gap auth_session_trail ip any
-gap auth_session_trail user_agent any
 gap billing_invoices doc_url any
 gap error_events message any
 gap gideon_device_requests chat_id any
@@ -214,18 +231,12 @@ gap ip_block_ranges reason any
 gap media_receipts search_text any
 gap ops_device_enrollments label any
 gap ops_device_enrollments location any
-gap ops_enroll_blocks reason any
 gap ops_probe_daily country any
-gap ops_security_events detail any
 gap pii_access_grants country any
 gap pii_access_grants reason any
 gap pii_access_grants ticket_ref any
 gap pii_access_log country any
 gap pii_access_log resource any
-gap task_definitions description any
-gap task_definitions ladder any
-gap task_definitions schedule any
-gap task_definitions title any
 class field_enc_enforcement table_name -
 class access_audit_findings event_kind -
 class access_audit_findings product_id -
@@ -239,7 +250,9 @@ class achievements description -
 class achievements icon_emoji -
 class achievements metadata -
 class achievements title -
+class admin_audit_log ip_bidx -
 class admin_audit_log detail -
+class admin_audit_log facts -
 class admin_audit_log ip -
 class admin_audit_log method -
 class admin_audit_log path -
@@ -264,6 +277,7 @@ class ai_usage_events model -
 class ai_usage_events product_id -
 class ai_usage_monthly feature -
 class ai_usage_monthly model -
+class almog_assignments title_tok_bidx -
 class almog_assignments created_by -
 class almog_assignments dedupe_key -
 class almog_assignments detail -
@@ -313,6 +327,7 @@ class audio_tracks object_key -
 class audio_tracks title -
 class auth_session_trail aal -
 class auth_session_trail ip -
+class auth_session_trail ip_bidx -
 class auth_session_trail product_id -
 class auth_session_trail user_agent -
 class billing_addons code -
@@ -430,6 +445,7 @@ class chat_sessions status -
 class chat_sessions summary -
 class chat_sessions title -
 class chat_sessions topic -
+class chat_task_proposals title_bidx -
 class chat_task_proposals reason -
 class chat_task_proposals status -
 class chat_task_proposals title -
@@ -807,6 +823,7 @@ class ops_probe_daily ip_hash -
 class ops_probe_daily product_id -
 class ops_recovery_codes code_hash -
 class ops_security_events detail -
+class ops_security_events facts -
 class ops_security_events kind -
 class ops_security_events product_id -
 class ops_security_keys aaguid -
@@ -960,6 +977,7 @@ class subscriptions provider -
 class subscriptions provider_ref -
 class subscriptions status -
 class subscriptions tier -
+class task_definitions title_bidx -
 class task_definitions created_by -
 class task_definitions description -
 class task_definitions emoji -
@@ -1028,6 +1046,7 @@ class user_plans description -
 class user_plans plan_data -
 class user_plans plan_type -
 class user_plans title -
+class user_task_assignments reason -
 class user_task_assignments habit_dedupe_key -
 class user_task_assignments legacy_ref -
 class user_task_assignments status -

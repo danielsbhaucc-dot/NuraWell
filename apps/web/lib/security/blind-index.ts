@@ -7,9 +7,20 @@
  *  - notifications.meta_unique_bidx       = H(kind|checkpoint_date|slot)   — replaces the metadata->>… unique indexes
  *  - notifications.meta_key_bidx          = H(metadata.dedupe_key)         — challengeNotificationExists lookup
  *
+ *  - task_definitions.title_bidx         = H(dedupeNormalize(normalizeTaskTitle(title))) — habit_dedupe_key (000212);
+ *      owned rows: Hu (per-user derived key, owner_user_id); shared staff rows (owner NULL): global H
+ *  - almog_assignments.title_tok_bidx    = [Hu(token) …] of titleTokens(title), per-user key — similar-title trigger
+ *  - chat_task_proposals.title_bidx      = Hu(title), per-user key — open-proposal unique index (000212)
+ *  Hu = HMAC under HKDF(indexKey, salt=user_id) (field-crypto.blindIndexForUser): the same title of two users gives
+ *  unrelated indexes. Global H is kept only where rows are shared staff content or system lookups (ip, notifications).
+ *  - admin_audit_log.ip_bidx             = H(ip) — `.eq('ip', …)` lookups (000212)
+ *  - auth_session_trail.ip_bidx          = H(ip) — ops_session_trail(p_ip_bidx) cross-user IP lookup (000214); filled by
+ *      the session-trail-seal cron in the same CAS update that seals ip/user_agent
+ *
  * Computed by prepareWriteRow (insert/update with a plaintext source value) and by the backfill (migration 000208).
  */
 import { isV2 } from '@/lib/security/field-crypto';
+import { dedupeNormalize, normalizeTaskTitle, titleTokens } from '@/lib/tasks/title-normalize';
 
 type Row = Record<string, unknown>;
 
@@ -18,6 +29,12 @@ async function hmac(table: string, column: string, value: string): Promise<strin
   const { blindIndexFor } = await import('@/lib/security/field-crypto');
   return blindIndexFor(table, column, value);
 }
+/** Per-user derived key (field-crypto.blindIndexForUser) — for indexes only ever compared within one user's rows. */
+async function uhmac(table: string, column: string, userId: string, value: string): Promise<string> {
+  const { blindIndexForUser } = await import('@/lib/security/field-crypto');
+  return blindIndexForUser(table, column, userId, value);
+}
+const ownerId = (v: unknown) => (typeof v === 'string' && v ? v : null);
 
 function plainObject(v: unknown): Row | null {
   return v && typeof v === 'object' && !Array.isArray(v) ? (v as Row) : null;
@@ -42,7 +59,40 @@ export async function notificationMetaKeyBidx(dedupeKey: string): Promise<string
 export const BLIND_INDEX_SOURCES: Readonly<Record<string, readonly string[]>> = {
   challenge_success_events: ['title'],
   notifications: ['metadata'],
+  task_definitions: ['title'],
+  almog_assignments: ['title'],
+  chat_task_proposals: ['title'],
+  admin_audit_log: ['ip'],
+  auth_session_trail: ['ip'],
 };
+
+/** Index columns per table (the backfill reads them to fill shared, owner-less rows once). */
+export const BLIND_INDEX_COLUMNS: Readonly<Record<string, readonly string[]>> = {
+  challenge_success_events: ['title_bidx'],
+  notifications: ['meta_key_bidx', 'meta_unique_bidx'],
+  task_definitions: ['title_bidx'],
+  almog_assignments: ['title_tok_bidx'],
+  chat_task_proposals: ['title_bidx'],
+  admin_audit_log: ['ip_bidx'],
+  auth_session_trail: ['ip_bidx'],
+};
+
+/** auth_session_trail ip index (global key: the investigation looks one IP up across users). */
+export async function sessionTrailIpBidx(ip: string): Promise<string> {
+  return hmac('auth_session_trail', 'ip', ip.trim());
+}
+
+/** Shared by the app write path and the backfill so both produce the same keys. */
+/** owner null = shared staff row (global key); owned = per-user key (matches only that user's assignments). */
+export async function taskTitleBidx(title: string, owner: string | null = null): Promise<string | null> {
+  const k = dedupeNormalize(normalizeTaskTitle(title));
+  if (!k) return null;
+  return owner ? uhmac('task_definitions', 'title.dedupe', owner, k) : hmac('task_definitions', 'title.dedupe', k);
+}
+/** almog_assignments are always owned: per-user key, compared only with the same user's active rows. */
+export async function titleTokenBidx(title: string, userId: string): Promise<string[]> {
+  return Promise.all(titleTokens(title).map((t) => uhmac('almog_assignments', 'title.token', userId, t)));
+}
 
 /**
  * Blind-index columns to add to a write. Only when the source value is present and plaintext (an enc:v2 value
@@ -60,8 +110,37 @@ export async function blindIndexPatch(table: string, row: Row): Promise<Row> {
     const scope = notificationUniqueScope(row.metadata);
     out.meta_unique_bidx = scope ? await hmac(table, 'metadata.unique_scope', scope) : null;
   }
+  const str = (v: unknown) => (typeof v === 'string' && v.trim() ? v : null);
+  if (table === 'task_definitions' && 'title' in row && !isV2(row.title)) {
+    const t = str(row.title);
+    out.title_bidx = t ? await taskTitleBidx(t, ownerId(row.owner_user_id)) : null;
+  }
+  if (table === 'almog_assignments' && 'title' in row && !isV2(row.title)) {
+    const t = str(row.title);
+    const u = ownerId(row.user_id);
+    out.title_tok_bidx = t && u ? await titleTokenBidx(t, u) : null;
+  }
+  if (table === 'chat_task_proposals' && 'title' in row && !isV2(row.title)) {
+    const t = str(row.title);
+    const u = ownerId(row.user_id);
+    out.title_bidx = t && u ? await uhmac(table, 'title', u, t) : null;
+  }
+  if (table === 'admin_audit_log' && 'ip' in row && !isV2(row.ip)) {
+    const t = str(row.ip);
+    out.ip_bidx = t ? await hmac(table, 'ip', t) : null;
+  }
+  if (table === 'auth_session_trail' && 'ip' in row && !isV2(row.ip)) {
+    const t = str(row.ip);
+    out.ip_bidx = t ? await sessionTrailIpBidx(t) : null;
+  }
   return out;
 }
+
+/** Equality-filter rewrites: table → plain column → index column. */
+const BLIND_FILTERS: Readonly<Record<string, Readonly<Record<string, string>>>> = {
+  challenge_success_events: { title: 'title_bidx' },
+  admin_audit_log: { ip: 'ip_bidx' },
+};
 
 /**
  * Rewrites equality filters on a blind-indexed column into the index column, so `.eq('title', X)` keeps working
@@ -70,13 +149,18 @@ export async function blindIndexPatch(table: string, row: Row): Promise<Row> {
  * Returns true if the URL was changed.
  */
 export async function rewriteBlindFilters(table: string, url: URL): Promise<boolean> {
-  if (table !== 'challenge_success_events') return false;
-  const f = url.searchParams.get('title');
-  if (!f || !f.startsWith('eq.')) return false;
-  const value = f.slice(3);
-  const h = await hmac(table, 'title', value);
-  url.searchParams.delete('title');
-  if (url.searchParams.has('or')) url.searchParams.set('title_bidx', `eq.${h}`);
-  else url.searchParams.set('or', `(title_bidx.eq.${h},title.eq.${JSON.stringify(value)})`);
-  return true;
+  const map = BLIND_FILTERS[table];
+  if (!map) return false;
+  let changed = false;
+  for (const [col, idx] of Object.entries(map)) {
+    const f = url.searchParams.get(col);
+    if (!f || !f.startsWith('eq.')) continue;
+    const value = f.slice(3);
+    const h = await hmac(table, col, value);
+    url.searchParams.delete(col);
+    if (url.searchParams.has('or')) url.searchParams.set(idx, `eq.${h}`);
+    else url.searchParams.set('or', `(${idx}.eq.${h},${col}.eq.${JSON.stringify(value)})`);
+    changed = true;
+  }
+  return changed;
 }
