@@ -9,7 +9,7 @@ const Stat = ({ label, value, hint }: { label: string; value: string | null; hin
   <div className={`hb-stat ${value === null ? 'is-na' : ''}`}><span className="hb-stat-v">{value ?? NA}</span><span className="hb-stat-l">{label}</span>{hint ? <span className="hb-stat-h">{hint}</span> : null}</div>
 );
 
-export function ProductCard({ product, summary, metricsError }: { product: ProductRow; summary: ProductSummary | null; metricsError: string | null }) {
+export function ProductCard({ product, summary, metricsError, footer }: { product: ProductRow; summary: ProductSummary | null; metricsError: string | null; footer?: React.ReactNode }) {
   const none = !summary;
   return (
     <section className="hb-card" style={{ ['--pa' as string]: product.color }} aria-label={`סיכום ${product.name}`}>
@@ -25,6 +25,7 @@ export function ProductCard({ product, summary, metricsError }: { product: Produ
           <Stat label="משימות פתוחות" value={fmtNum(summary.tasksOpen)} hint={summary.tasksOpen === null ? 'לא נמדד לפי מוצר' : undefined} />
         </div>
       )}
+      {footer ? <footer className="hb-card-foot">{footer}</footer> : null}
     </section>
   );
 }
@@ -34,23 +35,28 @@ export function Overview({ products, summaries, deployment, metricsError, regist
     <div className="fd-pane">
       <h2>סקירה</h2>
       {metricsError ? <p className="fd-warn" role="alert">נתוני המוצרים לא זמינים כרגע. מה שמוצג כאן הוא רק מה שנטען.</p> : null}
+      <section className="hb-group" aria-labelledby="g-stats"><h3 className="hb-group-h" id="g-stats">במבט אחד</h3>
       <div className="hb-stats hb-top">
         <Stat label="מוצרים" value={fmtNum(products.length)} />
         <Stat label="מודולים בספרייה" value={fmtNum(registry.length)} />
         <Stat label="אירועי אבטחה פתוחים" value={fmtNum(deployment.securityOpen)} hint="בכל המערכת" />
         <Stat label="משימות ציות פתוחות" value={fmtNum(deployment.tasksOpen)} hint="בכל המערכת" />
       </div>
-      <QuickLinks onNav={onNav} />
+      </section>
+      <section className="hb-group" aria-labelledby="g-quick"><h3 className="hb-group-h" id="g-quick">קיצורים</h3><QuickLinks onNav={onNav} /></section>
+      <section className="hb-group" aria-labelledby="g-prod"><h3 className="hb-group-h" id="g-prod">מוצרים</h3>
       <div className="hb-cards">
         {products.map((p) => (
           <div key={p.id} className="hb-wrap">
-            <ProductCard product={p} summary={summaries.find((s) => s.productId === p.id) ?? null} metricsError={metricsError} />
-            <button type="button" className="fd-link" onClick={() => onOpen(p.id)}>המודולים של {p.name} ‹</button>
+            <ProductCard product={p} summary={summaries.find((s) => s.productId === p.id) ?? null} metricsError={metricsError} footer={<button type="button" className="fd-link" onClick={() => onOpen(p.id)}>המודולים של {p.name} ‹</button>} />
           </div>
         ))}
       </div>
+      </section>
+      <section className="hb-group" aria-labelledby="g-cost"><h3 className="hb-group-h" id="g-cost">עלויות ופעילות</h3>
       <div className="hb-grid"><CostTrendChart trend={costTrend} /><ActivityList items={activity} products={products} /></div>
-      <LibraryPreview registry={registry} href={href} />
+      </section>
+      <section className="hb-group" aria-labelledby="g-lib"><h3 className="hb-group-h" id="g-lib">ספרייה</h3><LibraryPreview registry={registry} href={href} /></section>
     </div>
   );
 }
