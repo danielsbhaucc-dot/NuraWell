@@ -36,6 +36,7 @@
     "@platform/ai-engine": "*",
     "@platform/auth": "*",
     "@platform/security-crypto": "*",
+    "@platform/module-library-ui": "*",
     "@platform/ui": "*",
     "@saas/billing": "*",
     "@simplewebauthn/browser": "^14.0.0",

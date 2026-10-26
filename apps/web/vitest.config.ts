@@ -12,6 +12,7 @@ export default defineConfig({
       '@platform/ui': path.resolve(__dirname, '../../packages/@platform/ui/src/index.ts'),
       '@platform/ai-engine': path.resolve(__dirname, '../../packages/@platform/ai-engine/src/index.ts'),
       '@platform/security-crypto': path.resolve(__dirname, '../../packages/@platform/security-crypto/src/index.ts'),
+      '@platform/module-library-ui': path.resolve(__dirname, '../../packages/@platform/module-library-ui/src/index.ts'),
       '@platform/auth': path.resolve(__dirname, '../../packages/@platform/auth/src/index.ts'),
       'server-only': path.resolve(__dirname, 'tests/mocks/server-only.ts'),
     },

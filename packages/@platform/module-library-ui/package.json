@@ -1,0 +1,11 @@
+{
+  "name": "@platform/module-library-ui",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Mac Finder-style ops dashboard: product sidebar, module library (icon/list), per-product toggles, tier badges, detail panel. v1 is a mock with fake data.",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "peerDependencies": {
+    "react": ">=19"
+  }
+}
