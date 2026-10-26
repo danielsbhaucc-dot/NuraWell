@@ -338,7 +338,7 @@ export const FIELD_V2_TABLES: readonly string[] = [
  * row older than maxPlainMinutes.
  */
 export const SWEEP_TABLES: Readonly<Record<string, { maxPlainMinutes: number; tsCol: string }>> = {
-  auth_session_trail: { maxPlainMinutes: 15, tsCol: 'created_at' },
+  auth_session_trail: { maxPlainMinutes: 1500, tsCol: 'created_at' },
 };
 
 /**

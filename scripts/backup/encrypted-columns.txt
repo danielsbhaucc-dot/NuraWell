@@ -107,8 +107,8 @@ pending user_task_assignments reason text
 pending admin_audit_log ip text
 pending admin_audit_log detail json
 pending ops_security_events detail json
-sweep auth_session_trail ip text 15 created_at
-sweep auth_session_trail user_agent text 15 created_at
+sweep auth_session_trail ip text 1500 created_at
+sweep auth_session_trail user_agent text 1500 created_at
 pending user_insights insight_text text
 pending user_insights metadata json
 pending user_measurements notes text
