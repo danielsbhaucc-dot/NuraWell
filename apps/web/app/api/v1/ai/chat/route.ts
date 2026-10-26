@@ -93,6 +93,7 @@ import { fetchUserEnrolledCourseIds } from '../../../../../lib/api/rag-chat-acce
 import { isUpstashVectorConfigured } from '../../../../../lib/ai/upstash-vector-rest';
 import { createPiiShield, type PiiShield } from '../../../../../lib/ai/privacy/pii-shield';
 import { openAiLongCacheBreakpoint } from '../../../../../lib/ai/prompt-cache';
+import { condenseContextSections, contextCondenserEnabled } from '../../../../../lib/ai/chat-memory/context-condenser';
 import { keepVerbatimTailWhenSummarized } from '../../../../../lib/ai/chat-memory/summary-backed-history';
 import { fetchUserMemoryDossier } from '../../../../../lib/ai/memory-dossier/fetch-dossier';
 import { formatUserMemoryDossierPromptBlock } from '../../../../../lib/ai/memory-dossier/format-dossier-prompt';
@@ -3730,6 +3731,29 @@ async function handleChatPost(request: Request) {
       );
       const kept = contextSections.filter((x) => !terraHeavy.has(x) && !terraHeavy.has(x.trim()));
       contextSections.splice(0, contextSections.length, ...kept);
+    }
+    if (contextCondenserEnabled() && openrouterKey) {
+      // Off by default. Rewrites only recall blocks (vector memories + cross-session summaries); dossier/core state, safety, commitments untouched. Fail-safe → full context.
+      const condensable = new Set([ragMemoryBlock, crossSessionBlock].filter(Boolean));
+      const c = await condenseContextSections({
+        sections: contextSections,
+        userMessage: lastUserText,
+        condensable: (x) => condensable.has(x),
+        timeoutMs: Number(process.env.ALMOG_CONTEXT_CONDENSER_TIMEOUT_MS) || 700,
+        call: async (p, signal) => {
+          const r = await meteredFetch(fetch, { userId: user.id, feature: 'almog_context_condenser' })('https://openrouter.ai/api/v1/chat/completions', {
+            method: 'POST',
+            signal,
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${openrouterKey}` },
+            body: JSON.stringify({ model: process.env.ALMOG_CONTEXT_CONDENSER_MODEL || 'openai/gpt-5.6-luna', max_tokens: 400, messages: [{ role: 'system', content: p.system }, { role: 'user', content: p.user }] }),
+          });
+          if (!r.ok) throw new Error(`condenser_${r.status}`);
+          const j = (await r.json()) as { choices?: Array<{ message?: { content?: string } }> };
+          return j.choices?.[0]?.message?.content ?? '';
+        },
+      });
+      console.info('[ai/chat]', { debug_id: debugId, stage: 'context_condenser', condensed: c.condensed, reason: c.reason, saved_chars: c.savedChars });
+      contextSections.splice(0, contextSections.length, ...c.sections);
     }
     if (almogPromptV2Enabled()) {
       const b = budgetContextSectionsV2(contextSections);
