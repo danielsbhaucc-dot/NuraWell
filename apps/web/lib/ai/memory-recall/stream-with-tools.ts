@@ -1,3 +1,4 @@
+import { registerCacheablePrefix } from '../prompt-cache';
 /**
  * סטרימינג צ'אט עם כלי recall — Vercel AI SDK streamText + stopWhen מרובה-שלבים.
  * מחזיר UI message stream כדי שהלקוח יראה tool parts (recall_past_memory).
@@ -51,15 +52,22 @@ export async function createMemoryRecallStreamResponse(params: {
   maxOutputTokens: number;
   headers: HeadersInit;
   piiShield?: PiiShield | null;
+  /** chat session id → OpenRouter sticky routing key (x-session-id) */
+  sessionId?: string | null;
   providerOptions?: Record<string, Record<string, string>>;
   debugId?: string;
   onFinish: (payload: MemoryRecallStreamFinishPayload) => Promise<void>;
   onEmptyRetry?: () => Promise<string>;
 }): Promise<Response> {
-  const systemContent = [
+  const staticPart = [
     params.staticSystemPrompt,
     MEMORY_RECALL_TOOL_PROMPT,
     'כלי adjust_task_level: כשהמשתמש אומר במפורש שמשימה בתוכנית קשה לו מדי ("קשה לי") או קלה מדי — הקל/הקשה ברמה אחת בלבד, ואז ספר לו בחום מה המשימה החדשה. אל תשתמש בו בלי בקשה ברורה.',
+  ].join('\n\n');
+  // byte-identical text; the transport splits it here so the static part is prompt-cached (see prompt-cache.ts)
+  registerCacheablePrefix(`${staticPart}\n\n`);
+  const systemContent = [
+    staticPart,
     params.piiShield
       ? params.piiShield.tokenizeText(params.dynamicSystemPrompt)
       : params.dynamicSystemPrompt,
@@ -91,6 +99,8 @@ export async function createMemoryRecallStreamResponse(params: {
     temperature: params.temperature,
     maxOutputTokens: params.maxOutputTokens,
     providerOptions: params.providerOptions,
+    // OpenRouter sticky routing per chat session (keeps the prompt cache warm across turns)
+    ...(params.sessionId ? { headers: { 'x-session-id': String(params.sessionId).slice(0, 256) } } : {}),
     onStepFinish: (step) => {
       const recallCalls = (step.toolCalls ?? []).filter(
         (tc) => tc.toolName === RECALL_TOOL_NAME

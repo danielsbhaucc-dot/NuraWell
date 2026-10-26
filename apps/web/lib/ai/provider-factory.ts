@@ -1,6 +1,7 @@
 import { meteredFetch } from '@/lib/ai/usage-meter';
 import { createOpenAI } from '@ai-sdk/openai';
 import { publicAppUrlForAiReferer } from '../public-app-url';
+import { promptCacheFetch } from './prompt-cache';
 
 /**
  * Single factory for every AI SDK provider (OpenRouter / Groq lane).
@@ -48,6 +49,7 @@ export function createAiProvider(opts: {
       ? {}
       : { headers: { 'HTTP-Referer': publicAppUrlForAiReferer(), 'X-Title': opts.title ?? 'NuraWell' } }),
     // default goes through meteredFetch: usage metering + the central outbound PII guard
-    fetch: withTimeoutFetch(opts.fetch ?? meteredFetch(), timeoutMs),
+    // promptCacheFetch runs after the PII guard: splits a registered static system prefix into a cache_control block (text unchanged)
+    fetch: withTimeoutFetch(opts.fetch ?? meteredFetch(promptCacheFetch()), timeoutMs),
   });
 }
