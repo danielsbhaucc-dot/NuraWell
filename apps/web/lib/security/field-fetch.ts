@@ -11,7 +11,7 @@
  * (none of the registered tables are read through embeds today; stage 5 guard enforces it).
  * The browser client is never wrapped: the browser never gets ciphertext keys.
  */
-import { encryptedTable, FIELD_V2_TABLES, keyColumns } from '@/lib/security/field-registry';
+import { encryptedTable, FIELD_V2_TABLES, keyColumns, rowKeyOf } from '@/lib/security/field-registry';
 import { prepareWriteRow, sealedWriteCols } from '@/lib/security/field-write';
 // field-crypto (node:crypto, KMS key) is loaded lazily, only when a response really holds enc:v2 values.
 const FIELD_PREFIX_MARK = 'enc:v2:';
@@ -160,7 +160,7 @@ async function sealWrite(base: FetchFn, table: string, method: string, url: URL,
         r = { ...r, id: id ?? crypto.randomUUID() };
       }
       const userId = r[spec.userCol];
-      const rowId = keyCols.map((c) => r[c]).every((v) => v !== undefined && v !== null) ? keyCols.map((c) => String(r[c])).join('|') : null;
+      const rowId = rowKeyOf(spec, r);
       if (typeof userId !== 'string' || !rowId) throw new Error(`${table}: insert must carry ${spec.userCol} and ${keyCols.join(', ')} to seal encrypted columns`);
       out.push(await sealOne(table, r, rowId, userId));
     }
@@ -182,7 +182,8 @@ async function sealWrite(base: FetchFn, table: string, method: string, url: URL,
   for (const t of targets) {
     const userId = t[spec.userCol];
     if (typeof userId !== 'string') continue;
-    const rowId = keyCols.map((c) => String(t[c])).join('|');
+    const rowId = rowKeyOf(spec, t);
+    if (!rowId) continue;
     const patch = await sealOne(table, await prepareWriteRow(table, { ...patch0, [spec.userCol]: userId }), rowId, userId);
     if (!(spec.userCol in patch0)) delete patch[spec.userCol];
     const one = new URL(url.toString());
