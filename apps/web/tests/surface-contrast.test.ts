@@ -22,7 +22,7 @@ const MIN = 1.15;
 const LIGHT: Array<[string, string]> = [
   ['surface', 'canvas'], ['background-card', 'background'], ['background-soft', 'background-card'], ['surface-sunken', 'surface'],
 ];
-const DARK_ON: Array<[string, string]> = [['panel-dark', 'forest-950'], ['panel-dark', 'forest-900'], ['panel-dark-input', 'panel-dark'], ['panel-dark-line', 'panel-dark']];
+const DARK_ON: Array<[string, string]> = [['panel-dark', 'forest-950'], ['panel-dark', 'forest-900'], ['panel-dark-input', 'panel-dark'], ['panel-dark-line', 'panel-dark'], ['hero-row', 'forest-900'], ['hero-row-line', 'hero-row'], ['hero-card', 'forest-900'], ['hero-card', 'hero-row']];
 const DARK_SCHEME: Array<[string, string]> = [['surface', 'background'], ['background-card', 'background'], ['surface-sunken', 'surface'], ['surface-elevated', 'background']];
 
 describe('card vs background separation (contrast >= 1.15)', () => {
@@ -33,5 +33,16 @@ describe('card vs background separation (contrast >= 1.15)', () => {
     const rule = css.match(/\.onboarding-hero-card-photo\s*\{[^}]*\}/)![0];
     expect(rule).toContain('var(--color-panel-dark)');
     expect(rule).not.toMatch(/background:\s*rgba\(|backdrop-filter/);
+  });
+});
+
+describe('no near-white surface tokens (RGB >= 248)', () => {
+  it('every solid light-theme --color-* token stays below 248 on some channel', () => {
+    const css = fs.readFileSync(path.join(__dirname, '../app/globals.css'), 'utf8');
+    const theme = css.slice(css.indexOf('@theme'), css.indexOf('/* Coming-soon is frozen:') > 0 ? css.indexOf('/* Coming-soon is frozen:') : undefined);
+    const bad = [...theme.matchAll(/--color-([\w-]+):\s*#([0-9a-f]{6})\b/gi)]
+      .filter(([, n, h]) => !/^(on-|text|white|ink|glow)/.test(n) && [0, 2, 4].every((i) => parseInt(h.slice(i, i + 2), 16) >= 248))
+      .map(([, n, h]) => `${n} #${h}`);
+    expect(bad).toEqual([]);
   });
 });
