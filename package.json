@@ -15,7 +15,8 @@
   },
   "workspaces": [
     "apps/*",
-    "packages/*"
+    "packages/*",
+    "packages/@platform/*"
   ],
   "devDependencies": {
     "next": "16.4.3",
