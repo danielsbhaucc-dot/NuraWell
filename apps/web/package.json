@@ -61,7 +61,8 @@
     "vaul": "^1.1.2",
     "web-push": "^3.6.7",
     "zod": "^4.6.7",
-    "@saas/billing": "*"
+    "@saas/billing": "*",
+    "@platform/iam": "*"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",

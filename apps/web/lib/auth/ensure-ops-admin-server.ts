@@ -69,6 +69,13 @@ export const ensureOpsAdminServer = cache(async (): Promise<void> => {
   const { data: sess } = await supabase.auth.getSession();
   const gate = await opsDeviceGate(createAdminClient(), user.id, (await cookies()).get(DEVICE_COOKIE)?.value, sess.session?.access_token, h.get('user-agent'));
   if (!gate.ok) notFound();
+  // Platform IAM: the console opens only for a grant of admin.access on the selected product.
+  const { decide } = await import('@platform/iam');
+  const { CATALOG, DEFAULT_PRODUCT, PRODUCT_COOKIE } = await import('../platform/catalog');
+  const { loadActor } = await import('../platform/authorize');
+  const product = (await cookies()).get(PRODUCT_COOKIE)?.value || DEFAULT_PRODUCT;
+  const actor = await loadActor(createAdminClient(), user.id);
+  if (!decide(CATALOG, actor, product, 'admin.access', { steppedUp: true }).allow && !decide(CATALOG, actor, DEFAULT_PRODUCT, 'admin.access', { steppedUp: true }).allow) notFound();
 });
 
 /** Current Ops admin id (for audit rows written from server actions). */
