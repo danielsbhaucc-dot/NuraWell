@@ -4010,6 +4010,7 @@ async function handleChatPost(request: Request) {
               gender: profileGender,
               healthConsentOff,
               crisis: crisisSignal.redFlag,
+              firstName,
             });
             if (qc.status !== 'disabled') {
               console.info('[ai/chat]', { debug_id: debugId, stage: 'reply_qc', status: qc.status, ...('reason' in qc ? { reason: qc.reason } : {}) });
