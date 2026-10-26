@@ -300,6 +300,12 @@ export const ENCRYPTED_TABLES = {
   consent_evidence_attestations: { system: 'legal', userCol: '', rowCol: 'id', guardCols: [], columns: { payload: 'json' } },
   legal_access_log: { system: 'legal', userCol: '', rowCol: 'id', guardCols: [], columns: { detail: 'json' } },
   media_receipts: { system: 'legal', userCol: '', rowCol: 'id', columns: { attachments: 'json', confirmation_code: 'text', confirmation_link: 'text', original_from: 'text', subject: 'text' } },
+  // IAM/admin (000220_iam_admin_enc_prep; tables from PRs 357-362)
+  access_audit_findings: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { signals: 'json', summary: 'text' } },
+  access_audit_runs: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { error: 'text' } },
+  ops_device_enrollments: { system: 'ops', userCol: '', rowCol: 'id', guardCols: [], columns: { label: 'text', location: 'text' } },
+  pii_access_grants: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { country: 'text', reason: 'text', ticket_ref: 'text' } },
+  pii_access_log: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { country: 'text', resource: 'text' } },
 } as const satisfies Record<string, EncryptedTable>;
 
 /**
@@ -330,6 +336,8 @@ export const FIELD_V2_TABLES: readonly string[] = [
   'task_events', 'task_definitions', 'user_task_assignments', 'challenge_enrollments', 'admin_audit_log',
   // 000214: audit/security detail split (plain facts + sealed detail); session trail swept by cron
   'ops_security_events', 'auth_session_trail',
+  // 000220: IAM/admin tables (after PRs 357-362)
+  'access_audit_findings', 'access_audit_runs', 'ops_device_enrollments', 'pii_access_grants', 'pii_access_log',
 ];
 
 /**
@@ -342,7 +350,7 @@ export const SWEEP_TABLES: Readonly<Record<string, { maxPlainMinutes: number; ts
 };
 
 /**
- * GATED — admin/IAM tables created by the unmerged migrations 000191-000201 (#357-#362). NOT live: nothing reads
+ * GATED — admin/IAM tables created by the unmerged migrations 000191-000201 (PRs 357-362). NOT live: nothing reads
  * this constant for sealing or triggers. After those PRs merge, apply supabase/gated/000211_iam_admin_enc_prep.sql,
  * move these into ENCRYPTED_TABLES + FIELD_V2_TABLES, and regenerate the enc-reject triggers.
  * Not listed (stay pending): iam_audit_log.detail/target, iam_grants.reason and ops_probe_daily.country are written
@@ -350,11 +358,7 @@ export const SWEEP_TABLES: Readonly<Record<string, { maxPlainMinutes: number; ts
  * upsert); ops_enroll_blocks.reason is verified fixed-code only (single writer lib/ops/enrollment.ts upserts 'wrong_number').
  */
 export const GATED_AFTER_IAM_MERGE: Readonly<Record<string, EncryptedTable>> = {
-  access_audit_findings: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { signals: 'json', summary: 'text' } },
-  access_audit_runs: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { error: 'text' } },
-  ops_device_enrollments: { system: 'ops', userCol: '', rowCol: 'id', guardCols: [], columns: { label: 'text', location: 'text' } },
-  pii_access_grants: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { country: 'text', reason: 'text', ticket_ref: 'text' } },
-  pii_access_log: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { country: 'text', resource: 'text' } },
+  // moved into ENCRYPTED_TABLES + FIELD_V2_TABLES with 000220 (applies only after PRs 357-362 merge)
 };
 
 /**
