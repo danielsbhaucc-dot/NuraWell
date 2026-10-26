@@ -146,7 +146,7 @@ export function AdminNotificationsBell({ opsHref }: AdminNotificationsBellProps)
         <div className="inline-flex items-center gap-1.5">
           {unreadCount > 0 ? (
             <span
-              className="min-w-[1.35rem] rounded-full bg-coral-500 px-1.5 py-0.5 text-center text-[10px] font-black leading-none text-gc shadow-xs ring-2 ring-[#cfe9dc]"
+              className="min-w-[1.35rem] rounded-full bg-coral-500 px-1.5 py-0.5 text-center text-[10px] font-black leading-none text-gc shadow-xs ring-2 ring-[#f2f2f6]"
               aria-hidden
             >
               {formatUnreadBadgeCount(unreadCount)}

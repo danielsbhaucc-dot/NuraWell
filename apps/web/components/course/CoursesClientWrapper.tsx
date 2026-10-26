@@ -59,7 +59,7 @@ export function CoursesClientWrapper({
             'radial-gradient(circle at 0% 0%, rgba(99,102,241,0.10) 0%, transparent 42%),' +
             'radial-gradient(circle at 100% 8%, rgba(20,184,166,0.12) 0%, transparent 40%),' +
             'radial-gradient(circle at 50% 100%, rgba(245,166,35,0.10) 0%, transparent 45%),' +
-            'linear-gradient(180deg, #cfe9dc 0%, #EEF3F2 100%)',
+            'linear-gradient(180deg, #f2f2f6 0%, #EEF3F2 100%)',
           padding: '8px 16px 28px',
           minHeight: '55vh',
         }}
@@ -103,10 +103,10 @@ export function CoursesClientWrapper({
                 boxShadow: '0 4px 12px rgba(4,120,87,0.2)',
               }}
             >
-              <span style={{ fontSize: '24px', fontWeight: 900, color: '#eef4ea', lineHeight: 1 }}>
+              <span style={{ fontSize: '24px', fontWeight: 900, color: '#f2f2f6', lineHeight: 1 }}>
                 {stats.avgProgress}
               </span>
-              <span style={{ fontSize: '9px', color: 'rgba(207,233,220,0.7)', fontWeight: 600 }}>%</span>
+              <span style={{ fontSize: '9px', color: 'rgba(242,242,246,0.7)', fontWeight: 600 }}>%</span>
             </div>
             <div style={{ flex: 1 }}>
               <p
@@ -165,9 +165,9 @@ export function CoursesClientWrapper({
             transition={{ duration: 0.4, delay: 0.1 }}
             className="flex items-center gap-3.5 mb-4 p-3.5 px-4 rounded-2xl"
             style={{
-              background: 'linear-gradient(135deg, #FFF8E7 0%, #cfe9dc 100%)',
+              background: 'linear-gradient(135deg, #f2f2f6 0%, #f2f2f6 100%)',
               border: '1.5px solid rgba(245,166,35,0.35)',
-              boxShadow: '0 4px 20px rgba(245,166,35,0.12), inset 0 1px 0 rgba(207,233,220,0.9)',
+              boxShadow: '0 4px 20px rgba(245,166,35,0.12), inset 0 1px 0 rgba(242,242,246,0.9)',
             }}
           >
             <div
@@ -180,10 +180,10 @@ export function CoursesClientWrapper({
                 boxShadow: '0 4px 14px rgba(245,166,35,0.45)',
               }}
             >
-              <span style={{ fontSize: '20px', fontWeight: 900, color: '#eef4ea', lineHeight: 1 }}>
+              <span style={{ fontSize: '20px', fontWeight: 900, color: '#f2f2f6', lineHeight: 1 }}>
                 {enrolledCourses.length}
               </span>
-              <span style={{ fontSize: '8px', color: 'rgba(207,233,220,0.85)', fontWeight: 700 }}>מדריכים</span>
+              <span style={{ fontSize: '8px', color: 'rgba(242,242,246,0.85)', fontWeight: 700 }}>מדריכים</span>
             </div>
             <div>
               <p

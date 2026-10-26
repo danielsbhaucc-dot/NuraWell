@@ -227,7 +227,7 @@ export function SecuritySettingsClient() {
             ) : (
               <ul className="space-y-2">
                 {state.passkeys.map((p) => (
-                  <li key={p.id} className="flex items-center gap-3 rounded-xl border border-[#E8D5B5] bg-glass/70 backdrop-blur-md p-3">
+                  <li key={p.id} className="flex items-center gap-3 rounded-xl border border-[#cfd0d6] bg-glass/70 backdrop-blur-md p-3">
                     <Smartphone className="h-5 w-5 shrink-0 text-secondary-600" aria-hidden />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-bold text-ink">{p.label}</p>
@@ -278,7 +278,7 @@ export function SecuritySettingsClient() {
               </div>
             </div>
             <Divider />
-            <div className="flex items-center justify-between rounded-xl border border-[#E8D5B5] bg-glass-hi/80 p-3">
+            <div className="flex items-center justify-between rounded-xl border border-[#cfd0d6] bg-glass-hi/80 p-3">
               <span className="text-sm font-bold text-ink">קודים שנשארו</span>
               <span className={`text-lg font-black ${state.backup_codes_left <= 2 ? 'text-coral-600' : 'text-primary-700'}`}>
                 {state.backup_codes_left} / 10
@@ -337,7 +337,7 @@ export function SecuritySettingsClient() {
         <div className="my-4 h-px bg-linear-to-l from-transparent via-accent-300/80 to-transparent" aria-hidden />
         <ol dir="ltr" className="grid grid-cols-2 gap-2">
           {(codes ?? []).map((c) => (
-            <li key={c} className="rounded-xl border border-[#E8D5B5] bg-glass/85 backdrop-blur-md py-2 text-center font-mono text-[15px] font-bold tracking-wider text-ink">
+            <li key={c} className="rounded-xl border border-[#cfd0d6] bg-glass/85 backdrop-blur-md py-2 text-center font-mono text-[15px] font-bold tracking-wider text-ink">
               {c}
             </li>
           ))}

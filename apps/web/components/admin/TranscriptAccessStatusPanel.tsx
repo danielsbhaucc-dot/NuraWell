@@ -79,13 +79,13 @@ export function TranscriptAccessStatusPanel({
       ) : null}
 
       {timeline.length > 0 ? (
-        <div className="overflow-hidden rounded-xl border border-[#E8D5B5] bg-glass/80">
-          <div className="border-b border-[#E8D5B5] bg-glass-hi/80 px-3 py-1.5 text-xs font-bold text-ink-700">
+        <div className="overflow-hidden rounded-xl border border-[#cfd0d6] bg-glass/80">
+          <div className="border-b border-[#cfd0d6] bg-glass-hi/80 px-3 py-1.5 text-xs font-bold text-ink-700">
             מעקב סטטוס בקשה
           </div>
           <table className="w-full text-xs">
             <thead>
-              <tr className="border-b border-[#E8D5B5]/80 text-ink-500">
+              <tr className="border-b border-[#cfd0d6]/80 text-ink-500">
                 <th className="px-2 py-1.5 text-start font-semibold w-8" aria-label="סטטוס" />
                 <th className="px-2 py-1.5 text-start font-semibold">שלב</th>
                 <th className="px-2 py-1.5 text-start font-semibold whitespace-nowrap">תאריך ושעה</th>
@@ -97,7 +97,7 @@ export function TranscriptAccessStatusPanel({
                 <tr
                   key={step.key}
                   className={cn(
-                    'border-b border-[#E8D5B5]/50 last:border-0',
+                    'border-b border-[#cfd0d6]/50 last:border-0',
                     step.status === 'active' && 'bg-accent-50/50',
                     step.status === 'failed' && 'bg-coral-50/40',
                   )}

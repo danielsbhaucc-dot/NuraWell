@@ -102,7 +102,7 @@ export default async function PlansPage({ searchParams }: { searchParams: Promis
           <PlanProgressRing pct={pct} label="מהמסע" />
         </div>
         {curStation ? (
-          <div className="relative mt-4 flex items-center gap-3 rounded-2xl bg-primary-100/10 px-3.5 py-2.5 ring-1 ring-primary-100/15 backdrop-blur-sm">
+          <div className="relative mt-4 flex items-center gap-3 rounded-2xl bg-hero-row px-3.5 py-2.5 border border-hero-row-line shadow-lg">
             <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary-300 text-xs font-black text-[#022c22]">{currentIdx + 1}</span>
             <div className="min-w-0 flex-1">
               <p className="text-[11px] font-semibold text-primary-100/70">השלב הנוכחי · {currentIdx + 1} מתוך {mapStations.length}</p>
@@ -112,7 +112,7 @@ export default async function PlansPage({ searchParams }: { searchParams: Promis
           </div>
         ) : null}
 
-        <div className="relative mt-3 rounded-[22px] bg-cream p-4 text-primary-900 shadow-[0_10px_26px_rgba(2,44,34,0.25)]">
+        <div className="relative mt-3 rounded-[22px] bg-hero-card border border-hero-card-line p-4 text-brand shadow-xl">
           <p className="text-[11px] font-bold tracking-[0.08em] text-primary-700">{allDone ? 'היום' : 'הפוקוס של היום'}</p>
           {today ? (
             <a href={`#task-${today.id}`} className="mt-1 flex items-center gap-3">

@@ -463,9 +463,9 @@ export function FullscreenVideoPlayer({
             style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}
           >
             {tapFlash === 'play' ? (
-              <Play className="w-9 h-9 text-on-dark ml-1" fill="#eef4ea" />
+              <Play className="w-9 h-9 text-on-dark ml-1" fill="#f2f2f6" />
             ) : (
-              <Pause className="w-9 h-9 text-on-dark" fill="#eef4ea" />
+              <Pause className="w-9 h-9 text-on-dark" fill="#f2f2f6" />
             )}
           </div>
         </div>
@@ -479,7 +479,7 @@ export function FullscreenVideoPlayer({
           <div
             className="w-full max-w-sm rounded-3xl p-6 text-center transition-all duration-200"
             style={{
-              background: 'linear-gradient(165deg, #cfe9dc 0%, #ecfdf5 100%)',
+              background: 'linear-gradient(165deg, #f2f2f6 0%, #f2f2f6 100%)',
               border: '1px solid rgba(16,185,129,0.25)',
             }}
             onClick={e => e.stopPropagation()}
@@ -523,7 +523,7 @@ export function FullscreenVideoPlayer({
             <motion.div
               className="w-full max-w-md rounded-3xl p-5 sm:p-6"
               style={{
-                background: 'linear-gradient(165deg, rgba(207,233,220,0.72) 0%, rgba(236,253,245,0.55) 100%)',
+                background: 'linear-gradient(165deg, rgba(242,242,246,0.72) 0%, rgba(242,242,246,0.55) 100%)',
                 border: '1px solid rgba(248,251,246,0.55)',
                 boxShadow: '0 24px 60px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.45)',
                 backdropFilter: 'blur(18px)',
@@ -537,7 +537,7 @@ export function FullscreenVideoPlayer({
               <motion.div
                 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full mb-4 text-xs font-bold text-primary-700"
                 style={{
-                  background: 'rgba(207,233,220,0.72)',
+                  background: 'rgba(242,242,246,0.72)',
                   border: '1px solid rgba(16,185,129,0.22)',
                   boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3)',
                 }}

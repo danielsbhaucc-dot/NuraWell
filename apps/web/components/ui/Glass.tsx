@@ -7,7 +7,7 @@ import { cn } from './cn';
  * layered soft shadows, press states (motion-safe only). No white / near-white fills — ever.
  */
 const PRESS = 'transition-[transform,box-shadow,background-color] duration-200 ease-out motion-safe:active:scale-[0.97] motion-reduce:transition-none';
-const HIGHLIGHT = 'shadow-[inset_0_1px_0_rgba(238,244,234,0.55),0_1px_2px_rgba(4,20,14,0.06),0_10px_30px_-10px_rgba(4,20,14,0.22)]';
+const HIGHLIGHT = 'shadow-[inset_0_1px_0_rgba(242,242,246,0.55),0_1px_2px_rgba(4,20,14,0.06),0_10px_30px_-10px_rgba(4,20,14,0.22)]';
 
 export type GlassCardProps = HTMLAttributes<HTMLDivElement> & { tone?: 'light' | 'dark'; accent?: boolean };
 /** Frosted card. tone="light" = product glass on canvas, tone="dark" = forest glass on dark shells. */
@@ -61,7 +61,7 @@ const pillTones: Record<PillTone, string> = {
 };
 /** Static status pill (non-interactive). */
 export function Pill({ tone = 'mint', className, ...rest }: HTMLAttributes<HTMLSpanElement> & { tone?: PillTone }) {
-  return <span className={cn('inline-flex items-center gap-1 rounded-full px-2.5 py-[3px] text-[10.5px] font-bold leading-4 ring-1 ring-inset shadow-[inset_0_1px_0_rgba(238,244,234,0.35)]', pillTones[tone], className)} {...rest} />;
+  return <span className={cn('inline-flex items-center gap-1 rounded-full px-2.5 py-[3px] text-[10.5px] font-bold leading-4 ring-1 ring-inset shadow-[inset_0_1px_0_rgba(242,242,246,0.35)]', pillTones[tone], className)} {...rest} />;
 }
 
 export type ChipProps = ButtonHTMLAttributes<HTMLButtonElement> & { tone?: 'mint' | 'amber' | 'forest' };
@@ -78,7 +78,7 @@ export const Chip = forwardRef<HTMLButtonElement, ChipProps>(function Chip({ ton
       type={type}
       className={cn(
         'inline-flex min-h-10 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-3.5 text-[13px] font-bold ring-1 ring-inset backdrop-blur-md',
-        'shadow-[inset_0_1px_0_rgba(238,244,234,0.4),0_4px_14px_-6px_rgba(4,20,14,0.25)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 disabled:opacity-40',
+        'shadow-[inset_0_1px_0_rgba(242,242,246,0.4),0_4px_14px_-6px_rgba(4,20,14,0.25)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600 disabled:opacity-40',
         PRESS,
         chipTones[tone],
         className,

@@ -302,7 +302,7 @@ export function ProgressReportProvider({
               height: 'min(90dvh, 720px)',
               border: '1px solid rgba(255,255,255,0.35)',
               background:
-                'linear-gradient(165deg, rgba(255,255,255,0.42) 0%, rgba(236,253,245,0.55) 45%, rgba(255,255,255,0.38) 100%)',
+                'linear-gradient(165deg, rgba(255,255,255,0.42) 0%, rgba(242,242,246,0.55) 45%, rgba(255,255,255,0.38) 100%)',
               boxShadow: '0 -20px 50px rgba(6,78,59,0.18)',
               backdropFilter: 'blur(22px)',
               WebkitBackdropFilter: 'blur(22px)',
@@ -397,7 +397,7 @@ export function ProgressReportProvider({
                             className="pointer-events-none absolute inset-x-4 top-px h-px"
                             style={{
                               background:
-                                'linear-gradient(90deg, transparent, rgba(207,233,220,0.8), transparent)',
+                                'linear-gradient(90deg, transparent, rgba(242,242,246,0.8), transparent)',
                             }}
                           />
                           <div className="relative flex items-center gap-2 justify-end mb-3">
@@ -462,7 +462,7 @@ export function ProgressReportProvider({
                               className="pointer-events-none absolute inset-x-4 top-px h-px"
                               style={{
                                 background:
-                                  'linear-gradient(90deg, transparent, rgba(207,233,220,0.8), transparent)',
+                                  'linear-gradient(90deg, transparent, rgba(242,242,246,0.8), transparent)',
                               }}
                             />
                             <div className="relative flex items-center gap-2 justify-end mb-3">
@@ -575,7 +575,7 @@ export function ProgressReportProvider({
                               className="pointer-events-none absolute inset-x-4 top-px h-px"
                               style={{
                                 background:
-                                  'linear-gradient(90deg, transparent, rgba(207,233,220,0.8), transparent)',
+                                  'linear-gradient(90deg, transparent, rgba(242,242,246,0.8), transparent)',
                               }}
                             />
                             <div className="relative flex items-center gap-2 justify-end mb-3">

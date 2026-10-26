@@ -154,7 +154,7 @@ export function ProfileAvatarUpload({
       backdropClassName="absolute inset-0 bg-ink-900/55 backdrop-blur-sm"
       panelClassName="max-w-md overflow-hidden rounded-3xl shadow-2xl border border-on-dark/20"
       panelStyle={{
-        background: 'linear-gradient(165deg, #ecfdf5 0%, #cfe9dc 42%, #cfe9dc 100%)',
+        background: 'linear-gradient(165deg, #f2f2f6 0%, #f2f2f6 42%, #f2f2f6 100%)',
       }}
     >
       <div

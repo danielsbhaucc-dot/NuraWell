@@ -227,7 +227,7 @@ export function QuizSection({
                     <span className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0"
                       style={{
                         background: showResult && isCorrectAnswer ? '#10b981' : showResult && isSelected ? '#ef4444' : 'rgba(0,0,0,0.06)',
-                        color: (showResult && (isCorrectAnswer || isSelected)) ? '#cfe9dc' : '#6b7280',
+                        color: (showResult && (isCorrectAnswer || isSelected)) ? '#f2f2f6' : '#6b7280',
                       }}>
                       {showResult && isCorrectAnswer ? <CheckCircle2 className="w-4 h-4" /> :
                        showResult && isSelected ? <XCircle className="w-4 h-4" /> :

@@ -67,7 +67,7 @@ export function DeclinedTasksPageClient() {
         <div
           className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl"
           style={{
-            background: 'linear-gradient(145deg, rgba(236,253,245,0.9), rgba(167,243,208,0.45))',
+            background: 'linear-gradient(145deg, rgba(242,242,246,0.9), rgba(207,208,214,0.45))',
             border: '1px solid rgba(16,185,129,0.25)',
           }}
         >
@@ -120,9 +120,9 @@ export function DeclinedTasksPageClient() {
               <div
                 className="rounded-[21px] px-4 py-3.5 text-start"
                 style={{
-                  background: 'linear-gradient(180deg, rgba(207,233,220,0.78) 0%, rgba(255,241,242,0.38) 100%)',
-                  border: '1px solid rgba(207,233,220,0.65)',
-                  boxShadow: 'inset 0 1px 0 rgba(207,233,220,0.88)',
+                  background: 'linear-gradient(180deg, rgba(242,242,246,0.78) 0%, rgba(255,241,242,0.38) 100%)',
+                  border: '1px solid rgba(242,242,246,0.65)',
+                  boxShadow: 'inset 0 1px 0 rgba(242,242,246,0.88)',
                   backdropFilter: 'blur(12px)',
                 }}
               >

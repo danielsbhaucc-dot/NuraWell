@@ -41,7 +41,7 @@ export function drawIdentityStrip(src: HTMLCanvasElement, s: IdentityStrip): HTM
   g.fillStyle = '#d4a64a'; g.fillRect(0, h - Math.max(2, Math.round(3 * k)), w, Math.max(2, Math.round(3 * k)));
   g.direction = 'rtl'; g.textAlign = 'right'; g.textBaseline = 'middle';
   const pad = Math.round(36 * k);
-  g.fillStyle = '#f3e3b8'; g.font = `700 ${Math.round(30 * k)}px Rubik, Assistant, Arial, sans-serif`;
+  g.fillStyle = '#cfd0d6'; g.font = `700 ${Math.round(30 * k)}px Rubik, Assistant, Arial, sans-serif`;
   g.fillText('צילום החלון ברגע האישור · NuraWell', w - pad, Math.round(40 * k));
   // Bidi-safe: every label / value is drawn as its own run, right to left, so Hebrew and Latin never reorder.
   const runs = (y: number, items: Array<[string | null, string]>, color: string, labelColor: string) => {
@@ -55,7 +55,7 @@ export function drawIdentityStrip(src: HTMLCanvasElement, s: IdentityStrip): HTM
     });
   };
   runs(Math.round(84 * k), [['משתמש', s.uid], ['מייל', s.email], ['זמן', s.at]], '#f2f7f5', '#9cc7bd');
-  runs(Math.round(120 * k), [['מכשיר', s.device], ['נוסח', s.version]], '#d9ebe6', '#9cc7bd');
+  runs(Math.round(120 * k), [['מכשיר', s.device], ['נוסח', s.version]], '#f2f2f6', '#9cc7bd');
   g.drawImage(src, 0, h);
   return out;
 }

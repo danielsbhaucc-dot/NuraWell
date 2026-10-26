@@ -861,9 +861,9 @@ export function NotificationsProvider({
             style={{
               border: '1px solid rgba(255,255,255,0.52)',
               boxShadow:
-                '0 -24px 64px rgba(6,78,59,0.14), 0 0 0 1px rgba(255,255,255,0.35) inset, inset 0 1px 0 rgba(207,233,220,0.65)',
+                '0 -24px 64px rgba(6,78,59,0.14), 0 0 0 1px rgba(255,255,255,0.35) inset, inset 0 1px 0 rgba(242,242,246,0.65)',
               background:
-                'linear-gradient(168deg, rgba(248,251,246,0.58) 0%, rgba(236,253,245,0.42) 42%, rgba(255,255,255,0.52) 100%)',
+                'linear-gradient(168deg, rgba(248,251,246,0.58) 0%, rgba(242,242,246,0.42) 42%, rgba(255,255,255,0.52) 100%)',
               backdropFilter: 'blur(26px) saturate(1.35)',
               WebkitBackdropFilter: 'blur(26px) saturate(1.35)',
             }}
@@ -882,7 +882,7 @@ export function NotificationsProvider({
                 className="pointer-events-none absolute inset-0 opacity-[0.14]"
                 style={{
                   backgroundImage:
-                    'radial-gradient(circle at 18% 95%, rgba(255,255,255,0.5) 0%, transparent 45%), radial-gradient(circle at 82% 10%, rgba(167,243,208,0.45) 0%, transparent 38%)',
+                    'radial-gradient(circle at 18% 95%, rgba(255,255,255,0.5) 0%, transparent 45%), radial-gradient(circle at 82% 10%, rgba(207,208,214,0.45) 0%, transparent 38%)',
                 }}
                 aria-hidden
               />
@@ -892,7 +892,7 @@ export function NotificationsProvider({
                     className="h-1.5 w-12 rounded-full"
                     style={{
                       background:
-                        'linear-gradient(90deg, rgba(255,255,255,0.45), rgba(167,243,208,0.85), rgba(255,255,255,0.5))',
+                        'linear-gradient(90deg, rgba(255,255,255,0.45), rgba(207,208,214,0.85), rgba(255,255,255,0.5))',
                       boxShadow: '0 1px 8px rgba(0,0,0,0.12), inset 0 1px 0 rgba(248,251,246,0.55)',
                     }}
                   />
@@ -916,7 +916,7 @@ export function NotificationsProvider({
                     <div className="flex items-center justify-end gap-2 flex-wrap">
                       <span className="relative flex h-2.5 w-2.5 shrink-0">
                         <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary-100/80 opacity-75" />
-                        <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-primary-50 shadow-[0_0_8px_rgba(167,243,208,0.9)]" />
+                        <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-primary-50 shadow-[0_0_8px_rgba(207,208,214,0.9)]" />
                       </span>
                       <h2
                         className="text-[18px] sm:text-[19px] font-black text-on-dark leading-tight drop-shadow-xs tracking-tight"

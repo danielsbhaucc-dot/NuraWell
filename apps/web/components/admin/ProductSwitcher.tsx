@@ -99,7 +99,7 @@ export function ProductSwitcher() {
               role="option"
               aria-selected={p.id === s.selected}
               onClick={() => pick(p.id)}
-              className="flex min-h-11 w-full items-center gap-2.5 rounded-xl px-2.5 text-start text-sm font-semibold text-slate-800 hover:bg-emerald-50 active:bg-emerald-100"
+              className="flex min-h-11 w-full items-center gap-2.5 rounded-xl px-2.5 text-start text-sm font-semibold text-slate-800 hover:bg-surface-sunken active:bg-background-soft"
             >
               <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-xs font-black text-slate-700">
                 {p.id === ALL ? <Layers size={14} /> : p.name.slice(0, 1)}

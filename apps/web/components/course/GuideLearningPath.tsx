@@ -189,7 +189,7 @@ export function GuideLearningPath({
             'flex items-center gap-1.5 rounded-xl px-4 py-3 text-sm font-bold backdrop-blur-md transition',
             slideIdx === 0 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-background-card/15',
           )}
-          style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.22)', color: '#eef4ea' }}
+          style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.22)', color: '#f2f2f6' }}
         >
           <ChevronRight className="h-4 w-4" />
           הקודם
@@ -232,7 +232,7 @@ export function GuideLearningPath({
               boxShadow: '0 8px 24px rgba(20,184,166,0.35)',
             }}
           >
-            <Play className="h-4 w-4" fill="#eef4ea" />
+            <Play className="h-4 w-4" fill="#f2f2f6" />
             {firstIncompleteLessonId ? 'התחל ללמוד' : 'חזרה למדריך'}
           </Link>
         )}
@@ -338,7 +338,7 @@ function PathLessonSlide({
           className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold text-on-dark transition hover:brightness-110"
           style={{ background: 'rgba(255,255,255,0.14)', border: '1px solid rgba(255,255,255,0.3)' }}
         >
-          <Play className="h-4 w-4" fill="#eef4ea" />
+          <Play className="h-4 w-4" fill="#f2f2f6" />
           כניסה לפרק
         </Link>
       </div>
@@ -398,7 +398,7 @@ function PathOutroSlide({
             boxShadow: '0 10px 30px rgba(20,184,166,0.35)',
           }}
         >
-          <Play className="h-5 w-5" fill="#eef4ea" />
+          <Play className="h-5 w-5" fill="#f2f2f6" />
           המשך לפרק הבא
         </Link>
       ) : (

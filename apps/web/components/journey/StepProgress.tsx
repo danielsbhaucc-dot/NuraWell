@@ -77,10 +77,10 @@ export function StepProgress({ sections, currentSection, progress, onSectionClic
             background: isDone
               ? 'linear-gradient(145deg, #34d399, #059669)'
               : isCurrent
-                ? 'linear-gradient(145deg, #a7f3d0, #6ee7b7)'
+                ? 'linear-gradient(145deg, #cfd0d6, #6ee7b7)'
                 : 'rgba(255,255,255,0.22)',
             boxShadow: isCurrent
-              ? '0 0 0 3px rgba(167,243,208,0.55), 0 4px 14px rgba(0,0,0,0.18)'
+              ? '0 0 0 3px rgba(207,208,214,0.55), 0 4px 14px rgba(0,0,0,0.18)'
               : isDone
                 ? '0 2px 10px rgba(16,185,129,0.35)'
                 : 'inset 0 1px 0 rgba(255,255,255,0.2)',

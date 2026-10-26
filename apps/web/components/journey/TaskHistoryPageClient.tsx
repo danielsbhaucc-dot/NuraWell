@@ -231,7 +231,7 @@ export function TaskHistoryPageClient() {
         <div
           className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl"
           style={{
-            background: 'linear-gradient(145deg, rgba(236,253,245,0.9), rgba(167,243,208,0.45))',
+            background: 'linear-gradient(145deg, rgba(242,242,246,0.9), rgba(207,208,214,0.45))',
             border: '1px solid rgba(16,185,129,0.25)',
           }}
         >
@@ -279,7 +279,7 @@ export function TaskHistoryPageClient() {
             className="pointer-events-none absolute inset-x-3 top-px h-px"
             style={{
               background:
-                'linear-gradient(90deg, transparent, rgba(207,233,220,0.75), transparent)',
+                'linear-gradient(90deg, transparent, rgba(242,242,246,0.75), transparent)',
             }}
           />
           <p className="relative text-[10px] font-bold text-primary-900/75">סך ביצועים (60 יום)</p>
@@ -291,7 +291,7 @@ export function TaskHistoryPageClient() {
             className="pointer-events-none absolute inset-x-3 top-px h-px"
             style={{
               background:
-                'linear-gradient(90deg, transparent, rgba(207,233,220,0.75), transparent)',
+                'linear-gradient(90deg, transparent, rgba(242,242,246,0.75), transparent)',
             }}
           />
           <p className="relative text-[10px] font-bold text-secondary-900/75">ימים פעילים (שבוע)</p>
@@ -318,7 +318,7 @@ export function TaskHistoryPageClient() {
             className="pointer-events-none absolute inset-x-4 top-px h-px"
             style={{
               background:
-                'linear-gradient(90deg, transparent, rgba(207,233,220,0.8), transparent)',
+                'linear-gradient(90deg, transparent, rgba(242,242,246,0.8), transparent)',
             }}
           />
           <div className="relative flex items-center justify-center gap-2">
@@ -363,7 +363,7 @@ export function TaskHistoryPageClient() {
               className="pointer-events-none absolute inset-x-4 top-px h-px"
               style={{
                 background:
-                  'linear-gradient(90deg, transparent, rgba(207,233,220,0.8), transparent)',
+                  'linear-gradient(90deg, transparent, rgba(242,242,246,0.8), transparent)',
               }}
             />
             <div className="relative flex items-center justify-between mb-2">
@@ -379,7 +379,7 @@ export function TaskHistoryPageClient() {
                 style={{
                   background:
                     'linear-gradient(135deg, rgba(16,185,129,0.95), rgba(52,211,153,0.85))',
-                  color: '#eef4ea',
+                  color: '#f2f2f6',
                   boxShadow:
                     'inset 0 1px 0 rgba(255,255,255,0.35), 0 2px 8px rgba(6,78,59,0.18)',
                 }}

@@ -48,18 +48,16 @@ export function BottomNav() {
       <div
         className="absolute inset-0"
         style={{
-          background: 'linear-gradient(180deg, rgba(207,233,220,0.66) 0%, rgba(207,233,220,0.94) 100%)',
-          backdropFilter: 'blur(26px) saturate(190%)',
-          WebkitBackdropFilter: 'blur(26px) saturate(190%)',
-          borderTop: '1px solid rgba(207,233,220,0.9)',
-          boxShadow: '0 -12px 40px rgba(6,78,59,0.12)',
+          background: 'var(--color-nav)', // solid Apple neutral (no blur: content tint must not bleed through)
+          borderTop: '1px solid var(--color-hairline)',
+          boxShadow: '0 -8px 24px rgba(17,19,23,0.08)',
         }}
       />
       {/* קו הדגשה עליון בגרדיאנט */}
       <div
         aria-hidden
         className="absolute inset-x-0 top-0 h-px"
-        style={{ background: 'linear-gradient(90deg, transparent, rgba(16,185,129,0.6), transparent)' }}
+        style={{ background: 'transparent' }}
       />
       <div className="container-mobile relative">
         {/* Center raised button */}
@@ -126,7 +124,7 @@ function NavItem({ item, isActive }: { item: { href: string; label: string; icon
         aria-current={isActive ? 'page' : undefined}
         className={cn(
           'relative flex flex-col items-center justify-center gap-1 px-1 py-1.5 rounded-2xl transition-all duration-200 no-tap-highlight touch-manipulation min-w-0 w-full',
-          isActive ? 'text-primary-700' : 'text-[#9896B8] hover:text-[#5A5880]'
+          isActive ? 'text-brand-accent' : 'text-ink-500 hover:text-ink-900'
         )}
       >
         {isActive && (
@@ -134,9 +132,8 @@ function NavItem({ item, isActive }: { item: { href: string; label: string; icon
             layoutId="nav-indicator"
             className="absolute inset-x-1 inset-y-0 rounded-2xl"
             style={{
-              background: 'linear-gradient(165deg, rgba(16,185,129,0.16), rgba(16,185,129,0.06))',
-              border: '1px solid rgba(16,185,129,0.24)',
-              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.5)',
+              background: 'var(--color-canvas)',
+              border: '1px solid var(--color-hairline)',
             }}
             transition={{ type: 'spring', stiffness: 380, damping: 30 }}
           />

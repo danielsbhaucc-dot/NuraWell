@@ -126,7 +126,7 @@ export function CommitmentSection({
                   boxShadow: '0 6px 20px rgba(16,185,129,0.3)',
                 }}
               >
-                <Heart className="w-5 h-5" fill="#eef4ea" />
+                <Heart className="w-5 h-5" fill="#f2f2f6" />
                 <span>{copy.button}</span>
               </button>
               <button

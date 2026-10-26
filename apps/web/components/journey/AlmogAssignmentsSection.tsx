@@ -223,7 +223,7 @@ export function AlmogAssignmentsSection() {
         className="overflow-hidden rounded-[24px]"
         style={{
           background:
-            'linear-gradient(135deg, rgba(236,253,245,0.92) 0%, rgba(209,250,229,0.72) 100%)',
+            'linear-gradient(135deg, rgba(242,242,246,0.92) 0%, rgba(232,232,237,0.72) 100%)',
           backdropFilter: 'blur(14px) saturate(160%)',
           WebkitBackdropFilter: 'blur(14px) saturate(160%)',
           border: '1px solid rgba(110,231,183,0.45)',
@@ -280,7 +280,7 @@ export function AlmogAssignmentsSection() {
                     prefetch
                     className="shrink-0 rounded-xl px-3 py-1.5 text-[11px] font-bold text-primary-900 no-tap-highlight"
                     style={{
-                      background: 'rgba(167,243,208,0.55)',
+                      background: 'rgba(207,208,214,0.55)',
                       border: '1px solid rgba(52,211,153,0.45)',
                     }}
                   >
@@ -391,7 +391,7 @@ function CompletedList({
             className="flex items-start gap-2.5 rounded-2xl px-3 py-2.5"
             style={{
               background:
-                'linear-gradient(135deg, rgba(236,253,245,0.62) 0%, rgba(209,250,229,0.38) 100%)',
+                'linear-gradient(135deg, rgba(242,242,246,0.62) 0%, rgba(232,232,237,0.38) 100%)',
               backdropFilter: 'blur(10px) saturate(140%)',
               WebkitBackdropFilter: 'blur(10px) saturate(140%)',
               border: '1px solid rgba(110,231,183,0.32)',
@@ -459,18 +459,18 @@ function FocusBanner({
       className="relative mb-3 overflow-hidden rounded-[22px]"
       style={{
         background:
-          'linear-gradient(135deg, rgba(207,233,220,0.92) 0%, rgba(236,253,245,0.88) 55%, rgba(209,250,229,0.82) 100%)',
+          'linear-gradient(135deg, rgba(242,242,246,0.92) 0%, rgba(242,242,246,0.88) 55%, rgba(232,232,237,0.82) 100%)',
         backdropFilter: 'blur(14px) saturate(150%)',
         WebkitBackdropFilter: 'blur(14px) saturate(150%)',
         border: '1px solid rgba(52,211,153,0.42)',
-        boxShadow: '0 8px 22px rgba(6,78,59,0.08), inset 0 1px 0 rgba(207,233,220,0.75)',
+        boxShadow: '0 8px 22px rgba(6,78,59,0.08), inset 0 1px 0 rgba(242,242,246,0.75)',
       }}
     >
       <div
         aria-hidden
         className="pointer-events-none absolute -inset-s-8 -top-8 h-28 w-28 rounded-full"
         style={{
-          background: 'radial-gradient(circle, rgba(167,243,208,0.45) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(207,208,214,0.45) 0%, transparent 70%)',
           filter: 'blur(16px)',
         }}
       />
@@ -528,7 +528,7 @@ function FocusBanner({
               disabled={busy}
               onClick={onDecline}
               className="flex items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-[13px] font-bold text-primary-800 transition-transform active:scale-95 disabled:opacity-60"
-              style={{ background: 'rgba(207,233,220,0.85)', border: '1px solid rgba(52,211,153,0.35)' }}
+              style={{ background: 'rgba(242,242,246,0.85)', border: '1px solid rgba(52,211,153,0.35)' }}
             >
               לא עכשיו
             </button>
@@ -540,7 +540,7 @@ function FocusBanner({
               disabled={busy}
               onClick={onEnd}
               className="w-full rounded-xl px-3 py-2.5 text-[13px] font-bold text-primary-800 transition-transform active:scale-95 disabled:opacity-60"
-              style={{ background: 'rgba(207,233,220,0.85)', border: '1px solid rgba(52,211,153,0.35)' }}
+              style={{ background: 'rgba(242,242,246,0.85)', border: '1px solid rgba(52,211,153,0.35)' }}
             >
               חזרתי לשגרה
             </button>
@@ -567,7 +567,7 @@ function ProposedAssignmentCard({
       dir="rtl"
       className="rounded-[18px] px-3.5 py-3"
       style={{
-        background: 'linear-gradient(135deg, rgba(207,233,220,0.9) 0%, rgba(254,243,199,0.55) 100%)',
+        background: 'linear-gradient(135deg, rgba(242,242,246,0.9) 0%, rgba(242,242,246,0.55) 100%)',
         border: '1px solid rgba(245,158,11,0.35)',
       }}
     >
@@ -597,7 +597,7 @@ function ProposedAssignmentCard({
           onClick={onDecline}
           className="rounded-xl py-2 text-[12px] font-black text-accent-950 disabled:opacity-60"
           style={{
-            background: 'rgba(207,233,220,0.75)',
+            background: 'rgba(242,242,246,0.75)',
             border: '1px solid rgba(245,158,11,0.35)',
           }}
         >
@@ -634,7 +634,7 @@ function AssignmentCard({
       transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] as const }}
       className="relative overflow-hidden rounded-[20px]"
       style={{
-        background: 'linear-gradient(135deg, rgba(207,233,220,0.72) 0%, rgba(236,253,245,0.55) 100%)',
+        background: 'linear-gradient(135deg, rgba(242,242,246,0.72) 0%, rgba(242,242,246,0.55) 100%)',
         backdropFilter: 'blur(14px) saturate(160%)',
         WebkitBackdropFilter: 'blur(14px) saturate(160%)',
         border: '1px solid rgba(110,231,183,0.4)',

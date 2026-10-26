@@ -304,7 +304,7 @@ function LoginFormContent() {
                 className="h-px flex-1 max-w-[50px]"
                 style={{
                   background: isDarkUi
-                    ? 'linear-gradient(to left, rgba(167,243,208,0.5), transparent)'
+                    ? 'linear-gradient(to left, rgba(207,208,214,0.5), transparent)'
                     : 'linear-gradient(to left, rgba(16,185,129,0.3), transparent)',
                 }}
               />
@@ -313,7 +313,7 @@ function LoginFormContent() {
                 className="h-px flex-1 max-w-[50px]"
                 style={{
                   background: isDarkUi
-                    ? 'linear-gradient(to right, rgba(167,243,208,0.5), transparent)'
+                    ? 'linear-gradient(to right, rgba(207,208,214,0.5), transparent)'
                     : 'linear-gradient(to right, rgba(16,185,129,0.3), transparent)',
                 }}
               />
