@@ -13,10 +13,20 @@ import { createHash } from 'node:crypto';
 import { decryptString, isEncrypted } from '@/lib/crypto/pii';
 import { createRawAdminClient } from '@/lib/supabase/admin';
 import { decryptValue, encryptValue, isV2 } from '@/lib/security/field-crypto';
-import { encryptedTable, isBlocked, keyColumns, rowKeyOf } from '@/lib/security/field-registry';
+import { encryptedTable, FIELD_V2_TABLES, isBlocked, keyColumns, rowKeyOf } from '@/lib/security/field-registry';
 
-/** staged rollout list — a table is added only after its blocker-fix PR is merged and verified on prod */
-export const FIELD_V2_BACKFILL_TABLES: readonly string[] = ['user_memory_dossier', 'profiles', 'user_memories', 'journey_next_step_cache'];
+/** staged rollout list (defined in field-registry so the write path can read it without a cycle) */
+export const FIELD_V2_BACKFILL_TABLES: readonly string[] = FIELD_V2_TABLES;
+
+const CAS_MAX = 2000;
+
+/** CAS filter on a stored value: text by equality, json by jsonb equality, text[] by array equality. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- PostgREST builder
+export function casEq(u: any, kind: string, col: string, stored: unknown): any {
+  if (kind === 'text') return u.eq(col, String(stored));
+  if (kind === 'text[]') return u.eq(col, `{${(stored as unknown[]).map((x) => JSON.stringify(String(x))).join(',')}}`);
+  return u.eq(col, JSON.stringify(stored));
+}
 
 const canon = (v: unknown) => createHash('sha256').update(JSON.stringify(v ?? null)).digest('hex');
 
@@ -33,7 +43,7 @@ const needs = (v: unknown) =>
 export async function backfillFieldV2(budgetMs = 30_000, tables: readonly string[] = FIELD_V2_BACKFILL_TABLES) {
   const db = createRawAdminClient();
   const deadline = Date.now() + budgetMs;
-  const out: Record<string, { rows: number; skippedRace: number; verifyFail: number; error?: string }> = {};
+  const out: Record<string, { rows: number; skippedRace: number; verifyFail: number; remaining?: number; error?: string }> = {};
   for (const table of tables) {
     try {
       await backfillTable(db, table, deadline, out);
@@ -58,7 +68,7 @@ async function backfillTable(
   db: ReturnType<typeof createRawAdminClient>,
   table: string,
   deadline: number,
-  out: Record<string, { rows: number; skippedRace: number; verifyFail: number; error?: string }>
+  out: Record<string, { rows: number; skippedRace: number; verifyFail: number; remaining?: number; error?: string }>
 ) {
   {
     const spec = encryptedTable(table);
@@ -111,6 +121,10 @@ async function backfillTable(
         if (!Object.keys(patch).length) continue;
         let u = byKey(db.from(table).update(patch));
         for (const g of guardCols) u = r[g] == null ? u.is(g, null) : u.eq(g, r[g] as string);
+        // no updated_at (guardCols: []): compare-and-swap on the exact stored values being replaced
+        // (values too long for a URL filter skip the CAS; the re-read verification below still runs)
+        if (!guardCols.length && Object.keys(patch).every((c) => JSON.stringify(r[c]).length <= CAS_MAX))
+          for (const c of Object.keys(patch)) u = casEq(u, spec.columns[c], c, r[c]);
         const { data: upd, error: uErr } = await u.select(keyCols.join(','));
         if (uErr) throw new Error(`${table} update: ${uErr.code ?? uErr.message}`);
         if (!upd?.length) {

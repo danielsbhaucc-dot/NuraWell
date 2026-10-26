@@ -34,7 +34,7 @@ async function firstName(userId: string): Promise<string | null> {
 
 const needs = (v: unknown) => typeof v === 'string' && !isEncrypted(v) && PLACEHOLDER.test(v);
 
-async function restoreFields(row: Row, keys: readonly string[], userId: string): Promise<Row> {
+export async function restoreFields(row: Row, keys: readonly string[], userId: string): Promise<Row> {
   if (!keys.some((k) => needs(row[k]))) return row;
   const name = await firstName(userId);
   const out: Row = { ...row };

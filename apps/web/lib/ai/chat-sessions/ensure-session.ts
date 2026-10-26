@@ -55,7 +55,7 @@ export async function bumpChatSessionTurn(
   const { error } = await supabase.rpc('bump_chat_session_turn', {
     p_session_id: params.sessionId,
     p_user_id: params.userId,
-    p_preview: preview ? ((await sealTableRow('chat_sessions', { preview_text: preview }, params.userId)).preview_text as string) : preview,
+    p_preview: preview ? await sealPreviewV2(params.sessionId, params.userId, preview) : preview,
   });
   if (!error) return;
 
@@ -75,4 +75,12 @@ export async function createChatSession(
 ): Promise<ChatSessionRow> {
   const sessionId = crypto.randomUUID();
   return ensureChatSession(supabase, { sessionId, userId });
+}
+
+/** the RPC stores p_preview as-is, so it must arrive already sealed as enc:v2 for (chat_sessions, preview_text, session) */
+async function sealPreviewV2(sessionId: string, userId: string, preview: string): Promise<string> {
+  const { prepareWriteRow } = await import('@/lib/security/field-write');
+  const { sealRow } = await import('@/lib/security/field-crypto');
+  const restored = await prepareWriteRow('chat_sessions', { user_id: userId, preview_text: preview });
+  return (await sealRow('chat_sessions', userId, sessionId, { preview_text: restored.preview_text })).preview_text as string;
 }
