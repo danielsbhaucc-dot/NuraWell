@@ -374,7 +374,8 @@ export const APPEND_ONLY_TABLES: Readonly<Record<string, string>> = {
  * FAILS (and alerts) on any plaintext in these; other FIELD_V2 tables warn until their backfill completes — move a
  * table here once `backfillFieldV2` reports it done and the nightly count shows 0.
  */
-export const FIELD_V2_BACKFILL_COMPLETE: readonly string[] = ['user_memory_dossier', 'profiles', 'user_memories', 'journey_next_step_cache'];
+// 2026-10-26: every backfillable FIELD_V2 table verified on prod at 0 non-enc:v2 values (registry-precise count)
+export const FIELD_V2_BACKFILL_COMPLETE: readonly string[] = FIELD_V2_TABLES.filter((t) => !(t in APPEND_ONLY_TABLES));
 
 /** Registered but not yet safe to encrypt: a DB object reads/constrains the plaintext. Writes/backfill skip these. */
 export const BLOCKED: Readonly<Record<string, string>> = {};
