@@ -1,0 +1,18 @@
+{
+  "$schema": "../../../modules/module.schema.json",
+  "id": "security-crypto",
+  "package": "@platform/security-crypto",
+  "version": "0.1.0",
+  "distribution": "shareable",
+  "category": "security",
+  "toggleable": false,
+  "description": "Per-user envelope field encryption (enc:v2): AES-256-GCM, per-user data keys wrapped by an injected master key, AAD binding to table/column/row, blind indexes for equality search.",
+  "provides": { "routes": [], "apis": [], "jobs": [], "ui": [], "tables": [] },
+  "requires": { "modules": {} },
+  "env": [],
+  "migrations": [],
+  "conformance": ["encrypted-roundtrip", "no-plaintext-in-sensitive-columns"],
+  "tests": ["apps/web/tests/platform-security-crypto.test.ts"],
+  "dataPolicy": "Holds no data. Losing the master key makes data unrecoverable; deleting a user's wrapped key crypto-shreds that user.",
+  "frozen": ["enc:v2 wire format", "AAD strings (nurawell: namespace)"]
+}

@@ -35,6 +35,7 @@
     "@platform/access": "*",
     "@platform/ai-engine": "*",
     "@platform/auth": "*",
+    "@platform/security-crypto": "*",
     "@platform/ui": "*",
     "@saas/billing": "*",
     "@simplewebauthn/browser": "^14.0.0",
