@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { authorizeCronRequest } from '@/lib/api/authorize-cron';
-import { hasFieldBackfillSecret } from '@/lib/api/field-backfill-auth';
+import { authorizeCronRequest, hasFieldBackfillSecret } from '@/lib/api/authorize-cron';
 import { backfillFieldV2, FIELD_V2_BACKFILL_TABLES, recordBackfillRun } from '@/lib/security/field-backfill';
 
 export const runtime = 'nodejs';

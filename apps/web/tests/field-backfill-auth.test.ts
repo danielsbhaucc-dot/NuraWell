@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { hasFieldBackfillSecret } from '@/lib/api/field-backfill-auth';
+import { hasFieldBackfillSecret } from '@/lib/api/authorize-cron';
 
 const S = 'x'.repeat(40);
 const req = (h?: Record<string, string>, url = 'https://a.test/api/v1/ai/cron/field-backfill') => new Request(url, { headers: h });
