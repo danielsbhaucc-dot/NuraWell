@@ -1063,3 +1063,8 @@ class webauthn_credentials label -
 class webauthn_credentials public_key -
 class webauthn_credentials rp_id -
 class webauthn_credentials transports -
+class platform_product_registry product_id -
+class platform_product_registry description -
+class platform_product_registry key_purpose -
+class platform_product_registry tenancy -
+class product_memberships product_id -
