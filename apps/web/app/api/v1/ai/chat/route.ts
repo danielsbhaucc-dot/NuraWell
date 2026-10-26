@@ -120,7 +120,7 @@ import {
   formatChatTurnForPendingLog,
 } from '../../../../../lib/ai/memory-consolidation/enqueue-pending-log';
 import { getActiveContext } from '../../../../../lib/ai/mentorship/get-active-context';
-import { getMentorContext } from '../../../../../lib/ai/insights/get-mentor-context';
+import { getMentorContext, getNotableChangesBlock } from '../../../../../lib/ai/insights/get-mentor-context';
 import {
   fetchAlmogCommitmentContext,
   EMPTY_ALMOG_COMMITMENT_CONTEXT,
@@ -2687,6 +2687,9 @@ async function handleChatPost(request: Request) {
   const mentorStrategyPromise = trivialBypass
     ? Promise.resolve('')
     : getActiveContext(supabase, user.id).catch(() => '');
+  const notableChangesPromise = trivialBypass
+    ? Promise.resolve('')
+    : getNotableChangesBlock(supabase, user.id).catch(() => '');
   const mentorUserContextPromise = trivialBypass
     ? Promise.resolve('')
     : getMentorContext(supabase, user.id).catch((mentorCtxErr) => {
@@ -3558,6 +3561,9 @@ async function handleChatPost(request: Request) {
     if (principlesBlock) contextSections.push(principlesBlock);
     if (workingMemoryBlock) contextSections.push(workingMemoryBlock);
     if (memoryDossierBlock) contextSections.push(memoryDossierBlock);
+    // always-on core state: recent deviations (streak broken / unusual success / SOS after quiet)
+    const notableChangesBlock = await notableChangesPromise;
+    if (notableChangesBlock) contextSections.push(notableChangesBlock);
     if (mentorStrategyBlock && !leanLightTurn) contextSections.push(mentorStrategyBlock);
     if (mentorUserContextBlock && !leanLightTurn) contextSections.push(mentorUserContextBlock);
     /**
