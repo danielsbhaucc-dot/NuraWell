@@ -3,14 +3,15 @@ import type { ProductRow, RegistryModule } from './types';
 import { CAT_LABEL, CAT_TINT, TIER_LABEL, TIER_MEANING } from './labels';
 import { TechDetails } from './TechDetails';
 import { ModuleIcon } from './ModuleIcon';
+import { Accordion } from './Accordion';
 import registryJson from './registry.generated.json';
 
 const NAMES = new Map((registryJson as unknown as { modules: RegistryModule[] }).modules.flatMap((x) => [[x.id, x.store.name], [x.package, x.store.name]] as [string, string][]));
 const REG_NAME = (k: string) => NAMES.get(k) ?? NAMES.get(k.replace(/^@platform\//, '')) ?? k;
 
 const L = ({ items }: { items: string[] }) => (items.length ? <ul>{items.map((x) => <li key={x}>{x}</li>)}</ul> : <p className="fd-dim">אין.</p>);
-function Sec({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
-  return <section className="sp-sec" id={id} aria-labelledby={`${id}-h`}><h2 id={`${id}-h`}>{title}</h2>{children}</section>;
+function Sec({ id, title, hint, children }: { id: string; title: string; hint?: string; children: React.ReactNode }) {
+  return <section className="sp-sec sp-acc" id={id}><Accordion level={2} title={title} hint={hint}>{children}</Accordion></section>;
 }
 
 export function ModuleStorePage({ m, products, backHref = '/ops/modules' }: { m: RegistryModule; products: ProductRow[]; backHref?: string }) {
@@ -31,22 +32,22 @@ export function ModuleStorePage({ m, products, backHref = '/ops/modules' }: { m:
             <div className="fd-badges"><span className={`fd-tier fd-tier-${m.distribution}`}>{TIER_LABEL[m.distribution]}</span><span className="fd-chip fd-chip-cat" style={{ ['--tint' as string]: CAT_TINT[m.category] }}>{CAT_LABEL[m.category]}</span>{!m.toggleable ? <span className="fd-chip">תמיד פועל</span> : null}</div>
           </div>
         </header>
-        <nav className="sp-toc" aria-label="תוכן העמוד">{[['what', 'מה זה עושה'], ['install', 'התקנה'], ['settings', 'הגדרות'], ['security', 'אבטחה ופרטיות'], ['version', 'גרסה'], ['support', 'תמיכה ומגבלות']].map(([id, t]) => <a key={id} href={`#${id}`}>{t}</a>)}</nav>
-        <Sec id="what" title="מה זה עושה"><p>{s.descriptionHe}</p><h3>למי זה מתאים</h3><L items={s.audience} /><h3>שימושים</h3><L items={s.useCases} /><h3>יכולות</h3><L items={s.features} /></Sec>
+        <section className="sp-sec" id="what" aria-labelledby="what-h"><h2 id="what-h">מה זה עושה</h2><p>{s.descriptionHe}</p></section>
+        <Sec id="more" title="למי זה מתאים ומה הוא יודע" hint="קהל, שימושים ויכולות"><h3>למי זה מתאים</h3><L items={s.audience} /><h3>שימושים</h3><L items={s.useCases} /><h3>יכולות</h3><L items={s.features} /></Sec>
         <Sec id="preview" title="תצוגה מקדימה">
           <div className="sp-preview"><ModuleIcon m={m} on /><div><b>{s.name}</b><div className="fd-dim">{s.summary}</div></div></div>
         </Sec>
-        <Sec id="reqs" title="דרישות ותלויות">
+        <Sec id="reqs" title="דרישות ותלויות" hint="מודולים ומוצרים">
           <dl className="sp-dl">
             <dt>מודולים נדרשים</dt><dd>{deps.length ? deps.map(([k]) => <span key={k} className="fd-chip">{REG_NAME(k)}</span>) : 'אין'}</dd>
             <dt>מוצרים שמשתמשים בו</dt><dd>{used.length ? used.map((p) => <span key={p.id} className="fd-chip"><span className="fd-prod-dot" style={{ background: p.color }} />{p.name}</span>) : 'אף מוצר עדיין'}</dd>
           </dl>
         </Sec>
-        <Sec id="security" title="הרשאות, מידע, אבטחה ופרטיות">
+        <Sec id="security" title="הרשאות, מידע, אבטחה ופרטיות" hint="מה הוא רואה ואיפה זה נשמר">
           <h3>הרשאות</h3><L items={s.permissions} /><h3>מידע שהמודול נוגע בו</h3><L items={s.dataTouched} /><h3>אבטחה</h3><L items={s.security} />
           <p className="sp-callout"><b>איפה המידע נשמר:</b> {s.whereDataLives} המודול רץ על השרתים של מי שמתקין אותו.</p>
         </Sec>
-        <Sec id="install" title="התקנה">
+        <Sec id="install" title="התקנה" hint="פקודה אחת, פעם אחת">
           <p>ההתקנה נעשית פעם אחת, בפקודה אחת, על ידי מי שמנהל את השרת. אחר כך מפעילים ומכבים מכאן, בלחיצה.</p>
           <TechDetails title="פרטים טכניים להתקנה">
             <pre className="sp-code" dir="ltr">node scripts/modules/install.mjs {m.id} --target &lt;repo&gt;</pre>
@@ -60,7 +61,7 @@ export function ModuleStorePage({ m, products, backHref = '/ops/modules' }: { m:
               <tbody>{props.map(([k, p]) => <tr key={k}><td className="fd-mono">{k}</td><td className="fd-mono">{p.type ?? '–'}</td><td className="fd-mono">{p.const !== undefined ? `${String(p.const)} (קבוע)` : p.default !== undefined ? JSON.stringify(p.default) : '–'}</td><td>{p.description_he ?? ''}</td></tr>)}</tbody></table>
           </TechDetails></> : <p>אין מה להגדיר. ברירות המחדל בטוחות.</p>}
         </Sec>
-        <Sec id="version" title="גרסה ושינויים">
+        <Sec id="version" title="גרסה ושינויים" hint={`גרסה ${m.version}`}>
           <p><b>גרסה {m.version}</b></p>
           <TechDetails title="רשימת השינויים"><pre className="sp-changelog">{m.changelog.replace(/^# .*\n+/, '')}</pre></TechDetails>
         </Sec>
