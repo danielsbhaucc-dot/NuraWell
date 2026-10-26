@@ -29,5 +29,7 @@ module.exports = {
     exclude: { path: '(node_modules|\\.next|/tests?/|\\.test\\.)' },
     tsConfig: { fileName: 'tsconfig.depcruise.json' },
     tsPreCompilationDeps: true,
+    // Resolve workspace package subpath exports (e.g. @platform/licensing/online).
+    enhancedResolveOptions: { exportsFields: ['exports'], conditionNames: ['import', 'require', 'node', 'default', 'types'], extensions: ['.ts', '.tsx', '.js', '.mjs', '.cjs', '.d.ts'] },
   },
 };
