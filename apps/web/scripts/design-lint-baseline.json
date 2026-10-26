@@ -634,7 +634,7 @@
  },
  "components/profile/ProfilePageClient.tsx": {
   "white": 6,
-  "rawHex": 5,
+  "rawHex": 3,
   "rawButton": 3
  },
  "components/profile/ProfileRhythmCard.tsx": {
@@ -691,9 +691,9 @@
   "arbitraryColor": 3
  },
  "components/shared/BottomNav.tsx": {
-  "white": 3,
-  "rawHex": 6,
-  "arbitraryColor": 3
+  "white": 2,
+  "rawHex": 4,
+  "arbitraryColor": 1
  },
  "components/shared/CourseCard.tsx": {
   "white": 8,
@@ -701,7 +701,7 @@
  },
  "components/shared/MobileHeader.tsx": {
   "white": 3,
-  "rawHex": 8,
+  "rawHex": 5,
   "rawButton": 1
  },
  "components/shared/PageBackButton.tsx": {
