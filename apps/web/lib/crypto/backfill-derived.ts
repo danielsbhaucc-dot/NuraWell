@@ -18,7 +18,7 @@ export async function backfillDerivedPii(admin: SupabaseClient, budgetMs = 60_00
   for (const table of Object.keys(TABLE_ENC_TEXT) as EncTextTable[]) {
     const cols = TABLE_ENC_TEXT[table] as readonly string[];
     const sentinels = [...PLAIN_SENTINELS].map((v) => `"${v}"`).join(',');
-    const orFilter = cols.map((c) => `and(${c}.not.like.enc:v1:*,${c}.neq.,${c}.not.in.(${sentinels}))`).join(',');
+    const orFilter = cols.map((c) => `and(${c}.not.like.enc:*,${c}.neq.,${c}.not.in.(${sentinels}))`).join(',');
     out[table] = 0;
     while (Date.now() < deadline) {
       const { data, error } = await admin.from(table).select(['id', 'user_id', ...cols].join(', ')).or(orFilter).limit(200);
