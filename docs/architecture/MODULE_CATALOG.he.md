@@ -412,3 +412,13 @@ packages/<scope>/<name>/
 | תיעוד לבני אדם ול-agents | 13 |
 | אלמוג ונגישות ללא שינוי התנהגות | 5, 12.1 |
 | עיצוב לכל מוצר | 3 |
+
+## Module-first: כל פיצ'ר בכל מוצר נולד כמודול
+
+1. **Scaffold:** `npx @platform/modules new <id> --tier internal|shareable|sellable`. הפקודה יוצרת את module.json עם רמת ההפצה, README.he.md, llms.txt, CHANGELOG, config.schema.json עם ברירות מחדל מאובטחות (כבוי, admin בלבד, בלי PII בלוגים), תיקיית migrations, stub של בדיקות התאמה, ורשומה באינדקס. מודולי אבטחה/פרטיות נוצרים כ-always-on. (מומש ב-2a)
+2. **חוק CI:** `scripts/modules/boundaries.mjs` נכשל על כל קובץ חדש תחת `apps/*` שהוא לא דבק ניתוב/layout דק (page/layout/route וכו', עד 80 שורות), בדיקות, קונפיג או נכסים. קבצי NuraWell קיימים רשומים ב-`modules/legacy-app-files.txt` ("להמרה למודול"). הרשימה הזאת רק מתקצרת. (מומש ב-2a)
+3. **גילוי מודולים מכל ריפו של מוצר (מתוכנן):**
+   - כל ריפו של מוצר מפרסם את `modules/INDEX.md` ו-`llms.txt` שלו, ובנוסף `modules/registry.json` שנוצר מאותם module.json.
+   - ה-registry המרכזי ב-control-plane שומר רשימת מקורות (ריפו + ref). job לילי חינמי (GitHub Actions) מושך את registry.json מכל מקור, מאמת אותו מול הסכמה ומול חתימת tag ‏`mod/<id>@x.y.z`, ומאחד לספרייה.
+   - פיצ'ר שנולד במוצר אחר מופיע בספרייה עם תגית המקור. "הפעלה בלחיצה" למוצר אחר מריצה `install <id> --target`, פותחת PR (לא דחיפה ישירה), ואחרי מיזוג מופיע toggle ב-/ops/products.
+   - התנגשויות id נפתרות לפי namespace של package. מודול shareable/sellable שמייבא קוד אפליקציה נדחה כבר בשלב check.
