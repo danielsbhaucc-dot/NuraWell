@@ -29,6 +29,11 @@ export type EncryptedTable = {
    * the constant SYSTEM_ROW, so inserts need no id and an update is sealed once for every matched row.
    */
   system?: SystemPurpose;
+  /**
+   * Rows whose owner column is NULL are shared catalog content (not personal) and stay plaintext; rows with an
+   * owner are sealed under that owner's DEK. The reject trigger checks only owned rows (enc_reject_plaintext_owned).
+   */
+  ownerOptional?: boolean;
 };
 
 /** Separate key purposes for system-owned data. */
@@ -74,7 +79,6 @@ export const ENCRYPTED_TABLES = {
     source_excerpt: 'text',
     history: 'json',
     metadata: 'json',
-    schedule: 'text',
   } },
   almog_blockers: { userCol: 'user_id', rowCol: 'id', columns: {
     description: 'text',
@@ -88,10 +92,8 @@ export const ENCRYPTED_TABLES = {
     metadata: 'json',
   } },
   almog_interventions: { userCol: 'user_id', rowCol: 'id', guardCols: [], columns: {
-    outcome: 'text',
     strategy: 'text',
     metadata: 'json',
-    barrier_type: 'text',
   } },
   challenge_enrollments: { userCol: 'user_id', rowCol: 'id', guardCols: [], columns: {
     completion_summary: 'json',
@@ -117,7 +119,6 @@ export const ENCRYPTED_TABLES = {
   chat_sessions: { userCol: 'user_id', rowCol: 'id', columns: {
     summary: 'text',
     title: 'text',
-    topic: 'text',
     preview_text: 'text',
     live_conversation_file: 'text',
   } },
@@ -132,7 +133,6 @@ export const ENCRYPTED_TABLES = {
   } },
   churn_feedback: { userCol: 'user_id', rowCol: 'id', guardCols: [], columns: {
     detail: 'text',
-    reason: 'text',
   } },
   daily_action_instances: { userCol: 'user_id', rowCol: 'id', columns: {
     display_title: 'text',
@@ -141,7 +141,6 @@ export const ENCRYPTED_TABLES = {
   } },
   guardian_sos_events: { userCol: 'user_id', rowCol: 'id', guardCols: [], columns: {
     trigger: 'text',
-    outcome: 'text',
     strategy_offered: 'text',
     metadata: 'json',
   } },
@@ -204,6 +203,18 @@ export const ENCRYPTED_TABLES = {
     reason: 'text',
     metadata: 'json',
   } },
+  // shared guide/step/system definitions (owner_user_id NULL) are catalog content; per-user copies are sealed (000212)
+  task_definitions: { userCol: 'owner_user_id', rowCol: 'id', ownerOptional: true, columns: {
+    title: 'text',
+    description: 'text',
+    ladder: 'json',
+    schedule: 'text',
+  } },
+  // the user's own reason for a shared guide task (offerGuideTask; never written into the shared definition)
+  user_task_assignments: { userCol: 'user_id', rowCol: 'id', columns: {
+    reason: 'text',
+  } },
+  admin_audit_log: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { ip: 'text' } },
   user_insights: { userCol: 'user_id', rowCol: 'id', columns: {
     insight_text: 'text',
     metadata: 'json',
@@ -311,6 +322,8 @@ export const FIELD_V2_TABLES: readonly string[] = [
   'legal_export_secrets', 'consent_evidence', 'consent_evidence_attestations', 'legal_access_log', 'media_receipts',
   // 2026-10-26 enc-close: blind indexes / SQL readers moved (000208) + app-only writers
   'user_consents', 'journey_task_executions', 'almog_kickoff_status', 'billing_events', 'ceo_pending_actions', 'notify_quality_events',
+  // 2026-10-26 enc-close-2: SQL dedupe/merge moved to the app + blind indexes (000212)
+  'task_events', 'task_definitions', 'user_task_assignments', 'challenge_enrollments', 'admin_audit_log',
 ];
 
 /**
@@ -319,7 +332,7 @@ export const FIELD_V2_TABLES: readonly string[] = [
  * move these into ENCRYPTED_TABLES + FIELD_V2_TABLES, and regenerate the enc-reject triggers.
  * Not listed (stay pending): iam_audit_log.detail/target, iam_grants.reason and ops_probe_daily.country are written
  * by SQL functions in 000191/000198 (iam_audit_log on every grant/revoke inside the same transaction; probe counter
- * upsert); ops_enroll_blocks.reason has no personal content beyond a fixed code.
+ * upsert); ops_enroll_blocks.reason is verified fixed-code only (single writer lib/ops/enrollment.ts upserts 'wrong_number').
  */
 export const GATED_AFTER_IAM_MERGE: Readonly<Record<string, EncryptedTable>> = {
   access_audit_findings: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { signals: 'json', summary: 'text' } },
@@ -349,31 +362,10 @@ export const APPEND_ONLY_TABLES: Readonly<Record<string, string>> = {
 export const FIELD_V2_BACKFILL_COMPLETE: readonly string[] = ['user_memory_dossier', 'profiles', 'user_memories', 'journey_next_step_cache'];
 
 /** Registered but not yet safe to encrypt: a DB object reads/constrains the plaintext. Writes/backfill skip these. */
-export const BLOCKED: Readonly<Record<string, string>> = {
-  'almog_assignments.title': "SQL dedupe trigger + task_dup_candidates/merge_task_assignments compare titles in SQL",
-  'almog_assignments.history': "merge_task_assignments/task_dup_candidates read it in SQL",
-  'almog_assignments.metadata': "merge_task_assignments/task_dup_candidates read it in SQL",
-  'almog_assignments.reason': "task_dup_candidates/merge_task_assignments read it in SQL",
-  'almog_assignments.source_excerpt': "task_dup_candidates reads it in SQL",
-  'almog_assignments.schedule': "CHECK enum constraint + SQL",
-  'almog_interventions.outcome': "CHECK enum + index",
-  'almog_interventions.barrier_type': "indexed category used for filtering",
-  'chat_sessions.topic': "CHECK enum constraint",
-  'chat_task_proposals.title': "unique index on lower(title) \u2014 needs blind index column first",
-  'challenge_enrollments.completion_summary': "ensure_challenge_ops_schema() SQL",
-  'challenge_enrollments.eating_window': "ensure_challenge_ops_schema() SQL",
-  'challenge_enrollments.metadata': "ensure_challenge_ops_schema() SQL",
-  'churn_feedback.reason': "CHECK enum + index",
-  'guardian_sos_events.outcome': "CHECK enum constraint",
-  'task_events.metadata': "mirror_jte_to_task_events/merge_task_assignments SQL",
-  'task_events.reason': "merge_task_assignments SQL",
-};
+export const BLOCKED: Readonly<Record<string, string>> = {};
 
 /** Personal tables intentionally outside the per-user registry (no owner column), with the reason. */
-export const OUT_OF_REGISTRY: Readonly<Record<string, string>> = {
-  task_definitions: "owner split done (owner_user_id, migration 000209; RLS = shared or own). Not encrypted yet: normalize_task_title trigger, habit_dedupe_key (md5 of normalized title) and merge_task_assignments/task_dup_candidates read title/ladder/schedule in SQL; register once those move to the app",
-  user_task_assignments: "no personal text columns",
-};
+export const OUT_OF_REGISTRY: Readonly<Record<string, string>> = {};
 
 export function encryptedTable(table: string): EncryptedTable | undefined {
   return (ENCRYPTED_TABLES as Record<string, EncryptedTable>)[table];

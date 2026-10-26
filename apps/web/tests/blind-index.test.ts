@@ -51,3 +51,23 @@ describe('blind indexes', () => {
     expect(bad.evidence_id ?? null).toBeNull();
   });
 });
+
+describe('task/ip blind indexes', () => {
+  it('task title bidx ignores normalization noise; tokens are hashed', async () => {
+    const a = await blindIndexPatch('task_definitions', { title: 'הליכה  בבוקר' });
+    const b = await blindIndexPatch('task_definitions', { title: 'הליכה בבוקר' });
+    expect(a.title_bidx).toBeTruthy();
+    expect(a.title_bidx).toBe(b.title_bidx);
+    const t = await blindIndexPatch('almog_assignments', { user_id: U1, title: 'הליכה בבוקר' });
+    expect(Array.isArray(t.title_tok_bidx)).toBe(true);
+    expect(JSON.stringify(t.title_tok_bidx)).not.toContain('הליכה');
+  });
+
+  it('rewrites admin_audit_log ip=eq filters to the ip blind index', async () => {
+    const url = new URL('https://x.supabase.co/rest/v1/admin_audit_log?ip=eq.203.0.113.9');
+    expect(await rewriteBlindFilters('admin_audit_log', url)).toBe(true);
+    expect(url.searchParams.get('ip')).toBeNull();
+    const p = await blindIndexPatch('admin_audit_log', { ip: '203.0.113.9' });
+    expect(url.searchParams.get('or')).toContain(`ip_bidx.eq.${p.ip_bidx}`);
+  });
+});

@@ -7,9 +7,15 @@
  *  - notifications.meta_unique_bidx       = H(kind|checkpoint_date|slot)   — replaces the metadata->>… unique indexes
  *  - notifications.meta_key_bidx          = H(metadata.dedupe_key)         — challengeNotificationExists lookup
  *
+ *  - task_definitions.title_bidx         = H(dedupeNormalize(normalizeTaskTitle(title))) — habit_dedupe_key (000212)
+ *  - almog_assignments.title_tok_bidx    = [H(token) …] of titleTokens(title) — the similar-title trigger (000212)
+ *  - chat_task_proposals.title_bidx      = H(title) — open-proposal unique index (000212)
+ *  - admin_audit_log.ip_bidx             = H(ip) — `.eq('ip', …)` lookups (000212)
+ *
  * Computed by prepareWriteRow (insert/update with a plaintext source value) and by the backfill (migration 000208).
  */
 import { isV2 } from '@/lib/security/field-crypto';
+import { dedupeNormalize, normalizeTaskTitle, titleTokens } from '@/lib/tasks/title-normalize';
 
 type Row = Record<string, unknown>;
 
@@ -42,7 +48,30 @@ export async function notificationMetaKeyBidx(dedupeKey: string): Promise<string
 export const BLIND_INDEX_SOURCES: Readonly<Record<string, readonly string[]>> = {
   challenge_success_events: ['title'],
   notifications: ['metadata'],
+  task_definitions: ['title'],
+  almog_assignments: ['title'],
+  chat_task_proposals: ['title'],
+  admin_audit_log: ['ip'],
 };
+
+/** Index columns per table (the backfill reads them to fill shared, owner-less rows once). */
+export const BLIND_INDEX_COLUMNS: Readonly<Record<string, readonly string[]>> = {
+  challenge_success_events: ['title_bidx'],
+  notifications: ['meta_key_bidx', 'meta_unique_bidx'],
+  task_definitions: ['title_bidx'],
+  almog_assignments: ['title_tok_bidx'],
+  chat_task_proposals: ['title_bidx'],
+  admin_audit_log: ['ip_bidx'],
+};
+
+/** Shared by the app write path and the backfill so both produce the same keys. */
+export async function taskTitleBidx(title: string): Promise<string | null> {
+  const k = dedupeNormalize(normalizeTaskTitle(title));
+  return k ? hmac('task_definitions', 'title.dedupe', k) : null;
+}
+export async function titleTokenBidx(title: string): Promise<string[]> {
+  return Promise.all(titleTokens(title).map((t) => hmac('almog_assignments', 'title.token', t)));
+}
 
 /**
  * Blind-index columns to add to a write. Only when the source value is present and plaintext (an enc:v2 value
@@ -60,8 +89,31 @@ export async function blindIndexPatch(table: string, row: Row): Promise<Row> {
     const scope = notificationUniqueScope(row.metadata);
     out.meta_unique_bidx = scope ? await hmac(table, 'metadata.unique_scope', scope) : null;
   }
+  const str = (v: unknown) => (typeof v === 'string' && v.trim() ? v : null);
+  if (table === 'task_definitions' && 'title' in row && !isV2(row.title)) {
+    const t = str(row.title);
+    out.title_bidx = t ? await taskTitleBidx(t) : null;
+  }
+  if (table === 'almog_assignments' && 'title' in row && !isV2(row.title)) {
+    const t = str(row.title);
+    out.title_tok_bidx = t ? await titleTokenBidx(t) : null;
+  }
+  if (table === 'chat_task_proposals' && 'title' in row && !isV2(row.title)) {
+    const t = str(row.title);
+    out.title_bidx = t ? await hmac(table, 'title', t) : null;
+  }
+  if (table === 'admin_audit_log' && 'ip' in row && !isV2(row.ip)) {
+    const t = str(row.ip);
+    out.ip_bidx = t ? await hmac(table, 'ip', t) : null;
+  }
   return out;
 }
+
+/** Equality-filter rewrites: table → plain column → index column. */
+const BLIND_FILTERS: Readonly<Record<string, Readonly<Record<string, string>>>> = {
+  challenge_success_events: { title: 'title_bidx' },
+  admin_audit_log: { ip: 'ip_bidx' },
+};
 
 /**
  * Rewrites equality filters on a blind-indexed column into the index column, so `.eq('title', X)` keeps working
@@ -70,13 +122,18 @@ export async function blindIndexPatch(table: string, row: Row): Promise<Row> {
  * Returns true if the URL was changed.
  */
 export async function rewriteBlindFilters(table: string, url: URL): Promise<boolean> {
-  if (table !== 'challenge_success_events') return false;
-  const f = url.searchParams.get('title');
-  if (!f || !f.startsWith('eq.')) return false;
-  const value = f.slice(3);
-  const h = await hmac(table, 'title', value);
-  url.searchParams.delete('title');
-  if (url.searchParams.has('or')) url.searchParams.set('title_bidx', `eq.${h}`);
-  else url.searchParams.set('or', `(title_bidx.eq.${h},title.eq.${JSON.stringify(value)})`);
-  return true;
+  const map = BLIND_FILTERS[table];
+  if (!map) return false;
+  let changed = false;
+  for (const [col, idx] of Object.entries(map)) {
+    const f = url.searchParams.get(col);
+    if (!f || !f.startsWith('eq.')) continue;
+    const value = f.slice(3);
+    const h = await hmac(table, col, value);
+    url.searchParams.delete(col);
+    if (url.searchParams.has('or')) url.searchParams.set(idx, `eq.${h}`);
+    else url.searchParams.set('or', `(${idx}.eq.${h},${col}.eq.${JSON.stringify(value)})`);
+    changed = true;
+  }
+  return changed;
 }
