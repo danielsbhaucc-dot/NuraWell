@@ -25,7 +25,7 @@ export type GuardConfig = {
   /** Bundle integrity result computed at boot (verifyBundle). */
   integrityOk?: boolean;
   lockedMessage?: string;
-  /** Online verifier (default for sold modules; any host, Cloudflare Worker recommended). Checks ~5 min, recheck ~1 min while blocked, 6h outage grace. */
+  /** Optional online verifier / gateway (premium). Default sold modules use sealed offline + static status file. */
   online?: OnlineConfig & { enabled: boolean; cacheSeconds?: number; blockedRecheckSeconds?: number; graceHours?: number };
   now?: () => Date;
 };
@@ -66,7 +66,7 @@ export function createLicenseGuard(cfg: GuardConfig) {
     } catch { /* unreachable: keep working until license expiry (the backstop) */ }
   }
 
-  // Online check (default for sold modules): ask every ~5 min; while blocked ask every ~1 min so unblock lands fast.
+  // Optional online check (premium): ask every ~5 min; while blocked ask every ~1 min so unblock lands fast.
   // Outage: a seen block always wins; otherwise keep working for graceHours since the last good answer.
   type V = { ok: boolean; reason?: string; until?: string };
   let lastOnline: { at: number; v: V } | null = null;

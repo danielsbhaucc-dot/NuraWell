@@ -1,10 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
-import { buildBundle, issueLicense, publicKeyPemFrom, type DistributionMode, type Transform } from '@platform/licensing';
+import { buildBundle, issueLicense, publicKeyPemFrom, generateContentKey, contentKeyB64, type DistributionMode, type Transform } from '@platform/licensing';
 import { tarGz } from './tar';
 import type { RegistryModule } from '../types';
-import { LICENSE_TERMS_DRAFT_HE } from './terms';
+import { LICENSE_TERMS_DRAFT_HE, LICENSE_TERMS_VERSION } from './terms';
 
 const sha = (b: Buffer | string) => createHash('sha256').update(b).digest('hex');
 /** Anything that looks like a credential blocks the package entirely (fail closed). */
@@ -42,22 +42,48 @@ export function sharePackage(files: Files, m: RegistryModule): PackResult {
   return { ok: true, fileName: `${prefix}-share.tgz`, bytes, sha256: sha(bytes), files: inner.map((f) => f.path) };
 }
 
-export type SellInput = { privatePem: string | null; licensee: { id: string; name: string }; domains: string[]; validDays: number | null; mode: DistributionMode; transform?: Transform; revocationUrl?: string; verifierUrl?: string; verifierPublicKeyPem?: string };
+export type SellInput = {
+  privatePem: string | null;
+  licensee: { id: string; name: string };
+  domains: string[];
+  validDays: number | null;
+  graceDays?: number;
+  mode: DistributionMode;
+  transform?: Transform;
+  revocationUrl?: string;
+  verifierUrl?: string;
+  verifierPublicKeyPem?: string;
+  /** When true (default for bundle), AES-GCM seal the code; content key rides inside the signed license. */
+  seal?: boolean;
+  termsAcceptedAt?: Date;
+};
 
-/** 'מכירה': signed license + (bundle: minified, watermarked, signed manifest) or (source: full source). */
+/** 'מכירה': signed license + closed AES-GCM bundle (monthly default) or full source buyout. */
 export async function sellPackage(files: Files, m: RegistryModule, s: SellInput, now = new Date()): Promise<PackResult> {
   if (m.distribution !== 'sellable') return { ok: false, error: 'רק מודול שמסומן "למכירה" אפשר למכור.' };
   if (!s.privatePem) return { ok: false, error: 'מפתח החתימה לרישיונות עוד לא הוגדר, ולכן אי אפשר למכור כרגע.' };
   if (s.mode === 'source' && !m.sale?.modes.includes('source')) return { ok: false, error: 'למודול הזה אין אפשרות קנייה של קוד מלא.' };
   const prefix = `${m.id}-${m.version}`;
-  const { token, license } = issueLicense(s.privatePem, { moduleId: m.id, versionRange: `^${m.version}`, licensee: s.licensee, domains: s.domains, mode: s.mode, validDays: s.mode === 'bundle' ? (s.validDays ?? 30) : s.validDays }, now);
+  const seal = s.mode === 'bundle' && s.seal !== false;
+  const contentKey = seal ? generateContentKey() : undefined;
+  const { token, license } = issueLicense(s.privatePem, {
+    moduleId: m.id, versionRange: `^${m.version}`, licensee: s.licensee, domains: s.domains, mode: s.mode,
+    validDays: s.mode === 'bundle' ? (s.validDays ?? 30) : s.validDays,
+    graceDays: s.graceDays,
+    contentKey: contentKey ? contentKeyB64(contentKey) : undefined,
+    termsVersion: LICENSE_TERMS_VERSION,
+    termsAcceptedAt: s.termsAcceptedAt ?? now,
+  }, now);
   const pub = publicKeyPemFrom(s.privatePem);
   let payload: Files;
   const extra: Files = [];
   if (s.mode === 'bundle') {
     const code = files.filter((f) => /\.(ts|tsx|mjs|js)$/.test(f.path));
     const docs = files.filter((f) => !code.includes(f));
-    const b = await buildBundle(s.privatePem, { moduleId: m.id, version: m.version, lid: license.lid, licenseeId: s.licensee.id, files: code, transform: s.transform });
+    const b = await buildBundle(s.privatePem, {
+      moduleId: m.id, version: m.version, lid: license.lid, licenseeId: s.licensee.id, files: code,
+      transform: s.transform, seal: contentKey ?? false,
+    });
     payload = [...b.files, ...docs];
     extra.push({ path: 'BUNDLE-MANIFEST.json', content: JSON.stringify(b.manifest, null, 1) }, { path: 'BUNDLE-MANIFEST.sig', content: b.signature });
   } else payload = files;
@@ -65,7 +91,12 @@ export async function sellPackage(files: Files, m: RegistryModule, s: SellInput,
     { path: 'LICENSE.token', content: token },
     { path: 'license-public-key.pem', content: pub },
     { path: 'LICENSE-TERMS.he.md', content: LICENSE_TERMS_DRAFT_HE },
-    { path: 'license.config.json', content: JSON.stringify({ moduleId: m.id, licenseToken: 'LICENSE.token', revocationUrl: s.revocationUrl ?? null, pollMinutes: 2, graceHours: 6, online: s.verifierUrl ? { enabled: true, url: s.verifierUrl, verifierPublicKeyPem: s.verifierPublicKeyPem ?? null, cacheSeconds: 300, blockedRecheckSeconds: 60, graceHours: 6 } : { enabled: false } }, null, 1) },
+    { path: 'license.config.json', content: JSON.stringify({
+      moduleId: m.id, licenseToken: 'LICENSE.token', revocationUrl: s.revocationUrl ?? null,
+      pollMinutes: 2, graceHours: 6,
+      // Online verifier / gateway = optional premium only. Default = sealed offline + static status file.
+      online: s.verifierUrl ? { enabled: true, url: s.verifierUrl, verifierPublicKeyPem: s.verifierPublicKeyPem ?? null, cacheSeconds: 300, blockedRecheckSeconds: 60, graceHours: 6 } : { enabled: false },
+    }, null, 1) },
   );
   const inner = [...payload, ...extra].map((f) => ({ path: `${prefix}/${f.path}`, content: f.content }));
   const integ = integrity(inner);

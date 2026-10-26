@@ -1,8 +1,11 @@
--- GATED — DO NOT APPLY YET. Reviewed migration for offline module licensing (packages/@platform/licensing).
+-- GATED — DO NOT APPLY YET. Reviewed migration for closed-source monthly module licensing (packages/@platform/licensing).
 -- Lives outside supabase/migrations/ so no runner picks it up. Apply only after Daniel approves selling.
+-- Model: AES-GCM sealed bundle; content key inside signed license token; validity = paid period + grace_days (default 3);
+-- mid-period block/unblock via signed static status file (free static reads, poll ~2 min); fail-closed if status unreachable >6h.
 -- Licensee identity is stored encrypted by the app (enc:v2 via sealRow/systemDek); revocation reasons too.
--- Nothing here is read by buyers: buyers only see the signed static status file (lid + state + until + reason code),
--- polled every ~2 min from free static hosting (no Worker per check). Every block/unblock is audited (reason code only, no PII).
+-- Nothing here is read by buyers: buyers only see the signed static status file (lid + state + until + reason code).
+-- Content keys NEVER leave the signed license token / issuer process — they are not stored in this schema.
+-- Gateway (server-held core) tables are optional premium only.
 
 create table if not exists public.platform_licenses (
   lid text primary key,
@@ -13,7 +16,10 @@ create table if not exists public.platform_licenses (
   domains text[] not null default '{}',
   mode text not null check (mode in ('bundle','source')),
   issued_at timestamptz not null default now(),
-  expires_at timestamptz,
+  expires_at timestamptz,                -- end of paid period (next billing)
+  grace_days int not null default 3 check (grace_days >= 0 and grace_days <= 90),
+  terms_version text,                    -- which LICENSE-TERMS draft the buyer accepted
+  terms_accepted_at timestamptz,         -- signed evidence timestamp (no raw PII)
   superseded_by text references public.platform_licenses(lid),
   issued_by uuid,
   created_at timestamptz not null default now()
@@ -48,7 +54,7 @@ language sql security definer set search_path = public as $$
 $$;
 revoke all on function public.platform_bump_revocation_version() from public, anon, authenticated;
 
--- Server-held core: which gateway install belongs to which license. The key hash lives only in the gateway KV, never here.
+-- Optional premium: server-held core install map. The key hash lives only in the gateway KV, never here.
 create table if not exists public.platform_license_installs (
   lid text primary key references public.platform_licenses(lid) on delete cascade,
   install_id text not null unique,
