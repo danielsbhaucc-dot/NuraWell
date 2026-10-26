@@ -1,6 +1,7 @@
 // Read-only hub panels. Every number is an aggregate from the server; null = unavailable (shown as such, never guessed).
 import type { ProductRow, ProductSummary, RegistryModule } from './types';
 import { fmtNum, fmtUsd } from './labels';
+import { ActivityList, CostTrendChart, LibraryPreview, QuickLinks, type ActivityItem, type CostTrend } from './OverviewExtras';
 
 export type Deployment = { securityOpen: number | null; tasksOpen: number | null };
 const NA = 'אין נתון';
@@ -28,7 +29,7 @@ export function ProductCard({ product, summary, metricsError }: { product: Produ
   );
 }
 
-export function Overview({ products, summaries, deployment, metricsError, registry, onOpen }: { products: ProductRow[]; summaries: ProductSummary[]; deployment: Deployment; metricsError: string | null; registry: RegistryModule[]; onOpen: (id: string) => void }) {
+export function Overview({ products, summaries, deployment, metricsError, registry, onOpen, onNav, activity, costTrend, href }: { products: ProductRow[]; summaries: ProductSummary[]; deployment: Deployment; metricsError: string | null; registry: RegistryModule[]; onOpen: (id: string) => void; onNav: Parameters<typeof QuickLinks>[0]['onNav']; activity: ActivityItem[] | null; costTrend: CostTrend; href: (id: string) => string }) {
   return (
     <div className="fd-pane">
       <h2>סקירה</h2>
@@ -39,6 +40,7 @@ export function Overview({ products, summaries, deployment, metricsError, regist
         <Stat label="אירועי אבטחה פתוחים" value={fmtNum(deployment.securityOpen)} hint="בכל המערכת" />
         <Stat label="משימות ציות פתוחות" value={fmtNum(deployment.tasksOpen)} hint="בכל המערכת" />
       </div>
+      <QuickLinks onNav={onNav} />
       <div className="hb-cards">
         {products.map((p) => (
           <div key={p.id} className="hb-wrap">
@@ -47,6 +49,8 @@ export function Overview({ products, summaries, deployment, metricsError, regist
           </div>
         ))}
       </div>
+      <div className="hb-grid"><CostTrendChart trend={costTrend} /><ActivityList items={activity} products={products} /></div>
+      <LibraryPreview registry={registry} href={href} />
     </div>
   );
 }

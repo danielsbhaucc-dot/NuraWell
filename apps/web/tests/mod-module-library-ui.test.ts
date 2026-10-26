@@ -30,3 +30,15 @@ describe('module-library-ui render (real registry)', () => {
     expect(html).toContain('עוד לא נבנה');
   });
 });
+
+describe('store pages are Hebrew-only', () => {
+  it('hebrewProblem flags English and accepts Hebrew with code spans', async () => {
+    const { hebrewProblem } = await import('../../../scripts/modules/lib.mjs');
+    expect(hebrewProblem('Module licensing. Offline signed licenses.')).toBe('no Hebrew text');
+    expect(hebrewProblem('הצפנה חזקה (`AES-256-GCM`) בתוך `field-envelope.ts`')).toBeNull();
+    expect(hebrewProblem('רישיון with lots of English words here')).toMatch(/too much English/);
+  });
+  it('every module ships a Hebrew description', () => {
+    for (const m of REGISTRY_LITE) expect(m.store.descriptionHe).toMatch(/[\u0590-\u05FF]/);
+  });
+});

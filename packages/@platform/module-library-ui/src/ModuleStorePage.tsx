@@ -27,7 +27,7 @@ export function ModuleStorePage({ m, products, backHref = '/ops/modules' }: { m:
           </div>
         </header>
         <nav className="sp-toc" aria-label="תוכן העמוד">{[['what', 'מה זה עושה'], ['install', 'התקנה'], ['settings', 'הגדרות'], ['security', 'אבטחה ופרטיות'], ['version', 'גרסה'], ['support', 'תמיכה ומגבלות']].map(([id, t]) => <a key={id} href={`#${id}`}>{t}</a>)}</nav>
-        <Sec id="what" title="מה זה עושה"><p>{m.description}</p><h3>למי זה מתאים</h3><L items={s.audience} /><h3>שימושים</h3><L items={s.useCases} /><h3>יכולות</h3><L items={s.features} /></Sec>
+        <Sec id="what" title="מה זה עושה"><p>{s.descriptionHe}</p><h3>למי זה מתאים</h3><L items={s.audience} /><h3>שימושים</h3><L items={s.useCases} /><h3>יכולות</h3><L items={s.features} /></Sec>
         <Sec id="preview" title="תצוגה מקדימה">
           <div className="sp-preview"><ModuleIcon m={m} on /><div><b>{s.name}</b><div className="fd-dim">{s.summary}</div></div></div>
         </Sec>
@@ -50,7 +50,7 @@ export function ModuleStorePage({ m, products, backHref = '/ops/modules' }: { m:
         <Sec id="settings" title="הגדרות">
           {props.length ? (
             <table className="sp-table"><thead><tr><th>שדה</th><th>סוג</th><th>ברירת מחדל</th><th>מה זה</th></tr></thead>
-              <tbody>{props.map(([k, p]) => <tr key={k}><td className="fd-mono">{k}</td><td className="fd-mono">{p.type ?? '–'}</td><td className="fd-mono">{p.const !== undefined ? `${String(p.const)} (קבוע)` : p.default !== undefined ? JSON.stringify(p.default) : '–'}</td><td>{p.description ?? ''}</td></tr>)}</tbody></table>
+              <tbody>{props.map(([k, p]) => <tr key={k}><td className="fd-mono">{k}</td><td className="fd-mono">{p.type ?? '–'}</td><td className="fd-mono">{p.const !== undefined ? `${String(p.const)} (קבוע)` : p.default !== undefined ? JSON.stringify(p.default) : '–'}</td><td>{p.description_he ?? ''}</td></tr>)}</tbody></table>
           ) : <p>אין הגדרות מעבר לשדה ההתקנה. הפירוט המלא נמצא ב-README.</p>}
         </Sec>
         <Sec id="version" title="גרסה, שינויים ותאימות">

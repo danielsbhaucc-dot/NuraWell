@@ -109,9 +109,20 @@ export function renderLlms(mods) {
 
 // ---------- Plugin-store page (מודול כמו תוסף בחנות) ----------
 // Every module must carry enough for a non-technical Hebrew page. `modules check` fails when anything is missing.
-export const STORE_STRINGS = ['name', 'summary', 'whereDataLives', 'compatibility', 'support', 'installConfig'];
+export const STORE_STRINGS = ['name', 'summary', 'descriptionHe', 'whereDataLives', 'compatibility', 'support', 'installConfig'];
 export const STORE_LISTS = ['audience', 'useCases', 'features', 'dataTouched', 'permissions', 'security', 'limitations'];
 export const README_HEADINGS = ['## מה זה עושה', '## התקנה', '## הגדרות', '## אבטחה ופרטיות', '## מגבלות ידועות'];
+
+// Hebrew-only page text: code spans and identifier-like tokens (dots, slashes, digits, @, _) and known product names may stay Latin.
+const LATIN_OK = new Set(['NuraWell', 'Node', 'TypeScript', 'React', 'Next', 'Postgres', 'Cloudflare', 'Workers', 'Vercel', 'OpenAI', 'Finder', 'PR', 'AES', 'GCM', 'Request', 'Response', 'fetch', 'crypto', 'subtle', 'AI', 'PII', 'IAM', 'JSON', 'README', 'test', 'online', 'url']);
+export function hebrewProblem(text) {
+  const t = String(text).replace(/`[^`]*`/g, ' ').replace(/[A-Za-z][\w-]*(?:[._/@:][\w-]+)+|\S*\d\S*|\S*_\S*/g, ' ');
+  const latin = (t.match(/[A-Za-z]+/g) ?? []).filter((w) => !LATIN_OK.has(w)).join('').length;
+  const heb = (t.match(/[\u0590-\u05FF]/g) ?? []).length;
+  if (heb === 0) return 'no Hebrew text';
+  if (latin > heb * 0.25) return 'too much English (put identifiers in `code`)';
+  return null;
+}
 
 export function validateStorePage(m, root = ROOT) {
   const e = [];
@@ -120,6 +131,11 @@ export function validateStorePage(m, root = ROOT) {
   for (const k of STORE_STRINGS) if (typeof s[k] !== 'string' || s[k].trim().length < 2) e.push(`store.${k} missing`);
   for (const k of STORE_LISTS) if (!Array.isArray(s[k]) || !s[k].length || s[k].some((x) => typeof x !== 'string' || !x.trim())) e.push(`store.${k} must be a non-empty list`);
   if (s.iamModule !== undefined && !/^[a-z][a-z0-9-]*$/.test(s.iamModule)) e.push('store.iamModule bad id');
+  for (const k of [...STORE_STRINGS, ...STORE_LISTS]) for (const v of [].concat(s[k] ?? [])) { const p = hebrewProblem(v); if (p) e.push(`store.${k}: ${p}: "${String(v).slice(0, 60)}"`); }
+  const cp = join(root, m.dir, 'config.schema.json');
+  if (existsSync(cp)) for (const [k, v] of Object.entries(JSON.parse(readFileSync(cp, 'utf8')).properties ?? {})) { const p = v.description_he ? hebrewProblem(v.description_he) : 'missing description_he'; if (p) e.push(`config.schema.json ${k}: ${p}`); }
+  const chp = join(root, m.dir, 'CHANGELOG.md');
+  if (existsSync(chp)) for (const line of readFileSync(chp, 'utf8').split('\n').filter((l) => l.trim().startsWith('- '))) { const p = hebrewProblem(line); if (p) e.push(`CHANGELOG.md: ${p}: "${line.slice(0, 60)}"`); }
   const rp = join(root, m.dir, 'README.he.md');
   const readme = existsSync(rp) ? readFileSync(rp, 'utf8') : '';
   for (const h of README_HEADINGS) if (!readme.includes(h)) e.push(`README.he.md missing section "${h}"`);

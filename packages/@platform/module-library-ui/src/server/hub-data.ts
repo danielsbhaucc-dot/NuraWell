@@ -1,5 +1,6 @@
 import type { ProductRow, ProductSummary, RegistryModule } from '../types';
 import type { Deployment } from '../HubViews';
+import type { ActivityItem, CostTrend } from '../OverviewExtras';
 import registryJson from '../registry.generated.json';
 
 export const REGISTRY = (registryJson as unknown as { modules: RegistryModule[] }).modules;
@@ -23,7 +24,25 @@ export async function loadHubData(db: Db, products: { id: string; name: string }
     return error ? null : (n ?? 0);
   };
   const deployment: Deployment = { securityOpen: await count('security_incidents', 'status', ['open']), tasksOpen: await count('compliance_tasks', 'status', ['open', 'in_progress']) };
-  return { products: rows, summaries, deployment, metricsError: metrics.error, statesError: stErr ? 'module_states_unavailable' : null };
+  const ids = shown.map((p) => p.id);
+  const { data: log, error: logErr } = await db.from('iam_audit_log').select('at, kind, product_id').order('seq', { ascending: false }).limit(40);
+  // Only time, kind and product leave the server: no actor, target or detail (PII-free by construction).
+  const activity: ActivityItem[] | null = logErr ? null : ((log ?? []) as { at: string; kind: string; product_id: string | null }[])
+    .filter((r) => r.product_id === null || ids.includes(r.product_id)).slice(0, 10).map((r) => ({ at: r.at, kind: r.kind, productId: r.product_id }));
+  return { products: rows, summaries, deployment, activity, costTrend: await loadCostTrend(db, ids), metricsError: metrics.error, statesError: stErr ? 'module_states_unavailable' : null };
+}
+const TREND_CAP = 20000;
+/** Daily AI spend for the visible products, from ai_usage_events (the same table the cost screen reads). Null when unavailable. */
+async function loadCostTrend(db: Db, ids: string[]): Promise<CostTrend> {
+  if (!ids.length) return null;
+  const since = new Date(Date.now() - 30 * 864e5);
+  const { data, error } = await db.from('ai_usage_events').select('created_at, cost_usd').in('product_id', ids).gte('created_at', since.toISOString()).limit(TREND_CAP);
+  if (error) return null;
+  const byDay = new Map<string, number>();
+  for (let i = 29; i >= 0; i--) byDay.set(new Date(Date.now() - i * 864e5).toISOString().slice(0, 10), 0);
+  for (const r of (data ?? []) as { created_at: string; cost_usd: number | string | null }[]) { const d = r.created_at.slice(0, 10); if (byDay.has(d)) byDay.set(d, byDay.get(d)! + (Number(r.cost_usd) || 0)); }
+  const days = [...byDay].map(([day, usd]) => ({ day, usd }));
+  return days.some((d) => d.usd > 0) ? { days, partial: (data ?? []).length >= TREND_CAP } : { days: [], partial: false };
 }
 /** For the client hub: drop long docs (the store page loads the full entry server-side). */
 export const REGISTRY_LITE: RegistryModule[] = REGISTRY.map((m) => ({ ...m, readme: '', changelog: '' }));

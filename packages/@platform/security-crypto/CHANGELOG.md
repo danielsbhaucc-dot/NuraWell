@@ -1,3 +1,4 @@
-# Changelog — @platform/security-crypto
-## 0.1.0 — 2026-10-26
-- Initial extraction: `apps/web/lib/security/field-envelope.ts` moved verbatim. No behavior change; fixed-vector tests pin the wire format.
+# שינויים
+
+## 0.1.0 (2026-10-26)
+- הוצאה למודול נפרד של קוד ההצפנה הקיים (`apps/web/lib/security/field-envelope.ts`), בלי שינוי בהתנהגות. בדיקות עם ערכים קבועים מוודאות שהפורמט המוצפן לא השתנה.
