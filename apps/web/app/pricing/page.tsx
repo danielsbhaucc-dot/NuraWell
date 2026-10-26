@@ -15,11 +15,16 @@ export default async function PricingPage() {
     plan = (data as { plan?: string } | null)?.plan ?? 'basic';
   }
   return (
-    <main dir="rtl" className="min-h-dvh bg-[#f8f5ec] px-4 pb-28 pt-8">
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
-        <header className="flex flex-col items-center gap-2 text-center">
-          <h1 className="text-3xl font-black text-[#14532d]">בוחרים את הליווי שמתאים לך</h1>
-          <p className="max-w-xl text-[#14532d]/80">אלמוג, מנטור אישי לשינוי הרגלים: תוכנית אישית שמתעדכנת, שיעורי וידאו ומעקב יזום.</p>
+    <main dir="rtl" className="public-dark public-dark-bg min-h-dvh px-4 pb-28 pt-[max(2rem,env(safe-area-inset-top))]">
+      <div className="mx-auto flex w-full max-w-5xl flex-col gap-8">
+        <header className="flex flex-col items-center gap-3 pt-4 text-center">
+          <span className="rounded-full border border-accent-300/40 bg-accent-300/10 px-4 py-1 text-xs font-bold tracking-wide text-accent-200">
+            מסלולי הליווי של NuraWell
+          </span>
+          <h1 className="text-balance text-4xl font-black leading-tight text-on-dark md:text-5xl">
+            בוחרים את הליווי <span className="bg-linear-to-l from-accent-200 to-accent-400 bg-clip-text text-transparent">שמתאים לך</span>
+          </h1>
+          <p className="max-w-xl text-on-dark-soft">אלמוג, מנטור אישי לשינוי הרגלים: תוכנית אישית שמתעדכנת, שיעורי וידאו ומעקב יזום.</p>
         </header>
         <PlansGrid signedIn={!!user} currentPlan={isPlanId(plan) ? plan : null} />
       </div>

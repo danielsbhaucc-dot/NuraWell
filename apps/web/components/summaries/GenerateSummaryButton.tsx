@@ -105,7 +105,7 @@ export function GenerateSummaryButton({
     >
       <span className="flex items-center justify-between gap-2">
         <span
-          className={`w-9 h-9 rounded-xl ${colors.accent} text-white flex items-center justify-center shadow-xs`}
+          className={`w-9 h-9 rounded-xl ${colors.accent} text-on-dark flex items-center justify-center shadow-xs`}
         >
           {loading ? (
             <Loader2 className="w-4 h-4 animate-spin" strokeWidth={2.6} />
@@ -115,11 +115,11 @@ export function GenerateSummaryButton({
         </span>
         <span className="flex-1 min-w-0">
           <span className={`block text-xs font-bold ${colors.text}`}>סיכום {TYPE_LABEL_HE[type]}</span>
-          <span className="block text-[11px] text-gray-500 truncate">{periodKey}</span>
+          <span className="block text-[11px] text-ink-500 truncate">{periodKey}</span>
         </span>
       </span>
 
-      <span className="flex items-center justify-end gap-1.5 text-[11px] font-bold text-gray-700">
+      <span className="flex items-center justify-end gap-1.5 text-[11px] font-bold text-ink-700">
         {loading ? (
           <>
             <Loader2 className="w-3 h-3 animate-spin" />

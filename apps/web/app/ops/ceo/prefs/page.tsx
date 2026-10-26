@@ -9,7 +9,7 @@ export default async function Page() {
   return (
     <div className="mx-auto max-w-2xl space-y-4 p-4">
       <h1 className="text-2xl font-bold">גדעון · הוראות קבועות ושקט</h1>
-      <p className="text-sm text-slate-600">כל מה שביקשת מגדעון לגבי מתי ומה לשלוח לך. נאכף בקוד בשכבת השליחה לטלגרם, לא רק בזיכרון שלו. תשובות ישירות כשאתה כותב לו תמיד נשלחות.</p>
+      <p className="text-sm text-ink-soft">כל מה שביקשת מגדעון לגבי מתי ומה לשלוח לך. נאכף בקוד בשכבת השליחה לטלגרם, לא רק בזיכרון שלו. תשובות ישירות כשאתה כותב לו תמיד נשלחות.</p>
       <GideonPrefsPanel />
     </div>
   );

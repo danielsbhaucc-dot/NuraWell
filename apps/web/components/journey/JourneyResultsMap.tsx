@@ -15,7 +15,7 @@ const SUCCESS_PALETTES: MapPalette[] = [
     muted: '#065f46',
   },
   {
-    bg: 'linear-gradient(145deg, #f0fdfa 0%, #ccfbf1 100%)',
+    bg: 'linear-gradient(145deg, #cfe9dc 0%, #ccfbf1 100%)',
     border: 'rgba(20,184,166,0.36)',
     tag: '#0f766e',
     pin: '#14b8a6',
@@ -34,7 +34,7 @@ const SUCCESS_PALETTES: MapPalette[] = [
 
 const FAIL_PALETTES: MapPalette[] = [
   {
-    bg: 'linear-gradient(145deg, #fef2f2 0%, #fecaca 100%)',
+    bg: 'linear-gradient(145deg, #cfe9dc 0%, #fecaca 100%)',
     border: 'rgba(239,68,68,0.36)',
     tag: '#b91c1c',
     pin: '#ef4444',
@@ -42,7 +42,7 @@ const FAIL_PALETTES: MapPalette[] = [
     muted: '#991b1b',
   },
   {
-    bg: 'linear-gradient(145deg, #fff1f2 0%, #fecdd3 100%)',
+    bg: 'linear-gradient(145deg, #cfe9dc 0%, #fecdd3 100%)',
     border: 'rgba(244,63,94,0.34)',
     tag: '#be123c',
     pin: '#f43f5e',
@@ -50,7 +50,7 @@ const FAIL_PALETTES: MapPalette[] = [
     muted: '#9f1239',
   },
   {
-    bg: 'linear-gradient(145deg, #fdf2f8 0%, #fbcfe8 100%)',
+    bg: 'linear-gradient(145deg, #cfe9dc 0%, #fbcfe8 100%)',
     border: 'rgba(236,72,153,0.32)',
     tag: '#be185d',
     pin: '#ec4899',
@@ -163,7 +163,7 @@ export function QuizResultMapCard({
       </p>
       {!ok && correctLabel ? (
         <p className="text-xs font-bold mb-1" style={{ color: palette.muted }}>
-          התשובה הנכונה: <span className="text-emerald-700">{correctLabel}</span>
+          התשובה הנכונה: <span className="text-primary-700">{correctLabel}</span>
         </p>
       ) : null}
       <p
@@ -210,7 +210,7 @@ export function GameResultMapCard({
         {youMarkedLabel}:{' '}
         <span style={{ color: ok ? '#059669' : '#dc2626' }}>{pickedLabel}</span>
         {' · '}
-        נכון: <span className="text-emerald-800">{correctLabel}</span>
+        נכון: <span className="text-primary-800">{correctLabel}</span>
       </p>
       <p
         className="text-xs font-semibold leading-relaxed mt-2.5 pt-2.5 border-t"

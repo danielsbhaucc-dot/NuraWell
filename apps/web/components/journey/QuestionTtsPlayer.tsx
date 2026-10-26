@@ -139,12 +139,12 @@ export function QuestionTtsPlayer({
           type="button"
           onClick={toggleMute}
           aria-pressed={muted}
-          className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-background-card/20 px-4 py-2 text-xs font-bold text-emerald-900 shadow-[0_6px_22px_rgba(6,78,59,0.18)] backdrop-blur-xl transition hover:bg-background-card/30 active:scale-95"
+          className="inline-flex items-center gap-1.5 rounded-full border border-on-dark/40 bg-background-card/20 px-4 py-2 text-xs font-bold text-primary-900 shadow-[0_6px_22px_rgba(6,78,59,0.18)] backdrop-blur-xl transition hover:bg-background-card/30 active:scale-95"
         >
           {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
           {muted ? 'הפעל הקראה' : 'השתק הקראה'}
           {needsGesture && !muted && (
-            <span className="h-2 w-2 animate-ping rounded-full bg-amber-400" aria-hidden />
+            <span className="h-2 w-2 animate-ping rounded-full bg-accent-400" aria-hidden />
           )}
         </button>
 
@@ -152,14 +152,14 @@ export function QuestionTtsPlayer({
           type="button"
           onClick={replay}
           disabled={muted}
-          className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300/40 bg-emerald-400/15 px-4 py-2 text-xs font-bold text-emerald-800 shadow-[0_6px_22px_rgba(6,78,59,0.15)] backdrop-blur-xl transition hover:bg-emerald-400/25 active:scale-95 disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 rounded-full border border-primary-300/40 bg-primary-400/15 px-4 py-2 text-xs font-bold text-primary-800 shadow-[0_6px_22px_rgba(6,78,59,0.15)] backdrop-blur-xl transition hover:bg-primary-400/25 active:scale-95 disabled:opacity-50"
         >
           <RotateCcw className="h-4 w-4" />
           השמע שוב
         </button>
 
         {playing && !muted && (
-          <span className="text-[11px] font-semibold text-emerald-700 animate-pulse">מקריא…</span>
+          <span className="text-[11px] font-semibold text-primary-700 animate-pulse">מקריא…</span>
         )}
       </div>
     </div>

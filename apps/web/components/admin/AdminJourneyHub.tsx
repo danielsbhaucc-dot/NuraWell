@@ -312,7 +312,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
       <section className="overflow-hidden rounded-2xl border border-gc/50 bg-background-card/30 shadow-[0_8px_28px_rgba(15,23,42,0.06)] backdrop-blur-xl">
         <div className="border-b border-gc/40 p-3">
           <div className="relative">
-            <Search className="absolute inset-s-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden />
+            <Search className="absolute inset-s-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-faint" aria-hidden />
             <input
               type="search"
               value={searchQ}
@@ -337,8 +337,8 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
               className={cn(
                 'flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-xl px-2 py-2 text-xs font-bold transition-all sm:text-sm',
                 viewTab === key
-                  ? 'border border-amber-300/50 bg-amber-500/15 text-amber-900 shadow-xs backdrop-blur-md'
-                  : 'border border-transparent text-slate-600 hover:border-gc/50 hover:bg-background-card/35',
+                  ? 'border border-accent-300/50 bg-accent-500/15 text-accent-900 shadow-xs backdrop-blur-md'
+                  : 'border border-transparent text-ink-soft hover:border-gc/50 hover:bg-background-card/35',
               )}
             >
               <Icon className="h-4 w-4" aria-hidden />
@@ -352,7 +352,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
       {/* רשימה */}
       {viewTab === 'stations' ? (
         filteredStations.length === 0 ? (
-          <p className="py-10 text-center text-sm text-slate-500">
+          <p className="py-10 text-center text-sm text-ink-faint">
             {q ? 'לא נמצאו תחנות תואמות' : 'אין תחנות עדיין — צרו תחנה חדשה'}
           </p>
         ) : (
@@ -364,21 +364,21 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
                   <button
                     type="button"
                     onClick={() => openStation(st.id)}
-                    className="flex w-full items-center gap-3 rounded-2xl border border-gc/50 bg-background-card/28 px-3 py-3 text-start shadow-xs backdrop-blur-xl transition hover:border-amber-300/45 hover:bg-background-card/40 active:scale-[0.995] sm:px-4"
+                    className="flex w-full items-center gap-3 rounded-2xl border border-gc/50 bg-background-card/28 px-3 py-3 text-start shadow-xs backdrop-blur-xl transition hover:border-accent-300/45 hover:bg-background-card/40 active:scale-[0.995] sm:px-4"
                   >
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-amber-300/40 bg-linear-to-br from-amber-500/70 to-orange-500/70 text-sm font-black text-gc shadow-xs backdrop-blur-sm">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-accent-300/40 bg-linear-to-br from-accent-500/70 to-energy-500/70 text-sm font-black text-gc shadow-xs backdrop-blur-sm">
                       {st.sort_order}
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate font-display text-[15px] font-black text-slate-900">
+                      <span className="block truncate font-display text-[15px] font-black text-ink">
                         {st.title}
                         {st.is_foundation ? (
-                          <span className="ms-2 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
+                          <span className="ms-2 rounded-full bg-primary-500/15 px-2 py-0.5 text-[10px] font-bold text-primary-800">
                             תחנת חובה
                           </span>
                         ) : null}
                       </span>
-                      <span className="text-[11px] text-slate-500">
+                      <span className="text-[11px] text-ink-faint">
                         {stepCount} צעדים
                         {st.coverImageUrl ? ' · תמונה' : ''}
                       </span>
@@ -393,7 +393,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
           </ul>
         )
       ) : filteredOrphans.length === 0 ? (
-        <p className="py-10 text-center text-sm text-slate-500">
+        <p className="py-10 text-center text-sm text-ink-faint">
           {q ? 'לא נמצאו צעדים תואמים' : 'כל הצעדים משויכים לתחנות'}
         </p>
       ) : (
@@ -404,10 +404,10 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
               className="flex items-center justify-between gap-3 rounded-2xl border border-gc/50 bg-background-card/28 px-3 py-2.5 backdrop-blur-xl sm:px-4"
             >
               <span className="flex min-w-0 items-center gap-2">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-emerald-300/35 bg-emerald-500/10 text-xs font-black text-emerald-800 backdrop-blur-sm">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-primary-300/35 bg-primary-500/10 text-xs font-black text-primary-800 backdrop-blur-sm">
                   {s.step_number}
                 </span>
-                <span className="truncate text-sm font-semibold text-slate-800">{s.title}</span>
+                <span className="truncate text-sm font-semibold text-ink">{s.title}</span>
               </span>
               <Link href={`${opsBase}/steps/${s.id}`} className={opsGlassBtnClass}>
                 <Edit3 className="h-3.5 w-3.5" />
@@ -431,36 +431,36 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
             type="button"
             aria-label="סגור"
             onClick={() => !busy && closeStation()}
-            className="absolute inset-0 bg-amber-950/30 backdrop-blur-[5px]"
+            className="absolute inset-0 bg-accent-950/30 backdrop-blur-[5px]"
           />
           <div
             className="relative flex max-h-[94dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-[1.75rem] shadow-[0_28px_80px_-16px_rgba(180,83,9,0.4)] ring-1 ring-gc/50 sm:rounded-[1.75rem]"
             style={glassPanelStyle}
           >
-            <div className="pointer-events-none absolute -inset-e-12 -top-16 h-44 w-44 rounded-full bg-amber-400/25 blur-3xl" aria-hidden />
+            <div className="pointer-events-none absolute -inset-e-12 -top-16 h-44 w-44 rounded-full bg-accent-400/25 blur-3xl" aria-hidden />
             <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-linear-to-r from-transparent via-background-card/90 to-transparent" />
 
-            <header className="relative shrink-0 border-b border-gc/40 bg-linear-to-bl from-amber-100/55 via-background-card/25 to-orange-100/40 px-4 pb-3 pt-4 sm:px-6">
+            <header className="relative shrink-0 border-b border-gc/40 bg-linear-to-bl from-accent-100/55 via-background-card/25 to-energy-100/40 px-4 pb-3 pt-4 sm:px-6">
               <button
                 type="button"
                 onClick={() => !busy && closeStation()}
                 disabled={!!busy}
-                className="absolute inset-e-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-gc/55 bg-background-card/30 text-slate-600 backdrop-blur-md transition hover:bg-background-card/50 disabled:opacity-50 sm:inset-e-4 sm:top-4"
+                className="absolute inset-e-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-gc/55 bg-background-card/30 text-ink-soft backdrop-blur-md transition hover:bg-background-card/50 disabled:opacity-50 sm:inset-e-4 sm:top-4"
                 aria-label="סגור"
               >
                 <X className="h-4 w-4" />
               </button>
 
               <div className="flex items-center gap-3 pe-10">
-                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-amber-300/40 bg-linear-to-br from-amber-500 to-orange-600 text-lg font-black text-gc shadow-md ring-1 ring-gc/50">
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-accent-300/40 bg-linear-to-br from-accent-500 to-energy-600 text-lg font-black text-gc shadow-md ring-1 ring-gc/50">
                   {selected.sort_order}
                 </span>
                 <div className="min-w-0">
-                  <p className="text-[10px] font-bold uppercase tracking-wide text-amber-800/85">תחנה</p>
-                  <h2 className="truncate bg-linear-to-l from-amber-800 via-orange-700 to-amber-700 bg-clip-text font-display text-xl font-black text-transparent">
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-accent-800/85">תחנה</p>
+                  <h2 className="truncate bg-linear-to-l from-accent-800 via-energy-700 to-accent-700 bg-clip-text font-display text-xl font-black text-transparent">
                     {selected.title}
                   </h2>
-                  <p className="text-xs text-slate-600">
+                  <p className="text-xs text-ink-soft">
                     {stepsByStation(selected.id).length} צעדים
                     {selected.is_foundation ? ' · תחנת חובה' : ''}
                     {selected.coverImageUrl ? ' · יש תמונת רקע' : ''}
@@ -468,13 +468,13 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
                 </div>
               </div>
 
-              <label className="mt-3 flex cursor-pointer items-center gap-2 rounded-xl border border-emerald-200/50 bg-emerald-50/40 px-3 py-2 text-sm text-emerald-900">
+              <label className="mt-3 flex cursor-pointer items-center gap-2 rounded-xl border border-primary-200/50 bg-primary-50/40 px-3 py-2 text-sm text-primary-900">
                 <input
                   type="checkbox"
                   checked={selected.is_foundation === true}
                   disabled={busy === `foundation-${selected.id}`}
                   onChange={(e) => void toggleFoundation(selected.id, e.target.checked)}
-                  className="h-4 w-4 rounded border-emerald-400 text-emerald-600"
+                  className="h-4 w-4 rounded border-primary-400 text-primary-600"
                 />
                 <span>
                   <strong>תחנת חובה (Foundation)</strong> — כל המשתמשים עוברים כאן לפני שיעורים
@@ -483,13 +483,13 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
               </label>
 
               <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
-                <label className="flex flex-col gap-1 text-emerald-900">
+                <label className="flex flex-col gap-1 text-primary-900">
                   <span className="font-semibold">אייקון במפה (הרגל)</span>
                   <select
                     value={selected.habit_key ?? ''}
                     disabled={busy === `meta-${selected.id}`}
                     onChange={(e) => void patchStationMeta(selected.id, { habit_key: e.target.value || null })}
-                    className="rounded-xl border border-emerald-200 bg-gc px-2 py-1.5"
+                    className="rounded-xl border border-primary-200 bg-gc px-2 py-1.5"
                   >
                     <option value="">אוטומטי (לפי שם התחנה)</option>
                     {Object.keys(HABIT_ICONS).map((k) => (
@@ -499,7 +499,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
                     ))}
                   </select>
                 </label>
-                <label className="flex flex-col gap-1 text-emerald-900">
+                <label className="flex flex-col gap-1 text-primary-900">
                   <span className="font-semibold">מסלול</span>
                   <input
                     defaultValue={selected.track ?? 'main'}
@@ -509,7 +509,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
                       const v = e.target.value.trim() || 'main';
                       if (v !== (selected.track ?? 'main')) void patchStationMeta(selected.id, { track: v });
                     }}
-                    className="rounded-xl border border-emerald-200 bg-gc px-2 py-1.5"
+                    className="rounded-xl border border-primary-200 bg-gc px-2 py-1.5"
                     dir="ltr"
                   />
                 </label>
@@ -529,8 +529,8 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
                     className={cn(
                       'flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-xl px-2 py-2 text-xs font-bold transition-all sm:text-sm',
                       popupTab === key
-                        ? 'border border-amber-300/50 bg-amber-500/20 text-amber-900 shadow-xs backdrop-blur-md'
-                        : 'border border-transparent text-slate-600 hover:bg-background-card/40',
+                        ? 'border border-accent-300/50 bg-accent-500/20 text-accent-900 shadow-xs backdrop-blur-md'
+                        : 'border border-transparent text-ink-soft hover:bg-background-card/40',
                     )}
                   >
                     <Icon className="h-4 w-4" aria-hidden />
@@ -544,7 +544,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
               {popupTab === 'steps' ? (
                 <ul className="space-y-2">
                   {stepsByStation(selected.id).length === 0 ? (
-                    <li className="rounded-2xl border border-dashed border-gc/55 bg-background-card/20 py-10 text-center text-sm text-slate-500 backdrop-blur-md">
+                    <li className="rounded-2xl border border-dashed border-gc/55 bg-background-card/20 py-10 text-center text-sm text-ink-faint backdrop-blur-md">
                       אין צעדים בתחנה זו
                     </li>
                   ) : (
@@ -554,10 +554,10 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
                         className="flex items-center justify-between gap-3 rounded-xl border border-gc/45 bg-background-card/25 px-3 py-2.5 backdrop-blur-md"
                       >
                         <span className="flex min-w-0 items-center gap-2">
-                          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-emerald-300/35 bg-emerald-500/10 text-xs font-black text-emerald-800">
+                          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-primary-300/35 bg-primary-500/10 text-xs font-black text-primary-800">
                             {s.step_number}
                           </span>
-                          <span className="truncate text-sm font-semibold text-slate-800">{s.title}</span>
+                          <span className="truncate text-sm font-semibold text-ink">{s.title}</span>
                         </span>
                         <Link href={`${opsBase}/steps/${s.id}`} className={opsGlassBtnClass}>
                           <Edit3 className="h-3.5 w-3.5" />
@@ -623,7 +623,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
             type="button"
             aria-label="סגור"
             onClick={() => !busy && setShowAddPopup(false)}
-            className="absolute inset-0 bg-slate-900/35 backdrop-blur-[4px]"
+            className="absolute inset-0 bg-ink-900/35 backdrop-blur-[4px]"
           />
           <div
             className="relative w-full max-w-md overflow-hidden rounded-t-3xl p-5 shadow-[0_24px_60px_-12px_rgba(15,23,42,0.35)] ring-1 ring-gc/50 sm:rounded-3xl"
@@ -632,15 +632,15 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
             <button
               type="button"
               onClick={() => !busy && setShowAddPopup(false)}
-              className="absolute inset-e-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gc/55 bg-background-card/30 text-slate-600 backdrop-blur-md hover:bg-background-card/50"
+              className="absolute inset-e-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gc/55 bg-background-card/30 text-ink-soft backdrop-blur-md hover:bg-background-card/50"
               aria-label="סגור"
             >
               <X className="h-4 w-4" />
             </button>
-            <h3 className="mb-4 ps-8 font-display text-lg font-black text-slate-900">תחנה חדשה</h3>
+            <h3 className="mb-4 ps-8 font-display text-lg font-black text-ink">תחנה חדשה</h3>
             <form onSubmit={addStation} className="space-y-3">
               <label className="block">
-                <span className="mb-1 block text-xs font-bold text-slate-700">שם תחנה</span>
+                <span className="mb-1 block text-xs font-bold text-ink-soft">שם תחנה</span>
                 <input
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
@@ -650,7 +650,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
                 />
               </label>
               <label className="block">
-                <span className="mb-1 block text-xs font-bold text-slate-700">סדר</span>
+                <span className="mb-1 block text-xs font-bold text-ink-soft">סדר</span>
                 <input
                   type="number"
                   value={newSort}
@@ -681,7 +681,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
             type="button"
             aria-label="סגור"
             onClick={() => !aiBusy && setShowAiPopup(false)}
-            className="absolute inset-0 bg-indigo-950/35 backdrop-blur-[5px]"
+            className="absolute inset-0 bg-iris-950/35 backdrop-blur-[5px]"
           />
           <div
             className="relative w-full max-w-lg overflow-hidden rounded-t-3xl p-5 shadow-[0_24px_60px_-12px_rgba(79,70,229,0.4)] ring-1 ring-gc/50 sm:rounded-3xl"
@@ -690,23 +690,23 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
             <button
               type="button"
               onClick={() => !aiBusy && setShowAiPopup(false)}
-              className="absolute inset-e-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gc/55 bg-background-card/30 text-slate-600 backdrop-blur-md hover:bg-background-card/50"
+              className="absolute inset-e-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gc/55 bg-background-card/30 text-ink-soft backdrop-blur-md hover:bg-background-card/50"
               aria-label="סגור"
             >
               <X className="h-4 w-4" />
             </button>
 
             <div className="mb-1 flex items-center gap-2 ps-8">
-              <Sparkles className="h-5 w-5 text-indigo-500" />
-              <h3 className="font-display text-lg font-black text-slate-900">מצב סוכן — צור מסע ב-AI</h3>
+              <Sparkles className="h-5 w-5 text-iris-500" />
+              <h3 className="font-display text-lg font-black text-ink">מצב סוכן — צור מסע ב-AI</h3>
             </div>
-            <p className="mb-4 ps-8 text-xs text-slate-600">
+            <p className="mb-4 ps-8 text-xs text-ink-soft">
               תארו את המסע הרצוי ואלמוג יבנה תחנות וצעדים כטיוטה (לא מפורסם). אחר כך אפשר ללטש כל צעד עם המילוי החכם.
             </p>
 
             {aiResult ? (
               <div className="space-y-3">
-                <div className="rounded-2xl border border-emerald-300/50 bg-emerald-500/10 px-4 py-3 text-sm font-semibold text-emerald-900">
+                <div className="rounded-2xl border border-primary-300/50 bg-primary-500/10 px-4 py-3 text-sm font-semibold text-primary-900">
                   ✦ נוצרו {aiResult.stations} תחנות ו-{aiResult.steps} צעדים כטיוטה. הם מופיעים ברשימה — לחצו על צעד כדי ללטש עם AI-fill.
                 </div>
                 <button
@@ -724,7 +724,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
             ) : (
               <form onSubmit={generateJourneyWithAi} className="space-y-3">
                 <label className="block">
-                  <span className="mb-1 block text-xs font-bold text-slate-700">תיאור המסע</span>
+                  <span className="mb-1 block text-xs font-bold text-ink-soft">תיאור המסע</span>
                   <textarea
                     value={aiPrompt}
                     onChange={(e) => setAiPrompt(e.target.value)}
@@ -735,7 +735,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
                 </label>
                 <div className="flex gap-3">
                   <label className="flex-1">
-                    <span className="mb-1 block text-xs font-bold text-slate-700">מס׳ תחנות (אופציונלי)</span>
+                    <span className="mb-1 block text-xs font-bold text-ink-soft">מס׳ תחנות (אופציונלי)</span>
                     <input
                       type="number"
                       value={aiStations}
@@ -747,7 +747,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
                     />
                   </label>
                   <label className="flex-1">
-                    <span className="mb-1 block text-xs font-bold text-slate-700">צעדים לתחנה (אופציונלי)</span>
+                    <span className="mb-1 block text-xs font-bold text-ink-soft">צעדים לתחנה (אופציונלי)</span>
                     <input
                       type="number"
                       value={aiStepsPer}
@@ -760,7 +760,7 @@ export function AdminJourneyHub({ initialStations, initialSteps }: AdminJourneyH
                   </label>
                 </div>
                 {aiError ? (
-                  <p className="rounded-xl border border-red-300/50 bg-red-500/10 px-3 py-2 text-xs font-semibold text-red-800">
+                  <p className="rounded-xl border border-coral-300/50 bg-coral-500/10 px-3 py-2 text-xs font-semibold text-coral-800">
                     {aiError}
                   </p>
                 ) : null}

@@ -34,7 +34,7 @@ export function OpenMediaManagerButton({
       }
       className={
         className ||
-        'inline-flex items-center gap-2 rounded-xl border border-emerald-300/60 bg-emerald-800/10 px-4 py-2 text-sm font-bold text-emerald-900 backdrop-blur-sm transition hover:bg-emerald-800/20'
+        'inline-flex items-center gap-2 rounded-xl border border-primary-300/60 bg-primary-800/10 px-4 py-2 text-sm font-bold text-primary-900 backdrop-blur-sm transition hover:bg-primary-800/20'
       }
     >
       <FolderOpen className="h-4 w-4" />

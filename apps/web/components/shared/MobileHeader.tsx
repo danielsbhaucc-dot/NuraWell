@@ -53,11 +53,11 @@ export function MobileHeader({ user, profileFullName }: MobileHeaderProps) {
               <AnimatePresence mode="wait" initial={false}>
                 {isMenuOpen ? (
                   <motion.span key="close" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.15 }}>
-                    <X className="w-5 h-5 text-white" />
+                    <X className="w-5 h-5 text-on-dark" />
                   </motion.span>
                 ) : (
                   <motion.span key="menu" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }} transition={{ duration: 0.15 }}>
-                    <Menu className="w-5 h-5 text-white" />
+                    <Menu className="w-5 h-5 text-on-dark" />
                   </motion.span>
                 )}
               </AnimatePresence>
@@ -102,37 +102,37 @@ export function MobileHeader({ user, profileFullName }: MobileHeaderProps) {
                     href={item.href}
                     prefetch
                     onClick={() => setIsMenuOpen(false)}
-                    className={`flex items-center gap-3.5 px-5 py-4 transition-all hover:bg-gray-50 active:bg-gray-100 no-tap-highlight ${idx < menuItems.length - 1 ? 'border-b border-gray-100' : ''}`}
+                    className={`flex items-center gap-3.5 px-5 py-4 transition-all hover:bg-ink-50 active:bg-ink-100 no-tap-highlight ${idx < menuItems.length - 1 ? 'border-b border-ink-100' : ''}`}
                   >
                     <motion.div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
                       style={{ background: `${item.color}12`, border: `1px solid ${item.color}25` }}>
                       <item.icon style={{ color: item.color }} />
                     </motion.div>
-                    <span className="font-bold text-gray-800 flex-1">{item.label}</span>
-                    <item.icon className="w-3.5 h-3.5 text-gray-400" />
+                    <span className="font-bold text-ink-800 flex-1">{item.label}</span>
+                    <item.icon className="w-3.5 h-3.5 text-ink-400" />
                   </Link>
                 ))}
                 <button
                   type="button"
                   disabled={isSigningOut}
                   onClick={() => void handleSignOut()}
-                  className="flex w-full items-center gap-3.5 border-t border-gray-100 px-5 py-4 text-start transition hover:bg-red-50 active:bg-red-100 disabled:opacity-60"
+                  className="flex w-full items-center gap-3.5 border-t border-ink-100 px-5 py-4 text-start transition hover:bg-coral-50 active:bg-coral-100 disabled:opacity-60"
                 >
                   <motion.div
                     className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl"
                     style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)' }}
                   >
                     {isSigningOut ? (
-                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-red-400/40 border-t-red-600" />
+                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-coral-400/40 border-t-coral-600" />
                     ) : (
-                      <LogOut className=" text-red-600" />
+                      <LogOut className=" text-coral-600" />
                     )}
                   </motion.div>
-                  <span className="flex-1 font-bold text-red-700">התנתקות</span>
+                  <span className="flex-1 font-bold text-coral-700">התנתקות</span>
                 </button>
-                <motion.div className="flex items-center gap-2.5 border-t border-gray-100 px-5 py-3">
-                  <UserCircle className="h-4 w-4 text-gray-400" />
-                  <p className="text-xs font-medium text-gray-500">{firstName ? `שלום ${firstName}` : 'שלום'} 👋</p>
+                <motion.div className="flex items-center gap-2.5 border-t border-ink-100 px-5 py-3">
+                  <UserCircle className="h-4 w-4 text-ink-400" />
+                  <p className="text-xs font-medium text-ink-500">{firstName ? `שלום ${firstName}` : 'שלום'} 👋</p>
                 </motion.div>
               </motion.div>
             </motion.div>
@@ -146,7 +146,7 @@ export function MobileHeader({ user, profileFullName }: MobileHeaderProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
+            className="fixed inset-0 z-40 bg-forest-950/40 backdrop-blur-sm"
             onClick={() => setIsMenuOpen(false)}
           />
         )}

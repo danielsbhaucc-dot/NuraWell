@@ -400,8 +400,8 @@ function HeroSection({
                 WebkitBackdropFilter: 'blur(8px)',
               }}
             >
-              <Sparkles className="h-3.5 w-3.5 shrink-0 text-amber-300" />
-              <span className="text-[13px] font-bold text-white">המסע שלי</span>
+              <Sparkles className="h-3.5 w-3.5 shrink-0 text-accent-300" />
+              <span className="text-[13px] font-bold text-on-dark">המסע שלי</span>
             </motion.div>
 
             {daysInJourney > 0 ? (
@@ -418,8 +418,8 @@ function HeroSection({
                   WebkitBackdropFilter: 'blur(8px)',
                 }}
               >
-                <Calendar className="h-3.5 w-3.5 shrink-0 text-amber-200" />
-                <span className="text-[12px] font-bold text-amber-50">
+                <Calendar className="h-3.5 w-3.5 shrink-0 text-accent-200" />
+                <span className="text-[12px] font-bold text-accent-50">
                   יום {daysInJourney} במסע
                 </span>
               </motion.div>
@@ -494,7 +494,7 @@ function HeroSection({
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.55, delay: 0.36 }}
-              className="flex items-center justify-center gap-2 text-[22px] font-black leading-[1.15] text-white sm:text-[30px]"
+              className="flex items-center justify-center gap-2 text-[22px] font-black leading-[1.15] text-on-dark sm:text-[30px]"
               style={{
                 fontFamily: "'Rubik','Heebo',sans-serif",
                 textShadow: '0 2px 18px rgba(2,44,34,0.55)',
@@ -538,7 +538,7 @@ function HeroSection({
                   ככה זה נראה אצלי
                 </p>
                 <p
-                  className="mt-0.5 text-[18px] font-black text-white"
+                  className="mt-0.5 text-[18px] font-black text-on-dark"
                   style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
                 >
                   <CountUp value={overall.done} reduced={reduced} /> מתוך{' '}
@@ -576,10 +576,10 @@ function getTimeOfDay(): TimeOfDay {
 }
 
 function TimeOfDayIcon({ tod }: { tod: TimeOfDay }) {
-  if (tod.bucket === 'morning') return <Sunrise className="h-3.5 w-3.5 text-amber-200" />;
-  if (tod.bucket === 'noon') return <Sun className="h-3.5 w-3.5 text-amber-200" />;
-  if (tod.bucket === 'evening') return <Sunset className="h-3.5 w-3.5 text-orange-200" />;
-  return <Moon className="h-3.5 w-3.5 text-indigo-200" />;
+  if (tod.bucket === 'morning') return <Sunrise className="h-3.5 w-3.5 text-accent-200" />;
+  if (tod.bucket === 'noon') return <Sun className="h-3.5 w-3.5 text-accent-200" />;
+  if (tod.bucket === 'evening') return <Sunset className="h-3.5 w-3.5 text-energy-200" />;
+  return <Moon className="h-3.5 w-3.5 text-iris-200" />;
 }
 
 /**
@@ -696,7 +696,7 @@ function AnimatedSparkle({ char, reduced }: { char: string; reduced: boolean }) 
       className="inline-block"
       style={{
         textShadow:
-          '0 0 14px rgba(252,211,77,0.7), 0 0 4px rgba(248,251,246,0.85)',
+          '0 0 14px rgba(252,211,77,0.7), 0 0 4px rgba(207,233,220,0.85)',
       }}
       animate={
         reduced
@@ -780,7 +780,7 @@ function ProgressRing({ pct, reduced }: { pct: number; reduced: boolean }) {
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
         <span
-          className="text-[15px] font-black text-white"
+          className="text-[15px] font-black text-on-dark"
           style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
         >
           <CountUp value={pct} reduced={reduced} duration={1.1} />%
@@ -969,9 +969,9 @@ function ShootingStar() {
           width: 140,
           height: 2,
           background:
-            'linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(248,251,246,0.95) 60%, rgba(167,243,208,0.95) 100%)',
+            'linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(207,233,220,0.95) 60%, rgba(167,243,208,0.95) 100%)',
           borderRadius: 9999,
-          filter: 'drop-shadow(0 0 6px rgba(248,251,246,0.95)) drop-shadow(0 0 14px rgba(167,243,208,0.7))',
+          filter: 'drop-shadow(0 0 6px rgba(207,233,220,0.95)) drop-shadow(0 0 14px rgba(167,243,208,0.7))',
           transform: 'rotate(-18deg)',
         }}
         initial={{ x: 0, opacity: 0 }}
@@ -995,9 +995,9 @@ function ShootingStar() {
           width: 110,
           height: 2,
           background:
-            'linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(248,251,246,0.85) 60%, rgba(251,191,36,0.9) 100%)',
+            'linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(207,233,220,0.85) 60%, rgba(251,191,36,0.9) 100%)',
           borderRadius: 9999,
-          filter: 'drop-shadow(0 0 6px rgba(248,251,246,0.9)) drop-shadow(0 0 14px rgba(251,191,36,0.6))',
+          filter: 'drop-shadow(0 0 6px rgba(207,233,220,0.9)) drop-shadow(0 0 14px rgba(251,191,36,0.6))',
           transform: 'rotate(-12deg)',
         }}
         initial={{ x: 0, opacity: 0 }}
@@ -1044,7 +1044,7 @@ function FloatingSparkles() {
             top: s.top,
             width: s.size,
             height: s.size,
-            background: 'rgba(248, 251, 246, 0.9)',
+            background: 'rgba(207,233,220,0.9)',
             boxShadow:
               '0 0 8px rgba(167,243,208,0.85), 0 0 14px rgba(110,231,183,0.6)',
           }}
@@ -1168,7 +1168,7 @@ function EmptyState({ firstName }: { firstName: string }) {
       <h3 className="mb-2 text-xl font-black" style={{ color: tokens.ink }}>
         {firstName}, אני מחכה לך כאן
       </h3>
-      <p className="text-sm text-gray-500">
+      <p className="text-sm text-ink-500">
         כשיצטרפו תחנות — אני אדאג שיופיעו פה בדיוק בשבילך
       </p>
     </div>
@@ -1239,7 +1239,7 @@ function AlmogTouchBanner({
             ממני, אלמוג
           </p>
           <p
-            className="mt-1.5 text-[14.5px] font-bold leading-relaxed text-white"
+            className="mt-1.5 text-[14.5px] font-bold leading-relaxed text-on-dark"
             style={{
               fontFamily: "'Rubik','Heebo',sans-serif",
               textShadow: '0 1px 6px rgba(2,44,34,0.45)',
@@ -1333,7 +1333,7 @@ function StationDetailView({
             className="pointer-events-none absolute inset-x-4 top-px h-px"
             style={{
               background:
-                'linear-gradient(90deg, transparent, rgba(248,251,246,0.85), transparent)',
+                'linear-gradient(90deg, transparent, rgba(207,233,220,0.85), transparent)',
             }}
           />
 
@@ -1364,7 +1364,7 @@ function StationDetailView({
 
             {allDone ? (
               <div
-                className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-black text-white"
+                className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-black text-on-dark"
                 style={{
                   background:
                     'linear-gradient(135deg, rgba(245,158,11,0.95), rgba(251,191,36,0.95))',
@@ -1390,7 +1390,7 @@ function StationDetailView({
 
         {totalCount === 0 ? (
           <p
-            className="glass-inset rounded-2xl py-6 text-center text-sm text-gray-500"
+            className="glass-inset rounded-2xl py-6 text-center text-sm text-ink-500"
             style={{ borderStyle: 'dashed', borderColor: 'rgba(110,231,183,0.55)' }}
           >
             בתחנה הזו עדיין אין צעדים — זה יתעדכן מיד כשהתוכן יתפרסם.
@@ -1456,7 +1456,7 @@ function StationHeader({
 
         {allDone ? (
           <div
-            className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-black text-white shadow-sm"
+            className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-black text-on-dark shadow-sm"
             style={{
               background:
                 'linear-gradient(135deg, rgba(245,158,11,0.95), rgba(251,191,36,0.95))',
@@ -1511,7 +1511,7 @@ function StationHeader({
           >
             <div className="mb-2 flex items-center gap-2">
               <div
-                className="flex h-7 items-center gap-1.5 rounded-full px-2.5 text-[11px] font-bold text-white"
+                className="flex h-7 items-center gap-1.5 rounded-full px-2.5 text-[11px] font-bold text-on-dark"
                 style={{
                   background: 'rgba(255,255,255,0.18)',
                   border: '1px solid rgba(255,255,255,0.28)',
@@ -1519,18 +1519,18 @@ function StationHeader({
                   WebkitBackdropFilter: 'blur(8px)',
                 }}
               >
-                <Sparkles className="h-3 w-3 text-amber-300" />
+                <Sparkles className="h-3 w-3 text-accent-300" />
                 תחנה במסע
               </div>
             </div>
             <h1
-              className="text-start text-[28px] font-black leading-tight text-white drop-shadow-lg sm:text-[34px]"
+              className="text-start text-[28px] font-black leading-tight text-on-dark drop-shadow-lg sm:text-[34px]"
               style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
             >
               {group.title}
             </h1>
             {group.description ? (
-              <p className="mt-2 line-clamp-3 text-start text-sm leading-relaxed text-white/90 sm:text-base">
+              <p className="mt-2 line-clamp-3 text-start text-sm leading-relaxed text-on-dark/90 sm:text-base">
                 {group.description}
               </p>
             ) : null}
@@ -1615,7 +1615,7 @@ function StepsTimeline({
                     }}
                   >
                     {isCompleted ? (
-                      <CheckCircle2 className="h-3 w-3 text-white" />
+                      <CheckCircle2 className="h-3 w-3 text-on-dark" />
                     ) : isActive ? (
                       <motion.div
                         className="h-2 w-2 rounded-full bg-primary-500"
@@ -1623,7 +1623,7 @@ function StepsTimeline({
                         transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' as const }}
                       />
                     ) : (
-                      <Lock className="h-2.5 w-2.5 text-gray-400" />
+                      <Lock className="h-2.5 w-2.5 text-ink-400" />
                     )}
                   </div>
                 </div>
@@ -1635,7 +1635,7 @@ function StepsTimeline({
                       ? {
                           border: '1.5px solid rgba(16,185,129,0.45)',
                           boxShadow:
-                            '0 10px 28px rgba(16,185,129,0.22), inset 0 1px 0 rgba(248,251,246,0.65), inset 0 -1px 0 rgba(255,255,255,0.10), 0 0 0 4px rgba(16,185,129,0.08)',
+                            '0 10px 28px rgba(16,185,129,0.22), inset 0 1px 0 rgba(207,233,220,0.65), inset 0 -1px 0 rgba(255,255,255,0.10), 0 0 0 4px rgba(16,185,129,0.08)',
                         }
                       : undefined
                   }
@@ -1656,7 +1656,7 @@ function StepsTimeline({
                         שלב {step.step_number}
                       </span>
                       {step.duration_minutes ? (
-                        <span className="text-xs text-gray-400">
+                        <span className="text-xs text-ink-400">
                           {step.duration_minutes} דקות
                         </span>
                       ) : null}
@@ -1678,7 +1678,7 @@ function StepsTimeline({
                       <div>
                         <p
                           className={[
-                            'text-sm leading-relaxed text-gray-500',
+                            'text-sm leading-relaxed text-ink-500',
                             descExpanded ? '' : 'line-clamp-2',
                           ].join(' ')}
                         >
@@ -1707,13 +1707,13 @@ function StepsTimeline({
                     {isActive ? (
                       <div className="mt-3 flex items-center gap-2">
                         <div
-                          className="inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-bold text-white"
+                          className="inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-bold text-on-dark"
                           style={{
                             background: `linear-gradient(135deg, ${tokens.primary[700]}, ${tokens.primary[500]})`,
                             boxShadow: '0 4px 12px rgba(16,185,129,0.3)',
                           }}
                         >
-                          <Play className="h-3.5 w-3.5" fill="white" />
+                          <Play className="h-3.5 w-3.5" fill="#eef4ea" />
                           <span>בוא נתחיל!</span>
                         </div>
                       </div>

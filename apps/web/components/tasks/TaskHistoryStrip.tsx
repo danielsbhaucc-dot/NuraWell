@@ -33,32 +33,32 @@ const STATUS_STYLE: Record<Status, { bg: string; ring: string; text: string }> =
   done: {
     bg: 'linear-gradient(155deg, rgba(110,231,183,0.95) 0%, rgba(16,185,129,0.92) 100%)',
     ring: 'rgba(16,185,129,0.5)',
-    text: 'text-emerald-50',
+    text: 'text-primary-50',
   },
   partial: {
     bg: 'linear-gradient(155deg, rgba(253,224,71,0.95) 0%, rgba(245,158,11,0.92) 100%)',
     ring: 'rgba(245,158,11,0.5)',
-    text: 'text-amber-950',
+    text: 'text-accent-950',
   },
   attempted: {
     bg: 'linear-gradient(155deg, rgba(196,181,253,0.95) 0%, rgba(139,92,246,0.9) 100%)',
     ring: 'rgba(139,92,246,0.5)',
-    text: 'text-violet-50',
+    text: 'text-iris-50',
   },
   open: {
     bg: 'linear-gradient(155deg, rgba(186,230,253,0.9) 0%, rgba(56,189,248,0.78) 100%)',
     ring: 'rgba(56,189,248,0.55)',
-    text: 'text-sky-950',
+    text: 'text-secondary-950',
   },
   missed: {
     bg: 'linear-gradient(155deg, rgba(254,205,211,0.8) 0%, rgba(251,113,133,0.55) 100%)',
     ring: 'rgba(251,113,133,0.4)',
-    text: 'text-rose-900/85',
+    text: 'text-coral-900/85',
   },
   off: {
     bg: 'linear-gradient(155deg, rgba(241,245,249,0.55) 0%, rgba(203,213,225,0.4) 100%)',
     ring: 'rgba(148,163,184,0.28)',
-    text: 'text-slate-400',
+    text: 'text-ink-400',
   },
 };
 
@@ -96,7 +96,7 @@ export function TaskHistoryStrip({ days, onSelect, todayKey, activeKey }: Props)
           >
             <span
               className={`text-[10px] font-black ${
-                isToday ? 'text-sky-700' : 'text-emerald-900/50'
+                isToday ? 'text-secondary-700' : 'text-primary-900/50'
               }`}
             >
               {wd}

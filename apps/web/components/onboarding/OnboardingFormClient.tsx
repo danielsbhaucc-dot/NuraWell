@@ -1,4 +1,5 @@
 'use client';
+import { AuthBackdrop } from './AuthBackdrop';
 
 import { PageBackButton } from '@/components/shared/PageBackButton';
 import { useMemo, useState, useTransition } from 'react';
@@ -289,11 +290,12 @@ export function OnboardingFormClient() {
   return (
     <>
       <ToastContainer toasts={toast.toasts} onDismiss={toast.dismiss} />
-      <main id="main-content" className="onboarding-shell-dark px-4 py-6 pb-28">
+      <main id="main-content" className="onboarding-shell-dark relative px-4 pb-28 pt-[max(1.5rem,env(safe-area-inset-top))]">
+        <AuthBackdrop />
         <div className="onboarding-page-inner max-w-lg mx-auto w-full">
           <div className="flex items-center justify-between mb-4">
             <PageBackButton href="/register" />
-            <span className="text-xs font-bold text-emerald-300/90">
+            <span className="text-xs font-bold text-primary-300/90">
               שלב {step} מתוך {TOTAL_STEPS}
             </span>
           </div>
@@ -306,7 +308,7 @@ export function OnboardingFormClient() {
             aria-valuemax={100}
           >
             <motion.div
-              className="h-full bg-linear-to-l from-emerald-400 to-teal-300 rounded-full"
+              className="h-full bg-linear-to-l from-primary-400 to-secondary-300 rounded-full"
               animate={{ width: `${progress}%` }}
               transition={{ duration: 0.35 }}
             />
@@ -327,7 +329,7 @@ export function OnboardingFormClient() {
                     <p>שמח שבאת! לפני הכל — איך קוראים לך? אני דולב, ומכאן אדבר איתך בשם הפרטי 😊</p>
                   </MentorBubble>
                   <label htmlFor="onboarding-full-name" className="block mt-6">
-                    <span className="text-sm font-bold text-emerald-50 mb-2 block">השם שלך</span>
+                    <span className="text-sm font-bold text-primary-50 mb-2 block">השם שלך</span>
                     <input
                       id="onboarding-full-name"
                       name="full_name"
@@ -348,11 +350,11 @@ export function OnboardingFormClient() {
                 <>
                   <MentorBubble mentorId="dolev">
                     <p>
-                      נעים להכיר, <strong className="text-emerald-300 font-bold">{name}</strong>! עכשיו נכיר אותך קצת יותר — בלי לחץ.
+                      נעים להכיר, <strong className="text-primary-300 font-bold">{name}</strong>! עכשיו נכיר אותך קצת יותר — בלי לחץ.
                     </p>
                   </MentorBubble>
 
-                  <p className="text-sm font-bold text-emerald-100/85 mt-5 mb-2">מין (לפנייה נכונה)</p>
+                  <p className="text-sm font-bold text-primary-100/85 mt-5 mb-2">מין (לפנייה נכונה)</p>
                   <div className="grid grid-cols-2 gap-2 mb-4">
                     <GlassChoiceButton
                       selected={gender === 'female'}
@@ -368,7 +370,7 @@ export function OnboardingFormClient() {
                     />
                   </div>
 
-                  <p className="text-sm font-bold text-emerald-100/85 mb-2">
+                  <p className="text-sm font-bold text-primary-100/85 mb-2">
                     {gender ? `${gc.you}, מה המטרה העיקרית?` : 'מה המטרה העיקרית?'}
                   </p>
                   <div className="space-y-2 mb-4">
@@ -393,7 +395,7 @@ export function OnboardingFormClient() {
                   </div>
 
                   <label className="block mt-4">
-                    <span className="text-xs font-bold text-emerald-100/85">תאריך לידה</span>
+                    <span className="text-xs font-bold text-primary-100/85">תאריך לידה</span>
                     <input
                       type="date"
                       value={birthDate}
@@ -407,9 +409,9 @@ export function OnboardingFormClient() {
 
                   <HealthDataConsentBlock checked={healthConsent} onChange={setHealthConsent} gender={gender} onEvidence={setConsentEvidence} />
 
-                  <fieldset className={`mt-4 rounded-2xl border border-emerald-200/20 bg-white/5 p-3 ${healthConsent ? '' : 'opacity-50 pointer-events-none'}`}>
-                    <legend className="px-1 text-sm font-bold text-emerald-100/90">כדי להתאים את התוכנית בבטחה (לא חובה)</legend>
-                    <p className="mb-2 text-xs text-emerald-100/70">מה מהבאים נכון לגבי המצב שלך היום? התשובות נשמרות בהסכמה למידע בריאותי.</p>
+                  <fieldset className={`mt-4 rounded-2xl border border-primary-200/20 bg-on-dark/5 p-3 ${healthConsent ? '' : 'opacity-50 pointer-events-none'}`}>
+                    <legend className="px-1 text-sm font-bold text-primary-100/90">כדי להתאים את התוכנית בבטחה (לא חובה)</legend>
+                    <p className="mb-2 text-xs text-primary-100/70">מה מהבאים נכון לגבי המצב שלך היום? התשובות נשמרות בהסכמה למידע בריאותי.</p>
                     {(
                       [
                         ['ed_history', 'הפרעת אכילה עכשיו או בעבר'],
@@ -419,7 +421,7 @@ export function OnboardingFormClient() {
                       ] as const
                     ).map(([key, label]) => (
                       <div key={key} className="mb-2">
-                        <label className="flex items-start gap-2 text-sm text-emerald-50">
+                        <label className="flex items-start gap-2 text-sm text-primary-50">
                           <input
                             type="checkbox"
                             className="mt-1"
@@ -429,7 +431,7 @@ export function OnboardingFormClient() {
                           <span>{label}</span>
                         </label>
                         {screen[key] ? (
-                          <p role="note" className="mt-1 ms-6 rounded-xl bg-emerald-950/40 p-2 text-xs leading-relaxed text-emerald-100">
+                          <p role="note" className="mt-1 ms-6 rounded-xl bg-primary-950/40 p-2 text-xs leading-relaxed text-primary-100">
                             {SCREENING_GUIDANCE[key]}
                           </p>
                         ) : null}
@@ -440,10 +442,10 @@ export function OnboardingFormClient() {
                   <div className={healthConsent ? '' : 'opacity-50 pointer-events-none'}>
                   {noWeight ? null : (
                   <>
-                  <p className="mt-4 text-xs text-emerald-100/70">משקל — לא חובה. אפשר לדלג; NuraWell מתמקדת בהרגלים.</p>
+                  <p className="mt-4 text-xs text-primary-100/70">משקל — לא חובה. אפשר לדלג; NuraWell מתמקדת בהרגלים.</p>
                   <div className="grid grid-cols-[1fr_auto_1fr] gap-2 items-end mt-2">
                     <label>
-                      <span className="text-xs font-bold text-emerald-100/85">משקל נוכחי (ק״ג) — לא חובה</span>
+                      <span className="text-xs font-bold text-primary-100/85">משקל נוכחי (ק״ג) — לא חובה</span>
                       <input
                         type="number"
                         inputMode="decimal"
@@ -456,14 +458,14 @@ export function OnboardingFormClient() {
                       />
                     </label>
                     <span
-                      className="flex h-[46px] items-center justify-center text-emerald-300/90 pb-0.5"
+                      className="flex h-[46px] items-center justify-center text-primary-300/90 pb-0.5"
                       aria-hidden
                       title="ממשקל נוכחי ליעד"
                     >
                       <ArrowLeft className="w-5 h-5" strokeWidth={2.5} />
                     </span>
                     <label>
-                      <span className="text-xs font-bold text-emerald-100/85">משקל יעד (ק״ג) — לא חובה</span>
+                      <span className="text-xs font-bold text-primary-100/85">משקל יעד (ק״ג) — לא חובה</span>
                       <input
                         type="number"
                         inputMode="decimal"
@@ -477,7 +479,7 @@ export function OnboardingFormClient() {
                     </label>
                   </div>
                   <label className="block mt-3">
-                    <span className="text-xs font-bold text-emerald-100/85">גובה (ס״מ) — מומלץ</span>
+                    <span className="text-xs font-bold text-primary-100/85">גובה (ס״מ) — מומלץ</span>
                     <input
                       type="number"
                       inputMode="numeric"
@@ -506,7 +508,7 @@ export function OnboardingFormClient() {
                     </p>
                   </MentorBubble>
 
-                  <p className="text-sm font-bold text-emerald-100/85 mt-5 mb-2">
+                  <p className="text-sm font-bold text-primary-100/85 mt-5 mb-2">
                     {gender ? `מתי הכי קשה ל${gc.you} לשמור על תזונה?` : 'מתי הכי קשה לשמור על תזונה?'}
                   </p>
                   <div className="space-y-2 mb-5">
@@ -529,7 +531,7 @@ export function OnboardingFormClient() {
                     ))}
                   </div>
 
-                  <p className="text-sm font-bold text-emerald-100/85 mb-2">מה המכשול העיקרי בעבר?</p>
+                  <p className="text-sm font-bold text-primary-100/85 mb-2">מה המכשול העיקרי בעבר?</p>
                   <div className="space-y-2">
                     {(
                       [
@@ -572,10 +574,10 @@ export function OnboardingFormClient() {
                     </p>
                   </MentorBubble>
 
-                  <p className="text-sm font-bold text-emerald-100/90 mt-4 mb-1">
+                  <p className="text-sm font-bold text-primary-100/90 mt-4 mb-1">
                     כמה ארוחות עיקריות וגדולות ביום?
                   </p>
-                  <p className="text-xs text-emerald-200/75 mb-2 leading-relaxed">
+                  <p className="text-xs text-primary-200/75 mb-2 leading-relaxed">
                     ארוחות מלאות — לא נשנושים קטנים. המשימות במסע יסתנכרנו לפי הזמנים האלה.
                   </p>
                   <div className="grid grid-cols-2 gap-2 mb-4">
@@ -609,10 +611,10 @@ export function OnboardingFormClient() {
                         const slot = t ? classifyMealSlot(t) : null;
                         return (
                           <label key={i}>
-                            <span className="text-xs font-bold text-emerald-100/85">
+                            <span className="text-xs font-bold text-primary-100/85">
                               שעת ארוחה עיקרית {i + 1}
                               {slot ? (
-                                <span className="text-emerald-300/80 font-normal mr-1">
+                                <span className="text-primary-300/80 font-normal mr-1">
                                   · זוהה: {mealSlotLabel(slot)}
                                 </span>
                               ) : null}
@@ -633,10 +635,10 @@ export function OnboardingFormClient() {
                     </motion.div>
                   ) : null}
 
-                  <p className="text-sm font-bold text-emerald-100/90 mt-2 mb-2">שעות יום (תמיד)</p>
+                  <p className="text-sm font-bold text-primary-100/90 mt-2 mb-2">שעות יום (תמיד)</p>
                   <div className="grid grid-cols-2 gap-4">
                     <label>
-                      <span className="text-xs font-bold text-emerald-100/85">שעת השכמה</span>
+                      <span className="text-xs font-bold text-primary-100/85">שעת השכמה</span>
                       <input
                         type="time"
                         value={wakeUp}
@@ -645,7 +647,7 @@ export function OnboardingFormClient() {
                       />
                     </label>
                     <label>
-                      <span className="text-xs font-bold text-emerald-100/85">שעת שינה</span>
+                      <span className="text-xs font-bold text-primary-100/85">שעת שינה</span>
                       <input
                         type="time"
                         value={sleep}
@@ -676,8 +678,8 @@ export function OnboardingFormClient() {
                   </MentorBubble>
                   <div className="space-y-4 mt-6">
                     <label>
-                      <span className="text-sm font-bold text-emerald-50 flex items-center gap-2 mb-2">
-                        <Mail className="w-4 h-4 text-emerald-400" />
+                      <span className="text-sm font-bold text-primary-50 flex items-center gap-2 mb-2">
+                        <Mail className="w-4 h-4 text-primary-400" />
                         אימייל
                       </span>
                       <input
@@ -691,8 +693,8 @@ export function OnboardingFormClient() {
                       />
                     </label>
                     <label>
-                      <span className="text-sm font-bold text-emerald-50 flex items-center gap-2 mb-2">
-                        <Lock className="w-4 h-4 text-emerald-400" />
+                      <span className="text-sm font-bold text-primary-50 flex items-center gap-2 mb-2">
+                        <Lock className="w-4 h-4 text-primary-400" />
                         סיסמה (לפחות 10 תווים, אותיות וספרה)
                       </span>
                       <input
@@ -722,14 +724,14 @@ export function OnboardingFormClient() {
           </AnimatePresence>
         </div>
 
-        <div className="fixed bottom-0 inset-x-0 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] bg-linear-to-t from-slate-950 via-slate-950/95 to-transparent z-20">
+        <div className="fixed bottom-0 inset-x-0 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] bg-linear-to-t from-ink-950 via-ink-950/95 to-transparent z-20">
           <div className="max-w-lg mx-auto flex gap-2">
             {step > 1 ? (
               <button
                 type="button"
                 onClick={() => setStep((s) => s - 1)}
                 disabled={pending}
-                className="min-h-[52px] px-5 rounded-2xl border border-white/20 text-white font-bold bg-background-card/10"
+                className="min-h-[52px] px-5 rounded-2xl border border-on-dark/20 text-on-dark font-bold bg-background-card/10"
               >
                 אחורה
               </button>
@@ -738,7 +740,7 @@ export function OnboardingFormClient() {
               <button
                 type="button"
                 onClick={goNext}
-                className="flex-1 min-h-[52px] rounded-2xl font-black text-white bg-linear-to-l from-emerald-600 to-teal-500 flex items-center justify-center gap-2"
+                className="flex-1 min-h-[52px] rounded-2xl font-black text-on-dark bg-linear-to-l from-primary-600 to-secondary-500 flex items-center justify-center gap-2"
               >
                 המשך
                 <ArrowRight className="w-5 h-5 rotate-180" />
@@ -748,7 +750,7 @@ export function OnboardingFormClient() {
                 type="button"
                 onClick={submit}
                 disabled={pending}
-                className="flex-1 min-h-[52px] rounded-2xl font-black text-white bg-linear-to-l from-emerald-600 to-teal-500 flex items-center justify-center gap-2 disabled:opacity-60"
+                className="flex-1 min-h-[52px] rounded-2xl font-black text-on-dark bg-linear-to-l from-primary-600 to-secondary-500 flex items-center justify-center gap-2 disabled:opacity-60"
               >
                 {pending ? <Loader2 className="w-5 h-5 animate-spin" /> : 'סיום ושליחת אימות 🎉'}
               </button>

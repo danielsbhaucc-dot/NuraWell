@@ -14,3 +14,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - `npm run lint:design` must pass, and it is part of `npm run test` and CI.
 - Every UI PR fills in the Design parity review in the PR template and attaches side-by-side screenshots next to the landing page and the closest existing screen.
 - A bold new visual idea is a sketch for approval, not code.
+
+## Design system (mandatory)
+- Build UI only from `apps/web/components/ui` primitives (GlassCard, Tile, Pill, Chip, SectionHeader, Sheet/Dialog, Input, Button, EmptyState, Toast). See `apps/web/DESIGN_SYSTEM.md`.
+- The Tailwind palette is reset (`--color-*: initial`). Generic colors (`white`, `slate`, `emerald`, …) do not exist; use NuraWell tokens. White is only `text-on-dark`.
+- `node apps/web/scripts/design-lint.mjs` (runs in vitest) blocks new near-white / raw colors. Lower the baseline with `--update` only after removing debt.
+- The logo is `components/shared/NuraWellLogo` (renders `public/brand/*.svg`; `tone="dark"` on dark backgrounds). Never redraw it.

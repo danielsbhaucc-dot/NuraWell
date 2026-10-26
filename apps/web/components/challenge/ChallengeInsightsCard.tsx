@@ -22,8 +22,8 @@ export function ChallengeInsightsCard() {
   return (
     <section className="mt-6">
       <div className="mb-3 flex items-center gap-2">
-        <Brain className="h-4 w-4 text-violet-300" />
-        <h2 className="text-sm font-bold text-white/60">דפוסים שאלמוג זיהה</h2>
+        <Brain className="h-4 w-4 text-iris-300" />
+        <h2 className="text-sm font-bold text-on-dark/60">דפוסים שאלמוג זיהה</h2>
       </div>
       <ul className="space-y-2">
         {insights.map((item, i) => (
@@ -32,13 +32,13 @@ export function ChallengeInsightsCard() {
             initial={{ opacity: 0, x: 8 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: i * 0.05 }}
-            className="rounded-xl border border-violet-400/20 bg-violet-500/10 px-4 py-3"
+            className="rounded-xl border border-iris-400/20 bg-iris-500/10 px-4 py-3"
           >
             <div className="flex items-start gap-2">
-              <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-violet-300" />
+              <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-iris-300" />
               <div>
-                <p className="text-sm font-semibold text-violet-100">{item.title}</p>
-                <p className="mt-1 text-xs leading-relaxed text-white/50">{item.description}</p>
+                <p className="text-sm font-semibold text-iris-100">{item.title}</p>
+                <p className="mt-1 text-xs leading-relaxed text-on-dark/50">{item.description}</p>
               </div>
             </div>
           </motion.li>

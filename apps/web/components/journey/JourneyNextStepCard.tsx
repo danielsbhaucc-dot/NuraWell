@@ -53,11 +53,11 @@ export function JourneyNextStepCard({ initial = null }: { initial?: AdaptiveNext
       <div
         dir="rtl"
         className="glass-surface relative mb-5 overflow-hidden p-4"
-        style={{ borderRadius: '22px', background: '#F5FAF2' }}
+        style={{ borderRadius: '22px', background: '#cfe9dc' }}
       >
-        <div className="h-3 w-32 rounded-full bg-emerald-200/60 animate-pulse mb-3" />
-        <div className="h-3 w-full rounded-full bg-emerald-100/70 animate-pulse mb-2" />
-        <div className="h-3 w-4/5 rounded-full bg-emerald-100/70 animate-pulse" />
+        <div className="h-3 w-32 rounded-full bg-primary-200/60 animate-pulse mb-3" />
+        <div className="h-3 w-full rounded-full bg-primary-100/70 animate-pulse mb-2" />
+        <div className="h-3 w-4/5 rounded-full bg-primary-100/70 animate-pulse" />
       </div>
     );
   }
@@ -73,7 +73,7 @@ export function JourneyNextStepCard({ initial = null }: { initial?: AdaptiveNext
       className="glass-surface relative mb-5 overflow-hidden p-4"
       style={{
         borderRadius: '22px',
-        background: '#F5FAF2', // theme token: cream
+        background: '#cfe9dc', // theme token: cream
         border: '1px solid rgba(16,185,129,0.28)',
         boxShadow:
           '0 10px 28px rgba(4,120,87,0.14), inset 0 1px 0 rgba(248,251,246,0.55)',
@@ -83,7 +83,7 @@ export function JourneyNextStepCard({ initial = null }: { initial?: AdaptiveNext
         aria-hidden
         className="pointer-events-none absolute inset-x-4 top-px h-px"
         style={{
-          background: 'linear-gradient(90deg, transparent, rgba(248,251,246,0.85), transparent)',
+          background: 'linear-gradient(90deg, transparent, rgba(207,233,220,0.85), transparent)',
         }}
       />
 
@@ -100,7 +100,7 @@ export function JourneyNextStepCard({ initial = null }: { initial?: AdaptiveNext
           >
             {rec.pace === 'return' ? 'בוא נחזור בעדינות' : 'חשבתי עליך — הצעד הבא'}
           </span>
-          <p className="text-[11.5px] text-emerald-800/65 leading-snug">
+          <p className="text-[11.5px] text-primary-800/65 leading-snug">
             זה מה שהייתי ממליץ לך עכשיו
           </p>
         </div>
@@ -125,7 +125,7 @@ export function JourneyNextStepCard({ initial = null }: { initial?: AdaptiveNext
           className="mb-3 flex items-start gap-2 rounded-xl p-2.5"
           style={{ background: 'rgba(16,185,129,0.10)', border: '1px solid rgba(16,185,129,0.2)' }}
         >
-          <Sparkles className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" aria-hidden />
+          <Sparkles className="w-4 h-4 text-primary-600 shrink-0 mt-0.5" aria-hidden />
           <span style={{ fontSize: '12.5px', color: '#065f46', lineHeight: 1.5 }}>
             אני מציע: {rec.commitment_suggestion}
           </span>
@@ -136,7 +136,7 @@ export function JourneyNextStepCard({ initial = null }: { initial?: AdaptiveNext
         {rec.step_id ? (
           <Link
             href={`/journey/${rec.step_id}`}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-white active:scale-[0.98] transition"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-on-dark active:scale-[0.98] transition"
             style={{
               background: 'linear-gradient(145deg, #047857, #10b981)',
               boxShadow: '0 6px 16px rgba(16,185,129,0.25)',

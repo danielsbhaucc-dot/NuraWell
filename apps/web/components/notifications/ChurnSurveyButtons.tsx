@@ -45,8 +45,8 @@ export function ChurnSurveyButtons({ notificationId, survey }: ChurnSurveyButton
   if (status === 'done') {
     const chosenLabel = survey.options.find((o) => o.id === chosen)?.label;
     return (
-      <div className="flex items-center justify-end gap-1.5 pt-2 text-xs font-bold text-emerald-800/80">
-        <Check className="h-3.5 w-3.5 text-emerald-600" strokeWidth={2.6} aria-hidden />
+      <div className="flex items-center justify-end gap-1.5 pt-2 text-xs font-bold text-primary-800/80">
+        <Check className="h-3.5 w-3.5 text-primary-600" strokeWidth={2.6} aria-hidden />
         <span>תודה על המשוב{chosenLabel ? ` — "${chosenLabel}"` : ''} 🙏</span>
       </div>
     );
@@ -54,7 +54,7 @@ export function ChurnSurveyButtons({ notificationId, survey }: ChurnSurveyButton
 
   return (
     <div className="pt-2.5">
-      <p className="mb-1.5 text-[11px] font-semibold text-emerald-900/65">
+      <p className="mb-1.5 text-[11px] font-semibold text-primary-900/65">
         מה הכי הפריע? (תשובה אחת תעזור לי להשתפר)
       </p>
       <div className="flex flex-wrap justify-end gap-1.5">
@@ -71,7 +71,7 @@ export function ChurnSurveyButtons({ notificationId, survey }: ChurnSurveyButton
                 e.stopPropagation();
                 void submit(opt.id);
               }}
-              className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300/60 bg-emerald-50/80 px-3 py-1.5 text-xs font-bold text-emerald-900 shadow-xs transition hover:bg-emerald-100/80 active:scale-[0.98] disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-full border border-primary-300/60 bg-primary-50/80 px-3 py-1.5 text-xs font-bold text-primary-900 shadow-xs transition hover:bg-primary-100/80 active:scale-[0.98] disabled:opacity-50"
             >
               {sending && <Loader2 className="h-3 w-3 animate-spin" aria-hidden />}
               {opt.label}
@@ -80,7 +80,7 @@ export function ChurnSurveyButtons({ notificationId, survey }: ChurnSurveyButton
         })}
       </div>
       {status === 'error' && (
-        <p className="mt-1.5 text-[11px] font-semibold text-rose-600">
+        <p className="mt-1.5 text-[11px] font-semibold text-coral-600">
           לא הצלחנו לשמור — נסה שוב.
         </p>
       )}

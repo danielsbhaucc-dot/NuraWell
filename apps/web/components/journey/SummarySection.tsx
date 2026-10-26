@@ -81,7 +81,7 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
 
   const glassPanelStyle: CSSProperties = {
     background:
-      'linear-gradient(165deg, rgba(236,253,245,0.92) 0%, rgba(209,250,229,0.55) 38%, rgba(240,253,250,0.88) 100%)',
+      'linear-gradient(165deg, rgba(236,253,245,0.92) 0%, rgba(209,250,229,0.55) 38%, rgba(207,233,220,0.88) 100%)',
     backdropFilter: 'blur(28px) saturate(1.35)',
     WebkitBackdropFilter: 'blur(28px) saturate(1.35)',
     boxShadow:
@@ -118,10 +118,10 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
               border: '1px solid rgba(16,185,129,0.22)',
             }}
           >
-            <FileCheck className="w-4 h-4 text-emerald-700 shrink-0" />
-            <span className="text-sm font-black text-emerald-900">סיכום השיעור</span>
+            <FileCheck className="w-4 h-4 text-primary-700 shrink-0" />
+            <span className="text-sm font-black text-primary-900">סיכום השיעור</span>
           </div>
-          <p className="text-sm text-emerald-900/85 font-bold max-w-xs leading-relaxed">
+          <p className="text-sm text-primary-900/85 font-bold max-w-xs leading-relaxed">
             {copy.summaryLetsSummarize}
           </p>
         </div>
@@ -143,7 +143,7 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                 <LessonScoreRing percent={overallScore} />
                 <div className="text-center sm:text-start flex flex-col items-center sm:items-end gap-2 min-w-0">
                   <div className="text-4xl sm:text-5xl leading-none drop-shadow-xs">{getScoreEmoji(overallScore)}</div>
-                  <p className="text-white/95 font-bold text-[15px] sm:text-base leading-snug max-w-[240px] sm:max-w-xs">
+                  <p className="text-on-dark/95 font-bold text-[15px] sm:text-base leading-snug max-w-[240px] sm:max-w-xs">
                     {getScoreMessage(overallScore)}
                   </p>
                 </div>
@@ -157,46 +157,46 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
             title="מדדים מהשיעור"
             subtitle="שאלות, משחק והתחייבות"
             headerGradient="linear-gradient(145deg, #047857, #059669, #10b981)"
-            icon={<FileCheck className="h-5 w-5 text-white" strokeWidth={2.2} aria-hidden />}
+            icon={<FileCheck className="h-5 w-5 text-on-dark" strokeWidth={2.2} aria-hidden />}
           >
             <div className="flex flex-wrap justify-center gap-3 sm:gap-4 text-sm w-full">
               <div
-                className="px-3 py-2.5 rounded-2xl flex-1 min-w-[calc(50%-6px)] sm:min-w-[120px] text-center border border-emerald-900/10 shadow-xs"
+                className="px-3 py-2.5 rounded-2xl flex-1 min-w-[calc(50%-6px)] sm:min-w-[120px] text-center border border-primary-900/10 shadow-xs"
                 style={{
-                  background: 'rgba(248,251,246,0.72)',
-                  boxShadow: '0 4px 14px rgba(6,78,59,0.06), inset 0 1px 0 rgba(248,251,246,0.9)',
+                  background: 'rgba(207,233,220,0.72)',
+                  boxShadow: '0 4px 14px rgba(6,78,59,0.06), inset 0 1px 0 rgba(207,233,220,0.9)',
                 }}
               >
-                <span className="text-gray-600 block text-xs mb-0.5">שאלות</span>
-                <strong className="text-emerald-800 text-base">{quizCorrect}/{quizTotal}</strong>
+                <span className="text-ink-600 block text-xs mb-0.5">שאלות</span>
+                <strong className="text-primary-800 text-base">{quizCorrect}/{quizTotal}</strong>
               </div>
               <div
-                className="px-3 py-2.5 rounded-2xl flex-1 min-w-[calc(50%-6px)] sm:min-w-[120px] text-center border border-emerald-900/10 shadow-xs"
+                className="px-3 py-2.5 rounded-2xl flex-1 min-w-[calc(50%-6px)] sm:min-w-[120px] text-center border border-primary-900/10 shadow-xs"
                 style={{
-                  background: 'rgba(248,251,246,0.68)',
-                  boxShadow: '0 4px 14px rgba(6,78,59,0.06), inset 0 1px 0 rgba(248,251,246,0.88)',
+                  background: 'rgba(207,233,220,0.68)',
+                  boxShadow: '0 4px 14px rgba(6,78,59,0.06), inset 0 1px 0 rgba(207,233,220,0.88)',
                 }}
               >
-                <span className="text-gray-600 block text-xs mb-0.5">משחק</span>
-                <strong className="text-amber-800 text-base">{gameCorrect}/{gameTotal}</strong>
+                <span className="text-ink-600 block text-xs mb-0.5">משחק</span>
+                <strong className="text-accent-800 text-base">{gameCorrect}/{gameTotal}</strong>
               </div>
               {step.commitment && isCommitmentGateResolved(true, progress) && (
                 <div
-                  className="px-3 py-2.5 rounded-2xl flex-1 min-w-full sm:min-w-[120px] text-center border border-emerald-900/10 shadow-xs"
+                  className="px-3 py-2.5 rounded-2xl flex-1 min-w-full sm:min-w-[120px] text-center border border-primary-900/10 shadow-xs"
                   style={{
                     background: progress.commitment_accepted
                       ? 'rgba(236,253,245,0.92)'
-                      : 'rgba(255,247,237,0.92)',
-                    boxShadow: '0 4px 14px rgba(6,78,59,0.06), inset 0 1px 0 rgba(248,251,246,0.85)',
+                      : 'rgba(207,233,220,0.92)',
+                    boxShadow: '0 4px 14px rgba(6,78,59,0.06), inset 0 1px 0 rgba(207,233,220,0.85)',
                   }}
                 >
                   {progress.commitment_accepted ? (
-                    <Heart className="w-4 h-4 text-emerald-600 inline mb-0.5" fill="currentColor" aria-hidden />
+                    <Heart className="w-4 h-4 text-primary-600 inline mb-0.5" fill="currentColor" aria-hidden />
                   ) : (
-                    <Heart className="w-4 h-4 text-amber-700 inline mb-0.5" fill="none" strokeWidth={2} aria-hidden />
+                    <Heart className="w-4 h-4 text-accent-700 inline mb-0.5" fill="none" strokeWidth={2} aria-hidden />
                   )}
                   <span
-                    className={`font-bold block text-sm ${progress.commitment_accepted ? 'text-emerald-800' : 'text-amber-900'}`}
+                    className={`font-bold block text-sm ${progress.commitment_accepted ? 'text-primary-800' : 'text-accent-900'}`}
                   >
                     {progress.commitment_accepted ? 'התחייבות ✓' : 'בלי התחייבות בשלב זה'}
                   </span>
@@ -215,7 +215,7 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
             <div className="px-3 sm:px-6 pb-1 pt-6">
               <div className="relative mx-auto w-full max-w-lg min-w-0">
                 <div
-                  className="pointer-events-none absolute inset-s-[27px] top-16 bottom-14 z-0 border-s-2 border-dashed border-emerald-400/45"
+                  className="pointer-events-none absolute inset-s-[27px] top-16 bottom-14 z-0 border-s-2 border-dashed border-primary-400/45"
                   aria-hidden
                 />
                 <div className="relative z-1 space-y-12 pt-2">
@@ -226,12 +226,12 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
               title="מה למדנו?"
               subtitle={copy.summaryLearnSubtitle}
               headerGradient="linear-gradient(145deg, #065f46, #047857, #059669)"
-              icon={<BookOpen className="h-5 w-5 text-white" strokeWidth={2.2} aria-hidden />}
+              icon={<BookOpen className="h-5 w-5 text-on-dark" strokeWidth={2.2} aria-hidden />}
               isOpen={accordionOpen.learn}
               onToggle={() => toggleAccordion('learn')}
             >
               <p
-                className="m-0 text-[16px] sm:text-[17px] leading-[1.85] text-slate-700 wrap-anywhere wrap-break-word hyphens-auto antialiased"
+                className="m-0 text-[16px] sm:text-[17px] leading-[1.85] text-ink-700 wrap-anywhere wrap-break-word hyphens-auto antialiased"
                 lang="he"
                 style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
               >
@@ -249,7 +249,7 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
               title="משימות לביצוע"
               subtitle="בחר מה מקובל עליך כרגע — אלמוג יזכור ויתאים את ההכוונה"
               headerGradient="linear-gradient(145deg, #b45309, #d97706, #f59e0b)"
-              icon={<ListChecks className="h-5 w-5 text-white" strokeWidth={2.2} aria-hidden />}
+              icon={<ListChecks className="h-5 w-5 text-on-dark" strokeWidth={2.2} aria-hidden />}
               isOpen={accordionOpen.tasks}
               onToggle={() => toggleAccordion('tasks')}
             >
@@ -274,16 +274,16 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
 
                 const ringGradient =
                   status === 'accepted'
-                    ? 'linear-gradient(135deg, rgba(16,185,129,0.55), rgba(110,231,183,0.35), rgba(248,251,246,0.7))'
+                    ? 'linear-gradient(135deg, rgba(16,185,129,0.55), rgba(110,231,183,0.35), rgba(207,233,220,0.7))'
                     : status === 'rejected'
-                      ? 'linear-gradient(135deg, rgba(251,113,133,0.5), rgba(253,186,116,0.35), rgba(248,251,246,0.65))'
-                      : 'linear-gradient(135deg, rgba(248,251,246,0.95), rgba(167,243,208,0.4), rgba(204,251,241,0.5))';
+                      ? 'linear-gradient(135deg, rgba(251,113,133,0.5), rgba(253,186,116,0.35), rgba(207,233,220,0.65))'
+                      : 'linear-gradient(135deg, rgba(207,233,220,0.95), rgba(167,243,208,0.4), rgba(204,251,241,0.5))';
 
                 const innerBg =
                   status === 'accepted'
-                    ? 'linear-gradient(180deg, rgba(248,251,246,0.72) 0%, rgba(209,250,229,0.38) 100%)'
+                    ? 'linear-gradient(180deg, rgba(207,233,220,0.72) 0%, rgba(209,250,229,0.38) 100%)'
                     : status === 'rejected'
-                      ? 'linear-gradient(180deg, rgba(248,251,246,0.68) 0%, rgba(255,241,242,0.42) 100%)'
+                      ? 'linear-gradient(180deg, rgba(207,233,220,0.68) 0%, rgba(255,241,242,0.42) 100%)'
                       : 'linear-gradient(180deg, rgba(248,251,246,0.58) 0%, rgba(236,253,245,0.28) 100%)';
 
                 const accentBar =
@@ -306,7 +306,7 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                         backdropFilter: 'blur(22px) saturate(1.25)',
                         WebkitBackdropFilter: 'blur(22px) saturate(1.25)',
                         boxShadow:
-                          '0 18px 48px rgba(6,78,59,0.11), 0 0 0 1px rgba(255,255,255,0.5) inset, inset 0 1px 1px rgba(248,251,246,0.9)',
+                          '0 18px 48px rgba(6,78,59,0.11), 0 0 0 1px rgba(255,255,255,0.5) inset, inset 0 1px 1px rgba(207,233,220,0.9)',
                       }}
                     >
                       <div
@@ -318,9 +318,9 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                             <div
                               className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-[18px] text-[26px]"
                               style={{
-                                background: 'linear-gradient(145deg, rgba(248,251,246,0.92), rgba(236,253,245,0.5))',
-                                border: '1px solid rgba(248,251,246,0.85)',
-                                boxShadow: '0 6px 20px rgba(6,78,59,0.08), inset 0 1px 0 rgba(248,251,246,0.95)',
+                                background: 'linear-gradient(145deg, rgba(207,233,220,0.92), rgba(236,253,245,0.5))',
+                                border: '1px solid rgba(207,233,220,0.85)',
+                                boxShadow: '0 6px 20px rgba(6,78,59,0.08), inset 0 1px 0 rgba(207,233,220,0.95)',
                               }}
                               aria-hidden
                             >
@@ -330,11 +330,11 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                               <div className="flex items-center justify-end gap-2 flex-wrap">
                                 {isRecurring ? (
                                   <span
-                                    className="text-[10px] font-bold tracking-wide px-2 py-0.5 rounded-full border border-emerald-400/45 text-emerald-900"
+                                    className="text-[10px] font-bold tracking-wide px-2 py-0.5 rounded-full border border-primary-400/45 text-primary-900"
                                     style={{
                                       background:
                                         'linear-gradient(135deg, rgba(209,250,229,0.95), rgba(167,243,208,0.4))',
-                                      boxShadow: 'inset 0 1px 0 rgba(248,251,246,0.7)',
+                                      boxShadow: 'inset 0 1px 0 rgba(207,233,220,0.7)',
                                     }}
                                   >
                                     תזמון · {scheduleText}
@@ -342,13 +342,13 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                                 ) : null}
                               </div>
                               <p
-                                className="font-black text-[16px] sm:text-[17px] leading-snug text-slate-800 wrap-anywhere wrap-break-word tracking-tight"
+                                className="font-black text-[16px] sm:text-[17px] leading-snug text-ink-800 wrap-anywhere wrap-break-word tracking-tight"
                                 style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
                               >
                                 {task.title}
                               </p>
                               {task.description ? (
-                                <p className="text-[13px] sm:text-[14px] text-slate-600 leading-relaxed wrap-anywhere wrap-break-word rounded-xl bg-background-card/45 px-3 py-2.5 border border-white/55">
+                                <p className="text-[13px] sm:text-[14px] text-ink-600 leading-relaxed wrap-anywhere wrap-break-word rounded-xl bg-background-card/45 px-3 py-2.5 border border-on-dark/55">
                                   {task.description}
                                 </p>
                               ) : null}
@@ -370,8 +370,8 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                               }}
                               className={`flex min-h-[48px] items-center justify-center gap-1.5 rounded-2xl px-2 py-2.5 text-[11px] sm:text-xs font-black transition active:scale-[0.98] disabled:opacity-60 ${
                                 status === 'accepted'
-                                  ? 'bg-emerald-600 text-white shadow-lg ring-1 ring-white/25'
-                                  : 'border border-emerald-400/45 bg-background-card/60 text-emerald-900 hover:bg-emerald-50/95'
+                                  ? 'bg-primary-600 text-on-dark shadow-lg ring-1 ring-on-dark/25'
+                                  : 'border border-primary-400/45 bg-background-card/60 text-primary-900 hover:bg-primary-50/95'
                               }`}
                               style={{ backdropFilter: 'blur(8px)' }}
                             >
@@ -384,8 +384,8 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                               onClick={() => void onTaskDecisionChange(task.id, 'rejected')}
                               className={`flex min-h-[48px] items-center justify-center gap-1.5 rounded-2xl px-2 py-2.5 text-[11px] sm:text-xs font-black transition active:scale-[0.98] disabled:opacity-60 ${
                                 status === 'rejected'
-                                  ? 'bg-rose-600 text-white shadow-lg shadow-rose-900/15 ring-1 ring-white/20'
-                                  : 'border border-rose-300/65 bg-background-card/55 text-rose-900 hover:bg-rose-50/95'
+                                  ? 'bg-coral-600 text-on-dark shadow-lg shadow-coral-900/15 ring-1 ring-on-dark/20'
+                                  : 'border border-coral-300/65 bg-background-card/55 text-coral-900 hover:bg-coral-50/95'
                               }`}
                               style={{ backdropFilter: 'blur(8px)' }}
                             >
@@ -394,30 +394,30 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                             </button>
                           </div>
 
-                          <div className="flex justify-end flex-wrap gap-2 border-t border-emerald-900/[0.07] px-3 py-3 bg-background-card/12">
+                          <div className="flex justify-end flex-wrap gap-2 border-t border-primary-900/[0.07] px-3 py-3 bg-background-card/12">
                             {status === 'accepted' && (
                               <span
-                                className="text-[10px] sm:text-[11px] font-bold tracking-wide text-emerald-900 bg-linear-to-r from-emerald-50 to-teal-50/90 border border-emerald-300/50 rounded-full px-3 py-1.5 shadow-xs shadow-emerald-900/5"
-                                style={{ boxShadow: 'inset 0 1px 0 rgba(248,251,246,0.65)' }}
+                                className="text-[10px] sm:text-[11px] font-bold tracking-wide text-primary-900 bg-linear-to-r from-primary-50 to-secondary-50/90 border border-primary-300/50 rounded-full px-3 py-1.5 shadow-xs shadow-primary-900/5"
+                                style={{ boxShadow: 'inset 0 1px 0 rgba(207,233,220,0.65)' }}
                               >
                                 נשמר · מקובל
                               </span>
                             )}
                             {status === 'rejected' && (
                               <span
-                                className="text-[10px] sm:text-[11px] font-bold tracking-wide text-rose-900 bg-linear-to-r from-rose-50 to-orange-50/90 border border-rose-300/45 rounded-full px-3 py-1.5 shadow-xs shadow-rose-900/5"
-                                style={{ boxShadow: 'inset 0 1px 0 rgba(248,251,246,0.65)' }}
+                                className="text-[10px] sm:text-[11px] font-bold tracking-wide text-coral-900 bg-linear-to-r from-coral-50 to-energy-50/90 border border-coral-300/45 rounded-full px-3 py-1.5 shadow-xs shadow-coral-900/5"
+                                style={{ boxShadow: 'inset 0 1px 0 rgba(207,233,220,0.65)' }}
                               >
                                 נשמר · לא מקובל כרגע
                               </span>
                             )}
                             {status === 'pending' && (
-                              <span className="text-[10px] sm:text-[11px] font-semibold text-amber-950/95 bg-amber-100/85 border border-amber-300/55 rounded-full px-3 py-1.5 shadow-xs">
+                              <span className="text-[10px] sm:text-[11px] font-semibold text-accent-950/95 bg-accent-100/85 border border-accent-300/55 rounded-full px-3 py-1.5 shadow-xs">
                                 נא לבחור למעלה
                               </span>
                             )}
                             {status === 'accepted' && !isRecurring && decision?.execution_done && (
-                              <span className="text-[10px] sm:text-[11px] font-bold text-teal-900 bg-teal-50/95 border border-teal-300/50 rounded-full px-3 py-1.5 shadow-xs">
+                              <span className="text-[10px] sm:text-[11px] font-bold text-secondary-900 bg-secondary-50/95 border border-secondary-300/50 rounded-full px-3 py-1.5 shadow-xs">
                                 דווח: בוצע ✓
                               </span>
                             )}
@@ -446,7 +446,7 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
               title="הרגלים חדשים"
               subtitle="אלו ההרגלים של השלב — אלמוג יתבסס עליהם בשיחות"
               headerGradient="linear-gradient(145deg, #047857, #10b981, #34d399)"
-              icon={<Heart className="h-5 w-5 text-white" strokeWidth={2.2} aria-hidden />}
+              icon={<Heart className="h-5 w-5 text-on-dark" strokeWidth={2.2} aria-hidden />}
               isOpen={accordionOpen.habits}
               onToggle={() => toggleAccordion('habits')}
             >
@@ -486,7 +486,7 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                           {habitEmoji}
                         </span>
                         <span
-                          className="text-[10px] font-black leading-tight text-white/95 wrap-anywhere wrap-break-word px-0.5"
+                          className="text-[10px] font-black leading-tight text-on-dark/95 wrap-anywhere wrap-break-word px-0.5"
                           style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
                         >
                           {shortTitle}
@@ -495,26 +495,26 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                       <div
                         className="min-w-0 flex-1 px-4 py-3.5 flex flex-col justify-center text-start"
                         style={{
-                          background: 'linear-gradient(180deg, rgba(248,251,246,0.78) 0%, rgba(240,253,250,0.5) 100%)',
+                          background: 'linear-gradient(180deg, rgba(207,233,220,0.78) 0%, rgba(240,253,250,0.5) 100%)',
                         }}
                       >
                         <p
-                          className="font-black text-[16px] leading-snug text-slate-800 wrap-anywhere wrap-break-word"
+                          className="font-black text-[16px] leading-snug text-ink-800 wrap-anywhere wrap-break-word"
                           style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
                         >
                           {habit.title}
                         </p>
                         {habit.description ? (
-                          <p className="mt-2 border-t border-emerald-900/8 pt-2 text-[13px] sm:text-[14px] leading-relaxed text-slate-600 wrap-anywhere wrap-break-word">
+                          <p className="mt-2 border-t border-primary-900/8 pt-2 text-[13px] sm:text-[14px] leading-relaxed text-ink-600 wrap-anywhere wrap-break-word">
                             {habit.description}
                           </p>
                         ) : null}
                         <div className="mt-3 flex justify-start">
                           <span
-                            className="inline-flex items-center gap-1.5 text-[11px] font-bold tracking-wide px-3 py-1.5 rounded-full border border-emerald-400/35 text-emerald-900"
+                            className="inline-flex items-center gap-1.5 text-[11px] font-bold tracking-wide px-3 py-1.5 rounded-full border border-primary-400/35 text-primary-900"
                             style={{
                               background: 'linear-gradient(135deg, rgba(209,250,229,0.95), rgba(167,243,208,0.35))',
-                              boxShadow: '0 4px 14px rgba(16,185,129,0.12), inset 0 1px 0 rgba(248,251,246,0.75)',
+                              boxShadow: '0 4px 14px rgba(16,185,129,0.12), inset 0 1px 0 rgba(207,233,220,0.75)',
                             }}
                           >
                             תדירות · {getHabitFrequencyLabel(habit.frequency)}
@@ -543,7 +543,7 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
               title="מחקרים תומכים"
               subtitle="מקורות וממצאים לעיון"
               headerGradient="linear-gradient(145deg, #1d4ed8, #3b82f6, #60a5fa)"
-              icon={<Award className="h-5 w-5 text-white" strokeWidth={2.2} aria-hidden />}
+              icon={<Award className="h-5 w-5 text-on-dark" strokeWidth={2.2} aria-hidden />}
               isOpen={accordionOpen.research}
               onToggle={() => toggleAccordion('research')}
             >
@@ -568,7 +568,7 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
               title="חומר להורדה"
               subtitle="סיכום בקובץ PDF"
               headerGradient="linear-gradient(145deg, #0f766e, #14b8a6, #2dd4bf)"
-              icon={<Download className="h-5 w-5 text-white" strokeWidth={2.2} aria-hidden />}
+              icon={<Download className="h-5 w-5 text-on-dark" strokeWidth={2.2} aria-hidden />}
               isOpen={accordionOpen.pdf}
               onToggle={() => toggleAccordion('pdf')}
             >
@@ -576,25 +576,25 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
               href={step.pdf_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-3 p-4 rounded-2xl transition-all hover:scale-[1.01] border border-white/55 shadow-md"
+              className="flex items-center gap-3 p-4 rounded-2xl transition-all hover:scale-[1.01] border border-on-dark/55 shadow-md"
               style={{
-                background: 'rgba(248,251,246,0.62)',
+                background: 'rgba(207,233,220,0.62)',
                 backdropFilter: 'blur(14px)',
                 WebkitBackdropFilter: 'blur(14px)',
-                boxShadow: 'inset 0 1px 0 rgba(248,251,246,0.85), 0 8px 24px rgba(6,78,59,0.08)',
+                boxShadow: 'inset 0 1px 0 rgba(207,233,220,0.85), 0 8px 24px rgba(6,78,59,0.08)',
               }}
             >
               <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
                 style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)' }}>
-                <Download className="w-5 h-5 text-red-500" />
+                <Download className="w-5 h-5 text-coral-500" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[16px] font-bold text-slate-800" style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}>
+                <p className="text-[16px] font-bold text-ink-800" style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}>
                   הורד סיכום PDF
                 </p>
-                <p className="mt-0.5 text-[13px] text-slate-600">{step.pdf_name || 'סיכום השיעור'}</p>
+                <p className="mt-0.5 text-[13px] text-ink-600">{step.pdf_name || 'סיכום השיעור'}</p>
               </div>
-              <ExternalLink className="w-4 h-4 text-gray-400 shrink-0" />
+              <ExternalLink className="w-4 h-4 text-ink-400 shrink-0" />
             </a>
             </AccordionSummarySection>
           </TimelineRailRow>
@@ -614,10 +614,10 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
               background: 'linear-gradient(165deg, rgba(255,255,255,0.48) 0%, rgba(236,253,245,0.4) 100%)',
               backdropFilter: 'blur(22px)',
               WebkitBackdropFilter: 'blur(22px)',
-              boxShadow: '0 14px 40px rgba(6,78,59,0.12), inset 0 1px 0 rgba(248,251,246,0.75)',
+              boxShadow: '0 14px 40px rgba(6,78,59,0.12), inset 0 1px 0 rgba(207,233,220,0.75)',
             }}
           >
-          <p className="text-center text-[11px] font-bold text-emerald-900/80">רוצה לעבור שוב? אני איתך.</p>
+          <p className="text-center text-[11px] font-bold text-primary-900/80">רוצה לעבור שוב? אני איתך.</p>
           <button
             type="button"
             onClick={onReplay}
@@ -637,7 +637,7 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
             <button
               type="button"
               onClick={onComplete}
-              className="w-full py-4 rounded-2xl font-bold text-lg text-white flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-95"
+              className="w-full py-4 rounded-2xl font-bold text-lg text-on-dark flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-95"
               style={{ background: 'linear-gradient(135deg, #047857, #10b981)', boxShadow: '0 6px 20px rgba(16,185,129,0.3)' }}
             >
               <CheckCircle2 className="w-5 h-5" />
@@ -646,7 +646,7 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
           ) : (
             <Link
               href="/journey"
-              className="w-full py-4 rounded-2xl font-bold text-lg text-white flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-95"
+              className="w-full py-4 rounded-2xl font-bold text-lg text-on-dark flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-95"
               style={{ background: 'linear-gradient(135deg, #047857, #10b981)', boxShadow: '0 6px 20px rgba(16,185,129,0.3)' }}
             >
               <Sparkles className="w-5 h-5" />
@@ -701,13 +701,13 @@ function SummaryGlassSection({
         </div>
         <div className="min-w-0 flex-1 text-start">
           <h3
-            className="text-[15px] sm:text-base font-black text-white leading-snug"
+            className="text-[15px] sm:text-base font-black text-on-dark leading-snug"
             style={{ textShadow: '0 1px 2px rgba(0,0,0,0.14)' }}
           >
             {title}
           </h3>
           {subtitle ? (
-            <p className="text-[11px] sm:text-xs font-semibold text-white/90 mt-1 leading-relaxed">
+            <p className="text-[11px] sm:text-xs font-semibold text-on-dark/90 mt-1 leading-relaxed">
               {subtitle}
             </p>
           ) : null}
@@ -720,8 +720,8 @@ function SummaryGlassSection({
             'linear-gradient(165deg, rgba(248,251,246,0.58) 0%, rgba(236,253,245,0.4) 52%, rgba(255,255,255,0.52) 100%)',
           backdropFilter: 'blur(24px) saturate(1.25)',
           WebkitBackdropFilter: 'blur(24px) saturate(1.25)',
-          borderTop: '1px solid rgba(248,251,246,0.62)',
-          boxShadow: 'inset 0 1px 0 rgba(248,251,246,0.75)',
+          borderTop: '1px solid rgba(207,233,220,0.62)',
+          boxShadow: 'inset 0 1px 0 rgba(207,233,220,0.75)',
         }}
       >
         {children}
@@ -761,7 +761,7 @@ function TimelineStepBadge({ step, accent }: { step: number; accent: TimelineAcc
   const { gradient, shadow } = timelineAccentStyle(accent);
   return (
     <span
-      className="relative z-10 flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-full text-[19px] font-black tabular-nums tracking-tight text-white"
+      className="relative z-10 flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-full text-[19px] font-black tabular-nums tracking-tight text-on-dark"
       style={{
         background: gradient,
         boxShadow: `${shadow}, 0 0 0 3px rgba(167,243,208,0.55)`,
@@ -836,7 +836,7 @@ function AccordionSummarySection({
         }}
       >
         <ChevronDown
-          className={`h-5 w-5 shrink-0 text-white/95 transition-transform duration-200 ${isOpen ? '-rotate-180' : ''}`}
+          className={`h-5 w-5 shrink-0 text-on-dark/95 transition-transform duration-200 ${isOpen ? '-rotate-180' : ''}`}
           strokeWidth={2.4}
           aria-hidden
         />
@@ -853,13 +853,13 @@ function AccordionSummarySection({
           </div>
           <div className="min-w-0 flex-1 text-start">
             <h3
-              className="text-[15px] font-black leading-snug text-white sm:text-base"
+              className="text-[15px] font-black leading-snug text-on-dark sm:text-base"
               style={{ textShadow: '0 1px 2px rgba(0,0,0,0.14)' }}
             >
               {title}
             </h3>
             {subtitle ? (
-              <p className="mt-1 text-[11px] font-semibold leading-relaxed text-white/90 sm:text-xs">{subtitle}</p>
+              <p className="mt-1 text-[11px] font-semibold leading-relaxed text-on-dark/90 sm:text-xs">{subtitle}</p>
             ) : null}
           </div>
         </div>
@@ -877,15 +877,15 @@ function AccordionSummarySection({
             className="overflow-hidden"
           >
             <div
-              className="px-4 py-5 sm:px-5 sm:py-6 text-[16px] sm:text-[17px] leading-relaxed text-slate-700 antialiased [&_p]:leading-[1.8] [&_li]:leading-relaxed"
+              className="px-4 py-5 sm:px-5 sm:py-6 text-[16px] sm:text-[17px] leading-relaxed text-ink-700 antialiased [&_p]:leading-[1.8] [&_li]:leading-relaxed"
               style={{
                 fontFamily: "'Rubik','Heebo',sans-serif",
                 background:
-                  'linear-gradient(165deg, rgba(248,251,246,0.78) 0%, rgba(248,250,252,0.92) 40%, rgba(236,253,245,0.45) 100%)',
+                  'linear-gradient(165deg, rgba(207,233,220,0.78) 0%, rgba(207,233,220,0.92) 40%, rgba(236,253,245,0.45) 100%)',
                 backdropFilter: 'blur(24px) saturate(1.25)',
                 WebkitBackdropFilter: 'blur(24px) saturate(1.25)',
-                borderTop: '1px solid rgba(248,251,246,0.62)',
-                boxShadow: 'inset 0 1px 0 rgba(248,251,246,0.85)',
+                borderTop: '1px solid rgba(207,233,220,0.62)',
+                boxShadow: 'inset 0 1px 0 rgba(207,233,220,0.85)',
               }}
             >
               {children}
@@ -914,7 +914,7 @@ function LessonScoreRing({ percent }: { percent: number }) {
         boxShadow: '0 10px 32px rgba(4,120,87,0.35), inset 0 1px 0 rgba(255,255,255,0.25)',
       }}
     >
-      <div className="relative flex h-full w-full items-center justify-center rounded-full bg-emerald-950/50 p-1.5">
+      <div className="relative flex h-full w-full items-center justify-center rounded-full bg-primary-950/50 p-1.5">
         <svg width={90} height={90} viewBox="0 0 100 100" className="-rotate-90 shrink-0" aria-hidden>
           <defs>
             <linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="0%">
@@ -941,9 +941,9 @@ function LessonScoreRing({ percent }: { percent: number }) {
             className="transition-[stroke-dashoffset] duration-700 ease-out"
           />
         </svg>
-        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-white">
+        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-on-dark">
           <span className="text-2xl font-black leading-none tracking-tight drop-shadow-md">{clamped}%</span>
-          <span className="text-[10px] font-bold text-emerald-100 mt-0.5">התקדמות</span>
+          <span className="text-[10px] font-bold text-primary-100 mt-0.5">התקדמות</span>
         </div>
       </div>
     </div>
@@ -953,14 +953,14 @@ function LessonScoreRing({ percent }: { percent: number }) {
 function ResearchItem({ research, isExpanded, onToggle }: { research: Research; isExpanded: boolean; onToggle: () => void }) {
   return (
     <div
-      className="rounded-[18px] overflow-hidden border border-white/70 ring-1 ring-emerald-900/5"
+      className="rounded-[18px] overflow-hidden border border-on-dark/70 ring-1 ring-primary-900/5"
       style={{
         background:
-          'linear-gradient(165deg, rgba(248,251,246,0.62) 0%, rgba(239,246,255,0.48) 40%, rgba(255,255,255,0.45) 100%)',
+          'linear-gradient(165deg, rgba(207,233,220,0.62) 0%, rgba(239,246,255,0.48) 40%, rgba(255,255,255,0.45) 100%)',
         backdropFilter: 'blur(16px)',
         WebkitBackdropFilter: 'blur(16px)',
         boxShadow:
-          '0 8px 28px rgba(6,78,59,0.08), inset 0 1px 0 rgba(248,251,246,0.85)',
+          '0 8px 28px rgba(6,78,59,0.08), inset 0 1px 0 rgba(207,233,220,0.85)',
       }}
     >
       <button
@@ -969,16 +969,16 @@ function ResearchItem({ research, isExpanded, onToggle }: { research: Research; 
         className="w-full flex items-start gap-3 p-3.5 text-start transition-all hover:bg-background-card/25 active:bg-background-card/30"
       >
         <ChevronDown
-          className={`w-4 h-4 text-emerald-700/50 transition-transform shrink-0 mt-1 ${isExpanded ? 'rotate-180' : ''}`}
+          className={`w-4 h-4 text-primary-700/50 transition-transform shrink-0 mt-1 ${isExpanded ? 'rotate-180' : ''}`}
         />
         <div className="flex-1 min-w-0 dir-ltr text-left">
           <p
-            className="text-[15px] font-bold text-slate-800 leading-snug wrap-break-word wrap-anywhere"
+            className="text-[15px] font-bold text-ink-800 leading-snug wrap-break-word wrap-anywhere"
             lang="en"
           >
             {research.title}
           </p>
-          <p className="mt-1 text-[13px] text-slate-500 wrap-break-word">
+          <p className="mt-1 text-[13px] text-ink-500 wrap-break-word">
             {research.authors} ({research.year})
           </p>
         </div>
@@ -991,11 +991,11 @@ function ResearchItem({ research, isExpanded, onToggle }: { research: Research; 
             exit={{ height: 0, opacity: 0 }}
             className="overflow-hidden"
           >
-            <div className="px-3.5 pb-3.5 pt-0 border-t border-white/40">
-              <p className="mb-2 text-[13px] italic text-slate-500 dir-ltr text-left wrap-break-word" lang="en">
+            <div className="px-3.5 pb-3.5 pt-0 border-t border-on-dark/40">
+              <p className="mb-2 text-[13px] italic text-ink-500 dir-ltr text-left wrap-break-word" lang="en">
                 {research.journal}
               </p>
-              <p className="mb-2 text-[15px] leading-relaxed text-slate-700 dir-ltr text-left wrap-break-word hyphens-auto" lang="en">
+              <p className="mb-2 text-[15px] leading-relaxed text-ink-700 dir-ltr text-left wrap-break-word hyphens-auto" lang="en">
                 {research.finding}
               </p>
               {research.url && (
@@ -1003,7 +1003,7 @@ function ResearchItem({ research, isExpanded, onToggle }: { research: Research; 
                   href={research.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-semibold dir-ltr"
+                  className="inline-flex items-center gap-1 text-xs text-secondary-600 hover:text-secondary-700 font-semibold dir-ltr"
                 >
                   <ExternalLink className="w-3 h-3 shrink-0" /> צפה במחקר המלא
                 </a>

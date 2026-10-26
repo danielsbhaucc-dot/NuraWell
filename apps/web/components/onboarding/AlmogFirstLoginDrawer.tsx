@@ -61,13 +61,13 @@ export function AlmogFirstLoginDrawer({ profile }: AlmogFirstLoginDrawerProps) {
   return (
     <Drawer.Root open={open} onOpenChange={(v) => !v && void closeDrawer()}>
       <Drawer.Portal>
-        <Drawer.Overlay className="fixed inset-0 z-200 bg-black/50" />
+        <Drawer.Overlay className="fixed inset-0 z-200 bg-forest-950/50" />
         <Drawer.Content
           className={REGISTER_DRAWER_CONTENT_CLASS}
           style={{ maxHeight: '92vh' }}
         >
           <div className={REGISTER_DRAWER_BODY_CLASS}>
-            <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-emerald-200" />
+            <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-primary-200" />
 
             <motion.div
               initial={{ opacity: 0, y: 8 }}
@@ -77,15 +77,15 @@ export function AlmogFirstLoginDrawer({ profile }: AlmogFirstLoginDrawerProps) {
               <img
                 src={avatarUrl}
                 alt="אלמוג"
-                className="h-14 w-14 rounded-2xl border-2 border-emerald-200 object-cover shadow-md"
+                className="h-14 w-14 rounded-2xl border-2 border-primary-200 object-cover shadow-md"
                 onError={(e) => {
                   e.currentTarget.onerror = null;
                   e.currentTarget.src = ALMOG_AVATAR_FALLBACK;
                 }}
               />
               <div>
-                <p className="text-lg font-black text-emerald-900">אלמוג</p>
-                <p className="text-sm text-emerald-700">המנטור האישי שלך</p>
+                <p className="text-lg font-black text-primary-900">אלמוג</p>
+                <p className="text-sm text-primary-700">המנטור האישי שלך</p>
               </div>
             </motion.div>
 
@@ -96,7 +96,7 @@ export function AlmogFirstLoginDrawer({ profile }: AlmogFirstLoginDrawerProps) {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
-                  className="mt-5 rounded-2xl bg-emerald-50 px-4 py-3 text-start text-[15px] leading-relaxed text-emerald-950"
+                  className="mt-5 rounded-2xl bg-primary-50 px-4 py-3 text-start text-[15px] leading-relaxed text-primary-950"
                 >
                   {phase === 'intro' ? introMessage : replyMessage}
                 </motion.div>
@@ -107,7 +107,7 @@ export function AlmogFirstLoginDrawer({ profile }: AlmogFirstLoginDrawerProps) {
                   key="user-bubble"
                   initial={{ opacity: 0, x: -12 }}
                   animate={{ opacity: 1, x: 0 }}
-                  className="mt-4 ms-auto max-w-[85%] rounded-2xl bg-background-card px-4 py-3 text-start text-sm text-gray-800 shadow-xs ring-1 ring-emerald-100"
+                  className="mt-4 ms-auto max-w-[85%] rounded-2xl bg-background-card px-4 py-3 text-start text-sm text-ink-800 shadow-xs ring-1 ring-primary-100"
                 >
                   כן, בוא נתחיל 💪
                 </motion.div>
@@ -118,7 +118,7 @@ export function AlmogFirstLoginDrawer({ profile }: AlmogFirstLoginDrawerProps) {
                   key="typing"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="mt-4 text-sm text-emerald-600"
+                  className="mt-4 text-sm text-primary-600"
                 >
                   אלמוג מקליד...
                 </motion.p>
@@ -129,7 +129,7 @@ export function AlmogFirstLoginDrawer({ profile }: AlmogFirstLoginDrawerProps) {
               <motion.button
                 type="button"
                 onClick={onStartClick}
-                className="mt-6 w-full rounded-2xl bg-emerald-600 py-4 text-center text-base font-bold text-white shadow-lg"
+                className="mt-6 w-full rounded-2xl bg-primary-600 py-4 text-center text-base font-bold text-on-dark shadow-lg"
                 whileTap={{ scale: 0.98 }}
               >
                 יאללה, בוא נתחיל

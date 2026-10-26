@@ -182,7 +182,7 @@ export function AdminAudioPlaylistsClient() {
             <button
               type="button"
               onClick={() => setShowCreateForm((v) => !v)}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-linear-to-l from-emerald-600 to-teal-500 px-4 py-2.5 text-sm font-bold text-gc shadow-md shadow-emerald-500/20 transition hover:brightness-105"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-linear-to-l from-primary-600 to-secondary-500 px-4 py-2.5 text-sm font-bold text-gc shadow-md shadow-primary-500/20 transition hover:brightness-105"
             >
               <Plus className="h-4 w-4" />
               פלייליסט חדש
@@ -191,9 +191,9 @@ export function AdminAudioPlaylistsClient() {
         />
 
         {showCreateForm ? (
-          <div className="mb-4 grid grid-cols-1 gap-3 rounded-2xl border border-emerald-200/60 bg-emerald-50/30 p-4 sm:grid-cols-[1fr_1.4fr_auto] sm:items-end">
+          <div className="mb-4 grid grid-cols-1 gap-3 rounded-2xl border border-primary-200/60 bg-primary-50/30 p-4 sm:grid-cols-[1fr_1.4fr_auto] sm:items-end">
             <label className="block">
-              <span className="mb-1 block text-xs font-bold text-slate-600">שם הפלייליסט</span>
+              <span className="mb-1 block text-xs font-bold text-ink-soft">שם הפלייליסט</span>
               <input
                 value={newTitle}
                 onChange={(e) => setNewTitle(e.target.value)}
@@ -202,7 +202,7 @@ export function AdminAudioPlaylistsClient() {
               />
             </label>
             <label className="block">
-              <span className="mb-1 block text-xs font-bold text-slate-600">תיאור (אופציונלי)</span>
+              <span className="mb-1 block text-xs font-bold text-ink-soft">תיאור (אופציונלי)</span>
               <input
                 value={newDescription}
                 onChange={(e) => setNewDescription(e.target.value)}
@@ -214,7 +214,7 @@ export function AdminAudioPlaylistsClient() {
               type="button"
               onClick={() => void createPlaylist()}
               disabled={!newTitle.trim() || creating}
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-linear-to-l from-emerald-600 to-teal-500 px-5 py-3 font-bold text-gc shadow-lg shadow-emerald-500/20 transition active:scale-[0.99] disabled:opacity-45"
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-linear-to-l from-primary-600 to-secondary-500 px-5 py-3 font-bold text-gc shadow-lg shadow-primary-500/20 transition active:scale-[0.99] disabled:opacity-45"
             >
               {creating ? <Loader2 className="h-5 w-5 animate-spin" /> : <Plus className="h-5 w-5" />}
               צור
@@ -223,15 +223,15 @@ export function AdminAudioPlaylistsClient() {
         ) : null}
 
         {loading ? (
-          <div className="flex items-center gap-2 py-6 text-slate-500">
+          <div className="flex items-center gap-2 py-6 text-ink-faint">
             <Loader2 className="h-5 w-5 animate-spin" /> טוען…
           </div>
         ) : listError ? (
-          <p className="flex items-center gap-2 py-4 text-sm text-red-700">
+          <p className="flex items-center gap-2 py-4 text-sm text-coral-700">
             <AlertTriangle className="h-4 w-4" /> {listError}
           </p>
         ) : playlists.length === 0 ? (
-          <p className="py-4 text-sm text-slate-500">עדיין אין פלייליסטים. צרו אחד למעלה.</p>
+          <p className="py-4 text-sm text-ink-faint">עדיין אין פלייליסטים. צרו אחד למעלה.</p>
         ) : (
           <ul className="space-y-2.5">
             {playlists.map((pl) => {
@@ -242,7 +242,7 @@ export function AdminAudioPlaylistsClient() {
                     className={[
                       'flex flex-col gap-3 rounded-2xl border px-3 py-3 transition-colors sm:flex-row sm:items-center',
                       active
-                        ? 'border-emerald-400/70 bg-emerald-50/80 shadow-[0_10px_28px_rgba(16,185,129,0.12)]'
+                        ? 'border-primary-400/70 bg-primary-50/80 shadow-[0_10px_28px_rgba(16,185,129,0.12)]'
                         : 'border-gc/60 bg-background-card/55 hover:bg-background-card/75',
                     ].join(' ')}
                   >
@@ -258,12 +258,12 @@ export function AdminAudioPlaylistsClient() {
                       }}
                       className="flex min-w-0 flex-1 items-center gap-3 text-right"
                     >
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-emerald-500/20 to-teal-500/20 text-emerald-700">
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-primary-500/20 to-secondary-500/20 text-primary-700">
                         <Music className="h-5 w-5" />
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate font-bold text-slate-800">{pl.title}</span>
-                        <span className="block truncate text-xs text-slate-500">
+                        <span className="block truncate font-bold text-ink">{pl.title}</span>
+                        <span className="block truncate text-xs text-ink-faint">
                           {pl.track_count} רצועות
                           {pl.description ? ` · ${pl.description}` : ''}
                         </span>
@@ -279,8 +279,8 @@ export function AdminAudioPlaylistsClient() {
                         className={[
                           'inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl border px-3 text-xs font-black transition-colors disabled:opacity-60',
                           pl.is_published
-                            ? 'border-emerald-300/70 bg-emerald-100/80 text-emerald-800 hover:bg-emerald-200/80'
-                            : 'border-amber-300/70 bg-amber-50/90 text-amber-800 hover:bg-amber-100',
+                            ? 'border-primary-300/70 bg-primary-100/80 text-primary-800 hover:bg-primary-200/80'
+                            : 'border-accent-300/70 bg-accent-50/90 text-accent-800 hover:bg-accent-100',
                         ].join(' ')}
                       >
                         {publishingId === pl.id ? (
@@ -296,7 +296,7 @@ export function AdminAudioPlaylistsClient() {
                         type="button"
                         onClick={() => setConfirmDelete(pl)}
                         title="מחק פלייליסט"
-                        className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl border border-red-200/70 bg-red-50/70 text-red-600 hover:bg-red-100"
+                        className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl border border-coral-200/70 bg-coral-50/70 text-coral-600 hover:bg-coral-100"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -312,8 +312,8 @@ export function AdminAudioPlaylistsClient() {
                           className={[
                             'flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-bold transition-all',
                             playlistTab === 'tracks'
-                              ? 'bg-linear-to-l from-violet-500 to-fuchsia-600 text-gc shadow-xs'
-                              : 'text-slate-600 hover:bg-background-card/55',
+                              ? 'bg-linear-to-l from-iris-500 to-iris-600 text-gc shadow-xs'
+                              : 'text-ink-soft hover:bg-background-card/55',
                           ].join(' ')}
                         >
                           <Music className="h-3.5 w-3.5" />
@@ -325,8 +325,8 @@ export function AdminAudioPlaylistsClient() {
                           className={[
                             'flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-bold transition-all',
                             playlistTab === 'assign'
-                              ? 'bg-linear-to-l from-sky-500 to-cyan-600 text-gc shadow-xs'
-                              : 'text-slate-600 hover:bg-background-card/55',
+                              ? 'bg-linear-to-l from-secondary-500 to-secondary-600 text-gc shadow-xs'
+                              : 'text-ink-soft hover:bg-background-card/55',
                           ].join(' ')}
                         >
                           <MapPin className="h-3.5 w-3.5" />
@@ -435,13 +435,13 @@ function PlaylistTrackManager({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-2">
-        <h4 className="text-sm font-black text-slate-700">
+        <h4 className="text-sm font-black text-ink-soft">
           רצועות {tracks.length > 0 ? `(${tracks.length})` : ''}
         </h4>
         <button
           type="button"
           onClick={() => setShowUploader((v) => !v)}
-          className="inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-gc/55 bg-background-card/30 px-3 py-1.5 text-xs font-bold text-slate-800 backdrop-blur-md transition hover:bg-background-card/50"
+          className="inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-gc/55 bg-background-card/30 px-3 py-1.5 text-xs font-bold text-ink backdrop-blur-md transition hover:bg-background-card/50"
         >
           <Upload className="h-3.5 w-3.5" />
           {showUploader ? 'סגור העלאה' : 'הוסף רצועה'}
@@ -461,11 +461,11 @@ function PlaylistTrackManager({
 
       <div>
         {loading ? (
-          <div className="flex items-center gap-2 py-3 text-sm text-slate-500">
+          <div className="flex items-center gap-2 py-3 text-sm text-ink-faint">
             <Loader2 className="h-4 w-4 animate-spin" /> טוען רצועות…
           </div>
         ) : tracks.length === 0 ? (
-          <p className="py-2 text-sm text-slate-500">אין עדיין רצועות. העלו קובץ אודיו למעלה.</p>
+          <p className="py-2 text-sm text-ink-faint">אין עדיין רצועות. העלו קובץ אודיו למעלה.</p>
         ) : (
           <ul className="space-y-2">
             {tracks.map((track) => (
@@ -483,8 +483,8 @@ function PlaylistTrackManager({
                   <>
                     <div className="flex items-center gap-2">
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-bold text-slate-800">{track.title}</span>
-                        <span className="block truncate text-[11px] text-slate-500">
+                        <span className="block truncate text-sm font-bold text-ink">{track.title}</span>
+                        <span className="block truncate text-[11px] text-ink-faint">
                           {formatDuration(track.duration_seconds)} · {formatBytes(track.size_bytes)} ·{' '}
                           {track.credit?.author ? `${track.credit.author} (${track.credit.source})` : 'ללא קרדיט'}
                         </span>
@@ -493,7 +493,7 @@ function PlaylistTrackManager({
                         type="button"
                         onClick={() => setEditingId(track.id)}
                         title="ערוך פרטים"
-                        className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-emerald-200/70 bg-emerald-50/70 text-emerald-700 hover:bg-emerald-100"
+                        className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-primary-200/70 bg-primary-50/70 text-primary-700 hover:bg-primary-100"
                       >
                         <Pencil className="h-4 w-4" />
                       </button>
@@ -501,14 +501,14 @@ function PlaylistTrackManager({
                         type="button"
                         onClick={() => setConfirmTrack(track)}
                         title="מחק רצועה"
-                        className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-red-200/70 bg-red-50/70 text-red-600 hover:bg-red-100"
+                        className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-coral-200/70 bg-coral-50/70 text-coral-600 hover:bg-coral-100"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
                     {track.url ? (
                       <details className="mt-2">
-                        <summary className="cursor-pointer text-[11px] font-bold text-emerald-700">האזנה</summary>
+                        <summary className="cursor-pointer text-[11px] font-bold text-primary-700">האזנה</summary>
                         <div className="mt-1.5">
                           <GlassAudioPlayer src={track.url} />
                         </div>
@@ -613,37 +613,37 @@ function PlaylistStepAssigner({ playlistId }: { playlistId: string }) {
     : steps;
 
   return (
-    <div className="mt-4 rounded-2xl border border-sky-200/60 bg-linear-to-br from-sky-50/70 to-background-card/30 p-3 backdrop-blur-xl sm:p-4">
+    <div className="mt-4 rounded-2xl border border-secondary-200/60 bg-linear-to-br from-secondary-50/70 to-background-card/30 p-3 backdrop-blur-xl sm:p-4">
       <div className="mb-1 flex items-center gap-2">
-        <MapPin className="h-4 w-4 text-sky-600" />
-        <h4 className="text-sm font-black text-slate-700">איפה זה מתנגן?</h4>
+        <MapPin className="h-4 w-4 text-secondary-600" />
+        <h4 className="text-sm font-black text-ink-soft">איפה זה מתנגן?</h4>
         {assignedCount > 0 && (
-          <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[11px] font-bold text-sky-700">
+          <span className="rounded-full bg-secondary-100 px-2 py-0.5 text-[11px] font-bold text-secondary-700">
             {assignedCount} צעדים
           </span>
         )}
       </div>
-      <p className="mb-3 text-[11px] text-slate-500">
+      <p className="mb-3 text-[11px] text-ink-faint">
         בחרו את הצעדים שבהם הפלייליסט יתנגן ברקע. צעד יכול להיות משויך לפלייליסט אחד בלבד.
       </p>
 
       {loading ? (
-        <div className="flex items-center gap-2 py-2 text-sm text-slate-500">
+        <div className="flex items-center gap-2 py-2 text-sm text-ink-faint">
           <Loader2 className="h-4 w-4 animate-spin" /> טוען צעדים…
         </div>
       ) : error ? (
-        <p className="flex items-center gap-2 py-1 text-sm text-red-700">
+        <p className="flex items-center gap-2 py-1 text-sm text-coral-700">
           <AlertTriangle className="h-4 w-4" /> {error}
         </p>
       ) : steps.length === 0 ? (
-        <p className="py-1 text-sm text-slate-500">אין צעדים זמינים.</p>
+        <p className="py-1 text-sm text-ink-faint">אין צעדים זמינים.</p>
       ) : (
         <>
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="חיפוש צעד לפי שם…"
-            className="mb-2 w-full rounded-lg border border-gc/70 bg-background-card/80 px-3 py-2 text-sm outline-hidden focus:border-sky-400"
+            className="mb-2 w-full rounded-lg border border-gc/70 bg-background-card/80 px-3 py-2 text-sm outline-hidden focus:border-secondary-400"
           />
           <ul className="max-h-64 space-y-1.5 overflow-y-auto pe-1">
             {filtered.map((step) => {
@@ -658,35 +658,35 @@ function PlaylistStepAssigner({ playlistId }: { playlistId: string }) {
                     className={[
                       'flex w-full items-center gap-3 rounded-xl border px-3 py-2 text-right transition-colors',
                       assignedHere
-                        ? 'border-sky-400/70 bg-sky-100/70'
+                        ? 'border-secondary-400/70 bg-secondary-100/70'
                         : 'border-gc/70 bg-background-card/55 hover:bg-background-card/80',
                     ].join(' ')}
                   >
                     <span
                       className={[
                         'flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors',
-                        assignedHere ? 'border-sky-500 bg-sky-500 text-gc' : 'border-slate-300 bg-background-card/70',
+                        assignedHere ? 'border-secondary-500 bg-secondary-500 text-gc' : 'border-ink-300 bg-background-card/70',
                       ].join(' ')}
                     >
                       {savingId === step.id ? (
-                        <Loader2 className="h-3 w-3 animate-spin text-sky-600" />
+                        <Loader2 className="h-3 w-3 animate-spin text-secondary-600" />
                       ) : assignedHere ? (
                         <CheckCircle2 className="h-3.5 w-3.5" />
                       ) : null}
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-semibold text-slate-800">
+                      <span className="block truncate text-sm font-semibold text-ink">
                         {step.step_number != null ? `${step.step_number}. ` : ''}
                         {step.title}
                       </span>
                       {step.journey_stations?.title && (
-                        <span className="block truncate text-[11px] text-slate-500">
+                        <span className="block truncate text-[11px] text-ink-faint">
                           {step.journey_stations.title}
                         </span>
                       )}
                     </span>
                     {assignedElsewhere && (
-                      <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">
+                      <span className="shrink-0 rounded-full bg-surface px-2 py-0.5 text-[10px] font-bold text-ink-faint">
                         משויך לאחר
                       </span>
                     )}
@@ -744,7 +744,7 @@ function applySourcePreset(credit: AudioCredit, type: CreditSourceType): AudioCr
 }
 
 const inputCls =
-  'w-full rounded-lg border border-gc/60 bg-background-card/80 px-3 py-2 text-sm outline-hidden focus:border-emerald-400';
+  'w-full rounded-lg border border-gc/60 bg-background-card/80 px-3 py-2 text-sm outline-hidden focus:border-primary-400';
 
 /** טופס קרדיט משותף להעלאה ולעריכה — כולל בורר מקור (Pixabay / Suno / אחר). */
 function CreditFields({
@@ -766,7 +766,7 @@ function CreditFields({
   return (
     <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
       <div className="sm:col-span-2">
-        <span className="mb-1 block text-xs font-bold text-slate-600">מקור התוכן</span>
+        <span className="mb-1 block text-xs font-bold text-ink-soft">מקור התוכן</span>
         <div className="flex flex-wrap gap-1.5">
           {sources.map((s) => {
             const active = sourceType === s.id;
@@ -779,9 +779,9 @@ function CreditFields({
                   'inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-bold transition-colors',
                   active
                     ? s.id === 'suno'
-                      ? 'border-violet-400/70 bg-violet-100/80 text-violet-800'
-                      : 'border-emerald-400/70 bg-emerald-100/80 text-emerald-800'
-                    : 'border-gc/70 bg-background-card/60 text-slate-600 hover:bg-background-card/90',
+                      ? 'border-iris-400/70 bg-iris-100/80 text-iris-800'
+                      : 'border-primary-400/70 bg-primary-100/80 text-primary-800'
+                    : 'border-gc/70 bg-background-card/60 text-ink-soft hover:bg-background-card/90',
                 ].join(' ')}
               >
                 {s.id === 'suno' && <Sparkles className="h-3.5 w-3.5" />}
@@ -793,12 +793,12 @@ function CreditFields({
       </div>
 
       {isSuno && (
-        <div className="sm:col-span-2 rounded-xl border border-violet-300/60 bg-linear-to-br from-violet-100/70 to-fuchsia-50/40 p-3 backdrop-blur-xl">
-          <div className="flex items-center gap-1.5 text-[11px] font-black text-violet-800">
+        <div className="sm:col-span-2 rounded-xl border border-iris-300/60 bg-linear-to-br from-iris-100/70 to-iris-50/40 p-3 backdrop-blur-xl">
+          <div className="flex items-center gap-1.5 text-[11px] font-black text-iris-800">
             <Sparkles className="h-3.5 w-3.5" />
             תוכן שנוצר ב-Suno (מנוי Pro/Premier)
           </div>
-          <ul className="mt-1.5 list-disc space-y-0.5 pe-4 text-[11px] leading-snug text-violet-900/90">
+          <ul className="mt-1.5 list-disc space-y-0.5 pe-4 text-[11px] leading-snug text-iris-900/90">
             <li>אין חובת קרדיט ל-Suno — הבעלות והשימוש המסחרי שלך (מומלץ לציין שנוצר ב-AI).</li>
             <li>הרישיון תקף רק לרצועות שנוצרו בזמן מנוי Pro/Premier פעיל.</li>
             <li>חובה להיות בעל 100% מהזכויות בחומר (ללא מילים/דגימות של אחרים).</li>
@@ -807,7 +807,7 @@ function CreditFields({
       )}
 
       <label className="block">
-        <span className="mb-1 block text-xs font-bold text-slate-600">
+        <span className="mb-1 block text-xs font-bold text-ink-soft">
           {isSuno ? 'יוצר / בעל הזכויות' : 'מקור'}
         </span>
         <input
@@ -817,7 +817,7 @@ function CreditFields({
         />
       </label>
       <label className="block">
-        <span className="mb-1 block text-xs font-bold text-slate-600">
+        <span className="mb-1 block text-xs font-bold text-ink-soft">
           {isSuno ? 'שם האמן/הערוץ שלך' : 'יוצר / אמן'}
         </span>
         <input
@@ -828,7 +828,7 @@ function CreditFields({
         />
       </label>
       <label className="block">
-        <span className="mb-1 block text-xs font-bold text-slate-600">שם היצירה (אופציונלי)</span>
+        <span className="mb-1 block text-xs font-bold text-ink-soft">שם היצירה (אופציונלי)</span>
         <input
           value={credit.title ?? ''}
           onChange={(e) => onChange({ ...credit, title: e.target.value })}
@@ -836,7 +836,7 @@ function CreditFields({
         />
       </label>
       <label className="block">
-        <span className="mb-1 block text-xs font-bold text-slate-600">
+        <span className="mb-1 block text-xs font-bold text-ink-soft">
           {isSuno ? 'קישור לשיר ב-Suno (אופציונלי)' : 'קישור למקור (אופציונלי)'}
         </span>
         <input
@@ -848,7 +848,7 @@ function CreditFields({
         />
       </label>
       <label className="block sm:col-span-2">
-        <span className="mb-1 block text-xs font-bold text-slate-600">רישיון (אופציונלי)</span>
+        <span className="mb-1 block text-xs font-bold text-ink-soft">רישיון (אופציונלי)</span>
         <input
           value={credit.license ?? ''}
           onChange={(e) => onChange({ ...credit, license: e.target.value })}
@@ -909,18 +909,18 @@ function TrackEditor({
 
   return (
     <div dir="rtl" className="space-y-2.5">
-      <div className="flex items-center gap-1.5 text-xs font-black text-emerald-800">
+      <div className="flex items-center gap-1.5 text-xs font-black text-primary-800">
         <Pencil className="h-3.5 w-3.5" />
         עריכת פרטי רצועה
       </div>
       <label className="block">
-        <span className="mb-1 block text-xs font-bold text-slate-600">שם הרצועה</span>
+        <span className="mb-1 block text-xs font-bold text-ink-soft">שם הרצועה</span>
         <input value={title} onChange={(e) => setTitle(e.target.value)} className={inputCls} />
       </label>
       <CreditFields credit={credit} onChange={setCredit} />
 
       {error && (
-        <p className="flex items-center gap-1.5 text-xs text-red-700">
+        <p className="flex items-center gap-1.5 text-xs text-coral-700">
           <AlertTriangle className="h-3.5 w-3.5 shrink-0" /> {error}
         </p>
       )}
@@ -930,7 +930,7 @@ function TrackEditor({
           type="button"
           onClick={() => void save()}
           disabled={saving}
-          className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-linear-to-l from-emerald-600 to-teal-500 px-4 py-2 text-sm font-bold text-gc disabled:opacity-50"
+          className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-linear-to-l from-primary-600 to-secondary-500 px-4 py-2 text-sm font-bold text-gc disabled:opacity-50"
         >
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
           שמור
@@ -939,7 +939,7 @@ function TrackEditor({
           type="button"
           onClick={onCancel}
           disabled={saving}
-          className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-gc/70 bg-background-card/60 px-4 py-2 text-sm font-bold text-slate-600 hover:bg-background-card/90 disabled:opacity-50"
+          className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-gc/70 bg-background-card/60 px-4 py-2 text-sm font-bold text-ink-soft hover:bg-background-card/90 disabled:opacity-50"
         >
           <X className="h-4 w-4" />
           ביטול
@@ -1240,8 +1240,8 @@ function TrackUploader({ playlistId, onUploaded }: TrackUploaderProps) {
   return (
     <div className="rounded-2xl border border-gc/60 bg-background-card/55 p-3 sm:p-4" dir="rtl">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <h4 className="flex items-center gap-2 text-sm font-black text-slate-700">
-          <Upload className="h-4 w-4 text-emerald-600" />
+        <h4 className="flex items-center gap-2 text-sm font-black text-ink-soft">
+          <Upload className="h-4 w-4 text-primary-600" />
           העלאת רצועה
         </h4>
         <button
@@ -1255,22 +1255,22 @@ function TrackUploader({ playlistId, onUploaded }: TrackUploaderProps) {
               onSelect: (asset: MediaAsset) => void addFromLibrary(asset),
             })
           }
-          className="rounded-xl border border-emerald-300/70 bg-emerald-800/10 px-3 py-1.5 text-xs font-bold text-emerald-900 disabled:opacity-50"
+          className="rounded-xl border border-primary-300/70 bg-primary-800/10 px-3 py-1.5 text-xs font-bold text-primary-900 disabled:opacity-50"
         >
           העלאת אודיו
         </button>
       </div>
 
       {draftRestored && (
-        <div className="mb-3 flex flex-col gap-2 rounded-xl border border-amber-300/60 bg-linear-to-br from-amber-100/70 to-amber-50/40 px-3 py-2.5 backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between">
-          <span className="text-xs font-semibold leading-snug text-amber-900">
+        <div className="mb-3 flex flex-col gap-2 rounded-xl border border-accent-300/60 bg-linear-to-br from-accent-100/70 to-accent-50/40 px-3 py-2.5 backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between">
+          <span className="text-xs font-semibold leading-snug text-accent-900">
             שמרנו את הפרטים שמילאת קודם (שם וקרדיט) כדי שלא תצטרך להקליד שוב. בחר קובץ אודיו והעלה.
           </span>
           <button
             type="button"
             onClick={reset}
             title="מחיקת הפרטים השמורים והתחלה מאפס"
-            className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-amber-300/70 bg-background-card/30 px-3 py-1.5 text-[11px] font-bold text-amber-900 backdrop-blur-md transition-colors hover:bg-background-card/50"
+            className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-accent-300/70 bg-background-card/30 px-3 py-1.5 text-[11px] font-bold text-accent-900 backdrop-blur-md transition-colors hover:bg-background-card/50"
           >
             <RotateCcw className="h-3.5 w-3.5" />
             התחל מחדש
@@ -1301,24 +1301,24 @@ function TrackUploader({ playlistId, onUploaded }: TrackUploaderProps) {
         }}
         className={[
           'flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed px-4 py-6 text-center transition-all',
-          dragOver ? 'border-emerald-500 bg-emerald-50/90' : 'border-emerald-200/90 bg-emerald-50/40',
+          dragOver ? 'border-primary-500 bg-primary-50/90' : 'border-primary-200/90 bg-primary-50/40',
         ].join(' ')}
       >
-        <Music className="h-5 w-5 text-emerald-600" />
-        <p className="text-sm font-bold text-slate-800">גרור קובץ אודיו או לחץ לבחירה</p>
+        <Music className="h-5 w-5 text-primary-600" />
+        <p className="text-sm font-bold text-ink">גרור קובץ אודיו או לחץ לבחירה</p>
         {file ? (
-          <p className="text-xs text-emerald-800">
+          <p className="text-xs text-primary-800">
             {file.name} · {formatBytes(file.size)}
           </p>
         ) : (
-          <p className="text-[11px] text-slate-500">הקובץ יידחס ל-MP3 בדפדפן לפני ההעלאה</p>
+          <p className="text-[11px] text-ink-faint">הקובץ יידחס ל-MP3 בדפדפן לפני ההעלאה</p>
         )}
       </label>
 
       {/* פרטי רצועה + קרדיט */}
       <div className="mt-3 space-y-2.5">
         <label className="block">
-          <span className="mb-1 block text-xs font-bold text-slate-600">שם הרצועה</span>
+          <span className="mb-1 block text-xs font-bold text-ink-soft">שם הרצועה</span>
           <input value={title} onChange={(e) => setTitle(e.target.value)} className={inputCls} />
         </label>
         <CreditFields credit={credit} onChange={setCredit} />
@@ -1328,7 +1328,7 @@ function TrackUploader({ playlistId, onUploaded }: TrackUploaderProps) {
         type="button"
         onClick={() => void upload()}
         disabled={!file || busy}
-        className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-linear-to-l from-emerald-600 to-teal-500 px-5 py-2.5 font-bold text-gc disabled:opacity-45"
+        className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-linear-to-l from-primary-600 to-secondary-500 px-5 py-2.5 font-bold text-gc disabled:opacity-45"
       >
         {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <Upload className="h-5 w-5" />}
         {phase === 'transcoding'
@@ -1340,7 +1340,7 @@ function TrackUploader({ playlistId, onUploaded }: TrackUploaderProps) {
 
       {busy && (
         <div className="mt-2.5" aria-live="polite">
-          <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-slate-200/70 ring-1 ring-gc/60">
+          <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-hairline/70 ring-1 ring-gc/60">
             <div
               className="nura-flow-bar absolute inset-y-0 right-0 rounded-full transition-[width] duration-200 ease-out"
               style={{ width: phase === 'transcoding' ? `${progress}%` : '100%' }}
@@ -1349,19 +1349,19 @@ function TrackUploader({ playlistId, onUploaded }: TrackUploaderProps) {
               <div className="absolute inset-0 animate-pulse rounded-full bg-background-card/20" />
             )}
           </div>
-          <div className="mt-1 flex items-center justify-between text-[11px] font-semibold text-slate-500">
+          <div className="mt-1 flex items-center justify-between text-[11px] font-semibold text-ink-faint">
             <span>{phase === 'transcoding' ? 'דוחס בדפדפן (איכות מרבית, משקל נמוך)' : 'מעלה ישירות ל-CDN'}</span>
-            <span className="tabular-nums text-emerald-600">{phase === 'transcoding' ? `${progress}%` : '…'}</span>
+            <span className="tabular-nums text-primary-600">{phase === 'transcoding' ? `${progress}%` : '…'}</span>
           </div>
         </div>
       )}
 
       {result?.error ? (
-        <p className="mt-2 flex items-center gap-2 text-sm text-red-700">
+        <p className="mt-2 flex items-center gap-2 text-sm text-coral-700">
           <AlertTriangle className="h-4 w-4 shrink-0" /> {result.error}
         </p>
       ) : result?.ok ? (
-        <p className="mt-2 flex items-center gap-2 text-sm text-emerald-800">
+        <p className="mt-2 flex items-center gap-2 text-sm text-primary-800">
           <CheckCircle2 className="h-4 w-4" /> נשמר ל-CDN
           {result.savedPercent != null ? ` · ${result.savedPercent}% פחות נפח` : ''}
         </p>

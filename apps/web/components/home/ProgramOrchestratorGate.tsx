@@ -141,15 +141,15 @@ export function ProgramOrchestratorGate({ onAccepted }: { onAccepted?: () => voi
               }}
             >
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-background-card/20">
-                <Icon className="h-7 w-7 text-white" strokeWidth={2.2} />
+                <Icon className="h-7 w-7 text-on-dark" strokeWidth={2.2} />
               </div>
               <p
-                className="mt-3 text-[11px] font-bold uppercase tracking-widest text-white/80"
+                className="mt-3 text-[11px] font-bold uppercase tracking-widest text-on-dark/80"
               >
                 Level Up
               </p>
               <h2
-                className="mt-1 text-xl font-black text-white"
+                className="mt-1 text-xl font-black text-on-dark"
                 style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
               >
                 {proposal.headline}
@@ -157,18 +157,18 @@ export function ProgramOrchestratorGate({ onAccepted }: { onAccepted?: () => voi
             </div>
 
             <div className="px-6 py-5">
-              <p className="text-[15px] leading-relaxed text-emerald-950">{proposal.body}</p>
+              <p className="text-[15px] leading-relaxed text-primary-950">{proposal.body}</p>
 
               {proposal.next_step && (
                 <div
                   className="mt-4 rounded-2xl border p-4"
                   style={{ borderColor: `${accent}33`, background: `${accent}0d` }}
                 >
-                  <p className="text-[13px] font-extrabold text-emerald-900">
+                  <p className="text-[13px] font-extrabold text-primary-900">
                     הצעד הבא: {proposal.next_step.title}
                   </p>
                   {proposal.next_step.detail && (
-                    <p className="mt-1 text-[12px] leading-relaxed text-emerald-800/80">
+                    <p className="mt-1 text-[12px] leading-relaxed text-primary-800/80">
                       {proposal.next_step.detail}
                     </p>
                   )}
@@ -180,7 +180,7 @@ export function ProgramOrchestratorGate({ onAccepted }: { onAccepted?: () => voi
                   type="button"
                   disabled={submitting}
                   onClick={() => respond('accept')}
-                  className="w-full rounded-2xl py-3.5 text-[15px] font-extrabold text-white transition active:scale-[0.98] disabled:opacity-60"
+                  className="w-full rounded-2xl py-3.5 text-[15px] font-extrabold text-on-dark transition active:scale-[0.98] disabled:opacity-60"
                   style={{ background: 'linear-gradient(145deg, #047857, #10b981)' }}
                 >
                   {proposal.cta_accept_label}
@@ -189,7 +189,7 @@ export function ProgramOrchestratorGate({ onAccepted }: { onAccepted?: () => voi
                   type="button"
                   disabled={submitting}
                   onClick={() => respond('decline')}
-                  className="w-full rounded-2xl py-3 text-[14px] font-bold text-emerald-800/70 transition active:scale-[0.98] disabled:opacity-60"
+                  className="w-full rounded-2xl py-3 text-[14px] font-bold text-primary-800/70 transition active:scale-[0.98] disabled:opacity-60"
                 >
                   {proposal.cta_decline_label}
                 </button>
@@ -213,7 +213,7 @@ export function ProgramOrchestratorGate({ onAccepted }: { onAccepted?: () => voi
         aria-label="סגירה"
         onClick={() => respond('decline')}
         disabled={submitting}
-        className="absolute inset-e-3 top-3 flex h-7 w-7 items-center justify-center rounded-full text-emerald-900/40 transition hover:bg-black/5"
+        className="absolute inset-e-3 top-3 flex h-7 w-7 items-center justify-center rounded-full text-primary-900/40 transition hover:bg-forest-950/5"
       >
         <X className="h-4 w-4" />
       </button>
@@ -223,27 +223,27 @@ export function ProgramOrchestratorGate({ onAccepted }: { onAccepted?: () => voi
           className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl"
           style={{ background: `linear-gradient(145deg, ${accent}, ${accent}cc)` }}
         >
-          <Icon className="h-6 w-6 text-white" strokeWidth={2.2} />
+          <Icon className="h-6 w-6 text-on-dark" strokeWidth={2.2} />
         </div>
         <div className="min-w-0 flex-1 pe-8 text-start">
           <p
-            className="text-[15px] font-extrabold text-emerald-950"
+            className="text-[15px] font-extrabold text-primary-950"
             style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
           >
             {proposal.headline}
           </p>
-          <p className="mt-1 text-[13px] leading-relaxed text-emerald-900/80">{proposal.body}</p>
+          <p className="mt-1 text-[13px] leading-relaxed text-primary-900/80">{proposal.body}</p>
           <button
             type="button"
             disabled={submitting}
             onClick={() => respond('accept')}
-            className="mt-3 inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-[13px] font-bold text-white transition active:scale-[0.98] disabled:opacity-60"
+            className="mt-3 inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-[13px] font-bold text-on-dark transition active:scale-[0.98] disabled:opacity-60"
             style={{ background: `linear-gradient(145deg, ${accent}, ${accent}cc)` }}
           >
             {submitting ? 'רגע…' : proposal.cta_accept_label}
           </button>
           {failed ? (
-            <p role="alert" className="mt-2 text-[12px] font-semibold text-rose-700">
+            <p role="alert" className="mt-2 text-[12px] font-semibold text-coral-700">
               משהו השתבש, נסה שוב בעוד רגע.
             </p>
           ) : null}

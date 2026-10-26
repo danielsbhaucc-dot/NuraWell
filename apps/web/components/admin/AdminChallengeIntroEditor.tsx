@@ -62,15 +62,15 @@ export function AdminChallengeIntroEditor() {
   if (loading) {
     return (
       <div className="flex justify-center py-10">
-        <Loader2 className="h-8 w-8 animate-spin text-violet-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-iris-500" />
       </div>
     );
   }
 
   return (
-    <div className="rounded-3xl border border-slate-200/60 bg-background-card/70 p-5 shadow-xs backdrop-blur-md sm:p-6">
-      <h2 className="mb-4 text-lg font-bold text-slate-900">טקסט פתיחה + ElevenLabs</h2>
-      <p className="mb-4 text-sm text-slate-600">
+    <div className="rounded-3xl border border-hairline/60 bg-background-card/70 p-5 shadow-xs backdrop-blur-md sm:p-6">
+      <h2 className="mb-4 text-lg font-bold text-ink">טקסט פתיחה + ElevenLabs</h2>
+      <p className="mb-4 text-sm text-ink-soft">
         שורות הפתיחה אחרי השיר. השתמש ב-{'{firstName}'} לשם פרטי.
       </p>
 
@@ -84,9 +84,9 @@ export function AdminChallengeIntroEditor() {
                 next[i] = { ...line, text: e.target.value };
                 setLines(next);
               }}
-              className="min-h-11 flex-1 rounded-xl border border-slate-200 px-3 py-2 text-sm"
+              className="min-h-11 flex-1 rounded-xl border border-hairline px-3 py-2 text-sm"
             />
-            <label className="flex items-center gap-1 text-xs text-slate-500">
+            <label className="flex items-center gap-1 text-xs text-ink-faint">
               <input
                 type="checkbox"
                 checked={Boolean(line.emphasis)}
@@ -106,27 +106,27 @@ export function AdminChallengeIntroEditor() {
         type="button"
         disabled={saving}
         onClick={saveLines}
-        className="mt-4 inline-flex items-center gap-1 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-gc"
+        className="mt-4 inline-flex items-center gap-1 rounded-xl bg-primary-600 px-4 py-2 text-sm font-semibold text-gc"
       >
         {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
         שמור שורות
       </button>
 
-      <hr className="my-6 border-slate-200" />
+      <hr className="my-6 border-hairline" />
 
-      <label className="mb-2 block text-sm font-semibold text-slate-700">תמלול ElevenLabs (Liam)</label>
+      <label className="mb-2 block text-sm font-semibold text-ink-soft">תמלול ElevenLabs (Liam)</label>
       <textarea
         value={ttsText}
         onChange={(e) => setTtsText(e.target.value)}
         rows={5}
-        className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+        className="w-full rounded-xl border border-hairline px-3 py-2 text-sm"
         placeholder="היי, נעים להכיר — אני אלמוג!..."
       />
       <button
         type="button"
         disabled={syncing || !ttsText.trim()}
         onClick={syncTts}
-        className="mt-3 inline-flex items-center gap-1 rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-gc disabled:opacity-50"
+        className="mt-3 inline-flex items-center gap-1 rounded-xl bg-iris-600 px-4 py-2 text-sm font-semibold text-gc disabled:opacity-50"
       >
         {syncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mic className="h-4 w-4" />}
         {syncing ? 'מתחבר ל-ElevenLabs...' : 'יצירת תמלול'}

@@ -222,27 +222,27 @@ export function GuidesManager() {
       </div>
 
       {/* AI Generator */}
-      <section className="crystal-surface rounded-2xl p-5 border border-violet-200/40">
-        <h2 className="font-bold text-slate-900 flex items-center gap-2 mb-3">
-          <Sparkles className="w-5 h-5 text-violet-600" />
+      <section className="crystal-surface rounded-2xl p-5 border border-iris-200/40">
+        <h2 className="font-bold text-ink flex items-center gap-2 mb-3">
+          <Sparkles className="w-5 h-5 text-iris-600" />
           מחולל מדריך AI
         </h2>
         <textarea
           value={sourceText}
           onChange={(e) => setSourceText(e.target.value)}
           placeholder="הדבק כאן טקסט גולמי — מאמר, תסריט, הערות… ה-AI יחלק לפרקים, משימות והרגלים"
-          className="w-full min-h-[140px] rounded-xl border border-slate-200 p-3 text-sm"
+          className="w-full min-h-[140px] rounded-xl border border-hairline p-3 text-sm"
           dir="rtl"
         />
 
         {aiPhase.phase === 'questions' && (
-          <div className="mt-4 space-y-3 p-4 rounded-xl bg-background-card/80 border border-violet-100">
-            <p className="text-sm font-bold text-violet-900">שאלות חידוד:</p>
+          <div className="mt-4 space-y-3 p-4 rounded-xl bg-background-card/80 border border-iris-100">
+            <p className="text-sm font-bold text-iris-900">שאלות חידוד:</p>
             {aiPhase.questions.map((q) => (
               <div key={q}>
-                <label className="text-xs font-semibold text-slate-600">{q}</label>
+                <label className="text-xs font-semibold text-ink-soft">{q}</label>
                 <input
-                  className="w-full mt-1 rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                  className="w-full mt-1 rounded-lg border border-hairline px-3 py-2 text-sm"
                   value={clarificationAnswers[q] ?? ''}
                   onChange={(e) =>
                     setClarificationAnswers((prev) => ({ ...prev, [q]: e.target.value }))
@@ -253,7 +253,7 @@ export function GuidesManager() {
             <button
               type="button"
               onClick={() => void runAiGenerate(true)}
-              className="px-4 py-2 rounded-xl bg-violet-600 text-gc text-sm font-bold"
+              className="px-4 py-2 rounded-xl bg-iris-600 text-gc text-sm font-bold"
             >
               המשך יצירה
             </button>
@@ -261,24 +261,24 @@ export function GuidesManager() {
         )}
 
         {aiPhase.phase === 'preview' && (
-          <div className="mt-4 space-y-4 rounded-2xl border border-violet-200/60 bg-background-card/90 p-4">
-            <div className="flex items-center gap-2 text-violet-900">
+          <div className="mt-4 space-y-4 rounded-2xl border border-iris-200/60 bg-background-card/90 p-4">
+            <div className="flex items-center gap-2 text-iris-900">
               <Eye className="w-4 h-4" />
               <p className="text-sm font-black">תצוגה מקדימה — אשר לפני פרסום</p>
             </div>
             <div>
-              <h3 className="text-lg font-black text-slate-900">{aiPhase.guide.title}</h3>
-              <p className="text-sm text-slate-600 mt-1">{aiPhase.guide.description}</p>
+              <h3 className="text-lg font-black text-ink">{aiPhase.guide.title}</h3>
+              <p className="text-sm text-ink-soft mt-1">{aiPhase.guide.description}</p>
             </div>
             <div className="space-y-3 max-h-[420px] overflow-y-auto ps-1">
               {[...aiPhase.guide.lessons]
                 .sort((a, b) => a.sort_order - b.sort_order)
                 .map((lesson, i) => (
                   <div key={`${lesson.title}-${i}`} className="guide-glass-card p-3">
-                    <p className="font-bold text-sm text-slate-900">
+                    <p className="font-bold text-sm text-ink">
                       {i + 1}. {lesson.title}
                     </p>
-                    <p className="text-xs text-slate-500 mt-0.5">{lesson.description}</p>
+                    <p className="text-xs text-ink-faint mt-0.5">{lesson.description}</p>
                     <div
                       className="lesson-content text-sm mt-2 max-h-32 overflow-hidden"
                       dangerouslySetInnerHTML={{ __html: sanitizeLessonHtml(lesson.text_content) }}
@@ -289,7 +289,7 @@ export function GuidesManager() {
             <button
               type="button"
               onClick={() => void publishPreview(aiPhase.guide)}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 text-gc text-sm font-bold"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary-600 text-gc text-sm font-bold"
             >
               <Check className="w-4 h-4" />
               שמור כטיוטה לעריכה
@@ -302,7 +302,7 @@ export function GuidesManager() {
             type="button"
             disabled={sourceText.length < 40 || aiPhase.phase === 'working'}
             onClick={() => void runAiGenerate(false)}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-violet-600 text-gc text-sm font-bold disabled:opacity-50"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-iris-600 text-gc text-sm font-bold disabled:opacity-50"
           >
             {aiPhase.phase === 'working' ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -312,12 +312,12 @@ export function GuidesManager() {
             {aiPhase.phase === 'working' ? aiPhase.message : 'צור מדריך מטקסט'}
           </button>
           {aiPhase.phase === 'error' && (
-            <span className="text-sm text-red-600">{aiPhase.message}</span>
+            <span className="text-sm text-coral-600">{aiPhase.message}</span>
           )}
           {aiPhase.phase === 'done' && aiPhase.guide_id && (
             <Link
               href={opsHref(`/guides/${aiPhase.guide_id}`)}
-              className="text-sm font-bold text-emerald-700"
+              className="text-sm font-bold text-primary-700"
             >
               המדריך נוצר — לעריכה ←
             </Link>
@@ -331,12 +331,12 @@ export function GuidesManager() {
           value={newTitle}
           onChange={(e) => setNewTitle(e.target.value)}
           placeholder="שם מדריך חדש"
-          className="flex-1 min-w-[200px] rounded-xl border border-slate-200 px-3 py-2 text-sm"
+          className="flex-1 min-w-[200px] rounded-xl border border-hairline px-3 py-2 text-sm"
         />
         <button
           type="button"
           onClick={() => void createEmpty()}
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 text-gc text-sm font-bold"
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary-600 text-gc text-sm font-bold"
         >
           <Plus className="w-4 h-4" />
           מדריך ריק
@@ -345,13 +345,13 @@ export function GuidesManager() {
           type="button"
           disabled={syncingRag}
           onClick={() => void syncAllRag()}
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-teal-700 text-gc text-sm font-bold disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-secondary-700 text-gc text-sm font-bold disabled:opacity-50"
         >
           {syncingRag ? <Loader2 className="w-4 h-4 animate-spin" /> : <Database className="w-4 h-4" />}
           סנכרן הכל ל-RAG
         </button>
         {syncRagMessage ? (
-          <span className="text-xs font-semibold text-teal-800 w-full">{syncRagMessage}</span>
+          <span className="text-xs font-semibold text-secondary-800 w-full">{syncRagMessage}</span>
         ) : null}
       </div>
 
@@ -370,10 +370,10 @@ export function GuidesManager() {
       {/* List */}
       {loading ? (
         <div className="flex justify-center py-12">
-          <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
+          <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
         </div>
       ) : guides.length === 0 ? (
-        <p className="text-center text-slate-500 py-8">אין מדריכים עדיין</p>
+        <p className="text-center text-ink-faint py-8">אין מדריכים עדיין</p>
       ) : (
         <div className="grid gap-3">
           {guides.map((g) => {
@@ -385,18 +385,18 @@ export function GuidesManager() {
                 className="crystal-surface flex items-center gap-4 p-4 rounded-2xl hover:shadow-lg transition"
               >
                 <div
-                  className="w-14 h-14 rounded-xl flex-shrink-0 bg-emerald-100 overflow-hidden"
+                  className="w-14 h-14 rounded-xl flex-shrink-0 bg-primary-100 overflow-hidden"
                   style={
                     bg
                       ? { backgroundImage: `url(${bg})`, backgroundSize: 'cover' }
                       : undefined
                   }
                 >
-                  {!bg && <BookOpen className="w-6 h-6 text-emerald-600 m-4" />}
+                  {!bg && <BookOpen className="w-6 h-6 text-primary-600 m-4" />}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-bold text-slate-900 truncate">{g.title}</p>
-                  <p className="text-xs text-slate-500 mt-0.5">
+                  <p className="font-bold text-ink truncate">{g.title}</p>
+                  <p className="text-xs text-ink-faint mt-0.5">
                     {(g.lessons?.length ?? 0)} פרקים
                     {g.is_published ? ' · פורסם' : ' · טיוטה'}
                     {g.visibility === 'hidden' ? ' · מוסתר' : ''}
@@ -411,8 +411,8 @@ export function GuidesManager() {
                   className={cn(
                     'text-xs font-bold px-2.5 py-1 rounded-full',
                     g.is_published
-                      ? 'bg-emerald-100 text-emerald-800'
-                      : 'bg-slate-100 text-slate-600'
+                      ? 'bg-primary-100 text-primary-800'
+                      : 'bg-surface text-ink-soft'
                   )}
                 >
                   {g.is_published ? 'פעיל' : 'טיוטה'}

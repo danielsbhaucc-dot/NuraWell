@@ -43,13 +43,13 @@ export function HomeSectionDivider({
         />
         <div className="shrink-0 px-1 text-center">
           <p
-            className="text-[11px] font-black tracking-wide text-emerald-900/80"
+            className="text-[11px] font-black tracking-wide text-primary-900/80"
             style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
           >
             {title}
           </p>
           {subtitle ? (
-            <p className="mt-0.5 text-[10px] font-semibold leading-relaxed text-emerald-800/50">
+            <p className="mt-0.5 text-[10px] font-semibold leading-relaxed text-primary-800/50">
               {subtitle}
             </p>
           ) : null}

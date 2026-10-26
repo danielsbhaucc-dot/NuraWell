@@ -77,12 +77,12 @@ export function SummariesPageClient({
       {/* Hero */}
       <header className="pt-2 pb-5">
         <div className="flex items-center gap-2 mb-1.5">
-          <span className="inline-flex items-center justify-center w-9 h-9 rounded-2xl bg-linear-to-br from-emerald-400 to-emerald-600 text-white shadow-xs">
+          <span className="inline-flex items-center justify-center w-9 h-9 rounded-2xl bg-linear-to-br from-primary-400 to-primary-600 text-on-dark shadow-xs">
             <Sparkles className="w-5 h-5" strokeWidth={2.4} />
           </span>
-          <h1 className="text-2xl font-black tracking-tight text-gray-900">הסיכומים שלי</h1>
+          <h1 className="text-2xl font-black tracking-tight text-ink-900">הסיכומים שלי</h1>
         </div>
-        <p className="text-sm text-gray-600 leading-relaxed">
+        <p className="text-sm text-ink-600 leading-relaxed">
           המבט של אלמוג על המסע שלך — יומי, שבועי, חודשי וכל הדרך עד הסיכום השנתי.
           סיכומים גבוהים יותר מבוססים על הסיכומים שמתחתיהם, בלי לחזור על מספרים.
         </p>
@@ -93,8 +93,8 @@ export function SummariesPageClient({
         aria-label="צור סיכום עכשיו"
         className="glass-card-strong p-4 mb-5"
       >
-        <h2 className="text-sm font-extrabold text-gray-900 mb-3 flex items-center gap-1.5">
-          <Sparkles className="w-4 h-4 text-emerald-600" />
+        <h2 className="text-sm font-extrabold text-ink-900 mb-3 flex items-center gap-1.5">
+          <Sparkles className="w-4 h-4 text-primary-600" />
           צור סיכום עכשיו
         </h2>
         <div className="grid grid-cols-2 gap-2.5">
@@ -109,7 +109,7 @@ export function SummariesPageClient({
             />
           ))}
         </div>
-        <p className="text-[11px] text-gray-500 mt-3 leading-snug">
+        <p className="text-[11px] text-ink-500 mt-3 leading-snug">
           טיפ: לחיצה על &quot;סיכום שנתי&quot; כשאין סיכומים מתחתיו תייצר אוטומטית את כל
           הרמות הנמוכות החסרות ולכן עשויה לקחת מעט יותר זמן.
         </p>
@@ -176,8 +176,8 @@ function FilterChip({ active, onClick, children, icon, accentClass }: FilterChip
       className={`shrink-0 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all
         ${
           active
-            ? 'bg-gray-900 text-white shadow-xs'
-            : 'bg-background-card text-gray-700 ring-1 ring-gray-200 hover:bg-gray-50'
+            ? 'bg-ink-900 text-on-dark shadow-xs'
+            : 'bg-background-card text-ink-700 ring-1 ring-ink-200 hover:bg-ink-50'
         }`}
       aria-pressed={active}
     >
@@ -193,13 +193,13 @@ function FilterChip({ active, onClick, children, icon, accentClass }: FilterChip
 function EmptyState({ filterApplied }: { filterApplied: boolean }) {
   return (
     <div className="glass-card p-6 text-center">
-      <div className="mx-auto w-14 h-14 rounded-2xl bg-emerald-50 ring-1 ring-emerald-200 flex items-center justify-center mb-3">
-        <Sparkles className="w-6 h-6 text-emerald-600" />
+      <div className="mx-auto w-14 h-14 rounded-2xl bg-primary-50 ring-1 ring-primary-200 flex items-center justify-center mb-3">
+        <Sparkles className="w-6 h-6 text-primary-600" />
       </div>
-      <h3 className="text-base font-extrabold text-gray-900 mb-1">
+      <h3 className="text-base font-extrabold text-ink-900 mb-1">
         {filterApplied ? 'אין עדיין סיכומים מהסוג הזה' : 'עוד אין סיכומים'}
       </h3>
-      <p className="text-sm text-gray-600 leading-relaxed">
+      <p className="text-sm text-ink-600 leading-relaxed">
         {filterApplied
           ? 'נסה לסנן ב"הכל", או לחץ למעלה על "צור עכשיו" כדי שאני אכין לך אחד.'
           : 'לחץ למעלה על "צור עכשיו" באחת מהרמות, ואני אכין לך מבט אישי על התקופה.'}

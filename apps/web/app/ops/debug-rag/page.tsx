@@ -70,43 +70,43 @@ export default function RagDebugPage() {
 
   return (
     <div dir="rtl" className="mx-auto max-w-2xl px-4 py-8 text-start">
-      <h1 className="mb-2 text-xl font-semibold text-neutral-900">בדיקת זיכרון RAG</h1>
-      <p className="mb-6 text-sm leading-relaxed text-neutral-600">
+      <h1 className="mb-2 text-xl font-semibold text-ink-900">בדיקת זיכרון RAG</h1>
+      <p className="mb-6 text-sm leading-relaxed text-ink-600">
         כאן רואים מה המערכת <strong>מחלצת</strong> מהטקסט (Llama Scout), אילו וקטורים דומים נמצאו ב-Upstash,
         ומה קורה אם מפעילים כתיבה. התחברות חובה (עמוד זה בתוך האפליקציה המשוחזרת).
       </p>
 
-      <section className="mb-8 rounded-xl border border-neutral-200 bg-background-card p-4 shadow-xs">
-        <h2 className="mb-2 font-medium text-neutral-800">איך לוודא שזה עובד</h2>
-        <ol className="list-decimal ps-5 text-sm leading-relaxed text-neutral-700 space-y-3">
+      <section className="mb-8 rounded-xl border border-ink-200 bg-background-card p-4 shadow-xs">
+        <h2 className="mb-2 font-medium text-ink-800">איך לוודא שזה עובד</h2>
+        <ol className="list-decimal ps-5 text-sm leading-relaxed text-ink-700 space-y-3">
           <li>
             <strong>חיבור</strong> — «בדיקת חיבור»: OpenRouter + Upstash = כן. בלי זה אין embedding/וקטורים.
           </li>
           <li>
             <strong>חילוץ JSON (Llama)</strong> — «חילוץ בלבד»: ב־
-            <code className="rounded bg-neutral-100 px-1 text-xs">preview.extraction.facts</code> אמורות להופיע
-            עובדות עם <code className="rounded bg-neutral-100 px-1 text-xs">category</code> ו־
-            <code className="rounded bg-neutral-100 px-1 text-xs">text</code>. אם המערך ריק — או שאין תוכן לליווי,
-            או שהפרסור נכשל (אז גם <code className="rounded bg-neutral-100 px-1 text-xs">raw_model_text</code> יעזור לבדוק).
+            <code className="rounded bg-ink-100 px-1 text-xs">preview.extraction.facts</code> אמורות להופיע
+            עובדות עם <code className="rounded bg-ink-100 px-1 text-xs">category</code> ו־
+            <code className="rounded bg-ink-100 px-1 text-xs">text</code>. אם המערך ריק — או שאין תוכן לליווי,
+            או שהפרסור נכשל (אז גם <code className="rounded bg-ink-100 px-1 text-xs">raw_model_text</code> יעזור לבדוק).
           </li>
           <li>
             <strong>שליפה מ-Upstash</strong> — ב־
-            <code className="rounded bg-neutral-100 px-1 text-xs">preview.query_probe.top_hits</code> אמורים להופיע
+            <code className="rounded bg-ink-100 px-1 text-xs">preview.query_probe.top_hits</code> אמורים להופיע
             עד 3 פריטים רלוונטיים למשתמש המחובר (מסוננים לפי userId).
           </li>
           <li>
             <strong>כתיבה ומיזוג</strong> — «חילוץ + כתיבה»: ב־
-            <code className="rounded bg-neutral-100 px-1 text-xs">ingest_result.upserts</code> חפש{' '}
-            <code className="rounded bg-neutral-100 px-1 text-xs">inserted</code>,{' '}
-            <code className="rounded bg-neutral-100 px-1 text-xs">merged</code>,{' '}
-            <code className="rounded bg-neutral-100 px-1 text-xs">exact_refresh</code> — כך נמנעות כפילויות במסד.
+            <code className="rounded bg-ink-100 px-1 text-xs">ingest_result.upserts</code> חפש{' '}
+            <code className="rounded bg-ink-100 px-1 text-xs">inserted</code>,{' '}
+            <code className="rounded bg-ink-100 px-1 text-xs">merged</code>,{' '}
+            <code className="rounded bg-ink-100 px-1 text-xs">exact_refresh</code> — כך נמנעות כפילויות במסד.
           </li>
           <li>
             <strong>סוף־לסוף בצ&apos;אט</strong> — אחרי כתיבה, שלח בצ&apos;אט שאלה שקשורה לעובדה ששמרת; בתשובה אמור להופיע
             רמז מהזיכרון (בלי שהמנטור אומר ש&quot;שמר&quot;).
           </li>
           <li>
-            אם ב-Vercel מוגדר <code className="rounded bg-neutral-100 px-1 text-xs">RAG_SELF_TEST_SECRET</code> — הזן כאן;
+            אם ב-Vercel מוגדר <code className="rounded bg-ink-100 px-1 text-xs">RAG_SELF_TEST_SECRET</code> — הזן כאן;
             אחרת מספיק session.
           </li>
         </ol>
@@ -114,12 +114,12 @@ export default function RagDebugPage() {
 
       <div className="space-y-4">
         <div>
-          <label htmlFor="rag-test-message" className="mb-1 block text-sm font-medium text-neutral-700">
+          <label htmlFor="rag-test-message" className="mb-1 block text-sm font-medium text-ink-700">
             טקסט לבדיקה
           </label>
           <textarea
             id="rag-test-message"
-            className="min-h-[120px] w-full rounded-lg border border-neutral-300 bg-background-card p-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-emerald-600 focus:outline-hidden focus:ring-1 focus:ring-emerald-600"
+            className="min-h-[120px] w-full rounded-lg border border-ink-300 bg-background-card p-3 text-sm text-ink-900 placeholder:text-ink-400 focus:border-primary-600 focus:outline-hidden focus:ring-1 focus:ring-primary-600"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             disabled={busy}
@@ -127,13 +127,13 @@ export default function RagDebugPage() {
         </div>
 
         <div>
-          <label htmlFor="rag-prod-secret" className="mb-1 block text-sm font-medium text-neutral-700">
+          <label htmlFor="rag-prod-secret" className="mb-1 block text-sm font-medium text-ink-700">
             סוד בדיקה ב-production (אופציונלי)
           </label>
           <input
             id="rag-prod-secret"
             type="password"
-            className="w-full rounded-lg border border-neutral-300 bg-background-card p-2 text-sm text-neutral-900 focus:border-emerald-600 focus:outline-hidden focus:ring-1 focus:ring-emerald-600"
+            className="w-full rounded-lg border border-ink-300 bg-background-card p-2 text-sm text-ink-900 focus:border-primary-600 focus:outline-hidden focus:ring-1 focus:ring-primary-600"
             value={prodSecret}
             onChange={(e) => setProdSecret(e.target.value)}
             placeholder="RAG_SELF_TEST_SECRET — רק אם צריך"
@@ -145,7 +145,7 @@ export default function RagDebugPage() {
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
-            className="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-medium text-gc hover:bg-emerald-800 disabled:opacity-50"
+            className="rounded-lg bg-primary-700 px-4 py-2 text-sm font-medium text-gc hover:bg-primary-800 disabled:opacity-50"
             disabled={busy}
             onClick={() => void checkConnection()}
           >
@@ -153,7 +153,7 @@ export default function RagDebugPage() {
           </button>
           <button
             type="button"
-            className="rounded-lg border border-neutral-300 bg-background-card px-4 py-2 text-sm font-medium text-neutral-800 hover:bg-neutral-50 disabled:opacity-50"
+            className="rounded-lg border border-ink-300 bg-background-card px-4 py-2 text-sm font-medium text-ink-800 hover:bg-ink-50 disabled:opacity-50"
             disabled={busy || !message.trim()}
             onClick={() => void postSelfTest(false)}
           >
@@ -161,7 +161,7 @@ export default function RagDebugPage() {
           </button>
           <button
             type="button"
-            className="rounded-lg border border-amber-600 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-900 hover:bg-amber-100 disabled:opacity-50"
+            className="rounded-lg border border-accent-600 bg-accent-50 px-4 py-2 text-sm font-medium text-accent-900 hover:bg-accent-100 disabled:opacity-50"
             disabled={busy || !message.trim()}
             onClick={async () => {
               if (!(await confirmDialog({ title: 'לכתוב וקטורים ל-Upstash עבור המשתמש המחובר?', tone: 'warning', confirmLabel: 'כתוב' }))) return;
@@ -173,22 +173,22 @@ export default function RagDebugPage() {
         </div>
 
         {error ? (
-          <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</div>
+          <div className="rounded-lg border border-coral-200 bg-coral-50 p-3 text-sm text-coral-800">{error}</div>
         ) : null}
 
         {status ? (
-          <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-3 text-sm">
-            <p className="font-medium text-neutral-800">סטטוס חיבור</p>
-            <ul className="mt-2 space-y-1 text-neutral-700">
+          <div className="rounded-lg border border-ink-200 bg-ink-50 p-3 text-sm">
+            <p className="font-medium text-ink-800">סטטוס חיבור</p>
+            <ul className="mt-2 space-y-1 text-ink-700">
               <li>OpenRouter (מפתח מוגדר): {status.openrouter_key_configured ? 'כן' : 'לא'}</li>
               <li>Upstash (משתני סביבה): {status.upstash_env_configured ? 'כן' : 'לא'}</li>
               <li>Upstash (רשת): {status.upstash_reachable ? 'כן' : 'לא'}</li>
               {status.upstash_error ? (
-                <li className="text-red-700">שגיאה: {status.upstash_error}</li>
+                <li className="text-coral-700">שגיאה: {status.upstash_error}</li>
               ) : null}
               <li className="pt-1 font-medium">
                 סה״כ:{' '}
-                <span className={status.ok ? 'text-emerald-700' : 'text-amber-800'}>
+                <span className={status.ok ? 'text-primary-700' : 'text-accent-800'}>
                   {status.ok ? 'מוכן לחילוץ' : 'חסר משהו — תקן env והרץ שוב'}
                 </span>
               </li>
@@ -198,8 +198,8 @@ export default function RagDebugPage() {
 
         {previewJson ? (
           <div>
-            <p className="mb-1 text-sm font-medium text-neutral-700">תוצאת חילוץ (preview)</p>
-            <pre className="max-h-[320px] overflow-auto rounded-lg border border-neutral-200 bg-neutral-900 p-3 text-xs text-emerald-100">
+            <p className="mb-1 text-sm font-medium text-ink-700">תוצאת חילוץ (preview)</p>
+            <pre className="max-h-[320px] overflow-auto rounded-lg border border-ink-200 bg-ink-900 p-3 text-xs text-primary-100">
               {previewJson}
             </pre>
           </div>
@@ -207,8 +207,8 @@ export default function RagDebugPage() {
 
         {writeJson ? (
           <div>
-            <p className="mb-1 text-sm font-medium text-neutral-700">תוצאה אחרי כתיבה</p>
-            <pre className="max-h-[320px] overflow-auto rounded-lg border border-amber-200 bg-neutral-900 p-3 text-xs text-amber-100">
+            <p className="mb-1 text-sm font-medium text-ink-700">תוצאה אחרי כתיבה</p>
+            <pre className="max-h-[320px] overflow-auto rounded-lg border border-accent-200 bg-ink-900 p-3 text-xs text-accent-100">
               {writeJson}
             </pre>
           </div>

@@ -64,7 +64,7 @@ export function DolevFirstLoginDrawer({ profile }: DolevFirstLoginDrawerProps) {
   return (
     <Drawer.Root open={open} onOpenChange={(v) => !v && void closeDrawer()} direction="bottom" shouldScaleBackground>
       <Drawer.Portal>
-        <Drawer.Overlay className="fixed inset-0 z-250 bg-black/60 backdrop-blur-[4px]" />
+        <Drawer.Overlay className="fixed inset-0 z-250 bg-forest-950/60 backdrop-blur-[4px]" />
         <Drawer.Content dir="rtl" className={`${REGISTER_DRAWER_CONTENT_CLASS} z-260 max-h-[min(94dvh,780px)]`}>
           <Drawer.Title className="sr-only">ברכה ראשונה מדולב</Drawer.Title>
           <Drawer.Description className="sr-only">סיכום ההרשמה ושיחה קצרה עם דולב</Drawer.Description>
@@ -72,19 +72,19 @@ export function DolevFirstLoginDrawer({ profile }: DolevFirstLoginDrawerProps) {
           <div className="mx-auto mt-3 mb-1 h-1.5 w-12 shrink-0 rounded-full bg-background-card/25" aria-hidden />
 
           <div className={REGISTER_DRAWER_BODY_CLASS}>
-            <p className="text-center text-xs font-bold text-emerald-300/80 mb-3 tracking-wide">
+            <p className="text-center text-xs font-bold text-primary-300/80 mb-3 tracking-wide">
               הכירות ראשונה · דולב
             </p>
 
-            <ul className="mb-5 grid gap-1.5 rounded-2xl border border-emerald-500/25 bg-linear-to-b from-emerald-950/80 to-slate-900/90 p-3">
+            <ul className="mb-5 grid gap-1.5 rounded-2xl border border-primary-500/25 bg-linear-to-b from-primary-950/80 to-ink-900/90 p-3">
               {rows.map((row) => (
                 <li
                   key={row.label}
                   className="flex items-center justify-between gap-3 rounded-lg bg-background-card/5 px-3 py-2"
                 >
-                  <span className="text-[11px] font-bold text-emerald-200/60">{row.label}</span>
+                  <span className="text-[11px] font-bold text-primary-200/60">{row.label}</span>
                   <span
-                    className="text-sm font-semibold text-emerald-50 text-end"
+                    className="text-sm font-semibold text-primary-50 text-end"
                     dir={row.label.includes('משקל') ? 'ltr' : undefined}
                   >
                     {row.value}
@@ -108,7 +108,7 @@ export function DolevFirstLoginDrawer({ profile }: DolevFirstLoginDrawerProps) {
                     animate={{ opacity: 1, y: 0 }}
                     className="flex justify-end"
                   >
-                    <div className="max-w-[85%] rounded-2xl rounded-ee-md bg-emerald-600/90 px-4 py-3 text-white text-[15px] font-medium shadow-lg">
+                    <div className="max-w-[85%] rounded-2xl rounded-ee-md bg-primary-600/90 px-4 py-3 text-on-dark text-[15px] font-medium shadow-lg">
                       תודה דולב
                     </div>
                   </motion.div>
@@ -120,9 +120,9 @@ export function DolevFirstLoginDrawer({ profile }: DolevFirstLoginDrawerProps) {
                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                     <MentorBubble mentorId="dolev">
                       <span className="inline-flex gap-1 py-1" aria-label="דולב מקליד">
-                        <span className="w-2 h-2 rounded-full bg-emerald-300/80 animate-bounce [animation-delay:0ms]" />
-                        <span className="w-2 h-2 rounded-full bg-emerald-300/80 animate-bounce [animation-delay:150ms]" />
-                        <span className="w-2 h-2 rounded-full bg-emerald-300/80 animate-bounce [animation-delay:300ms]" />
+                        <span className="w-2 h-2 rounded-full bg-primary-300/80 animate-bounce [animation-delay:0ms]" />
+                        <span className="w-2 h-2 rounded-full bg-primary-300/80 animate-bounce [animation-delay:150ms]" />
+                        <span className="w-2 h-2 rounded-full bg-primary-300/80 animate-bounce [animation-delay:300ms]" />
                       </span>
                     </MentorBubble>
                   </motion.div>
@@ -144,12 +144,12 @@ export function DolevFirstLoginDrawer({ profile }: DolevFirstLoginDrawerProps) {
               <button
                 type="button"
                 onClick={onThanksClick}
-                className="mt-6 w-full rounded-2xl border border-emerald-400/50 bg-linear-to-l from-emerald-600/50 to-teal-500/40 py-3.5 font-bold text-white shadow-lg shadow-emerald-500/20 hover:brightness-110 active:scale-[0.98] transition-all"
+                className="mt-6 w-full rounded-2xl border border-primary-400/50 bg-linear-to-l from-primary-600/50 to-secondary-500/40 py-3.5 font-bold text-on-dark shadow-lg shadow-primary-500/20 hover:brightness-110 active:scale-[0.98] transition-all"
               >
                 תודה דולב
               </button>
             ) : (
-              <p className="mt-6 text-center text-xs text-emerald-200/50">רגע אחד...</p>
+              <p className="mt-6 text-center text-xs text-primary-200/50">רגע אחד...</p>
             )}
           </div>
         </Drawer.Content>
