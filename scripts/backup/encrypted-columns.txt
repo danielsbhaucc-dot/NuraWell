@@ -36,6 +36,7 @@ pending almog_interventions strategy text
 pending almog_interventions metadata json
 pending challenge_interview_sessions transcript json
 pending challenge_interview_sessions extracted_insights json
+pending challenge_success_events title text
 pending challenge_success_events description text
 pending challenge_success_events evidence json
 pending challenge_task_completions metadata json
@@ -64,6 +65,7 @@ pending journey_progress quiz_answers json
 pending journey_progress habit_meta json
 pending journey_progress habits_progress json
 pending journey_progress task_level_meta json
+pending journey_task_executions note text
 pending lesson_progress habit_progress json
 pending lesson_progress task_progress json
 pending notification_fall_episodes reason_summary text
@@ -73,6 +75,7 @@ pending notification_logs task_name text
 pending notification_logs metadata json
 pending notifications title text
 pending notifications body text
+pending notifications metadata json
 pending pending_almog_commitment_jobs user_message text
 pending pending_almog_commitment_jobs assistant_message text
 pending pending_almog_commitment_jobs rolling_summary text
@@ -112,11 +115,14 @@ pending user_mentorship_strategy psychological_approach text
 pending user_plans title text
 pending user_plans description text
 pending user_plans plan_data json
+pending user_consents metadata json
 pending task_logs task_name text
 pending user_journey_step_unlocks reason text
 pending safety_events category text
 pending safety_events severity text
 pending enrollments granted_reason text
+pending almog_kickoff_status last_error text
+pending almog_kickoff_status skip_reason text
 pending ceo_audit_log detail json
 pending challenge_admin_audit_log payload json
 pending challenge_admin_audit_log summary text
@@ -125,6 +131,7 @@ pending chat_transcript_admin_audit_log reason text
 pending chat_transcript_admin_audit_log summary text
 pending delivery_log error text
 pending delivery_log recipient_mask text
+pending billing_events metadata json
 pending error_events stack text
 pending error_events tags json
 pending ceo_conversations summary text
@@ -134,6 +141,11 @@ pending ceo_dev_forwards error text
 pending ceo_dev_forwards or_notes text
 pending ceo_dev_forwards source_text text
 pending ceo_dev_forwards title text
+pending ceo_pending_actions args json
+pending ceo_pending_actions result json
+pending ceo_pending_actions summary text
+pending notify_quality_events after_text text
+pending notify_quality_events before_text text
 pending ceo_owner_tasks detail text
 pending ceo_owner_tasks title text
 pending demo_access_links guest_name text
@@ -187,15 +199,9 @@ gap access_audit_runs error any
 gap admin_audit_log detail any
 gap admin_audit_log ip any
 gap admin_passkeys telegram_user_id any
-gap almog_kickoff_status last_error any
-gap almog_kickoff_status skip_reason any
 gap auth_session_trail ip any
 gap auth_session_trail user_agent any
-gap billing_events metadata any
 gap billing_invoices doc_url any
-gap ceo_pending_actions args any
-gap ceo_pending_actions result any
-gap ceo_pending_actions summary any
 gap error_events message any
 gap gideon_device_requests chat_id any
 gap gideon_stranger_sim attempts any
@@ -206,8 +212,6 @@ gap iam_audit_log target any
 gap iam_grants reason any
 gap ip_block_ranges reason any
 gap media_receipts search_text any
-gap notify_quality_events after_text any
-gap notify_quality_events before_text any
 gap ops_device_enrollments label any
 gap ops_device_enrollments location any
 gap ops_enroll_blocks reason any
@@ -401,6 +405,7 @@ class challenge_success_events detected_by -
 class challenge_success_events event_type -
 class challenge_success_events evidence -
 class challenge_success_events title -
+class challenge_success_events title_bidx -
 class challenge_task_completions metadata -
 class challenge_task_completions slot_key -
 class challenge_task_definitions celebration_key -
@@ -752,6 +757,8 @@ class notifications action_url -
 class notifications body -
 class notifications dedupe_key -
 class notifications icon_emoji -
+class notifications meta_key_bidx -
+class notifications meta_unique_bidx -
 class notifications metadata -
 class notifications title -
 class notifications type -
@@ -978,9 +985,11 @@ class tg_action_nonces id -
 class tg_action_nonces ip_hash -
 class tg_action_nonces nonce_hash -
 class user_backup_codes code_hash -
+class user_consents choice -
 class user_consents consent_type -
 class user_consents metadata -
 class user_consents policy_version -
+class user_consents request_id -
 class user_consents source -
 class user_data_keys wrapped -
 class user_insights category -
