@@ -232,9 +232,9 @@ function renderInlineStyledText(text: string): ReactNode[] {
               key={`hl-${index}`}
               className="mx-px rounded-[4px] px-[3px] font-extrabold"
               style={{
-                color: '#eef4ea',
+                color: '#f2f2f6',
                 background:
-                  'linear-gradient(180deg, rgba(253,230,138,0.42) 0%, rgba(245,158,11,0.55) 100%)',
+                  'linear-gradient(180deg, rgba(207,208,214,0.42) 0%, rgba(245,158,11,0.55) 100%)',
                 boxShadow: 'inset 0 -0.12em 0 rgba(180,83,9,0.45)',
               }}
             >
@@ -247,7 +247,7 @@ function renderInlineStyledText(text: string): ReactNode[] {
             key={`hl-${index}`}
             className="font-semibold"
             style={{
-              color: '#fef3c7',
+              color: '#f2f2f6',
               borderBottom: '2px solid rgba(251,191,36,0.85)',
               paddingBottom: '0.5px',
             }}
@@ -285,7 +285,7 @@ function renderAlmogMessage(text: string): ReactNode {
                     className="mt-0.5 inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold tabular-nums"
                     style={{
                       background: 'rgba(253,230,138,0.22)',
-                      color: '#fef3c7',
+                      color: '#f2f2f6',
                       border: '1px solid rgba(251,191,36,0.45)',
                     }}
                   >
@@ -1776,9 +1776,9 @@ export function AIChatWidget({ userId, firstName, autoOpen = false }: AIChatWidg
                   style={{
                     background:
                       'linear-gradient(165deg, rgba(254,226,226,0.22) 0%, rgba(127,29,29,0.42) 48%, rgba(69,10,10,0.38) 100%)',
-                    border: '1px solid rgba(252,165,165,0.45)',
+                    border: '1px solid rgba(207,208,214,0.45)',
                     boxShadow:
-                      'inset 0 1px 0 rgba(254,202,202,0.35), 0 14px 36px rgba(127,29,29,0.28)',
+                      'inset 0 1px 0 rgba(232,232,237,0.35), 0 14px 36px rgba(127,29,29,0.28)',
                     backdropFilter: 'blur(22px)',
                     WebkitBackdropFilter: 'blur(22px)',
                   }}

@@ -169,7 +169,7 @@ export function CourseDetailClient({
         <div className="container-mobile absolute inset-x-0 top-0 z-3 px-4 pt-5">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-extrabold backdrop-blur-md"
-              style={{ background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.35)', color: '#eef4ea' }}>
+              style={{ background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.35)', color: '#f2f2f6' }}>
               <BookOpen className="w-3.5 h-3.5" /> מדריך
             </span>
             {viewMode === 'read' && (
@@ -177,7 +177,7 @@ export function CourseDetailClient({
                 type="button"
                 onClick={() => setViewMode('cover')}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-extrabold backdrop-blur-md transition hover:bg-background-card/25"
-                style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.3)', color: '#eef4ea' }}
+                style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.3)', color: '#f2f2f6' }}
               >
                 <Sparkles className="w-3.5 h-3.5" /> שער כניסה
               </button>
@@ -190,13 +190,13 @@ export function CourseDetailClient({
             )}
             {isEnrolled && progress === 100 && (
               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-extrabold backdrop-blur-md"
-                style={{ background: 'rgba(16,185,129,0.34)', border: '1px solid rgba(167,243,208,0.55)', color: '#d1fae5' }}>
+                style={{ background: 'rgba(16,185,129,0.34)', border: '1px solid rgba(207,208,214,0.55)', color: '#e8e8ed' }}>
                 <CheckCircle2 className="w-3.5 h-3.5" /> הושלם
               </span>
             )}
             {isEnrolled && progress > 0 && progress < 100 && (
               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-extrabold backdrop-blur-md"
-                style={{ background: 'rgba(20,184,166,0.32)', border: '1px solid rgba(94,234,212,0.55)', color: '#ccfbf1' }}>
+                style={{ background: 'rgba(20,184,166,0.32)', border: '1px solid rgba(94,234,212,0.55)', color: '#e8e8ed' }}>
                 <BookOpen className="w-3.5 h-3.5" /> בלמידה
               </span>
             )}
@@ -308,7 +308,7 @@ export function CourseDetailClient({
                   boxShadow: '0 10px 30px rgba(20,184,166,0.35), inset 0 1px 0 rgba(255,255,255,0.25)',
                 }}
               >
-                <Play className="w-5 h-5" fill="#eef4ea" />
+                <Play className="w-5 h-5" fill="#f2f2f6" />
                 {guideLearnCta(gender, progress === 0)}
               </Link>
             ) : (
@@ -489,7 +489,7 @@ function GuideCover({
         >
           <span
             className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-extrabold backdrop-blur-md"
-            style={{ background: 'rgba(255,255,255,0.14)', border: '1px solid rgba(255,255,255,0.3)', color: '#eef4ea' }}
+            style={{ background: 'rgba(255,255,255,0.14)', border: '1px solid rgba(255,255,255,0.3)', color: '#f2f2f6' }}
           >
             <BookOpen className="h-3.5 w-3.5" /> מדריך
           </span>

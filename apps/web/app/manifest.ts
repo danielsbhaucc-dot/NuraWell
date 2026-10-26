@@ -6,7 +6,7 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: 'NuraWell',
     start_url: '/',
     display: 'standalone',
-    background_color: '#F7FBF4',
+    background_color: '#f2f2f6',
     theme_color: '#10b981',
     icons: [
       { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },

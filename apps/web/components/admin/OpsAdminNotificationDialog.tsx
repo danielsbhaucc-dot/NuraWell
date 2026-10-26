@@ -56,7 +56,7 @@ export function OpsAdminNotificationDialog({
       backdropClassName="absolute inset-0 bg-ink-900/35 backdrop-blur-sm"
       panelClassName="max-w-sm overflow-hidden rounded-3xl border border-gc/50 bg-glass/95 p-0 shadow-2xl backdrop-blur-xl"
     >
-      <div className="flex items-center justify-between border-b border-[#E8D5B5] bg-glass-hi/90 px-4 py-3">
+      <div className="flex items-center justify-between border-b border-[#cfd0d6] bg-glass-hi/90 px-4 py-3">
         <div className="flex items-center gap-2">
           <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-100 text-lg">
             {notification.icon_emoji || '🔔'}
@@ -99,7 +99,7 @@ export function OpsAdminNotificationDialog({
               onDismiss();
               onOpenPanel();
             }}
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#E8D5B5] bg-background-card px-4 py-2.5 text-sm font-bold text-ink-700"
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#cfd0d6] bg-background-card px-4 py-2.5 text-sm font-bold text-ink-700"
           >
             <Bell className="h-4 w-4" />
             כל ההתראות

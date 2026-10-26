@@ -23,10 +23,10 @@ const HEADER_GRADIENT =
 
 /** טקסטים בהירים על הירוק — לא לבן חד */
 const HEADER_TEXT = {
-  greeting: '#d1fae5',
-  title: '#ecfdf5',
-  body: '#a7f3d0',
-  accent: '#ccfbf1',
+  greeting: '#e8e8ed',
+  title: '#f2f2f6',
+  body: '#cfd0d6',
+  accent: '#e8e8ed',
 } as const;
 
 const MEMORY_PAGE_SIZE = 5;
@@ -93,7 +93,7 @@ function outcomeBadge(outcome: string, gender: OnboardingGender | ''): OutcomeBa
   if (outcome === 'passed') {
     return {
       label: 'עזר לך',
-      bg: 'linear-gradient(135deg, #d1fae5, #a7f3d0)',
+      bg: 'linear-gradient(135deg, #e8e8ed, #cfd0d6)',
       text: '#065f46',
       border: 'rgba(16,185,129,0.35)',
     };
@@ -101,7 +101,7 @@ function outcomeBadge(outcome: string, gender: OnboardingGender | ''): OutcomeBa
   if (outcome === 'fell') {
     return {
       label: 'עדיין היה קשה',
-      bg: 'linear-gradient(135deg, #fef3c7, #fde68a)',
+      bg: 'linear-gradient(135deg, #f2f2f6, #cfd0d6)',
       text: '#92400e',
       border: 'rgba(245,158,11,0.35)',
     };
@@ -125,7 +125,7 @@ function outcomeBadge(outcome: string, gender: OnboardingGender | ''): OutcomeBa
   }
   return {
     label: 'נסגר',
-    bg: 'linear-gradient(135deg, #cfe9dc, #e2e8f0)',
+    bg: 'linear-gradient(135deg, #f2f2f6, #e2e8f0)',
     text: '#475569',
     border: 'rgba(100,116,139,0.25)',
   };
@@ -219,7 +219,7 @@ function DayHeading({ day }: { day: string }) {
         style={{
           ...HEBREW_HEAD,
           color: '#065f46',
-          background: 'linear-gradient(135deg, rgba(209,250,229,0.95), rgba(167,243,208,0.85))',
+          background: 'linear-gradient(135deg, rgba(232,232,237,0.95), rgba(207,208,214,0.85))',
           border: '1px solid rgba(16,185,129,0.28)',
           boxShadow: '0 4px 14px rgba(4,120,87,0.1)',
         }}
@@ -404,7 +404,7 @@ export function SosMomentsClient({ firstName, gender = '' }: SosMomentsClientPro
   const visibleEventDays = paginate(groupedEvents, eventsPage, EVENT_DAYS_PAGE_SIZE);
 
   return (
-    <div className="touch-manipulation min-h-screen bg-linear-to-b from-primary-50 via-[#cfe9dc] to-[#cfe9dc]">
+    <div className="touch-manipulation min-h-screen bg-linear-to-b from-primary-50 via-[#f2f2f6] to-[#f2f2f6]">
       <div
         className="relative overflow-hidden px-4 pb-10 pt-4"
         style={{ background: HEADER_GRADIENT }}
@@ -557,7 +557,7 @@ export function SosMomentsClient({ firstName, gender = '' }: SosMomentsClientPro
                           className="rounded-2xl border border-accent-200/50 px-4 py-3 text-sm text-accent-950"
                           style={{
                             background:
-                              'linear-gradient(135deg, rgba(254,243,199,0.85), rgba(253,230,138,0.5))',
+                              'linear-gradient(135deg, rgba(242,242,246,0.85), rgba(207,208,214,0.5))',
                           }}
                         >
                           <p className="font-bold leading-snug wrap-break-word">{m.strategy}</p>

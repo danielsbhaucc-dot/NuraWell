@@ -62,7 +62,7 @@ export function HealthConsentSection({
           <Loader2 className="w-5 h-5 animate-spin text-ink-faint" aria-label="טוען" />
         </div>
       ) : (
-        <div className="flex items-center gap-3 rounded-xl border border-[#E8D5B5] bg-glass-hi/80 p-3">
+        <div className="flex items-center gap-3 rounded-xl border border-[#cfd0d6] bg-glass-hi/80 p-3">
           <div className="min-w-0 flex-1">
             <p id="health-consent-label" className="font-bold text-ink text-sm">
               {active ? 'ההסכמה פעילה' : 'ההסכמה בוטלה'}
@@ -83,7 +83,7 @@ export function HealthConsentSection({
           >
             <span
               aria-hidden
-              className={`absolute top-1 h-6 w-6 rounded-full bg-[#FDF3D6] shadow transition-all ${active ? 'right-1' : 'right-7'}`}
+              className={`absolute top-1 h-6 w-6 rounded-full bg-[#e8e8ed] shadow transition-all ${active ? 'right-1' : 'right-7'}`}
             />
           </button>
         </div>

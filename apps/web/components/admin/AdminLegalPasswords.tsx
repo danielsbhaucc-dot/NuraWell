@@ -65,7 +65,7 @@ export function AdminLegalPasswords({ refreshKey = 0 }: { refreshKey?: number })
       {!items ? <Loader2 className="mx-auto my-4 animate-spin text-ink-faint" /> : items.length === 0 ? <p className="py-4 text-center text-sm text-ink-faint">עוד לא הופקו קבצים</p> : (
         <ul className="space-y-2">
           {items.map((it) => (
-            <li key={it.id} className="rounded-2xl border border-primary-900/10 bg-[linear-gradient(135deg,rgba(236,247,240,0.72),rgba(252,244,224,0.6))] p-3 backdrop-blur-md">
+            <li key={it.id} className="rounded-2xl border border-primary-900/10 bg-[linear-gradient(135deg,rgba(242,242,246,0.72),rgba(242,242,246,0.6))] p-3 backdrop-blur-md">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-bold text-ink">{it.label}</p>
@@ -91,7 +91,7 @@ export function AdminLegalPasswords({ refreshKey = 0 }: { refreshKey?: number })
       <StepUpDialog open={!!pending} purpose="legal.password" reason="הצגת סיסמה של תיק ראיות" onClose={() => setPending(null)} onVerified={() => void afterStepUp()} />
       {draft ? (
         <div className="fixed inset-0 z-50 grid place-items-end bg-primary-950/40 backdrop-blur-sm sm:place-items-center" role="dialog" aria-modal="true" aria-label="טיוטת שליחה">
-          <div className="w-full max-w-lg rounded-t-[28px] border border-accent-200/40 bg-[linear-gradient(160deg,rgba(236,247,240,0.94),rgba(250,240,214,0.92))] p-5 shadow-2xl backdrop-blur-xl sm:rounded-[28px]">
+          <div className="w-full max-w-lg rounded-t-[28px] border border-accent-200/40 bg-[linear-gradient(160deg,rgba(242,242,246,0.94),rgba(232,232,237,0.92))] p-5 shadow-2xl backdrop-blur-xl sm:rounded-[28px]">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="font-bold text-ink">טיוטה לשליחה</h3>
               <button type="button" onClick={() => setDraft(null)} aria-label="סגירה" className="rounded-full p-1.5 text-ink-soft hover:bg-glass/40"><X size={18} /></button>

@@ -345,7 +345,7 @@ export function StepLesson({ step, initialProgress, userId, userGender = null, a
   }, [progress.video_watched, updateProgress]);
 
   return (
-    <div className="min-h-screen" style={{ background: '#EDF5F0' }}>
+    <div className="min-h-screen" style={{ background: '#f2f2f6' }}>
       {/* Header */}
       <div
         ref={stepChromeRef}
@@ -390,7 +390,7 @@ export function StepLesson({ step, initialProgress, userId, userGender = null, a
           marginTop: '-14px',
           position: 'relative',
           zIndex: 3,
-          background: 'linear-gradient(180deg, #ecfdf5 0%, #cfe9dc 35%, #e8f5ef 100%)',
+          background: 'linear-gradient(180deg, #f2f2f6 0%, #f2f2f6 35%, #f2f2f6 100%)',
         }}
       >
         <motion.div

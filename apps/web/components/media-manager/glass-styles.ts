@@ -8,7 +8,7 @@ export const glassPanelStyle: CSSProperties = {
   boxShadow:
     '0 -24px 64px rgba(6,78,59,0.18), 0 0 0 1px rgba(255,255,255,0.32) inset, inset 0 1px 0 rgba(248,251,246,0.55)',
   background:
-    'linear-gradient(168deg, rgba(255,255,255,0.52) 0%, rgba(236,253,245,0.38) 42%, rgba(255,255,255,0.46) 100%)',
+    'linear-gradient(168deg, rgba(255,255,255,0.52) 0%, rgba(242,242,246,0.38) 42%, rgba(255,255,255,0.46) 100%)',
   backdropFilter: 'blur(28px) saturate(1.35)',
   WebkitBackdropFilter: 'blur(28px) saturate(1.35)',
 };

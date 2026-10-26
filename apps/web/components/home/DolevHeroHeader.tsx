@@ -82,7 +82,7 @@ export function AlmogHeroHeader({
         className="mb-3 rounded-2xl px-4 py-3"
         style={{
           background:
-            'linear-gradient(145deg, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0.16) 100%)',
+            'var(--color-panel-dark)' /* solid: separated from the green header */,
           border: '1px solid rgba(255,255,255,0.35)',
           boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3), 0 2px 12px rgba(0,0,0,0.06)',
           isolation: 'isolate',
@@ -91,7 +91,7 @@ export function AlmogHeroHeader({
         <div
           style={{
             fontSize: '20px',
-            color: '#eef4ea',
+            color: '#f2f2f6',
             fontWeight: 900,
             fontFamily: "'Rubik','Heebo',sans-serif",
             lineHeight: 1.15,
@@ -108,8 +108,8 @@ export function AlmogHeroHeader({
                 greeting.tone === 'festive'
                   ? '#FFD97D'
                   : greeting.tone === 'solemn'
-                    ? 'rgba(207,233,220,0.78)'
-                    : 'rgba(207,233,220,0.92)',
+                    ? 'rgba(242,242,246,0.78)'
+                    : 'rgba(242,242,246,0.92)',
               fontWeight: greeting.tone === 'solemn' ? 600 : 700,
               fontStyle: greeting.tone === 'solemn' ? 'italic' : 'normal',
               letterSpacing: '0.2px',
@@ -175,7 +175,7 @@ export function AlmogHeroHeader({
                   width: '58px',
                   height: '58px',
                   borderRadius: '50%',
-                  background: 'rgba(236,253,245,0.95)',
+                  background: 'rgba(242,242,246,0.95)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -201,7 +201,7 @@ export function AlmogHeroHeader({
                   bottom: '0',
                   right: '2px',
                   background: '#14b8a6',
-                  border: '2px solid rgba(236,253,245,0.95)',
+                  border: '2px solid rgba(242,242,246,0.95)',
                   borderRadius: '20px',
                   padding: '3px 7px',
                   display: 'flex',
@@ -210,9 +210,9 @@ export function AlmogHeroHeader({
                   boxShadow: '0 2px 8px rgba(20,184,166,0.4)',
                 }}
               >
-                <span style={{ width: '3px', height: '3px', background: 'rgba(236,253,245,0.95)', borderRadius: '50%', display: 'inline-block' }} />
-                <span style={{ width: '3px', height: '3px', background: 'rgba(236,253,245,0.95)', borderRadius: '50%', display: 'inline-block' }} />
-                <span style={{ width: '3px', height: '3px', background: 'rgba(236,253,245,0.95)', borderRadius: '50%', display: 'inline-block' }} />
+                <span style={{ width: '3px', height: '3px', background: 'rgba(242,242,246,0.95)', borderRadius: '50%', display: 'inline-block' }} />
+                <span style={{ width: '3px', height: '3px', background: 'rgba(242,242,246,0.95)', borderRadius: '50%', display: 'inline-block' }} />
+                <span style={{ width: '3px', height: '3px', background: 'rgba(242,242,246,0.95)', borderRadius: '50%', display: 'inline-block' }} />
               </div>
             ) : null}
           </button>
@@ -225,7 +225,7 @@ export function AlmogHeroHeader({
             style={{
               padding: '11px 14px',
               background:
-                'linear-gradient(145deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.12) 100%)',
+                'var(--color-panel-dark)' /* solid: separated from the green header */,
               border: '1px solid rgba(255,255,255,0.3)',
               borderRadius: '6px 18px 18px 18px',
               boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.28), 0 4px 20px rgba(0,0,0,0.1)',
@@ -235,7 +235,7 @@ export function AlmogHeroHeader({
             <div
               style={{
                 fontSize: '10px',
-                color: '#A7F3D0',
+                color: '#cfd0d6',
                 fontWeight: 700,
                 letterSpacing: '0.5px',
                 marginBottom: '4px',
@@ -250,7 +250,7 @@ export function AlmogHeroHeader({
                   style={{
                     fontSize: '9px',
                     fontWeight: 800,
-                    color: 'rgba(207,233,220,0.88)',
+                    color: 'rgba(242,242,246,0.88)',
                     background: 'rgba(255,255,255,0.14)',
                     border: '1px solid rgba(255,255,255,0.22)',
                     borderRadius: '999px',
@@ -264,7 +264,7 @@ export function AlmogHeroHeader({
             <div
               style={{
                 fontSize: '14px',
-                color: 'rgba(207,233,220,0.92)',
+                color: 'rgba(242,242,246,0.92)',
                 lineHeight: 1.55,
                 fontWeight: 400,
                 fontFamily: "'Heebo',sans-serif",
@@ -283,7 +283,7 @@ export function AlmogHeroHeader({
                 justifyContent: 'space-between',
                 fontSize: '9px',
                 fontWeight: 700,
-                color: 'rgba(207,233,220,0.72)',
+                color: 'rgba(242,242,246,0.72)',
                 marginBottom: '4px',
               }}
             >
@@ -395,8 +395,8 @@ function TaskBadgeRow({
           gap: '8px',
           padding: '7px 10px',
           borderRadius: '12px',
-          background: 'linear-gradient(135deg, rgba(167,243,208,0.22), rgba(110,231,183,0.16))',
-          border: '1px solid rgba(167,243,208,0.4)',
+          background: 'var(--color-forest-700)',
+          border: '1px solid rgba(207,208,214,0.4)',
           fontFamily: "'Rubik','Heebo',sans-serif",
         }}
       >
@@ -407,7 +407,7 @@ function TaskBadgeRow({
           style={{
             fontSize: '12px',
             fontWeight: 700,
-            color: '#ECFDF5',
+            color: '#f2f2f6',
             letterSpacing: '0.2px',
             flex: 1,
           }}
@@ -415,7 +415,7 @@ function TaskBadgeRow({
           המסע שלך מחכה, בלחיצה אתה שם
         </span>
         {onClick ? (
-          <span style={{ fontSize: '10px', color: 'rgba(207,233,220,0.7)', fontWeight: 700 }}>
+          <span style={{ fontSize: '10px', color: 'rgba(242,242,246,0.7)', fontWeight: 700 }}>
             פתיחה ›
           </span>
         ) : null}
@@ -447,7 +447,7 @@ function TaskBadgeRow({
           style={{
             fontSize: '12px',
             fontWeight: 800,
-            color: '#eef4ea',
+            color: '#f2f2f6',
             letterSpacing: '0.2px',
             flex: 1,
           }}
@@ -455,7 +455,7 @@ function TaskBadgeRow({
           סגרת היום הכל, {done} מתוך {dueToday || accepted}
         </span>
         {onClick ? (
-          <span style={{ fontSize: '10px', color: 'rgba(207,233,220,0.85)', fontWeight: 700 }}>
+          <span style={{ fontSize: '10px', color: 'rgba(242,242,246,0.85)', fontWeight: 700 }}>
             פירוט ›
           </span>
         ) : null}
@@ -486,7 +486,7 @@ function TaskBadgeRow({
         style={{
           fontSize: '12px',
           fontWeight: 800,
-          color: '#FEF3C7',
+          color: '#f2f2f6',
           letterSpacing: '0.2px',
           flex: 1,
           lineHeight: 1.35,
@@ -496,12 +496,12 @@ function TaskBadgeRow({
         {done > 0 && dueToday > 0 ? (
           <>
             {done}/{dueToday} בוצעו · עוד{' '}
-            <span style={{ color: '#eef4ea', fontWeight: 900, fontSize: '14px' }}>{pending}</span>
+            <span style={{ color: '#f2f2f6', fontWeight: 900, fontSize: '14px' }}>{pending}</span>
           </>
         ) : (
           <>
             יש לך{' '}
-            <span style={{ color: '#eef4ea', fontWeight: 900, fontSize: '14px' }}>{pending}</span>{' '}
+            <span style={{ color: '#f2f2f6', fontWeight: 900, fontSize: '14px' }}>{pending}</span>{' '}
             {pending === 1 ? 'משימה' : 'משימות'} לביצוע היום
           </>
         )}
@@ -529,7 +529,7 @@ function TaskBadgeRow({
                   display: 'block',
                   fontSize: '11px',
                   fontWeight: 800,
-                  color: '#eef4ea',
+                  color: '#f2f2f6',
                   lineHeight: 1.35,
                   wordBreak: 'break-word',
                 }}
@@ -543,7 +543,7 @@ function TaskBadgeRow({
                     marginTop: '2px',
                     fontSize: '9px',
                     fontWeight: 700,
-                    color: 'rgba(207,233,220,0.82)',
+                    color: 'rgba(242,242,246,0.82)',
                     background: 'rgba(0,0,0,0.12)',
                     borderRadius: '999px',
                     padding: '1px 7px',
@@ -571,7 +571,7 @@ function TaskBadgeRow({
             border: '1px solid rgba(255,255,255,0.35)',
             boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.25)',
             fontSize: '14px',
-            color: '#eef4ea',
+            color: '#f2f2f6',
             fontWeight: 900,
           }}
           aria-hidden

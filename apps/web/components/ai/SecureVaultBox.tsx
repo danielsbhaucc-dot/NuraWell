@@ -65,10 +65,10 @@ export function SecureVaultBox({ onSaved, onClose, field, initialKind, initialVa
       <button type="button" className="nw-vault__x" onClick={onClose} aria-label="סגור כספת">×</button>
       <div className="nw-vault__head">
         <div className="nw-vault__lock" aria-hidden="true">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ecfdf5" strokeWidth="2.2" strokeLinecap="round">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#f2f2f6" strokeWidth="2.2" strokeLinecap="round">
             <path className="nw-vault__shackle" d="M7 11V8a5 5 0 0 1 10 0v3" />
             <rect x="4.5" y="11" width="15" height="10" rx="3" fill="#ecfdf522" />
-            <circle cx="12" cy="16" r="1.4" fill="#ecfdf5" />
+            <circle cx="12" cy="16" r="1.4" fill="#f2f2f6" />
           </svg>
         </div>
         <div>
@@ -119,7 +119,7 @@ export function SecureVaultBox({ onSaved, onClose, field, initialKind, initialVa
       ) : (
         <div className="nw-vault__ok" role="status">
           <div className="nw-vault__ring">
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#eef4ea" strokeWidth="3" strokeLinecap="round"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#f2f2f6" strokeWidth="3" strokeLinecap="round"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
           </div>
           <b>נשמר ונעול 🔒</b>
           {ref ? (<><p>מוצפן ב-AES-256. אלמוג רואה רק את ההפניה:</p><span className="nw-vault__chip">{ref}</span></>) : <p>נשמר בפרופיל, בלי לעבור דרך ה-AI.</p>}
@@ -130,19 +130,19 @@ export function SecureVaultBox({ onSaved, onClose, field, initialKind, initialVa
 }
 
 const VAULT_CSS = `
-.nw-vault{position:relative;border-radius:26px;padding:20px 18px 18px;margin:8px 0;color:#ecfdf5;background:linear-gradient(160deg,#064e3b,#065f46 55%,#047857);border:1px solid #6ee7b740;box-shadow:0 20px 50px #0008,inset 0 1px 0 #a7f3d055;overflow:hidden}
+.nw-vault{position:relative;border-radius:26px;padding:20px 18px 18px;margin:8px 0;color:#f2f2f6;background:linear-gradient(160deg,#064e3b,#065f46 55%,#047857);border:1px solid #6ee7b740;box-shadow:0 20px 50px #0008,inset 0 1px 0 #a7f3d055;overflow:hidden}
 .nw-vault:before{content:"";position:absolute;inset:-40%;background:conic-gradient(from 0deg,transparent,#34d39933,transparent 30%);animation:nwv-spin 7s linear infinite;pointer-events:none}
 .nw-vault>*{position:relative}
-.nw-vault__x{position:absolute;top:10px;left:12px;z-index:2;background:none;border:0;color:#a7f3d0;font-size:22px;line-height:1;cursor:pointer}
+.nw-vault__x{position:absolute;top:10px;left:12px;z-index:2;background:none;border:0;color:#cfd0d6;font-size:22px;line-height:1;cursor:pointer}
 .nw-vault__head{display:flex;align-items:center;gap:12px}
 .nw-vault h3{margin:0;font-size:17px;font-weight:700}
-.nw-vault__sub{font-size:12.5px;color:#a7f3d0;margin-top:2px}
+.nw-vault__sub{font-size:12.5px;color:#cfd0d6;margin-top:2px}
 .nw-vault__label{display:block;margin-top:12px}
 .nw-vault__lock{width:52px;height:52px;border-radius:18px;display:grid;place-items:center;background:radial-gradient(circle at 30% 30%,#34d399,#047857);animation:nwv-pulse 2.4s infinite}
 .nw-vault__shackle{transform-origin:70% 100%;transition:transform .5s cubic-bezier(.5,1.8,.5,1);transform:translateY(-3px) rotate(-18deg)}
 .nw-vault--sealed .nw-vault__shackle{transform:none}
 .nw-vault__kinds{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
-.nw-vault__kinds button{border:1px solid #34d39955;background:#022c2288;color:#a7f3d0;border-radius:999px;padding:5px 10px;font-size:12px;cursor:pointer}
+.nw-vault__kinds button{border:1px solid #34d39955;background:#022c2288;color:#cfd0d6;border-radius:999px;padding:5px 10px;font-size:12px;cursor:pointer}
 .nw-vault__kinds button.on{background:#34d399;color:#064e3b;font-weight:700}
 .nw-vault__field{position:relative;margin-top:6px;border-radius:16px;background:#022c22cc;border:1.5px solid #34d39955;min-height:58px;transition:border-color .3s,box-shadow .3s}
 .nw-vault--typing .nw-vault__field,.nw-vault__field:focus-within{border-color:#34d399;box-shadow:0 0 0 4px #34d39922}
@@ -150,14 +150,14 @@ const VAULT_CSS = `
 .nw-vault__mask{padding:14px;font:600 18px/1.4 ui-monospace,monospace;letter-spacing:2px;direction:ltr;text-align:right;color:#6ee7b7;pointer-events:none;overflow:hidden;white-space:nowrap}
 .nw-vault__ch{display:inline-block;color:#fbbf24;animation:nwv-scr .45s steps(6)}
 .nw-vault__caret{display:inline-block;width:2px;height:20px;background:#6ee7b7;vertical-align:middle;margin-inline-start:2px;animation:nwv-bl 1s steps(1) infinite}
-.nw-vault__meter{display:flex;gap:6px;margin-top:10px;font-size:11.5px;color:#a7f3d0;align-items:center}
+.nw-vault__meter{display:flex;gap:6px;margin-top:10px;font-size:11.5px;color:#cfd0d6;align-items:center}
 .nw-vault__dot{width:7px;height:7px;border-radius:50%;background:#34d399;animation:nwv-pulse 1.6s infinite}
-.nw-vault__btn{margin-top:14px;width:100%;border:0;border-radius:16px;padding:14px;font-weight:700;font-size:16px;color:#064e3b;background:linear-gradient(135deg,#a7f3d0,#34d399);box-shadow:0 8px 20px #10b98155;cursor:pointer}
+.nw-vault__btn{margin-top:14px;width:100%;border:0;border-radius:16px;padding:14px;font-weight:700;font-size:16px;color:#064e3b;background:linear-gradient(135deg,#cfd0d6,#34d399);box-shadow:0 8px 20px #10b98155;cursor:pointer}
 .nw-vault__btn:disabled{opacity:.55}
 .nw-vault__btn:focus-visible,.nw-vault__kinds button:focus-visible,.nw-vault__x:focus-visible{outline:2px solid #fbbf24;outline-offset:2px}
-.nw-vault__note{font-size:11.5px;color:#a7f3d0cc;margin-top:10px;line-height:1.6}
+.nw-vault__note{font-size:11.5px;color:#cfd0d6cc;margin-top:10px;line-height:1.6}
 .nw-vault__ok{text-align:center;padding:10px 0}
-.nw-vault__ok p{font-size:12.5px;color:#a7f3d0;margin:6px 0 0}
+.nw-vault__ok p{font-size:12.5px;color:#cfd0d6;margin:6px 0 0}
 .nw-vault__ring{width:84px;height:84px;margin:6px auto 10px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle,#10b981,#047857);box-shadow:0 0 30px #34d39988;animation:nwv-pop .6s cubic-bezier(.3,1.6,.5,1)}
 .nw-vault__chip{display:inline-block;margin-top:10px;font:600 12px monospace;background:#022c22;border:1px solid #34d39966;border-radius:999px;padding:5px 10px;direction:ltr}
 @keyframes nwv-spin{to{transform:rotate(360deg)}}

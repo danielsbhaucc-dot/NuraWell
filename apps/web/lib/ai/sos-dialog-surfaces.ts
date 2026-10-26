@@ -4,7 +4,7 @@ import type { FrictionCategory } from './almog-commitments/friction';
 
 /** רקע גוף הפופאפ — חם וניטרלי */
 export const SOS_BODY_BG =
-  'linear-gradient(180deg, #cfe9dc 0%, #cfe9dc 55%, #cfe9dc 100%)';
+  'linear-gradient(180deg, #f2f2f6 0%, #f2f2f6 55%, #f2f2f6 100%)';
 
 export const SOS_CREAM_TEXT = '#faf6ef';
 

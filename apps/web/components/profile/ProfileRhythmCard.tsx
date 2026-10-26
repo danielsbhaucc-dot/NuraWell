@@ -177,8 +177,8 @@ export function ProfileRhythmCard({
                   onClick={() => updateMealCount(n)}
                   className="rounded-full px-3 py-1 text-xs font-bold"
                   style={{
-                    background: mealCount === n ? '#10b981' : '#ecfdf5',
-                    color: mealCount === n ? '#cfe9dc' : '#065f46',
+                    background: mealCount === n ? '#10b981' : '#f2f2f6',
+                    color: mealCount === n ? '#f2f2f6' : '#065f46',
                     border: '1px solid rgba(16,185,129,0.35)',
                   }}
                 >

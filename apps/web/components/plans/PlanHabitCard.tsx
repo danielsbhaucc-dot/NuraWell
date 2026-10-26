@@ -18,10 +18,10 @@ export function PlanHabitCard({ habit, canStepDown, canStepUp, highlighted }: { 
       id={`task-${habit.id}`}
       data-task-id={habit.id}
       data-highlight={highlighted ? 'true' : undefined}
-      className="relative scroll-mt-24 overflow-hidden rounded-[28px] bg-glass/80 backdrop-blur-xl backdrop-saturate-150 p-4 pt-5 shadow-[inset_0_1px_0_rgba(238,244,234,0.55),0_1px_2px_rgba(4,20,14,0.06),0_14px_36px_-12px_rgba(4,20,14,0.22)] ring-1 ring-hairline/70 transition-shadow before:absolute before:inset-x-0 before:top-0 before:h-1 before:bg-linear-to-l before:from-primary-500 before:via-secondary-400 before:to-accent-300 data-[highlight=true]:ring-4 data-[highlight=true]:ring-primary-300/70"
+      className="relative scroll-mt-24 overflow-hidden rounded-[28px] bg-glass/80 backdrop-blur-xl backdrop-saturate-150 p-4 pt-5 shadow-[inset_0_1px_0_rgba(242,242,246,0.55),0_1px_2px_rgba(4,20,14,0.06),0_14px_36px_-12px_rgba(4,20,14,0.22)] ring-1 ring-hairline/70 transition-shadow before:absolute before:inset-x-0 before:top-0 before:h-1 before:bg-linear-to-l before:from-primary-500 before:via-secondary-400 before:to-accent-300 data-[highlight=true]:ring-4 data-[highlight=true]:ring-primary-300/70"
     >
       <div className="flex items-start gap-3">
-        <span className="flex size-12 shrink-0 items-center justify-center rounded-[16px] bg-linear-to-br from-primary-500/18 to-secondary-500/14 text-2xl ring-1 ring-inset ring-primary-600/15 shadow-[inset_0_1px_0_rgba(238,244,234,0.5)]" aria-hidden>
+        <span className="flex size-12 shrink-0 items-center justify-center rounded-[16px] bg-linear-to-br from-primary-500/18 to-secondary-500/14 text-2xl ring-1 ring-inset ring-primary-600/15 shadow-[inset_0_1px_0_rgba(242,242,246,0.5)]" aria-hidden>
           {habit.emoji}
         </span>
         <div className="min-w-0 flex-1">

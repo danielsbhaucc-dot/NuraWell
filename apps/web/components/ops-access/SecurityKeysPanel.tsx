@@ -61,11 +61,11 @@ export function SecurityKeysPanel() {
   return (
     <section dir="rtl" className="overflow-hidden rounded-3xl border border-forest-950/5 bg-gc shadow-[0_4px_20px_rgba(15,61,46,0.06)]">
       <StepUpDialog open={!!stepUp} purpose="ops.sensitive" reason="ניהול מפתחות אבטחה" onClose={() => setStepUp(null)} onVerified={() => { const f = stepUp; setStepUp(null); f?.(); }} />
-      <div className="flex items-start gap-3 bg-gradient-to-l from-[#0f3d2e] to-[#14523d] px-5 py-4 text-[#f6f1e7]">
+      <div className="flex items-start gap-3 bg-gradient-to-l from-[#0f3d2e] to-[#14523d] px-5 py-4 text-[#f2f2f6]">
         <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-on-dark/10 ring-1 ring-on-dark/20"><Usb className="h-5 w-5" /></span>
         <div>
           <h2 className="font-bold">מפתחות אבטחה פיזיים</h2>
-          <p className="mt-0.5 text-xs text-[#f6f1e7]/80">נגיעה במפתח מאשרת כניסה ממכשיר חדש. אם המפתח לא זמין, אפשר להשתמש בקוד גיבוי חד-פעמי.</p>
+          <p className="mt-0.5 text-xs text-[#f2f2f6]/80">נגיעה במפתח מאשרת כניסה ממכשיר חדש. אם המפתח לא זמין, אפשר להשתמש בקוד גיבוי חד-פעמי.</p>
         </div>
       </div>
       <div className="space-y-3 p-4">
@@ -74,7 +74,7 @@ export function SecurityKeysPanel() {
         {keys && (
           <ul className="space-y-2">
             {keys.map((k) => (
-              <li key={k.id} className="flex items-center justify-between gap-3 rounded-2xl bg-[#f3efe4] px-3 py-2.5 text-sm">
+              <li key={k.id} className="flex items-center justify-between gap-3 rounded-2xl bg-[#e8e8ed] px-3 py-2.5 text-sm">
                 <span className="flex items-center gap-2"><KeyRound className="h-4 w-4 text-[#0b6b4b]" /><span className="font-medium">{k.label}</span><span className="text-xs text-ink-faint">נוסף {fmt(k.created_at)}{k.last_used_at ? ` · שימוש אחרון ${fmt(k.last_used_at)}` : ''}</span></span>
                 <button type="button" onClick={() => { setRemoving(k); setCode(''); }} aria-label={`הסרת ${k.label}`} className="rounded-xl p-2 text-coral-700 hover:bg-coral-50"><Trash2 className="h-4 w-4" /></button>
               </li>
@@ -93,8 +93,8 @@ export function SecurityKeysPanel() {
           </div>
         )}
         <div className="flex flex-col gap-2 sm:flex-row">
-          <input value={label} onChange={(e) => setLabel(e.target.value.slice(0, 60))} placeholder="שם למפתח (למשל: מפתח ראשי)" className="flex-1 rounded-2xl border border-forest-950/10 bg-[#f3efe4] px-3 py-2.5 text-sm" />
-          <button type="button" onClick={add} disabled={!!busy || (keys?.length ?? 0) >= 5} className="flex items-center justify-center gap-2 rounded-2xl bg-[#0f3d2e] px-4 py-2.5 text-sm font-bold text-[#f6f1e7] shadow-lg shadow-primary-900/20 transition active:scale-[0.99] disabled:opacity-50">
+          <input value={label} onChange={(e) => setLabel(e.target.value.slice(0, 60))} placeholder="שם למפתח (למשל: מפתח ראשי)" className="flex-1 rounded-2xl border border-forest-950/10 bg-[#e8e8ed] px-3 py-2.5 text-sm" />
+          <button type="button" onClick={add} disabled={!!busy || (keys?.length ?? 0) >= 5} className="flex items-center justify-center gap-2 rounded-2xl bg-[#0f3d2e] px-4 py-2.5 text-sm font-bold text-[#f2f2f6] shadow-lg shadow-primary-900/20 transition active:scale-[0.99] disabled:opacity-50">
             {busy === 'add' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}הוספת מפתח
           </button>
         </div>

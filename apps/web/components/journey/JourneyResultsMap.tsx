@@ -7,7 +7,7 @@ type MapPalette = { bg: string; border: string; tag: string; pin: string; text: 
 
 const SUCCESS_PALETTES: MapPalette[] = [
   {
-    bg: 'linear-gradient(145deg, #ecfdf5 0%, #d1fae5 100%)',
+    bg: 'linear-gradient(145deg, #f2f2f6 0%, #e8e8ed 100%)',
     border: 'rgba(16,185,129,0.38)',
     tag: '#047857',
     pin: '#10b981',
@@ -15,7 +15,7 @@ const SUCCESS_PALETTES: MapPalette[] = [
     muted: '#065f46',
   },
   {
-    bg: 'linear-gradient(145deg, #cfe9dc 0%, #ccfbf1 100%)',
+    bg: 'linear-gradient(145deg, #f2f2f6 0%, #e8e8ed 100%)',
     border: 'rgba(20,184,166,0.36)',
     tag: '#0f766e',
     pin: '#14b8a6',
@@ -23,7 +23,7 @@ const SUCCESS_PALETTES: MapPalette[] = [
     muted: '#115e59',
   },
   {
-    bg: 'linear-gradient(145deg, #f7fee7 0%, #d9f99d 55%, #ecfccb 100%)',
+    bg: 'linear-gradient(145deg, #f2f2f6 0%, #cfd0d6 55%, #e8e8ed 100%)',
     border: 'rgba(132,204,22,0.34)',
     tag: '#3f6212',
     pin: '#84cc16',
@@ -34,7 +34,7 @@ const SUCCESS_PALETTES: MapPalette[] = [
 
 const FAIL_PALETTES: MapPalette[] = [
   {
-    bg: 'linear-gradient(145deg, #cfe9dc 0%, #fecaca 100%)',
+    bg: 'linear-gradient(145deg, #f2f2f6 0%, #e8e8ed 100%)',
     border: 'rgba(239,68,68,0.36)',
     tag: '#b91c1c',
     pin: '#ef4444',
@@ -42,7 +42,7 @@ const FAIL_PALETTES: MapPalette[] = [
     muted: '#991b1b',
   },
   {
-    bg: 'linear-gradient(145deg, #cfe9dc 0%, #fecdd3 100%)',
+    bg: 'linear-gradient(145deg, #f2f2f6 0%, #fecdd3 100%)',
     border: 'rgba(244,63,94,0.34)',
     tag: '#be123c',
     pin: '#f43f5e',
@@ -50,7 +50,7 @@ const FAIL_PALETTES: MapPalette[] = [
     muted: '#9f1239',
   },
   {
-    bg: 'linear-gradient(145deg, #cfe9dc 0%, #fbcfe8 100%)',
+    bg: 'linear-gradient(145deg, #f2f2f6 0%, #fbcfe8 100%)',
     border: 'rgba(236,72,153,0.32)',
     tag: '#be185d',
     pin: '#ec4899',

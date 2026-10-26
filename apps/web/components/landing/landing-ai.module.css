@@ -8,7 +8,7 @@
   position: relative;
   min-height: 100dvh;
   overflow-x: hidden;
-  color: #eafff8;
+  color: #f2f2f6;
   font-family: 'Heebo', 'Rubik', sans-serif;
   background:
     radial-gradient(120% 90% at 12% -10%, rgba(20, 255, 236, 0.18), transparent 55%),
@@ -99,7 +99,7 @@
   z-index: 0;
   pointer-events: none;
   opacity: 0.04;
-  background-image: radial-gradient(rgba(207,233,220,0.9) 0.5px, transparent 0.5px);
+  background-image: radial-gradient(rgba(242,242,246,0.9) 0.5px, transparent 0.5px);
   background-size: 3px 3px;
 }
 
@@ -173,7 +173,7 @@
 
 /* ---------- Text effects ---------- */
 .shimmer {
-  background: linear-gradient(100deg, #eafff8 0%, #14ffec 25%, #7dd3fc 50%, #14ffec 75%, #eafff8 100%);
+  background: linear-gradient(100deg, #f2f2f6 0%, #14ffec 25%, #7dd3fc 50%, #14ffec 75%, #f2f2f6 100%);
   background-size: 220% auto;
   -webkit-background-clip: text;
   background-clip: text;
@@ -382,7 +382,7 @@
 /* strike-through line for "this is not a diet" */
 .strike {
   position: relative;
-  color: rgba(234, 255, 248, 0.45);
+  color: rgba(242,242,246,0.45);
 }
 .strike::after {
   content: '';

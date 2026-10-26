@@ -38,16 +38,16 @@ export function OpsDevicesPanel() {
       {banner && !codes && (
         <div className="rounded-3xl border border-accent-300 bg-accent-50 p-4 text-sm text-accent-900">
           <b>שמור קודי שחזור.</b> אם תאבד גישה לטלגרם ולמייל, קוד שחזור יכניס אותך ממכשיר חדש.
-          <button type="button" onClick={regen} className="mt-3 block rounded-2xl bg-[#0f3d2e] px-4 py-2 font-semibold text-[#f6f1e7]">צור קודי שחזור</button>
+          <button type="button" onClick={regen} className="mt-3 block rounded-2xl bg-[#0f3d2e] px-4 py-2 font-semibold text-[#f2f2f6]">צור קודי שחזור</button>
         </div>
       )}
       {codes && (
-        <div className="rounded-3xl border border-[#c9a227] bg-[#fbf6e6] p-4">
+        <div className="rounded-3xl border border-[#c9a227] bg-[#f2f2f6] p-4">
           <p className="mb-2 text-sm font-semibold text-[#0f3d2e]">הקודים מוצגים פעם אחת בלבד. שמור אותם במקום בטוח (מנהל סיסמאות / דף מודפס).</p>
           <ol dir="ltr" className="grid grid-cols-2 gap-2 font-mono text-base">{codes.map((c) => <li key={c} className="rounded-xl bg-gc px-3 py-2 text-center shadow-sm">{c}</li>)}</ol>
           <div className="mt-3 flex gap-2">
             <button type="button" onClick={() => navigator.clipboard?.writeText(codes.join('\n'))} className="rounded-2xl border border-hairline bg-gc px-4 py-2 text-sm">העתק</button>
-            <button type="button" onClick={() => setCodes(null)} className="rounded-2xl bg-[#0f3d2e] px-4 py-2 text-sm font-semibold text-[#f6f1e7]">שמרתי</button>
+            <button type="button" onClick={() => setCodes(null)} className="rounded-2xl bg-[#0f3d2e] px-4 py-2 text-sm font-semibold text-[#f2f2f6]">שמרתי</button>
           </div>
         </div>
       )}
@@ -96,7 +96,7 @@ export function OpsPendingLoginAlert() {
       <p className="font-bold text-[#0f3d2e]">🔐 ניסיון כניסה ממכשיר חדש</p>
       <p className="mt-1 text-sm text-ink-soft">{r.label} · {r.location} · {fmt(r.created_at)}</p>
       <div className="mt-3 flex gap-2">
-        <button type="button" onClick={() => decide(true)} className="flex-1 rounded-2xl bg-[#0f3d2e] py-2.5 font-semibold text-[#f6f1e7]">אשר כניסה</button>
+        <button type="button" onClick={() => decide(true)} className="flex-1 rounded-2xl bg-[#0f3d2e] py-2.5 font-semibold text-[#f2f2f6]">אשר כניסה</button>
         <button type="button" onClick={() => decide(false)} className="flex-1 rounded-2xl border border-coral-200 py-2.5 font-semibold text-coral-700">זה לא אני</button>
       </div>
     </div>

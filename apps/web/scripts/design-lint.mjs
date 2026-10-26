@@ -4,6 +4,8 @@
  *  - hard-coded white (#fff, #ffffff, white, bg-white, rgb(255,255,255), from/via/to-white, border/ring/fill-white)
  *  - raw hex colors or arbitrary Tailwind colors (bg-[#..], text-[#..]) outside token files
  *  - near-white in any form (scripts/near-white.mjs): light hex/rgb/hsl/oklch (L>96%), bg-white/60+, white aliases
+ *  - mint / sage / cream light surfaces (scripts/mint-surface.mjs): light colors with G > R,B or warm cream,
+ *    and light green Tailwind fills (bg-emerald-50 ...). ZERO tolerance, not ratcheted.
  *  - raw styled <button className=...> in feature folders (use components/ui Button)
  * Ratchet: existing debt is frozen in scripts/design-lint-baseline.json (per file, per rule).
  * A file may only go DOWN. Run `node scripts/design-lint.mjs --update` after you REMOVE debt.
@@ -11,6 +13,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { findNearWhite, nearWhiteAliases } from './near-white.mjs';
+import { findMintSurfaces } from './mint-surface.mjs';
+import { MINT_ALLOW } from './mint-allow.mjs';
+const MINT_CLASS = /\b(?:bg|from|via|to)-(?:emerald|green|teal|lime|mint|sage)-(?:50|100|200)\b/g;
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const BASELINE = path.join(ROOT, 'scripts/design-lint-baseline.json');
 const DIRS = ['app', 'components', 'lib'];
@@ -65,6 +70,22 @@ for (const d of DIRS) for (const f of walk(path.join(ROOT, d))) {
   const nw = findNearWhite(src, ALIASES).length;
   if (nw) c.nearWhite = nw;
   if (Object.keys(c).length) counts[rel] = c;
+}
+// Zero-tolerance mint/sage/cream surface check (all of app/components/lib incl. globals.css + ui/).
+const mintFails = [];
+function walkAll(d, out = []) { for (const e of fs.readdirSync(d, { withFileTypes: true })) { if (e.name === 'node_modules' || e.name.startsWith('.')) continue; const p = path.join(d, e.name); if (e.isDirectory()) walkAll(p, out); else if (/\.(tsx?|css)$/.test(e.name) && !/\.test\./.test(e.name)) out.push(p); } return out; }
+for (const d of DIRS) for (const f of walkAll(path.join(ROOT, d))) {
+  const rel = path.relative(ROOT, f).split(path.sep).join('/');
+  if (MINT_ALLOW.some((r) => r.test(rel))) continue;
+  let src = fs.readFileSync(f, 'utf8');
+  const cut = src.indexOf('/* Coming-soon is frozen:'); if (cut >= 0) src = src.slice(0, cut); // frozen legacy token block
+  src = src.replace(/\/\/ design-lint-allow:[^\n]*\n[^\n]*/g, '');
+  const hits = findMintSurfaces(src).map((h) => `${h.kind} ${h.match}`).concat(src.match(MINT_CLASS) || []);
+  if (hits.length) mintFails.push(`${rel}: ${hits.slice(0, 4).join(', ')}${hits.length > 4 ? ` (+${hits.length - 4})` : ''}`);
+}
+if (mintFails.length) {
+  console.error('✖ design-lint: mint/sage/cream light surface (use neutral tokens: canvas #dedee3, surface #f2f2f6, background-soft #e8e8ed, hairline #cfd0d6):\n  ' + mintFails.join('\n  '));
+  process.exit(1);
 }
 if (process.argv.includes('--update')) {
   fs.writeFileSync(BASELINE, JSON.stringify(counts, null, 1) + '\n');

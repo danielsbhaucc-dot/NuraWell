@@ -38,7 +38,7 @@ export const QUICK_PATH_SELECT_FILL =
 
 export const QUICK_ASSISTANT_BUBBLE: BubbleStyle = {
   background: 'linear-gradient(152deg, #152e28 0%, #1f453c 52%, #285a4d 100%)',
-  color: '#ecfdf5',
+  color: '#f2f2f6',
   border: '1px solid rgba(167, 243, 208, 0.16)',
   boxShadow: '0 8px 24px rgba(4, 44, 34, 0.4), inset 0 1px 0 rgba(255,255,255,0.07)',
 };
@@ -62,14 +62,14 @@ export const FUN_HEADER_BG =
 
 export const FUN_ASSISTANT_BUBBLE: BubbleStyle = {
   background: 'linear-gradient(152deg, #1a4039 0%, #265a50 50%, #2f6759 100%)',
-  color: '#eef4ea',
+  color: '#f2f2f6',
   border: '1px solid rgba(201, 169, 98, 0.22)',
   boxShadow: '0 10px 28px rgba(26, 64, 57, 0.38), inset 0 1px 0 rgba(255, 248, 235, 0.09)',
 };
 
 export const FUN_USER_BUBBLE: BubbleStyle = {
   background: 'rgba(255, 248, 235, 0.07)',
-  color: '#eef4ea',
+  color: '#f2f2f6',
   border: '1px solid rgba(201, 169, 98, 0.16)',
 };
 

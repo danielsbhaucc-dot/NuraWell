@@ -663,7 +663,7 @@ export function AlmogChatMemoryPanel({
                     ) : null}
 
                     {!hasAccess ? (
-                      <div className="flex items-start gap-3 rounded-xl border border-[#E8D5B5] bg-glass-hi/80 p-3">
+                      <div className="flex items-start gap-3 rounded-xl border border-[#cfd0d6] bg-glass-hi/80 p-3">
                         <div className="min-w-0 flex-1">
                         <div className="mb-2 flex items-center gap-2 font-medium text-accent-900">
                           {access === 'pending' ? (
@@ -684,14 +684,14 @@ export function AlmogChatMemoryPanel({
                               value={requestReason}
                               onChange={(e) => setRequestReason(e.target.value)}
                               rows={2}
-                              className="mb-2 w-full rounded-lg border border-[#E8D5B5] bg-glass/80 px-2 py-1 text-ink"
+                              className="mb-2 w-full rounded-lg border border-[#cfd0d6] bg-glass/80 px-2 py-1 text-ink"
                               placeholder="למשל: בקשת תמיכה #1234 — בדיקת תקלה בשיחה"
                             />
                             <button
                               type="button"
                               disabled={busy}
                               onClick={() => void requestAccess(s.id)}
-                              className="inline-flex items-center gap-1 rounded-lg bg-accent-700 px-3 py-1.5 font-medium text-[#cfe9dc] disabled:opacity-50"
+                              className="inline-flex items-center gap-1 rounded-lg bg-accent-700 px-3 py-1.5 font-medium text-[#f2f2f6] disabled:opacity-50"
                             >
                               <Send className="h-3.5 w-3.5" />
                               שלח בקשת אישור למשתמש

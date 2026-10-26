@@ -8,7 +8,7 @@ import type { ResolvedChatUi, UiProposal } from '@/lib/ai/chat-ui/blocks';
  * Cards + chips under Almog's latest message. Cream surface (no pure white), dark-green ink, RTL, ≥40px tap targets.
  * Nothing changes without a tap: proposals call the owner-only routes; picks/chips continue the conversation.
  */
-const CREAM = '#FBF6EA';
+const CREAM = '#f2f2f6';
 const INK = '#0F3D2E';
 
 type Props = {
@@ -96,7 +96,7 @@ export function AlmogChatUiBlock({ ui, disabled, getSessionId, onSend }: Props) 
                     }
                   }}
                   className="flex min-h-[40px] items-center gap-2 rounded-xl border px-3 py-2 text-start text-[13px] font-semibold transition active:scale-[0.98] disabled:opacity-60"
-                  style={{ borderColor: 'rgba(15,61,46,0.18)', background: '#F4ECD8' }}
+                  style={{ borderColor: 'rgba(15,61,46,0.18)', background: '#e8e8ed' }}
                 >
                   {o.emoji ? <span aria-hidden>{o.emoji}</span> : null}
                   <span className="flex-1 leading-snug">{o.title}</span>

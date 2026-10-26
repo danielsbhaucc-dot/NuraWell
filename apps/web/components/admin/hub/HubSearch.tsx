@@ -38,7 +38,7 @@ export function HubSearch({ open, onClose, onPick }: { open: boolean; onClose: (
   let idx = -1;
   return (
     <div className="fixed inset-0 z-[55] flex items-start justify-center bg-primary-950/40 p-0 backdrop-blur-sm sm:p-6 sm:pt-[10vh]" role="dialog" aria-modal="true" aria-label="חיפוש" dir="rtl" onClick={onClose} data-testid="hub-search">
-      <div onClick={(e) => e.stopPropagation()} className="flex max-h-[100dvh] w-full max-w-2xl flex-col overflow-hidden border border-accent-200/40 bg-[linear-gradient(160deg,rgba(220,240,233,0.96),rgba(233,226,205,0.94))] shadow-2xl backdrop-blur-xl sm:max-h-[78vh] sm:rounded-[28px]">
+      <div onClick={(e) => e.stopPropagation()} className="flex max-h-[100dvh] w-full max-w-2xl flex-col overflow-hidden border border-accent-200/40 bg-[linear-gradient(160deg,rgba(232,232,237,0.96),rgba(242,242,246,0.94))] shadow-2xl backdrop-blur-xl sm:max-h-[78vh] sm:rounded-[28px]">
         <div className="flex items-center gap-3 border-b border-primary-900/10 px-4 py-3.5 pt-[max(0.875rem,env(safe-area-inset-top))]">
           <Search size={18} className="text-secondary-700" />
           <input ref={input} value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={onKey} placeholder="מה מחפשים?" className="min-w-0 flex-1 bg-transparent text-[16px] font-semibold text-ink outline-none placeholder:text-ink-faint" data-testid="hub-search-input" />

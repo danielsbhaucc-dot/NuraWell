@@ -291,7 +291,7 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
           </div>
         ) : (
           <>
-            <label className="flex items-start gap-3 rounded-xl border border-[#E8D5B5] bg-glass-hi/80 p-3 cursor-pointer">
+            <label className="flex items-start gap-3 rounded-xl border border-[#cfd0d6] bg-glass-hi/80 p-3 cursor-pointer">
               <input
                 type="checkbox"
                 checked={transcriptConsent === true}
@@ -331,8 +331,8 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
                     key={req.id}
                     className={`flex items-start gap-3 rounded-xl border p-3 ${
                       highlightedRequest === req.id
-                        ? 'border-iris-300 bg-[#cfe9dc]'
-                        : 'border-[#E8D5B5] bg-glass-hi/80'
+                        ? 'border-iris-300 bg-[#f2f2f6]'
+                        : 'border-[#cfd0d6] bg-glass-hi/80'
                     }`}
                   >
                     <div className="min-w-0 flex-1">
@@ -349,7 +349,7 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
                             value={denyReason}
                             onChange={(e) => setDenyReason(e.target.value)}
                             rows={2}
-                            className="w-full rounded-lg border border-[#E8D5B5] bg-glass/80 px-2 py-1.5 text-sm text-ink-800"
+                            className="w-full rounded-lg border border-[#cfd0d6] bg-glass/80 px-2 py-1.5 text-sm text-ink-800"
                             placeholder="למשל: עדיף לי לא לשתף את השיחה הזו"
                           />
                           <div className="flex flex-wrap gap-2">
