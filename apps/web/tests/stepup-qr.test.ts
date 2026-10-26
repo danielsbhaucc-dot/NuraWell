@@ -21,3 +21,20 @@ describe('QR approval anti-phishing', () => {
     expect(sessionHash(null)).toBeNull();
   });
 });
+
+describe('number-match randomness', () => {
+  it('codes are uniform-range 2-digit and the real code position is not fixed', async () => {
+    const { matchCode } = await import('@/lib/auth/stepup');
+    const seen = new Set<string>();
+    for (let i = 0; i < 2000; i++) {
+      const c = matchCode();
+      expect(Number(c)).toBeGreaterThanOrEqual(10);
+      expect(Number(c)).toBeLessThanOrEqual(99);
+      seen.add(c);
+    }
+    expect(seen.size).toBeGreaterThan(80);
+    const pos = [0, 0, 0];
+    for (let i = 0; i < 600; i++) pos[matchChoices('42').indexOf('42')]++;
+    for (const p of pos) expect(p).toBeGreaterThan(120);
+  });
+});
