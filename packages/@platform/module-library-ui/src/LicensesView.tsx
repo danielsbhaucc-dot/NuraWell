@@ -5,6 +5,7 @@ import { postJson } from './api';
 import { STATE_LABEL, fmtDate } from './labels';
 import { TechDetails } from './TechDetails';
 import { OneTimeKey } from './OneTimeKey';
+import { Sheet } from './Sheet';
 
 type Load = { s: 'loading' } | { s: 'error'; msg: string } | { s: 'ok'; rows: LicenseRow[]; signingReady: boolean };
 type RevState = 'suspended_until' | 'suspended_until_payment' | 'revoked_permanent';
@@ -61,10 +62,8 @@ export function LicensesView({ api, initial, initialRevoke, initialUnblock, init
         </div>
       )}
       {rev ? (
-        <div className="fd-modal-back" onClick={() => setRev(null)}>
-          <form className="fd-modal fd-form" role="dialog" aria-modal="true" aria-label="חסימת רישיון" onClick={(e) => e.stopPropagation()} onSubmit={(e) => { e.preventDefault(); act({ op: 'revoke', lid: rev.lid, state: rev.state, until: rev.state === 'suspended_until' ? plus30() : null, reason: reasonLabel(rev.reason), reasonCode: rev.reason }, 'החסימה נשמרה'); }}>
-            <button type="button" className="fd-close" onClick={() => setRev(null)} aria-label="סגירה">×</button>
-            <h3>חסימה{target ? `: ${target.licensee}` : ''}</h3>
+        <Sheet label="חסימת רישיון" onClose={() => setRev(null)} onSubmit={() => { act({ op: 'revoke', lid: rev.lid, state: rev.state, until: rev.state === 'suspended_until' ? plus30() : null, reason: reasonLabel(rev.reason), reasonCode: rev.reason }, 'החסימה נשמרה'); }}>
+            <h3 className="fd-sheet-title">חסימה{target ? `: ${target.licensee}` : ''}</h3>
             <p>הרכיב ייעצר אצל הקונה תוך כשתי דקות. הקבצים שלו לא נמחקים, ואפשר לבטל בכל רגע.</p>
             <label>למה?<select value={rev.reason} onChange={(e) => setRev({ ...rev, reason: e.target.value })}>{REASONS.map(([k, t]) => <option key={k} value={k}>{t}</option>)}</select><small>הקונה רואה רק את סוג הסיבה, בלי פרטים.</small></label>
             <fieldset className="fd-choices"><legend>מה לעשות?</legend>
@@ -72,30 +71,23 @@ export function LicensesView({ api, initial, initialRevoke, initialUnblock, init
             </fieldset>
             <button type="submit" className="fd-btn fd-btn-danger fd-btn-wide">חסימה</button>
             <TechDetails><p>מספר רישיון: <span className="fd-mono">{rev.lid}</span>. מעדכנים קובץ סטטוס חתום שהקונה קורא כל כשתי דקות. אם הקובץ לא נגיש יותר מ-6 שעות, הרכיב נעצר עד שהבדיקה חוזרת. נתיב &quot;מוח מרחוק&quot; (חסימה בשניות) הוא אופציה יקרה בנפרד.</p></TechDetails>
-          </form>
-        </div>
+        </Sheet>
       ) : null}
       {unb ? (
-        <div className="fd-modal-back" onClick={() => setUnb(null)}>
-          <div className="fd-modal fd-form" role="dialog" aria-modal="true" aria-label="ביטול חסימה" onClick={(e) => e.stopPropagation()}>
-            <button type="button" className="fd-close" onClick={() => setUnb(null)} aria-label="סגירה">×</button>
-            <h3>ביטול חסימה{unbRow ? `: ${unbRow.licensee}` : ''}</h3>
+        <Sheet label="ביטול חסימה" onClose={() => setUnb(null)}>
+            <h3 className="fd-sheet-title">ביטול חסימה{unbRow ? `: ${unbRow.licensee}` : ''}</h3>
             <p>הרכיב יחזור לעבוד אצל הקונה תוך כשתי דקות. אין צורך לשלוח לו קובץ חדש.</p>
             <button type="button" className="fd-btn fd-btn-primary fd-btn-wide" onClick={() => act({ op: 'reinstate', lid: unb }, 'הרכיב חזר לעבוד אצל הקונה')}>ביטול החסימה</button>
-          </div>
-        </div>
+        </Sheet>
       ) : null}
       {rot ? (
-        <div className="fd-modal-back" onClick={() => setRot(null)}>
-          <div className="fd-modal fd-form" role="dialog" aria-modal="true" aria-label="מפתח חדש" onClick={(e) => e.stopPropagation()}>
-            <button type="button" className="fd-close" onClick={() => setRot(null)} aria-label="סגירה">×</button>
-            <h3>מפתח חדש{rotRow ? `: ${rotRow.licensee}` : ''}</h3>
+        <Sheet label="מפתח חדש" onClose={() => setRot(null)}>
+            <h3 className="fd-sheet-title">מפתח חדש{rotRow ? `: ${rotRow.licensee}` : ''}</h3>
             {rot.secret ? <OneTimeKey secret={rot.secret} /> : <>
               <p>אם המפתח של הקונה דלף. המפתח הישן מפסיק לעבוד תוך שניות, ואת החדש מעבירים לקונה.</p>
               <button type="button" className="fd-btn fd-btn-primary fd-btn-wide" onClick={() => rotate(rot.lid)}>יצירת מפתח חדש</button>
             </>}
-          </div>
-        </div>
+        </Sheet>
       ) : null}
     </div>
   );

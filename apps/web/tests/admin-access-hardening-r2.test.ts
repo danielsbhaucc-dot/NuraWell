@@ -105,29 +105,7 @@ describe('bindAdminSession: fail closed, no trust-on-first-use', () => {
   });
 });
 
-describe('opsDeviceGate: unbound session → reauth; lockout-safe', () => {
-  it('trusted device + stale unbound session → {ok:false, reauth:true}; fresh login → ok', async () => {
-    vi.resetModules();
-    vi.doMock('@/lib/ops/device-trust', async (orig) => ({ ...(await orig<object>()), trustedDeviceId: async () => D }));
-    const { opsDeviceGate } = await import('@/lib/ops/device-gate');
-    const stale = jwt({ session_id: SID, amr: [{ method: 'password', timestamp: Math.floor(Date.now() / 1000) - 86_400 }] });
-    const fresh = jwt({ session_id: SID, amr: [{ method: 'password', timestamp: Math.floor(Date.now() / 1000) - 10 }] });
-    expect(await opsDeviceGate(fakeDb({ rpc: { ops_bind_admin_session: () => true } }) as never, U, 'c', stale, null)).toEqual({ ok: false, reauth: true });
-    expect(await opsDeviceGate(fakeDb({ rpc: { ops_bind_admin_session: () => true } }) as never, U, 'c', fresh, null)).toEqual({ ok: true });
-    vi.doUnmock('@/lib/ops/device-trust');
-  });
-  it('proxy ends the session and route guards answer reauth_required', () => {
-    const proxy = readFileSync(join(process.cwd(), 'proxy.ts'), 'utf8');
-    expect(proxy).toMatch(/gate\.reauth\)[\s\S]{0,200}signOut\(\{ scope: 'local' \}\)/);
-    const guards = readFileSync(join(process.cwd(), 'lib/api/route-guards.ts'), 'utf8');
-    expect(guards).toMatch(/gate\.reauth[\s\S]{0,200}reauth_required/);
-  });
-  it('bootstrap never adopts an old session', () => {
-    const src = readFileSync(join(process.cwd(), 'lib/ops/device-gate.ts'), 'utf8');
-    expect(src).toMatch(/allowBootstrap && isFreshLogin\(accessToken\) && \(await canBootstrap/);
-  });
-});
-
+// opsDeviceGate reauth tests removed: main's ops_device_sessions (000213) gate supersedes the admin_session_devices binding.
 describe('touchDeviceMeta (last-seen, throttled, new-country)', () => {
   const f = { ipHash: 'h', ipMasked: '1.2.3.x', country: 'IL', browser: 'Chrome · macOS' };
   const now = Date.parse('2026-10-25T10:00:00Z');

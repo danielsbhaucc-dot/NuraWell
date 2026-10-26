@@ -5,19 +5,17 @@ import { downloadBase64, postJson } from './api';
 import { fmtDate } from './labels';
 import { TechDetails } from './TechDetails';
 import { OneTimeKey } from './OneTimeKey';
+import { Sheet } from './Sheet';
 
 export type PackOut = { fileName: string; sha256: string; files: string[]; base64?: string; lid?: string; expiresAt?: string | null; installId?: string; secret?: string };
 type Phase = { s: 'idle' } | { s: 'busy' } | { s: 'error'; msg: string } | { s: 'done'; out: PackOut };
 
 function Shell({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   return (
-    <div className="fd-modal-back" onClick={onClose}>
-      <div className="fd-modal" role="dialog" aria-modal="true" aria-label={title} onClick={(e) => e.stopPropagation()}>
-        <button type="button" className="fd-close" onClick={onClose} aria-label="סגירה">×</button>
-        <h3>{title}</h3>
-        {children}
-      </div>
-    </div>
+    <Sheet label={title} onClose={onClose}>
+      <h3 className="fd-sheet-title">{title}</h3>
+      {children}
+    </Sheet>
   );
 }
 
