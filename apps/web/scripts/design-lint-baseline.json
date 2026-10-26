@@ -870,6 +870,9 @@
  "lib/security/field-registry.ts": {
   "rawHex": 2
  },
+ "lib/theme/tokens.ts": {
+  "rawHex": 22
+ },
  "lib/ui/avatar-fallback-svg.ts": {
   "white": 1,
   "rawHex": 2
