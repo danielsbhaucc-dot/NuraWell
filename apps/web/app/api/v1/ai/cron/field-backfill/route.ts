@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { authorizeCronRequest } from '@/lib/api/authorize-cron';
+import { hasFieldBackfillSecret } from '@/lib/api/field-backfill-auth';
 import { backfillFieldV2, FIELD_V2_BACKFILL_TABLES, recordBackfillRun } from '@/lib/security/field-backfill';
 
 export const runtime = 'nodejs';
@@ -11,8 +12,10 @@ export const maxDuration = 60;
  * Returns counts only — never values.
  */
 export async function POST(request: Request) {
-  const denied = await authorizeCronRequest(request);
-  if (denied) return denied;
+  if (!hasFieldBackfillSecret(request)) {
+    const denied = await authorizeCronRequest(request);
+    if (denied) return denied;
+  }
   const t0 = Date.now();
   const source = request.headers.get('user-agent')?.includes('vercel-cron') ? 'vercel_cron' : 'manual';
   try {
