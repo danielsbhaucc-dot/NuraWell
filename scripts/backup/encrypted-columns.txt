@@ -153,6 +153,7 @@ enforce chat_transcript_admin_audit_log summary text
 enforce delivery_log error text
 enforce delivery_log recipient_mask text
 enforce billing_events metadata json
+enforce error_events message text
 enforce error_events stack text
 enforce error_events tags json
 enforce ceo_conversations summary text
@@ -219,7 +220,6 @@ gap access_audit_findings summary any
 gap access_audit_runs error any
 gap admin_passkeys telegram_user_id any
 gap billing_invoices doc_url any
-gap error_events message any
 gap gideon_device_requests chat_id any
 gap gideon_stranger_sim attempts any
 gap gideon_stranger_sim chat_id any

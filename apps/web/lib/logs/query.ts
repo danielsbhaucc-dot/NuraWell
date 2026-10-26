@@ -23,7 +23,7 @@ export const LOG_SOURCES: Record<LogType, Src> = {
     map: (r) => ({ id: s(r.id)!, at: s(r.created_at)!, actor: null, action: s(r.kind) ?? '', target: null, result: r.alerted_at ? 'נשלחה התראה' : 'ממתין', ip: null, country: s((logDetail(r) as { country?: string } | null)?.country), detail: j(logDetail(r)) }) },
   signals: { table: 'security_signals', select: 'id,created_at,kind,ip_hash,actor_id,path,country,n', actorCol: 'actor_id', resultCol: 'kind', searchCols: ['path', 'kind'],
     map: (r) => ({ id: s(r.id)!, at: s(r.created_at)!, actor: s(r.actor_id), action: s(r.kind) ?? '', target: s(r.path), result: s(r.kind), ip: s(r.ip_hash), country: s(r.country), detail: r.n && Number(r.n) > 1 ? `n=${r.n}` : '', inv: { user: s(r.actor_id), ipHash: s(r.ip_hash) } }) },
-  errors: { table: 'error_events', select: 'id,created_at,severity,source,route,message,user_id', actorCol: 'user_id', resultCol: 'severity', searchCols: ['message', 'route', 'source'],
+  errors: { table: 'error_events', select: 'id,created_at,severity,source,route,message,user_id', actorCol: 'user_id', resultCol: 'severity', searchCols: ['route', 'source'], // message is sealed (enc:v2) — not ilike-searchable
     map: (r) => ({ id: s(r.id)!, at: s(r.created_at)!, actor: s(r.user_id), action: s(r.source) ?? '', target: s(r.route), result: s(r.severity), ip: null, country: null, detail: (s(r.message) ?? '').slice(0, 300) }) },
   legal: { table: 'legal_access_log', select: 'id,created_at,actor_id,action,user_id,detail', actorCol: 'actor_id', resultCol: 'action', searchCols: ['action'],
     map: (r) => ({ id: s(r.id)!, at: s(r.created_at)!, actor: s(r.actor_id), action: s(r.action) ?? '', target: s(r.user_id), result: s(r.action), ip: null, country: null, detail: j(r.detail) }) },
