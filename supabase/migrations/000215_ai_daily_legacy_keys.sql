@@ -1,11 +1,10 @@
--- GATED — DO NOT APPLY without Daniel's explicit approval (it rewrites existing rows on prod).
--- Then: move this file to supabase/migrations/ (keep or re-claim the number).
--- It sits outside supabase/migrations/ on purpose so no runner can pick it up early.
+-- Applied on prod 2026-10-26 with Daniel's approval (2 rows rewritten, 0 legacy keys remaining); idempotent re-run is a no-op.
 --
 -- Why: migration 000092 created ai_daily task_definitions with
 --   stable_key = 'ai_daily:' || daily_action_instances.id      (id-based, fine)
 --   habit_key  = 'ai_daily:' || coalesce(original_title, display_title)   <- the user's task TITLE in plaintext
--- task_definitions.title is now enc:v2 for owned rows, so the title must not survive in habit_key.
+-- task_definitions is on enc:v2 (FIELD_V2_TABLES): owned rows' title is sealed by the app and the backfill, so the
+-- title must not survive in plaintext in habit_key/stable_key. Shared catalog rows (owner_user_id NULL) stay plaintext.
 -- Current app writers already use id keys only; buildDupCandidates ignores habit_keys starting with ai_daily:
 -- (dedupe runs on title_bidx), so grouping by these keys has no remaining reader.
 --
