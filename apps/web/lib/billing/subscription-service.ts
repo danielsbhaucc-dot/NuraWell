@@ -59,7 +59,7 @@ async function findSubscription(admin: SupabaseClient, by: { subscriptionId?: st
 /** Apply one state-machine event. Idempotency is upstream (webhook store / dunning dedupe); invalid transitions are no-ops. */
 export async function applyBillingEvent(
   admin: SupabaseClient,
-  p: { event: BillingEventKind; subscriptionId?: string; provider?: string; providerRef?: string; userId?: string; now?: Date; source: 'webhook' | 'dunning' | 'admin' }
+  p: { event: BillingEventKind; subscriptionId?: string; provider?: string; providerRef?: string; userId?: string; now?: Date; source: 'webhook' | 'dunning' | 'admin' | 'user' }
 ): Promise<ApplyResult> {
   const now = p.now ?? new Date();
   const sub = await findSubscription(admin, p);
