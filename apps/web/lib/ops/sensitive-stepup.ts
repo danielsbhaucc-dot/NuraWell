@@ -63,7 +63,7 @@ export async function hasToggleApproval(c: StepUpCtx, mode: 'strict' | 'friendly
   if (c.req.method === 'GET') return false;
   try {
     const { createAdminClient } = await import('@/lib/supabase/admin');
-    const { STEPUP_COOKIE, consumeGrant, readCookieFrom } = await import('@/lib/auth/stepup');
+    const { STEPUP_COOKIE, consumeGrant, readCookieFrom } = await import('@/lib/module-api/auth-signup/lib-auth-stepup');
     const { FRIENDLY_PURPOSE } = await import('@/lib/platform/toggle-confirm');
     return (await consumeGrant(createAdminClient(), c.userId, FRIENDLY_PURPOSE, readCookieFrom(c.req, STEPUP_COOKIE))).ok;
   } catch {
