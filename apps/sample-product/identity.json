@@ -1,0 +1,10 @@
+{
+  "product": "sample",
+  "status": "proposed",
+  "story": "A lab-bench demo that proves the shared engine: every screen shows the invisible infrastructure working, like an instrument panel.",
+  "tone": "precise, curious, technical",
+  "palette": { "primary": "#2f5bea", "accent": "#ff7a45", "background": "#f6f4ef", "ink": "#14161c" },
+  "typography": { "display": "Assistant", "body": "Inter" },
+  "motion": "crisp, mechanical, step-by-step",
+  "signatureInteraction": "a live 'wiring' panel that lights up each shared module as it handles a request"
+}

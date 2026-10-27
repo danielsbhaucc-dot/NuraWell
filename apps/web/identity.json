@@ -1,0 +1,10 @@
+{
+  "product": "nurawell",
+  "status": "approved",
+  "story": "Personal weight-loss companionship with Almog: a warm, human guide who remembers you and walks the journey with you.",
+  "tone": "warm, encouraging, personal",
+  "palette": { "primary": "#10b981", "accent": "#fbbf24", "background": "#f2f2f6", "ink": "#1A1730" },
+  "typography": { "display": "Rubik", "body": "Heebo" },
+  "motion": "soft, calm, glassy",
+  "signatureInteraction": "a daily conversation with Almog that remembers your commitments"
+}
