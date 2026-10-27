@@ -281,13 +281,13 @@ export async function receiptSearchParity(db: SupabaseClient): Promise<Record<st
  * Nothing evidentiary changes: record_hash/prev_hash/signature are not touched (they cover the plaintext).
  */
 const LEGAL_TABLES = ['consent_evidence', 'consent_evidence_attestations', 'legal_access_log'] as const;
-const canon = (v: unknown): string =>
+const canonJson = (v: unknown): string =>
   v === null || typeof v !== 'object'
     ? JSON.stringify(v ?? null)
     : Array.isArray(v)
-      ? `[${v.map(canon).join(',')}]`
-      : `{${Object.keys(v as object).sort().map((k) => `${JSON.stringify(k)}:${canon((v as Record<string, unknown>)[k])}`).join(',')}}`;
-const sha = (s: string) => createHash('sha256').update(s).digest('hex');
+      ? `[${v.map(canonJson).join(',')}]`
+      : `{${Object.keys(v as object).sort().map((k) => `${JSON.stringify(k)}:${canonJson((v as Record<string, unknown>)[k])}`).join(',')}}`;
+const sha256Of = (s: string) => createHash('sha256').update(s).digest('hex');
 
 async function legalSnapshot(db: SupabaseClient): Promise<{ digest: Record<string, string>; rows: number; chainsOk: number; chainsBad: number }> {
   const digest: Record<string, string> = {};
@@ -296,7 +296,7 @@ async function legalSnapshot(db: SupabaseClient): Promise<{ digest: Record<strin
     const { data, error } = await db.from(t).select('*').order('id');
     if (error) throw new Error(`read_${t}`);
     rows += (data ?? []).length;
-    digest[t] = sha(canon(data ?? []));
+    digest[t] = sha256Of(canonJson(data ?? []));
   }
   const { data: recs } = await db.from('consent_evidence').select('*').order('created_at').order('id');
   const byUser = new Map<string, unknown[]>();
@@ -339,7 +339,7 @@ export async function legalReseal(db: SupabaseClient, raw: SupabaseClient) {
     const plain = (data as Record<string, unknown>)[c.col];
     const owner = ownerOf(spec, data as Record<string, unknown>)!;
     const cipher = await encryptValue(c.t, c.col, owner, SYSTEM_ROW, plain);
-    if (!isV2(cipher) || canon(await decryptValue(c.t, c.col, owner, SYSTEM_ROW, cipher)) !== canon(plain)) return { error: 'roundtrip_failed', candidates: cells.length };
+    if (!isV2(cipher) || canonJson(await decryptValue(c.t, c.col, owner, SYSTEM_ROW, cipher)) !== canonJson(plain)) return { error: 'roundtrip_failed', candidates: cells.length };
     p.push({ ...c, cipher });
   }
   const { data: n, error: e } = p.length ? await raw.rpc('legal_reseal_apply', { p }) : { data: 0, error: null };
