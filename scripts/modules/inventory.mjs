@@ -13,7 +13,7 @@ import { join } from 'node:path';
 import { ROOT, findModules } from './lib.mjs';
 import { readBaseline } from './boundaries.mjs';
 
-/** Starter kit (Daniel's list). `modules`: catalog ids or packaged module ids that deliver it. `mustBeCore`: cannot be disabled. */
+/** Starter kit (owner's list). `modules`: catalog ids or packaged module ids that deliver it. `mustBeCore`: cannot be disabled. */
 export const STARTER_KIT = [
   { item: 'Auth: 2FA, new-device approval, roles, PII encryption', modules: ['security-core', 'iam', 'field-encryption', 'auth-signup'], mustBeCore: ['security-core', 'iam', 'field-encryption'] },
   { item: 'Privacy/legal: consents, terms, deletion/export, accessibility', modules: ['privacy-retention', 'legal', 'a11y'] },
