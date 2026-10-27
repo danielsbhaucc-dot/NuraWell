@@ -18,7 +18,7 @@ export async function GET(request: Request) {
   const g = await requireApiAdmin(request);
   if (!g.ok) return g.response;
   const product = selectedProduct(request);
-  const states = await loadModuleStates(createAdminClient(), product);
+  const states = await loadModuleStates(createAdminClient(), product, { fresh: true });
   return json({ product, modules: MODULES.map((m) => ({ id: m.id, name: m.name, core: Boolean(m.core), dependsOn: m.dependsOn ?? [], enabled: Boolean(m.core) || states.some((s) => s.moduleId === m.id && s.enabled) })) });
 }
 
