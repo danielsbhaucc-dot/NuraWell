@@ -12,6 +12,20 @@
     "nightly-scan",
     "step-up-2fa"
   ],
-  "owns": [],
+  "owns": [
+    "apps/web/lib/security/",
+    "apps/web/lib/security-core/",
+    "apps/web/lib/secure-vault/",
+    "apps/web/lib/demo-access/",
+    "apps/web/components/demo-access/",
+    "apps/web/components/ops-access/",
+    "apps/web/app/api/v1/ops/stepup/",
+    "apps/web/app/api/v1/ops/device/",
+    "apps/web/app/api/v1/ops/enroll/",
+    "apps/web/app/api/v1/admin/key-backup/",
+    "apps/web/app/api/v1/admin/kms-wrap/",
+    "apps/web/app/api/v1/admin/demo-access/",
+    "apps/web/scripts/gen-security-docs.mjs"
+  ],
   "description": "Security core: step-up 2FA, trusted-device approval, key backup, nightly security scan, demo access."
 }

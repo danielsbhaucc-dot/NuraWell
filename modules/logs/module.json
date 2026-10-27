@@ -10,6 +10,11 @@
   "alwaysOn": [
     "error-logs"
   ],
-  "owns": [],
+  "owns": [
+    "apps/web/lib/logs/",
+    "apps/web/lib/logging/",
+    "apps/web/components/ops-logs/",
+    "apps/web/app/api/v1/ai/cron/log-retention/"
+  ],
   "description": "Structured logs, error capture and retention."
 }

@@ -8,6 +8,10 @@
   "core": false,
   "toggleable": true,
   "alwaysOn": [],
-  "owns": [],
+  "owns": [
+    "apps/web/lib/a11y/",
+    "apps/web/components/a11y/",
+    "apps/web/app/accessibility/"
+  ],
   "description": "Accessibility preferences and tools (behavior unchanged)."
 }

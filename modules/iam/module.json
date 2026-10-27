@@ -11,6 +11,17 @@
     "roles",
     "owner-super-access"
   ],
-  "owns": [],
+  "owns": [
+    "apps/web/lib/platform/",
+    "apps/web/lib/admin/",
+    "apps/web/components/admin/",
+    "apps/web/lib/ops/",
+    "apps/web/components/ops/",
+    "apps/web/lib/ops-host.ts",
+    "apps/web/app/api/v1/ops/",
+    "apps/web/app/api/v1/admin/",
+    "apps/web/app/auth/ops-ingest/",
+    "apps/web/components/ops-products/"
+  ],
   "description": "Permissions and the console shell: roles, module toggles, product picker, admin/ops screens."
 }

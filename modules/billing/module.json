@@ -8,6 +8,13 @@
   "core": false,
   "toggleable": true,
   "alwaysOn": [],
-  "owns": [],
+  "owns": [
+    "apps/web/lib/billing/",
+    "apps/web/components/billing/",
+    "apps/web/lib/plans/",
+    "apps/web/components/plans/",
+    "apps/web/app/api/v1/billing/",
+    "apps/web/app/(dashboard)/plans/"
+  ],
   "description": "Subscriptions, perpetual licenses, plans and module gating."
 }

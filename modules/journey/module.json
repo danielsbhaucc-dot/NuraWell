@@ -19,7 +19,21 @@
     "apps/web/lib/tasks/",
     "apps/web/components/tasks/",
     "apps/web/app/(dashboard)/journey/",
-    "apps/web/app/(dashboard)/guides/"
+    "apps/web/app/(dashboard)/guides/",
+    "apps/web/app/api/v1/challenge/",
+    "apps/web/app/api/v1/journey-progress/",
+    "apps/web/app/api/v1/journey-report/",
+    "apps/web/app/api/v1/progress/",
+    "apps/web/app/api/v1/task-executions/",
+    "apps/web/app/api/v1/task-level-feedback/",
+    "apps/web/app/api/v1/user-task-snapshot/",
+    "apps/web/components/progress/",
+    "apps/web/components/progress-report/",
+    "apps/web/components/action-hub/",
+    "apps/web/app/(dashboard)/lessons/",
+    "apps/web/app/(dashboard)/progress/",
+    "apps/web/app/ops/guides/",
+    "apps/web/scripts/guide-reason-cleanup.ts"
   ],
   "description": "Journey, guides, challenge, course and tasks."
 }

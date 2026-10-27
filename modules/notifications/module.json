@@ -8,6 +8,12 @@
   "core": false,
   "toggleable": true,
   "alwaysOn": [],
-  "owns": [],
+  "owns": [
+    "apps/web/lib/notifications/",
+    "apps/web/components/notifications/",
+    "apps/web/lib/email/",
+    "apps/web/lib/push/",
+    "apps/web/app/api/v1/notifications/"
+  ],
   "description": "Event-driven email, Telegram, WhatsApp and push."
 }

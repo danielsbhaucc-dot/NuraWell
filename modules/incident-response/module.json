@@ -10,6 +10,9 @@
   "alwaysOn": [
     "incident-playbook"
   ],
-  "owns": [],
+  "owns": [
+    "apps/web/app/api/v1/ops/security/",
+    "apps/web/app/api/v1/admin/ceo/security/"
+  ],
   "description": "Incident response: security events, lockdown, CEO security view."
 }
