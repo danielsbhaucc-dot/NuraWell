@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildMapStations } from '../lib/journey/map-stations';
 import { habitIcon, resolveHabitKey, HABIT_ICONS } from '../lib/journey/habit-icons';
-import { Lock, Sparkles } from 'lucide-react';
+import { Lock, Sprout } from 'lucide-react';
 
 describe('journey map (data-driven)', () => {
   it('14-station curriculum: done / current / locked, other tracks excluded', () => {
@@ -19,7 +19,7 @@ describe('journey map (data-driven)', () => {
   it('icon per habit key, title fallback, generic fallback, lock when locked', () => {
     expect(habitIcon('water', 'x', 'current')).toBe(HABIT_ICONS.water);
     expect(resolveHabitKey(null, 'שינה טובה')).toBe('sleep');
-    expect(habitIcon('unknown', 'משהו', 'current')).toBe(Sparkles);
+    expect(habitIcon('unknown', 'משהו', 'current')).toBe(Sprout);
     expect(habitIcon('water', 'x', 'locked')).toBe(Lock);
   });
 });
