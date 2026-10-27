@@ -1,0 +1,15 @@
+{
+  "$schema": "../area.schema.json",
+  "id": "logs",
+  "name": "יומנים",
+  "kind": "area",
+  "distribution": "shareable",
+  "category": "ops",
+  "core": true,
+  "toggleable": false,
+  "alwaysOn": [
+    "error-logs"
+  ],
+  "owns": [],
+  "description": "Structured logs, error capture and retention."
+}

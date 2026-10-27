@@ -1,0 +1,13 @@
+{
+  "$schema": "../area.schema.json",
+  "id": "journey",
+  "name": "מסע, מדריכים ואתגר",
+  "kind": "area",
+  "distribution": "internal",
+  "category": "content",
+  "core": false,
+  "toggleable": true,
+  "alwaysOn": [],
+  "owns": [],
+  "description": "Journey, guides, challenge, course and tasks."
+}

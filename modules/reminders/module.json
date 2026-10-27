@@ -1,0 +1,13 @@
+{
+  "$schema": "../area.schema.json",
+  "id": "reminders",
+  "name": "תזכורות",
+  "kind": "area",
+  "distribution": "internal",
+  "category": "ai",
+  "core": false,
+  "toggleable": true,
+  "alwaysOn": [],
+  "owns": [],
+  "description": "Reminders, follow-ups and re-engagement with stale-expiry."
+}

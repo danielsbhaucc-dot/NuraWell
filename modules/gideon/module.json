@@ -1,0 +1,13 @@
+{
+  "$schema": "../area.schema.json",
+  "id": "gideon",
+  "name": "גדעון (בוט מנכ\"ל)",
+  "kind": "area",
+  "distribution": "internal",
+  "category": "ops",
+  "core": false,
+  "toggleable": true,
+  "alwaysOn": [],
+  "owns": [],
+  "description": "Gideon, the owner's CEO bot."
+}

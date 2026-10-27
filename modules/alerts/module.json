@@ -1,0 +1,15 @@
+{
+  "$schema": "../area.schema.json",
+  "id": "alerts",
+  "name": "התראות אבטחה",
+  "kind": "area",
+  "distribution": "internal",
+  "category": "security",
+  "core": true,
+  "toggleable": false,
+  "alwaysOn": [
+    "security-alerts"
+  ],
+  "owns": [],
+  "description": "Security and ops alerting."
+}

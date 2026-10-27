@@ -1,0 +1,17 @@
+{
+  "$schema": "../area.schema.json",
+  "id": "security-core",
+  "name": "אבטחה",
+  "kind": "area",
+  "distribution": "internal",
+  "category": "security",
+  "core": true,
+  "toggleable": false,
+  "alwaysOn": [
+    "trusted-device",
+    "nightly-scan",
+    "step-up-2fa"
+  ],
+  "owns": [],
+  "description": "Security core: step-up 2FA, trusted-device approval, key backup, nightly security scan, demo access."
+}

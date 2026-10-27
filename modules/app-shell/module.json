@@ -1,0 +1,16 @@
+{
+  "$schema": "../area.schema.json",
+  "id": "app-shell",
+  "name": "מעטפת האפליקציה",
+  "kind": "area",
+  "distribution": "internal",
+  "category": "ui",
+  "core": true,
+  "toggleable": false,
+  "alwaysOn": [
+    "layout",
+    "error-pages"
+  ],
+  "owns": [],
+  "description": "App shell: layout, navigation, shared UI, data clients, loading/error/404."
+}

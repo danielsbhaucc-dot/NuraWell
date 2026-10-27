@@ -1,0 +1,9 @@
+# agent
+> The Almog agent engine: chat, routing, prompts, memory, safety, voice. Locked by the Almog golden test.
+
+kind: area module (owns app code in place; see module.json "owns", longest prefix wins)
+tier: internal
+core: false  toggleable: true
+always-on features: none
+gate: off for a customer product without an active entitlement => routes 404, no menu, crons skipped, data retained. Owned products: always on.
+rules: no owner names in code; server-side authz; behavior changes need a golden/regression test.

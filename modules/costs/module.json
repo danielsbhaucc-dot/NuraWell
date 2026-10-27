@@ -1,0 +1,13 @@
+{
+  "$schema": "../area.schema.json",
+  "id": "costs",
+  "name": "עלויות",
+  "kind": "area",
+  "distribution": "internal",
+  "category": "ops",
+  "core": false,
+  "toggleable": true,
+  "alwaysOn": [],
+  "owns": [],
+  "description": "AI and infra cost tracking and caps."
+}

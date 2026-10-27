@@ -1,0 +1,13 @@
+{
+  "$schema": "../area.schema.json",
+  "id": "site-content",
+  "name": "תוכן האתר ומדיה",
+  "kind": "area",
+  "distribution": "internal",
+  "category": "content",
+  "core": false,
+  "toggleable": true,
+  "alwaysOn": [],
+  "owns": [],
+  "description": "Site content, media library, storage and CDN."
+}

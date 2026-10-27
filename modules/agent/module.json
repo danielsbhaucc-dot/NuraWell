@@ -1,0 +1,13 @@
+{
+  "$schema": "../area.schema.json",
+  "id": "agent",
+  "name": "מנוע סוכן",
+  "kind": "area",
+  "distribution": "internal",
+  "category": "ai",
+  "core": false,
+  "toggleable": true,
+  "alwaysOn": [],
+  "owns": [],
+  "description": "The Almog agent engine: chat, routing, prompts, memory, safety, voice. Locked by the Almog golden test."
+}
