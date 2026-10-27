@@ -5,7 +5,7 @@ import {
   ALL_PRODUCTS, FOUNDER_ROLE, checkGrantChange, decide, defineCatalog, isModuleEnabled, permittedProducts, validateRegistry,
   type Actor, type Grant,
 } from '@platform/iam';
-import { CATALOG, MODULES } from '@/lib/platform/catalog';
+import { CATALOG, MODULES, MODULES_ADDED_1027 } from '@/lib/platform/catalog';
 import { permissionFor } from '@/lib/platform/route-permissions';
 
 // A dummy second product registered with ZERO product-specific code: it must inherit everything.
@@ -147,7 +147,9 @@ describe('migration seed mirrors the TS catalog', () => {
   it('same modules', () => {
     const mseed = sql.slice(sql.indexOf('-- MODULES-SEED-BEGIN'), sql.indexOf('-- MODULES-SEED-END'));
     const later = readFileSync(path.resolve(__dirname, '../../../supabase/migrations/000192_product_id_tagging.sql'), 'utf8');
+    const added = readFileSync(path.resolve(__dirname, '../../../supabase/migrations/000226_modules_wp_stage1.sql'), 'utf8');
     for (const m of MODULES) {
+      if ((MODULES_ADDED_1027 as readonly string[]).includes(m.id)) { expect(added).toMatch(new RegExp(`\\('${m.id}', '[^']+', ${m.core}, '\\{${m.dependsOn.join(',')}\\}'\\)`)); continue; }
       if (m.id === 'qc') { expect(later).toContain("values ('qc', 'בקרת איכות', false, array['logs'])"); continue; }
       expect(mseed).toMatch(new RegExp(`\\('${m.id}', '[^']+', ${m.core}, '\\{${m.dependsOn.join(',')}\\}'\\)`));
     }

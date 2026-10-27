@@ -353,6 +353,7 @@
     "src/audit.ts",
     "src/catalog.ts",
     "src/escalation.ts",
+    "src/gate.ts",
     "src/index.ts",
     "src/modules.ts",
     "src/policy.ts",

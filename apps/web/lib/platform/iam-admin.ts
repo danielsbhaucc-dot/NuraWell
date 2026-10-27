@@ -2,7 +2,8 @@ import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { checkGrantChange, decide, isFounder, type Actor } from '@platform/iam';
 import { CATALOG, MODULES } from './catalog';
-import { audit, centralModuleSource, ensureCentralSync } from './authorize';
+import { checkToggle, dependentsOf } from '@platform/iam';
+import { audit, centralModuleSource, ensureCentralSync, loadModuleStates } from './authorize';
 import { setCentralModuleState } from '@platform/module-library-ui/server';
 import { createCentralAdminClient } from '@/lib/supabase/admin';
 
@@ -74,6 +75,12 @@ export async function toggleModule(db: SupabaseClient, actor: Actor, productId: 
   const m = MODULES.find((x) => x.id === moduleId);
   if (!m) return { ok: false, status: 404, error: 'מודול לא מוכר.' };
   if (m.core && !enabled) return { ok: false, status: 409, error: 'מודול אבטחה ליבה לא ניתן לכיבוי.', reason: 'core_module' };
+  // WordPress-style dependency rule: can't turn a module off while an enabled module needs it.
+  // (Enabling with a dependency off is refused by central itself: 'dependency_disabled'.) Only looked up when someone depends on it.
+  if (!enabled && dependentsOf(MODULES, moduleId).length > 0) {
+    const chk = checkToggle(MODULES, await loadModuleStates(db, productId, { fresh: true }), productId, moduleId, false);
+    if (!chk.ok && chk.reason === 'has_dependents') return { ok: false, status: 409, error: `קודם צריך לכבות את הרכיבים שתלויים בו: ${chk.modules.join(', ')}.`, reason: 'has_dependents' };
+  }
   const src = centralModuleSource(productId);
   if (src) {
     // Central is the single source of truth: write there only (audited centrally). If central is down, nothing is written.

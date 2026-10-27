@@ -1,6 +1,6 @@
 import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { ALL_PRODUCTS, decide, isModuleEnabled, moduleForPath, permittedProducts, isFounder, type Actor, type Decision, type Grant, type ModuleState } from '@platform/iam';
+import { ALL_PRODUCTS, createModuleGate, decide, isModuleEnabled, moduleForPath, permittedProducts, isFounder, type Actor, type Decision, type Grant, type ModuleState } from '@platform/iam';
 import { CATALOG, DEFAULT_PRODUCT, MODULES, PRODUCT_COOKIE } from './catalog';
 import { centralConfigured, createCentralModuleSource, syncModulesToCentral } from '@platform/module-library-ui/server';
 import { productLicenseFromEnv } from '@platform/licensing/product';
@@ -135,3 +135,11 @@ function readCookie(request: Request, name: string): string | null {
   }
   return null;
 }
+
+/** The product's shared module gate (proxy + schedulers). Shares the central cache above; failsafe never blocks users. */
+export const moduleGate = createModuleGate(MODULES, async () => {
+  const src = centralModuleSource(DEFAULT_PRODUCT);
+  if (!src) return null;
+  const r = await src.get();
+  return { source: r.source, states: r.states };
+});
