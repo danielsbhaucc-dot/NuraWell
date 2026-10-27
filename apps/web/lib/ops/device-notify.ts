@@ -3,12 +3,12 @@
  * (sent as kind 'reply' — they are the immediate result of Daniel's own login attempt).
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { createTelegramChannel } from '@/lib/ceo/telegram';
-import { allowedChatIds } from '@/lib/ceo/channel';
-import { createStepupLink, hasPasskey } from '@/lib/ceo/security';
-import { fmtIl } from '@/lib/ceo/quiet';
-import { sendResendEmail } from '@/lib/email/resend';
-import { emailCode, emailNotice, emailParagraph, emailSummaryTable, escapeHtml, renderEmailLayout } from '@/lib/email/layout';
+import { createTelegramChannel } from '@/lib/module-api/gideon/lib-ceo-telegram';
+import { allowedChatIds } from '@/lib/module-api/gideon/lib-ceo-channel';
+import { createStepupLink, hasPasskey } from '@/lib/module-api/gideon/lib-ceo-security';
+import { fmtIl } from '@/lib/module-api/gideon/lib-ceo-quiet';
+import { sendResendEmail } from '@/lib/module-api/notifications/lib-email-resend';
+import { emailCode, emailNotice, emailParagraph, emailSummaryTable, escapeHtml, renderEmailLayout } from '@/lib/module-api/notifications/lib-email-layout';
 import { publicAppBaseNoSlashSync } from '@/lib/public-app-url';
 import { audit, createEmailChallenge, ONE_TAP_WINDOW_MS } from './device-trust';
 
@@ -89,7 +89,7 @@ export async function sendLoginEmail(db: SupabaseClient, r: Req): Promise<boolea
 
 /** Generic security alert to owner: Telegram + email, bypassing quiet hours. */
 export type AlertDelivery = { telegram: number; email: number; emailIds: string[] };
-type AlertOpts = { buttons?: import('@/lib/ceo/channel').CeoButton[][]; emailLink?: { href: string; label: string }; purpose?: string };
+type AlertOpts = { buttons?: import('@/lib/module-api/gideon/lib-ceo-channel').CeoButton[][]; emailLink?: { href: string; label: string }; purpose?: string };
 
 /** Admin owner accounts (profiles.role = 'admin'): system alerts with no specific user go to them. */
 export async function ownerAdminIds(db: SupabaseClient): Promise<string[]> {

@@ -1,4 +1,4 @@
-import { workflowPublicBaseUrl } from '../workflows/resolve-workflow-public-url';
+import { workflowPublicBaseUrl } from '@/lib/module-api/reminders/lib-workflows-resolve-workflow-public-url';
 
 /**
  * Fire-and-forget: ask QStash to POST one of our own cron routes (signed → authorizeCronRequest

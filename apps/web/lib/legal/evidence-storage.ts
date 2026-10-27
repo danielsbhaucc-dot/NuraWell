@@ -15,7 +15,7 @@ export function legalBucket() {
 
 export async function legalR2Client() {
   const { S3Client } = await import('@aws-sdk/client-s3');
-  const { getR2Credentials } = await import('@/lib/storage/r2-almog');
+  const { getR2Credentials } = await import('@/lib/module-api/site-content/lib-storage-r2-almog');
   const { accountId, accessKeyId, secretAccessKey } = getR2Credentials();
   const j = process.env.R2_LEGAL_JURISDICTION?.trim();
   return new S3Client({

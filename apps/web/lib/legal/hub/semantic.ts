@@ -20,8 +20,8 @@ async function up<T>(path: string, body: unknown): Promise<T> {
 }
 async function embedText(text: string): Promise<number[] | null> {
   const { embed } = await import('ai');
-  const { createAiProvider } = await import('@/lib/ai/provider-factory');
-  const { EMBEDDING_MODEL_OPENROUTER } = await import('@/lib/ai/rag-config');
+  const { createAiProvider } = await import('@/lib/module-api/agent/lib-ai-provider-factory');
+  const { EMBEDDING_MODEL_OPENROUTER } = await import('@/lib/module-api/agent/lib-ai-rag-config');
   try {
     const { embedding } = await embed({ model: createAiProvider().embedding(EMBEDDING_MODEL_OPENROUTER), value: text.slice(0, 1000) });
     return embedding?.length === DIM ? embedding : null;

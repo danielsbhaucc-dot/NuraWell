@@ -12,23 +12,23 @@ import {
   Sparkles,
   X,
 } from 'lucide-react';
-import { useDialogA11y } from '@/lib/a11y/use-dialog-a11y';
-import { ALMOG_AVATAR_FALLBACK } from '../../lib/ai/almog-avatar';
-import { buildTaskDoneChatPrefill } from '../../lib/ai/almog-greeting';
+import { useDialogA11y } from '@/lib/module-api/a11y/lib-a11y-use-dialog-a11y';
+import { ALMOG_AVATAR_FALLBACK } from '@/lib/module-api/agent/lib-ai-almog-avatar';
+import { buildTaskDoneChatPrefill } from '@/lib/module-api/agent/lib-ai-almog-greeting';
 import {
   buildTaskReportHintFromPendingRow,
   type TaskReportHint,
-} from '../../lib/ai/task-report-hint';
+} from '@/lib/module-api/agent/lib-ai-task-report-hint';
 import { useAlmogAvatarUrl } from '../../lib/client/useAlmogAvatarUrl';
-import { slotLabel } from '../../lib/journey/task-schedule';
+import { slotLabel } from '@/lib/module-api/journey/lib-journey-task-schedule';
 import {
   buildTaskTimeHint,
   pickNextTaskForNow,
-} from '../../lib/journey/pick-next-task-for-now';
+} from '@/lib/module-api/journey/lib-journey-pick-next-task-for-now';
 import type { JourneyTaskSlot } from '../../lib/types/journey';
-import type { PendingTaskTodayRow } from '../../lib/journey/journey-report-parse';
-import type { UserScheduleProfile } from '../../lib/journey/pick-next-task-for-now';
-import type { AlmogTodayRow } from '../../lib/tasks/user-task-ssot';
+import type { PendingTaskTodayRow } from '@/lib/module-api/journey/lib-journey-journey-report-parse';
+import type { UserScheduleProfile } from '@/lib/module-api/journey/lib-journey-pick-next-task-for-now';
+import type { AlmogTodayRow } from '@/lib/module-api/journey/lib-tasks-user-task-ssot';
 
 interface TodayTasksPopupProps {
   open: boolean;

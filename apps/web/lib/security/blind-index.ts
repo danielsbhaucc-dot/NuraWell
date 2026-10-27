@@ -23,7 +23,7 @@
  * Computed by prepareWriteRow (insert/update with a plaintext source value) and by the backfill (migration 000208).
  */
 import { isV2 } from '@/lib/security/field-crypto';
-import { dedupeNormalize, normalizeTaskTitle, titleTokens } from '@/lib/tasks/title-normalize';
+import { dedupeNormalize, normalizeTaskTitle, titleTokens } from '@/lib/module-api/journey/lib-tasks-title-normalize';
 
 type Row = Record<string, unknown>;
 
@@ -139,7 +139,7 @@ export async function blindIndexPatch(table: string, row: Row): Promise<Row> {
     out.ip_bidx = t ? await sessionTrailIpBidx(t) : null;
   }
   if (table === 'media_receipts') {
-    const { receiptSearchPatch } = await import('@/lib/legal/media/receipts');
+    const { receiptSearchPatch } = await import('@/lib/module-api/legal/lib-legal-media-receipts');
     Object.assign(out, await receiptSearchPatch(row));
   }
   return out;

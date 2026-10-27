@@ -17,7 +17,7 @@ import {
   splitLyricWords,
   type ComingSoonLyrics,
   type LyricLineConfig,
-} from '@/lib/coming-soon/lyrics';
+} from '@/lib/module-api/site-content/lib-coming-soon-lyrics';
 
 /** פיצוי תגובת-אדם: בני אדם מקליקים מעט באיחור → מקדימים את הזמן שנקלט */
 const REACTION_COMP = 0.12;

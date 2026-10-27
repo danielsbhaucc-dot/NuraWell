@@ -7,7 +7,7 @@ import type { HabitIntentDetection } from './chat-habit-intent';
 import type { TaskIntentDetection } from './chat-task-intent';
 import type { PendingAcceptedTask } from './mark-task-execution';
 import { inferSlotFromUserMessage } from './mark-task-execution';
-import { slotLabel } from '../journey/task-schedule';
+import { slotLabel } from '@/lib/module-api/journey/lib-journey-task-schedule';
 import type { HabitGapSignal } from './roller-coaster';
 
 /** מונע כפילות כשהחסם כבר מופיע ב-[יום]. */

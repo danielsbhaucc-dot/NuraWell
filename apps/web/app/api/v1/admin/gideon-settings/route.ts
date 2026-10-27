@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { readJsonBody } from '@/lib/api/json-request';
 import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
-import { GideonSettingsInput, readGideonSettings, writeGideonSettings } from '@/lib/ceo/settings';
-import { audit } from '@/lib/ceo/actions';
+import { GideonSettingsInput, readGideonSettings, writeGideonSettings } from '@/lib/module-api/gideon/lib-ceo-settings';
+import { audit } from '@/lib/module-api/gideon/lib-ceo-actions';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 export const runtime = 'nodejs';

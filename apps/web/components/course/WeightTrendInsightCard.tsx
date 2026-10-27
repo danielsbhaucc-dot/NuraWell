@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Check, LineChart, MessageCircle, TrendingDown, TrendingUp } from 'lucide-react';
-import { dispatchOpenAlmogChatWithPrefill } from '../../lib/notifications/open-almog-chat';
+import { dispatchOpenAlmogChatWithPrefill } from '@/lib/module-api/notifications/lib-notifications-open-almog-chat';
 
 type Tone = 'positive' | 'plateau' | 'concern' | 'neutral';
 

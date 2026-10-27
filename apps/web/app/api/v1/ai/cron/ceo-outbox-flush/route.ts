@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { authorizeCronRequest } from '@/lib/api/authorize-cron';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { createTelegramChannel } from '@/lib/ceo/telegram';
-import { flushOutbox, scheduleFlush } from '@/lib/ceo/outbound';
+import { createTelegramChannel } from '@/lib/module-api/gideon/lib-ceo-telegram';
+import { flushOutbox, scheduleFlush } from '@/lib/module-api/gideon/lib-ceo-outbound';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

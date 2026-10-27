@@ -11,7 +11,7 @@
  */
 
 import type OpenAI from 'openai';
-import { AI_MODELS, getClientForModel } from '../../ai/client';
+import { AI_MODELS, getClientForModel } from '@/lib/module-api/agent/lib-ai-client';
 import type { SummaryType } from './period-keys';
 import type { SummaryMetrics } from './metrics';
 

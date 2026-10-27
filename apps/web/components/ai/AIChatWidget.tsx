@@ -4,8 +4,8 @@ import { useHideOnScrollDown } from '@/lib/hooks/use-hide-on-scroll-down';
 import { RetypingTitle } from './RetypingTitle';
 import { CrisisResourcesCard } from '@/components/safety/CrisisResourcesCard';
 import { detectCrisisSignals } from '@/lib/safety/crisis-detector';
-import { ConsentChatButton } from '@/components/legal/ConsentChatButton';
-import { REDACTED_CONTENT, isRedactedContent } from '@/lib/privacy/health-chat-redaction';
+import { ConsentChatButton } from '@/lib/module-api/legal/components-legal-ConsentChatButton';
+import { REDACTED_CONTENT, isRedactedContent } from '@/lib/module-api/privacy-retention/lib-privacy-health-chat-redaction';
 import { DeletedMessageBubble } from './DeletedMessageBubble';
 import { ReplyQuoteBubble } from './ReplyQuoteBubble';
 import { resolveReplyQuote } from '../../lib/client/reply-quote-resolve';
@@ -45,7 +45,7 @@ import {
   OPEN_ALMOG_CHAT_EVENT,
   PROFILE_ONBOARDING_CHAT_VISIBILITY_EVENT,
   type OpenAlmogChatDetail,
-} from '../../lib/notifications/open-almog-chat';
+} from '@/lib/module-api/notifications/lib-notifications-open-almog-chat';
 import { taskReportHintToPayload, type TaskReportHint } from '../../lib/ai/task-report-hint';
 import { guideContextHintToPayload, type GuideContextHint } from '../../lib/ai/guide-context-hint';
 import { ChatSessionInbox } from './ChatSessionInbox';

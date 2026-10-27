@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { PRODUCT_ID, billingPlatformEnabled } from '@/lib/billing/platform';
-import { loadPlansLite, mrrAgorot, statusCounts } from '@/lib/billing/screens';
+import { PRODUCT_ID, billingPlatformEnabled } from '@/lib/module-api/billing/lib-billing-platform';
+import { loadPlansLite, mrrAgorot, statusCounts } from '@/lib/module-api/billing/lib-billing-screens';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

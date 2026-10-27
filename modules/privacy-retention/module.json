@@ -13,13 +13,17 @@
     "deletion-with-approval"
   ],
   "owns": [
-    "apps/web/lib/privacy/",
-    "apps/web/app/api/v1/admin/privacy-compliance/",
     "apps/web/app/api/v1/account/health-consent/",
     "apps/web/app/api/v1/account/transcript-access-consent/",
-    "apps/web/components/privacy/",
+    "apps/web/app/api/v1/admin/privacy-compliance/",
+    "apps/web/app/cookies/",
     "apps/web/app/privacy/",
-    "apps/web/app/cookies/"
+    "apps/web/components/privacy/",
+    "apps/web/lib/module-api/privacy-retention/",
+    "apps/web/lib/privacy/"
   ],
-  "description": "Consents, retention, export and deletion (never without approval)."
+  "description": "Consents, retention, export and deletion (never without approval).",
+  "api": [
+    "apps/web/lib/module-api/privacy-retention/"
+  ]
 }

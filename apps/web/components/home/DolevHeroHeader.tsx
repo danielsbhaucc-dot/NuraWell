@@ -3,9 +3,9 @@
 import { motion } from 'framer-motion';
 import type { ReactNode } from 'react';
 import { useAlmogAvatarUrl } from '../../lib/client/useAlmogAvatarUrl';
-import { ALMOG_AVATAR_FALLBACK } from '../../lib/ai/almog-avatar';
-import { dispatchOpenAlmogChatWithPrefill, dispatchOpenAlmogChatWithTaskReport } from '../../lib/notifications/open-almog-chat';
-import type { TaskReportHint } from '../../lib/ai/task-report-hint';
+import { ALMOG_AVATAR_FALLBACK } from '@/lib/module-api/agent/lib-ai-almog-avatar';
+import { dispatchOpenAlmogChatWithPrefill, dispatchOpenAlmogChatWithTaskReport } from '@/lib/module-api/notifications/lib-notifications-open-almog-chat';
+import type { TaskReportHint } from '@/lib/module-api/agent/lib-ai-task-report-hint';
 import { usePersonalGreeting } from '../../lib/time/usePersonalGreeting';
 
 interface AlmogHeroHeaderProps {

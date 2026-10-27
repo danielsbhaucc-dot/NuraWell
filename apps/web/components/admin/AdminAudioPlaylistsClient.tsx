@@ -23,12 +23,12 @@ import {
   AudioTranscodeUnsupportedError,
   transcodeToMp3,
   type TranscodeResult,
-} from '@/lib/audio/transcode-client';
-import { GlassAudioPlayer } from '@/components/audio/GlassAudioPlayer';
+} from '@/lib/module-api/agent/lib-audio-transcode-client';
+import { GlassAudioPlayer } from '@/lib/module-api/agent/components-audio-GlassAudioPlayer';
 import { ConfirmDialog } from '@/components/admin/ConfirmDialog';
 import { OpsPanelHeader, opsGlassCardClass, opsInputClass } from '@/components/admin/OpsPanel';
-import { useMediaManager } from '@/components/media-manager/MediaManagerProvider';
-import type { MediaAsset } from '@/components/media-manager/types';
+import { useMediaManager } from '@/lib/module-api/site-content/components-media-manager-MediaManagerProvider';
+import type { MediaAsset } from '@/lib/module-api/site-content/components-media-manager-types';
 import type { AudioCredit, AudioTrack, AudioPlaylistSummary } from '@/lib/types/audio';
 
 type TrackWithUrl = AudioTrack & { url: string | null };

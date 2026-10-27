@@ -2,7 +2,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
 
-import { runNotificationJob } from '@/lib/notifications/scheduler';
+import { runNotificationJob } from '@/lib/module-api/notifications/lib-notifications-scheduler';
 
 /** Thin trigger — all notification decisions live in the unified scheduler. */
 export async function GET(request: Request) {

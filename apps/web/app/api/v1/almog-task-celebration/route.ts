@@ -91,7 +91,7 @@ export async function POST(request: Request) {
 
     if (result.title) {
       const { afterAlmogInAppNotification } = await import(
-        '../../../../lib/notifications/after-almog-insert'
+        '@/lib/module-api/notifications/lib-notifications-after-almog-insert'
       );
       afterAlmogInAppNotification(auth.user.id, result.title, result.body);
     }

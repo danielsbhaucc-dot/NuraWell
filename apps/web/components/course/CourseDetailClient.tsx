@@ -9,7 +9,7 @@ import {
   ChevronLeft, ChevronRight, Award, Zap, Video, Headphones, FileText, Presentation, AlignLeft, Layers, Crown,
   Sparkles, AlignJustify,
 } from 'lucide-react';
-import { AlmogScreenCoach } from '../ai/AlmogScreenCoach';
+import { AlmogScreenCoach } from '@/lib/module-api/agent/components-ai-AlmogScreenCoach';
 import { GuideLearningPath } from './GuideLearningPath';
 import { GuideBackIconButton } from './GuideBackIconButton';
 import { cn } from '../../lib/cn';
@@ -27,7 +27,7 @@ import {
   guideBackToCoverLabel,
   guideChaptersSubtitle,
   type ProfileGender,
-} from '../../lib/profile/personalized-copy';
+} from '@/lib/module-api/auth-signup/lib-profile-personalized-copy';
 import { hebrewMinutesLabel, sumLessonDurationMinutes } from '../../lib/text/hebrew-plural';
 
 interface LessonItem {

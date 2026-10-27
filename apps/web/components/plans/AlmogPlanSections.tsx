@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Button } from '@/components/ui';
 import { PlanAccordion } from './PlanAccordion';
-import { dispatchOpenAlmogChatWithPrefill } from '@/lib/notifications/open-almog-chat';
+import { dispatchOpenAlmogChatWithPrefill } from '@/lib/module-api/notifications/lib-notifications-open-almog-chat';
 
 /**
  * Everything Almog manages besides ladder tasks (ported from the old /plans/details):

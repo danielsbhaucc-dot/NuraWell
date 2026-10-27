@@ -7,7 +7,7 @@ import { ArrowLeft, Sparkles } from 'lucide-react';
 import { AlmogAvatarChip } from './AlmogPresence';
 import {
   dispatchOpenAlmogChatWithPrefill,
-} from '../../lib/notifications/open-almog-chat';
+} from '@/lib/module-api/notifications/lib-notifications-open-almog-chat';
 
 export type NextStepCardData = AdaptiveNextStep;
 type AdaptiveNextStep = {

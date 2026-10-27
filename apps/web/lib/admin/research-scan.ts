@@ -1,5 +1,5 @@
-import { AI_MODELS, groq, openrouter } from '@/lib/ai/client';
-import { isGroqLaneAvailable } from '@/lib/ai/groq-compat';
+import { AI_MODELS, groq, openrouter } from '@/lib/module-api/agent/lib-ai-client';
+import { isGroqLaneAvailable } from '@/lib/module-api/agent/lib-ai-groq-compat';
 
 export const MAX_SOURCE_CHARS = 45_000;
 const MAX_FETCH_CHARS = 80_000;

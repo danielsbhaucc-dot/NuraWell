@@ -2,10 +2,10 @@
 
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import type { MentorId } from '@/lib/mentors/registry';
-import { MENTORS } from '@/lib/mentors/registry';
+import type { MentorId } from '@/lib/module-api/agent/lib-mentors-registry';
+import { MENTORS } from '@/lib/module-api/agent/lib-mentors-registry';
 import { useMentorAvatarUrl } from '@/lib/client/useMentorAvatarUrl';
-import { almogCdnHostname } from '@/lib/ai/almog-avatar';
+import { almogCdnHostname } from '@/lib/module-api/agent/lib-ai-almog-avatar';
 
 export type MentorBubbleTheme = 'dark' | 'light';
 

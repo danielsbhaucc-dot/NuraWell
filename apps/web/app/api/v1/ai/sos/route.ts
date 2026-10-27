@@ -1,7 +1,7 @@
 import { recordCrisisSignal } from '@/lib/safety/record-crisis';
 import { NextResponse } from 'next/server';
 
-import { normalizeFrictionCategory, normalizeStrategyType } from '../../../../../lib/ai/almog-commitments/friction';
+import { normalizeFrictionCategory, normalizeStrategyType } from '@/lib/module-api/reminders/lib-ai-almog-commitments-friction';
 import {
   executeSosFlow,
   fetchSosContext,

@@ -24,7 +24,7 @@ import {
 import {
   fetchRecentSosForChat,
   formatRecentSosForChat,
-} from '../guardian/sos-memory';
+} from '@/lib/module-api/agent/lib-ai-guardian-sos-memory';
 import { formatPlansPageSnapshotForChat } from './plans-page-tracking';
 
 type Supa = SupabaseClient;

@@ -1,7 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/cn';
-import { mediaAltText } from '@/lib/a11y/alt-text';
+import { mediaAltText } from '@/lib/module-api/a11y/lib-a11y-alt-text';
 import type { FinderFolderEntry } from '@/lib/media-manager/smart-folders';
 import type { MediaAsset } from './types';
 import { CreditBadge } from './CreditBadge';

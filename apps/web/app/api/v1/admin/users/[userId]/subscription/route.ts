@@ -4,7 +4,7 @@ import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { readJsonBody } from '@/lib/api/json-request';
 import { hasSensitiveStepUp } from '@/lib/ops/sensitive-stepup';
-import { setSubscriptionEnded } from '@/lib/privacy/subscription-retention';
+import { setSubscriptionEnded } from '@/lib/module-api/privacy-retention/lib-privacy-subscription-retention';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

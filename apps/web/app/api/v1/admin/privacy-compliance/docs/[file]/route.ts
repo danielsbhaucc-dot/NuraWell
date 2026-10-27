@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server';
 import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { isKnownDocFile } from '@/lib/privacy/compliance-checklist';
-import { loadLegalObject } from '@/lib/legal/evidence-storage';
-import { sha256Hex } from '@/lib/legal/evidence-crypto';
+import { loadLegalObject } from '@/lib/module-api/legal/lib-legal-evidence-storage';
+import { sha256Hex } from '@/lib/module-api/legal/lib-legal-evidence-crypto';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

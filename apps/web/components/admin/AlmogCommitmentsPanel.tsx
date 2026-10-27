@@ -12,7 +12,7 @@ import {
   Snowflake,
   Sparkles,
 } from 'lucide-react';
-import { glassCardStyle, glassPanelStyle } from '@/components/media-manager/glass-styles';
+import { glassCardStyle, glassPanelStyle } from '@/lib/module-api/site-content/components-media-manager-glass-styles';
 
 type Assignment = {
   id: string;

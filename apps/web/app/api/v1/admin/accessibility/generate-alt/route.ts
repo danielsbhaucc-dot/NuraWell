@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { generateAltTextForImage } from '@/lib/a11y/generate-alt-text';
+import { generateAltTextForImage } from '@/lib/module-api/a11y/lib-a11y-generate-alt-text';
 import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import { readJsonBody } from '@/lib/api/json-request';
 import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { resolvePublicUrlForAsset } from '@/lib/cdn/public-media';
+import { resolvePublicUrlForAsset } from '@/lib/module-api/site-content/lib-cdn-public-media';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

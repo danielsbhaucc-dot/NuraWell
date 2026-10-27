@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { BookOpen, Loader2, Save } from 'lucide-react';
-import type { ChallengeEatingWindowLesson } from '@/lib/challenge/content';
+import type { ChallengeEatingWindowLesson } from '@/lib/module-api/journey/lib-challenge-content';
 
 export function AdminChallengeEatingWindowEditor() {
   const [lesson, setLesson] = useState<ChallengeEatingWindowLesson | null>(null);

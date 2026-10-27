@@ -9,9 +9,13 @@
   "toggleable": true,
   "alwaysOn": [],
   "owns": [
-    "apps/web/lib/ceo/",
+    "apps/web/app/api/v1/admin/ceo/",
     "apps/web/components/gideon/",
-    "apps/web/app/api/v1/admin/ceo/"
+    "apps/web/lib/ceo/",
+    "apps/web/lib/module-api/gideon/"
   ],
-  "description": "Gideon, the owner's CEO bot."
+  "description": "Gideon, the owner's CEO bot.",
+  "api": [
+    "apps/web/lib/module-api/gideon/"
+  ]
 }

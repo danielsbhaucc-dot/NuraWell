@@ -1,4 +1,4 @@
-import type { OnboardingGender } from '@/lib/onboarding/types';
+import type { OnboardingGender } from '@/lib/module-api/auth-signup/lib-onboarding-types';
 
 /** מגדר פרופיל — null/ריק = ניסוח ניטרלי עם סלאש. */
 export type ProfileGender = OnboardingGender | null | undefined | '';

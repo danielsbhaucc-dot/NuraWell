@@ -1,6 +1,6 @@
 import { sealProfilePatch } from '@/lib/crypto/pii-seal';
 import { encryptMeasurementPatch } from '@/lib/crypto/pii-fields';
-import { isHealthProcessingBlocked } from '@/lib/privacy/health-consent';
+import { isHealthProcessingBlocked } from '@/lib/module-api/privacy-retention/lib-privacy-health-consent';
 /**
  * זיהוי משקל מהודעת צ'אט — עדכון user_measurements בלי טופס.
  */

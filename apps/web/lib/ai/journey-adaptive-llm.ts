@@ -13,8 +13,8 @@ import {
   loadJourneyAccessContext,
   pickNextJourneyStep,
   type PickNextJourneyStepResult,
-} from '../journey/journey-access';
-import type { MainObstacle, WeakestTimeOfDay } from '../onboarding/types';
+} from '@/lib/module-api/journey/lib-journey-journey-access';
+import type { MainObstacle, WeakestTimeOfDay } from '@/lib/module-api/auth-signup/lib-onboarding-types';
 
 export type AdaptiveNextStep = {
   step_id: string | null;

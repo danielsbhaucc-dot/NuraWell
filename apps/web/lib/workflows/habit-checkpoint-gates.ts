@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { gateAlmogUserFacingTouch } from '../notifications/almog-touch-send-gate';
+import { gateAlmogUserFacingTouch } from '@/lib/module-api/notifications/lib-notifications-almog-touch-send-gate';
 import type { HabitCheckpointSlot } from './almog-habit-checkpoint-payload';
 
 type NotifyMode = 'remind' | 'reinforce';

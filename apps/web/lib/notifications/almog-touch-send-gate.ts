@@ -14,8 +14,8 @@
 
 import { evaluateNotifyGate } from './notify-recipients';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { shouldSkipNotifyForTouchFatigue } from '../ai/almog-daily-context';
-import { fetchTodayAlmogTouches } from '../ai/almog-notify-day-context';
+import { shouldSkipNotifyForTouchFatigue } from '@/lib/module-api/agent/lib-ai-almog-daily-context';
+import { fetchTodayAlmogTouches } from '@/lib/module-api/agent/lib-ai-almog-notify-day-context';
 import {
   hasRecentSimilarHabitNotification,
   type RecentHabitNotificationMeta,

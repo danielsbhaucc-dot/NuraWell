@@ -1,33 +1,33 @@
 import { sealProfilePatch } from '@/lib/crypto/pii-seal';
 import { decProfileResult } from '@/lib/crypto/pii-fields';
 import { decInteractionResult } from '@/lib/crypto/pii-fields';
-import { withAiUser } from '@/lib/ai/usage-meter';
+import { withAiUser } from '@/lib/module-api/agent/lib-ai-usage-meter';
 import { insertNotification } from '@/lib/notifications/deliver';
 import { evaluateNotifyGate, filterNotifyEligibleUserIds } from '@/lib/notifications/notify-recipients';
 import { NextResponse } from 'next/server';
-import { openrouter } from '@/lib/ai/client';
+import { openrouter } from '@/lib/module-api/agent/lib-ai-client';
 import {
   buildCronOpsNotification,
   daysSinceIso,
   decideStaleProfileAction,
   nudgeThresholdDays,
   type CronOpsAction,
-} from '@/lib/ai/cron-ops-action';
+} from '@/lib/module-api/agent/lib-ai-cron-ops-action';
 import {
   cronOpsNotificationTitle,
   generateCronOpsNotificationBody,
-} from '@/lib/ai/send-cron-ops-notification';
-import { buildCrisisCooldownPatch, isAvoidPushActive } from '@/lib/ai/avoid-push';
+} from '@/lib/module-api/agent/lib-ai-send-cron-ops-notification';
+import { buildCrisisCooldownPatch, isAvoidPushActive } from '@/lib/module-api/agent/lib-ai-avoid-push';
 import {
   cronOpsShouldUseLlm,
   fetchGhostingSignals,
   type HabitGapSignal,
-} from '@/lib/ai/roller-coaster';
-import { type AiUserContext } from '@/lib/ai/memory';
-import { ANALYSIS_PROMPT } from '@/lib/ai/prompts';
+} from '@/lib/module-api/agent/lib-ai-roller-coaster';
+import { type AiUserContext } from '@/lib/module-api/agent/lib-ai-memory';
+import { ANALYSIS_PROMPT } from '@/lib/module-api/agent/lib-ai-prompts';
 import { authorizeCronRequest } from '@/lib/api/authorize-cron';
 import { maybeReturnCronIdleSkip } from '@/lib/api/cron-idle-guard';
-import { runMemoryConsolidationBatch } from '@/lib/ai/memory-consolidation/run-batch';
+import { runMemoryConsolidationBatch } from '@/lib/module-api/agent/lib-ai-memory-consolidation-run-batch';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 /** Strip emails/phones/UUIDs before any external LLM. Prefer OpenRouter over DeepSeek for user content. */
@@ -558,9 +558,9 @@ async function runMasterCron() {
   let kickoffWatchdogFailed = 0;
   try {
     const { fetchKickoffWatchdogCandidates, markKickoffSent, markKickoffSkipped, markKickoffFailed } =
-      await import('@/lib/auth/kickoff-status');
+      await import('@/lib/module-api/auth-signup/lib-auth-kickoff-status');
     const { sendKickoffNudgeForUser, checkKickoffEligibility } = await import(
-      '@/lib/workflows/almog-onboarding-kickoff'
+      '@/lib/module-api/reminders/lib-workflows-almog-onboarding-kickoff'
     );
 
     const watchdogLimit = Math.min(
@@ -701,12 +701,12 @@ async function runMasterCron() {
       gateJourneyCompanionNotify,
       shouldNudgeJourneyCompanion,
       shouldSendFullJourneyCompanion,
-    } = await import('@/lib/workflows/journey-companion');
+    } = await import('@/lib/module-api/reminders/lib-workflows-journey-companion');
     const { sendJourneyCompanionNudge } = await import(
-      '@/lib/workflows/send-journey-companion-nudge'
+      '@/lib/module-api/reminders/lib-workflows-send-journey-companion-nudge'
     );
-    const { sendLifeContextTouch } = await import('@/lib/ai/life-context');
-    const { isAvoidPushActive: avoidPush } = await import('@/lib/ai/avoid-push');
+    const { sendLifeContextTouch } = await import('@/lib/module-api/agent/lib-ai-life-context');
+    const { isAvoidPushActive: avoidPush } = await import('@/lib/module-api/agent/lib-ai-avoid-push');
 
     for (const profile of (journeyCandidateRows ?? []) as {
       id: string;
@@ -757,7 +757,7 @@ async function runMasterCron() {
 
         if (companion.followUpDue) {
           const { clearJourneyFollowUp } = await import(
-            '@/lib/ai/journey-follow-up-promise'
+            '@/lib/module-api/agent/lib-ai-journey-follow-up-promise'
           );
           await clearJourneyFollowUp(admin, userId);
         }
@@ -829,11 +829,11 @@ async function runMasterCron() {
   }
 
   // --- Guide companion — סריקה יומית של מדריכים (Llama 4 / Groq)
-  let guideCompanion: Awaited<ReturnType<typeof import('@/lib/workflows/guide-companion-cron').runGuideCompanionBatch>> | null = null;
+  let guideCompanion: Awaited<ReturnType<typeof import('@/lib/module-api/reminders/lib-workflows-guide-companion-cron').runGuideCompanionBatch>> | null = null;
   if (process.env.GUIDE_COMPANION_IN_MASTER?.trim() !== '0') {
     try {
       const { runGuideCompanionBatch } = await import(
-        '@/lib/workflows/guide-companion-cron'
+        '@/lib/module-api/reminders/lib-workflows-guide-companion-cron'
       );
       guideCompanion = await runGuideCompanionBatch(admin);
       console.log('[cron/master] guide_companion', JSON.stringify(guideCompanion));
@@ -891,7 +891,7 @@ async function runMasterCron() {
 
   let taskLadder: unknown = null;
   try {
-    const { runTaskLadderMonitorBatch } = await import('@/lib/tasks/monitor-job');
+    const { runTaskLadderMonitorBatch } = await import('@/lib/module-api/journey/lib-tasks-monitor-job');
     taskLadder = await runTaskLadderMonitorBatch(admin);
   } catch (e) {
     errors.push(`task_ladder: ${e instanceof Error ? e.message : String(e)}`);
@@ -908,7 +908,7 @@ async function runMasterCron() {
 
   let billing: unknown = null;
   try {
-    const { runBillingRetention } = await import('@/lib/billing/retention-job');
+    const { runBillingRetention } = await import('@/lib/module-api/billing/lib-billing-retention-job');
     billing = await runBillingRetention(admin);
   } catch (e) {
     errors.push(`billing: ${e instanceof Error ? e.message : String(e)}`);

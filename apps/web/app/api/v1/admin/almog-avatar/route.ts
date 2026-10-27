@@ -6,17 +6,17 @@ import {
   getAlmogAvatarUrl,
   resolveAlmogPublicBaseUrl,
   resolveCdnImagesPrefix,
-} from '@/lib/ai/almog-avatar';
+} from '@/lib/module-api/agent/lib-ai-almog-avatar';
 import {
   ALMOG_AVATAR_LEGACY_KEYS,
   ALMOG_AVATAR_OBJECT_KEY,
   getR2Client,
   r2ImageBucketName,
-} from '@/lib/storage/r2-almog';
+} from '@/lib/module-api/site-content/lib-storage-r2-almog';
 import {
   copyImageSourceToKey,
   parseSourceObjectKeyFromRequest,
-} from '@/lib/storage/apply-source-image';
+} from '@/lib/module-api/site-content/lib-storage-apply-source-image';
 import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
 import { isWebpBuffer, MAX_UPLOAD_BYTES } from '@/lib/validation/webp';
 

@@ -4,9 +4,9 @@ import Link from 'next/link';
 import { User } from '@supabase/supabase-js';
 import { BookOpen, TrendingUp, UserCircle, X, Menu, Home, LogOut, ListChecks } from 'lucide-react';
 import { useState } from 'react';
-import { signOutClient } from '../../lib/auth/sign-out-client';
+import { signOutClient } from '@/lib/module-api/auth-signup/lib-auth-sign-out-client';
 import { motion, AnimatePresence } from 'framer-motion';
-import { NotificationsBellButton } from '../notifications/NotificationsBellButton';
+import { NotificationsBellButton } from '@/lib/module-api/notifications/components-notifications-NotificationsBellButton';
 import { APP_HOME_PATH } from '../../lib/navigation/app-home-path';
 
 interface MobileHeaderProps {

@@ -3,7 +3,7 @@
 // Rules:
 //   1. Importing a CORE module's files is allowed: core is the platform API (like WordPress core).
 //   2. Importing a NON-core module from another module is allowed only through that module's public API:
-//      the files listed in its module.json "api" (its index file). Anything else is an internal import.
+//      the files listed in its module.json "api" (files, or a folder ending in "/" such as apps/web/lib/module-api/<id>/). Anything else is an internal import.
 //   3. Existing violations live in modules/import-baseline.txt. The baseline may only shrink: a new
 //      violation fails CI, and a fixed one must be removed from the file (so the count never climbs back).
 // Reads sources from git (works in sparse checkouts). Usage:
@@ -59,7 +59,7 @@ export function violations(src = sources(), areas = findAreas()) {
       if (!tm || tm === fm) continue;
       const t = byId.get(tm);
       if (t.core) continue;
-      if ((t.api ?? []).includes(to)) continue;
+      if ((t.api ?? []).some((a) => (a.endsWith('/') ? to.startsWith(a) : a === to))) continue;
       v.add(`${fm} -> ${tm} | ${from} -> ${to}`);
     }
   }

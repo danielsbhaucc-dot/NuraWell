@@ -11,8 +11,8 @@ import { browserSupportsWebAuthn, startAuthentication } from '@simplewebauthn/br
 import { AnimatedDialog } from '../../../components/shared/AnimatedDialog';
 import { createClient } from '../../../lib/supabase/client';
 import { NuraWellLogo } from '../../../components/shared/NuraWellLogo';
-import { PublicAiPresence } from '../../../components/ai/PublicAiPresence';
-import { LegalLinksRow } from '../../../components/legal/LegalLinksRow';
+import { PublicAiPresence } from '@/lib/module-api/agent/components-ai-PublicAiPresence';
+import { LegalLinksRow } from '@/lib/module-api/legal/components-legal-LegalLinksRow';
 import { useToast, ToastContainer } from '../../../components/shared/Toast';
 import { APP_HOME_PATH } from '../../../lib/navigation/app-home-path';
 

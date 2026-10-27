@@ -1,5 +1,5 @@
 import { Client as WorkflowClient } from '@upstash/workflow';
-import { workflowPublicBaseUrl } from '@/lib/workflows/resolve-workflow-public-url';
+import { workflowPublicBaseUrl } from '@/lib/module-api/reminders/lib-workflows-resolve-workflow-public-url';
 
 const WELCOME_DELAY = process.env.WELCOME_EMAIL_DELAY?.trim() || '3m';
 

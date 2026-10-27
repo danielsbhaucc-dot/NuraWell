@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { HeadObjectCommand } from '@aws-sdk/client-s3';
 import { resolveAlmogPublicBaseUrl, resolveCdnImagesPrefix, almogCdnHostname } from '@/lib/ai/almog-avatar';
-import { getR2Client, r2ImageBucketName } from '@/lib/storage/r2-almog';
+import { getR2Client, r2ImageBucketName } from '@/lib/module-api/site-content/lib-storage-r2-almog';
 import { isMentorId, MENTORS } from '@/lib/mentors/registry';
 import { getMentorAvatarFallback } from '@/lib/mentors/avatar-url';
 

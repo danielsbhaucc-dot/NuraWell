@@ -13,7 +13,7 @@ import {
   Save,
   Trash2,
 } from 'lucide-react';
-import { DEFAULT_REVOLUTION_LINES } from '@/lib/coming-soon/revolution-lines';
+import { DEFAULT_REVOLUTION_LINES } from '@/lib/module-api/site-content/lib-coming-soon-revolution-lines';
 import { OpsPanelHeader, opsGlassCardClass, opsInputClass } from '@/components/admin/OpsPanel';
 import { cn } from '@/lib/cn';
 

@@ -9,9 +9,9 @@
  *     unless Daniel reviewed the rule in Ops.
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { applyPiiDetectors } from '@/lib/ai/privacy/pii-patterns';
-import { meteredFetch } from '@/lib/ai/usage-meter';
-import { REPLY_QC_MODEL } from '@/lib/ai/reply-quality/core';
+import { applyPiiDetectors } from '@/lib/module-api/agent/lib-ai-privacy-pii-patterns';
+import { meteredFetch } from '@/lib/module-api/agent/lib-ai-usage-meter';
+import { REPLY_QC_MODEL } from '@/lib/module-api/agent/lib-ai-reply-quality-core';
 import { maskName } from './notify-qc';
 
 export type NotifyQualityStage = 'lint_fix' | 'lint_reject' | 'qc_edit' | 'qc_reject' | 'sweep_fix';

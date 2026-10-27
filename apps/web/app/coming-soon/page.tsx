@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { PublicAiPresence } from '@/components/ai/PublicAiPresence';
+import { PublicAiPresence } from '@/lib/module-api/agent/components-ai-PublicAiPresence';
 import { ComingSoonExperience } from '@/components/coming-soon/ComingSoonExperience';
 import { parseLyricsConfig, type ComingSoonLyrics } from '@/lib/coming-soon/lyrics';
 import { parseRevolutionLines } from '@/lib/coming-soon/revolution-lines';
