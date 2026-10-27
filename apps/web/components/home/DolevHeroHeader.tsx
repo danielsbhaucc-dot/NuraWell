@@ -11,7 +11,7 @@ import { usePersonalGreeting } from '../../lib/time/usePersonalGreeting';
 interface AlmogHeroHeaderProps {
   firstName: string;
   bubbleContent: ReactNode;
-  /** כותרת משנה דינמית מתחת ל"✦ אלמוג" */
+  /** כותרת משנה דינמית מתחת ל"אלמוג" */
   mentorTag?: string;
   /** CTA לצ'אט מתוך הבועה */
   chatCta?: { label: string; prefill: string; hint?: TaskReportHint };
@@ -351,7 +351,7 @@ export const DolevHeroHeader = AlmogHeroHeader;
 
 /**
  * שורת "יש לך X משימות לביצוע" מעוצבת — מופיעה רק כשיש משימות פתוחות בפועל.
- * מצב 1 — כל המשימות בוצעו: ירוק חזק "סגרת הכל היום ✦"
+ * מצב 1 — כל המשימות בוצעו: ירוק חזק "סגרת הכל היום "
  * מצב 2 — יש משימות פתוחות: כתום-זהב "יש לך X משימות לביצוע היום"
  * מצב 3 — אין משימות מקובלות: ענן רך "המסע מחכה לך"
  */

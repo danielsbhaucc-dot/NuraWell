@@ -7958,33 +7958,37 @@ html.a11y-reduce-motion .nw-chat-receive {
 }
 
 /* =============================================
-   Hero / header colour variants (owner review 2026-10-27).
-   Default = "a" (pre-#384 emerald). Preview others with ?hv=b..e and the
-   scroll-aware glass header with ?hm=glass (persisted in localStorage).
-   Green stays an accent band on the neutral #dfe2e0 canvas (never green-on-green surfaces).
+   Hero / header palette — owner picked "E" forest-emerald (2026-10-27).
+   Green stays an accent band on the neutral #dfe2e0 canvas.
    ============================================= */
 :root {
-  --hero-from: #047857; --hero-mid: #10b981; --hero-to: #14b8a6;
-  --hero-inner: #05795a; --hero-inner-line: #34b892;
+  --hero-from: #0f5132; --hero-mid: #047857; --hero-to: #059669;
+  --hero-inner: #0b4a2f; --hero-inner-line: #2f8a64;
+  /* "Today's focus" panel — option 1 (default) deep forest, light text. */
+  --focus-bg: #0a3a25; --focus-line: #2f8a64; --focus-text: #f1f3f2; --focus-muted: #c3d3cb; --focus-label: #9fdcc0;
 }
-html[data-hero='b'] { --hero-from: #064e3b; --hero-mid: #047857; --hero-to: #0f766e; --hero-inner: #053f30; --hero-inner-line: #2a7d66; }
-html[data-hero='c'] { --hero-from: #115e59; --hero-mid: #0d9488; --hero-to: #0e7490; --hero-inner: #0d5652; --hero-inner-line: #3a9994; }
-html[data-hero='d'] { --hero-from: #262b29; --hero-mid: #313735; --hero-to: #3b4240; --hero-inner: #1f2321; --hero-inner-line: #4e5653; }
-html[data-hero='e'] { --hero-from: #0f5132; --hero-mid: #047857; --hero-to: #059669; --hero-inner: #0b4a2f; --hero-inner-line: #2f8a64; }
+/* Owner preview only: ?fp=2 warm stone, ?fp=3 graphite. Remove once one is chosen. */
+html[data-fp='2'] { --focus-bg: #d3cdc4; --focus-line: #b3aba0; --focus-text: #1d211f; --focus-muted: #3f4441; --focus-label: #0f5132; }
+html[data-fp='3'] { --focus-bg: #262b29; --focus-line: #4e5653; --focus-text: #f1f3f2; --focus-muted: #c4cac7; --focus-label: #8fd3b4; }
+.focus-panel { background: var(--focus-bg); border: 1px solid var(--focus-line); color: var(--focus-text); }
+.focus-panel .fp-label { color: var(--focus-label); }
+.focus-panel .fp-muted { color: var(--focus-muted); }
 
 .hero-gradient { background: linear-gradient(150deg, var(--hero-from) 0%, var(--hero-mid) 55%, var(--hero-to) 100%); }
-.app-header-bar { background: linear-gradient(160deg, var(--hero-from) 0%, var(--hero-mid) 50%, var(--hero-to) 100%); transition: background 0.25s ease, box-shadow 0.25s ease; }
-html[data-hero='d'] .app-header-bar { box-shadow: inset 0 -3px 0 #10b981; }
-html[data-hero='d'] .hero-gradient { box-shadow: inset 0 3px 0 #10b981; }
-/* Glass mode: transparent over the page at the top, frosted neutral once scrolled. */
-html[data-hm='glass'] .app-header-bar[data-scrolled='false']:not([data-menu='true']) { background: transparent; box-shadow: none; }
-html[data-hm='glass'] .app-header-bar[data-scrolled='true'],
-html[data-hm='glass'] .app-header-bar[data-menu='true'] {
-  background: rgba(223, 226, 224, 0.82);
-  backdrop-filter: blur(18px) saturate(160%);
-  -webkit-backdrop-filter: blur(18px) saturate(160%);
-  box-shadow: 0 1px 0 var(--color-hairline), 0 8px 24px rgba(17, 19, 23, 0.08);
+/* Header: transparent at the top, light clear glass once scrolled; solid green while the menu is open. */
+.app-header-bar { background: transparent; transition: background 0.25s ease, box-shadow 0.25s ease; }
+.app-header-bar[data-scrolled='true'] {
+  background: rgba(223, 226, 224, 0.42);
+  backdrop-filter: blur(6px) saturate(115%);
+  -webkit-backdrop-filter: blur(6px) saturate(115%);
+  box-shadow: 0 1px 0 rgba(17, 19, 23, 0.08);
 }
+.app-header-bar[data-menu='true'] {
+  background: linear-gradient(160deg, var(--hero-from) 0%, var(--hero-mid) 50%, var(--hero-to) 100%);
+  backdrop-filter: none; -webkit-backdrop-filter: none;
+  box-shadow: 0 10px 28px rgba(17, 19, 23, 0.12);
+}
+.app-header-bar .hdr-logo { filter: drop-shadow(0 0 6px rgba(223, 226, 224, 0.9)); }
 
 /* Hamburger menu card: pre-#384 neutral surface, restored per owner. */
 .app-menu-card { background: #f2f2f6; }

@@ -170,7 +170,7 @@ export function JourneyStationCard({ group, index, onSelect }: JourneyStationCar
                 fontFamily: "'Rubik','Heebo',sans-serif",
               }}
             >
-              {/* ✦ specular highlight — קו אור עליון */}
+              {/* specular highlight — קו אור עליון */}
               <span
                 aria-hidden
                 className="pointer-events-none absolute inset-x-2 top-px h-px"

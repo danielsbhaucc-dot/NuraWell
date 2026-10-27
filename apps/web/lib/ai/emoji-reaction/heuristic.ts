@@ -135,11 +135,11 @@ const FALLBACK_POOLS: Record<ReactionIntent, PoolOption[]> = {
     { emoji: '💪', verb: 'חיזק', when: /גאה|הצלח|ניצח/i },
     { emoji: '🏆', verb: 'חוגג', when: /שיא|ניצח|הצלחתי/i },
     { emoji: '🎉', verb: 'חוגג', when: /סיימתי את כל|הכל/i },
-    { emoji: '🌟', verb: 'גאה בך' },
+    { emoji: '👏', verb: 'גאה בך' },
     { emoji: '🚀', verb: 'מעודד' },
     { emoji: '🔥', verb: 'מתלהב' },
     { emoji: '🙌', verb: 'מחא כפיים' },
-    { emoji: '✨', verb: 'מאיר' },
+    { emoji: '🌿', verb: 'מאיר' },
   ],
   micro_win: [
     { emoji: '💧', verb: 'ציין', when: /שתית|מים/i },
@@ -161,12 +161,12 @@ const FALLBACK_POOLS: Record<ReactionIntent, PoolOption[]> = {
     { emoji: '🫶', verb: 'מודה' },
   ],
   joy: [
-    { emoji: '✨', verb: 'שמח איתך' },
+    { emoji: '🌿', verb: 'שמח איתך' },
     { emoji: '😄', verb: 'שמח איתך' },
     { emoji: '🌈', verb: 'שמח איתך' },
     { emoji: '🌞', verb: 'מאיר' },
     { emoji: '🎊', verb: 'חוגג' },
-    { emoji: '💫', verb: 'מתרגש' },
+    { emoji: '🎈', verb: 'מתרגש' },
   ],
   encourage: [
     { emoji: '💪', verb: 'עודד' },

@@ -21,7 +21,7 @@ export function OfferCard({ definitionId, title, emoji, description }: { definit
     <Card className="flex flex-col gap-2 border-dashed">
       <div className="flex items-start gap-3">
         <span className="text-2xl" aria-hidden>
-          {emoji ?? '✨'}
+          {emoji ?? '🌿'}
         </span>
         <div className="min-w-0 flex-1">
           <span className="text-xs font-bold text-accent-700">הצעה מאלמוג</span>

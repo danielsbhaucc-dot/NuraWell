@@ -376,7 +376,7 @@ export async function dispatchSummaryReadyNotification(
       body: `המבט שלי על ${args.periodKey} מחכה לך באפליקציה.`,
       type: 'periodic_summary',
       action_url: `/me/insights?type=${args.type}&period=${encodeURIComponent(args.periodKey)}`,
-      icon_emoji: '✨',
+      icon_emoji: '🌿',
       metadata: {
         summary_type: args.type,
         period_key: args.periodKey,

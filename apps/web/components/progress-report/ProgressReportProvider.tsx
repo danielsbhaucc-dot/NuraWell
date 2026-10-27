@@ -427,7 +427,7 @@ export function ProgressReportProvider({
                                     <CheckCircle2 className="h-5 w-5 shrink-0 text-primary-600" />
                                   )}
                                   <span className="text-xl shrink-0" aria-hidden>
-                                    ✨
+                                    🌿
                                   </span>
                                   <span className="flex-1 text-start text-sm font-bold text-primary-950 leading-snug">
                                     {t.title}
@@ -456,7 +456,7 @@ export function ProgressReportProvider({
                             dir="rtl"
                             className="glass-surface relative overflow-hidden rounded-[22px] px-3 py-3"
                           >
-                            {/* ✦ קו אור עליון */}
+                            {/* קו אור עליון */}
                             <span
                               aria-hidden
                               className="pointer-events-none absolute inset-x-4 top-px h-px"

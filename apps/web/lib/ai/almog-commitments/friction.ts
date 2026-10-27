@@ -86,7 +86,7 @@ export const FRICTION_META: Record<FrictionCategory, FrictionCategoryMeta> = {
   motivational: {
     id: 'motivational',
     labelHe: 'מוטיבציה',
-    emoji: '✨',
+    emoji: '🌿',
     preferredStrategies: ['value_linking', 'reward_system', 'micro_habit'],
     examples: ['לא רואה טעם', 'למה בכלל', 'אין משמעות'],
   },

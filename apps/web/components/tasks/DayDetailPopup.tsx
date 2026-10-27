@@ -299,7 +299,7 @@ export function DayDetailPopup({ open, dateKey, todayKey, rows, onClose }: Props
               >
                 {sortedRows.length === 1
                   ? 'ביצוע אחד תועד — צעד הוא צעד 🌱'
-                  : `${sortedRows.length} ביצועים תועדו — יום פעיל ✨`}
+                  : `${sortedRows.length} ביצועים תועדו — יום פעיל 🌿`}
               </div>
             ) : null}
           </motion.div>

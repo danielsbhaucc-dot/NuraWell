@@ -269,7 +269,7 @@ export async function sendTaskCompletionCelebration(
   }));
 
   /** טייטל דינמי לפי outcome + streak. */
-  const titleEmoji = outcome === 'attempt_failed' ? '💙' : streak && streak.currentStreak >= 3 ? '🔥' : '✨';
+  const titleEmoji = outcome === 'attempt_failed' ? '💙' : streak && streak.currentStreak >= 3 ? '🔥' : '🌿';
   const titlePrefix =
     outcome === 'attempt_failed'
       ? `${firstName}, אני איתך`
@@ -284,7 +284,7 @@ export async function sendTaskCompletionCelebration(
     type: 'ai_message',
     title,
     body,
-    icon_emoji: outcome === 'attempt_failed' ? '💙' : '✨',
+    icon_emoji: outcome === 'attempt_failed' ? '💙' : '🌿',
     action_url: '/journey',
     is_read: false,
     is_sent: false,

@@ -194,7 +194,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       reply: parsed.data.persist
-        ? '✦ נשמר! תיעוד סגור נוסף להיסטוריה — בלי פרטים אישיים.'
+        ? 'נשמר! תיעוד סגור נוסף להיסטוריה — בלי פרטים אישיים.'
         : result.reply,
       extracted_public: redactExtractedForClient(mergedPublic),
       field_flags: responseFlags,

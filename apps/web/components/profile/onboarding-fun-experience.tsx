@@ -12,7 +12,7 @@ export const FUN_TYPING_LINES = [
   'אלמוג מכין פאנץ…',
 ] as const;
 
-const FLOAT_EMOJIS = ['✨', '🎉', '😅', '🍕', '💫', '🎭', '🔥', '🌈'] as const;
+const FLOAT_EMOJIS = ['🌿', '🎉', '😅', '🍕', '🎈', '🎭', '🔥', '🌈'] as const;
 
 const CONFETTI_COLORS = ['#c9a962', '#5a9a8a', '#8fb5a8', '#a8c4b8', '#d4c4a0', '#6b9080'];
 

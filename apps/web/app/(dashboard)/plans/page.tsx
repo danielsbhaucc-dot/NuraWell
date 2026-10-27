@@ -112,18 +112,18 @@ export default async function PlansPage({ searchParams }: { searchParams: Promis
           </div>
         ) : null}
 
-        <div className="relative mt-3 rounded-[22px] bg-hero-card border border-hero-card-line p-4 text-brand shadow-xl">
-          <p className="text-[11px] font-bold tracking-[0.08em] text-primary-700">{allDone ? 'היום' : 'הפוקוס של היום'}</p>
+        <div className="relative mt-3 rounded-[22px] focus-panel p-4 shadow-xl">
+          <p className="text-[11px] font-bold tracking-[0.08em] fp-label">{allDone ? 'היום' : 'הפוקוס של היום'}</p>
           {today ? (
             <a href={`#task-${today.id}`} className="mt-1 flex items-center gap-3">
               <span className="text-3xl" aria-hidden>{today.emoji}</span>
               <span className="min-w-0 flex-1">
                 <span className="block text-[17px] font-extrabold leading-snug">{today.currentStep}</span>
-                <span className="mt-0.5 block text-xs text-primary-800/70">
+                <span className="mt-0.5 block text-xs fp-muted">
                   {today.doneToday}/{today.targetToday} היום{today.streakDays > 0 ? ` · ${today.streakDays} ${today.streakDays === 1 ? 'יום' : 'ימים'} ברצף` : ''}
                 </span>
               </span>
-              <span aria-hidden className="text-lg text-primary-700">←</span>
+              <span aria-hidden className="text-lg fp-label">←</span>
             </a>
           ) : (
             <p className="mt-1 text-[15px] font-bold leading-snug">

@@ -383,7 +383,7 @@ export function OnboardingFormClient() {
                     <GlassChoiceButton
                       selected={mainGoal === 'both'}
                       onClick={() => setMainGoal('both')}
-                      emoji="✨"
+                      emoji="🌿"
                       title="גם וגם"
                     />
                     <GlassChoiceButton
@@ -585,7 +585,7 @@ export function OnboardingFormClient() {
                       [
                         [0, 'לא עכשיו', 'נשתמש בשעות כלליות'],
                         [1, 'ארוחה אחת', undefined],
-                        [2, 'שתיים', 'מומלץ ✨'],
+                        [2, 'שתיים', 'מומלץ 🌿'],
                         [3, 'שלוש', undefined],
                       ] as const
                     ).map(([n, title, sub]) => (

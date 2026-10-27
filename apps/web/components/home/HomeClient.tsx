@@ -147,7 +147,7 @@ export function HomeClient({
         ]
       : [
           ...todayTasks.filter((t) => !t.done).map((t) => ({ title: t.title, emoji: t.emoji })),
-          ...almogOpen.map((t) => ({ title: t.title, emoji: '✨' })),
+          ...almogOpen.map((t) => ({ title: t.title, emoji: '🌿' })),
         ];
 
     return buildAlmogGreeting({

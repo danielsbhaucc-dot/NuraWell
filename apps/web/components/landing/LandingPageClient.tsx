@@ -42,7 +42,6 @@ import {
   Route,
   Scale,
   Smile,
-  Sparkles,
   Star,
   Sun,
   Sunrise,
@@ -256,7 +255,7 @@ export function LandingPageClient() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.18, ease }}
           >
-            <Sparkles className="w-4 h-4" aria-hidden />
+            <Leaf className="w-4 h-4" aria-hidden />
             NuraWell · אורח חיים מלווה ב-AI
           </motion.span>
 
@@ -381,7 +380,7 @@ export function LandingPageClient() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.32, ease }}
               >
-                <Sparkles className="w-4 h-4" aria-hidden />
+                <Leaf className="w-4 h-4" aria-hidden />
                 הרעיון הגדול
               </motion.span>
 
@@ -548,7 +547,7 @@ export function LandingPageClient() {
                 {
                   badIcon: Ban,
                   bad: 'רשימת מאכלים אסורים',
-                  goodIcon: Sparkles,
+                  goodIcon: Leaf,
                   good: 'חופש בחירה מודע — הכל מותר',
                 },
                 {
@@ -649,7 +648,7 @@ export function LandingPageClient() {
                     className="object-cover"
                   />
                   <div className="landing-image-badge">
-                    <Sparkles className="w-3.5 h-3.5" aria-hidden />
+                    <Leaf className="w-3.5 h-3.5" aria-hidden />
                     מותאם אישית
                   </div>
                 </div>
@@ -713,7 +712,7 @@ export function LandingPageClient() {
                   <div className="landing-bento-featured-media" aria-hidden>
                     <span className="landing-bento-featured-ring" />
                     <span className="landing-bento-featured-iconwrap">
-                      <Sparkles />
+                      <Leaf />
                     </span>
                   </div>
                   <div className="landing-bento-featured-body">
@@ -730,7 +729,7 @@ export function LandingPageClient() {
                         <Brain aria-hidden /> זוכר הקשר
                       </li>
                       <li className="landing-bento-featured-tag">
-                        <Sparkles aria-hidden /> זמין 24/7
+                        <Leaf aria-hidden /> זמין 24/7
                       </li>
                     </ul>
                   </div>
@@ -1263,7 +1262,7 @@ export function LandingPageClient() {
                 אנחנו פה <em>לכל השאר.</em>
               </p>
               <Link href="/register" className="landing-btn-primary landing-btn-primary-lg landing-story-cta">
-                <Sparkles className="w-5 h-5" aria-hidden />
+                <Leaf className="w-5 h-5" aria-hidden />
                 להתחיל את הפרק החדש
                 <ChevronLeft className="w-5 h-5" aria-hidden />
               </Link>
@@ -1287,7 +1286,7 @@ export function LandingPageClient() {
               transition={{ duration: 0.32, ease }}
             >
               <span className="landing-cta-badge">
-                <Sparkles className="w-4 h-4" aria-hidden />
+                <Leaf className="w-4 h-4" aria-hidden />
                 חינם להתחיל — בלי כרטיס אשראי
               </span>
               <h2 className="landing-cta-title">

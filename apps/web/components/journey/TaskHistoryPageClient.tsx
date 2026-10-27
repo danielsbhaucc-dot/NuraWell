@@ -406,7 +406,7 @@ export function TaskHistoryPageClient() {
                       style={{ border: '1px solid rgba(16,185,129,0.22)' }}
                     >
                       <span className="text-base shrink-0" aria-hidden>
-                        ✨
+                        🌿
                       </span>
                       <div className="min-w-0 flex-1 text-start">
                         <p className="text-[13px] font-bold text-primary-950 truncate">

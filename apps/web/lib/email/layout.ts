@@ -81,7 +81,7 @@ export function emailSummaryTable(rows: Array<[string, string]>, title?: string)
     })
     .join('');
   const head = title
-    ? `<p dir="rtl" align="right" style="margin:6px 4px 8px;color:${C.muted};font-family:${EMAIL_FONT};font-size:13px;font-weight:600;letter-spacing:0.3px;direction:rtl;text-align:right">🌟 ${title}</p>`
+    ? `<p dir="rtl" align="right" style="margin:6px 4px 8px;color:${C.muted};font-family:${EMAIL_FONT};font-size:13px;font-weight:600;letter-spacing:0.3px;direction:rtl;text-align:right">${title}</p>`
     : '';
   return head + table(trs, `background:${C.cream};border:0.5px solid #e6dfcc;border-radius:18px;border-collapse:separate;margin:0 0 28px;box-shadow:0 1px 3px rgba(15,61,46,0.06)`, ` bgcolor="${C.cream}"`);
 }
