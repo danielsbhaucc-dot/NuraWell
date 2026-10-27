@@ -425,7 +425,7 @@ export function TodayTasksPopup({
                             border: '1px solid rgba(110,231,183,0.4)',
                           }}
                         >
-                          ✨
+                          🌿
                         </div>
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-black text-primary-950 leading-snug">

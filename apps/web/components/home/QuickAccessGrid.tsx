@@ -107,7 +107,7 @@ export function QuickAccessGrid({ simplifiedDashboard = false, onOpenTasks }: Qu
             href: '/profile',
             icon: UserRound,
             label: 'פרופיל',
-            emoji: '✨',
+            emoji: '🌿',
             gradient: 'linear-gradient(145deg, #db2777 0%, #ec4899 70%)',
             shadow: '0 6px 16px rgba(219,39,119,0.22)',
           },

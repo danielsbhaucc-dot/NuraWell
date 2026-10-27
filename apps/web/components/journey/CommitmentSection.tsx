@@ -100,7 +100,7 @@ export function CommitmentSection({
                 style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)' }}
               >
                 <CheckCircle2 className="w-5 h-5 text-primary-600" />
-                <span className="text-primary-700 font-bold">קיבלת על עצמך! 🌟</span>
+                <span className="text-primary-700 font-bold">קיבלת על עצמך! 🌿</span>
               </motion.div>
               <AlmogLessonFeedback
                 isCorrect

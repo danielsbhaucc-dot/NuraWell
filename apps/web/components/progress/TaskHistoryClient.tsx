@@ -446,7 +446,7 @@ function DayRow({ day, todayKey }: { day: TaskHistoryDay; todayKey: string }) {
 /* ── Task encouragement helper ──────────────────────────────────── */
 function getTaskEncouragement(task: TaskHistoryEntry, gender: ProfileGender): string | null {
   if (task.missed_days_in_range === 0 && task.active_days_in_range > 0) {
-    return '✨ הכל מתועד — כל יום שנחשב נמצא כאן';
+    return '🌿 הכל מתועד — כל יום שנחשב נמצא כאן';
   }
   if (task.current_streak >= 3) {
     return `🔥 ${task.current_streak} ימים ברצף — זה בדיוק איך הרגל נבנה`;

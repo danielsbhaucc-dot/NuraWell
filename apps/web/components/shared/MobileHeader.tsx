@@ -28,32 +28,24 @@ export function MobileHeader({ user, profileFullName }: MobileHeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [glass, setGlass] = useState(false);
   const pathname = usePathname();
   const overHero = pathname === APP_HOME_PATH || pathname === '/';
 
-  // Colour-variant preview (owner review): ?hv=a..e, ?hm=glass|solid — persisted locally.
   useEffect(() => {
-    const root = document.documentElement;
-    const q = new URLSearchParams(window.location.search);
-    const pick = (key: string, param: string, ok: RegExp) => {
-      const v = q.get(param);
-      if (v && ok.test(v)) localStorage.setItem(key, v);
-      return localStorage.getItem(key);
-    };
-    const hv = pick('nw-hero-variant', 'hv', /^[a-e]$/);
-    const hm = pick('nw-header-mode', 'hm', /^(glass|solid)$/);
-    if (hv && hv !== 'a') root.dataset.hero = hv; else delete root.dataset.hero;
-    if (hm === 'glass') root.dataset.hm = 'glass'; else delete root.dataset.hm;
-    setGlass(hm === 'glass');
+    // Owner preview of the "today's focus" panel options (?fp=1|2|3) — temporary.
+    const fp = new URLSearchParams(window.location.search).get('fp');
+    if (fp && /^[1-3]$/.test(fp)) localStorage.setItem('nw-focus-panel', fp);
+    const saved = localStorage.getItem('nw-focus-panel');
+    if (saved && saved !== '1') document.documentElement.dataset.fp = saved;
     const onScroll = () => setScrolled(window.scrollY > 8);
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // In glass mode the bar turns light (frosted) when scrolled, or at the top of non-hero pages.
-  const lightBar = glass && (scrolled || isMenuOpen || !overHero);
+  // Over the green hero (top of home) the bar is clear with light icons; elsewhere / scrolled it is light glass.
+  // While the menu is open the bar is solid green.
+  const lightBar = !isMenuOpen && (scrolled || !overHero);
   const iconCls = lightBar ? 'w-5 h-5 text-brand' : 'w-5 h-5 text-on-dark';
   const fullName = String(profileFullName || '').trim();
   const firstName = fullName.split(/\s+/)[0] || '';
@@ -109,6 +101,7 @@ export function MobileHeader({ user, profileFullName }: MobileHeaderProps) {
               alt="NuraWell"
               width={122}
               height={24}
+              className={lightBar ? 'hdr-logo' : undefined}
               style={{ display: 'block', height: 24, width: 'auto' }}
             />
           </Link>

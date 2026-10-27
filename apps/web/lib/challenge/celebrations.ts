@@ -61,7 +61,7 @@ const BY_CELEBRATION_KEY: Record<string, Omit<ChallengeCelebration, 'key'>> = {
   sparkle: {
     title: 'עוד הצלחה!',
     subtitle: 'כל סימון קטן נספר — אלמוג רואה.',
-    emoji: '✨',
+    emoji: '🌿',
     variant: 'default',
   },
 };

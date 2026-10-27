@@ -50,7 +50,7 @@ export function LdChrome({
       <div className={`ld-heroGrid${stat ? '' : ' ld-heroGrid--solo'}`}>
         <div className="ld-hero">
           <div className="ld-hero-txt">
-            <p className="ld-pill">✦ {eyebrow}</p>
+            <p className="ld-pill">{eyebrow}</p>
             <h1 className="ld-title">
               {title}
               {titleAccent ? (<><br /><span className="ld-shine">{titleAccent}</span></>) : null}

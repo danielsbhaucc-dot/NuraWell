@@ -694,7 +694,7 @@ function AssignmentCard({
             }}
           >
             {doneToday ? <CheckCircle2 className="h-4 w-4" /> : <Check className="h-4 w-4" strokeWidth={2.6} />}
-            {doneToday ? 'עשית היום ✨' : isRecurring ? 'סמן שעשית' : 'סיימתי'}
+            {doneToday ? 'עשית היום 🌿' : isRecurring ? 'סמן שעשית' : 'סיימתי'}
           </button>
           <button
             type="button"

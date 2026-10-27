@@ -259,7 +259,7 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
                 const status = decision?.status ?? 'pending';
                 const taskEmoji = emojiFromWellnessText(
                   `${task.title} ${task.description ?? ''}`,
-                  task.emoji || '✨'
+                  task.emoji || '🌿'
                 );
                 const { schedule, times_per_day, weekly_day, meal_timing, meal_target } =
                   resolveTaskSchedule(task);

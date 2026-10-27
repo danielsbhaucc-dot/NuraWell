@@ -22,7 +22,7 @@ const RULES: { pattern: RegExp; emoji: string }[] = [
   { pattern: /ספר|קריאה|read|book/i, emoji: '📖' },
 ];
 
-const DEFAULT_EMOJI = '✨';
+const DEFAULT_EMOJI = '🌿';
 
 export function emojiFromWellnessText(text: string, fallback: string = DEFAULT_EMOJI): string {
   const t = (text ?? '').trim();

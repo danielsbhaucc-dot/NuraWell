@@ -67,7 +67,7 @@
 .ld-block, .ld-sec { padding-top: 56px; scroll-margin-top: 140px; }
 .ld-block { padding-top: var(--gap); }
 .ld-sep { height: 1px; max-width: 760px !important; margin: var(--gap) auto 0 !important; background: linear-gradient(90deg, transparent, var(--gold) 50%, transparent); position: relative; opacity: .8; }
-.ld-sep::after { content: '✦'; position: absolute; left: 50%; top: -12px; transform: translateX(-50%); color: var(--gold); font-size: 14px; padding: 0 12px; text-shadow: 0 0 10px #cfd0d6; }
+.ld-sep::after { content: '•'; position: absolute; left: 50%; top: -12px; transform: translateX(-50%); color: var(--gold); font-size: 14px; padding: 0 12px; text-shadow: 0 0 10px #cfd0d6; }
 .ld-sec { padding-top: 48px; }
 .ld-num { display: inline-flex; align-items: center; gap: 12px; margin-inline-end: 14px; font-size: .8em; font-weight: 800; color: var(--gold-ink); font-variant-numeric: tabular-nums; }
 .ld-num::after { content: ''; width: 28px; height: 1.5px; background: var(--gold); }
