@@ -1,5 +1,5 @@
-import type { ChatTranscriptTurn } from '../ai/chat-sessions/types';
-import type { MentorEmojiReaction } from '../ai/emoji-reaction/types';
+import type { ChatTranscriptTurn } from '@/lib/module-api/agent/lib-ai-chat-sessions-types';
+import type { MentorEmojiReaction } from '@/lib/module-api/agent/lib-ai-emoji-reaction-types';
 
 import { formatHebrewRelative } from '../../lib/time/hebrew-relative';
 

@@ -4,10 +4,10 @@ import { evaluateNotifyGate } from '@/lib/notifications/notify-recipients';
 import { insertNotification } from '@/lib/notifications/deliver';
 import { NextResponse } from 'next/server';
 
-import { buildGuardianTouch } from '@/lib/ai/guardian/build-guardian-touch';
-import { evaluateGuardianGate } from '@/lib/ai/guardian/guardian-gates';
-import type { GuardianTriggerPayload } from '@/lib/ai/guardian/qstash-scheduler';
-import type { RiskWindow } from '@/lib/ai/risk-window';
+import { buildGuardianTouch } from '@/lib/module-api/agent/lib-ai-guardian-build-guardian-touch';
+import { evaluateGuardianGate } from '@/lib/module-api/agent/lib-ai-guardian-guardian-gates';
+import type { GuardianTriggerPayload } from '@/lib/module-api/agent/lib-ai-guardian-qstash-scheduler';
+import type { RiskWindow } from '@/lib/module-api/agent/lib-ai-risk-window';
 import { authorizeCronRequest } from '@/lib/api/authorize-cron';
 import { readJsonBody } from '@/lib/api/json-request';
 import { afterAlmogInAppNotification } from '@/lib/notifications/after-almog-insert';

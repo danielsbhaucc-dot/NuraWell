@@ -14,28 +14,28 @@ import { ProgramOrchestratorGate } from './ProgramOrchestratorGate';
 import { QuickAccessGrid } from './QuickAccessGrid';
 import { HomeSectionDivider } from './HomeSectionDivider';
 import { TodayTasksPopup } from './TodayTasksPopup';
-import { SosButton } from '../ai/SosButton';
-import { SosMemoryCard, type SosContextPayload } from '../ai/SosMemoryCard';
-import { buildAlmogGreeting, type GreetingTaskState } from '../../lib/ai/almog-greeting';
+import { SosButton } from '@/lib/module-api/agent/components-ai-SosButton';
+import { SosMemoryCard, type SosContextPayload } from '@/lib/module-api/agent/components-ai-SosMemoryCard';
+import { buildAlmogGreeting, type GreetingTaskState } from '@/lib/module-api/agent/lib-ai-almog-greeting';
 import {
   type PendingTaskTodayRow,
-} from '../../lib/journey/journey-report-parse';
-import { dispatchOpenAlmogChatWithPrefill, dispatchOpenAlmogChatWithTaskReport } from '../../lib/notifications/open-almog-chat';
-import { buildTaskReportHintFromPendingRow } from '../../lib/ai/task-report-hint';
-import { useProgressReport } from '../progress-report/ProgressReportProvider';
-import { useActionHub } from '../action-hub/ActionHubProvider';
+} from '@/lib/module-api/journey/lib-journey-journey-report-parse';
+import { dispatchOpenAlmogChatWithPrefill, dispatchOpenAlmogChatWithTaskReport } from '@/lib/module-api/notifications/lib-notifications-open-almog-chat';
+import { buildTaskReportHintFromPendingRow } from '@/lib/module-api/agent/lib-ai-task-report-hint';
+import { useProgressReport } from '@/lib/module-api/journey/components-progress-report-ProgressReportProvider';
+import { useActionHub } from '@/lib/module-api/journey/components-action-hub-ActionHubProvider';
 import {
   pickNextTaskForNow,
   type UserScheduleProfile,
-} from '../../lib/journey/pick-next-task-for-now';
+} from '@/lib/module-api/journey/lib-journey-pick-next-task-for-now';
 import { fetchUserTaskSnapshot } from '../../lib/client/user-task-snapshot';
 import {
   hasAnyTakenTasks,
   type AlmogTodayRow,
   type UserTaskSnapshotCounts,
-} from '../../lib/tasks/user-task-ssot';
+} from '@/lib/module-api/journey/lib-tasks-user-task-ssot';
 
-import type { OnboardingGender } from '../../lib/onboarding/types';
+import type { OnboardingGender } from '@/lib/module-api/auth-signup/lib-onboarding-types';
 import { hebrewActiveGuidesLabel } from '../../lib/text/hebrew-plural';
 
 export type HomeStats = {

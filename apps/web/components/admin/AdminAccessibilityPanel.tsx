@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { Loader2, Wand2 } from 'lucide-react';
-import type { AccessibilityAuditSummary } from '@/lib/a11y/types';
+import type { AccessibilityAuditSummary } from '@/lib/module-api/a11y/lib-a11y-types';
 import { opsGlassBtnClass } from '@/components/admin/OpsPanel';
 import { cn } from '@/lib/cn';
 

@@ -5,7 +5,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-import { israelDayOffsetToUtcIso } from '../almog-commitments/time';
+import { israelDayOffsetToUtcIso } from '@/lib/module-api/reminders/lib-ai-almog-commitments-time';
 import type { SosFocusTask } from './sos-memory';
 
 export type SosCareUrgency = 'normal' | 'still_hard';

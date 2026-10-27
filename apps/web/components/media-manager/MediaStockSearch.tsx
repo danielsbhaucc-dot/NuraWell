@@ -4,7 +4,7 @@ import { useCallback, useState } from 'react';
 import { Loader2, Search } from 'lucide-react';
 import { buildStationCoverCredit } from '@/lib/media/stock-image-attribution';
 import { StockImageSearchAttribution } from '@/components/media/StockImageAttribution';
-import { stockPreviewAlt } from '@/lib/a11y/alt-text';
+import { stockPreviewAlt } from '@/lib/module-api/a11y/lib-a11y-alt-text';
 import { glassInputClass } from './glass-styles';
 import { importStockImageAsAsset } from '@/lib/media-manager/upload-client';
 import type { MediaAsset } from './types';

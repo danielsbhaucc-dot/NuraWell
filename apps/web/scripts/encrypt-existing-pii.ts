@@ -3,8 +3,8 @@
  * הרצה: PII_ENCRYPTION_KEY=... SUPABASE_ACCESS_TOKEN=... SUPABASE_PROJECT_REF=... npx jiti apps/web/scripts/encrypt-existing-pii.ts
  * לא מדפיס ערכים, רק ספירות.
  */
-import { sealVectorMetadata } from '../lib/ai/upstash-vector-rest';
-import { UPSTASH_NAMESPACE_USER_MEMORY, UPSTASH_NAMESPACE_CONVERSATION_MEMORY } from '../lib/ai/rag-config';
+import { sealVectorMetadata } from '@/lib/module-api/agent/lib-ai-upstash-vector-rest';
+import { UPSTASH_NAMESPACE_USER_MEMORY, UPSTASH_NAMESPACE_CONVERSATION_MEMORY } from '@/lib/module-api/agent/lib-ai-rag-config';
 import { DOSSIER_ENCRYPTED_FIELDS, encryptJson, encryptStringArray, isEncrypted } from '../lib/crypto/pii';
 import { encryptAiContext, encryptTableRow, TABLE_ENC_TEXT, type EncTextTable, encryptChatContent, encryptMeasurementPatch, encryptProfilePatch, PROFILE_ENC_JSON, PROFILE_ENC_NUMERIC, PROFILE_ENC_TEXT } from '../lib/crypto/pii-fields';
 

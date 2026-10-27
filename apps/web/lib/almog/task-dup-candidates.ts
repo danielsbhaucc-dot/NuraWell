@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { titleTokens } from '@/lib/tasks/title-normalize';
+import { titleTokens } from '@/lib/module-api/journey/lib-tasks-title-normalize';
 
 /**
  * App-side port of the SQL task_dup_candidates() / merge_task_assignments() (000115/000118, dropped in 000212):

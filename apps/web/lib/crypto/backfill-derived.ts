@@ -7,8 +7,8 @@ import { isEncrypted } from './pii';
 import { sealTableRow } from './pii-seal';
 import { encryptAiContext, needsTextEncryption, PLAIN_SENTINELS, TABLE_ENC_TEXT, type EncTextTable } from './pii-fields';
 import { encryptJson } from './pii';
-import { sealVectorMetadata, isUpstashVectorConfigured } from '@/lib/ai/upstash-vector-rest';
-import { UPSTASH_NAMESPACE_CONVERSATION_MEMORY, UPSTASH_NAMESPACE_USER_MEMORY } from '@/lib/ai/rag-config';
+import { sealVectorMetadata, isUpstashVectorConfigured } from '@/lib/module-api/agent/lib-ai-upstash-vector-rest';
+import { UPSTASH_NAMESPACE_CONVERSATION_MEMORY, UPSTASH_NAMESPACE_USER_MEMORY } from '@/lib/module-api/agent/lib-ai-rag-config';
 
 type Row = Record<string, unknown>;
 

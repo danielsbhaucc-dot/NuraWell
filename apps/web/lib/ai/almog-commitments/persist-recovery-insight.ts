@@ -3,8 +3,8 @@
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { fetchUserMemoryDossier, upsertUserMemoryDossier } from '../memory-dossier/fetch-dossier';
-import { mergeDossierPatch } from '../memory-dossier/merge-dossier';
+import { fetchUserMemoryDossier, upsertUserMemoryDossier } from '@/lib/module-api/agent/lib-ai-memory-dossier-fetch-dossier';
+import { mergeDossierPatch } from '@/lib/module-api/agent/lib-ai-memory-dossier-merge-dossier';
 
 export type RecoveryInsightInput = {
   userId: string;

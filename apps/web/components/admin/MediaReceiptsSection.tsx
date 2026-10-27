@@ -5,7 +5,7 @@ import { CheckCircle2, ChevronDown, Loader2, Mail, Paperclip, ShieldCheck, Shiel
 import { opsGlassBtnClass, opsGlassBtnPrimaryClass, opsGlassCardClass, opsInputClass } from '@/components/admin/OpsPanel';
 import { cn } from '@/lib/cn';
 import { Divider } from '@/components/admin/hub/Divider';
-import { VENDORS, type VendorId } from '@/lib/legal/media/receipts-core';
+import { VENDORS, type VendorId } from '@/lib/module-api/legal/lib-legal-media-receipts-core';
 import { useLiveRefresh } from '@/lib/hooks/useLiveRefresh';
 
 type Receipt = { id: string; source: string; vendor: VendorId; plan: string | null; amount: number | null; currency: string | null; receipt_date: string | null; period_start: string | null; period_end: string | null; subject: string | null; original_from: string | null; forwarder_ok: boolean; dkim: { vendor_dkim_pass?: boolean }; trust: 'verified' | 'review' | 'rejected'; attachments: Array<{ name: string }>; confirmation_code: string | null; confirmation_link?: string | null; confirmed_at?: string | null; created_at: string };

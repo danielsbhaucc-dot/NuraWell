@@ -5,7 +5,7 @@ import 'server-only';
  * Stored once per file hash. Daily cost cap; any failure = no description (scanner continues).
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { meteredFetch } from '@/lib/ai/usage-meter';
+import { meteredFetch } from '@/lib/module-api/agent/lib-ai-usage-meter';
 import { SOURCE_TYPES, type SourceType } from './core';
 
 export const MEDIA_AI_FEATURE = 'media_provenance_ai';

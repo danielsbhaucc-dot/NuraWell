@@ -9,8 +9,8 @@ import {
 } from '@/lib/validation/admin-journey-step';
 import { jsonZodError } from '@/lib/validation/zod-http';
 import { syncStepResearchesToAlmogKnowledge } from '@/lib/admin/sync-research-knowledge';
-import { syncJourneyStepQuestionTts } from '@/lib/tts/sync-step-questions';
-import { deleteTtsFromR2 } from '@/lib/tts/r2-upload';
+import { syncJourneyStepQuestionTts } from '@/lib/module-api/agent/lib-tts-sync-step-questions';
+import { deleteTtsFromR2 } from '@/lib/module-api/agent/lib-tts-r2-upload';
 import type { GameItem, QuizQuestion, Research } from '@/lib/types/journey';
 
 export const runtime = 'nodejs';

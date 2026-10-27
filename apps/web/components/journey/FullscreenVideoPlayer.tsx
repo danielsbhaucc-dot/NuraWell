@@ -9,7 +9,7 @@ import type { ImmersiveAttentionStop } from '../../lib/journey/immersiveAttentio
 import { formatSecondsAsClock } from '../../lib/journey/immersiveAttentionStops';
 import { useScreenWakeLock } from '../../lib/journey/use-screen-wake-lock';
 import { useAlmogAvatarUrl } from '../../lib/client/useAlmogAvatarUrl';
-import { ALMOG_AVATAR_FALLBACK } from '../../lib/ai/almog-avatar';
+import { ALMOG_AVATAR_FALLBACK } from '@/lib/module-api/agent/lib-ai-almog-avatar';
 import { getAppOverlayRoot } from '../../lib/dom/app-overlay-root';
 
 interface FullscreenVideoPlayerProps {

@@ -23,9 +23,9 @@ import { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import { Shield, X } from 'lucide-react';
-import { ALMOG_AVATAR_FALLBACK } from '../../lib/ai/almog-avatar';
-import { getMentorAvatarFallback } from '../../lib/mentors/avatar-url';
-import { MENTORS } from '../../lib/mentors/registry';
+import { ALMOG_AVATAR_FALLBACK } from '@/lib/module-api/agent/lib-ai-almog-avatar';
+import { getMentorAvatarFallback } from '@/lib/module-api/agent/lib-mentors-avatar-url';
+import { MENTORS } from '@/lib/module-api/agent/lib-mentors-registry';
 import { cn } from '../../lib/cn';
 import type { NotificationItem } from './NotificationsProvider';
 

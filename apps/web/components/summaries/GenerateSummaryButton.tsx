@@ -20,7 +20,7 @@
 import { Loader2, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import type { SummaryType } from '../../lib/notifications/summaries/period-keys';
+import type { SummaryType } from '@/lib/module-api/notifications/lib-notifications-summaries-period-keys';
 import { TYPE_COLORS } from './SummaryCard';
 
 const TYPE_LABEL_HE: Record<SummaryType, string> = {

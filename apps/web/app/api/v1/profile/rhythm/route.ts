@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { NextRequest, NextResponse } from 'next/server';
 import { readJsonBody } from '../../../../../lib/api/json-request';
 import { requireApiSession } from '../../../../../lib/api/route-guards';
-import { mealTimesFromStrings } from '../../../../../lib/journey/profile-schedule';
+import { mealTimesFromStrings } from '@/lib/module-api/journey/lib-journey-profile-schedule';
 import { jsonZodError } from '../../../../../lib/validation/zod-http';
 
 export const runtime = 'nodejs';

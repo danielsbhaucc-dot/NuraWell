@@ -1,6 +1,6 @@
 import { DeleteObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
-import { getPublicCdnAudioUrl } from '@/lib/cdn/public-audio';
-import { getR2Client, r2AudioBucketName } from '@/lib/storage/r2-almog';
+import { getPublicCdnAudioUrl } from '@/lib/module-api/site-content/lib-cdn-public-audio';
+import { getR2Client, r2AudioBucketName } from '@/lib/module-api/site-content/lib-storage-r2-almog';
 
 export async function uploadTtsMp3ToR2(params: {
   objectKey: string;

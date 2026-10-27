@@ -5,8 +5,8 @@ import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import { X, ChevronRight, ChevronLeft, ZoomIn } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useDialogA11y } from '@/lib/a11y/use-dialog-a11y';
-import { mediaAltText } from '@/lib/a11y/alt-text';
+import { useDialogA11y } from '@/lib/module-api/a11y/lib-a11y-use-dialog-a11y';
+import { mediaAltText } from '@/lib/module-api/a11y/lib-a11y-alt-text';
 import { getAppOverlayRoot } from '../../lib/dom/app-overlay-root';
 
 interface ImageItem {

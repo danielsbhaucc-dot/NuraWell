@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { LogOut, Volume2, VolumeX } from 'lucide-react';
-import { ComingSoonExperience } from '@/components/coming-soon/ComingSoonExperience';
-import type { ComingSoonLyrics } from '@/lib/coming-soon/lyrics';
+import { ComingSoonExperience } from '@/lib/module-api/site-content/components-coming-soon-ComingSoonExperience';
+import type { ComingSoonLyrics } from '@/lib/module-api/site-content/lib-coming-soon-lyrics';
 import {
   type ChallengeIntroLine,
   renderIntroLine,

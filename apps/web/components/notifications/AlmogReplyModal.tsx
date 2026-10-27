@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Drawer } from 'vaul';
 import { Send, X } from 'lucide-react';
-import { ALMOG_AVATAR_FALLBACK } from '../../lib/ai/almog-avatar';
+import { ALMOG_AVATAR_FALLBACK } from '@/lib/module-api/agent/lib-ai-almog-avatar';
 import { useAlmogAvatarUrl } from '../../lib/client/useAlmogAvatarUrl';
 import {
   OPEN_ALMOG_REPLY_EVENT,

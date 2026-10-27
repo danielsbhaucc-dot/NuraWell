@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import { readJsonBody } from '@/lib/api/json-request';
-import { grantGuideAccess } from '@/lib/guides/grant-access';
+import { grantGuideAccess } from '@/lib/module-api/journey/lib-guides-grant-access';
 import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
 
 export const runtime = 'nodejs';

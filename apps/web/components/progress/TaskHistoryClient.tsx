@@ -27,7 +27,7 @@ import type {
   TaskHistoryReport,
 } from '../../lib/journey/build-task-history';
 import type { JourneyTaskSlot } from '../../lib/types/journey';
-import { AlmogScreenCoach } from '../ai/AlmogScreenCoach';
+import { AlmogScreenCoach } from '@/lib/module-api/agent/components-ai-AlmogScreenCoach';
 import { AlmogAvatarChipWithNameTag } from '../journey/AlmogPresence';
 import { DayDetailPopup, type DayExecRow } from '../tasks/DayDetailPopup';
 import { formatHebrewRelativeFromDateKey } from '../../lib/time/hebrew-relative';
@@ -37,7 +37,7 @@ import {
   historyPageAlmogHeroBody,
   historyPageSuccessEncouragement,
   type ProfileGender,
-} from '../../lib/profile/personalized-copy';
+} from '@/lib/module-api/auth-signup/lib-profile-personalized-copy';
 
 /* ── Design tokens ───────────────────────────────────────────────── */
 const glassCard = {

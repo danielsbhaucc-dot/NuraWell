@@ -8,13 +8,13 @@ import { timingSafeEqualStr } from '../../../../../../../lib/api/timing-safe-equ
 import { isAvoidPushActive } from '../../../../../../../lib/ai/avoid-push';
 import { fetchTodayAlmogTouches } from '../../../../../../../lib/ai/almog-notify-day-context';
 import { normalizeCheckInTimes } from '../../../../../../../lib/ai/onboarding-check-in-time';
-import { isPassivePresenceEnabled } from '../../../../../../../lib/churn/feature-flags';
+import { isPassivePresenceEnabled } from '@/lib/module-api/reminders/lib-churn-feature-flags';
 import { createAdminClient } from '../../../../../../../lib/supabase/admin';
 import { jsonZodError } from '../../../../../../../lib/validation/zod-http';
 import {
   habitCheckpointSlotSchema,
   type HabitCheckpointSlot,
-} from '../../../../../../../lib/workflows/almog-habit-checkpoint-payload';
+} from '@/lib/module-api/reminders/lib-workflows-almog-habit-checkpoint-payload';
 import {
   computeCadenceStage,
   daysBetween,
@@ -23,16 +23,16 @@ import {
   planHabitCheckpointTriggers,
   presenceCooldownDaysForCadenceStage,
   type ProgressRow,
-} from '../../../../../../../lib/workflows/habit-checkpoint-batch';
+} from '@/lib/module-api/reminders/lib-workflows-habit-checkpoint-batch';
 import {
   fetchPendingPlanAssignmentsForUsers,
   mergePendingPlanAssignmentsIntoCheckpoints,
-} from '../../../../../../../lib/ai/almog-commitments/plans-page-tracking';
+} from '@/lib/module-api/reminders/lib-ai-almog-commitments-plans-page-tracking';
 import {
   filterHabitsForSlot,
   jerusalemCalendarParts,
   parseJourneyHabitsJson,
-} from '../../../../../../../lib/workflows/habit-checkpoint-eligibility';
+} from '@/lib/module-api/reminders/lib-workflows-habit-checkpoint-eligibility';
 
 /**
  * /api/v1/ai/cron/habit-checkpoints/diagnose

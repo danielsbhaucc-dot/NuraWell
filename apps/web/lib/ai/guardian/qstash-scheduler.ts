@@ -1,4 +1,4 @@
-import { workflowPublicBaseUrl } from '../../workflows/resolve-workflow-public-url';
+import { workflowPublicBaseUrl } from '@/lib/module-api/reminders/lib-workflows-resolve-workflow-public-url';
 import type { RiskWindow } from '../risk-window';
 
 export type GuardianTriggerPayload = {

@@ -19,7 +19,7 @@ import type {
   ProgramProposalNextStep,
   ProgramStateDecision,
 } from './program-state';
-import type { JourneyCompanionContext } from '../../workflows/journey-companion';
+import type { JourneyCompanionContext } from '@/lib/module-api/reminders/lib-workflows-journey-companion';
 import type { AiUserContext } from '../memory';
 import { isGroqLaneAvailable } from '../groq-compat';
 import { HEBREW_JSON_VALUES_RULE } from '../hebrew-output-rules';

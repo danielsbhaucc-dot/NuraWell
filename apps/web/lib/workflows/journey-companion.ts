@@ -1,21 +1,21 @@
 import { decProfileResult } from '@/lib/crypto/pii-fields';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { AiUserContext } from '../ai/memory';
+import type { AiUserContext } from '@/lib/module-api/agent/lib-ai-memory';
 import {
   companionIntervalForLife,
   formatLifeContextNotifyBlock,
   isLifeContextualCheckDue,
   readLifeContext,
   type LifeContext,
-} from '../ai/life-context';
+} from '@/lib/module-api/agent/lib-ai-life-context';
 import {
   formatJourneyFollowUpPromptBlock,
   isJourneyFollowUpDue,
   readJourneyFollowUp,
   type JourneyFollowUp,
-} from '../ai/journey-follow-up-promise';
-import { countUnansweredAlmogTouches } from '../ai/roller-coaster';
-import { israelDateKey } from '../ai/onboarding-check-in-time';
+} from '@/lib/module-api/agent/lib-ai-journey-follow-up-promise';
+import { countUnansweredAlmogTouches } from '@/lib/module-api/agent/lib-ai-roller-coaster';
+import { israelDateKey } from '@/lib/module-api/agent/lib-ai-onboarding-check-in-time';
 import {
   collectPendingAcceptedTasks,
   type ProgressRow,

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { NextRequest, NextResponse } from 'next/server';
-import { parseCoachingStyle, type AlmogCoachingStyle } from '../../../../../lib/ai/almog-coaching-style';
-import { updateAiContext } from '../../../../../lib/ai/memory';
+import { parseCoachingStyle, type AlmogCoachingStyle } from '@/lib/module-api/agent/lib-ai-almog-coaching-style';
+import { updateAiContext } from '@/lib/module-api/agent/lib-ai-memory';
 import { readJsonBody } from '../../../../../lib/api/json-request';
 import { requireApiSession } from '../../../../../lib/api/route-guards';
 import { jsonZodError } from '../../../../../lib/validation/zod-http';

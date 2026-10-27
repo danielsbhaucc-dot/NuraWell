@@ -1,4 +1,4 @@
-import { FRICTION_META } from '../almog-commitments/friction';
+import { FRICTION_META } from '@/lib/module-api/reminders/lib-ai-almog-commitments-friction';
 import type { RiskWindow } from '../risk-window';
 
 function firstNameFromFullName(fullName: string | null | undefined): string {

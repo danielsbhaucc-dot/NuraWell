@@ -2,10 +2,10 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ShieldCheck, Lock, HeartPulse, Ban, UserCheck, Globe2 } from 'lucide-react';
 import '../legal-v2.css';
-import { LegalDoc, LegalDataTable, type LegalDocSection } from '@/components/legal/v2/LegalDoc';
-import { LEGAL_PRIVACY_EMAIL } from '@/lib/legal/contact';
+import { LegalDoc, LegalDataTable, type LegalDocSection } from '@/lib/module-api/legal/components-legal-v2-LegalDoc';
+import { LEGAL_PRIVACY_EMAIL } from '@/lib/module-api/legal/lib-legal-contact';
 import { LEGAL_POLICY_VERSION } from '@/lib/privacy/constants';
-import { LEGAL_THEME } from '@/components/legal/v2/theme';
+import { LEGAL_THEME } from '@/lib/module-api/legal/components-legal-v2-theme';
 
 export const metadata: Metadata = {
   title: 'מדיניות פרטיות',

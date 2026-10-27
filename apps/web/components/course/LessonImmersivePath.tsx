@@ -10,7 +10,7 @@ import {
 import { cn } from '../../lib/cn';
 import { sanitizeLessonHtml } from '../../lib/sanitize-lesson-html';
 import { splitLessonHtmlToSections } from '../../lib/course/split-lesson-slides';
-import { dispatchOpenAlmogChatWithGuideContext } from '../../lib/notifications/open-almog-chat';
+import { dispatchOpenAlmogChatWithGuideContext } from '@/lib/module-api/notifications/lib-notifications-open-almog-chat';
 import { GuideBackIconButton } from './GuideBackIconButton';
 import { GuideImmersiveAlmogHero } from './GuideImmersiveAlmogHero';
 import { GuideImmersiveSlideHeader } from './GuideImmersiveSlideHeader';
@@ -25,7 +25,7 @@ import {
   guideBackToGuideLabel,
   lessonAlmogCta,
   type ProfileGender,
-} from '../../lib/profile/personalized-copy';
+} from '@/lib/module-api/auth-signup/lib-profile-personalized-copy';
 
 interface NavLesson { id: string; title: string; }
 

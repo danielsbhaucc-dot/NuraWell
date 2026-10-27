@@ -1,6 +1,6 @@
 'use client';
 
-import { HABIT_ICONS } from '@/lib/journey/habit-icons';
+import { HABIT_ICONS } from '@/lib/module-api/journey/lib-journey-habit-icons';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
@@ -20,7 +20,7 @@ import {
   X,
 } from 'lucide-react';
 import type { JourneyStep } from '@/lib/types/journey';
-import type { StationCoverCredit } from '@/lib/journey/group-journey-by-station';
+import type { StationCoverCredit } from '@/lib/module-api/journey/lib-journey-group-journey-by-station';
 import { AdminStationCoverPanel } from '@/components/admin/AdminStationCoverPanel';
 import { OpsPageHeader } from '@/components/admin/OpsPageHeader';
 import {
@@ -29,7 +29,7 @@ import {
   opsGlassBtnPrimaryClass,
   opsInputClass,
 } from '@/components/admin/OpsPanel';
-import { glassPanelStyle } from '@/components/media-manager/glass-styles';
+import { glassPanelStyle } from '@/lib/module-api/site-content/components-media-manager-glass-styles';
 import { cn } from '@/lib/cn';
 import { ConfirmDialog } from '@/components/admin/ConfirmDialog';
 

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Loader2, UserX, ArrowRight } from 'lucide-react';
-import { AlmogScreenCoach } from '../ai/AlmogScreenCoach';
+import { AlmogScreenCoach } from '@/lib/module-api/agent/components-ai-AlmogScreenCoach';
 import {
   listDeclinedTasksFromReport,
   type DeclinedTaskRow,

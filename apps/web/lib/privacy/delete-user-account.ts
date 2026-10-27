@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { deleteAllUserMemoryVectors } from '@/lib/ai/upstash-vector-rest';
+import { deleteAllUserMemoryVectors } from '@/lib/module-api/agent/lib-ai-upstash-vector-rest';
 import { deleteUserCompletely } from '@/lib/admin/delete-user-completely';
 
 export type DeleteAccountResult =

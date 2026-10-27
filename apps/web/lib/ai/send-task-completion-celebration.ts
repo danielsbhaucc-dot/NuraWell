@@ -1,15 +1,15 @@
 import { withAiUser } from '@/lib/ai/usage-meter';
-import { insertNotification } from '@/lib/notifications/deliver';
+import { insertNotification } from '@/lib/module-api/notifications/lib-notifications-deliver';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { AI_MODELS } from './client';
 import { completeEmpathyNotifyBody } from './empathy-notify-completion';
 import { fetchNotifyUserProfile } from './notify-user-profile';
 import { ALMOG_NOTIFY_MAX_OUTPUT_TOKENS, buildAlmogNotifySystemPrompt } from './prompts';
-import { computeTaskStreak, streakLabelHe } from '../journey/task-streak';
+import { computeTaskStreak, streakLabelHe } from '@/lib/module-api/journey/lib-journey-task-streak';
 import {
   resolveTaskSchedule,
   slotLabel as slotLabelHe,
-} from '../journey/task-schedule';
+} from '@/lib/module-api/journey/lib-journey-task-schedule';
 import type { JourneyTaskSchedule, JourneyTaskSlot } from '../types/journey';
 
 /**

@@ -19,7 +19,7 @@ import {
   type PendingTaskTodayRow,
   type TodayExecutionRow,
 } from '../journey/journey-report-parse';
-import { groupSimilarByTitle } from '../ai/almog-commitments/title-similarity';
+import { groupSimilarByTitle } from '@/lib/module-api/reminders/lib-ai-almog-commitments-title-similarity';
 
 export type UnifiedTaskLifecycle = 'active' | 'completed' | 'rejected';
 

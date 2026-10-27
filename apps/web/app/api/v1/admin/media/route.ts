@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
-import { resolvePublicUrlForAsset } from '@/lib/cdn/public-media';
+import { resolvePublicUrlForAsset } from '@/lib/module-api/site-content/lib-cdn-public-media';
 import { mediaAssetListQuerySchema } from '@/lib/validation/media-asset';
 
 export const runtime = 'nodejs';

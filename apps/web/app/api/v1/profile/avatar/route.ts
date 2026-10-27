@@ -2,12 +2,12 @@ import { NextResponse } from 'next/server';
 import { DeleteObjectCommand, HeadObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 
 import { requireApiSession } from '../../../../../lib/api/route-guards';
-import { getR2Client, r2ImageBucketName } from '../../../../../lib/storage/r2-almog';
+import { getR2Client, r2ImageBucketName } from '@/lib/module-api/site-content/lib-storage-r2-almog';
 import {
   getUserAvatarCdnUrl,
   userAvatarLegacyKeys,
   userAvatarObjectKey,
-} from '../../../../../lib/storage/user-avatar';
+} from '@/lib/module-api/site-content/lib-storage-user-avatar';
 import { isWebpBuffer, MAX_UPLOAD_BYTES } from '../../../../../lib/validation/webp';
 
 export const runtime = 'nodejs';

@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Mail, MessageCircle, ShieldCheck, Sparkles } from 'lucide-react';
-import { LegalShell } from '@/components/legal/LegalShell';
-import { LegalCard, LegalSection, LegalCallout } from '@/components/legal/LegalParts';
+import { LegalShell } from '@/lib/module-api/legal/components-legal-LegalShell';
+import { LegalCard, LegalSection, LegalCallout } from '@/lib/module-api/legal/components-legal-LegalParts';
 
 const UPDATED_AT = '3 באוקטובר 2026';
 

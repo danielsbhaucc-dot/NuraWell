@@ -1,10 +1,10 @@
 /** Journey-step fill core (moved from the ai-fill route so the admin agent can reuse it). */
 import { z } from 'zod';
-import { AI_MODELS, groq, openrouter } from '@/lib/ai/client';
+import { AI_MODELS, groq, openrouter } from '@/lib/module-api/agent/lib-ai-client';
 import { scanResearchSource } from '@/lib/admin/research-scan';
 import { normalizeTaskLeveling } from '@/lib/admin/ai-fill-leveling';
 import type { JourneyTaskLevelingConfig } from '@/lib/types/journey';
-import { isGroqLaneAvailable } from '@/lib/ai/groq-compat';
+import { isGroqLaneAvailable } from '@/lib/module-api/agent/lib-ai-groq-compat';
 
 
 const MAX_SOURCE_CHARS = 60_000;

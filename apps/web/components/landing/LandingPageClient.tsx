@@ -52,7 +52,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { NuraWellLogo } from '@/components/shared/NuraWellLogo';
-import { MentorBubble } from '@/components/onboarding/MentorBubble';
+import { MentorBubble } from '@/lib/module-api/auth-signup/components-onboarding-MentorBubble';
 
 const HERO_IMAGE =
   'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=1400&q=90&auto=format&fit=crop';

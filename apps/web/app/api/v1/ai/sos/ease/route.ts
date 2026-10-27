@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-import { normalizeFrictionCategory, normalizeStrategyType } from '../../../../../../lib/ai/almog-commitments/friction';
+import { normalizeFrictionCategory, normalizeStrategyType } from '@/lib/module-api/reminders/lib-ai-almog-commitments-friction';
 import { createSosEaseAssignment } from '../../../../../../lib/ai/guardian/sos-ease-assignment';
 import type { SosIntervention } from '../../../../../../lib/ai/guardian/sos';
 import type { SosFocusTask } from '../../../../../../lib/ai/guardian/sos-memory';

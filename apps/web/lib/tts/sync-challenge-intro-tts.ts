@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import { buildPublicUrlForUpload } from '@/lib/cdn/public-media';
-import { getPublicCdnAudioUrl } from '@/lib/cdn/public-audio';
+import { buildPublicUrlForUpload } from '@/lib/module-api/site-content/lib-cdn-public-media';
+import { getPublicCdnAudioUrl } from '@/lib/module-api/site-content/lib-cdn-public-audio';
 import { TTS_MODEL_ID, TTS_VOICE_ID } from './constants';
 import { synthesizeQuestionSpeech } from './elevenlabs';
 import { uploadTtsMp3ToR2 } from './r2-upload';

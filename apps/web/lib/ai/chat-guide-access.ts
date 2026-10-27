@@ -5,11 +5,11 @@ import {
   findGuideForSignal,
   grantGuideAccess,
   type GuideAccessSignal,
-} from '@/lib/guides/grant-access';
-import { TRIAL_DAYS_BY_SIGNAL } from '@/lib/guides/access';
-import { fetchUserGuideSummaries } from '@/lib/guides/fetch-user-guides';
-import { detectGuideSeasonTag, isGuideSeasonallyActive } from '@/lib/guides/seasonal';
-import { decideGuideOpen, isExplicitGuideRequest, readGuideRules } from '@/lib/guides/guide-rules';
+} from '@/lib/module-api/journey/lib-guides-grant-access';
+import { TRIAL_DAYS_BY_SIGNAL } from '@/lib/module-api/journey/lib-guides-access';
+import { fetchUserGuideSummaries } from '@/lib/module-api/journey/lib-guides-fetch-user-guides';
+import { detectGuideSeasonTag, isGuideSeasonallyActive } from '@/lib/module-api/journey/lib-guides-seasonal';
+import { decideGuideOpen, isExplicitGuideRequest, readGuideRules } from '@/lib/module-api/journey/lib-guides-guide-rules';
 import { isStorableMemoryText } from '@/lib/ai/safety/memory-text-guard';
 
 /** Best title/description word overlap with the user's message (explicit "open the guide about X"). */

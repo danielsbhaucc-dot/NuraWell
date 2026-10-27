@@ -1,8 +1,8 @@
-import type { OnboardingProfileForChat } from '@/lib/ai/onboarding-chat-context';
-import { genderCopy } from '@/lib/onboarding/gender-copy';
+import type { OnboardingProfileForChat } from '@/lib/module-api/agent/lib-ai-onboarding-chat-context';
+import { genderCopy } from '@/lib/module-api/auth-signup/lib-onboarding-gender-copy';
 import { publicAppOriginSync } from '@/lib/public-app-url';
 import { emailParagraph, emailSummaryTable, escapeHtml, renderEmailLayout } from '@/lib/email/layout';
-import type { OnboardingGender } from '@/lib/onboarding/types';
+import type { OnboardingGender } from '@/lib/module-api/auth-signup/lib-onboarding-types';
 
 const GOAL_HE: Record<string, string> = {
   weight_loss: 'ירידה במשקל',

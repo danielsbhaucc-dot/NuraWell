@@ -1,6 +1,6 @@
 'use client';
 
-import { NotificationsBellButton } from '@/components/notifications/NotificationsBellButton';
+import { NotificationsBellButton } from '@/lib/module-api/notifications/components-notifications-NotificationsBellButton';
 
 export function ChallengeNotificationsBell() {
   return (

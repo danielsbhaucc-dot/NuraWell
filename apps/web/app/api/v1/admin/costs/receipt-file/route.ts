@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { loadMediaBlob } from '@/lib/legal/media/store';
+import { loadMediaBlob } from '@/lib/module-api/legal/lib-legal-media-store';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

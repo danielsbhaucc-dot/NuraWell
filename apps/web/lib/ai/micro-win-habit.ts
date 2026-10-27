@@ -4,7 +4,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-import { parseJourneyHabitsJson } from '../workflows/habit-checkpoint-eligibility';
+import { parseJourneyHabitsJson } from '@/lib/module-api/reminders/lib-workflows-habit-checkpoint-eligibility';
 
 const WATER_HABIT_RE = /מים|שתייה|לשתות|רטוב/i;
 

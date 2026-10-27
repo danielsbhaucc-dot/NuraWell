@@ -7,7 +7,7 @@
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { jerusalemDateKey } from '../../journey/task-schedule';
+import { jerusalemDateKey } from '@/lib/module-api/journey/lib-journey-task-schedule';
 import type { AlmogHabitCheckpointPayload } from '../../workflows/almog-habit-checkpoint-payload';
 import type { HabitCheckpointPlanItem } from '../../workflows/habit-checkpoint-batch';
 import type { AlmogCommitmentContext } from './types';

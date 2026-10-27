@@ -9,18 +9,18 @@ import {
   fetchInterventionMemory,
   generateBlockerOptions,
   generateBlockerPivot,
-} from '../../../../lib/ai/almog-commitments/intervention-engine';
-import { packCoachContext } from '../../../../lib/ai/almog-commitments/coach-context';
+} from '@/lib/module-api/reminders/lib-ai-almog-commitments-intervention-engine';
+import { packCoachContext } from '@/lib/module-api/reminders/lib-ai-almog-commitments-coach-context';
 import {
   evaluateRecoveryGraduation,
   scheduleRecoveryEncouragement,
-} from '../../../../lib/ai/almog-commitments/recovery-plan-engine';
-import { normalizeFrictionCategory, normalizeStrategyType } from '../../../../lib/ai/almog-commitments/friction';
+} from '@/lib/module-api/reminders/lib-ai-almog-commitments-recovery-plan-engine';
+import { normalizeFrictionCategory, normalizeStrategyType } from '@/lib/module-api/reminders/lib-ai-almog-commitments-friction';
 import type {
   BlockerHistoryEntry,
   BlockerOption,
   BlockerProposal,
-} from '../../../../lib/ai/almog-commitments/types';
+} from '@/lib/module-api/reminders/lib-ai-almog-commitments-types';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

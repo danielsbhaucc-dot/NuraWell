@@ -3,7 +3,7 @@ import { autoCloseStaleSessionsBatch } from '@/lib/ai/chat-sessions/auto-close-s
 import { authorizeCronRequest } from '@/lib/api/authorize-cron';
 import { maybeReturnCronIdleSkip } from '@/lib/api/cron-idle-guard';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { notifyDevForwardsDone } from '@/lib/ceo/dev-forward-notify';
+import { notifyDevForwardsDone } from '@/lib/module-api/gideon/lib-ceo-dev-forward-notify';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;

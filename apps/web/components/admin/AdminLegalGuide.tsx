@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { BookOpen } from 'lucide-react';
-import { ADMIN_GUIDE } from '@/lib/legal/admin-guide';
+import { ADMIN_GUIDE } from '@/lib/module-api/legal/lib-legal-admin-guide';
 import { opsGlassCardClass } from '@/components/admin/OpsPanel';
 import { cn } from '@/lib/cn';
 

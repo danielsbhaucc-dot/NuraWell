@@ -149,7 +149,7 @@ export async function flushOutbox(
 /** Delayed QStash call to one of our cron routes (deduplicated). */
 export async function publishDelayed(path: string, notBefore: number, dedupeId: string, retries = 1): Promise<{ ok: boolean; reason?: string }> {
   const token = process.env.QSTASH_TOKEN?.trim();
-  const { workflowPublicBaseUrl } = await import('@/lib/workflows/resolve-workflow-public-url');
+  const { workflowPublicBaseUrl } = await import('@/lib/module-api/reminders/lib-workflows-resolve-workflow-public-url');
   const base = workflowPublicBaseUrl();
   if (!token || !base) return { ok: false, reason: 'qstash_or_base_missing' };
   const api = (process.env.QSTASH_URL?.trim() || 'https://qstash.upstash.io').replace(/\/$/, '');

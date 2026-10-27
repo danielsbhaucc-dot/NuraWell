@@ -7,3 +7,4 @@ core: false  toggleable: true
 always-on features: none
 gate: off for a customer product without an active entitlement => routes 404, no menu, crons skipped, data retained. Owned products: always on.
 rules: no owner names in code; server-side authz; behavior changes need a golden/regression test.
+public api: apps/web/lib/module-api/gideon/ (one re-export file per public entry; other modules import gideon only through these)

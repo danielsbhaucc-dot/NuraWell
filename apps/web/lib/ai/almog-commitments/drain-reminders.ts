@@ -10,11 +10,11 @@
  * ב-cron של habit-checkpoints.
  */
 
-import { insertNotification } from '@/lib/notifications/deliver';
+import { insertNotification } from '@/lib/module-api/notifications/lib-notifications-deliver';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-import { skipSosFollowUpIfResolved } from '../guardian/sos-care-loop';
-import { gateAlmogUserFacingTouch } from '../../notifications/almog-touch-send-gate';
+import { skipSosFollowUpIfResolved } from '@/lib/module-api/agent/lib-ai-guardian-sos-care-loop';
+import { gateAlmogUserFacingTouch } from '@/lib/module-api/notifications/lib-notifications-almog-touch-send-gate';
 
 type Admin = SupabaseClient;
 
@@ -245,7 +245,7 @@ export async function drainAlmogReminders(
         /* לא מבטלים את ההתראה אם ה-RPC נכשל */
       }
 
-      const { afterAlmogInAppNotification } = await import('../../notifications/after-almog-insert');
+      const { afterAlmogInAppNotification } = await import('@/lib/module-api/notifications/lib-notifications-after-almog-insert');
       afterAlmogInAppNotification(r.user_id, r.title, r.body);
 
       sentByUser.set(r.user_id, (sentByUser.get(r.user_id) ?? 0) + 1);

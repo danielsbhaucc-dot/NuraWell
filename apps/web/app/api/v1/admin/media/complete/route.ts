@@ -1,17 +1,17 @@
 import { NextResponse, after } from 'next/server';
-import { scanStorage } from '@/lib/legal/media/ingest';
+import { scanStorage } from '@/lib/module-api/legal/lib-legal-media-ingest';
 import { HeadObjectCommand } from '@aws-sdk/client-s3';
 import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import { readJsonBody } from '@/lib/api/json-request';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { buildPublicUrlForUpload } from '@/lib/cdn/public-media';
-import { bucketForKind, buildMediaObjectKey } from '@/lib/media/media-asset-keys';
-import { nurawellPlaylistFromVideoId } from '@/lib/journey/bunny-pull';
+import { buildPublicUrlForUpload } from '@/lib/module-api/site-content/lib-cdn-public-media';
+import { bucketForKind, buildMediaObjectKey } from '@/lib/module-api/site-content/lib-media-media-asset-keys';
+import { nurawellPlaylistFromVideoId } from '@/lib/module-api/journey/lib-journey-bunny-pull';
 import {
   mediaCompleteUploadSchema,
   mediaCompleteVideoSchema,
 } from '@/lib/validation/media-asset';
-import { getR2Client, r2BucketNameForMediaBucket } from '@/lib/storage/r2-almog';
+import { getR2Client, r2BucketNameForMediaBucket } from '@/lib/module-api/site-content/lib-storage-r2-almog';
 import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
 
 export const runtime = 'nodejs';

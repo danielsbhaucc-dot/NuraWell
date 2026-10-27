@@ -7,9 +7,9 @@
 
 import type { TaskIntentDetection } from './chat-task-intent';
 import { classifyResponseFast } from './response-classifier-fast';
-import type { PendingTaskTodayRow } from '../journey/journey-report-parse';
+import type { PendingTaskTodayRow } from '@/lib/module-api/journey/lib-journey-journey-report-parse';
 import type { JourneyTaskSlot } from '../types/journey';
-import { slotsForSchedule } from '../journey/task-schedule';
+import { slotsForSchedule } from '@/lib/module-api/journey/lib-journey-task-schedule';
 import type { PendingAcceptedTask } from './mark-task-execution';
 
 export type TaskReportHintSource = 'home_tasks_popup' | 'home_hero' | 'sos_moment';

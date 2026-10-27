@@ -27,7 +27,7 @@ import {
   opsGlassCardClass,
   opsInputClass,
 } from '@/components/admin/OpsPanel';
-import { glassPanelStyle } from '@/components/media-manager/glass-styles';
+import { glassPanelStyle } from '@/lib/module-api/site-content/components-media-manager-glass-styles';
 import { cn } from '@/lib/cn';
 
 type KnowledgeItem = {

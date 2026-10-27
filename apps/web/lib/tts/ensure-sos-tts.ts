@@ -1,9 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import { HeadObjectCommand } from '@aws-sdk/client-s3';
 
-import { buildPublicUrlForUpload } from '@/lib/cdn/public-media';
-import { getPublicCdnAudioUrl } from '@/lib/cdn/public-audio';
-import { getR2Client, r2AudioBucketName } from '@/lib/storage/r2-almog';
+import { buildPublicUrlForUpload } from '@/lib/module-api/site-content/lib-cdn-public-media';
+import { getPublicCdnAudioUrl } from '@/lib/module-api/site-content/lib-cdn-public-audio';
+import { getR2Client, r2AudioBucketName } from '@/lib/module-api/site-content/lib-storage-r2-almog';
 
 import { TTS_ELEVENLABS_CREDIT, TTS_MODEL_ID, TTS_VOICE_ID } from './constants';
 import { synthesizeQuestionSpeech } from './elevenlabs';

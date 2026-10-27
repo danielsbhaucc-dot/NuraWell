@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { ChevronDown, HeartPulse, Loader2 } from 'lucide-react';
-import type { ProfileGender } from '@/lib/privacy/gender-hebrew';
-import { healthConsentExplainer } from '@/lib/privacy/health-consent-explainer';
-import { CONSENT_CHANGED_EVENT, openConsentSheet } from '@/components/legal/ConsentSheetHost';
+import type { ProfileGender } from '@/lib/module-api/privacy-retention/lib-privacy-gender-hebrew';
+import { healthConsentExplainer } from '@/lib/module-api/privacy-retention/lib-privacy-health-consent-explainer';
+import { CONSENT_CHANGED_EVENT, openConsentSheet } from '@/lib/module-api/legal/components-legal-ConsentSheetHost';
 
 type State = { active: boolean; decided_at: string | null };
 

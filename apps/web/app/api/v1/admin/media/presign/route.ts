@@ -6,10 +6,10 @@ import {
   bucketForKind,
   buildMediaObjectKey,
   newMediaAssetId,
-} from '@/lib/media/media-asset-keys';
-import { inferFileSubtype } from '@/lib/media/file-subtype';
-import { r2BucketNameForMediaBucket } from '@/lib/storage/r2-almog';
-import { createR2PutPresignedUrl } from '@/lib/storage/r2-presign';
+} from '@/lib/module-api/site-content/lib-media-media-asset-keys';
+import { inferFileSubtype } from '@/lib/module-api/site-content/lib-media-file-subtype';
+import { r2BucketNameForMediaBucket } from '@/lib/module-api/site-content/lib-storage-r2-almog';
+import { createR2PutPresignedUrl } from '@/lib/module-api/site-content/lib-storage-r2-presign';
 import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
 
 export const runtime = 'nodejs';

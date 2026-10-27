@@ -1,4 +1,4 @@
-import type { OnboardingExtracted } from '../ai/onboarding-chat-llm';
+import type { OnboardingExtracted } from '@/lib/module-api/agent/lib-ai-onboarding-chat-llm';
 import {
   buildFieldFlags,
   redactExtractedForClient,

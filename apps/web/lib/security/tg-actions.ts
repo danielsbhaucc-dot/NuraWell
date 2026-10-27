@@ -12,7 +12,7 @@ import 'server-only';
 import { createHash } from 'node:crypto';
 import { macFor as coreMac, newNonceId, verifyToken as coreVerify } from '@/lib/security-core/signed-actions';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { allowedChatIds, type CeoButton } from '@/lib/ceo/channel';
+import { allowedChatIds, type CeoButton } from '@/lib/module-api/gideon/lib-ceo-channel';
 import { blockIp, irAudit, revokeSession, type Actor } from './ir';
 
 export const TG_ACTION_TTL_MS = 30 * 60_000;

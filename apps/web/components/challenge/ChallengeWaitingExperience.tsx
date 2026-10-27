@@ -4,8 +4,8 @@ import { useCallback, useEffect, useState } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { Clock, LogOut, Sparkles, Users } from 'lucide-react';
-import { getMentorAvatarUrl } from '@/lib/mentors/avatar-url';
-import { MENTORS } from '@/lib/mentors/registry';
+import { getMentorAvatarUrl } from '@/lib/module-api/agent/lib-mentors-avatar-url';
+import { MENTORS } from '@/lib/module-api/agent/lib-mentors-registry';
 import type { ChallengeStateResponse } from '@/lib/challenge/types';
 import {
   excitedAlmogLine,

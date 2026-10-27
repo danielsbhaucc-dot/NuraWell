@@ -1,13 +1,13 @@
 import { sealProfilePatch } from '@/lib/crypto/pii-seal';
 import { decProfileResult } from '@/lib/crypto/pii-fields';
-import { withAiUser } from '@/lib/ai/usage-meter';
-import { insertNotification } from '@/lib/notifications/deliver';
+import { withAiUser } from '@/lib/module-api/agent/lib-ai-usage-meter';
+import { insertNotification } from '@/lib/module-api/notifications/lib-notifications-deliver';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { AI_MODELS } from '../ai/client';
+import { AI_MODELS } from '@/lib/module-api/agent/lib-ai-client';
 import {
   fetchTodayChatTurns,
   formatDailyShortTermBlock,
-} from '../ai/almog-daily-context';
+} from '@/lib/module-api/agent/lib-ai-almog-daily-context';
 import {
   buildSlotDaypartPromptBlock,
   fetchTodayAlmogTouches,
@@ -15,22 +15,22 @@ import {
   formatTodayTouchesCooldownBlock,
   shouldFetchWeekRecentBodies,
   type TodayAlmogTouch,
-} from '../ai/almog-notify-day-context';
-import { completeEmpathyNotifyBody } from '../ai/empathy-notify-completion';
+} from '@/lib/module-api/agent/lib-ai-almog-notify-day-context';
+import { completeEmpathyNotifyBody } from '@/lib/module-api/agent/lib-ai-empathy-notify-completion';
 import {
   buildHabitCheckpointSystemPrompt,
   countUnansweredEarlierToday,
-} from '../ai/habit-checkpoint-llm';
-import { isDailyAvailabilityLowToday } from '../ai/memory';
-import { fetchNotifyUserProfile } from '../ai/notify-user-profile';
-import { buildProfileScheduleHints } from '../ai/profile-schedule-anchors';
-import { ALMOG_NOTIFY_MAX_OUTPUT_TOKENS } from '../ai/prompts';
+} from '@/lib/module-api/agent/lib-ai-habit-checkpoint-llm';
+import { isDailyAvailabilityLowToday } from '@/lib/module-api/agent/lib-ai-memory';
+import { fetchNotifyUserProfile } from '@/lib/module-api/agent/lib-ai-notify-user-profile';
+import { buildProfileScheduleHints } from '@/lib/module-api/agent/lib-ai-profile-schedule-anchors';
+import { ALMOG_NOTIFY_MAX_OUTPUT_TOKENS } from '@/lib/module-api/agent/lib-ai-prompts';
 import type { AlmogHabitCheckpointPayload, HabitCheckpointSlot } from './almog-habit-checkpoint-payload';
 import { isActiveReengagementMove, churnSurveyOptions, type ReengagementMove } from '../churn/reengagement-moves';
 import { patchReengagementContext } from '../churn/patch-reengagement-context';
 import { checkpointShouldOpenPlansPage } from '../ai/almog-commitments/plans-page-tracking';
 import { reportError } from '../monitoring/report-error';
-import { gateAlmogUserFacingTouch } from '../notifications/almog-touch-send-gate';
+import { gateAlmogUserFacingTouch } from '@/lib/module-api/notifications/lib-notifications-almog-touch-send-gate';
 
 const SLOT_HE: Record<HabitCheckpointSlot, string> = {
   morning: 'בוקר',
@@ -218,7 +218,7 @@ async function fetchProfileScheduleHints(admin: SupabaseClient, userId: string) 
     sleep_time?: string | null;
     dinner_time?: string | null;
     meal_schedule?: Array<{ time: string; label?: string }> | null;
-    ai_context?: import('../ai/memory').AiUserContext | null;
+    ai_context?: import('@/lib/module-api/agent/lib-ai-memory').AiUserContext | null;
   } | null;
   const hints = buildProfileScheduleHints(row);
   return { ...hints, aiContext: row?.ai_context ?? null };
@@ -619,7 +619,7 @@ export async function sendAlmogHabitCheckpointNotification(
     await patchReengagementContext(admin, payload.userId, move);
   }
 
-  const { afterAlmogInAppNotification } = await import('../notifications/after-almog-insert');
+  const { afterAlmogInAppNotification } = await import('@/lib/module-api/notifications/lib-notifications-after-almog-insert');
   afterAlmogInAppNotification(payload.userId, title, body);
 
   return { body, inserted: inserted as Record<string, unknown> | null };

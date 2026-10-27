@@ -11,17 +11,17 @@ import {
   habitCheckpointSlotSchema,
   type AlmogHabitCheckpointPayload,
   type HabitCheckpointSlot,
-} from '../../../../../../../lib/workflows/almog-habit-checkpoint-payload';
+} from '@/lib/module-api/reminders/lib-workflows-almog-habit-checkpoint-payload';
 import {
   collectPendingAcceptedTasks,
   collectUserJourneyHabits,
-} from '../../../../../../../lib/workflows/habit-checkpoint-batch';
+} from '@/lib/module-api/reminders/lib-workflows-habit-checkpoint-batch';
 import {
   filterHabitsForSlot,
   jerusalemCalendarParts,
-} from '../../../../../../../lib/workflows/habit-checkpoint-eligibility';
-import { gateAlmogHabitCheckpoint } from '../../../../../../../lib/workflows/habit-checkpoint-gates';
-import { sendAlmogHabitCheckpointNotification } from '../../../../../../../lib/workflows/send-almog-habit-checkpoint';
+} from '@/lib/module-api/reminders/lib-workflows-habit-checkpoint-eligibility';
+import { gateAlmogHabitCheckpoint } from '@/lib/module-api/reminders/lib-workflows-habit-checkpoint-gates';
+import { sendAlmogHabitCheckpointNotification } from '@/lib/module-api/reminders/lib-workflows-send-almog-habit-checkpoint';
 
 /**
  * Endpoint לדיבוג של תזרים ה-Habit Checkpoint — מריץ סינכרונית את אותו קוד שה-CRON

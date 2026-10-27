@@ -1,15 +1,15 @@
 import { sealProfilePatch } from '@/lib/crypto/pii-seal';
 import { decProfileResult } from '@/lib/crypto/pii-fields';
-import { withAiUser } from '@/lib/ai/usage-meter';
-import { readGuideRules } from '../guides/guide-rules';
-import { isStorableMemoryText } from '../ai/safety/memory-text-guard';
+import { withAiUser } from '@/lib/module-api/agent/lib-ai-usage-meter';
+import { readGuideRules } from '@/lib/module-api/journey/lib-guides-guide-rules';
+import { isStorableMemoryText } from '@/lib/module-api/agent/lib-ai-safety-memory-text-guard';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { fetchUserGuideSummaries } from '../guides/fetch-user-guides';
-import { grantGuideAccess } from '../guides/grant-access';
-import { revokeGuideAccess } from '../guides/revoke-access';
-import { runGuideCompanionLlm, type GuideCatalogEntry } from '../guides/guide-companion-llm';
-import { detectGuideSeasonTag, isGuideSeasonallyActive, seasonInactiveReason } from '../guides/seasonal';
-import type { AiUserContext } from '../ai/memory';
+import { fetchUserGuideSummaries } from '@/lib/module-api/journey/lib-guides-fetch-user-guides';
+import { grantGuideAccess } from '@/lib/module-api/journey/lib-guides-grant-access';
+import { revokeGuideAccess } from '@/lib/module-api/journey/lib-guides-revoke-access';
+import { runGuideCompanionLlm, type GuideCatalogEntry } from '@/lib/module-api/journey/lib-guides-guide-companion-llm';
+import { detectGuideSeasonTag, isGuideSeasonallyActive, seasonInactiveReason } from '@/lib/module-api/journey/lib-guides-seasonal';
+import type { AiUserContext } from '@/lib/module-api/agent/lib-ai-memory';
 import { sumLessonDurationMinutes } from '../text/hebrew-plural';
 
 export interface GuideCompanionSnapshot {
@@ -214,7 +214,7 @@ export async function runGuideCompanionForUser(
   /** unified task model: Almog's guide pick is offered as a task (user chooses in the plan). */
   if (nextPick) {
     try {
-      const { offerGuideTask } = await import('@/lib/tasks');
+      const { offerGuideTask } = await import('@/lib/module-api/journey/lib-tasks');
       await offerGuideTask(admin, { userId, courseId: nextPick.courseId, courseTitle: nextPick.courseTitle, reason: nextPick.reason });
     } catch (e) {
       console.warn('[guide-companion] offer task failed', e);

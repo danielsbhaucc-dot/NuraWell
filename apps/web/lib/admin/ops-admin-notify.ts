@@ -5,7 +5,7 @@ import {
   genderGrantedGlobal,
   genderRevoked,
   type ProfileGender,
-} from '@/lib/privacy/gender-hebrew';
+} from '@/lib/module-api/privacy-retention/lib-privacy-gender-hebrew';
 
 export type OpsAdminNotificationType =
   | 'transcript_access_approved'

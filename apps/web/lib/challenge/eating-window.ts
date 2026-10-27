@@ -1,4 +1,4 @@
-import { parseHHMMToMinutes } from '@/lib/ai/almog-time-context';
+import { parseHHMMToMinutes } from '@/lib/module-api/agent/lib-ai-almog-time-context';
 import type { EatingWindowConfig } from './types';
 
 export type MealScheduleInput = Array<{ time?: string | null; label?: string | null }>;

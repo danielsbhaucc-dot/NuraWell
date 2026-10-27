@@ -2,15 +2,15 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireApiSession } from '../../../../lib/api/route-guards';
 import { createAdminClient } from '../../../../lib/supabase/admin';
-import type { AssignmentHistoryEntry } from '../../../../lib/ai/almog-commitments/types';
+import type { AssignmentHistoryEntry } from '@/lib/module-api/reminders/lib-ai-almog-commitments-types';
 import {
   evaluateRecoveryGraduation,
   MICRO_SUCCESS_DAYS_BEFORE_REACTIVATE,
   scheduleRecoveryEncouragement,
   type StepDifficultyRating,
-} from '../../../../lib/ai/almog-commitments/recovery-plan-engine';
+} from '@/lib/module-api/reminders/lib-ai-almog-commitments-recovery-plan-engine';
 import { undoPivotOnDrop } from '../../../../lib/ai/orchestrator/pivot-lifecycle';
-import { persistRecoveryInsight } from '../../../../lib/ai/almog-commitments/persist-recovery-insight';
+import { persistRecoveryInsight } from '@/lib/module-api/reminders/lib-ai-almog-commitments-persist-recovery-insight';
 import { decTableResult } from '@/lib/crypto/pii-fields';
 
 export const runtime = 'nodejs';

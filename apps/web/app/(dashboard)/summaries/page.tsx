@@ -25,7 +25,7 @@ import {
   buildWeeklyKey,
   fromDateKey,
   type SummaryType,
-} from '../../../lib/notifications/summaries';
+} from '@/lib/module-api/notifications/lib-notifications-summaries';
 import { SummariesPageClient } from '../../../components/summaries/SummariesPageClient';
 
 export const dynamic = 'force-dynamic';

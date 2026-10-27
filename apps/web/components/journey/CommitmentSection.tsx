@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Heart, CheckCircle2 } from 'lucide-react';
 import type { CommitmentData } from '../../lib/types/journey';
-import { commitmentCopy } from '../../lib/onboarding/gender-copy';
+import { commitmentCopy } from '@/lib/module-api/auth-signup/lib-onboarding-gender-copy';
 import { lessonGenderCopy } from '../../lib/journey/lesson-gender-copy';
 import { AlmogLessonFeedback } from './AlmogLessonFeedback';
 

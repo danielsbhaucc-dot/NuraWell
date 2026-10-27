@@ -1,8 +1,8 @@
 'use client';
 
 import { MessageCircle } from 'lucide-react';
-import { AlmogAvatarChipWithNameTag } from '../journey/AlmogPresence';
-import { dispatchOpenAlmogChatWithGuideContext, dispatchOpenAlmogChatWithPrefill } from '../../lib/notifications/open-almog-chat';
+import { AlmogAvatarChipWithNameTag } from '@/lib/module-api/journey/components-journey-AlmogPresence';
+import { dispatchOpenAlmogChatWithGuideContext, dispatchOpenAlmogChatWithPrefill } from '@/lib/module-api/notifications/lib-notifications-open-almog-chat';
 import type { GuideContextHint } from '../../lib/ai/guide-context-hint';
 
 type AlmogScreenCoachProps = {

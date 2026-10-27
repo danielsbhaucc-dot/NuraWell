@@ -1,4 +1,4 @@
-import type { MainGoal, MainObstacle, OnboardingGender, WeakestTimeOfDay } from '../onboarding/types';
+import type { MainGoal, MainObstacle, OnboardingGender, WeakestTimeOfDay } from '@/lib/module-api/auth-signup/lib-onboarding-types';
 export type OnboardingProfileForChat = {
   full_name: string | null;
   gender: OnboardingGender | null;

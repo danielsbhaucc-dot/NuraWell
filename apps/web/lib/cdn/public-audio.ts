@@ -1,4 +1,4 @@
-import { resolveAlmogPublicBaseUrl } from '../ai/almog-avatar';
+import { resolveAlmogPublicBaseUrl } from '@/lib/module-api/agent/lib-ai-almog-avatar';
 
 /**
  * נתיב ה-Worker לאודיו. ה-Worker מנתב /audio/* אל דלי ה-AUDIO.

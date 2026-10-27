@@ -5,14 +5,14 @@ import type {
   HabitCheckpointNudgeLevel,
   HabitCheckpointSlot,
   HabitCheckpointUrgencyLevel,
-} from '../workflows/almog-habit-checkpoint-payload';
+} from '@/lib/module-api/reminders/lib-workflows-almog-habit-checkpoint-payload';
 import type { TodayAlmogTouch } from './almog-notify-day-context';
 import {
   reengagementMoveBlock,
   identityContextBlock,
   type IdentityContext,
-} from '../churn/reengagement-prompt-blocks';
-import { isActiveReengagementMove, type ReengagementMove } from '../churn/reengagement-moves';
+} from '@/lib/module-api/reminders/lib-churn-reengagement-prompt-blocks';
+import { isActiveReengagementMove, type ReengagementMove } from '@/lib/module-api/reminders/lib-churn-reengagement-moves';
 import { almogVoiceRule, type AlmogRegister } from './almog-voice';
 
 function genderFromInstruction(gi: string): 'male' | 'female' | null {

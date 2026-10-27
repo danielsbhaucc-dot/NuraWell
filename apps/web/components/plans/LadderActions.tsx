@@ -4,7 +4,7 @@ import { MessageCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { Button, Sheet } from '@/components/ui';
-import { dispatchOpenAlmogChatWithPrefill } from '@/lib/notifications/open-almog-chat';
+import { dispatchOpenAlmogChatWithPrefill } from '@/lib/module-api/notifications/lib-notifications-open-almog-chat';
 
 /** "קשה לי" / "קל לי" / "לדבר עם אלמוג" for one habit — the only client part of a plan habit. */
 export function LadderActions({

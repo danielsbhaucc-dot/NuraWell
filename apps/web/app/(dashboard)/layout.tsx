@@ -1,22 +1,22 @@
-import { UserGenderProvider } from '@/components/providers/UserGenderProvider';
+import { UserGenderProvider } from '@/lib/module-api/auth-signup/components-providers-UserGenderProvider';
 import type { Viewport } from 'next';
 import { redirect } from 'next/navigation';
 import { MobileHeader } from '../../components/shared/MobileHeader';
 import { BottomNav } from '../../components/shared/BottomNav';
-import { AIOverlaysClient } from '../../components/ai/AIOverlaysClient';
-import { ProgressReportProvider } from '../../components/progress-report/ProgressReportProvider';
-import { ActionHubProvider } from '../../components/action-hub/ActionHubProvider';
-import { NotificationsProvider } from '../../components/notifications/NotificationsProvider';
-import { DolevFirstLoginHost } from '../../components/onboarding/DolevFirstLoginHost';
-import { AlmogFirstLoginHost } from '../../components/onboarding/AlmogFirstLoginHost';
-import type { ProfileSummarySource } from '../../lib/onboarding/profile-summary-rows';
+import { AIOverlaysClient } from '@/lib/module-api/agent/components-ai-AIOverlaysClient';
+import { ProgressReportProvider } from '@/lib/module-api/journey/components-progress-report-ProgressReportProvider';
+import { ActionHubProvider } from '@/lib/module-api/journey/components-action-hub-ActionHubProvider';
+import { NotificationsProvider } from '@/lib/module-api/notifications/components-notifications-NotificationsProvider';
+import { DolevFirstLoginHost } from '@/lib/module-api/auth-signup/components-onboarding-DolevFirstLoginHost';
+import { AlmogFirstLoginHost } from '@/lib/module-api/auth-signup/components-onboarding-AlmogFirstLoginHost';
+import type { ProfileSummarySource } from '@/lib/module-api/auth-signup/lib-onboarding-profile-summary-rows';
 import {
   getCachedAuthUser,
   getCachedDashboardProfile,
 } from '../../lib/supabase/cached-auth';
 import { DemoAccessBanner } from '../../components/demo-access/DemoAccessBanner';
-import { ConsentSheetHost } from '../../components/legal/ConsentSheetHost';
-import { PasskeyNudgeHost } from '../../components/settings/PasskeyNudge';
+import { ConsentSheetHost } from '@/lib/module-api/legal/components-legal-ConsentSheetHost';
+import { PasskeyNudgeHost } from '@/lib/module-api/auth-signup/components-settings-PasskeyNudge';
 
 export const viewport: Viewport = {
   width: 'device-width',

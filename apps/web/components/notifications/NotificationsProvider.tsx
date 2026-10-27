@@ -26,15 +26,15 @@ import { groupSimilarNotifications } from '../../lib/notifications/group-similar
 import { createClient } from '../../lib/supabase/client';
 import { useAlmogAvatarUrl } from '../../lib/client/useAlmogAvatarUrl';
 import { useMentorAvatarUrl } from '../../lib/client/useMentorAvatarUrl';
-import type { MentorId } from '../../lib/mentors/registry';
+import type { MentorId } from '@/lib/module-api/agent/lib-mentors-registry';
 import { cn } from '../../lib/cn';
 import { ToastContainer, useToast } from '../shared/Toast';
 import {
   TranscriptAccessRequestDialog,
   type TranscriptAccessRequestPayload,
-} from '../settings/TranscriptAccessRequestDialog';
-import type { ProfileGender } from '../../lib/privacy/gender-hebrew';
-import type { TranscriptAccessGrant } from '@/lib/privacy/transcript-access-grants';
+} from '@/lib/module-api/auth-signup/components-settings-TranscriptAccessRequestDialog';
+import type { ProfileGender } from '@/lib/module-api/privacy-retention/lib-privacy-gender-hebrew';
+import type { TranscriptAccessGrant } from '@/lib/module-api/privacy-retention/lib-privacy-transcript-access-grants';
 
 export type NotificationItem = {
   id: string;

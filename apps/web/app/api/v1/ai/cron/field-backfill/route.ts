@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { authorizeCronRequest, hasFieldBackfillSecret } from '@/lib/api/authorize-cron';
 import { createAdminClient, createRawAdminClient } from '@/lib/supabase/admin';
 import { backfillFieldV2, FIELD_V2_BACKFILL_TABLES, legalReseal, legalVerify, mediaReceiptsProbe, receiptSearchParity, recordBackfillRun, resealAuditLog, verifyAuditLog } from '@/lib/security/field-backfill';
-import { backfillReceiptSearch } from '@/lib/legal/media/receipts';
+import { backfillReceiptSearch } from '@/lib/module-api/legal/lib-legal-media-receipts';
 
 /** ?action= one-off maintenance for 000222/000225 (counts only). */
 const ACTIONS: Record<string, () => Promise<unknown>> = {

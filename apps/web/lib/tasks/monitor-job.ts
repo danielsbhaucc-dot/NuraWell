@@ -1,9 +1,9 @@
 import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { filterNotifyEligibleUserIds } from '@/lib/notifications/notify-recipients';
-import { insertNotification } from '@/lib/notifications/deliver';
-import { afterAlmogInAppNotification } from '@/lib/notifications/after-almog-insert';
-import { evaluateNotifyGate } from '@/lib/notifications/notify-recipients';
+import { filterNotifyEligibleUserIds } from '@/lib/module-api/notifications/lib-notifications-notify-recipients';
+import { insertNotification } from '@/lib/module-api/notifications/lib-notifications-deliver';
+import { afterAlmogInAppNotification } from '@/lib/module-api/notifications/lib-notifications-after-almog-insert';
+import { evaluateNotifyGate } from '@/lib/module-api/notifications/lib-notifications-notify-recipients';
 import { getPlan, runLadderMonitor } from './index';
 
 /**

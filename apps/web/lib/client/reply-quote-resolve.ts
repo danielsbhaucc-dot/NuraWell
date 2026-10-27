@@ -1,4 +1,4 @@
-import { resolveReplyQuoteTurnIndex } from '../ai/reply-quote';
+import { resolveReplyQuoteTurnIndex } from '@/lib/module-api/agent/lib-ai-reply-quote';
 
 export type QuoteResolvable = {
   role: string;

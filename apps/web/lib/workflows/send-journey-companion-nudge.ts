@@ -1,21 +1,21 @@
 import { decProfileResult } from '@/lib/crypto/pii-fields';
-import { genderFromInstruction } from '@/lib/notifications/notify-hebrew-lint';
-import { withAiUser } from '@/lib/ai/usage-meter';
-import { insertNotification } from '@/lib/notifications/deliver';
+import { genderFromInstruction } from '@/lib/module-api/notifications/lib-notifications-notify-hebrew-lint';
+import { withAiUser } from '@/lib/module-api/agent/lib-ai-usage-meter';
+import { insertNotification } from '@/lib/module-api/notifications/lib-notifications-deliver';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { AI_MODELS } from '../ai/client';
+import { AI_MODELS } from '@/lib/module-api/agent/lib-ai-client';
 import {
   buildSlotDaypartPromptBlock,
   fetchTodayAlmogTouches,
   formatTodayTouchesCooldownBlock,
-} from '../ai/almog-notify-day-context';
-import { completeEmpathyNotifyBody } from '../ai/empathy-notify-completion';
-import { fetchNotifyUserProfile } from '../ai/notify-user-profile';
+} from '@/lib/module-api/agent/lib-ai-almog-notify-day-context';
+import { completeEmpathyNotifyBody } from '@/lib/module-api/agent/lib-ai-empathy-notify-completion';
+import { fetchNotifyUserProfile } from '@/lib/module-api/agent/lib-ai-notify-user-profile';
 import {
   ALMOG_JOURNEY_MOTIVATION_SYSTEM_PROMPT,
   ALMOG_NOTIFY_MAX_OUTPUT_TOKENS,
-} from '../ai/prompts';
-import { gateAlmogUserFacingTouch } from '../notifications/almog-touch-send-gate';
+} from '@/lib/module-api/agent/lib-ai-prompts';
+import { gateAlmogUserFacingTouch } from '@/lib/module-api/notifications/lib-notifications-almog-touch-send-gate';
 import {
   formatJourneyCompanionPromptBlock,
   type JourneyCompanionContext,

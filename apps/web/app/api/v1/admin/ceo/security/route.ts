@@ -3,9 +3,9 @@ import { z } from 'zod';
 import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { approveDeviceRequest, createStepupLink, hasPasskey, killSwitch, requestDevice, securityState } from '@/lib/ceo/security';
-import { allowedChatIds } from '@/lib/ceo/channel';
-import { alertOwner, sendMiniAppButton } from '@/lib/ceo/stepup-http';
+import { approveDeviceRequest, createStepupLink, hasPasskey, killSwitch, requestDevice, securityState } from '@/lib/module-api/gideon/lib-ceo-security';
+import { allowedChatIds } from '@/lib/module-api/gideon/lib-ceo-channel';
+import { alertOwner, sendMiniAppButton } from '@/lib/module-api/gideon/lib-ceo-stepup-http';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

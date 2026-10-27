@@ -2,7 +2,7 @@
 # Module inventory
 
 Catalog modules: 21 (core: 8). Packaged modules (module.json): 9.
-App code already modular: 100% (1489/1489 files; the rest is on modules/legacy-app-files.txt and may only shrink).
+App code already modular: 100% (1815/1815 files; the rest is on modules/legacy-app-files.txt and may only shrink).
 
 | id | name | core (cannot disable) | tier | always-on | area manifest | owned app files | packaged |
 |---|---|---|---|---|---|---|---|
@@ -14,19 +14,19 @@ App code already modular: 100% (1489/1489 files; the rest is on modules/legacy-a
 | `field-encryption` | הצפנת שדות | yes | internal | pii-encryption | yes | 8 | not yet |
 | `logs` | יומנים | yes | shareable | error-logs | yes | 16 | not yet |
 | `app-shell` | מעטפת האפליקציה | yes | internal | layout, error-pages | yes | 138 | not yet |
-| `auth-signup` | הרשמה וקליטה | no | shareable | - | yes | 75 | not yet |
-| `privacy-retention` | פרטיות ושמירה | no | shareable | consents, data-export, deletion-with-approval | yes | 23 | not yet |
-| `billing` | תשלומים | no | shareable | - | yes | 36 | not yet |
-| `notifications` | התראות למשתמשים | no | shareable | - | yes | 48 | not yet |
+| `auth-signup` | הרשמה וקליטה | no | shareable | - | yes | 100 | not yet |
+| `privacy-retention` | פרטיות ושמירה | no | shareable | consents, data-export, deletion-with-approval | yes | 38 | not yet |
+| `billing` | תשלומים | no | shareable | - | yes | 47 | not yet |
+| `notifications` | התראות למשתמשים | no | shareable | - | yes | 71 | not yet |
 | `costs` | עלויות | no | internal | - | yes | 3 | not yet |
-| `legal` | משפטי | no | shareable | terms-acceptance, legal-evidence | yes | 99 | not yet |
-| `a11y` | נגישות | no | sellable | - | yes | 15 | not yet |
+| `legal` | משפטי | no | shareable | terms-acceptance, legal-evidence | yes | 126 | not yet |
+| `a11y` | נגישות | no | sellable | - | yes | 21 | not yet |
 | `qc` | בקרת איכות | no | shareable | - | yes | 2 | yes |
-| `agent` | מנוע סוכן | no | internal | - | yes | 306 | not yet |
-| `reminders` | תזכורות | no | internal | - | yes | 57 | not yet |
-| `journey` | מסע, מדריכים ואתגר | no | internal | - | yes | 173 | not yet |
-| `gideon` | גדעון (בוט מנכ"ל) | no | internal | - | yes | 30 | not yet |
-| `site-content` | תוכן האתר ומדיה | no | internal | - | yes | 50 | not yet |
+| `agent` | מנוע סוכן | no | internal | - | yes | 395 | not yet |
+| `reminders` | תזכורות | no | internal | - | yes | 95 | not yet |
+| `journey` | מסע, מדריכים ואתגר | no | internal | - | yes | 225 | not yet |
+| `gideon` | גדעון (בוט מנכ"ל) | no | internal | - | yes | 42 | not yet |
+| `site-content` | תוכן האתר ומדיה | no | internal | - | yes | 78 | not yet |
 
 ## Starter kit for every new product
 

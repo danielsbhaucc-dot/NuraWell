@@ -7,7 +7,7 @@ export async function markAlmogWelcomeSeen(): Promise<{ ok: boolean }> {
   if (!result.ok) return { ok: false };
 
   void (async () => {
-    const { sendWelcomeAlmogEmail } = await import('@/lib/auth/send-welcome-almog-email');
+    const { sendWelcomeAlmogEmail } = await import('@/lib/module-api/auth-signup/lib-auth-send-welcome-almog-email');
     await sendWelcomeAlmogEmail(result.userId);
   })().catch((e) => {
     console.warn('[mark-almog-welcome-seen] email:', e);

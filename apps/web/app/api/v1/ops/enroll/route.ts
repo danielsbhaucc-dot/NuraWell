@@ -3,7 +3,7 @@ import { z } from 'zod';
 import type { AuthenticationResponseJSON, RegistrationResponseJSON } from '@simplewebauthn/server';
 import { consumeMultiRateLimits } from '@/lib/api/rate-limit';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { resolveRp } from '@/lib/auth/passkeys';
+import { resolveRp } from '@/lib/module-api/auth-signup/lib-auth-passkeys';
 import { cookieOpts, DEVICE_COOKIE, DEVICE_MAX_AGE_S, deviceLabel, approxLocation } from '@/lib/ops/device-trust';
 import { clientIp, country, ipHash, ipHashCandidates, maskIp } from '@/lib/platform/access/request-facts';
 import { enrollStage } from '@platform/access';
@@ -11,7 +11,7 @@ import {
   ENROLL_COOKIE, completeFactor, factorPasskeyOptions, finishEnrollment, ipBlocked, loadByCookie, openEnrollment, registrationOptions, stateOf,
 } from '@/lib/ops/enrollment';
 import { sendOwnerTelegram } from '@/lib/ops/enroll-telegram';
-import { createTelegramChannel } from '@/lib/ceo/telegram';
+import { createTelegramChannel } from '@/lib/module-api/gideon/lib-ceo-telegram';
 import { alertOwnerSecurity } from '@/lib/ops/device-notify';
 
 export const runtime = 'nodejs';

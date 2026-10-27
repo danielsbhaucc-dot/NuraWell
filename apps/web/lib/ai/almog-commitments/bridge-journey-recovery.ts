@@ -8,13 +8,13 @@ import type { JourneyTask, JourneyTaskDifficultyLevel } from '../../types/journe
 import { generateBlockerPivot } from './intervention-engine';
 import { fetchInterventionMemory } from './intervention-engine';
 import { normalizeFrictionCategory } from './friction';
-import { getPreviousLevelId } from '../../journey/task-level-meta';
+import { getPreviousLevelId } from '@/lib/module-api/journey/lib-journey-task-level-meta';
 import {
   computeTaskLevelProgressSnapshot,
   coerceTaskExecutionsFromApi,
   recommendTaskLevelAdjustment,
-} from '../../journey/task-level-progress';
-import { resolveTaskSchedule } from '../../journey/task-schedule';
+} from '@/lib/module-api/journey/lib-journey-task-level-progress';
+import { resolveTaskSchedule } from '@/lib/module-api/journey/lib-journey-task-schedule';
 
 type Admin = SupabaseClient;
 
@@ -69,7 +69,7 @@ export async function bridgeJourneyDifficultyToRecoveryPlan(params: {
       // Levels live in the unified task model now (journey_progress.task_level_meta is read-only legacy).
       if (params.syncUnifiedLadder !== false) {
         try {
-          const { changeTaskLevel } = await import('../../tasks');
+          const { changeTaskLevel } = await import('@/lib/module-api/journey/lib-tasks');
           const { data: def } = await params.admin
             .from('task_definitions')
             .select('id')

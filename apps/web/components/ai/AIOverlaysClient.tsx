@@ -8,7 +8,7 @@ import {
   OPEN_ALMOG_CHAT_EVENT,
   stashPendingOpenAlmogChat,
   type OpenAlmogChatDetail,
-} from '../../lib/notifications/open-almog-chat';
+} from '@/lib/module-api/notifications/lib-notifications-open-almog-chat';
 import { runWhenIdle } from '../../lib/client/run-when-idle';
 
 type AIOverlaysClientProps = {
@@ -25,7 +25,7 @@ const AIChatWidgetLazy = dynamic(
 );
 
 const AlmogReplyModalLazy = dynamic(
-  () => import('../notifications/AlmogReplyModal').then((m) => m.AlmogReplyModal),
+  () => import('@/lib/module-api/notifications/components-notifications-AlmogReplyModal').then((m) => m.AlmogReplyModal),
   { ssr: false, loading: () => null }
 );
 

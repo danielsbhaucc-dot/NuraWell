@@ -3,8 +3,8 @@
  * תזמוני משימות גמישים מוגדרים על ידי המנהל ומסונכרנים עם הפרופיל.
  */
 
-import { parseHHMMToMinutes } from '../ai/almog-time-context';
-import { buildMealSchedule } from '../onboarding/meal-schedule';
+import { parseHHMMToMinutes } from '@/lib/module-api/agent/lib-ai-almog-time-context';
+import { buildMealSchedule } from '@/lib/module-api/auth-signup/lib-onboarding-meal-schedule';
 import type { JourneyTaskSchedule, JourneyTaskSlot, MealTiming } from '../types/journey';
 import { slotsForSchedule } from './task-schedule';
 

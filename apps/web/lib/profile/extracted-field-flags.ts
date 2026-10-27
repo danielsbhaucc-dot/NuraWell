@@ -1,5 +1,5 @@
-import type { OnboardingExtracted } from '../ai/onboarding-chat-llm';
-import { DISCRETE_FIELD_KEYS, type DiscreteFieldKey } from '../ai/onboarding-discrete-fields';
+import type { OnboardingExtracted } from '@/lib/module-api/agent/lib-ai-onboarding-chat-llm';
+import { DISCRETE_FIELD_KEYS, type DiscreteFieldKey } from '@/lib/module-api/agent/lib-ai-onboarding-discrete-fields';
 
 /** דגלים בלבד — בלי ערכים רגישים, בטוח לשליחה ל-LLM וללוגים */
 export type ProfileFieldFlags = {

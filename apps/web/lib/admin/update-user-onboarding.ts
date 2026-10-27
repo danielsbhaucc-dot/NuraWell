@@ -1,11 +1,11 @@
 import { sealProfilePatch } from '@/lib/crypto/pii-seal';
 import { decProfileResult } from '@/lib/crypto/pii-fields';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { generateMentorSystemPrompt, calculateDailyCheckInTimes } from '@/lib/ai/generate-mentor-system-prompt';
-import { ingestOnboardingIntoVectorMemory } from '@/lib/ai/ingest-onboarding-vector-memory';
-import type { OnboardingProfileForChat } from '@/lib/ai/onboarding-chat-context';
-import { buildMealSchedule, type MealScheduleEntry } from '@/lib/onboarding/meal-schedule';
-import type { MainGoal, MainObstacle, OnboardingGender, WeakestTimeOfDay } from '@/lib/onboarding/types';
+import { generateMentorSystemPrompt, calculateDailyCheckInTimes } from '@/lib/module-api/agent/lib-ai-generate-mentor-system-prompt';
+import { ingestOnboardingIntoVectorMemory } from '@/lib/module-api/agent/lib-ai-ingest-onboarding-vector-memory';
+import type { OnboardingProfileForChat } from '@/lib/module-api/agent/lib-ai-onboarding-chat-context';
+import { buildMealSchedule, type MealScheduleEntry } from '@/lib/module-api/auth-signup/lib-onboarding-meal-schedule';
+import type { MainGoal, MainObstacle, OnboardingGender, WeakestTimeOfDay } from '@/lib/module-api/auth-signup/lib-onboarding-types';
 
 export type AdminProfilePatch = {
   full_name?: string;

@@ -4,9 +4,9 @@ import { z } from 'zod';
 import { readJsonBody } from '@/lib/api/json-request';
 import { requireApiSession } from '@/lib/api/route-guards';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { bridgeJourneyDifficultyToRecoveryPlan } from '@/lib/ai/almog-commitments/bridge-journey-recovery';
-import { linkJourneyLevelHardToSosMemory } from '@/lib/ai/guardian/sos-memory';
-import { persistRecoveryInsight } from '@/lib/ai/almog-commitments/persist-recovery-insight';
+import { bridgeJourneyDifficultyToRecoveryPlan } from '@/lib/module-api/reminders/lib-ai-almog-commitments-bridge-journey-recovery';
+import { linkJourneyLevelHardToSosMemory } from '@/lib/module-api/agent/lib-ai-guardian-sos-memory';
+import { persistRecoveryInsight } from '@/lib/module-api/reminders/lib-ai-almog-commitments-persist-recovery-insight';
 import {
   computeTaskLevelProgressSnapshot,
   recommendTaskLevelAdjustment,

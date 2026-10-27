@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
-import { PublicAiPresence } from '@/components/ai/PublicAiPresence';
+import { PublicAiPresence } from '@/lib/module-api/agent/components-ai-PublicAiPresence';
 
 /**
  * Internal Ops on the main site: admin role + trusted device are enforced server-side on /ops and its APIs

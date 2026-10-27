@@ -4,7 +4,7 @@ import { Scale, HeartPulse, UserCheck, Ban } from 'lucide-react';
 import '../legal-v2.css';
 import { LegalDoc, type LegalDocSection } from '@/components/legal/v2/LegalDoc';
 import { LEGAL_THEME } from '@/components/legal/v2/theme';
-import { LEGAL_POLICY_VERSION } from '@/lib/privacy/constants';
+import { LEGAL_POLICY_VERSION } from '@/lib/module-api/privacy-retention/lib-privacy-constants';
 import { LEGAL_SUPPORT_EMAIL } from '@/lib/legal/contact';
 
 const UPDATED_AT = '20 באוקטובר 2026';

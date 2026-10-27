@@ -9,9 +9,9 @@ import type {
 import {
   fetchUserIdsWithChatToday,
   mergeHabitsDoneTodayFromRows,
-} from '../ai/almog-daily-context';
-import { isHabitDoneTodayFromTasks } from '../journey/habit-progress';
-import { parseJourneyTasksFull } from '../journey/journey-report-parse';
+} from '@/lib/module-api/agent/lib-ai-almog-daily-context';
+import { isHabitDoneTodayFromTasks } from '@/lib/module-api/journey/lib-journey-habit-progress';
+import { parseJourneyTasksFull } from '@/lib/module-api/journey/lib-journey-journey-report-parse';
 import {
   filterHabitsForSlot,
   jerusalemCalendarParts,
@@ -26,7 +26,7 @@ import {
   slotLabel as slotLabelHe,
   slotsForSchedule,
   type UserMealProfile,
-} from '../journey/task-schedule';
+} from '@/lib/module-api/journey/lib-journey-task-schedule';
 import type {
   JourneyTask,
   JourneyTaskSchedule,
@@ -36,7 +36,7 @@ import type {
 import {
   computeTaskLevelProgressSnapshot,
   recommendTaskLevelAdjustment,
-} from '../journey/task-level-progress';
+} from '@/lib/module-api/journey/lib-journey-task-level-progress';
 import {
   computeEngagementStatus,
   computeReengagementMove,

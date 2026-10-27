@@ -6,9 +6,9 @@ import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit'
 import { readJsonBody } from '@/lib/api/json-request';
 import { audioTrackMetaSchema } from '@/lib/validation/admin-audio';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { audioTrackObjectKey } from '@/lib/cdn/public-audio';
-import { r2AudioBucketName } from '@/lib/storage/r2-almog';
-import { createR2PutPresignedUrl } from '@/lib/storage/r2-presign';
+import { audioTrackObjectKey } from '@/lib/module-api/site-content/lib-cdn-public-audio';
+import { r2AudioBucketName } from '@/lib/module-api/site-content/lib-storage-r2-almog';
+import { createR2PutPresignedUrl } from '@/lib/module-api/site-content/lib-storage-r2-presign';
 
 export const runtime = 'nodejs';
 

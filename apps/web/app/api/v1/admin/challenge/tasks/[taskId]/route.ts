@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { readJsonBody } from '@/lib/api/json-request';
 import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
-import { logChallengeAdminAudit } from '@/lib/challenge/admin-audit';
+import { logChallengeAdminAudit } from '@/lib/module-api/journey/lib-challenge-admin-audit';
 
 export const dynamic = 'force-dynamic';
 

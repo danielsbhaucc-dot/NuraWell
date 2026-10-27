@@ -1,4 +1,4 @@
-import { withAiUsage } from '@/lib/ai/usage-meter';
+import { withAiUsage } from '@/lib/module-api/agent/lib-ai-usage-meter';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { timingSafeEqualStr } from '@/lib/api/timing-safe-equal';
 import { consumeRateLimit } from '@/lib/api/rate-limit';

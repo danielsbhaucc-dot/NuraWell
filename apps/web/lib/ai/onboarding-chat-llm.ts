@@ -9,13 +9,13 @@ import {
 import {
   buildLlmKnownContext,
   type ProfileFieldFlags,
-} from '../profile/extracted-field-flags';
+} from '@/lib/module-api/auth-signup/lib-profile-extracted-field-flags';
 import {
   countKnownProfileFields,
   describeKnownProfileForLlm,
   isProfileBasicsComplete,
-} from '../profile/profile-chat-bootstrap';
-import { imperativeTap, type ProfileGender } from '../profile/personalized-copy';
+} from '@/lib/module-api/auth-signup/lib-profile-profile-chat-bootstrap';
+import { imperativeTap, type ProfileGender } from '@/lib/module-api/auth-signup/lib-profile-personalized-copy';
 import { isGroqLaneAvailable } from './groq-compat';
 import { parseLlmJsonObject } from './parse-llm-json';
 import { HEBREW_JSON_VALUES_RULE, hebrewAddressingRule } from './hebrew-output-rules';

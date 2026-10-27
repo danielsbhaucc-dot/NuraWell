@@ -23,9 +23,9 @@ import {
   XCircle,
   Ban,
 } from 'lucide-react';
-import { glassCardStyle, glassPanelStyle } from '@/components/media-manager/glass-styles';
-import { buildChatSessionListTitle } from '@/lib/ai/chat-sessions/session-list-title';
-import { formatTranscriptForLlm } from '@/lib/ai/chat-sessions/format-transcript';
+import { glassCardStyle, glassPanelStyle } from '@/lib/module-api/site-content/components-media-manager-glass-styles';
+import { buildChatSessionListTitle } from '@/lib/module-api/agent/lib-ai-chat-sessions-session-list-title';
+import { formatTranscriptForLlm } from '@/lib/module-api/agent/lib-ai-chat-sessions-format-transcript';
 import type {
   TranscriptAccessInsight,
   TranscriptAccessTimelineStep,

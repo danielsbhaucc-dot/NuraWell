@@ -46,7 +46,7 @@ import {
   isValidPeriodKey,
   SUMMARY_TYPES,
   type SummaryType,
-} from '../../../../lib/notifications/summaries';
+} from '@/lib/module-api/notifications/lib-notifications-summaries';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;

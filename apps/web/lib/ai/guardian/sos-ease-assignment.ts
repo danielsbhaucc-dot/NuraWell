@@ -3,9 +3,9 @@
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-import type { AssignmentRelation, BlockerProposal } from '../almog-commitments/types';
-import { normalizeFrictionCategory } from '../almog-commitments/friction';
-import { defaultInterventionReminderIso } from '../almog-commitments/intervention-engine';
+import type { AssignmentRelation, BlockerProposal } from '@/lib/module-api/reminders/lib-ai-almog-commitments-types';
+import { normalizeFrictionCategory } from '@/lib/module-api/reminders/lib-ai-almog-commitments-friction';
+import { defaultInterventionReminderIso } from '@/lib/module-api/reminders/lib-ai-almog-commitments-intervention-engine';
 import { SOS_EASE_STALE_DAYS } from './sos-ease-shared';
 import type { SosFocusTask } from './sos-memory';
 import type { SosIntervention } from './sos';

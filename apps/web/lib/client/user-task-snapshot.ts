@@ -3,9 +3,9 @@
  * כולל dedupe in-flight + cache קצר כדי שמסכים מקבילים לא יירו את אותו fetch פעמיים.
  */
 
-import type { UserTaskSnapshotCounts } from '../tasks/user-task-ssot';
-import type { PendingTaskTodayRow } from '../journey/journey-report-parse';
-import type { AlmogTodayRow } from '../tasks/user-task-ssot';
+import type { UserTaskSnapshotCounts } from '@/lib/module-api/journey/lib-tasks-user-task-ssot';
+import type { PendingTaskTodayRow } from '@/lib/module-api/journey/lib-journey-journey-report-parse';
+import type { AlmogTodayRow } from '@/lib/module-api/journey/lib-tasks-user-task-ssot';
 
 export type UserTaskSnapshotResponse = {
   today_date_key?: string;

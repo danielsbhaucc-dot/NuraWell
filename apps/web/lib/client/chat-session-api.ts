@@ -1,4 +1,4 @@
-import type { ChatCloseReason } from '../ai/chat-sessions/close-reason';
+import type { ChatCloseReason } from '@/lib/module-api/agent/lib-ai-chat-sessions-close-reason';
 export type ChatSessionKindClient = 'chat' | 'profile_update';
 
 export type ChatSessionListItemClient = {

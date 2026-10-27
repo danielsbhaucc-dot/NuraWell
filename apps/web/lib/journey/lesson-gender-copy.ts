@@ -1,4 +1,4 @@
-import type { OnboardingGender } from '../onboarding/types';
+import type { OnboardingGender } from '@/lib/module-api/auth-signup/lib-onboarding-types';
 
 export type LessonGenderCopy = {
   letsStartTogether: string;

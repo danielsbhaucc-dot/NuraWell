@@ -24,7 +24,7 @@ import {
   markTaskExecutionForUser,
   type PendingAcceptedTask,
 } from './mark-task-execution';
-import { jerusalemDateKey } from '../journey/task-schedule';
+import { jerusalemDateKey } from '@/lib/module-api/journey/lib-journey-task-schedule';
 import {
   parseHintSlot,
   resolveTaskIntentWithHint,

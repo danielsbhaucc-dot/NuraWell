@@ -1,4 +1,4 @@
-import { limitIp } from '@/lib/ceo/stepup-http';
+import { limitIp } from '@/lib/module-api/gideon/lib-ceo-stepup-http';
 import { sealProfilePatch } from '@/lib/crypto/pii-seal';
 import { decProfileResult } from '@/lib/crypto/pii-fields';
 import { enterAiUsage } from '@/lib/ai/usage-meter';
@@ -20,14 +20,14 @@ import {
   buildFieldFlags,
   redactExtractedForClient,
   type ProfileFieldFlags,
-} from '../../../../../lib/profile/extracted-field-flags';
+} from '@/lib/module-api/auth-signup/lib-profile-extracted-field-flags';
 import {
   buildFlagsFromProfileRow,
   buildOnboardingResponseFlags,
   buildPublicExtractedFromProfileRow,
   mergeProfileFlags,
-} from '../../../../../lib/profile/profile-chat-bootstrap';
-import { firstNameFrom } from '../../../../../lib/profile/personalized-copy';
+} from '@/lib/module-api/auth-signup/lib-profile-profile-chat-bootstrap';
+import { firstNameFrom } from '@/lib/module-api/auth-signup/lib-profile-personalized-copy';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
