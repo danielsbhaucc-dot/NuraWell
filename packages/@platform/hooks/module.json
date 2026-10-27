@@ -1,0 +1,64 @@
+{
+  "$schema": "../../../modules/module.schema.json",
+  "id": "hooks",
+  "package": "@platform/hooks",
+  "version": "0.1.0",
+  "distribution": "shareable",
+  "category": "platform",
+  "toggleable": false,
+  "description": "WordPress-style actions and filters so modules extend a product without editing its code. Pure logic.",
+  "provides": {
+    "routes": [],
+    "apis": [],
+    "jobs": [],
+    "ui": [],
+    "tables": []
+  },
+  "requires": {
+    "modules": {}
+  },
+  "env": [],
+  "migrations": [],
+  "conformance": [
+    "isolated-checks",
+    "timeout-becomes-fail"
+  ],
+  "tests": [
+    "apps/web/tests/platform-hooks.test.ts"
+  ],
+  "dataPolicy": "אין מידע.",
+  "store": {
+    "name": "נקודות חיבור למודולים",
+    "summary": "מודולים מתחברים למוצר דרך פעולות ומסננים בשם, בלי לשנות את קוד המוצר",
+    "audience": [
+      "כל מוצר בספרייה"
+    ],
+    "useCases": [
+      "שליחת הודעה אחרי הרשמה",
+      "שינוי טקסטים או אישיות העוזר לפי מוצר"
+    ],
+    "features": [
+      "פעולות ומסננים",
+      "עדיפויות",
+      "הסרה לפי מודול",
+      "מסנן שנכשל לא שובר"
+    ],
+    "dataTouched": [
+      "אין"
+    ],
+    "permissions": [
+      "אין"
+    ],
+    "security": [
+      "אין קוד שרת ואין מידע"
+    ],
+    "whereDataLives": "אין מידע.",
+    "installConfig": "יוצרים רשם אחד במוצר ומעבירים אותו למודולים.",
+    "compatibility": "TypeScript, שרת ודפדפן.",
+    "limitations": [
+      "רשם בזיכרון לכל תהליך"
+    ],
+    "support": "תמיכה דרך בעל הספרייה. תיקונים חוזרים לספרייה כ-PR לריפו NuraWell, עם בדיקות.",
+    "descriptionHe": "רשם פעולות ומסננים בסגנון WordPress: מודולים מתחברים למוצר בלי לגעת בקוד שלו."
+  }
+}
