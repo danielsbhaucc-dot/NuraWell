@@ -3,7 +3,8 @@ import { z } from 'zod';
 import { requireApiAdmin } from '@/lib/api/route-guards';
 import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { hasFreshDeviceApproval } from '@/lib/ops/sensitive-stepup';
+import { hasToggleApproval } from '@/lib/ops/sensitive-stepup';
+import { togglePurpose, toggleConfirmMode } from '@/lib/platform/toggle-confirm';
 import { alertOwnerSecurity } from '@/lib/ops/device-notify';
 import { loadActor, loadModuleStates, selectedProduct } from '@/lib/platform/authorize';
 import { toggleModule } from '@/lib/platform/iam-admin';
@@ -32,9 +33,11 @@ export async function POST(request: Request) {
   const rl = await consumeMultiRateLimits(uid, 'ops-iam-modules', [{ limit: 30, windowSeconds: 600 }]);
   if (!rl.ok) return rateLimitResponse(rl);
   const { data: sess } = await g.supabase.auth.getSession();
-  // Every toggle needs a fresh, single-use device approval (not just a recent login).
-  const steppedUp = await hasFreshDeviceApproval({ accessToken: sess.session?.access_token, userId: uid, req: request });
-  if (!steppedUp) return json({ error: 'נדרש אימות נוסף.', stepUp: true, code: 'stepup_required' }, 403);
+  // Every toggle needs its own single-use re-confirmation. Owned products: strict fresh device approval
+  // (hasFreshDeviceApproval). Customer products: friendly passkey → TOTP → email code, unless they opted into strict.
+  const mode = toggleConfirmMode(p.data.productId);
+  const steppedUp = await hasToggleApproval({ accessToken: sess.session?.access_token, userId: uid, req: request }, mode);
+  if (!steppedUp) return json({ error: 'נדרש אימות נוסף.', stepUp: true, code: 'stepup_required', purpose: togglePurpose(mode), confirm: mode }, 403);
   const db = createAdminClient();
   const out = await toggleModule(db, await loadActor(db, uid), p.data.productId, p.data.moduleId, p.data.enabled, {
     steppedUp,

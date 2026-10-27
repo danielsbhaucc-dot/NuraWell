@@ -52,3 +52,21 @@ export async function hasFreshDeviceApproval(c: StepUpCtx): Promise<boolean> {
     return false;
   }
 }
+
+/**
+ * Module toggle re-confirmation, per product config (lib/platform/toggle-confirm.ts).
+ * strict: exactly hasFreshDeviceApproval (unchanged). friendly: a single-use grant for purpose ops.modules
+ * (passkey / TOTP / email code), consumed by this request. Never accepts a GET; failures never grant.
+ */
+export async function hasToggleApproval(c: StepUpCtx, mode: 'strict' | 'friendly'): Promise<boolean> {
+  if (mode === 'strict') return hasFreshDeviceApproval(c);
+  if (c.req.method === 'GET') return false;
+  try {
+    const { createAdminClient } = await import('@/lib/supabase/admin');
+    const { STEPUP_COOKIE, consumeGrant, readCookieFrom } = await import('@/lib/auth/stepup');
+    const { FRIENDLY_PURPOSE } = await import('@/lib/platform/toggle-confirm');
+    return (await consumeGrant(createAdminClient(), c.userId, FRIENDLY_PURPOSE, readCookieFrom(c.req, STEPUP_COOKIE))).ok;
+  } catch {
+    return false;
+  }
+}

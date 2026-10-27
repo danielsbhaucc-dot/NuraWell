@@ -51,7 +51,7 @@ type AdminShellProps = {
   /** Pages of modules that are off for the selected product (their menu entries are hidden). */
   hiddenPaths?: readonly string[];
   /** Admin-only notice: our own product's license/billing needs attention (modules stay on). */
-  licenseAlert?: boolean;
+  licenseNotices?: { productId: string; name: string }[];
   children: React.ReactNode;
   /** שם פרטי מהפרופיל; אם ריק — מציגים רק שלום עם אימוג׳י */
   adminFirstName: string;
@@ -78,7 +78,7 @@ export function AdminShell({
   adminAvatarUrl = null,
   mainAppBase,
   hiddenPaths = [],
-  licenseAlert = false,
+  licenseNotices = [],
 }: AdminShellProps) {
   const pathname = usePathname();
   const np = normalizeOpsPathname(pathname);
@@ -625,9 +625,9 @@ export function AdminShell({
           id="main-content"
           className="mx-auto w-full max-w-5xl flex-1 space-y-6 px-3 py-5 sm:space-y-8 sm:px-4 sm:py-6 md:px-6 md:py-8 safe-area-bottom"
         >
-          {licenseAlert ? (
-            <div role="status" className="rounded-2xl border border-amber-400/50 bg-amber-100/70 px-4 py-3 text-sm text-amber-950">
-              יש לטפל ברישיון או בחיוב של המוצר. המודולים ממשיכים לפעול; ההודעה מוצגת רק למנהלים.
+          {licenseNotices.length ? (
+            <div role="status" data-testid="license-notice" className="rounded-2xl border border-amber-400/50 bg-amber-100/70 px-4 py-3 text-sm text-amber-950">
+              יש לטפל ברישיון או בחיוב של: {licenseNotices.map((n) => n.name).join(', ')}. המודולים ממשיכים לפעול; ההודעה מוצגת רק למנהלים.
             </div>
           ) : null}
           {isHome ? <AdminAiAssistantCard opsHref={opsHref} /> : null}

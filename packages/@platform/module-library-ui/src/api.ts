@@ -12,7 +12,7 @@ export function postJson<T>(url: string, body: unknown, reason: string, done: (r
       const j = (await r.json().catch(() => ({}))) as Record<string, unknown>;
       if (r.status === 403 && j.stepUp && !retried) {
         done({ ok: false, error: 'נדרש אימות נוסף. אחרי האימות הפעולה תרוץ שוב.', stepUp: true });
-        window.dispatchEvent(new CustomEvent('ops:stepup-required', { detail: { reason, retry: () => postJson(url, body, reason, done, true) } }));
+        window.dispatchEvent(new CustomEvent('ops:stepup-required', { detail: { reason, purpose: typeof j.purpose === 'string' ? j.purpose : undefined, retry: () => postJson(url, body, reason, done, true) } }));
         return;
       }
       done(r.ok ? { ok: true, data: j as T } : { ok: false, error: typeof j.error === 'string' ? j.error : 'הפעולה נכשלה.' });

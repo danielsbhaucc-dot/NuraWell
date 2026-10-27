@@ -34,7 +34,7 @@ export default async function OpsLayout({ children }: { children: React.ReactNod
   const adminFirstName = firstNameFromFullName(profile?.full_name ?? null);
   const adminDisplayName = profile?.full_name?.trim() || 'מנהל';
   const adminAvatarUrl = profile?.avatar_url ?? null;
-  const nav = await opsNavState();
+  const nav = await opsNavState(user?.id);
 
   return (
     <AdminShell
@@ -43,7 +43,7 @@ export default async function OpsLayout({ children }: { children: React.ReactNod
       adminAvatarUrl={adminAvatarUrl}
       mainAppBase={mainAppBase}
       hiddenPaths={nav.hiddenPaths}
-      licenseAlert={nav.licenseAlert}
+      licenseNotices={nav.licenseNotices}
     >
       {children}
       <OpsPendingLoginAlert />
