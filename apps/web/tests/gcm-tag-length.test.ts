@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { readdirSync, readFileSync, type Dirent } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -65,13 +65,13 @@ describe('AES-GCM auth tag length is pinned to 16 bytes', () => {
     const skip = /node_modules|\.next|dist|coverage/;
     const offenders: string[] = [];
     const walk = (d: string) => {
-      let names: string[] = [];
-      try { names = readdirSync(d); } catch { return; }
-      for (const n of names) {
-        const p = join(d, n);
+      let entries: Dirent[] = [];
+      try { entries = readdirSync(d, { withFileTypes: true }); } catch { return; }
+      for (const e of entries) {
+        const p = join(d, e.name);
         if (skip.test(p)) continue;
-        if (statSync(p).isDirectory()) { walk(p); continue; }
-        if (!/\.(ts|tsx|js|mjs|cjs)$/.test(n)) continue;
+        if (e.isDirectory()) { walk(p); continue; }
+        if (!e.isFile() || !/\.(ts|tsx|js|mjs|cjs)$/.test(e.name)) continue;
         const src = readFileSync(p, 'utf8');
         for (const m of src.matchAll(/createDecipheriv\(\s*['"`]aes-\d+-gcm['"`][^;]*/g)) {
           if (!/authTagLength\s*:\s*16/.test(m[0])) offenders.push(p.slice(root.length + 1));
