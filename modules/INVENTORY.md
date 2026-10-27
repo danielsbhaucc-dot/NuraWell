@@ -2,7 +2,7 @@
 # Module inventory
 
 Catalog modules: 21 (core: 8). Packaged modules (module.json): 9.
-App code already modular: 17.4% (259/1489 files; the rest is on modules/legacy-app-files.txt and may only shrink).
+App code already modular: 32.6% (486/1489 files; the rest is on modules/legacy-app-files.txt and may only shrink).
 
 | id | name | core (cannot disable) | tier | always-on | area manifest | owned app files | packaged |
 |---|---|---|---|---|---|---|---|
@@ -23,9 +23,9 @@ App code already modular: 17.4% (259/1489 files; the rest is on modules/legacy-a
 | `a11y` | נגישות | no | sellable | - | yes | 0 | not yet |
 | `qc` | בקרת איכות | no | shareable | - | yes | 0 | yes |
 | `agent` | מנוע סוכן | no | internal | - | yes | 0 | not yet |
-| `reminders` | תזכורות | no | internal | - | yes | 0 | not yet |
-| `journey` | מסע, מדריכים ואתגר | no | internal | - | yes | 0 | not yet |
-| `gideon` | גדעון (בוט מנכ"ל) | no | internal | - | yes | 0 | not yet |
+| `reminders` | תזכורות | no | internal | - | yes | 52 | not yet |
+| `journey` | מסע, מדריכים ואתגר | no | internal | - | yes | 149 | not yet |
+| `gideon` | גדעון (בוט מנכ"ל) | no | internal | - | yes | 31 | not yet |
 | `site-content` | תוכן האתר ומדיה | no | internal | - | yes | 0 | not yet |
 
 ## Starter kit for every new product

@@ -8,6 +8,11 @@
   "core": false,
   "toggleable": true,
   "alwaysOn": [],
-  "owns": [],
+  "owns": [
+    "apps/web/lib/ai/almog-commitments/",
+    "apps/web/lib/workflows/",
+    "apps/web/lib/churn/",
+    "apps/web/app/api/v1/ai/cron/almog-reminders/"
+  ],
   "description": "Reminders, follow-ups and re-engagement with stale-expiry."
 }

@@ -8,6 +8,18 @@
   "core": false,
   "toggleable": true,
   "alwaysOn": [],
-  "owns": [],
+  "owns": [
+    "apps/web/lib/journey/",
+    "apps/web/components/journey/",
+    "apps/web/lib/challenge/",
+    "apps/web/components/challenge/",
+    "apps/web/lib/guides/",
+    "apps/web/components/course/",
+    "apps/web/lib/course/",
+    "apps/web/lib/tasks/",
+    "apps/web/components/tasks/",
+    "apps/web/app/(dashboard)/journey/",
+    "apps/web/app/(dashboard)/guides/"
+  ],
   "description": "Journey, guides, challenge, course and tasks."
 }

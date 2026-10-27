@@ -8,6 +8,10 @@
   "core": false,
   "toggleable": true,
   "alwaysOn": [],
-  "owns": [],
+  "owns": [
+    "apps/web/lib/ceo/",
+    "apps/web/components/gideon/",
+    "apps/web/app/api/v1/admin/ceo/"
+  ],
   "description": "Gideon, the owner's CEO bot."
 }
