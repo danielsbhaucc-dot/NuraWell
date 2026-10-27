@@ -32,3 +32,20 @@ Product servers never get central credentials by default. The hub (server-side o
 2. Point `/ops/modules` reads at central behind a flag, dual-read and compare, then switch writes.
 3. Move staff grants; keep NuraWell `iam_*` read-only for one release, then drop.
 Risks: two DBs to keep consistent during dual-run; extra env secret on Vercel; free-tier pause if keepalive fails (restore is manual); hub latency for cross-DB reads.
+
+## שלב 1 — רישום מודולים ורישוי מרכזי (מיגרציות 000003–000004)
+
+- הקטלוג, מצבי המודולים, הרישיונות והחסימות נשמרים עכשיו ב-`central` (סכמה פרטית, RLS כפוי, ללא anon, יומן ביקורת על כל שינוי).
+- גישה רק דרך פונקציות `public.central_*` עם service_role.
+- **הפעלה:** להגדיר ב-Vercel את `CENTRAL_SUPABASE_URL` ואת `CENTRAL_SUPABASE_SECRET_KEY` (רגיש). בלי המשתנים האלה ה-Hub ממשיך לקרוא מה-DB של NuraWell.
+- המוצר לדוגמה (`apps/sample-product`, דרך `@platform/licensing/product`) נרשם, מקבל טוקן רישיון (עד מועד החיוב הבא + 3 ימי חסד), בודק קובץ סטטוס חתום כל 2 דקות, וננעל אחרי 6 שעות בלי קובץ מאומת.
+- ידוע: שינוי מצב מודול מה-Hub עדיין נכתב ל-DB של NuraWell (רק הקריאה עברה).
+
+## שלב 2 — כתיבה למרכז + NuraWell צורך מהמרכז (מיגרציה 000005)
+
+- הפעלה/כיבוי מודולים מה-Hub נכתבים **רק** למרכז (מקור אמת יחיד), עם יומן ביקורת (מי, איזה מודול, מופעל/כבוי). מודולי ליבה לא נכבים, תלות כבויה חוסמת הפעלה.
+- סנכרון חד־פעמי ובטוח: בפעם הראשונה המצב הנוכחי מ-`iam_product_modules` של NuraWell מועתק למרכז. המרכז שומר סימון, וכל ניסיון נוסף לא משנה כלום.
+- אם המרכז לא זמין: הקריאה ממשיכה (קריאה בלבד), ושינויים לא נשמרים בשום מקום. מקבלים הודעה ברורה לנסות שוב.
+- NuraWell עצמה קוראת את מצבי המודולים מהמרכז (מטמון של 2 דקות). אם המרכז לא עונה, היא ממשיכה עם המצב האחרון עד 6 שעות, ואחר כך רק מודולים שאינם ליבה נכבים. הליבה והמשתמשים אף פעם לא ננעלים.
+- רישיון של NuraWell (אופציונלי): להגדיר `NURAWELL_LICENSE_TOKEN`, `NURAWELL_LICENSE_PUBLIC_KEY`, `NURAWELL_LICENSE_STATUS_URL`, `NURAWELL_HOST`. אם הרישיון לא פעיל, רק מודולים שאינם ליבה נכבים.
+- בלי `CENTRAL_SUPABASE_URL` + `CENTRAL_SUPABASE_SECRET_KEY` הכול עובד כמו קודם מה-DB של NuraWell.
