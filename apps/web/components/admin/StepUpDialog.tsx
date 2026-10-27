@@ -5,8 +5,15 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { browserSupportsWebAuthn, startAuthentication } from '@simplewebauthn/browser';
 import { CheckCircle2, Fingerprint, KeyRound, Loader2, Mail, ShieldCheck, Smartphone, X } from 'lucide-react';
 import { friendlyMethods, type FriendlyMethod } from '@/lib/platform/toggle-confirm';
-import { opsGlassBtnClass, opsGlassBtnPrimaryClass, opsInputClass } from '@/components/admin/OpsPanel';
+import { opsInputClass } from '@/components/admin/OpsPanel';
 import { cn } from '@/lib/cn';
+
+/** Step-up primary action: deep forest green, on-dark text (contrast ≥ 4.5:1 in both themes). */
+export const STEPUP_PRIMARY_BTN =
+  'inline-flex items-center justify-center gap-1.5 rounded-xl border border-forest-900 bg-forest-800 px-4 py-2.5 text-sm font-bold text-on-dark shadow-sm transition hover:bg-forest-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest-700 active:scale-[0.99] disabled:opacity-60';
+
+export const STEPUP_SECONDARY_BTN =
+  'inline-flex items-center justify-center gap-1.5 rounded-xl border-2 border-forest-800 bg-transparent px-4 py-2.5 text-sm font-bold text-forest-800 transition hover:bg-forest-800 hover:text-on-dark active:scale-[0.99] disabled:opacity-60';
 
 /**
  * Step-up sheet for sensitive Ops actions. Primary: QR → approve with Face ID on the phone.
@@ -86,7 +93,7 @@ export function StepUpDialog({ open, purpose, reason, onClose, onVerified, varia
   };
 
   if (!open) return null;
-  const tab = (k: typeof mode, label: string, show = true) => show ? <button type="button" onClick={() => { setMode(k); setErr(null); setCode(''); }} className={cn('flex-1 rounded-2xl px-3 py-2 text-[13px] font-bold transition', mode === k ? 'bg-primary-800 text-accent-50 shadow' : 'text-ink-soft hover:bg-glass/50')}>{label}</button> : null;
+  const tab = (k: typeof mode, label: string, show = true) => show ? <button type="button" onClick={() => { setMode(k); setErr(null); setCode(''); }} className={cn('flex-1 rounded-2xl px-3 py-2 text-[13px] font-bold transition', mode === k ? 'bg-forest-800 text-on-dark shadow' : 'text-ink-soft hover:bg-glass/50')}>{label}</button> : null;
 
   return (
     <div className="fixed inset-0 z-[60] grid place-items-end bg-primary-950/45 backdrop-blur-sm sm:place-items-center" role="dialog" aria-modal="true" aria-label="אימות זהות" dir="rtl" data-testid="stepup-dialog">
@@ -122,12 +129,12 @@ export function StepUpDialog({ open, purpose, reason, onClose, onVerified, varia
                   </div>
                 ) : null}
                 <div className="mt-3 flex flex-wrap justify-center gap-2 text-[11.5px] font-bold">
-                  {qr && left > 0 ? <span className="rounded-full border border-primary-300/60 bg-primary-500/10 px-2.5 py-1 text-primary-800">בתוקף עוד {Math.floor(left / 60)}:{String(left % 60).padStart(2, '0')}</span>
-                    : qr ? <button type="button" onClick={() => void startQr()} className="rounded-full border border-accent-300/60 bg-accent-500/10 px-2.5 py-1 text-accent-800">הקוד פג. ליצור חדש</button> : null}
-                  <span className="rounded-full border border-primary-300/60 bg-primary-500/10 px-2.5 py-1 text-primary-800"><ShieldCheck size={12} className="inline" /> קשור למסך הזה בלבד · חד-פעמי</span>
+                  {qr && left > 0 ? <span className="rounded-full border border-forest-700/50 px-2.5 py-1 font-semibold text-forest-800">בתוקף עוד {Math.floor(left / 60)}:{String(left % 60).padStart(2, '0')}</span>
+                    : qr ? <button type="button" onClick={() => void startQr()} className="rounded-full border border-forest-700/50 px-2.5 py-1 font-semibold text-forest-800">הקוד פג. ליצור חדש</button> : null}
+                  <span className="rounded-full border border-forest-700/50 px-2.5 py-1 font-semibold text-forest-800"><ShieldCheck size={12} className="inline" /> קשור למסך הזה בלבד · חד-פעמי</span>
                 </div>
                 {variant !== 'login' && browserSupportsWebAuthn() ? (
-                  <button type="button" onClick={() => void passkeyHere()} disabled={busy} className={cn(opsGlassBtnClass, 'mt-4 w-full justify-center gap-2')}>
+                  <button type="button" onClick={() => void passkeyHere()} disabled={busy} className={cn(STEPUP_SECONDARY_BTN, 'mt-4 w-full justify-center gap-2')}>
                     {busy ? <Loader2 size={16} className="animate-spin" /> : <Fingerprint size={16} />}Face ID או טביעת אצבע במכשיר הזה
                   </button>
                 ) : null}
@@ -137,7 +144,7 @@ export function StepUpDialog({ open, purpose, reason, onClose, onVerified, varia
                 <p className="mb-2 flex items-center gap-2 text-sm text-ink-soft">{mode === 'totp' ? <><Smartphone size={16} />מקלידים את 6 הספרות מאפליקציית הקודים</> : <><KeyRound size={16} />מקלידים אחד מקודי הגיבוי. כל קוד עובד פעם אחת.</>}</p>
                 <input autoFocus value={code} onChange={(e) => setCode(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && code) void submitCode(); }} inputMode={mode === 'totp' ? 'numeric' : 'text'} autoComplete="one-time-code" dir="ltr" maxLength={mode === 'totp' ? 6 : 12}
                   placeholder={mode === 'totp' ? '123456' : 'ABCDE-FGHJK'} className={cn(opsInputClass, 'text-center font-mono text-xl tracking-[0.35em]')} data-testid="stepup-code" />
-                <button type="button" onClick={() => void submitCode()} disabled={busy || !code} className={cn(opsGlassBtnPrimaryClass, 'mt-3 w-full justify-center')}>{busy ? <Loader2 size={16} className="animate-spin" /> : 'אימות'}</button>
+                <button type="button" onClick={() => void submitCode()} disabled={busy || !code} className={cn(STEPUP_PRIMARY_BTN, 'mt-3 w-full justify-center')}>{busy ? <Loader2 size={16} className="animate-spin" /> : 'אימות'}</button>
                 {mode === 'backup' && m ? <p className="mt-2 text-center text-[11px] text-ink-faint">נשארו {m.backup_left} קודים</p> : null}
               </div>
             )}
@@ -182,25 +189,25 @@ export function FriendlyStepUp({ m, purpose, post, onDone }: { m: Methods; purpo
         <div className="mb-4 flex gap-1 rounded-3xl border border-gc/50 bg-glass/30 p-1" role="tablist">
           {methods.map((k) => (
             <button key={k} type="button" role="tab" aria-selected={mode === k} onClick={() => { setMode(k); setErr(null); setCode(''); }}
-              className={cn('flex-1 rounded-2xl px-3 py-2 text-[13px] font-bold transition', mode === k ? 'bg-primary-800 text-accent-50 shadow' : 'text-ink-soft hover:bg-glass/50')}>{LABEL[k]}</button>
+              className={cn('flex-1 rounded-2xl px-3 py-2 text-[13px] font-bold transition', mode === k ? 'bg-forest-800 text-on-dark shadow' : 'text-ink-soft hover:bg-glass/50')}>{LABEL[k]}</button>
           ))}
         </div>
       ) : null}
       {mode === 'passkey' ? (
-        <button type="button" onClick={() => void passkey()} disabled={busy} className={cn(opsGlassBtnPrimaryClass, 'w-full justify-center gap-2')}>
+        <button type="button" onClick={() => void passkey()} disabled={busy} className={cn(STEPUP_PRIMARY_BTN, 'w-full justify-center gap-2')}>
           {busy ? <Loader2 size={16} className="animate-spin" /> : <Fingerprint size={16} />}אימות עם Face ID או טביעת אצבע
         </button>
       ) : mode === 'email' && !sent ? (
         <div>
           <p className="mb-2 flex items-center gap-2 text-sm text-ink-soft"><Mail size={16} />נשלח קוד חד-פעמי לכתובת המייל של החשבון. הקוד תקף ל-5 דקות.</p>
-          <button type="button" onClick={() => void send()} disabled={busy} className={cn(opsGlassBtnPrimaryClass, 'w-full justify-center')}>{busy ? <Loader2 size={16} className="animate-spin" /> : 'שליחת קוד למייל'}</button>
+          <button type="button" onClick={() => void send()} disabled={busy} className={cn(STEPUP_PRIMARY_BTN, 'w-full justify-center')}>{busy ? <Loader2 size={16} className="animate-spin" /> : 'שליחת קוד למייל'}</button>
         </div>
       ) : (
         <div>
           <p className="mb-2 flex items-center gap-2 text-sm text-ink-soft">{mode === 'totp' ? <><Smartphone size={16} />מקלידים את 6 הספרות מאפליקציית הקודים</> : <><Mail size={16} />מקלידים את 6 הספרות שנשלחו למייל</>}</p>
           <input autoFocus value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))} onKeyDown={(e) => { if (e.key === 'Enter' && code.length === 6) void verify(); }} inputMode="numeric" autoComplete="one-time-code" dir="ltr" maxLength={6}
             aria-label="קוד אימות" placeholder="123456" className={cn(opsInputClass, 'text-center font-mono text-xl tracking-[0.35em]')} data-testid="stepup-code" />
-          <button type="button" onClick={() => void verify()} disabled={busy || code.length !== 6} className={cn(opsGlassBtnPrimaryClass, 'mt-3 w-full justify-center')}>{busy ? <Loader2 size={16} className="animate-spin" /> : 'אימות'}</button>
+          <button type="button" onClick={() => void verify()} disabled={busy || code.length !== 6} className={cn(STEPUP_PRIMARY_BTN, 'mt-3 w-full justify-center')}>{busy ? <Loader2 size={16} className="animate-spin" /> : 'אימות'}</button>
           {mode === 'email' ? <button type="button" onClick={() => void send()} disabled={busy} className="mt-2 w-full text-center text-[12px] font-bold text-primary-800 underline">שליחת קוד חדש</button> : null}
         </div>
       )}
