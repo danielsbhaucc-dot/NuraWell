@@ -216,3 +216,57 @@ export function coverageFor(generator: GeneratorId | null | undefined, createdOn
   if (!generator || !createdOn) return null;
   return receipts.find((r) => r.trust !== 'rejected' && r.period_start && r.period_end && (VENDORS[r.vendor].generators as readonly string[]).includes(generator) && createdOn >= r.period_start && createdOn <= r.period_end) ?? null;
 }
+
+// ---- receipt search without a plaintext column (000222/000224) ----
+/*
+ * Receipt search without a plaintext column (replaces the generated media_receipts.search_text, migrations
+ * 000222/000224). The searchable text is the same concatenation the old generated column used:
+ *   lower(vendor ' ' plan ' ' subject ' ' currency ' ' amount)
+ * built in the app from decrypted values (subject is enc:v2 at rest). The DB only stores `search_bidx`: truncated
+ * keyed-HMAC tokens (system blind-index key, never logged) of
+ *   g:<1..3 char n-grams of each space-separated chunk>   -> substring (ILIKE '%w%') candidates
+ *   t:<pg_trgm trigrams of each letter/digit word>         -> fuzzy (word_similarity) candidates
+ * Search = candidate prefilter on tokens (+ rows whose index is still NULL), then the exact legacy predicate on the
+ * decrypted text in the app; fuzzy scores come from public.legal_word_similarity (pg_trgm on values passed in, no
+ * table access), so results equal the old SQL. Tokens are 64-bit truncations: collisions only widen the candidate set.
+ */
+
+type Row = Record<string, unknown>;
+export const RECEIPT_SEARCH_SOURCES = ['vendor', 'plan', 'subject', 'currency', 'amount'] as const;
+export const TOKEN_HEX = 16;
+/** pg_trgm.word_similarity_threshold default (the old `p_q <% search_text`) */
+export const FUZZY_THRESHOLD = 0.6;
+
+const s = (v: unknown) => (v == null ? '' : String(v));
+/** Same text as the dropped generated column. */
+export function receiptSearchText(r: Row): string {
+  return `${s(r.vendor)} ${s(r.plan)} ${s(r.subject)} ${s(r.currency)} ${s(r.amount)}`.toLowerCase();
+}
+
+/** 1..3-grams of a space-free chunk */
+export function charGrams(chunk: string): string[] {
+  const c = [...chunk];
+  const out = new Set<string>();
+  for (let n = 1; n <= 3; n++) for (let i = 0; i + n <= c.length; i++) out.add(c.slice(i, i + n).join(''));
+  return [...out];
+}
+/** grams that every text containing `w` must have: w itself when short, else its 3-grams */
+export function queryGrams(w: string): string[] {
+  const c = [...w];
+  if (c.length <= 3) return [w];
+  const out = new Set<string>();
+  for (let i = 0; i + 3 <= c.length; i++) out.add(c.slice(i, i + 3).join(''));
+  return [...out];
+}
+/** pg_trgm show_trgm(): words = runs of letters/digits, lower-cased, padded '  w ' */
+export function pgTrigrams(text: string): string[] {
+  const out = new Set<string>();
+  for (const m of text.toLowerCase().matchAll(/[\p{L}\p{N}]+/gu)) {
+    const c = [' ', ' ', ...m[0], ' '];
+    for (let i = 0; i + 3 <= c.length; i++) out.add(c.slice(i, i + 3).join(''));
+  }
+  return [...out];
+}
+
+export const matchesAnyWord = (text: string, words: string[]) => words.some((w) => w && text.includes(w.toLowerCase()));
+

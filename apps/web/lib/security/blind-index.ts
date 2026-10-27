@@ -17,6 +17,9 @@
  *  - auth_session_trail.ip_bidx          = H(ip) — ops_session_trail(p_ip_bidx) cross-user IP lookup (000214); filled by
  *      the session-trail-seal cron in the same CAS update that seals ip/user_agent
  *
+ *  - media_receipts.search_bidx         = [H(token) …] substring/trigram search tokens (lib/legal/media/receipts-core.ts,
+ *      000222) — replaces the plaintext generated search_text; a partial update clears it and the writer refreshes it
+ *
  * Computed by prepareWriteRow (insert/update with a plaintext source value) and by the backfill (migration 000208).
  */
 import { isV2 } from '@/lib/security/field-crypto';
@@ -64,6 +67,7 @@ export const BLIND_INDEX_SOURCES: Readonly<Record<string, readonly string[]>> = 
   chat_task_proposals: ['title'],
   admin_audit_log: ['ip'],
   auth_session_trail: ['ip'],
+  media_receipts: ['vendor', 'plan', 'subject', 'currency', 'amount'],
 };
 
 /** Index columns per table (the backfill reads them to fill shared, owner-less rows once). */
@@ -75,6 +79,7 @@ export const BLIND_INDEX_COLUMNS: Readonly<Record<string, readonly string[]>> = 
   chat_task_proposals: ['title_bidx'],
   admin_audit_log: ['ip_bidx'],
   auth_session_trail: ['ip_bidx'],
+  media_receipts: ['search_bidx'],
 };
 
 /** auth_session_trail ip index (global key: the investigation looks one IP up across users). */
@@ -132,6 +137,10 @@ export async function blindIndexPatch(table: string, row: Row): Promise<Row> {
   if (table === 'auth_session_trail' && 'ip' in row && !isV2(row.ip)) {
     const t = str(row.ip);
     out.ip_bidx = t ? await sessionTrailIpBidx(t) : null;
+  }
+  if (table === 'media_receipts') {
+    const { receiptSearchPatch } = await import('@/lib/legal/media/receipts');
+    Object.assign(out, await receiptSearchPatch(row));
   }
   return out;
 }
