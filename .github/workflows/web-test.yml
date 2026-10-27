@@ -32,7 +32,7 @@ jobs:
         run: npm run lint:design
         working-directory: ${{ github.workspace }}/apps/web
       - name: Module system check (metadata, docs index, coupling rules)
-        run: node scripts/modules/check.mjs && node scripts/modules/index.mjs --check && node scripts/modules/areas.mjs && git fetch --depth=1 origin main && node scripts/modules/boundaries.mjs && node scripts/modules/imports.mjs && node scripts/modules/inventory.mjs && node scripts/modules/identity.mjs
+        run: node scripts/modules/check.mjs && node scripts/modules/index.mjs --check && node scripts/modules/areas.mjs && git fetch --depth=1 origin main && node scripts/modules/boundaries.mjs && node scripts/modules/imports.mjs && node scripts/modules/inventory.mjs && node scripts/modules/convention.mjs && node scripts/modules/identity.mjs
         working-directory: ${{ github.workspace }}
       - name: Run unit tests
         run: npm run test

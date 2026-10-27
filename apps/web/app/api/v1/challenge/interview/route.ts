@@ -1,4 +1,4 @@
-import { enterAiUsage } from '@/lib/ai/usage-meter';
+import { enterAiUsage } from '@/lib/module-api/agent/lib-ai-usage-meter';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { readJsonBody } from '@/lib/api/json-request';
@@ -6,8 +6,8 @@ import { requireApiSession } from '@/lib/api/route-guards';
 import { getUserEnrollment } from '@/lib/challenge/enrollment';
 import { runChallengeInterviewTurn } from '@/lib/challenge/interview-llm';
 import type { ChallengeInterviewTurn } from '@/lib/challenge/content';
-import { embedTextForRag } from '@/lib/ai/openrouter-embeddings';
-import { isUpstashVectorConfigured, upsertUserMemoryVector } from '@/lib/ai/upstash-vector-rest';
+import { embedTextForRag } from '@/lib/module-api/agent/lib-ai-openrouter-embeddings';
+import { isUpstashVectorConfigured, upsertUserMemoryVector } from '@/lib/module-api/agent/lib-ai-upstash-vector-rest';
 import { createHash } from 'node:crypto';
 
 export const runtime = 'nodejs';

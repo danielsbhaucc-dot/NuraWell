@@ -6,7 +6,7 @@ import {
   AudioTranscodeUnsupportedError,
   transcodeToMp3,
   type TranscodeResult,
-} from '@/lib/audio/transcode-client';
+} from '@/lib/module-api/agent/lib-audio-transcode-client';
 import type { FileSubtype, MediaCredit, MediaKind, MediaSource } from '@/lib/validation/media-asset';
 import { inferFileSubtype } from '@/lib/media/file-subtype';
 

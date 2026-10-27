@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import type { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { mergeAuthCookieOptions } from '@/lib/supabase/cookie-options';
-import { getPublicCdnImageUrl } from '@/lib/cdn/public-images';
+import { getPublicCdnImageUrl } from '@/lib/module-api/site-content/lib-cdn-public-images';
 import {
   DEMO_ACCESS_COOKIE,
   demoAccessCookieOptions,

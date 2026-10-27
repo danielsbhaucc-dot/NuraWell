@@ -1,14 +1,14 @@
 import { NextResponse } from 'next/server';
 import { DeleteObjectCommand, HeadObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
-import { almogCdnHostname, resolveAlmogPublicBaseUrl, resolveCdnImagesPrefix } from '@/lib/ai/almog-avatar';
-import { getR2Client, r2ImageBucketName } from '@/lib/storage/r2-almog';
+import { almogCdnHostname, resolveAlmogPublicBaseUrl, resolveCdnImagesPrefix } from '@/lib/module-api/agent/lib-ai-almog-avatar';
+import { getR2Client, r2ImageBucketName } from '@/lib/module-api/site-content/lib-storage-r2-almog';
 import {
   copyImageSourceToKey,
   parseSourceObjectKeyFromRequest,
-} from '@/lib/storage/apply-source-image';
-import { isMentorId, MENTORS, mentorLegacyKeys } from '@/lib/mentors/registry';
-import { getMentorAvatarUrl } from '@/lib/mentors/avatar-url';
+} from '@/lib/module-api/site-content/lib-storage-apply-source-image';
+import { isMentorId, MENTORS, mentorLegacyKeys } from '@/lib/module-api/agent/lib-mentors-registry';
+import { getMentorAvatarUrl } from '@/lib/module-api/agent/lib-mentors-avatar-url';
 import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
 import { isWebpBuffer, MAX_UPLOAD_BYTES } from '@/lib/validation/webp';
 

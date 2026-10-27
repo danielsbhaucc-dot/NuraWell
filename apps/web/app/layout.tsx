@@ -1,9 +1,9 @@
 import type { Metadata, Viewport } from 'next';
 import { headers } from 'next/headers';
-import { AccessibilityToolbarClient } from '@/components/a11y/AccessibilityToolbarClient';
-import { accessibilityBootstrapScript } from '@/lib/a11y/apply-preferences';
+import { AccessibilityToolbarClient } from '@/lib/module-api/a11y/components-a11y-AccessibilityToolbarClient';
+import { accessibilityBootstrapScript } from '@/lib/module-api/a11y/lib-a11y-apply-preferences';
 import { DialogHost } from '@/components/shared/dialogs';
-import { CookieNotice } from '@/components/legal/cookies/CookieNotice';
+import { CookieNotice } from '@/lib/module-api/legal/components-legal-cookies-CookieNotice';
 import { fontVariables } from './fonts';
 import './globals.css';
 

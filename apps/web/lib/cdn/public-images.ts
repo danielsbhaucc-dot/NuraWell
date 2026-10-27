@@ -1,4 +1,4 @@
-import { resolveAlmogPublicBaseUrl, resolveCdnImagesPrefix } from '../ai/almog-avatar';
+import { resolveAlmogPublicBaseUrl, resolveCdnImagesPrefix } from '@/lib/module-api/agent/lib-ai-almog-avatar';
 import { DeleteObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
 import { getR2Client, r2ImageBucketName } from '@/lib/storage/r2-almog';
 

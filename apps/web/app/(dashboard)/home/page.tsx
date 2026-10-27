@@ -1,15 +1,15 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { HomeClient } from '../../../components/home/HomeClient';
-import { PatternInsightsCard } from '../../../components/insights/PatternInsightsCard';
+import { PatternInsightsCard } from '@/lib/module-api/agent/components-insights-PatternInsightsCard';
 import {
   DynamicMentorWidget,
   loadMentorshipHomeContext,
-} from '../../../components/mentorship/DynamicMentorWidget';
-import { fetchSosContext } from '../../../lib/ai/guardian/sos-memory';
+} from '@/lib/module-api/agent/components-mentorship-DynamicMentorWidget';
+import { fetchSosContext } from '@/lib/module-api/agent/lib-ai-guardian-sos-memory';
 import { createAdminClient } from '../../../lib/supabase/admin';
-import { firstNameFromFull } from '../../../lib/onboarding/profile-summary-rows';
-import type { OnboardingGender } from '../../../lib/onboarding/types';
+import { firstNameFromFull } from '@/lib/module-api/auth-signup/lib-onboarding-profile-summary-rows';
+import type { OnboardingGender } from '@/lib/module-api/auth-signup/lib-onboarding-types';
 import {
   getCachedAuthUser,
   getCachedDashboardProfile,

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, Mic, Send, Sparkles } from 'lucide-react';
 import { useAlmogAvatarUrl } from '@/lib/client/useAlmogAvatarUrl';
-import { ALMOG_AVATAR_FALLBACK } from '@/lib/ai/almog-avatar';
+import { ALMOG_AVATAR_FALLBACK } from '@/lib/module-api/agent/lib-ai-almog-avatar';
 import { DemoExitBanner } from './DemoExitBanner';
 
 type Turn = { role: 'user' | 'assistant'; content: string };

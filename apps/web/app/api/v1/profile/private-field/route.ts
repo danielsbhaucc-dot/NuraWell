@@ -9,8 +9,8 @@ import { consumeMultiRateLimits, rateLimitResponse } from '../../../../../lib/ap
 import {
   applyDiscreteField,
   type DiscreteFieldKey,
-} from '../../../../../lib/ai/onboarding-discrete-fields';
-import { buildAfterDiscreteContinuation, type OnboardingPath } from '../../../../../lib/ai/onboarding-chat-llm';
+} from '@/lib/module-api/agent/lib-ai-onboarding-discrete-fields';
+import { buildAfterDiscreteContinuation, type OnboardingPath } from '@/lib/module-api/agent/lib-ai-onboarding-chat-llm';
 import { redactExtractedForClient } from '../../../../../lib/profile/extracted-field-flags';
 import {
   buildFlagsFromProfileRow,

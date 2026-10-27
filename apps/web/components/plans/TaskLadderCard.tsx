@@ -4,7 +4,7 @@ import { MessageCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { Button, Card, Sheet } from '@/components/ui';
-import { dispatchOpenAlmogChatWithPrefill } from '@/lib/notifications/open-almog-chat';
+import { dispatchOpenAlmogChatWithPrefill } from '@/lib/module-api/notifications/lib-notifications-open-almog-chat';
 
 export type LadderCardTask = {
   id: string;

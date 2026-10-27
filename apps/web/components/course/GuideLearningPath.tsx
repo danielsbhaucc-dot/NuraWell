@@ -17,7 +17,7 @@ import {
   guideBackToCoverLabel,
   guidePathIntroHint,
   type ProfileGender,
-} from '../../lib/profile/personalized-copy';
+} from '@/lib/module-api/auth-signup/lib-profile-personalized-copy';
 
 interface PathLesson {
   id: string;

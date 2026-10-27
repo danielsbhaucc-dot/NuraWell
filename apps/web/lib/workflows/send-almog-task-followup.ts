@@ -1,19 +1,19 @@
 import { decProfileResult } from '@/lib/crypto/pii-fields';
-import { withAiUser } from '@/lib/ai/usage-meter';
-import { insertNotification } from '@/lib/notifications/deliver';
+import { withAiUser } from '@/lib/module-api/agent/lib-ai-usage-meter';
+import { insertNotification } from '@/lib/module-api/notifications/lib-notifications-deliver';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { AI_MODELS } from '../ai/client';
+import { AI_MODELS } from '@/lib/module-api/agent/lib-ai-client';
 import {
   buildSlotDaypartPromptBlock,
   fetchTodayAlmogTouches,
   formatTodayTouchesCooldownBlock,
-} from '../ai/almog-notify-day-context';
-import { completeEmpathyNotifyBody } from '../ai/empathy-notify-completion';
-import { fetchNotifyUserProfile } from '../ai/notify-user-profile';
-import { buildCoachingStylePromptBlock } from '../ai/almog-coaching-style';
-import type { AiUserContext } from '../ai/memory';
-import { ALMOG_NOTIFY_MAX_OUTPUT_TOKENS, buildAlmogNotifySystemPrompt } from '../ai/prompts';
-import { gateAlmogUserFacingTouch } from '../notifications/almog-touch-send-gate';
+} from '@/lib/module-api/agent/lib-ai-almog-notify-day-context';
+import { completeEmpathyNotifyBody } from '@/lib/module-api/agent/lib-ai-empathy-notify-completion';
+import { fetchNotifyUserProfile } from '@/lib/module-api/agent/lib-ai-notify-user-profile';
+import { buildCoachingStylePromptBlock } from '@/lib/module-api/agent/lib-ai-almog-coaching-style';
+import type { AiUserContext } from '@/lib/module-api/agent/lib-ai-memory';
+import { ALMOG_NOTIFY_MAX_OUTPUT_TOKENS, buildAlmogNotifySystemPrompt } from '@/lib/module-api/agent/lib-ai-prompts';
+import { gateAlmogUserFacingTouch } from '@/lib/module-api/notifications/lib-notifications-almog-touch-send-gate';
 import type { AlmogFollowupUserState } from './almog-followup-state';
 import { habitSlotFromCheckInTime } from './personalized-check-in-journey';
 
@@ -127,7 +127,7 @@ ${cooldownBlock ?? ''}
 
   if (error) throw new Error(error.message);
 
-  const { afterAlmogInAppNotification } = await import('../notifications/after-almog-insert');
+  const { afterAlmogInAppNotification } = await import('@/lib/module-api/notifications/lib-notifications-after-almog-insert');
   afterAlmogInAppNotification(userId, title, body);
 
   return { body };

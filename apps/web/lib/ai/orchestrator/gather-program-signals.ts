@@ -15,11 +15,11 @@ import type { AiUserContext } from '../memory';
 import { isDailyAvailabilityLowToday } from '../memory';
 import { israelDateKey } from '../onboarding-check-in-time';
 import { detectRelapseInMessage } from '../roller-coaster';
-import { fetchTrueLastActiveByUser, daysBetween } from '../../workflows/habit-checkpoint-batch';
+import { fetchTrueLastActiveByUser, daysBetween } from '@/lib/module-api/reminders/lib-workflows-habit-checkpoint-batch';
 import {
   fetchJourneyCompanionContext,
   type JourneyCompanionContext,
-} from '../../workflows/journey-companion';
+} from '@/lib/module-api/reminders/lib-workflows-journey-companion';
 import type { ProgramActivitySignals } from './program-state';
 
 const STREAK_LOOKBACK_DAYS = 10;

@@ -2,10 +2,10 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { ImageIcon, Loader2, Trash2, CheckCircle2, AlertTriangle } from 'lucide-react';
-import { useMediaManager } from '@/components/media-manager/MediaManagerProvider';
-import { applyLoginBackgroundFromAsset } from '@/lib/media-manager/apply-asset';
-import type { MediaAsset } from '@/components/media-manager/types';
-import { GlassConfirmDialog } from '@/components/media-manager/GlassConfirmDialog';
+import { useMediaManager } from '@/lib/module-api/site-content/components-media-manager-MediaManagerProvider';
+import { applyLoginBackgroundFromAsset } from '@/lib/module-api/site-content/lib-media-manager-apply-asset';
+import type { MediaAsset } from '@/lib/module-api/site-content/components-media-manager-types';
+import { GlassConfirmDialog } from '@/lib/module-api/site-content/components-media-manager-GlassConfirmDialog';
 
 export function AdminLoginBackgroundPanel() {
   const { open } = useMediaManager();

@@ -1,9 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import type { MentorId } from '../mentors/registry';
-import { MENTORS } from '../mentors/registry';
-import { getMentorAvatarFallback, getMentorAvatarUrl } from '../mentors/avatar-url';
+import type { MentorId } from '@/lib/module-api/agent/lib-mentors-registry';
+import { MENTORS } from '@/lib/module-api/agent/lib-mentors-registry';
+import { getMentorAvatarFallback, getMentorAvatarUrl } from '@/lib/module-api/agent/lib-mentors-avatar-url';
 
 export type MentorAvatarMeta = {
   avatarUrl: string;

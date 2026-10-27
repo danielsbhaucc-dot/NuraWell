@@ -1,24 +1,24 @@
 import { decProfileResult } from '@/lib/crypto/pii-fields';
-import { withAiUser } from '@/lib/ai/usage-meter';
-import { insertNotification } from '@/lib/notifications/deliver';
+import { withAiUser } from '@/lib/module-api/agent/lib-ai-usage-meter';
+import { insertNotification } from '@/lib/module-api/notifications/lib-notifications-deliver';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { AI_MODELS } from '../ai/client';
+import { AI_MODELS } from '@/lib/module-api/agent/lib-ai-client';
 import {
   fetchTodayChatTurns,
   formatDailyShortTermBlock,
-} from '../ai/almog-daily-context';
+} from '@/lib/module-api/agent/lib-ai-almog-daily-context';
 import {
   buildSlotDaypartPromptBlock,
   fetchTodayAlmogTouches,
   formatTodayTouchesCooldownBlock,
-} from '../ai/almog-notify-day-context';
-import { getIsraelNowMinutes, parseHHMMToMinutes } from '../ai/almog-time-context';
+} from '@/lib/module-api/agent/lib-ai-almog-notify-day-context';
+import { getIsraelNowMinutes, parseHHMMToMinutes } from '@/lib/module-api/agent/lib-ai-almog-time-context';
 import {
   buildHabitCheckpointSystemPrompt,
   countUnansweredEarlierToday,
-} from '../ai/habit-checkpoint-llm';
-import { buildProfileScheduleHints } from '../ai/profile-schedule-anchors';
-import { ALMOG_NOTIFY_MAX_OUTPUT_TOKENS, buildAlmogNotifySystemPrompt } from '../ai/prompts';
+} from '@/lib/module-api/agent/lib-ai-habit-checkpoint-llm';
+import { buildProfileScheduleHints } from '@/lib/module-api/agent/lib-ai-profile-schedule-anchors';
+import { ALMOG_NOTIFY_MAX_OUTPUT_TOKENS, buildAlmogNotifySystemPrompt } from '@/lib/module-api/agent/lib-ai-prompts';
 import {
   computeCadenceStage,
   computeCompletionStatus,
@@ -27,9 +27,9 @@ import {
   fetchTrueLastActiveByUser,
 } from './habit-checkpoint-batch';
 import { habitSlotFromCheckInTime } from './personalized-check-in-journey';
-import { completeEmpathyNotifyBody } from '../ai/empathy-notify-completion';
-import { normalizeCheckInTimes } from '../ai/onboarding-check-in-time';
-import { fetchNotifyUserProfile } from '../ai/notify-user-profile';
+import { completeEmpathyNotifyBody } from '@/lib/module-api/agent/lib-ai-empathy-notify-completion';
+import { normalizeCheckInTimes } from '@/lib/module-api/agent/lib-ai-onboarding-check-in-time';
+import { fetchNotifyUserProfile } from '@/lib/module-api/agent/lib-ai-notify-user-profile';
 import type {
   AlmogHabitCheckpointPayload,
   HabitCheckpointSlot,
@@ -39,7 +39,7 @@ import {
   formatLifeContextNotifyBlock,
   readLifeContext,
   sendLifeContextTouch,
-} from '../ai/life-context';
+} from '@/lib/module-api/agent/lib-ai-life-context';
 import {
   fetchJourneyCompanionContext,
   formatCompanionBlockForPersonalizedCheckIn,
@@ -51,7 +51,7 @@ import {
   fetchPersonalizedCheckInJourneyContext,
   formatJourneyBlockForPersonalizedCheckIn,
 } from './personalized-check-in-journey';
-import { gateAlmogUserFacingTouch } from '../notifications/almog-touch-send-gate';
+import { gateAlmogUserFacingTouch } from '@/lib/module-api/notifications/lib-notifications-almog-touch-send-gate';
 import { sendJourneyCompanionNudge } from './send-journey-companion-nudge';
 
 const NOTIFY_PERSONALIZED_TASK = buildAlmogNotifySystemPrompt(
@@ -106,7 +106,7 @@ export async function sendOnboardingCheckInNotification(
         payload.checkInTime
       );
       if (lifeResult?.inserted) {
-        const { afterAlmogInAppNotification } = await import('../notifications/after-almog-insert');
+        const { afterAlmogInAppNotification } = await import('@/lib/module-api/notifications/lib-notifications-after-almog-insert');
         afterAlmogInAppNotification(payload.userId, `${firstName} 🌴`, lifeResult.body);
       }
       return { body: lifeResult?.body ?? '', inserted: lifeResult?.inserted ?? null };
@@ -127,10 +127,10 @@ export async function sendOnboardingCheckInNotification(
       );
       if (companionResult?.inserted) {
         if (companionCtx.followUpDue) {
-          const { clearJourneyFollowUp } = await import('../ai/journey-follow-up-promise');
+          const { clearJourneyFollowUp } = await import('@/lib/module-api/agent/lib-ai-journey-follow-up-promise');
           await clearJourneyFollowUp(admin, payload.userId);
         }
-        const { afterAlmogInAppNotification } = await import('../notifications/after-almog-insert');
+        const { afterAlmogInAppNotification } = await import('@/lib/module-api/notifications/lib-notifications-after-almog-insert');
         afterAlmogInAppNotification(payload.userId, `${firstName} 🌿`, companionResult.body);
       }
       return { body: companionResult?.body ?? '', inserted: companionResult?.inserted ?? null };
@@ -635,7 +635,7 @@ async function fetchProfileScheduleForCheckIn(admin: SupabaseClient, userId: str
     sleep_time?: string | null;
     dinner_time?: string | null;
     meal_schedule?: Array<{ time: string; label?: string }> | null;
-    ai_context?: import('../ai/memory').AiUserContext | null;
+    ai_context?: import('@/lib/module-api/agent/lib-ai-memory').AiUserContext | null;
   } | null;
   const hints = buildProfileScheduleHints(row);
   return { ...hints, aiContext: row?.ai_context ?? null };

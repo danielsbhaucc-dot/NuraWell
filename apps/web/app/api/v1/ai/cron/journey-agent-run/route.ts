@@ -4,8 +4,8 @@ import { authorizeCronRequest } from '@/lib/api/authorize-cron';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { JourneyAgent, loadAgentSession } from '@/lib/admin/journey-agent/agent';
 import { formatSessionForTelegram } from '@/lib/admin/journey-agent/telegram-bridge';
-import { createTelegramChannel } from '@/lib/ceo/telegram';
-import { allowedChatIds } from '@/lib/ceo/channel';
+import { createTelegramChannel } from '@/lib/module-api/gideon/lib-ceo-telegram';
+import { allowedChatIds } from '@/lib/module-api/gideon/lib-ceo-channel';
 import { withAiUsage } from '@/lib/ai/usage-meter';
 
 export const runtime = 'nodejs';

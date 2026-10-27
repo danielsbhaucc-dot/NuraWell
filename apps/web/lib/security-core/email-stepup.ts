@@ -1,7 +1,7 @@
 import 'server-only';
 import { createHash, randomBytes, randomInt } from 'node:crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { consumeGrant, GRANT_TTL_MS, issueGrant } from '@/lib/auth/stepup';
+import { consumeGrant, GRANT_TTL_MS, issueGrant } from '@/lib/module-api/auth-signup/lib-auth-stepup';
 
 /**
  * One-time email code for the friendly step-up. Stored as a pending row in stepup_grants under

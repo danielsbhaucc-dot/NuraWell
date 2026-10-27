@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import type { AdminUserJourneyReport, AdminUserJourneyStepRow } from '../admin/build-user-journey-report';
-import type { MainObstacle, WeakestTimeOfDay } from '../onboarding/types';
+import type { MainObstacle, WeakestTimeOfDay } from '@/lib/module-api/auth-signup/lib-onboarding-types';
 import type { JourneyStationGroup } from './group-journey-by-station';
 import type { JourneyStepProgress, JourneyStepWithProgress } from '../types/journey';
 

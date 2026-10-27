@@ -6,7 +6,7 @@
  * Bounded: max 300 rows scanned, max 40 LLM calls, plus the daily USD cap inside qcNotifyText.
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { fetchNotifyUserProfile } from '@/lib/ai/notify-user-profile';
+import { fetchNotifyUserProfile } from '@/lib/module-api/agent/lib-ai-notify-user-profile';
 import { genderFromInstruction, lintNotifyHebrew } from '../notify-hebrew-lint';
 import { qcNotifyText } from '../notify-qc';
 import { applyAutoFixRules, learnStyleRules, loadActiveStyleRules, logNotifyQualityEvents, type LearnResult } from '../quality-learning';

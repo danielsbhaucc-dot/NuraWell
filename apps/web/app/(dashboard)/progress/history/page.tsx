@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '../../../../lib/supabase/server';
 import { buildTaskHistoryReport } from '../../../../lib/journey/build-task-history';
 import { TaskHistoryClient } from '../../../../components/progress/TaskHistoryClient';
-import { firstNameFrom, type ProfileGender } from '../../../../lib/profile/personalized-copy';
+import { firstNameFrom, type ProfileGender } from '@/lib/module-api/auth-signup/lib-profile-personalized-copy';
 
 export const metadata: Metadata = {
   title: 'היסטוריית משימות',

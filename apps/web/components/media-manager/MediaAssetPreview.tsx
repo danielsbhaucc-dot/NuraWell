@@ -1,8 +1,8 @@
 'use client';
 
 import { Download, FileText } from 'lucide-react';
-import { GlassAudioPlayer } from '@/components/audio/GlassAudioPlayer';
-import { resolveBunnyStreamEmbedId } from '@/lib/journey/bunny-pull';
+import { GlassAudioPlayer } from '@/lib/module-api/agent/components-audio-GlassAudioPlayer';
+import { resolveBunnyStreamEmbedId } from '@/lib/module-api/journey/lib-journey-bunny-pull';
 import { CreditBadge } from './CreditBadge';
 import type { MediaAsset } from './types';
 

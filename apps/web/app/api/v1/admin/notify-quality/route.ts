@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { bumpStyleRulesVersion } from '@/lib/notifications/quality-learning';
+import { bumpStyleRulesVersion } from '@/lib/module-api/notifications/lib-notifications-quality-learning';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

@@ -2,8 +2,8 @@
  * "התוכנית שלך" as a written plan — pure view-model (no I/O, no AI): built on the server from the real plan
  * (ladder levels, level-change events with source + reason) so every line reflects what Almog actually changed.
  */
-import type { PlanTask } from '@/lib/tasks';
-import { STEP_UP_AFTER_SUCCESS_DAYS, resolveLadder } from '@/lib/tasks/ladder';
+import type { PlanTask } from '@/lib/module-api/journey/lib-tasks';
+import { STEP_UP_AFTER_SUCCESS_DAYS, resolveLadder } from '@/lib/module-api/journey/lib-tasks-ladder';
 
 export type Gender = 'female' | 'male' | 'other';
 export type PlanChangeNote = { at: string; text: string; quote: string | null; direction: 'down' | 'up' | 'start' };

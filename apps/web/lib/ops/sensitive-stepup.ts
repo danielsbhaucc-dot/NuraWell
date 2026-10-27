@@ -1,5 +1,5 @@
 import 'server-only';
-import { isFreshSession } from '@/lib/auth/passkeys';
+import { isFreshSession } from '@/lib/module-api/auth-signup/lib-auth-passkeys';
 
 /**
  * Single step-up check for the most sensitive Ops actions (key backup).
@@ -16,7 +16,7 @@ export const SENSITIVE_PURPOSE = 'ops.sensitive';
 /** Grant from <StepUpDialog purpose="ops.sensitive">: GET only peeks, every other method consumes it (single use). */
 const grantVerifier: Verifier = async (c) => {
   const { createAdminClient } = await import('@/lib/supabase/admin');
-  const { STEPUP_COOKIE, consumeGrant, peekGrant, readCookieFrom } = await import('@/lib/auth/stepup');
+  const { STEPUP_COOKIE, consumeGrant, peekGrant, readCookieFrom } = await import('@/lib/module-api/auth-signup/lib-auth-stepup');
   const db = createAdminClient();
   const ck = readCookieFrom(c.req, STEPUP_COOKIE);
   return c.req.method === 'GET' ? peekGrant(db, c.userId, SENSITIVE_PURPOSE, ck) : (await consumeGrant(db, c.userId, SENSITIVE_PURPOSE, ck)).ok;

@@ -1,8 +1,8 @@
 import type { DiscreteFieldKey } from './onboarding-discrete-fields';
 import { DISCRETE_FIELD_LABELS } from './onboarding-discrete-fields';
 import type { OnboardingPath } from './onboarding-chat-llm';
-import type { ProfileFieldFlags } from '../profile/extracted-field-flags';
-import { imperativeAndSend, imperativeTap, type ProfileGender } from '../profile/personalized-copy';
+import type { ProfileFieldFlags } from '@/lib/module-api/auth-signup/lib-profile-extracted-field-flags';
+import { imperativeAndSend, imperativeTap, type ProfileGender } from '@/lib/module-api/auth-signup/lib-profile-personalized-copy';
 
 const TIME_RE = /\b(?:0?[0-9]|1[0-9]|2[0-3]):[0-5]\d\b/;
 const WEIGHT_WITH_UNIT_RE =

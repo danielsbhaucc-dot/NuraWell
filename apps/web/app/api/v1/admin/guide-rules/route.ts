@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { readJsonBody } from '@/lib/api/json-request';
 import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
-import { GuideRules, readGuideRules, writeGuideRules } from '@/lib/guides/guide-rules';
+import { GuideRules, readGuideRules, writeGuideRules } from '@/lib/module-api/journey/lib-guides-guide-rules';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 export const dynamic = 'force-dynamic';

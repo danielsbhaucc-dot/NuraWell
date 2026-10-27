@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Drawer } from 'vaul';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAlmogAvatarUrl } from '@/lib/client/useAlmogAvatarUrl';
-import { ALMOG_AVATAR_FALLBACK } from '@/lib/ai/almog-avatar';
+import { ALMOG_AVATAR_FALLBACK } from '@/lib/module-api/agent/lib-ai-almog-avatar';
 import { markAlmogWelcomeSeen } from '@/lib/actions/mark-almog-welcome-seen';
 import { genderCopy } from '@/lib/onboarding/gender-copy';
 import { firstNameFromFull, type ProfileSummarySource } from '@/lib/onboarding/profile-summary-rows';

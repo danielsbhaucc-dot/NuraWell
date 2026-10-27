@@ -20,7 +20,7 @@ import {
   type ReplyQcInput,
   type ReplyQcVerdict,
 } from './core';
-import { logNotifyQualityEvents } from '@/lib/notifications/quality-learning';
+import { logNotifyQualityEvents } from '@/lib/module-api/notifications/lib-notifications-quality-learning';
 
 /** source tag in notify_quality_events so nightly rules learn from chat replies too */
 export const REPLY_QC_LEARN_SOURCE = 'almog_reply';

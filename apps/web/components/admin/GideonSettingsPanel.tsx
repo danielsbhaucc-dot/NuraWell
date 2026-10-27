@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { KeyRound, Loader2, Plus, Save, Trash2 } from 'lucide-react';
-import type { GideonSettings } from '@/lib/ceo/settings';
+import type { GideonSettings } from '@/lib/module-api/gideon/lib-ceo-settings';
 
 type Recipient = { chat_id: string; label: string };
 const TOPICS: Array<[keyof GideonSettings['alert_topics'], string]> = [

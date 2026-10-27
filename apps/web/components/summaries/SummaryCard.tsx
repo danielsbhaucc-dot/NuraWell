@@ -16,7 +16,7 @@ import {
   Target,
   TrendingDown,
 } from 'lucide-react';
-import type { SummaryType } from '../../lib/notifications/summaries/period-keys';
+import type { SummaryType } from '@/lib/module-api/notifications/lib-notifications-summaries-period-keys';
 import type { PeriodicSummaryRow } from '../../app/(dashboard)/summaries/page';
 import { formatHebrewRelative } from '../../lib/time/hebrew-relative';
 

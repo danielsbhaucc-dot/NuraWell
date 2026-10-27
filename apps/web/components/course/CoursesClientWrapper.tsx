@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { GraduationCap } from 'lucide-react';
-import { AlmogScreenCoach } from '../ai/AlmogScreenCoach';
+import { AlmogScreenCoach } from '@/lib/module-api/agent/components-ai-AlmogScreenCoach';
 import { CourseCard } from '../shared/CourseCard';
 import type { CourseWithProgress, UserStats } from '../../lib/types/course';
 import {
@@ -13,7 +13,7 @@ import {
   guidesPageSubtitle,
   guidesPageTitle,
   type ProfileGender,
-} from '../../lib/profile/personalized-copy';
+} from '@/lib/module-api/auth-signup/lib-profile-personalized-copy';
 import { hebrewActiveGuidesLabel } from '../../lib/text/hebrew-plural';
 
 interface CoursesClientWrapperProps {

@@ -17,24 +17,24 @@ import { withAiUser } from '@/lib/ai/usage-meter';
  *   - כבר נשלחה הצעת אורקסטרטור היום → תקרת תדירות (≤1/יום).
  */
 
-import { insertNotification } from '@/lib/notifications/deliver';
-import { getTodayTasks } from '@/lib/tasks';
+import { insertNotification } from '@/lib/module-api/notifications/lib-notifications-deliver';
+import { getTodayTasks } from '@/lib/module-api/journey/lib-tasks';
 import { isProposalExpired } from './pivot-lifecycle';
-import { evaluateNotifyGate, filterNotifyEligibleUserIds } from '@/lib/notifications/notify-recipients';
+import { evaluateNotifyGate, filterNotifyEligibleUserIds } from '@/lib/module-api/notifications/lib-notifications-notify-recipients';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { isAvoidPushActive } from '../avoid-push';
 import { getAlmogPushTier } from '../life-context';
 import { israelDateKey } from '../onboarding-check-in-time';
-import { firstNameFromFull } from '../../onboarding/profile-summary-rows';
-import { afterAlmogInAppNotification } from '../../notifications/after-almog-insert';
+import { firstNameFromFull } from '@/lib/module-api/auth-signup/lib-onboarding-profile-summary-rows';
+import { afterAlmogInAppNotification } from '@/lib/module-api/notifications/lib-notifications-after-almog-insert';
 import type { AiUserContext } from '../memory';
 import { gatherProgramSignals } from './gather-program-signals';
 import { evaluateProgramState, type ProgramProposalKind, type ProgramState } from './program-state';
 import { buildProgramProposal } from './build-program-proposal';
 import { writePendingProposal, writeProgramState } from './program-store';
 import { advancePivotProgression, type PivotProgressionResult } from './daily-action-instances';
-import { runRecoveryOrchestrationForUser } from '../almog-commitments/recovery-orchestrator';
+import { runRecoveryOrchestrationForUser } from '@/lib/module-api/reminders/lib-ai-almog-commitments-recovery-orchestrator';
 
 const PROPOSAL_ICON: Record<ProgramProposalKind, string> = {
   level_up: '🚀',

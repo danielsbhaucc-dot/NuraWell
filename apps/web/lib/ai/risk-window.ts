@@ -1,4 +1,4 @@
-import type { FrictionCategory, StrategyType } from './almog-commitments/friction';
+import type { FrictionCategory, StrategyType } from '@/lib/module-api/reminders/lib-ai-almog-commitments-friction';
 
 export type RiskWindow = {
   weekday: number | null;

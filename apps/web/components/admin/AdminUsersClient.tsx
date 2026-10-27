@@ -30,11 +30,11 @@ import {
 import { AdminUserJourneyDetail } from '@/components/admin/AdminUserJourneyDetail';
 import { AlmogChatMemoryPanel } from '@/components/admin/AlmogChatMemoryPanel';
 import { AlmogCommitmentsPanel } from '@/components/admin/AlmogCommitmentsPanel';
-import { genderDisplayLabel } from '@/lib/profile/profile-field-ssot';
+import { genderDisplayLabel } from '@/lib/module-api/auth-signup/lib-profile-profile-field-ssot';
 import { AlmogMemoryPanel } from '@/components/admin/AlmogMemoryPanel';
 import { ConfirmDialog } from '@/components/admin/ConfirmDialog';
 import { OpsPageHeader } from '@/components/admin/OpsPageHeader';
-import { glassCardStyle, glassPanelStyle } from '@/components/media-manager/glass-styles';
+import { glassCardStyle, glassPanelStyle } from '@/lib/module-api/site-content/components-media-manager-glass-styles';
 import { cn } from '@/lib/cn';
 import type { AdminUserJourneyReport } from '@/lib/admin/build-user-journey-report';
 

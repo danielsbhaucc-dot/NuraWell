@@ -7,3 +7,4 @@ core: false  toggleable: false
 always-on features: consents, data-export, deletion-with-approval
 gate: off for a customer product without an active entitlement => routes 404, no menu, crons skipped, data retained. Owned products: always on.
 rules: no owner names in code; server-side authz; behavior changes need a golden/regression test.
+public api: apps/web/lib/module-api/privacy-retention/ (one re-export file per public entry; other modules import privacy-retention only through these)

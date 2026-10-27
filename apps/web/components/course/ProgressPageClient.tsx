@@ -36,7 +36,7 @@ import {
   progressPageGreeting,
   progressPartialDaysMessage,
   type ProfileGender,
-} from '../../lib/profile/personalized-copy';
+} from '@/lib/module-api/auth-signup/lib-profile-personalized-copy';
 import { hebrewDaysLabel } from '../../lib/text/hebrew-plural';
 
 interface CourseStatItem {

@@ -8,8 +8,8 @@ import { AI_CONTEXT_ENC_KEYS, decryptAiContext, decryptProfileRow, encryptProfil
 import { sealRow } from '@/lib/security/field-crypto';
 import { isBlocked } from '@/lib/security/field-registry';
 import { firstNameFromFullName, restorePiiPlaceholders } from './pii-placeholders';
-import { healthConsentStatus, patchHasHealthFields, stripHealthFields } from '@/lib/privacy/health-consent';
-import { scrubHealthJson, isHealthText } from '@/lib/privacy/health-memory';
+import { healthConsentStatus, patchHasHealthFields, stripHealthFields } from '@/lib/module-api/privacy-retention/lib-privacy-health-consent';
+import { scrubHealthJson, isHealthText } from '@/lib/module-api/privacy-retention/lib-privacy-health-memory';
 import { assertProfileEnums } from '@/lib/security/profile-enums';
 
 type Row = Record<string, unknown>;

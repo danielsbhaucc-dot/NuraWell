@@ -4,7 +4,7 @@
  */
 import { applyPiiDetectors } from '../privacy/pii-patterns';
 import { maskName, unmaskName } from '../privacy/name-mask';
-import { isHealthChatMessage, isRedactedContent } from '../../privacy/health-chat-redaction';
+import { isHealthChatMessage, isRedactedContent } from '@/lib/module-api/privacy-retention/lib-privacy-health-chat-redaction';
 
 export const REPLY_QC_FEATURE = 'almog_reply_qc';
 /**

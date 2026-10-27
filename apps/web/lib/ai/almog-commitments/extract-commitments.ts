@@ -9,7 +9,7 @@
  * לסף. כך אלמוג נשאר בדיוק כמו שהוא, והרקע רק "מתעד ומבצע" מה שכבר נאמר.
  */
 
-import { openrouter } from '../client';
+import { openrouter } from '@/lib/module-api/agent/lib-ai-client';
 import { normalizeFrictionCategory } from './friction';
 import {
   correctLateNightMorning,

@@ -1,4 +1,4 @@
-import { escapeFilterString } from '@/lib/ai/system-knowledge-vector';
+import { escapeFilterString } from '@/lib/module-api/agent/lib-ai-system-knowledge-vector';
 
 type StepRow = {
   id: string;

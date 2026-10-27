@@ -1,11 +1,11 @@
-import { limitIp } from '@/lib/ceo/stepup-http';
+import { limitIp } from '@/lib/module-api/gideon/lib-ceo-stepup-http';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { readJsonBody } from '@/lib/api/json-request';
 import { requireApiSession } from '@/lib/api/route-guards';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { getPlan, israelDateKey } from '@/lib/tasks';
-import { persistCommitmentExtraction, titlesAreSimilar } from '@/lib/ai/almog-commitments/persist';
+import { getPlan, israelDateKey } from '@/lib/module-api/journey/lib-tasks';
+import { persistCommitmentExtraction, titlesAreSimilar } from '@/lib/module-api/reminders/lib-ai-almog-commitments-persist';
 import { resolveTaskProposal } from '@/lib/ai/chat-ui/task-proposals';
 
 export const runtime = 'nodejs';

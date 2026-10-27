@@ -6,8 +6,8 @@ import { readJsonBody } from '@/lib/api/json-request';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { assertNotDemoAccessSession } from '@/lib/demo-access/server';
 import { getHealthConsentState, grantHealthConsent, withdrawHealthConsent } from '@/lib/privacy/health-consent';
-import { recordConsentEvidence, requestMeta } from '@/lib/legal/record-evidence';
-import { consentText, normalizeGender, CONSENT_TEXT_VERSION } from '@/lib/legal/consent-text';
+import { recordConsentEvidence, requestMeta } from '@/lib/module-api/legal/lib-legal-record-evidence';
+import { consentText, normalizeGender, CONSENT_TEXT_VERSION } from '@/lib/module-api/legal/lib-legal-consent-text';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

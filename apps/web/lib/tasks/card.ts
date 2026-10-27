@@ -1,4 +1,4 @@
-import type { LadderCardTask } from '@/components/plans/TaskLadderCard';
+import type { LadderCardTask } from '@/lib/module-api/billing/components-plans-TaskLadderCard';
 import type { PlanTask } from './index';
 import { resolveLadder } from './ladder';
 

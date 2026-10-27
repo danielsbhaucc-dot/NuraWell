@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
-import type { AccessibilityAuditSummary } from '@/lib/a11y/types';
+import type { AccessibilityAuditSummary } from '@/lib/module-api/a11y/lib-a11y-types';
 import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { resolvePublicUrlForAsset } from '@/lib/cdn/public-media';
+import { resolvePublicUrlForAsset } from '@/lib/module-api/site-content/lib-cdn-public-media';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

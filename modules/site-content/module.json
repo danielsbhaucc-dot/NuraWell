@@ -9,19 +9,23 @@
   "toggleable": true,
   "alwaysOn": [],
   "owns": [
-    "apps/web/lib/media/",
-    "apps/web/lib/media-manager/",
-    "apps/web/components/media-manager/",
-    "apps/web/lib/storage/",
-    "apps/web/lib/cdn/",
-    "apps/web/lib/coming-soon/",
-    "apps/web/app/coming-soon/",
-    "apps/web/components/coming-soon/",
     "apps/web/app/about/",
+    "apps/web/app/coming-soon/",
     "apps/web/app/contact/",
     "apps/web/app/landing-v2/",
+    "apps/web/components/coming-soon/",
     "apps/web/components/landing/",
-    "apps/web/components/media/"
+    "apps/web/components/media-manager/",
+    "apps/web/components/media/",
+    "apps/web/lib/cdn/",
+    "apps/web/lib/coming-soon/",
+    "apps/web/lib/media-manager/",
+    "apps/web/lib/media/",
+    "apps/web/lib/module-api/site-content/",
+    "apps/web/lib/storage/"
   ],
-  "description": "Site content, media library, storage and CDN."
+  "description": "Site content, media library, storage and CDN.",
+  "api": [
+    "apps/web/lib/module-api/site-content/"
+  ]
 }

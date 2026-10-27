@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { Archive, Loader2, RefreshCw } from 'lucide-react';
-import { RetentionChoicePicker } from '@/components/privacy/RetentionChoicePicker';
+import { RetentionChoicePicker } from '@/lib/module-api/privacy-retention/components-privacy-RetentionChoicePicker';
 import type { RetentionChoice } from '@saas/billing';
 
 type State = { choice: RetentionChoice; is_default: boolean; decided_at: string | null };

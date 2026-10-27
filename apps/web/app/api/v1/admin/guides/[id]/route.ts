@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
 import { readJsonBody } from '@/lib/api/json-request';
-import { syncGuideToAlmogKnowledge, deleteGuideFromAlmogKnowledge } from '@/lib/guides/sync-knowledge';
+import { syncGuideToAlmogKnowledge, deleteGuideFromAlmogKnowledge } from '@/lib/module-api/journey/lib-guides-sync-knowledge';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

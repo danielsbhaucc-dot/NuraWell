@@ -9,7 +9,7 @@ import { buildUserTaskSnapshot } from '../../../../lib/tasks/user-task-ssot';
 import {
   genderDisplayLabel,
   resolveDisplayWeightKg,
-} from '../../../../lib/profile/profile-field-ssot';
+} from '@/lib/module-api/auth-signup/lib-profile-profile-field-ssot';
 
 type JourneyStepRow = {
   id?: string;

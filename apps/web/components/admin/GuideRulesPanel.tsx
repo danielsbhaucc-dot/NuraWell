@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Loader2, Save } from 'lucide-react';
-import type { GuideRules } from '@/lib/guides/guide-rules';
+import type { GuideRules } from '@/lib/module-api/journey/lib-guides-guide-rules';
 
 /** /ops/guides — rules for when Almog opens a guide (and when not). */
 export function GuideRulesPanel() {

@@ -5,7 +5,7 @@ import {
   isSystemKnowledgeVectorConfigured,
   rangeAllSystemKnowledgeVectors,
   type SystemKnowledgeVectorMetadata,
-} from '@/lib/ai/system-knowledge-vector';
+} from '@/lib/module-api/agent/lib-ai-system-knowledge-vector';
 import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';

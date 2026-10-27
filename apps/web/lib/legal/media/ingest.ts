@@ -114,7 +114,7 @@ export async function markAbsent(admin: SupabaseClient, origins: AssetOrigin[], 
 
 /** Media stored in our buckets (media_assets). User avatars are personal data and are never scanned. */
 export async function scanStorage(admin: SupabaseClient, opts: { only?: string; force?: boolean } = {}) {
-  const { getR2Client, r2BucketNameForMediaBucket } = await import('@/lib/storage/r2-almog');
+  const { getR2Client, r2BucketNameForMediaBucket } = await import('@/lib/module-api/site-content/lib-storage-r2-almog');
   const { GetObjectCommand } = await import('@aws-sdk/client-s3');
   let q = admin.from('media_assets').select('id, kind, bucket, object_key, public_url, external_url, title, original_filename, mime_type, source, credit, alt_text, created_at, created_by');
   if (opts.only) q = q.eq('id', opts.only);

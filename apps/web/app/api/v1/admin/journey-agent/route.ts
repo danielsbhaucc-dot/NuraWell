@@ -4,7 +4,7 @@ import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import { readJsonBody } from '@/lib/api/json-request';
 import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { withAiUsage } from '@/lib/ai/usage-meter';
+import { withAiUsage } from '@/lib/module-api/agent/lib-ai-usage-meter';
 import { applyAdminInput, createAgentSession, JourneyAgent, loadAgentSession, type AgentEvent } from '@/lib/admin/journey-agent/agent';
 
 export const runtime = 'nodejs';

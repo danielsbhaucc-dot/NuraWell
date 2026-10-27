@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { requireApiAdmin } from '@/lib/api/route-guards';
 import { consumeRateLimit, rateLimitResponse } from '@/lib/api/rate-limit';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { consumeGrant, readCookieFrom, STEPUP_COOKIE, totpBeginEnroll, totpCheck } from '@/lib/auth/stepup';
+import { consumeGrant, readCookieFrom, STEPUP_COOKIE, totpBeginEnroll, totpCheck } from '@/lib/module-api/auth-signup/lib-auth-stepup';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
