@@ -5,13 +5,12 @@
 //    Central down with no verified snapshot ("failsafe") → nothing is blocked here (admin areas keep failing closed in authorize()).
 //  * Unknown modules / no row → not blocked (a newly registered module behaves exactly as before until someone turns it off).
 // Admin/ops APIs keep their existing (stricter) gate in requireApiAdmin → authorize().
-import { ownerOfPage, ownerOfPath, type ModuleManifest, type Surface } from '@platform/iam';
-import { DEFAULT_PRODUCT, MODULES } from './catalog';
+import { ownerOfPage, ownerOfPath, type ModuleManifest, type Surface } from './modules';
 
 export type GateStates = { source: 'central' | 'cache' | 'failsafe'; states: readonly { moduleId: string; enabled: boolean }[] };
 export type GateDecision = { blocked: false; moduleId: string | null; surface: Surface | null } | { blocked: true; moduleId: string; surface: Surface; offModule: string };
 
-export function ownerFor(path: string, kind: 'server' | 'page', registry: readonly ModuleManifest[] = MODULES) {
+export function ownerFor(path: string, kind: 'server' | 'page', registry: readonly ModuleManifest[]) {
   return kind === 'page' ? ownerOfPage(registry, path) : ownerOfPath(registry, path);
 }
 
@@ -38,19 +37,21 @@ export function decideGate(registry: readonly ModuleManifest[], owner: { module:
   return offModule ? { blocked: true, moduleId: m.id, surface, offModule } : { blocked: false, moduleId: m.id, surface };
 }
 
-/** Runtime gate. Never throws; any error → not blocked (users are never locked out by an outage). */
-export async function gateRequest(path: string, kind: 'server' | 'page'): Promise<GateDecision> {
-  const owner = ownerFor(path, kind);
-  if (!owner || owner.surface === 'admin' || !isGateable(owner.module)) return { blocked: false, moduleId: owner?.module.id ?? null, surface: owner?.surface ?? null };
-  try {
-    const { centralModuleSource } = await import('./authorize');
-    const src = centralModuleSource(DEFAULT_PRODUCT);
-    if (!src) return { blocked: false, moduleId: owner.module.id, surface: owner.surface };
-    const r = await src.get();
-    return decideGate(MODULES, owner, { source: r.source, states: r.states });
-  } catch {
-    return { blocked: false, moduleId: owner.module.id, surface: owner.surface };
+/** Runtime gate bound to a product registry + a state loader. Never throws; any error → not blocked (users are never locked out by an outage). */
+export function createModuleGate(registry: readonly ModuleManifest[], loadStates: () => Promise<GateStates | null>) {
+  async function gateRequest(path: string, kind: 'server' | 'page'): Promise<GateDecision> {
+    const owner = ownerFor(path, kind, registry);
+    const pass: GateDecision = { blocked: false, moduleId: owner?.module.id ?? null, surface: owner?.surface ?? null };
+    if (!owner || owner.surface === 'admin' || !isGateable(owner.module)) return pass;
+    try { return decideGate(registry, owner, await loadStates()); } catch { return pass; }
   }
+  /** For code outside a request (scheduler fan-out, server actions): `if (!(await gate.moduleOn('reminders'))) return;` */
+  async function moduleOn(moduleId: string): Promise<boolean> {
+    const m = registry.find((x) => x.id === moduleId);
+    if (!isGateable(m)) return true;
+    try { return !decideGate(registry, { module: m, surface: 'api' }, await loadStates()).blocked; } catch { return true; }
+  }
+  return { gateRequest, moduleOn, ownerFor: (path: string, kind: 'server' | 'page') => ownerFor(path, kind, registry) };
 }
 
 /** Response for a blocked server path: crons/webhooks get 200 "skipped" (no scheduler retries), APIs get 404. */
@@ -58,19 +59,4 @@ export function blockedResponse(d: Extract<GateDecision, { blocked: true }>): Re
   const headers = { 'content-type': 'application/json', 'cache-control': 'no-store', 'x-module-gate': d.moduleId };
   if (d.surface === 'cron' || d.surface === 'webhook') return new Response(JSON.stringify({ ok: true, skipped: true, reason: 'module_disabled', module: d.moduleId }), { status: 200, headers });
   return new Response(JSON.stringify({ error: 'not_found' }), { status: 404, headers });
-}
-
-/** For code paths that run outside a request (scheduler fan-out, server actions): `if (!(await moduleOn('reminders'))) return;` */
-export async function moduleOn(moduleId: string): Promise<boolean> {
-  const m = MODULES.find((x) => x.id === moduleId);
-  if (!m) return true;
-  const fake = { module: m, surface: 'api' as const };
-  if (!isGateable(m)) return true;
-  try {
-    const { centralModuleSource } = await import('./authorize');
-    const src = centralModuleSource(DEFAULT_PRODUCT);
-    if (!src) return true;
-    const r = await src.get();
-    return !decideGate(MODULES, fake, { source: r.source, states: r.states }).blocked;
-  } catch { return true; }
 }

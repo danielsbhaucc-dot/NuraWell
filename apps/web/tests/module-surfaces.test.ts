@@ -1,9 +1,8 @@
 import { readdirSync, readFileSync, statSync } from 'fs';
 import path from 'path';
 import { describe, expect, it } from 'vitest';
-import { checkToggle, dependentsOf, ownerOfPage, ownerOfPath, validateRegistry, type ModuleState } from '@platform/iam';
+import { checkToggle, decideGate, dependentsOf, ownerOfPage, ownerOfPath, validateRegistry, type ModuleState } from '@platform/iam';
 import { MODULES } from '@/lib/platform/catalog';
-import { decideGate } from '@/lib/platform/module-gate';
 
 const APP = path.join(__dirname, '../app');
 function walk(dir: string, file: string, out: string[] = []): string[] {
@@ -43,7 +42,7 @@ describe('every surface belongs to a module (WordPress-style registry)', () => {
   });
   it('the proxy runs the shared gate', () => {
     const src = readFileSync(path.join(__dirname, '../proxy.ts'), 'utf8');
-    expect(src).toContain("import('./lib/platform/module-gate')");
+    expect(src).toContain("moduleGate.gateRequest(pathname, kind)");
   });
 });
 

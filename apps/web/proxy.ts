@@ -279,13 +279,13 @@ export async function proxy(request: NextRequest) {
   // its crons/webhooks → 200 "skipped", its pages → the normal 404. Core/essential modules are never looked up or blocked;
   // central outage → nothing blocked. Ops host pages use different paths, so only their APIs are gated there.
   {
-    const { ownerFor, isGateable, gateRequest, blockedResponse } = await import('./lib/platform/module-gate');
+    const [{ ownerFor, isGateable, blockedResponse }, { MODULES }] = await Promise.all([import('@platform/iam'), import('./lib/platform/catalog')]);
     const isServerPath = pathname.startsWith('/api/') || pathname.startsWith('/auth/') || pathname.startsWith('/.well-known/') || pathname === '/landing-v2';
     const kind = isServerPath ? 'server' as const : 'page' as const;
     if (isServerPath || !effectiveOpsHost) {
-      const owner = ownerFor(pathname, kind);
+      const owner = ownerFor(pathname, kind, MODULES);
       if (owner && owner.surface !== 'admin' && isGateable(owner.module)) {
-        const d = await gateRequest(pathname, kind);
+        const d = await (await import('./lib/platform/authorize')).moduleGate.gateRequest(pathname, kind);
         if (d.blocked) {
           if (kind === 'server') {
             const r = blockedResponse(d);
