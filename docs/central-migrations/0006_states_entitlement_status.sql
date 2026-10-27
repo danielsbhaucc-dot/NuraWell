@@ -1,0 +1,2 @@
+-- Applied to central 2026-10-27: central_module_states also returns entitlement status/revoked/renewsAt so cached snapshots are re-evaluated correctly.
+-- See central DB function public.central_module_states (same body as 0004 plus those fields).
