@@ -8,11 +8,13 @@ import { authenticationOptions, backupCodesLeft, CHALLENGE_COOKIE, challengeCook
 import { readCookie } from '@/lib/module-api/auth-signup/lib-auth-http';
 import { DEVICE_COOKIE, trustedDeviceId } from '@/lib/ops/device-trust';
 import { pollCrossDevice, startCrossDevice } from '@/lib/module-api/auth-signup/lib-auth-stepup-http';
-import { cookieOpts, GRANT_TTL_MS, issueGrant, STEPUP_COOKIE, totpCheck, totpStatus, validPurpose, type StepUpMethod } from '@/lib/module-api/auth-signup/lib-auth-stepup';
+import { consumeGrant, cookieOpts, GRANT_TTL_MS, issueGrant, STEPUP_COOKIE, totpCheck, totpStatus, validPurpose, type StepUpMethod } from '@/lib/module-api/auth-signup/lib-auth-stepup';
 import { createEmailCode, EMAIL_NONCE_COOKIE, verifyEmailCode } from '@/lib/security-core/email-stepup';
 import { sendResendEmail } from '@/lib/module-api/notifications/lib-email-resend';
 import { selectedProduct } from '@/lib/platform/authorize';
 import { FRIENDLY_PURPOSE, toggleConfirmMode } from '@/lib/platform/toggle-confirm';
+
+const EMAIL_GRANTS = { ttlMs: GRANT_TTL_MS, issueGrant, consumeGrant };
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -70,7 +72,7 @@ export async function POST(request: Request) {
     case 'email_send': {
       const to = auth.user.email;
       if (!to) return NextResponse.json({ error: 'no_email' }, { status: 409, headers: NO_STORE });
-      const { code, nonce } = await createEmailCode(db, uid, b.purpose);
+      const { code, nonce } = await createEmailCode(EMAIL_GRANTS, db, uid, b.purpose);
       const sent = await sendResendEmail({ to, subject: 'קוד אימות לשינוי מודולים', purpose: 'stepup_email', text: `קוד האימות שלך: ${code}\nהקוד תקף ל-5 דקות ולשימוש אחד בלבד. אם לא ביקשת אותו, אפשר להתעלם מההודעה.`, html: `<div dir="rtl" style="font-family:sans-serif"><p>קוד האימות שלך:</p><p style="font-size:28px;font-weight:700;letter-spacing:6px" dir="ltr">${code}</p><p>הקוד תקף ל-5 דקות ולשימוש אחד בלבד. אם לא ביקשת אותו, אפשר להתעלם מההודעה.</p></div>` });
       if (!sent.ok) return NextResponse.json({ error: 'send_failed' }, { status: 502, headers: NO_STORE });
       const res = NextResponse.json({ ok: true, sent: true }, { headers: NO_STORE });
@@ -78,7 +80,7 @@ export async function POST(request: Request) {
       return res;
     }
     case 'email_verify': {
-      const g = await verifyEmailCode(db, uid, b.purpose, readCookie(request, EMAIL_NONCE_COOKIE), b.code.trim());
+      const g = await verifyEmailCode(EMAIL_GRANTS, db, uid, b.purpose, readCookie(request, EMAIL_NONCE_COOKIE), b.code.trim());
       if (!g) return NextResponse.json({ error: 'bad_code' }, { status: 401, headers: NO_STORE });
       const res = NextResponse.json({ ok: true, method: 'email_code' }, { headers: NO_STORE });
       res.cookies.set(STEPUP_COOKIE, g, cookieOpts(Math.floor(GRANT_TTL_MS / 1000)));
