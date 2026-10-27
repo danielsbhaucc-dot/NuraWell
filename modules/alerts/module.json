@@ -10,6 +10,8 @@
   "alwaysOn": [
     "security-alerts"
   ],
-  "owns": [],
+  "owns": [
+    "apps/web/lib/monitoring/"
+  ],
   "description": "Security and ops alerting."
 }

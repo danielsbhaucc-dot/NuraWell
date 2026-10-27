@@ -11,6 +11,13 @@
     "terms-acceptance",
     "legal-evidence"
   ],
-  "owns": [],
+  "owns": [
+    "apps/web/lib/legal/",
+    "apps/web/components/legal/",
+    "apps/web/app/api/v1/legal/",
+    "apps/web/app/api/v1/ops/legal/",
+    "apps/web/app/terms/",
+    "apps/web/app/safety/"
+  ],
   "description": "Terms, legal evidence and anchoring."
 }

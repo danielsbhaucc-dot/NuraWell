@@ -8,6 +8,20 @@
   "core": false,
   "toggleable": true,
   "alwaysOn": [],
-  "owns": [],
+  "owns": [
+    "apps/web/lib/auth/",
+    "apps/web/lib/profile/",
+    "apps/web/components/profile/",
+    "apps/web/components/settings/",
+    "apps/web/lib/onboarding/",
+    "apps/web/components/onboarding/",
+    "apps/web/app/(auth)/login/",
+    "apps/web/app/api/v1/account/security/",
+    "apps/web/app/api/v1/profile/",
+    "apps/web/app/(dashboard)/profile/",
+    "apps/web/components/providers/",
+    "apps/web/scripts/build-auth-email-templates.ts",
+    "apps/web/scripts/strip-metadata-full-name.ts"
+  ],
   "description": "Sign-up, login, onboarding and profile settings."
 }
