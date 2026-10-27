@@ -6,8 +6,8 @@ import { usePathname } from 'next/navigation';
 import { BookOpen, Loader2, Plus, Sparkles, Wand2, Database, Eye, Check } from 'lucide-react';
 import { sanitizeLessonHtml } from '@/lib/sanitize-lesson-html';
 import { cn } from '@/lib/cn';
-import { resolveGuideBackgroundUrl } from '@/lib/guides/resolve-background';
-import { GuidesAlmogKnowledgePanel } from '@/components/course/GuidesAlmogKnowledgePanel';
+import { resolveGuideBackgroundUrl } from '@/lib/module-api/journey/lib-guides-resolve-background';
+import { GuidesAlmogKnowledgePanel } from '@/lib/module-api/journey/components-course-GuidesAlmogKnowledgePanel';
 
 interface GuideRow {
   id: string;

@@ -2,16 +2,16 @@
 
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { ImageUp, Loader2, CheckCircle2, AlertTriangle, Upload, UserCircle } from 'lucide-react';
-import type { MentorId } from '@/lib/mentors/registry';
-import { MENTORS } from '@/lib/mentors/registry';
+import type { MentorId } from '@/lib/module-api/agent/lib-mentors-registry';
+import { MENTORS } from '@/lib/module-api/agent/lib-mentors-registry';
 import { useMentorAvatarUrl } from '@/lib/client/useMentorAvatarUrl';
 import {
   encodeImageToWebpBlob,
   isWebpEncodeUnsupportedError,
 } from '@/lib/client/encodeAlmogAvatarWebp';
-import { OpenMediaManagerButton } from '@/components/media-manager/OpenMediaManagerButton';
-import { applyMentorAvatarFromAsset } from '@/lib/media-manager/apply-asset';
-import type { MediaAsset } from '@/components/media-manager/types';
+import { OpenMediaManagerButton } from '@/lib/module-api/site-content/components-media-manager-OpenMediaManagerButton';
+import { applyMentorAvatarFromAsset } from '@/lib/module-api/site-content/lib-media-manager-apply-asset';
+import type { MediaAsset } from '@/lib/module-api/site-content/components-media-manager-types';
 
 type UploadResult = {
   ok?: boolean;

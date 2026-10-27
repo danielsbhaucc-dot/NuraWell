@@ -1,5 +1,5 @@
-import { pendingLicenseLine } from '@/lib/legal/media/pending';
-import { withAiUsage } from '@/lib/ai/usage-meter';
+import { pendingLicenseLine } from '@/lib/module-api/legal/lib-legal-media-pending';
+import { withAiUsage } from '@/lib/module-api/agent/lib-ai-usage-meter';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { CEO_NAME, CEO_SYSTEM_PROMPT } from './agent';
 import { audit } from './actions';
@@ -9,7 +9,7 @@ import { allowedChatIds, opsLink } from './channel';
 import { digestRecipients, readGideonSettings, type GideonSettings } from './settings';
 import { CEO_CONTENT_MODEL, complete } from './llm';
 import { TOOL_BY_NAME } from './tools';
-import { privacyDigestLine, privacyReopenedLine } from '../privacy/compliance-server';
+import { privacyDigestLine, privacyReopenedLine } from '@/lib/module-api/privacy-retention/lib-privacy-compliance-server';
 import { dueForReminder, formatTaskLine, openOwnerTasks, taskButtons } from './owner-tasks';
 
 export type CostAnomaly = { component: string; culprit: string; yesterday_usd: number; baseline_usd: number; ratio: number | null };

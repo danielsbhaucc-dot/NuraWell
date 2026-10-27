@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { consecutiveJerusalemDoneDays } from '../../journey/recovery-streak';
+import { consecutiveJerusalemDoneDays } from '@/lib/module-api/journey/lib-journey-recovery-streak';
 
 export type RecoveryTrack = {
   journeyTaskId: string;

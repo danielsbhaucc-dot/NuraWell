@@ -3,7 +3,7 @@
 import { Shield } from 'lucide-react';
 import { TranscriptAccessCountdown } from '@/components/admin/TranscriptAccessCountdown';
 import { cn } from '@/lib/cn';
-import type { TranscriptAccessGrant } from '@/lib/privacy/transcript-access-grants';
+import type { TranscriptAccessGrant } from '@/lib/module-api/privacy-retention/lib-privacy-transcript-access-grants';
 
 export type { TranscriptAccessGrant };
 

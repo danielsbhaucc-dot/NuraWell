@@ -70,7 +70,7 @@ const { POST: workflowPost } = serve<AlmogOnboardingKickoffPayload>(async (conte
         /** כבר נשלח nudge — מבחינת kickoff status זה הצלחה. */
         await context.run(`mark-sent-after-existing-nudge-${attempt}`, async () => {
           const admin = createAdminClient();
-          const { markKickoffSent } = await import('../../../../lib/auth/kickoff-status');
+          const { markKickoffSent } = await import('@/lib/module-api/auth-signup/lib-auth-kickoff-status');
           await markKickoffSent(admin, payload.userId);
         });
         continue;
@@ -84,7 +84,7 @@ const { POST: workflowPost } = serve<AlmogOnboardingKickoffPayload>(async (conte
       if (skipReasons.has(eligibility.reason)) {
         await context.run(`mark-skipped-${attempt}`, async () => {
           const admin = createAdminClient();
-          const { markKickoffSkipped } = await import('../../../../lib/auth/kickoff-status');
+          const { markKickoffSkipped } = await import('@/lib/module-api/auth-signup/lib-auth-kickoff-status');
           await markKickoffSkipped(admin, payload.userId, eligibility.reason);
         });
       }
@@ -119,10 +119,10 @@ const { POST: workflowPost } = serve<AlmogOnboardingKickoffPayload>(async (conte
       const admin = createAdminClient();
       const send = await sendKickoffNudgeForUser(admin, payload.userId);
       if (send.inserted) {
-        const { markKickoffSent } = await import('../../../../lib/auth/kickoff-status');
+        const { markKickoffSent } = await import('@/lib/module-api/auth-signup/lib-auth-kickoff-status');
         await markKickoffSent(admin, payload.userId);
       } else if (send.reason) {
-        const { markKickoffFailed } = await import('../../../../lib/auth/kickoff-status');
+        const { markKickoffFailed } = await import('@/lib/module-api/auth-signup/lib-auth-kickoff-status');
         await markKickoffFailed(admin, payload.userId, send.reason);
       }
       return send;

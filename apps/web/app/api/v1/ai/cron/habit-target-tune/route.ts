@@ -9,13 +9,13 @@ import {
   computeHabitProgressSnapshot,
   recommendHabitTargetAdjustment,
   type TaskStatusInput,
-} from '../../../../../../lib/journey/habit-progress';
-import { jerusalemDateKey } from '../../../../../../lib/journey/task-schedule';
+} from '@/lib/module-api/journey/lib-journey-habit-progress';
+import { jerusalemDateKey } from '@/lib/module-api/journey/lib-journey-task-schedule';
 import type {
   JourneyHabit,
   JourneyTask,
 } from '../../../../../../lib/types/journey';
-import { parseJourneyTasksFull } from '../../../../../../lib/journey/journey-report-parse';
+import { parseJourneyTasksFull } from '@/lib/module-api/journey/lib-journey-journey-report-parse';
 
 export const runtime = 'nodejs';
 export const maxDuration = 120;

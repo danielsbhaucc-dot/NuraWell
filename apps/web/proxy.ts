@@ -15,7 +15,7 @@ import {
   APP_HOME_PATH,
   MARKETING_PATHS_REDIRECT_WHEN_AUTHED,
 } from './lib/navigation/app-home-path';
-import { handleChallengeMiddleware } from './lib/challenge/middleware-challenge';
+import { handleChallengeMiddleware } from '@/lib/module-api/journey/lib-challenge-middleware-challenge';
 import { isDeviceCheckPath, opsDeviceGate } from './lib/ops/device-gate';
 import { consumeRateLimit } from './lib/api/rate-limit';
 import { DEVICE_COOKIE, liveDeviceCookie } from './lib/ops/device-trust';

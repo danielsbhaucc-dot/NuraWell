@@ -2,8 +2,8 @@ import { createHash } from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { authorizeDbBackupRequest } from '@/lib/api/authorize-db-backup';
-import { legalBucket, legalR2Client } from '@/lib/legal/evidence-storage';
-import { createR2GetPresignedUrl, createR2PutPresignedUrl } from '@/lib/storage/r2-presign';
+import { legalBucket, legalR2Client } from '@/lib/module-api/legal/lib-legal-evidence-storage';
+import { createR2GetPresignedUrl, createR2PutPresignedUrl } from '@/lib/module-api/site-content/lib-storage-r2-presign';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

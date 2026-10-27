@@ -82,8 +82,8 @@ type DunningDeps = {
 };
 
 async function defaultDunningDeps(): Promise<DunningDeps> {
-  const { insertNotification } = await import('@/lib/notifications/deliver');
-  const { isUserNotifyEligible } = await import('@/lib/notifications/notify-recipients');
+  const { insertNotification } = await import('@/lib/module-api/notifications/lib-notifications-deliver');
+  const { isUserNotifyEligible } = await import('@/lib/module-api/notifications/lib-notifications-notify-recipients');
   return {
     provider: null,
     notify: async (admin, userId, subscriptionId, attempt) => {

@@ -1,0 +1,5 @@
+---
+description: Modular platform rules (add, enable, restyle modules)
+alwaysApply: true
+---
+Follow AGENTS.md and packages/@platform/LIBRARY.md. Cross-module imports only via public API. Styles only via design-token CSS variables; restyle by editing the tokens file. Keep module.json valid against modules/module.schema.json.

@@ -10,9 +10,9 @@ import {
   resolveTaskSchedule,
   slotsForSchedule,
   type UserMealProfile,
-} from '../../journey/task-schedule';
-import { parseJourneyTasksFull } from '../../journey/journey-report-parse';
-import { parseTaskLevelMeta } from '../../journey/task-level-meta';
+} from '@/lib/module-api/journey/lib-journey-task-schedule';
+import { parseJourneyTasksFull } from '@/lib/module-api/journey/lib-journey-journey-report-parse';
+import { parseTaskLevelMeta } from '@/lib/module-api/journey/lib-journey-task-level-meta';
 import type { ProgressRow } from '../../workflows/habit-checkpoint-batch';
 
 export type StruggleKind =

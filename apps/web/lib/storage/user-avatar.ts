@@ -1,7 +1,7 @@
 import {
   resolveAlmogPublicBaseUrl,
   resolveCdnImagesPrefix,
-} from '../ai/almog-avatar';
+} from '@/lib/module-api/agent/lib-ai-almog-avatar';
 import { getPublicCdnImageUrl } from '../cdn/public-images';
 
 /** מפתח אובייקט יחיד לתמונת פרופיל משתמש (WebP). */

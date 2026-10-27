@@ -13,11 +13,11 @@ import { createHash } from 'node:crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { decryptString, isEncrypted } from '@/lib/crypto/pii';
 import { createRawAdminClient } from '@/lib/supabase/admin';
-import { publicKeyPem, verifyChain } from '@/lib/legal/evidence-crypto';
+import { publicKeyPem, verifyChain } from '@/lib/module-api/legal/lib-legal-evidence-crypto';
 import { decryptValue, encryptValue, isV2 } from '@/lib/security/field-crypto';
 import { BLIND_INDEX_COLUMNS, BLIND_INDEX_SOURCES, blindIndexPatch } from '@/lib/security/blind-index';
-import { FUZZY_THRESHOLD, matchesAnyWord, receiptSearchText } from '@/lib/legal/media/receipts-core';
-import { fuzzyReceipts, searchReceiptIds } from '@/lib/legal/media/receipts';
+import { FUZZY_THRESHOLD, matchesAnyWord, receiptSearchText } from '@/lib/module-api/legal/lib-legal-media-receipts-core';
+import { fuzzyReceipts, searchReceiptIds } from '@/lib/module-api/legal/lib-legal-media-receipts';
 import { SYSTEM_ROW, APPEND_ONLY_TABLES, encryptedTable, FIELD_V2_TABLES, isBlocked, keyColumns, ownerOf, rowKeyOf } from '@/lib/security/field-registry';
 
 /** staged rollout list (defined in field-registry so the write path can read it without a cycle) */

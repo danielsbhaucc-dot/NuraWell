@@ -5,8 +5,8 @@ import { HeadObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { audioTrackMetaSchema } from '@/lib/validation/admin-audio';
-import { getR2Client, r2AudioBucketName } from '@/lib/storage/r2-almog';
-import { audioTrackObjectKey, getPublicCdnAudioUrl } from '@/lib/cdn/public-audio';
+import { getR2Client, r2AudioBucketName } from '@/lib/module-api/site-content/lib-storage-r2-almog';
+import { audioTrackObjectKey, getPublicCdnAudioUrl } from '@/lib/module-api/site-content/lib-cdn-public-audio';
 import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
 
 export const runtime = 'nodejs';

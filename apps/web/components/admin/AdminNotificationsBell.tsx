@@ -8,7 +8,7 @@ import { cn } from '@/lib/cn';
 import {
   formatUnreadBadgeCount,
   formatUnreadBellAriaLabel,
-} from '@/lib/notifications/format-unread-badge';
+} from '@/lib/module-api/notifications/lib-notifications-format-unread-badge';
 import {
   OpsAdminNotificationDialog,
   type OpsAdminNotificationPayload,

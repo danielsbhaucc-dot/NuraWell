@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import { authorizeCronRequest } from '@/lib/api/authorize-cron';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { createTelegramChannel, resolveBotToken } from '@/lib/ceo/telegram';
-import { israelHourNow, nextDigestAt, periodsFor, sendDigest } from '@/lib/ceo/digest';
-import { readGideonSettings } from '@/lib/ceo/settings';
+import { createTelegramChannel, resolveBotToken } from '@/lib/module-api/gideon/lib-ceo-telegram';
+import { israelHourNow, nextDigestAt, periodsFor, sendDigest } from '@/lib/module-api/gideon/lib-ceo-digest';
+import { readGideonSettings } from '@/lib/module-api/gideon/lib-ceo-settings';
 import { runNightlyTaskMerge } from '@/lib/almog/nightly-task-merge';
-import { flushOutbox, loadPrefsSafe, publishDelayed } from '@/lib/ceo/outbound';
-import { quietState } from '@/lib/ceo/quiet';
+import { flushOutbox, loadPrefsSafe, publishDelayed } from '@/lib/module-api/gideon/lib-ceo-outbound';
+import { quietState } from '@/lib/module-api/gideon/lib-ceo-quiet';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

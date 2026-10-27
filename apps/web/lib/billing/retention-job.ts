@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { insertNotification } from '@/lib/notifications/deliver';
-import { isUserNotifyEligible } from '@/lib/notifications/notify-recipients';
+import { insertNotification } from '@/lib/module-api/notifications/lib-notifications-deliver';
+import { isUserNotifyEligible } from '@/lib/module-api/notifications/lib-notifications-notify-recipients';
 
 const DAY = 86_400_000;
 

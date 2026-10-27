@@ -1,6 +1,6 @@
 'use server';
 import { sealProfilePatch } from '@/lib/crypto/pii-seal';
-import { buildSafetyScreening } from '@/lib/onboarding/safety-screening';
+import { buildSafetyScreening } from '@/lib/module-api/auth-signup/lib-onboarding-safety-screening';
 
 import { z } from 'zod';
 import { headers } from 'next/headers';
@@ -10,31 +10,31 @@ import {
   PASSWORD_ERRORS,
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
-} from '@/lib/auth/password-policy';
+} from '@/lib/module-api/auth-signup/lib-auth-password-policy';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { publicAppOriginSync } from '@/lib/public-app-url';
-import { generateMentorSystemPrompt, calculateDailyCheckInTimes } from '@/lib/ai/generate-mentor-system-prompt';
-import { ingestOnboardingIntoVectorMemory } from '@/lib/ai/ingest-onboarding-vector-memory';
-import type { OnboardingProfileForChat } from '@/lib/ai/onboarding-chat-context';
-import { buildMealSchedule, type MealScheduleEntry } from '@/lib/onboarding/meal-schedule';
-import { BODY_METRICS } from '@/lib/onboarding/body-metrics';
-import { validateBirthDate } from '@/lib/privacy/age-validation';
-import { recordRegistrationConsents } from '@/lib/privacy/record-consent';
+import { generateMentorSystemPrompt, calculateDailyCheckInTimes } from '@/lib/module-api/agent/lib-ai-generate-mentor-system-prompt';
+import { ingestOnboardingIntoVectorMemory } from '@/lib/module-api/agent/lib-ai-ingest-onboarding-vector-memory';
+import type { OnboardingProfileForChat } from '@/lib/module-api/agent/lib-ai-onboarding-chat-context';
+import { buildMealSchedule, type MealScheduleEntry } from '@/lib/module-api/auth-signup/lib-onboarding-meal-schedule';
+import { BODY_METRICS } from '@/lib/module-api/auth-signup/lib-onboarding-body-metrics';
+import { validateBirthDate } from '@/lib/module-api/privacy-retention/lib-privacy-age-validation';
+import { recordRegistrationConsents } from '@/lib/module-api/privacy-retention/lib-privacy-record-consent';
 import {
   computeChallengeEndDate,
   computeChallengeStartDate,
-} from '@/lib/challenge/start-date';
+} from '@/lib/module-api/journey/lib-challenge-start-date';
 import {
   GENDERS,
   MAIN_GOALS,
   MAIN_OBSTACLES,
   PREFERRED_CHANNELS,
   WEAKEST_TIMES,
-} from '@/lib/onboarding/types';
-import { clearChallengeGateCookie } from '@/lib/challenge/gate-cookie';
-import { recordRetentionChoice } from '@/lib/privacy/subscription-retention';
-import { recordConsentEvidence, validateSubmission } from '@/lib/legal/record-evidence';
+} from '@/lib/module-api/auth-signup/lib-onboarding-types';
+import { clearChallengeGateCookie } from '@/lib/module-api/journey/lib-challenge-gate-cookie';
+import { recordRetentionChoice } from '@/lib/module-api/privacy-retention/lib-privacy-subscription-retention';
+import { recordConsentEvidence, validateSubmission } from '@/lib/module-api/legal/lib-legal-record-evidence';
 
 const timeRegex = /^([01]\d|2[0-3]):[0-5]\d$/;
 

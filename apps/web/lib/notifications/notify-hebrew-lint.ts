@@ -9,7 +9,7 @@
  *  - fixes: safe, mechanical rewrites (applied silently)
  *  - issues: defects that need rephrasing → generation retries; nightly sweep sends to the LLM editor
  */
-import { ALMOG_UNNATURAL_PHRASES, ALWAYS_BANNED, FEMALE_ONLY_SLANG, MALE_ONLY_SLANG } from '../ai/almog-voice';
+import { ALMOG_UNNATURAL_PHRASES, ALWAYS_BANNED, FEMALE_ONLY_SLANG, MALE_ONLY_SLANG } from '@/lib/module-api/agent/lib-ai-almog-voice';
 
 export type NotifyGender = 'male' | 'female' | 'other' | null | undefined;
 

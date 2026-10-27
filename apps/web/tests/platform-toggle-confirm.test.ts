@@ -30,7 +30,7 @@ const db = { from: (t: string) => q(t) };
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => db }));
 
 import { friendlyMethods, toggleConfirmMode, togglePurpose } from '@/lib/platform/toggle-confirm';
-import { createEmailCode, verifyEmailCode } from '@/lib/auth/email-stepup';
+import { createEmailCode, verifyEmailCode } from '@/lib/security-core/email-stepup';
 import { issueGrant, STEPUP_COOKIE } from '@/lib/auth/stepup';
 import { hasToggleApproval } from '@/lib/ops/sensitive-stepup';
 

@@ -12,7 +12,7 @@ import { createHash } from 'node:crypto';
 import { encryptedTable, isBlocked } from '@/lib/security/field-registry';
 import { isV2 } from '@/lib/security/field-crypto';
 import { BLIND_INDEX_SOURCES, blindIndexPatch } from '@/lib/security/blind-index';
-import { normalizeTaskTitle } from '@/lib/tasks/title-normalize';
+import { normalizeTaskTitle } from '@/lib/module-api/journey/lib-tasks-title-normalize';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 

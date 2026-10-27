@@ -5,14 +5,14 @@ import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'r
 import Link from 'next/link';
 import { ArrowRight, ChevronLeft, ChevronRight, CircleHelp } from 'lucide-react';
 
-import { normalizeFrictionCategory } from '../../lib/ai/almog-commitments/friction';
-import type { SosMemorySnippet, SosRecentEvent } from '../../lib/ai/guardian/sos-memory';
-import { filterRelevantSosEvents } from '../../lib/ai/guardian/sos-ease-shared';
+import { normalizeFrictionCategory } from '@/lib/module-api/reminders/lib-ai-almog-commitments-friction';
+import type { SosMemorySnippet, SosRecentEvent } from '@/lib/module-api/agent/lib-ai-guardian-sos-memory';
+import { filterRelevantSosEvents } from '@/lib/module-api/agent/lib-ai-guardian-sos-ease-shared';
 import { genderCopy } from '../../lib/onboarding/gender-copy';
 import type { OnboardingGender } from '../../lib/onboarding/types';
 import { formatHebrewRelative } from '../../lib/time/hebrew-relative';
 import { APP_HOME_PATH } from '../../lib/navigation/app-home-path';
-import { MomentsHeroAvatar } from '../journey/AlmogPresence';
+import { MomentsHeroAvatar } from '@/lib/module-api/journey/components-journey-AlmogPresence';
 
 const HEBREW_HEAD: CSSProperties = {
   fontFamily: 'Rubik, Heebo, Arial, sans-serif',

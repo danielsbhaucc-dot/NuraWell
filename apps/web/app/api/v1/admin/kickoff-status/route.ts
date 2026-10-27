@@ -1,11 +1,11 @@
 import { auditAdminRequest, requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '../../../../../lib/supabase/admin';
-import { sendKickoffNudgeForUser } from '../../../../../lib/workflows/almog-onboarding-kickoff';
+import { sendKickoffNudgeForUser } from '@/lib/module-api/reminders/lib-workflows-almog-onboarding-kickoff';
 import {
   markKickoffFailed,
   markKickoffSent,
-} from '../../../../../lib/auth/kickoff-status';
+} from '@/lib/module-api/auth-signup/lib-auth-kickoff-status';
 import { consumeMultiRateLimits, rateLimitResponse } from '../../../../../lib/api/rate-limit';
 
 export const runtime = 'nodejs';

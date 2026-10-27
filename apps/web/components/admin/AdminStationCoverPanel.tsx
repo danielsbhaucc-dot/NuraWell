@@ -2,12 +2,12 @@
 
 import { useState } from 'react';
 import { ImageIcon, Loader2, Trash2, CheckCircle2, AlertTriangle, ImagePlus } from 'lucide-react';
-import type { StationCoverCredit } from '@/lib/media/stock-image-attribution';
-import { useMediaManager } from '@/components/media-manager/MediaManagerProvider';
-import { applyStationCoverFromAsset } from '@/lib/media-manager/apply-asset';
-import type { MediaAsset } from '@/components/media-manager/types';
-import { buildJourneyStationUploadFolder } from '@/lib/media-manager/folders';
-import { GlassConfirmDialog } from '@/components/media-manager/GlassConfirmDialog';
+import type { StationCoverCredit } from '@/lib/module-api/site-content/lib-media-stock-image-attribution';
+import { useMediaManager } from '@/lib/module-api/site-content/components-media-manager-MediaManagerProvider';
+import { applyStationCoverFromAsset } from '@/lib/module-api/site-content/lib-media-manager-apply-asset';
+import type { MediaAsset } from '@/lib/module-api/site-content/components-media-manager-types';
+import { buildJourneyStationUploadFolder } from '@/lib/module-api/site-content/lib-media-manager-folders';
+import { GlassConfirmDialog } from '@/lib/module-api/site-content/components-media-manager-GlassConfirmDialog';
 import { opsGlassBtnClass, opsGlassBtnDangerClass } from '@/components/admin/OpsPanel';
 
 type StationCoverState = {

@@ -5,8 +5,8 @@ import {
   normalizeStrategyType,
   type FrictionCategory,
   type StrategyType,
-} from '../almog-commitments/friction';
-import type { GeneratedPivotResult } from '../almog-commitments/intervention-engine';
+} from '@/lib/module-api/reminders/lib-ai-almog-commitments-friction';
+import type { GeneratedPivotResult } from '@/lib/module-api/reminders/lib-ai-almog-commitments-intervention-engine';
 
 export const SOS_LLM_TIMEOUT_MS = 2000;
 export const SOS_DAILY_SOFT_LIMIT = 6;

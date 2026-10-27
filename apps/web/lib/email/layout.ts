@@ -1,4 +1,4 @@
-import { LEGAL_SUPPORT_EMAIL } from '@/lib/legal/contact';
+import { LEGAL_SUPPORT_EMAIL } from '@/lib/module-api/legal/lib-legal-contact';
 /**
  * שלד מייל משותף (כיוון B: חם וצבעוני, בפלטת המותג).
  * RTL עמיד ל-Gmail: dir=rtl + align=right על כל table/td, text-align inline, בלי <style>,

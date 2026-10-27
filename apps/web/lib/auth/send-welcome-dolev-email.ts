@@ -1,13 +1,13 @@
 import { decProfileResult } from '@/lib/crypto/pii-fields';
-import { insertNotification } from '@/lib/notifications/deliver';
+import { insertNotification } from '@/lib/module-api/notifications/lib-notifications-deliver';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { sendResendEmail } from '@/lib/email/resend';
+import { sendResendEmail } from '@/lib/module-api/notifications/lib-email-resend';
 import {
   buildWelcomeDolevEmailHtml,
   buildWelcomeDolevEmailText,
   welcomeDolevEmailSubject,
-} from '@/lib/email/templates/welcome-dolev';
-import type { OnboardingProfileForChat } from '@/lib/ai/onboarding-chat-context';
+} from '@/lib/module-api/notifications/lib-email-templates-welcome-dolev';
+import type { OnboardingProfileForChat } from '@/lib/module-api/agent/lib-ai-onboarding-chat-context';
 import type { OnboardingGender } from '@/lib/onboarding/types';
 import { publicAppOriginSync } from '@/lib/public-app-url';
 

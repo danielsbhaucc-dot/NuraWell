@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { israelDateKey } from '../ai/onboarding-check-in-time';
+import { israelDateKey } from '@/lib/module-api/agent/lib-ai-onboarding-check-in-time';
 
 export type OnboardingCheckInGateResult =
   | { ok: true }

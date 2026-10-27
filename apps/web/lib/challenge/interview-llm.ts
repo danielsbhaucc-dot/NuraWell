@@ -1,4 +1,4 @@
-import { createAiProvider } from '@/lib/ai/provider-factory';
+import { createAiProvider } from '@/lib/module-api/agent/lib-ai-provider-factory';
 import { generateText } from 'ai';
 import type {
   ChallengeInterviewInsights,

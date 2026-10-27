@@ -87,8 +87,8 @@ import {
   queryAlmogSystemKnowledgeForUser,
 } from '../../../../../lib/ai/almog-system-rag';
 import { isSystemKnowledgeVectorConfigured } from '../../../../../lib/ai/system-knowledge-vector';
-import { fetchChallengeAlmogContextBlock } from '../../../../../lib/challenge/almog-context';
-import { scanChallengeSuccessFromChat } from '../../../../../lib/challenge/scan-chat-success';
+import { fetchChallengeAlmogContextBlock } from '@/lib/module-api/journey/lib-challenge-almog-context';
+import { scanChallengeSuccessFromChat } from '@/lib/module-api/journey/lib-challenge-scan-chat-success';
 import { fetchUserEnrolledCourseIds } from '../../../../../lib/api/rag-chat-access';
 import { isUpstashVectorConfigured } from '../../../../../lib/ai/upstash-vector-rest';
 import { createPiiShield, type PiiShield } from '../../../../../lib/ai/privacy/pii-shield';
@@ -125,14 +125,14 @@ import {
   fetchAlmogCommitmentContext,
   EMPTY_ALMOG_COMMITMENT_CONTEXT,
   formatAlmogCommitmentBlocks,
-} from '../../../../../lib/ai/almog-commitments/chat-context';
+} from '@/lib/module-api/reminders/lib-ai-almog-commitments-chat-context';
 import {
   shouldAttemptCommitmentExtraction,
   detectExplicitReminderPromise,
   mentionsReminderKeyword,
-} from '../../../../../lib/ai/almog-commitments/extract-commitments';
-import { enqueueAlmogCommitmentJob } from '../../../../../lib/ai/almog-commitments/enqueue-commitment-job';
-import { processPendingAlmogCommitmentJobs } from '../../../../../lib/ai/almog-commitments/process-pending-commitment-jobs';
+} from '@/lib/module-api/reminders/lib-ai-almog-commitments-extract-commitments';
+import { enqueueAlmogCommitmentJob } from '@/lib/module-api/reminders/lib-ai-almog-commitments-enqueue-commitment-job';
+import { processPendingAlmogCommitmentJobs } from '@/lib/module-api/reminders/lib-ai-almog-commitments-process-pending-commitment-jobs';
 import { applyChatSignalsFromUserMessage, detectChatSignals } from '../../../../../lib/ai/chat-signals';
 import {
   applyHabitIntentFromUserMessage,
@@ -187,20 +187,20 @@ import {
 } from '../../../../../lib/ai/journey-follow-up-promise';
 import { sendTaskCompletionCelebration } from '../../../../../lib/ai/send-task-completion-celebration';
 import { applyGuideAccessFromSignals } from '../../../../../lib/ai/chat-guide-access';
-import { fetchUserGuideSummaries } from '../../../../../lib/guides/fetch-user-guides';
-import { formatGuidesStateForAi, formatGuideCompanionForAi } from '../../../../../lib/guides/progress';
+import { fetchUserGuideSummaries } from '@/lib/module-api/journey/lib-guides-fetch-user-guides';
+import { formatGuidesStateForAi, formatGuideCompanionForAi } from '@/lib/module-api/journey/lib-guides-progress';
 import { createAdminClient } from '../../../../../lib/supabase/admin';
-import { healthConsentStatus } from '../../../../../lib/privacy/health-consent';
-import { detectConsentChangeIntent } from '../../../../../lib/legal/consent-chat-intent';
-import { respondWithConsentOffer } from '../../../../../lib/legal/consent-chat-offer';
+import { healthConsentStatus } from '@/lib/module-api/privacy-retention/lib-privacy-health-consent';
+import { detectConsentChangeIntent } from '@/lib/module-api/legal/lib-legal-consent-chat-intent';
+import { respondWithConsentOffer } from '@/lib/module-api/legal/lib-legal-consent-chat-offer';
 import {
   HEALTH_CONSENT_OFF_PROMPT,
   REDACTED_CONTENT,
   isHealthChatMessage,
   respondWithHealthRedaction,
   sanitizeIncomingMessages,
-} from '../../../../../lib/privacy/health-chat-redaction';
-import { formatGuideRulesForAi, readGuideRules } from '../../../../../lib/guides/guide-rules';
+} from '@/lib/module-api/privacy-retention/lib-privacy-health-chat-redaction';
+import { formatGuideRulesForAi, readGuideRules } from '@/lib/module-api/journey/lib-guides-guide-rules';
 import {
   fetchTodayChatTurns,
   formatDailyShortTermBlock,
@@ -221,8 +221,8 @@ import {
 import { buildAdminUserJourneyReport } from '../../../../../lib/admin/build-user-journey-report';
 import { formatUserProgressForAi } from '../../../../../lib/ai/format-user-progress-for-ai';
 import { readJsonBody } from '../../../../../lib/api/json-request';
-import { formatNotificationReplyContextBlock } from '../../../../../lib/notifications/notification-chat-context';
-import { extractSource } from '../../../../../lib/notifications/replyable';
+import { formatNotificationReplyContextBlock } from '@/lib/module-api/notifications/lib-notifications-notification-chat-context';
+import { extractSource } from '@/lib/module-api/notifications/lib-notifications-replyable';
 import {
   consumeMultiRateLimits,
   rateLimitResponse,
@@ -2645,7 +2645,7 @@ async function handleChatPost(request: Request) {
    */
   const profilePromise = fetchChatProfileRow(supabase, user.id);
   /** unified task plan (main tasks + ladder levels + recent level changes) — started early, awaited at prompt build */
-  const taskPlanPromise = import('../../../../../lib/tasks')
+  const taskPlanPromise = import('@/lib/module-api/journey/lib-tasks')
     .then(({ getPlan }) => getPlan(createAdminClient(), user.id))
     .catch(() => null);
   /** perf: מתחיל מיד כש-profile מוכן (במקביל לנתב), במקום אחרי כל שליפות ההקשר. */
@@ -3650,10 +3650,10 @@ async function handleChatPost(request: Request) {
     {
       const plan = await taskPlanPromise;
       if (plan && plan.length) {
-        const { planForPrompt, changeTaskLevel } = await import('../../../../../lib/tasks');
+        const { planForPrompt, changeTaskLevel } = await import('@/lib/module-api/journey/lib-tasks');
         /** explicit "make it easier/harder" → do it for real before the reply (no claimed-but-not-done actions) */
         if (!parsed.data.resume_assistant) {
-          const { detectLevelIntent } = await import('../../../../../lib/tasks/chat-intent');
+          const { detectLevelIntent } = await import('@/lib/module-api/journey/lib-tasks-chat-intent');
           const accepted = plan.filter((t) => t.status === 'accepted');
           const intent = detectLevelIntent(lastUserText, accepted.map((t) => t.level.title));
           const target = intent ? accepted[intent.targetIndex] : null;
@@ -4844,7 +4844,7 @@ async function handleChatPost(request: Request) {
                 const uiPlan = (await taskPlanPromise) ?? [];
                 const offers =
                   rawUi.pick === 'offer'
-                    ? await import('../../../../../lib/tasks').then(({ listOffers }) => listOffers(createAdminClient(), user.id)).catch(() => [])
+                    ? await import('@/lib/module-api/journey/lib-tasks').then(({ listOffers }) => listOffers(createAdminClient(), user.id)).catch(() => [])
                     : [];
                 const ui = resolveChatUi(rawUi, uiPlan, offers);
                 if (hasResolvedContent(ui)) {

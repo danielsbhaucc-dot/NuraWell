@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { TaskLadderCard, type LadderCardTask } from '@/components/plans/TaskLadderCard';
+import { TaskLadderCard, type LadderCardTask } from '@/lib/module-api/billing/components-plans-TaskLadderCard';
 
 /** Lesson screen: the accepted task(s) of this step, read from the unified task model (levels + ladder actions). */
 export function LessonTaskLevels({ stepId }: { stepId: string }) {

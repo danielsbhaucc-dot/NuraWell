@@ -150,8 +150,8 @@ export async function sendOwnerCodeEmail(db: SupabaseClient, code: string, fromT
     to = u.user?.email ?? null;
   }
   if (!to) return false;
-  const { sendResendEmail } = await import('@/lib/email/resend');
-  const { emailCode, emailNotice, emailParagraph, renderEmailLayout } = await import('@/lib/email/layout');
+  const { sendResendEmail } = await import('@/lib/module-api/notifications/lib-email-resend');
+  const { emailCode, emailNotice, emailParagraph, renderEmailLayout } = await import('@/lib/module-api/notifications/lib-email-layout');
   const { GIDEON_EMAIL_FROM } = await import('@/lib/ops/device-notify');
   const { publicAppBaseNoSlashSync } = await import('@/lib/public-app-url');
   const subject = 'קוד אימות לחשבון טלגרם חדש בגדעון';

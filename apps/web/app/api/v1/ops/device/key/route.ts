@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { requireApiAdmin } from '@/lib/api/route-guards';
 import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { resolveRp } from '@/lib/auth/passkeys';
+import { resolveRp } from '@/lib/module-api/auth-signup/lib-auth-passkeys';
 import { cookieOpts, DEVICE_COOKIE, DEVICE_MAX_AGE_S, PENDING_COOKIE, requestForPendingCookie } from '@/lib/ops/device-trust';
 import { KEY_CHALLENGE_COOKIE, keyLoginOptions, keyRegistrationOptions, listKeys, redeemKeyTap, removeKey, verifyKeyRegistration } from '@/lib/ops/security-keys';
 import { alertOwnerSecurity } from '@/lib/ops/device-notify';

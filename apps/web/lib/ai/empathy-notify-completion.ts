@@ -13,9 +13,9 @@ import {
   isGroqLaneAvailable,
 } from './groq-compat';
 import { ALMOG_NOTIFY_MAX_OUTPUT_TOKENS } from './prompts';
-import { stripReasoningArtifacts, validateNotifyText } from '../notifications/validate-notify-text';
-import type { NotifyGender } from '../notifications/notify-hebrew-lint';
-import { qcNotifyText } from '../notifications/notify-qc';
+import { stripReasoningArtifacts, validateNotifyText } from '@/lib/module-api/notifications/lib-notifications-validate-notify-text';
+import type { NotifyGender } from '@/lib/module-api/notifications/lib-notifications-notify-hebrew-lint';
+import { qcNotifyText } from '@/lib/module-api/notifications/lib-notifications-notify-qc';
 import {
   applyAutoFixRules,
   categoryFromReason,
@@ -23,7 +23,7 @@ import {
   logNotifyQualityEvents,
   styleRulesPromptBlock,
   type NotifyQualityEvent,
-} from '../notifications/quality-learning';
+} from '@/lib/module-api/notifications/lib-notifications-quality-learning';
 
 /**
  * 📣 מנוע יצירת טקסט להתראות אלמוג.

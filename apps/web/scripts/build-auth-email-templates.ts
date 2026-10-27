@@ -6,7 +6,7 @@
  */
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { dolevSignature, emailCode, emailFallbackLink, emailNotice, emailParagraph, renderEmailLayout } from '../lib/email/layout';
+import { dolevSignature, emailCode, emailFallbackLink, emailNotice, emailParagraph, renderEmailLayout } from '@/lib/module-api/notifications/lib-email-layout';
 
 const URL_VAR = '{{ .ConfirmationURL }}';
 const SITE = '{{ .SiteURL }}';

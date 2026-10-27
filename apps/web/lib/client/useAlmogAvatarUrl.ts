@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { ALMOG_AVATAR_FALLBACK } from '../ai/almog-avatar';
+import { ALMOG_AVATAR_FALLBACK } from '@/lib/module-api/agent/lib-ai-almog-avatar';
 
 export type AlmogAvatarMeta = {
   avatarUrl: string;

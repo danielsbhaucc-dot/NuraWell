@@ -5,7 +5,7 @@ import {
   generateAuthenticationOptions, generateRegistrationOptions, verifyAuthenticationResponse, verifyRegistrationResponse,
   type AuthenticationResponseJSON, type RegistrationResponseJSON,
 } from '@simplewebauthn/server';
-import { consumeChallenge, storeChallenge, RP_NAME } from '@/lib/auth/passkeys';
+import { consumeChallenge, storeChallenge, RP_NAME } from '@/lib/module-api/auth-signup/lib-auth-passkeys';
 import { acceptAdminKey, adminKeyRegistrationPolicy, ADMIN_KEY_TIMEOUT_MS, counterOk, keyLimitReached } from '@/lib/security-core/webauthn-policy';
 import { audit, consumeApproved, decideRequest, type LoginRequest } from './device-trust';
 

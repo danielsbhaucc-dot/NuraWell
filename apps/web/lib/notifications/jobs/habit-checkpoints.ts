@@ -4,9 +4,9 @@ import { NextResponse } from 'next/server';
 import { Client as WorkflowClient } from '@upstash/workflow';
 import { authorizeCronRequest } from '@/lib/api/authorize-cron';
 import { maybeReturnCronIdleSkip } from '@/lib/api/cron-idle-guard';
-import { normalizeCheckInTimes } from '@/lib/ai/onboarding-check-in-time';
+import { normalizeCheckInTimes } from '@/lib/module-api/agent/lib-ai-onboarding-check-in-time';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { habitCheckpointSlotSchema } from '@/lib/workflows/almog-habit-checkpoint-payload';
+import { habitCheckpointSlotSchema } from '@/lib/module-api/reminders/lib-workflows-almog-habit-checkpoint-payload';
 import {
   fetchTrueLastActiveByUser,
   planHabitCheckpointTriggersWithChat,
@@ -16,33 +16,33 @@ import {
   type ReengagementUserInfo,
   type UserResponseInfo,
   presenceCooldownDaysForCadenceStage,
-} from '@/lib/workflows/habit-checkpoint-batch';
-import { isChurnReengagementEnabled, isPassivePresenceEnabled } from '@/lib/churn/feature-flags';
-import { readReengagementContext } from '@/lib/churn/patch-reengagement-context';
-import { updateEngagementStatuses } from '@/lib/churn/update-engagement-status';
+} from '@/lib/module-api/reminders/lib-workflows-habit-checkpoint-batch';
+import { isChurnReengagementEnabled, isPassivePresenceEnabled } from '@/lib/module-api/reminders/lib-churn-feature-flags';
+import { readReengagementContext } from '@/lib/module-api/reminders/lib-churn-patch-reengagement-context';
+import { updateEngagementStatuses } from '@/lib/module-api/reminders/lib-churn-update-engagement-status';
 import {
   goalToHebrew,
   obstacleToHebrew,
-} from '@/lib/churn/reengagement-prompt-blocks';
-import { jerusalemDateKey } from '@/lib/journey/task-schedule';
-import { workflowPublicBaseUrl } from '@/lib/workflows/resolve-workflow-public-url';
+} from '@/lib/module-api/reminders/lib-churn-reengagement-prompt-blocks';
+import { jerusalemDateKey } from '@/lib/module-api/journey/lib-journey-task-schedule';
+import { workflowPublicBaseUrl } from '@/lib/module-api/reminders/lib-workflows-resolve-workflow-public-url';
 import {
   computeRiskFingerprintForUser,
   persistRiskFingerprint,
-} from '@/lib/ai/risk-fingerprint-llm';
+} from '@/lib/module-api/agent/lib-ai-risk-fingerprint-llm';
 import {
   isGuardianFingerprintEnabled,
   isGuardianProactiveEnabled,
-} from '@/lib/ai/guardian/guardian-feature-flags';
-import { guardianSchedulesForToday } from '@/lib/ai/risk-window';
-import { guardianOptedIn } from '@/lib/ai/guardian/guardian-gates';
-import { scheduleGuardianTrigger } from '@/lib/ai/guardian/qstash-scheduler';
-import { runMentorshipSynthesisBatch } from '@/lib/ai/mentorship/run-synthesis-batch';
-import { fetchRecoveryStatesForUsers } from '@/lib/ai/almog-commitments/recovery-state';
+} from '@/lib/module-api/agent/lib-ai-guardian-guardian-feature-flags';
+import { guardianSchedulesForToday } from '@/lib/module-api/agent/lib-ai-risk-window';
+import { guardianOptedIn } from '@/lib/module-api/agent/lib-ai-guardian-guardian-gates';
+import { scheduleGuardianTrigger } from '@/lib/module-api/agent/lib-ai-guardian-qstash-scheduler';
+import { runMentorshipSynthesisBatch } from '@/lib/module-api/agent/lib-ai-mentorship-run-synthesis-batch';
+import { fetchRecoveryStatesForUsers } from '@/lib/module-api/reminders/lib-ai-almog-commitments-recovery-state';
 import {
   fetchPendingPlanAssignmentsForUsers,
   mergePendingPlanAssignmentsIntoCheckpoints,
-} from '@/lib/ai/almog-commitments/plans-page-tracking';
+} from '@/lib/module-api/reminders/lib-ai-almog-commitments-plans-page-tracking';
 
 
 const PROGRESS_SELECTS = [
@@ -740,11 +740,11 @@ async function runHabitCheckpointCron(request: Request) {
    * רץ ב-slot=b morning (08:00 ישראל) — בלי schedule נפרד.
    */
   let challengeDaily: Awaited<
-    ReturnType<typeof import('@/lib/challenge/run-challenge-cron').runChallengeDailyCron>
+    ReturnType<typeof import('@/lib/module-api/journey/lib-challenge-run-challenge-cron').runChallengeDailyCron>
   > | { error: string } | null = null;
   if (slot === 'morning') {
     try {
-      const { runChallengeDailyCron } = await import('@/lib/challenge/run-challenge-cron');
+      const { runChallengeDailyCron } = await import('@/lib/module-api/journey/lib-challenge-run-challenge-cron');
       challengeDaily = await runChallengeDailyCron(admin, { dryRun: isDryRun });
       console.log('[habit-checkpoints] challenge_daily', JSON.stringify(challengeDaily));
     } catch (e) {

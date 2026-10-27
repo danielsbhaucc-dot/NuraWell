@@ -19,11 +19,11 @@ import { OnboardingSummaryStep } from './OnboardingSummaryStep';
 import {
   HealthDataConsentBlock,
   LegalConsentCheckbox,
-} from '@/components/legal/PrivacyConsentFields';
-import type { ConsentCollected } from '@/components/legal/ConsentEvidenceSheet';
-import { validateBirthDate } from '@/lib/privacy/age-validation';
+} from '@/lib/module-api/legal/components-legal-PrivacyConsentFields';
+import type { ConsentCollected } from '@/lib/module-api/legal/components-legal-ConsentEvidenceSheet';
+import { validateBirthDate } from '@/lib/module-api/privacy-retention/lib-privacy-age-validation';
 import { SCREENING_GUIDANCE } from '@/lib/onboarding/safety-screening';
-import { RetentionChoicePicker } from '@/components/privacy/RetentionChoicePicker';
+import { RetentionChoicePicker } from '@/lib/module-api/privacy-retention/components-privacy-RetentionChoicePicker';
 import type { RetentionChoice } from '@saas/billing';
 
 const TOTAL_STEPS = 6;

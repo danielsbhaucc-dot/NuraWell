@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import { consumeRateLimit, rateLimitResponse } from '@/lib/api/rate-limit';
-import { audit } from '@/lib/auth/passkeys';
+import { audit } from '@/lib/module-api/auth-signup/lib-auth-passkeys';
 import { hasSensitiveStepUp } from '@/lib/ops/sensitive-stepup';
 import { ensureKmsKeysSync, googleIdTokenForAudience, kmsEnvelopeStatus } from '@/lib/security/kms-envelope';
 import { kmsRotatorUrl } from '@/lib/security/kms-rotation';

@@ -1,6 +1,6 @@
-import type { MainGoal, MainObstacle, OnboardingGender, WeakestTimeOfDay } from '../onboarding/types';
-import type { MealScheduleEntry } from '../onboarding/meal-schedule';
-import { formatMealScheduleForPrompt } from '../onboarding/meal-schedule';
+import type { MainGoal, MainObstacle, OnboardingGender, WeakestTimeOfDay } from '@/lib/module-api/auth-signup/lib-onboarding-types';
+import type { MealScheduleEntry } from '@/lib/module-api/auth-signup/lib-onboarding-meal-schedule';
+import { formatMealScheduleForPrompt } from '@/lib/module-api/auth-signup/lib-onboarding-meal-schedule';
 
 export type MentorPromptProfile = {
   full_name: string;

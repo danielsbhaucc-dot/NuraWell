@@ -7,7 +7,7 @@ import { ProgressPageClient } from '../../../components/course/ProgressPageClien
 import { jerusalemDateKey } from '../../../lib/journey/task-schedule';
 import { parseJourneyTasksFull } from '../../../lib/journey/journey-report-parse';
 import { buildDailyAggregateDays } from '../../../lib/journey/build-daily-aggregate-days';
-import { firstNameFrom, type ProfileGender } from '../../../lib/profile/personalized-copy';
+import { firstNameFrom, type ProfileGender } from '@/lib/module-api/auth-signup/lib-profile-personalized-copy';
 
 export const metadata: Metadata = {
   title: 'ההתקדמות שלי',

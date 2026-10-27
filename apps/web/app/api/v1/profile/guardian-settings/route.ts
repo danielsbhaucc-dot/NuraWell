@@ -5,7 +5,7 @@ import { z } from 'zod';
 import {
   readGuardianUserSettings,
   updateGuardianUserSettings,
-} from '../../../../../lib/ai/guardian/guardian-user-settings';
+} from '@/lib/module-api/agent/lib-ai-guardian-guardian-user-settings';
 import { readJsonBody } from '../../../../../lib/api/json-request';
 import { requireApiSession } from '../../../../../lib/api/route-guards';
 import { jsonZodError } from '../../../../../lib/validation/zod-http';

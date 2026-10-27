@@ -7,7 +7,7 @@ import { APP_HOME_PATH } from '../../lib/navigation/app-home-path';
 import { cn } from '../../lib/cn';
 import { motion } from 'framer-motion';
 import { useEffect } from 'react';
-import { useActionHub } from '../action-hub/ActionHubProvider';
+import { useActionHub } from '@/lib/module-api/journey/components-action-hub-ActionHubProvider';
 import { runWhenIdle } from '../../lib/client/run-when-idle';
 
 const leftItems = [

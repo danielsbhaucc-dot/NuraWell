@@ -1,4 +1,4 @@
-import { getPublicCdnImageUrl } from '@/lib/cdn/public-images';
+import { getPublicCdnImageUrl } from '@/lib/module-api/site-content/lib-cdn-public-images';
 
 /** מפתח אובייקט R2 לרקע מדריך. */
 export function guideBackgroundObjectKey(guideId: string): string {

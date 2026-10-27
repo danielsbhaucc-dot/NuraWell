@@ -10,10 +10,10 @@ import { TranscriptAccessRequestDialog } from '@/components/settings/TranscriptA
 import {
   TranscriptAccessTransparencyPanel,
 } from '@/components/settings/TranscriptAccessTransparencyPanel';
-import type { TranscriptAccessGrant } from '@/lib/privacy/transcript-access-grants';
-import type { ProfileGender } from '@/lib/privacy/gender-hebrew';
+import type { TranscriptAccessGrant } from '@/lib/module-api/privacy-retention/lib-privacy-transcript-access-grants';
+import type { ProfileGender } from '@/lib/module-api/privacy-retention/lib-privacy-gender-hebrew';
 import { signOutClient } from '@/lib/auth/sign-out-client';
-import { LegalLinksRow } from '@/components/legal/LegalLinksRow';
+import { LegalLinksRow } from '@/lib/module-api/legal/components-legal-LegalLinksRow';
 import { HealthConsentSection } from '@/components/settings/HealthConsentSection';
 import { RetentionChoiceSection } from '@/components/settings/RetentionChoiceSection';
 

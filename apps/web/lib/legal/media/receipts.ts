@@ -142,7 +142,7 @@ export async function aiParseFallback(admin: SupabaseClient, masked: string): Pr
   const cap = Number(process.env.RECEIPTS_AI_DAILY_CAP_USD ?? 0.05);
   const { data } = await admin.from('ai_usage_events').select('cost_usd').eq('feature', RECEIPTS_AI_FEATURE).gte('created_at', new Date(Date.now() - 86400_000).toISOString()).limit(5000);
   if ((data ?? []).reduce((s, r) => s + Number((r as { cost_usd?: number }).cost_usd ?? 0), 0) >= cap) return null;
-  const { meteredFetch } = await import('@/lib/ai/usage-meter');
+  const { meteredFetch } = await import('@/lib/module-api/agent/lib-ai-usage-meter');
   try {
     const res = await meteredFetch(fetch, { userId: null, feature: RECEIPTS_AI_FEATURE })('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST', signal: AbortSignal.timeout(15_000), headers: { Authorization: `Bearer ${key}`, 'content-type': 'application/json' },

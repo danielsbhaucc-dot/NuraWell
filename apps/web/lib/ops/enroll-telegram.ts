@@ -1,9 +1,9 @@
 import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { isEnrollCommand } from '@platform/access';
-import type { CeoChannel } from '@/lib/ceo/channel';
-import { allowedChatIds } from '@/lib/ceo/channel';
-import type { Update } from '@/lib/ceo/webhook';
+import type { CeoChannel } from '@/lib/module-api/gideon/lib-ceo-channel';
+import { allowedChatIds } from '@/lib/module-api/gideon/lib-ceo-channel';
+import type { Update } from '@/lib/module-api/gideon/lib-ceo-webhook';
 import { opsCanonicalHostname } from '@/lib/ops-host';
 import { audit, revokeDevice } from './device-trust';
 import { revokeDeviceSessions } from './admin-session';

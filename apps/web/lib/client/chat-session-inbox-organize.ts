@@ -17,7 +17,7 @@ export type InboxSession = {
   updated_at: string;
   preview_text: string | null;
   message_count: number;
-  close_reason?: import('../ai/chat-sessions/close-reason').ChatCloseReason | null;
+  close_reason?: import('@/lib/module-api/agent/lib-ai-chat-sessions-close-reason').ChatCloseReason | null;
 };
 
 export type InboxTimeFolderId = 'all' | 'open' | 'today' | 'week' | 'summary';

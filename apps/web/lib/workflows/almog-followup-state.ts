@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { normalizeTaskSchedule } from '../journey/task-schedule';
+import { normalizeTaskSchedule } from '@/lib/module-api/journey/lib-journey-task-schedule';
 import type { JourneyTaskSchedule } from '../types/journey';
 
 export type AlmogFollowupUserState = {

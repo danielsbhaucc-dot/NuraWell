@@ -3,16 +3,16 @@ import { NextResponse } from 'next/server';
 import { authorizeCronRequest } from '@/lib/api/authorize-cron';
 import { maybeReturnCronIdleSkip } from '@/lib/api/cron-idle-guard';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { isAvoidPushActive } from '@/lib/ai/avoid-push';
-import { isPassivePresenceEnabled } from '@/lib/churn/feature-flags';
-import { daysBetween, fetchTrueLastActiveByUser } from '@/lib/workflows/habit-checkpoint-batch';
+import { isAvoidPushActive } from '@/lib/module-api/agent/lib-ai-avoid-push';
+import { isPassivePresenceEnabled } from '@/lib/module-api/reminders/lib-churn-feature-flags';
+import { daysBetween, fetchTrueLastActiveByUser } from '@/lib/module-api/reminders/lib-workflows-habit-checkpoint-batch';
 import {
   passivePresenceAllowed,
   passivePresenceGateDays,
   planPassiveTouchForUser,
-} from '@/lib/churn/passive-presence-batch';
-import { patchPassiveTouch } from '@/lib/churn/patch-reengagement-context';
-import { sendPassivePresenceNotification } from '@/lib/churn/send-passive-presence-notification';
+} from '@/lib/module-api/reminders/lib-churn-passive-presence-batch';
+import { patchPassiveTouch } from '@/lib/module-api/reminders/lib-churn-patch-reengagement-context';
+import { sendPassivePresenceNotification } from '@/lib/module-api/reminders/lib-churn-send-passive-presence-notification';
 import { afterAlmogInAppNotification } from '@/lib/notifications/after-almog-insert';
 
 

@@ -10,7 +10,7 @@ import {
   audit, revokeDevice, startLoginRequest, unusedCodeCount,
 } from '@/lib/ops/device-trust';
 import { alertOwnerSecurity, sendLoginEmail, sendTelegramLoginCard } from '@/lib/ops/device-notify';
-import { killSwitch } from '@/lib/ceo/security';
+import { killSwitch } from '@/lib/module-api/gideon/lib-ceo-security';
 import { hasSensitiveStepUp } from '@/lib/ops/sensitive-stepup';
 import { passwordRotationRequired } from '@/lib/ops/password-rotation';
 

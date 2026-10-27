@@ -13,7 +13,7 @@ import Link from 'next/link';
 import { OnboardingChat } from './OnboardingChat';
 import { ProfileAvatarUpload } from './ProfileAvatarUpload';
 import { ProfileSettingsDrawer } from './ProfileSettingsDrawer';
-import { LegalLinksRow } from '../legal/LegalLinksRow';
+import { LegalLinksRow } from '@/lib/module-api/legal/components-legal-LegalLinksRow';
 import { AnimatedDialog } from '../shared/AnimatedDialog';
 import { useProfileAvatarUrl } from '@/lib/client/useProfileAvatarUrl';
 import {

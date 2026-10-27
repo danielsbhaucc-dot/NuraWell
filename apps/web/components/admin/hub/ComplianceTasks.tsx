@@ -8,7 +8,7 @@ import { Divider } from './Divider';
 import {
   OWNER_HE, RECURRENCE_HE, STATUSES, STATUS_HE, daysBetween, dueState,
   type ComplianceTask, type DueState, type TaskStatus,
-} from '@/lib/legal/compliance-tasks';
+} from '@/lib/module-api/legal/lib-legal-compliance-tasks';
 
 type Data = { today: string; tasks: ComplianceTask[] };
 

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { habitIcon } from '@/lib/journey/habit-icons';
+import { habitIcon } from '@/lib/module-api/journey/lib-journey-habit-icons';
 
 export type MapStation = { id: string; title: string; total: number; done: number; state: 'done' | 'current' | 'locked'; habitKey?: string | null };
 

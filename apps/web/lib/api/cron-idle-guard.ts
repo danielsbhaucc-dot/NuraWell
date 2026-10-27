@@ -1,11 +1,11 @@
-import { countNotifyEligibleProfiles } from '@/lib/notifications/notify-recipients';
+import { countNotifyEligibleProfiles } from '@/lib/module-api/notifications/lib-notifications-notify-recipients';
 import { NextResponse } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import {
   isCheckInDueNow,
   normalizeCheckInTimes,
-} from '../ai/onboarding-check-in-time';
+} from '@/lib/module-api/agent/lib-ai-onboarding-check-in-time';
 
 /**
  * Early exit ל-cron routes כשאין עבודה רלוונטית — חוסך Fluid CPU.

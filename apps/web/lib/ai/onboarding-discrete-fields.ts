@@ -1,5 +1,5 @@
 import type { OnboardingExtracted } from './onboarding-chat-llm';
-import { imperativeDontWrite, type ProfileGender } from '../profile/personalized-copy';
+import { imperativeDontWrite, type ProfileGender } from '@/lib/module-api/auth-signup/lib-profile-personalized-copy';
 
 /** שדות רגישים — נאספים בערוץ דיסקרטי, לא בטקסט חופשי בצ'אט. */
 export const DISCRETE_FIELD_KEYS = [

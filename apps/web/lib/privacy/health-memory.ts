@@ -85,7 +85,7 @@ export async function scrubHealthFromMemory(
     const { error } = await admin.from('user_insights').delete().in('id', insIds);
     if (error) throw new Error(error.message);
     res.insights = insIds.length;
-    const { insightVectorId } = await import('@/lib/ai/insights/sync-insight-vector');
+    const { insightVectorId } = await import('@/lib/module-api/agent/lib-ai-insights-sync-insight-vector');
     for (const id of insIds) vectorIds.push(insightVectorId(id));
   }
 
@@ -139,9 +139,9 @@ export async function scrubHealthFromMemory(
     deps?.deleteVectors ??
     (async (ids: string[]) => {
       const { deleteVectorsByIds, isUpstashVectorConfigured, listUserMemoryVectors } = await import(
-        '@/lib/ai/upstash-vector-rest'
+        '@/lib/module-api/agent/lib-ai-upstash-vector-rest'
       );
-      const { UPSTASH_NAMESPACE_USER_MEMORY } = await import('@/lib/ai/rag-config');
+      const { UPSTASH_NAMESPACE_USER_MEMORY } = await import('@/lib/module-api/agent/lib-ai-rag-config');
       if (!isUpstashVectorConfigured()) return;
       const extra = (await listUserMemoryVectors(userId))
         .filter((v) => v.id && isHealthMemory(v.category, v.text))

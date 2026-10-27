@@ -9,9 +9,9 @@ import {
   detectExplicitReminderPromise,
   detectUserReminderRequest,
   mentionsReminderKeyword,
-} from '../../../../../lib/ai/almog-commitments/extract-commitments';
-import { persistCommitmentExtraction } from '../../../../../lib/ai/almog-commitments/persist';
-import { workflowPublicBaseUrl } from '../../../../../lib/workflows/resolve-workflow-public-url';
+} from '@/lib/module-api/reminders/lib-ai-almog-commitments-extract-commitments';
+import { persistCommitmentExtraction } from '@/lib/module-api/reminders/lib-ai-almog-commitments-persist';
+import { workflowPublicBaseUrl } from '@/lib/module-api/reminders/lib-workflows-resolve-workflow-public-url';
 
 /**
  * /api/v1/ai/diagnose-commitment

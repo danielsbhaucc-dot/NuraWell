@@ -9,7 +9,7 @@ import {
   ALMOG_AVATAR_OBJECT_KEY,
   getR2Client,
   r2ImageBucketName,
-} from '../../../../lib/storage/r2-almog';
+} from '@/lib/module-api/site-content/lib-storage-r2-almog';
 
 export const runtime = 'nodejs';
 

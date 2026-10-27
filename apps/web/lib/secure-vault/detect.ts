@@ -1,4 +1,4 @@
-import { applyPiiDetectors, type PiiKind } from '@/lib/ai/privacy/pii-patterns';
+import { applyPiiDetectors, type PiiKind } from '@/lib/module-api/agent/lib-ai-privacy-pii-patterns';
 import type { VaultKind } from './crypto-labels';
 
 const MAP: Partial<Record<PiiKind, VaultKind>> = {

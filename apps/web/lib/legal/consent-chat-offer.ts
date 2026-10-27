@@ -6,7 +6,7 @@
 import { almogConsentReply, resolveConsentOffer } from './consent-chat-intent';
 import type { ConsentAction } from './consent-text';
 import { normalizeGender } from './consent-text';
-import { isHealthChatMessage } from '../privacy/health-chat-redaction';
+import { isHealthChatMessage } from '@/lib/module-api/privacy-retention/lib-privacy-health-chat-redaction';
 
 export const CONSENT_REQUEST_PLACEHOLDER = 'בקשה לעדכון ההסכמה למידע בריאותי';
 
@@ -36,7 +36,7 @@ export async function respondWithConsentOffer(p: {
   }
   let granted = false;
   try {
-    const lookup = p.statusLookup ?? (async (id: string) => (await import('../privacy/health-consent')).healthConsentStatus(id));
+    const lookup = p.statusLookup ?? (async (id: string) => (await import('@/lib/module-api/privacy-retention/lib-privacy-health-consent')).healthConsentStatus(id));
     granted = (await lookup(p.userId)) === 'granted';
   } catch {
     granted = false;

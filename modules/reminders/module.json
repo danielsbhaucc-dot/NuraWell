@@ -9,14 +9,18 @@
   "toggleable": true,
   "alwaysOn": [],
   "owns": [
-    "apps/web/lib/ai/almog-commitments/",
-    "apps/web/lib/workflows/",
-    "apps/web/lib/churn/",
     "apps/web/app/api/v1/ai/cron/almog-reminders/",
-    "apps/web/app/api/v1/churn-feedback/",
     "apps/web/app/api/v1/almog-followup/",
     "apps/web/app/api/v1/almog-kickoff/",
-    "apps/web/app/api/workflows/almog-onboarding-kickoff/"
+    "apps/web/app/api/v1/churn-feedback/",
+    "apps/web/app/api/workflows/almog-onboarding-kickoff/",
+    "apps/web/lib/ai/almog-commitments/",
+    "apps/web/lib/churn/",
+    "apps/web/lib/module-api/reminders/",
+    "apps/web/lib/workflows/"
   ],
-  "description": "Reminders, follow-ups and re-engagement with stale-expiry."
+  "description": "Reminders, follow-ups and re-engagement with stale-expiry.",
+  "api": [
+    "apps/web/lib/module-api/reminders/"
+  ]
 }

@@ -8,7 +8,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { isHabitMarkedDoneToday } from './almog-daily-context';
 import { daysSinceIso } from './cron-ops-action';
 import type { AiUserContext } from './memory';
-import { parseJourneyHabitsJson } from '../workflows/habit-checkpoint-eligibility';
+import { parseJourneyHabitsJson } from '@/lib/module-api/reminders/lib-workflows-habit-checkpoint-eligibility';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

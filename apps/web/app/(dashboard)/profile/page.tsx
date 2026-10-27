@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '../../../lib/supabase/server';
 import { ProfilePageClient } from '../../../components/profile/ProfilePageClient';
 import { resolveDisplayWeightKg } from '../../../lib/profile/profile-field-ssot';
-import { CurrentPlanCard } from '../../../components/billing/CurrentPlanCard';
+import { CurrentPlanCard } from '@/lib/module-api/billing/components-billing-CurrentPlanCard';
 import { isDemoAccessActiveForUser } from '../../../lib/demo-access/server';
 
 export const metadata: Metadata = {

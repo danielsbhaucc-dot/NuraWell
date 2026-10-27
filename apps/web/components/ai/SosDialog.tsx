@@ -6,12 +6,12 @@ import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Check, Loader2, MessageCircle, Snowflake, Sparkles, Volume2, X, ArrowRight } from 'lucide-react';
 
-import { useDialogA11y } from '@/lib/a11y/use-dialog-a11y';
+import { useDialogA11y } from '@/lib/module-api/a11y/lib-a11y-use-dialog-a11y';
 import { AnimatedDialog } from '../shared/AnimatedDialog';
-import { AlmogAvatarChip } from '../journey/AlmogPresence';
+import { AlmogAvatarChip } from '@/lib/module-api/journey/components-journey-AlmogPresence';
 
-import type { FrictionCategory, StrategyType } from '../../lib/ai/almog-commitments/friction';
-import { FRICTION_META } from '../../lib/ai/almog-commitments/friction';
+import type { FrictionCategory, StrategyType } from '@/lib/module-api/reminders/lib-ai-almog-commitments-friction';
+import { FRICTION_META } from '@/lib/module-api/reminders/lib-ai-almog-commitments-friction';
 import {
   SOS_ALMOG_BUBBLE,
   SOS_ALMOG_BUBBLE_TEXT,
@@ -37,16 +37,16 @@ import {
   type SosQuickTriggerId,
   sosSurface,
 } from '../../lib/ai/sos-dialog-surfaces';
-import type { OnboardingGender } from '../../lib/onboarding/types';
-import { genderCopy } from '../../lib/onboarding/gender-copy';
+import type { OnboardingGender } from '@/lib/module-api/auth-signup/lib-onboarding-types';
+import { genderCopy } from '@/lib/module-api/auth-signup/lib-onboarding-gender-copy';
 import { useSosTts } from './useSosTts';
 import type {
   SosFocusTask,
 } from '../../lib/ai/guardian/sos-memory';
-import { jerusalemDateKey } from '../../lib/journey/task-schedule';
+import { jerusalemDateKey } from '@/lib/module-api/journey/lib-journey-task-schedule';
 import {
   dispatchOpenAlmogChatWithPrefill,
-} from '../../lib/notifications/open-almog-chat';
+} from '@/lib/module-api/notifications/lib-notifications-open-almog-chat';
 import type { JourneyTaskSlot } from '../../lib/types/journey';
 
 type SosMode = 'intervention' | 'escalation' | 'slow_down' | 'pivot';

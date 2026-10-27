@@ -2,7 +2,7 @@ import 'server-only';
 import { tool } from 'ai';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { z } from 'zod';
-import { changeTaskLevel, getPlan } from '@/lib/tasks';
+import { changeTaskLevel, getPlan } from '@/lib/module-api/journey/lib-tasks';
 
 /**
  * Almog chat tool: when the user says a task is too hard / too easy, Almog steps the MAIN task

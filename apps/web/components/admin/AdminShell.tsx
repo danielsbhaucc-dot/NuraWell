@@ -33,8 +33,8 @@ import { cn } from '../../lib/cn';
 import { OpsSessionGuard } from './OpsSessionGuard';
 import { AdminAiAssistantCard } from './AdminAiAssistantCard';
 import { AdminNotificationsBell } from './AdminNotificationsBell';
-import { MediaManagerProvider } from '@/components/media-manager/MediaManagerProvider';
-import { AdminMediaManagerLauncher } from '@/components/media-manager/AdminMediaManagerLauncher';
+import { MediaManagerProvider } from '@/lib/module-api/site-content/components-media-manager-MediaManagerProvider';
+import { AdminMediaManagerLauncher } from '@/lib/module-api/site-content/components-media-manager-AdminMediaManagerLauncher';
 
 const SIDEBAR_COLLAPSED_KEY = 'nura-admin-sidebar-collapsed';
 

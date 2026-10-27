@@ -1,12 +1,12 @@
 import { decProfileResult } from '@/lib/crypto/pii-fields';
-import { insertNotification } from '@/lib/notifications/deliver';
+import { insertNotification } from '@/lib/module-api/notifications/lib-notifications-deliver';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { sendResendEmail } from '@/lib/email/resend';
+import { sendResendEmail } from '@/lib/module-api/notifications/lib-email-resend';
 import {
   buildWelcomeAlmogEmailHtml,
   buildWelcomeAlmogEmailText,
-} from '@/lib/email/templates/welcome-almog';
-import type { OnboardingProfileForChat } from '@/lib/ai/onboarding-chat-context';
+} from '@/lib/module-api/notifications/lib-email-templates-welcome-almog';
+import type { OnboardingProfileForChat } from '@/lib/module-api/agent/lib-ai-onboarding-chat-context';
 import type { OnboardingGender } from '@/lib/onboarding/types';
 export type SendWelcomeAlmogResult =
   | { ok: true; sent: boolean }
@@ -90,7 +90,7 @@ export async function sendWelcomeAlmogEmail(userId: string): Promise<SendWelcome
     metadata: { mentor: 'almog', source: 'almog_intro_welcome' },
   });
 
-  const { afterAlmogInAppNotification } = await import('../notifications/after-almog-insert');
+  const { afterAlmogInAppNotification } = await import('@/lib/module-api/notifications/lib-notifications-after-almog-insert');
   afterAlmogInAppNotification(userId, title, notifyBody);
 
   return { ok: true, sent: true };

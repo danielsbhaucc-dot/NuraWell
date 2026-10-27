@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { buildAggregateCostReport } from './build-cost-report';
-import { computeMrrIls } from '@/lib/billing/service';
-import type { Tier } from '@/lib/billing/tiers';
+import { computeMrrIls } from '@/lib/module-api/billing/lib-billing-service';
+import type { Tier } from '@/lib/module-api/billing/lib-billing-tiers';
 
 /**
  * Business dashboard metrics. REAL users only: profiles.role = 'user' (admin + 'test' e2e accounts excluded everywhere).

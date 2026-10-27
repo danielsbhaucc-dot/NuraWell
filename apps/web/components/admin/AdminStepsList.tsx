@@ -9,7 +9,7 @@ import {
   Video, HelpCircle, Gamepad2, Heart, FileText, CheckCircle2, Brain
 } from 'lucide-react';
 import type { JourneyStep } from '../../lib/types/journey';
-import { parseImmersiveAttentionStops } from '../../lib/journey/immersiveAttentionStops';
+import { parseImmersiveAttentionStops } from '@/lib/module-api/journey/lib-journey-immersiveAttentionStops';
 import { ConfirmDialog } from '@/components/admin/ConfirmDialog';
 
 interface AdminStepsListProps {

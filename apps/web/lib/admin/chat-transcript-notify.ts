@@ -1,9 +1,9 @@
 import { gx } from '@/lib/i18n/gender';
-import { insertNotification } from '@/lib/notifications/deliver';
+import { insertNotification } from '@/lib/module-api/notifications/lib-notifications-deliver';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { deliverWebPushAfterAlmogNotification } from '@/lib/push/deliver-after-notification';
-import { genderPress } from '@/lib/privacy/gender-hebrew';
-import type { ProfileGender } from '@/lib/privacy/gender-hebrew';
+import { deliverWebPushAfterAlmogNotification } from '@/lib/module-api/notifications/lib-push-deliver-after-notification';
+import { genderPress } from '@/lib/module-api/privacy-retention/lib-privacy-gender-hebrew';
+import type { ProfileGender } from '@/lib/module-api/privacy-retention/lib-privacy-gender-hebrew';
 
 const PLATFORM_NOTIFICATION_META = {
   channel: 'platform',

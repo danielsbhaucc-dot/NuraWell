@@ -1,7 +1,7 @@
 import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { workflowPublicBaseUrl } from '@/lib/workflows/resolve-workflow-public-url';
-import { opsLink } from '@/lib/ceo/channel';
+import { workflowPublicBaseUrl } from '@/lib/module-api/reminders/lib-workflows-resolve-workflow-public-url';
+import { opsLink } from '@/lib/module-api/gideon/lib-ceo-channel';
 import type { AgentSession } from './agent';
 
 /**

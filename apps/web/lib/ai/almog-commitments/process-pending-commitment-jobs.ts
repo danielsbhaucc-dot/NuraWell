@@ -6,8 +6,8 @@ import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { extractAlmogCommitments } from './extract-commitments';
 import { persistCommitmentExtraction } from './persist';
-import { queueTaskProposals } from '../chat-ui/task-proposals';
-import { getPlan } from '../../tasks';
+import { queueTaskProposals } from '@/lib/module-api/agent/lib-ai-chat-ui-task-proposals';
+import { getPlan } from '@/lib/module-api/journey/lib-tasks';
 import { decryptTableRow } from '@/lib/crypto/pii-fields';
 
 type JobRow = {

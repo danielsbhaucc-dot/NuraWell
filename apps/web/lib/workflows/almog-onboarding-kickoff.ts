@@ -1,11 +1,11 @@
 import { decProfileResult } from '@/lib/crypto/pii-fields';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { isAvoidPushActive } from '../ai/avoid-push';
+import { isAvoidPushActive } from '@/lib/module-api/agent/lib-ai-avoid-push';
 import {
   isJourneyFollowUpDue,
   readJourneyFollowUp,
-} from '../ai/journey-follow-up-promise';
-import type { AiUserContext } from '../ai/memory';
+} from '@/lib/module-api/agent/lib-ai-journey-follow-up-promise';
+import type { AiUserContext } from '@/lib/module-api/agent/lib-ai-memory';
 import { isQuietWindow } from '../time/hebrew-calendar';
 import { fetchJourneyCompanionContext } from './journey-companion';
 import { sendJourneyCompanionNudge } from './send-journey-companion-nudge';
@@ -191,7 +191,7 @@ export async function sendKickoffNudgeForUser(
   const inserted = result.inserted as { title?: string } | null;
   const title = inserted?.title ?? 'אלמוג';
 
-  const { afterAlmogInAppNotification } = await import('../notifications/after-almog-insert');
+  const { afterAlmogInAppNotification } = await import('@/lib/module-api/notifications/lib-notifications-after-almog-insert');
   afterAlmogInAppNotification(userId, title, result.body);
 
   return { inserted: true };

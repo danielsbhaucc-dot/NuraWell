@@ -2,10 +2,10 @@
 
 import Link from 'next/link';
 import { Archive, ArchiveRestore, Check, ChevronLeft, MessageCircle, Zap } from 'lucide-react';
-import { ALMOG_AVATAR_ALT } from '@/lib/a11y/alt-text';
-import { ALMOG_AVATAR_FALLBACK } from '../../lib/ai/almog-avatar';
-import { getMentorAvatarFallback } from '../../lib/mentors/avatar-url';
-import { MENTORS } from '../../lib/mentors/registry';
+import { ALMOG_AVATAR_ALT } from '@/lib/module-api/a11y/lib-a11y-alt-text';
+import { ALMOG_AVATAR_FALLBACK } from '@/lib/module-api/agent/lib-ai-almog-avatar';
+import { getMentorAvatarFallback } from '@/lib/module-api/agent/lib-mentors-avatar-url';
+import { MENTORS } from '@/lib/module-api/agent/lib-mentors-registry';
 import { formatHebrewRelativeTime } from '../../lib/time/hebrew-relative';
 import { isNotificationReplyable } from '../../lib/notifications/replyable';
 import { dispatchOpenAlmogReply } from '../../lib/notifications/open-almog-reply';

@@ -5,8 +5,8 @@ import {
   generateBlockerPivot,
   type ActiveTaskRef,
   type InterventionMemoryRow,
-} from '../almog-commitments/intervention-engine';
-import { normalizeFrictionCategory, normalizeStrategyType, type FrictionCategory, type StrategyType } from '../almog-commitments/friction';
+} from '@/lib/module-api/reminders/lib-ai-almog-commitments-intervention-engine';
+import { normalizeFrictionCategory, normalizeStrategyType, type FrictionCategory, type StrategyType } from '@/lib/module-api/reminders/lib-ai-almog-commitments-friction';
 import type { SosIntervention } from './sos';
 import { buildDeterministicSosFallback, buildSosInterventionFromPivot, withTimeout } from './sos';
 

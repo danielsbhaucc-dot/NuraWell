@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import { CheckCircle2, Loader2, Lock, Shield, XCircle } from 'lucide-react';
 import { AnimatedDialog } from '@/components/shared/AnimatedDialog';
-import type { ProfileGender } from '@/lib/privacy/gender-hebrew';
-import { genderPress } from '@/lib/privacy/gender-hebrew';
+import type { ProfileGender } from '@/lib/module-api/privacy-retention/lib-privacy-gender-hebrew';
+import { genderPress } from '@/lib/module-api/privacy-retention/lib-privacy-gender-hebrew';
 
 export type TranscriptAccessRequestPayload = {
   id: string;

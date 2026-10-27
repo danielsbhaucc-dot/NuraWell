@@ -9,8 +9,8 @@ import {
   coerceTaskExecutionsFromApi,
   isTaskLevelAtOrAboveRecommended,
 } from './task-level-progress';
-import { RECOMMENDED_SUCCESS_WEEK_DAYS } from '../ai/almog-commitments/recovery-plan-engine';
-import { persistRecoveryInsight } from '../ai/almog-commitments/persist-recovery-insight';
+import { RECOMMENDED_SUCCESS_WEEK_DAYS } from '@/lib/module-api/reminders/lib-ai-almog-commitments-recovery-plan-engine';
+import { persistRecoveryInsight } from '@/lib/module-api/reminders/lib-ai-almog-commitments-persist-recovery-insight';
 
 export type GraduationResult = {
   taskGraduated: boolean;

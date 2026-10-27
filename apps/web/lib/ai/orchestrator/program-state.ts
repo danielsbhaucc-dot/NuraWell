@@ -10,7 +10,7 @@
  * "דטרמיניסטי קודם, LLM רק לחידוד" שמנחה את כל שכבת ה-AI כאן.
  */
 
-import type { JourneyCompanionPhase } from '../../workflows/journey-companion';
+import type { JourneyCompanionPhase } from '@/lib/module-api/reminders/lib-workflows-journey-companion';
 
 /** שלושת המצבים של המשתמש בתוכנית. */
 export type ProgramState = 'ready_to_advance' | 'maintaining' | 'struggling';

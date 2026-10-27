@@ -6,7 +6,7 @@ import { Sparkles } from 'lucide-react';
 
 import type {
   PendingTaskTodayRow,
-} from '../../lib/journey/journey-report-parse';
+} from '@/lib/module-api/journey/lib-journey-journey-report-parse';
 
 type DashboardBrief = {
   headline: string;

@@ -9,8 +9,8 @@ export async function runAnomalyAlerts(db: SupabaseClient, now = Date.now()): Pr
   if (!found.length) return 0;
   const { data: prev } = await db.from('ops_security_events').select('facts').eq('kind', 'anomaly').gte('created_at', new Date(now - 86_400_000).toISOString());
   const seen = new Set(((prev ?? []) as { facts: { key?: string } | null }[]).map((p) => p.facts?.key));
-  const { createTelegramChannel } = await import('@/lib/ceo/telegram');
-  const { allowedChatIds } = await import('@/lib/ceo/channel');
+  const { createTelegramChannel } = await import('@/lib/module-api/gideon/lib-ceo-telegram');
+  const { allowedChatIds } = await import('@/lib/module-api/gideon/lib-ceo-channel');
   const ch = createTelegramChannel();
   let n = 0;
   for (const a of found) {

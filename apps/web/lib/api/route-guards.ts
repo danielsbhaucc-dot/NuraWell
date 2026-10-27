@@ -123,8 +123,8 @@ async function lockdownRefusal(request: Request, userId: string, accessToken: st
     const ld = await readLockdown(db);
     if (!ld?.active) return null;
     const { hashIp, requestIp } = await import('@/lib/logs/signals');
-    const { isFreshSession } = await import('@/lib/auth/passkeys');
-    const { STEPUP_COOKIE, peekGrant, readCookieFrom } = await import('@/lib/auth/stepup');
+    const { isFreshSession } = await import('@/lib/module-api/auth-signup/lib-auth-passkeys');
+    const { STEPUP_COOKIE, peekGrant, readCookieFrom } = await import('@/lib/module-api/auth-signup/lib-auth-stepup');
     let path = '';
     try { path = new URL(request.url).pathname; } catch { /* empty */ }
     const steppedUp = isFreshSession(accessToken) || (await peekGrant(db, userId, 'ops.sensitive', readCookieFrom(request, STEPUP_COOKIE)));
@@ -148,7 +148,7 @@ export async function auditAdminApiAccess(request: Request, actorId: string, acc
     const ip = (request.headers.get('x-real-ip') || request.headers.get('x-forwarded-for')?.split(',')[0] || '').trim().slice(0, 64) || null;
     const country = (request.headers.get('x-vercel-ip-country') || '').trim().toUpperCase().slice(0, 4) || null;
     const db = createAdminClient();
-    const { sessionIdOf } = await import('@/lib/auth/stepup');
+    const { sessionIdOf } = await import('@/lib/module-api/auth-signup/lib-auth-stepup');
     const session = sessionIdOf(accessToken);
     const ua = (request.headers.get('user-agent') || '').slice(0, 160) || null;
     const detail: Record<string, unknown> = {};

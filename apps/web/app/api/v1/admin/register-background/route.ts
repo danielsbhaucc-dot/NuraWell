@@ -1,15 +1,15 @@
 import { NextResponse } from 'next/server';
 import { DeleteObjectCommand, HeadObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
-import { getPublicCdnImageUrl } from '@/lib/cdn/public-images';
-import { almogCdnHostname, resolveCdnImagesPrefix } from '@/lib/ai/almog-avatar';
-import { getR2Client, r2ImageBucketName } from '@/lib/storage/r2-almog';
-import { copyImageSourceToKey } from '@/lib/storage/apply-source-image';
+import { getPublicCdnImageUrl } from '@/lib/module-api/site-content/lib-cdn-public-images';
+import { almogCdnHostname, resolveCdnImagesPrefix } from '@/lib/module-api/agent/lib-ai-almog-avatar';
+import { getR2Client, r2ImageBucketName } from '@/lib/module-api/site-content/lib-storage-r2-almog';
+import { copyImageSourceToKey } from '@/lib/module-api/site-content/lib-storage-apply-source-image';
 import { readJsonBody } from '@/lib/api/json-request';
 import {
   REGISTER_BACKGROUND_LEGACY_KEYS,
   REGISTER_BACKGROUND_OBJECT_KEY,
-} from '@/lib/storage/register-background';
+} from '@/lib/module-api/site-content/lib-storage-register-background';
 import { stationCoverCreditSchema } from '@/lib/validation/admin-journey-station';
 import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
 import { isWebpBuffer, MAX_UPLOAD_BYTES } from '@/lib/validation/webp';

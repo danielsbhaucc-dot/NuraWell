@@ -6,8 +6,8 @@ import { readJsonBody } from '@/lib/api/json-request';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { audioTrackUpdateSchema } from '@/lib/validation/admin-audio';
 import { jsonZodError } from '@/lib/validation/zod-http';
-import { getR2Client, r2AudioBucketName } from '@/lib/storage/r2-almog';
-import { getPublicCdnAudioUrl } from '@/lib/cdn/public-audio';
+import { getR2Client, r2AudioBucketName } from '@/lib/module-api/site-content/lib-storage-r2-almog';
+import { getPublicCdnAudioUrl } from '@/lib/module-api/site-content/lib-cdn-public-audio';
 import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
 
 export const runtime = 'nodejs';

@@ -13,7 +13,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { decProfileResult } from '@/lib/crypto/pii-fields';
 
-import { normalizeTitleKey, titlesAreSimilar } from '../almog-commitments/title-similarity';
+import { normalizeTitleKey, titlesAreSimilar } from '@/lib/module-api/reminders/lib-ai-almog-commitments-title-similarity';
 import { updateAiContext } from '../memory';
 import { israelDateKey } from '../onboarding-check-in-time';
 import type { ProgramProposal } from './program-state';

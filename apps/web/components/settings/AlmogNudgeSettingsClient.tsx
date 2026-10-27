@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Bell, ChevronRight, Loader2, MessageCircle, Scale, Send, Shield, Sparkles } from 'lucide-react';
-import type { AlmogCoachingStyle } from '../../lib/ai/almog-coaching-style';
+import type { AlmogCoachingStyle } from '@/lib/module-api/agent/lib-ai-almog-coaching-style';
 import { cn } from '../../lib/cn';
 
 const COACHING_OPTIONS: { id: AlmogCoachingStyle; label: string; hint: string }[] = [

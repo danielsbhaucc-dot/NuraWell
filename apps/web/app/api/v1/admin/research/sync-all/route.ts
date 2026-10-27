@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { syncStepResearchesToAlmogKnowledge } from '@/lib/admin/sync-research-knowledge';
-import { isSystemKnowledgeVectorConfigured } from '@/lib/ai/system-knowledge-vector';
+import { isSystemKnowledgeVectorConfigured } from '@/lib/module-api/agent/lib-ai-system-knowledge-vector';
 import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import type { Research } from '@/lib/types/journey';
 import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';

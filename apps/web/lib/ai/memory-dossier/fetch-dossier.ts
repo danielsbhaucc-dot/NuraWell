@@ -38,9 +38,9 @@ export async function upsertUserMemoryDossier(
   dossier: UserMemoryDossier
 ): Promise<void> {
   // After an explicit health-consent withdrawal, never write health facts back into the dossier.
-  const { healthConsentStatus } = await import('@/lib/privacy/health-consent');
+  const { healthConsentStatus } = await import('@/lib/module-api/privacy-retention/lib-privacy-health-consent');
   if ((await healthConsentStatus(dossier.user_id)) === 'withdrawn') {
-    const { scrubHealthJson } = await import('@/lib/privacy/health-memory');
+    const { scrubHealthJson } = await import('@/lib/module-api/privacy-retention/lib-privacy-health-memory');
     dossier = {
       ...dossier,
       health_context: {} as UserMemoryDossier['health_context'],

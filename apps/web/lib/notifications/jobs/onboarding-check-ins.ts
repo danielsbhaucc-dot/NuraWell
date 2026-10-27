@@ -2,21 +2,21 @@ import { decProfileResult } from '@/lib/crypto/pii-fields';
 import { filterNotifyEligibleUserIds } from '@/lib/notifications/notify-recipients';
 import { NextResponse } from 'next/server';
 import { Client as WorkflowClient } from '@upstash/workflow';
-import { isAvoidPushActive } from '@/lib/ai/avoid-push';
+import { isAvoidPushActive } from '@/lib/module-api/agent/lib-ai-avoid-push';
 import { authorizeCronRequest } from '@/lib/api/authorize-cron';
 import { maybeReturnCronIdleSkip } from '@/lib/api/cron-idle-guard';
 import {
   isCheckInDueNow,
   israelDateKey,
   normalizeCheckInTimes,
-} from '@/lib/ai/onboarding-check-in-time';
+} from '@/lib/module-api/agent/lib-ai-onboarding-check-in-time';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { workflowPublicBaseUrl } from '@/lib/workflows/resolve-workflow-public-url';
-import type { DrainRemindersResult } from '@/lib/ai/almog-commitments/drain-reminders';
-import type { ProcessCommitmentJobsResult } from '@/lib/ai/almog-commitments/process-pending-commitment-jobs';
-import type { SweepAssignmentsResult } from '@/lib/ai/almog-commitments/sweep-assignments';
-import type { RunOrchestratorResult } from '@/lib/ai/orchestrator/run-program-orchestrator';
-import type { runRecoveryOrchestrationBatch } from '@/lib/ai/almog-commitments/recovery-orchestrator';
+import { workflowPublicBaseUrl } from '@/lib/module-api/reminders/lib-workflows-resolve-workflow-public-url';
+import type { DrainRemindersResult } from '@/lib/module-api/reminders/lib-ai-almog-commitments-drain-reminders';
+import type { ProcessCommitmentJobsResult } from '@/lib/module-api/reminders/lib-ai-almog-commitments-process-pending-commitment-jobs';
+import type { SweepAssignmentsResult } from '@/lib/module-api/reminders/lib-ai-almog-commitments-sweep-assignments';
+import type { RunOrchestratorResult } from '@/lib/module-api/agent/lib-ai-orchestrator-run-program-orchestrator';
+import type { runRecoveryOrchestrationBatch } from '@/lib/module-api/reminders/lib-ai-almog-commitments-recovery-orchestrator';
 // perf: phase modules are imported lazily below — split schedules (?phase=…) only load what they run.
 
 
@@ -73,9 +73,9 @@ async function runOnboardingCheckInsCron(request: Request) {
   if (runReminders) {
     const [{ sweepStaleAssignments }, { processPendingAlmogCommitmentJobs }, { drainAlmogReminders }] =
       await Promise.all([
-        import('@/lib/ai/almog-commitments/sweep-assignments'),
-        import('@/lib/ai/almog-commitments/process-pending-commitment-jobs'),
-        import('@/lib/ai/almog-commitments/drain-reminders'),
+        import('@/lib/module-api/reminders/lib-ai-almog-commitments-sweep-assignments'),
+        import('@/lib/module-api/reminders/lib-ai-almog-commitments-process-pending-commitment-jobs'),
+        import('@/lib/module-api/reminders/lib-ai-almog-commitments-drain-reminders'),
       ]);
     try {
       assignmentSweep = await sweepStaleAssignments(createAdminClient(), { dryRun: isDryRun });
@@ -133,11 +133,11 @@ async function runOnboardingCheckInsCron(request: Request) {
           errors: [],
         };
       } else {
-        const { runProgramOrchestrator } = await import('@/lib/ai/orchestrator/run-program-orchestrator');
+        const { runProgramOrchestrator } = await import('@/lib/module-api/agent/lib-ai-orchestrator-run-program-orchestrator');
         orchestrator = await runProgramOrchestrator(adminForOrch, { dryRun: isDryRun });
         try {
           const { runRecoveryOrchestrationBatch } = await import(
-            '@/lib/ai/almog-commitments/recovery-orchestrator'
+            '@/lib/module-api/reminders/lib-ai-almog-commitments-recovery-orchestrator'
           );
           recoveryOrchestration = await runRecoveryOrchestrationBatch(adminForOrch, {
             dryRun: isDryRun,
@@ -152,12 +152,12 @@ async function runOnboardingCheckInsCron(request: Request) {
   }
 
   let challengeHourly: Awaited<
-    ReturnType<typeof import('@/lib/challenge/run-challenge-hourly').runChallengeHourlyReminders>
+    ReturnType<typeof import('@/lib/module-api/journey/lib-challenge-run-challenge-hourly').runChallengeHourlyReminders>
   > | { error: string } | null = null;
 
   if (runChallenge) {
     try {
-      const { runChallengeHourlyReminders } = await import('@/lib/challenge/run-challenge-hourly');
+      const { runChallengeHourlyReminders } = await import('@/lib/module-api/journey/lib-challenge-run-challenge-hourly');
       challengeHourly = await runChallengeHourlyReminders(createAdminClient(), { dryRun: isDryRun });
       console.log('[onboarding-check-ins] challenge_hourly', JSON.stringify(challengeHourly));
     } catch (e) {

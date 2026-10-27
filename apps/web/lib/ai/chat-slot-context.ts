@@ -19,7 +19,7 @@
  */
 
 import type { JourneyTaskSchedule, JourneyTaskSlot } from '../types/journey';
-import { slotLabel } from '../journey/task-schedule';
+import { slotLabel } from '@/lib/module-api/journey/lib-journey-task-schedule';
 
 export interface SlotReinforcementInput {
   /** שם המשימה / הרגל לפי המשתמש (לדוגמה: "כוס מים לפני ארוחה"). */

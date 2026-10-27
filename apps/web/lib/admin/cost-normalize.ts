@@ -7,8 +7,8 @@ import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { costVendor } from './cost-vendors';
 import { boiUrl, parseBoiCsv, vatIncluded } from './fx-core';
-import { parseInvoiceRef, parseVat } from '@/lib/legal/media/receipts-core';
-import { receiptSearchText } from '@/lib/legal/media/receipts-core';
+import { parseInvoiceRef, parseVat } from '@/lib/module-api/legal/lib-legal-media-receipts-core';
+import { receiptSearchText } from '@/lib/module-api/legal/lib-legal-media-receipts-core';
 
 const memo = new Map<string, number>();
 
