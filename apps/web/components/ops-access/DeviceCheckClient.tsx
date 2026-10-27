@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useRealtimePing } from '@/lib/hooks/useRealtimePing';
+import { useRealtimePing } from '@/lib/hooks/useLiveRefresh';
 import { KeyRound, Loader2, Mail, Send, ShieldAlert, ShieldCheck, Smartphone, Usb } from 'lucide-react';
 import { startAuthentication } from '@simplewebauthn/browser';
 import { cn } from '@/lib/cn';

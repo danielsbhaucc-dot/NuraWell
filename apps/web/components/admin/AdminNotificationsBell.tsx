@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useRealtimePing } from '@/lib/hooks/useRealtimePing';
+import { useRealtimePing } from '@/lib/hooks/useLiveRefresh';
 import Link from 'next/link';
 import { Bell, CheckCheck, Loader2, X } from 'lucide-react';
 import { cn } from '@/lib/cn';

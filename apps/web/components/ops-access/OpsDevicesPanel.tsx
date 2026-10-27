@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { useRealtimePing } from '@/lib/hooks/useRealtimePing';
+import { useRealtimePing } from '@/lib/hooks/useLiveRefresh';
 import { confirmDialog } from '@/components/shared/dialogs';
 import { Badge, Banner, Button, Card } from '@/components/ui';
 import { StepUpDialog } from '@/components/admin/StepUpDialog';
