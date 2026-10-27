@@ -66,6 +66,15 @@ describe('NuraWell consumes module states from central (runtime source)', () => 
       expect(on(r, 'qc')).toBe(qc); expect(on(r, 'iam')).toBe(true);
     }
   });
+  it('license-lock switch: modules-off (default) locks users too; admin-only keeps user features, admin still locked', async () => {
+    const h = harness();
+    const def = await createCentralModuleSource({ db: h.db, productId: 'nurawell', coreIds: CORE, now: h.now, license: lic('locked') }).get();
+    expect(on({ states: def.userStates }, 'qc')).toBe(false);
+    const ao = await createCentralModuleSource({ db: harness().db, productId: 'nurawell', coreIds: CORE, now: h.now, license: lic('locked'), licenseLock: 'admin-only' }).get();
+    expect(on(ao, 'qc')).toBe(false); expect(on({ states: ao.userStates }, 'qc')).toBe(true); expect(on({ states: ao.userStates }, 'billing')).toBe(false);
+    const dis = await createCentralModuleSource({ db: harness(snap({ qc: true }, 'disabled')).db, productId: 'nurawell', coreIds: CORE, now: h.now, licenseLock: 'admin-only' }).get();
+    expect(on({ states: dis.userStates }, 'qc')).toBe(false);
+  });
   it('product disabled in central → non-core off, core on', async () => {
     const h = harness(snap({ qc: true }, 'disabled'));
     const r = await createCentralModuleSource({ db: h.db, productId: 'nurawell', coreIds: CORE, now: h.now }).get();

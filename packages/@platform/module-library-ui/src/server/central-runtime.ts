@@ -4,13 +4,16 @@
 //    core app are never locked out; only non-core modules can turn off.
 //  * States are cached ~2 minutes. If central can't be reached, the last verified states keep working for up to 6 hours;
 //    after that non-core modules fail closed (off) until central answers again.
-//  * Optional license guard (same @platform/licensing guard as the sample product): if it isn't 'active', non-core modules are off.
+//  * Optional license guard (same @platform/licensing guard as the sample product): if it isn't 'active', non-core modules are off
+//    for admin (`states`). For end users (`userStates`) that depends on the product's ONE switch `licenseLock`:
+//    'modules-off' (default) → same as admin; 'admin-only' → user features keep working, only admin/ops locks.
 import type { GuardStatus } from '@platform/licensing';
 
 type Rpc = { rpc(fn: string, args?: Record<string, unknown>): PromiseLike<{ data: unknown; error: { message: string } | null }> };
 export type RuntimeModuleState = { productId: string; moduleId: string; enabled: boolean };
 export type RuntimeSource = 'central' | 'cache' | 'failsafe';
-export type RuntimeResult = { states: RuntimeModuleState[]; source: RuntimeSource; license: GuardStatus['state'] | 'not_configured'; productStatus: string | null };
+export type LicenseLockPolicy = 'modules-off' | 'admin-only';
+export type RuntimeResult = { states: RuntimeModuleState[]; userStates: RuntimeModuleState[]; source: RuntimeSource; license: GuardStatus['state'] | 'not_configured'; productStatus: string | null };
 type Snap = { productStatus: string | null; core: string[]; states: { moduleId: string; enabled: boolean }[] };
 
 export const RUNTIME_POLL_MS = 2 * 60_000;
@@ -25,6 +28,7 @@ export async function loadCentralModuleStates(db: Rpc, productId: string): Promi
 export function createCentralModuleSource(o: {
   db: Rpc; productId: string; coreIds: readonly string[];
   license?: { status(): Promise<GuardStatus> } | null;
+  licenseLock?: LicenseLockPolicy;
   now?: () => number; pollMs?: number; maxStaleMs?: number;
 }) {
   const now = o.now ?? Date.now, pollMs = o.pollMs ?? RUNTIME_POLL_MS, maxStale = o.maxStaleMs ?? RUNTIME_MAX_STALE_MS;
@@ -49,13 +53,16 @@ export function createCentralModuleSource(o: {
       let lic: RuntimeResult['license'] = 'not_configured';
       if (o.license) { try { lic = (await o.license.status()).state; } catch { lic = 'locked'; } }
       const core = new Set([...o.coreIds, ...(snap?.core ?? [])]);
-      const nonCoreAllowed = Boolean(snap) && snap!.productStatus !== 'disabled' && (lic === 'active' || lic === 'not_configured');
+      const live = Boolean(snap) && snap!.productStatus !== 'disabled';
+      const licOk = lic === 'active' || lic === 'not_configured';
       const ids = new Set([...core, ...(snap?.states ?? []).map((s) => s.moduleId)]);
-      const states = [...ids].map((moduleId) => ({
+      const build = (nonCoreAllowed: boolean) => [...ids].map((moduleId) => ({
         productId: o.productId, moduleId,
         enabled: core.has(moduleId) || (nonCoreAllowed && Boolean(snap!.states.find((s) => s.moduleId === moduleId)?.enabled)),
       }));
-      return { states, source, license: lic, productStatus: snap?.productStatus ?? null };
+      const states = build(live && licOk);
+      const userStates = (o.licenseLock ?? 'modules-off') === 'admin-only' ? build(live) : states;
+      return { states, userStates, source, license: lic, productStatus: snap?.productStatus ?? null };
     },
     invalidate() { if (last) last = { ...last, at: -Infinity }; },
   };

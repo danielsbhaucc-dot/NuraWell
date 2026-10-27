@@ -7,7 +7,7 @@
 // Admin/ops APIs keep their existing (stricter) gate in requireApiAdmin → authorize().
 import { ownerOfPage, ownerOfPath, type ModuleManifest, type Surface } from './modules';
 
-export type GateStates = { source: 'central' | 'cache' | 'failsafe'; states: readonly { moduleId: string; enabled: boolean }[] };
+export type GateStates = { source: 'central' | 'cache' | 'failsafe'; states: readonly { moduleId: string; enabled: boolean }[]; adminStates?: readonly { moduleId: string; enabled: boolean }[] };
 export type GateDecision = { blocked: false; moduleId: string | null; surface: Surface | null } | { blocked: true; moduleId: string; surface: Surface; offModule: string };
 
 export function ownerFor(path: string, kind: 'server' | 'page', registry: readonly ModuleManifest[]) {
@@ -39,11 +39,15 @@ export function decideGate(registry: readonly ModuleManifest[], owner: { module:
 
 /** Runtime gate bound to a product registry + a state loader. Never throws; any error → not blocked (users are never locked out by an outage). */
 export function createModuleGate(registry: readonly ModuleManifest[], loadStates: () => Promise<GateStates | null>) {
-  async function gateRequest(path: string, kind: 'server' | 'page'): Promise<GateDecision> {
+  /** `audience: 'admin'` (ops-host pages) judges by the admin view (license lock always applies there). */
+  async function gateRequest(path: string, kind: 'server' | 'page', audience: 'user' | 'admin' = 'user'): Promise<GateDecision> {
     const owner = ownerFor(path, kind, registry);
     const pass: GateDecision = { blocked: false, moduleId: owner?.module.id ?? null, surface: owner?.surface ?? null };
     if (!owner || owner.surface === 'admin' || !isGateable(owner.module)) return pass;
-    try { return decideGate(registry, owner, await loadStates()); } catch { return pass; }
+    try {
+      const st = await loadStates();
+      return decideGate(registry, owner, st && audience === 'admin' ? { ...st, states: st.adminStates ?? st.states } : st);
+    } catch { return pass; }
   }
   /** For code outside a request (scheduler fan-out, server actions): `if (!(await gate.moduleOn('reminders'))) return;` */
   async function moduleOn(moduleId: string): Promise<boolean> {

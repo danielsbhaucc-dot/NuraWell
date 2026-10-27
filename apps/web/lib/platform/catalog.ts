@@ -7,6 +7,9 @@ export const PRODUCTS = [
   { id: 'sample', name: 'מוצר לדוגמה', status: 'active' as const },
 ];
 export const DEFAULT_PRODUCT = 'nurawell';
+/** THE licensing-lock switch, per product. 'modules-off': a locked license turns non-essential modules off for users too.
+ *  'admin-only': users keep every feature, only admin/ops locks. Core/essential modules are never off either way. */
+export const LICENSE_LOCK_POLICY: Record<string, 'modules-off' | 'admin-only'> = { nurawell: 'modules-off' };
 export const PRODUCT_COOKIE = 'nw_product';
 
 export const CATALOG = defineCatalog(PRODUCTS);

@@ -277,15 +277,17 @@ export async function proxy(request: NextRequest) {
    */
   // ── Module gate (WordPress-style): a module turned off in central is off for users too: its APIs → 404,
   // its crons/webhooks → 200 "skipped", its pages → the normal 404. Core/essential modules are never looked up or blocked;
-  // central outage → nothing blocked. Ops host pages use different paths, so only their APIs are gated there.
+  // central outage → nothing blocked. Ops-host pages are judged by their /ops/* path with the admin view (license lock applies).
   {
     const [{ ownerFor, isGateable, blockedResponse }, { MODULES }] = await Promise.all([import('@platform/iam'), import('./lib/platform/catalog')]);
     const isServerPath = pathname.startsWith('/api/') || pathname.startsWith('/auth/') || pathname.startsWith('/.well-known/') || pathname === '/landing-v2';
     const kind = isServerPath ? 'server' as const : 'page' as const;
-    if (isServerPath || !effectiveOpsHost) {
-      const owner = ownerFor(pathname, kind, MODULES);
+    const opsPage = !isServerPath && effectiveOpsHost && !pathname.startsWith('/_next') && !pathname.startsWith('/k/');
+    const gatePath = opsPage ? (pathname === '/' || pathname === '' ? '/ops' : pathname.startsWith('/ops') ? pathname : `/ops${pathname}`) : pathname;
+    if (isServerPath || !effectiveOpsHost || opsPage) {
+      const owner = ownerFor(gatePath, kind, MODULES);
       if (owner && owner.surface !== 'admin' && isGateable(owner.module)) {
-        const d = await (await import('./lib/platform/authorize')).moduleGate.gateRequest(pathname, kind);
+        const d = await (await import('./lib/platform/authorize')).moduleGate.gateRequest(gatePath, kind, opsPage ? 'admin' : 'user');
         if (d.blocked) {
           if (kind === 'server') {
             const r = blockedResponse(d);
