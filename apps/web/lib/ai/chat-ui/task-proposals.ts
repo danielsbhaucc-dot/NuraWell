@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { titlesAreSimilar } from '../almog-commitments/persist';
+import { titlesAreSimilar } from '@/lib/module-api/reminders/lib-ai-almog-commitments-persist';
 
 /**
  * Detected-in-chat tasks → proposals → a confirm card in chat (never straight into the plan).

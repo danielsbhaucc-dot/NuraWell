@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { killSwitch } from '@/lib/ceo/security';
+import { killSwitch } from '@/lib/module-api/gideon/lib-ceo-security';
 import { audit, decideRequest, loadRequest } from './device-trust';
 import { oneTapAllowed } from './device-notify';
 

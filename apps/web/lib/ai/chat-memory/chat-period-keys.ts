@@ -15,7 +15,7 @@ import {
   parsePeriodKey as parseTaskPeriodKey,
   toDateKey,
   type SummaryType,
-} from '../../notifications/summaries/period-keys';
+} from '@/lib/module-api/notifications/lib-notifications-summaries-period-keys';
 
 export type ChatSummaryType =
   | 'daily'

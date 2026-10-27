@@ -5,7 +5,7 @@ import {
   deleteUserMemoryVectorById,
   isUpstashVectorConfigured,
   listUserMemoryVectors,
-} from '@/lib/ai/upstash-vector-rest';
+} from '@/lib/module-api/agent/lib-ai-upstash-vector-rest';
 import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import { readJsonBody } from '@/lib/api/json-request';
 import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';

@@ -1,7 +1,7 @@
 import type {
   AlmogHabitCheckpointPayload,
   HabitCheckpointSlot,
-} from '../workflows/almog-habit-checkpoint-payload';
+} from '@/lib/module-api/reminders/lib-workflows-almog-habit-checkpoint-payload';
 import type { FallMemoryContext } from './fall-memory';
 
 const SLOT_GREETING: Record<HabitCheckpointSlot, string> = {

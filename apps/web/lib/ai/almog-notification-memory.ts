@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { describeNotificationSource } from '../notifications/notification-chat-context';
-import { extractSource } from '../notifications/replyable';
+import { describeNotificationSource } from '@/lib/module-api/notifications/lib-notifications-notification-chat-context';
+import { extractSource } from '@/lib/module-api/notifications/lib-notifications-replyable';
 
 const LOOKBACK_DAYS = 14;
 const MAX_NOTIFICATIONS = 22;

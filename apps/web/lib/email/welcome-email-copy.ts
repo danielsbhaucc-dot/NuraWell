@@ -1,4 +1,4 @@
-import type { OnboardingGender } from '@/lib/onboarding/types';
+import type { OnboardingGender } from '@/lib/module-api/auth-signup/lib-onboarding-types';
 
 /** בוחר נוסח לפי מגדר; כשלא ידוע: נוסח רבים/ניטרלי */
 export function byGender(gender: OnboardingGender | '' | null | undefined, male: string, female: string, neutral: string): string {

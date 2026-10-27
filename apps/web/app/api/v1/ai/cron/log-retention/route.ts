@@ -2,9 +2,9 @@ import { NextResponse } from 'next/server';
 import { authorizeCronRequest } from '@/lib/api/authorize-cron';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { runLogRetentionJob } from '@/lib/logs/retention-job';
-import { runSubscriptionRetention } from '@/lib/privacy/subscription-retention';
-import { runDunning } from '@/lib/billing/subscription-service';
-import { billingPlatformEnabled } from '@/lib/billing/platform';
+import { runSubscriptionRetention } from '@/lib/module-api/privacy-retention/lib-privacy-subscription-retention';
+import { runDunning } from '@/lib/module-api/billing/lib-billing-subscription-service';
+import { billingPlatformEnabled } from '@/lib/module-api/billing/lib-billing-platform';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

@@ -1,6 +1,6 @@
 'use client';
 
-import { REDACTED_PLACEHOLDER } from '@/lib/privacy/health-chat-redaction';
+import { REDACTED_PLACEHOLDER } from '@/lib/module-api/privacy-retention/lib-privacy-health-chat-redaction';
 
 /** Placeholder for a user message Almog deleted (health info without consent). */
 export function DeletedMessageBubble({ text, time }: { text: string; time: string }) {

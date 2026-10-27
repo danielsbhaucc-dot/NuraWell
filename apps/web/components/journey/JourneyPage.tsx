@@ -30,7 +30,7 @@ import { PracticingStepsContext, useStepCredit } from './practicing-context';
 import { JourneyNextStepCard, type NextStepCardData } from './JourneyNextStepCard';
 import { AlmogAvatarChip } from './AlmogPresence';
 import { AlmogAssignmentsSection, AlmogCompletedSection } from './AlmogAssignmentsSection';
-import { stationCoverAlt } from '../../lib/a11y/alt-text';
+import { stationCoverAlt } from '@/lib/module-api/a11y/lib-a11y-alt-text';
 import { getIsraelTimeOfDay } from '../../lib/time/greeting';
 import { palette as tokens } from '../../lib/theme/tokens';
 import { Button } from '../ui';

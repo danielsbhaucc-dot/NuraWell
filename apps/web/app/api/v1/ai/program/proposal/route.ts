@@ -22,7 +22,7 @@ import {
   claimPendingProposal,
   isProposalExpired,
 } from '../../../../../../lib/ai/orchestrator/pivot-lifecycle';
-import { persistRecoveryInsight } from '../../../../../../lib/ai/almog-commitments/persist-recovery-insight';
+import { persistRecoveryInsight } from '@/lib/module-api/reminders/lib-ai-almog-commitments-persist-recovery-insight';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

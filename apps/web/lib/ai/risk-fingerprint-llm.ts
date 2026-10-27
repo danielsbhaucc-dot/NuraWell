@@ -2,7 +2,7 @@ import { decInteractionResult } from '@/lib/crypto/pii-fields';
 import { decryptJson, encryptJson } from '@/lib/crypto/pii';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-import { normalizeFrictionCategory, normalizeStrategyType } from './almog-commitments/friction';
+import { normalizeFrictionCategory, normalizeStrategyType } from '@/lib/module-api/reminders/lib-ai-almog-commitments-friction';
 import type { RiskFingerprint, RiskWindow } from './risk-window';
 import { detectRelapseInMessage } from './roller-coaster';
 

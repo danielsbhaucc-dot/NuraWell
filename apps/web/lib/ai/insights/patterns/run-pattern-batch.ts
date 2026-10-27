@@ -1,4 +1,4 @@
-import { createHealthMemoryGate } from '@/lib/privacy/health-memory';
+import { createHealthMemoryGate } from '@/lib/module-api/privacy-retention/lib-privacy-health-memory';
 import { sealTableRow } from '@/lib/crypto/pii-seal';
 import { decTableResult } from '@/lib/crypto/pii-fields';
 import { decInteractionResult } from '@/lib/crypto/pii-fields';
@@ -20,7 +20,7 @@ import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { queueTaskProposals } from '../../chat-ui/task-proposals';
-import { titlesAreSimilar } from '../../almog-commitments/title-similarity';
+import { titlesAreSimilar } from '@/lib/module-api/reminders/lib-ai-almog-commitments-title-similarity';
 import { hasPlaceholderCorruption } from '../../safety/memory-text-guard';
 import { INSIGHT_STATUS } from '../status';
 import { detectNotableChanges } from './detect-changes';

@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { parseTimeToMinutes } from '../ai/generate-mentor-system-prompt';
+import { parseTimeToMinutes } from '@/lib/module-api/agent/lib-ai-generate-mentor-system-prompt';
 import type { HabitCheckpointSlot } from './almog-habit-checkpoint-payload';
 import {
   collectPendingAcceptedTasks,

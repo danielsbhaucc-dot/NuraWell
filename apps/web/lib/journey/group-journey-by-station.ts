@@ -1,9 +1,9 @@
 import type { JourneyStepProgress, JourneyStepWithProgress } from '../types/journey';
-import { getPublicCdnImageUrl } from '../cdn/public-images';
+import { getPublicCdnImageUrl } from '@/lib/module-api/site-content/lib-cdn-public-images';
 import {
   normalizeStationCoverCredit,
   type StationCoverCredit,
-} from '../media/stock-image-attribution';
+} from '@/lib/module-api/site-content/lib-media-stock-image-attribution';
 
 export type { StationCoverCredit };
 

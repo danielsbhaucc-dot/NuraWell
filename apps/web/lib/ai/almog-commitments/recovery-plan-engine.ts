@@ -10,14 +10,14 @@ import {
 } from './intervention-engine';
 import { israelDayOffsetToUtcIso, israelHour, israelParts } from './time';
 import type { AssignmentHistoryEntry } from './types';
-import { consecutiveJerusalemDoneDays } from '../../journey/recovery-streak';
+import { consecutiveJerusalemDoneDays } from '@/lib/module-api/journey/lib-journey-recovery-streak';
 
 export const MICRO_SUCCESS_DAYS_BEFORE_REACTIVATE = 3;
 export const RECOMMENDED_SUCCESS_WEEK_DAYS = 7;
 
 export type StepDifficultyRating = 'easy' | 'ok' | 'hard';
 
-import { graduatePivot, PIVOT_SOURCE } from '../orchestrator/pivot-lifecycle';
+import { graduatePivot, PIVOT_SOURCE } from '@/lib/module-api/agent/lib-ai-orchestrator-pivot-lifecycle';
 
 type Admin = SupabaseClient;
 

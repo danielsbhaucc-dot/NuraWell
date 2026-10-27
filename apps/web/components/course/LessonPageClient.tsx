@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useState, useTransition, useCallback } from 'react';
 import { LessonImmersivePath } from './LessonImmersivePath';
 import type { LessonDetail, LessonProgressData } from '../../lib/types/course';
-import type { ProfileGender } from '../../lib/profile/personalized-copy';
+import type { ProfileGender } from '@/lib/module-api/auth-signup/lib-profile-personalized-copy';
 
 interface NavLesson { id: string; title: string; }
 

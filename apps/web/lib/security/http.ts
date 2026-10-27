@@ -1,7 +1,7 @@
 import 'server-only';
 import { NextResponse } from 'next/server';
 import { requireApiAdmin } from '@/lib/api/route-guards';
-import { sessionIdOf } from '@/lib/auth/stepup';
+import { sessionIdOf } from '@/lib/module-api/auth-signup/lib-auth-stepup';
 import { hasSensitiveStepUp } from '@/lib/ops/sensitive-stepup';
 import { hashIp, requestIp } from '@/lib/logs/signals';
 import { createAdminClient } from '@/lib/supabase/admin';

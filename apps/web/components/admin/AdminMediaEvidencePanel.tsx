@@ -7,7 +7,7 @@ import { OpsDivider, opsGlassBtnClass, opsGlassBtnPrimaryClass, opsGlassCardClas
 import { cn } from '@/lib/cn';
 import { StepUpDialog } from '@/components/admin/StepUpDialog';
 import { ReceiptsSection } from './MediaReceiptsSection';
-import { FIELD_LABEL_HE, GENERATORS, SOURCE_LABEL_HE, SOURCE_TYPES, type Provenance, type SourceType } from '@/lib/legal/media/labels';
+import { FIELD_LABEL_HE, GENERATORS, SOURCE_LABEL_HE, SOURCE_TYPES, type Provenance, type SourceType } from '@/lib/module-api/legal/lib-legal-media-labels';
 
 type Commit = { sha: string; author: string; date: string; subject: string } | null;
 export type MediaItem = Item;

@@ -1,5 +1,5 @@
-import type { ChatTranscriptTurn } from '@/lib/ai/chat-sessions/types';
-import { formatTranscriptForLlm } from '@/lib/ai/chat-sessions/fetch-transcript';
+import type { ChatTranscriptTurn } from '@/lib/module-api/agent/lib-ai-chat-sessions-types';
+import { formatTranscriptForLlm } from '@/lib/module-api/agent/lib-ai-chat-sessions-fetch-transcript';
 
 function fmtHe(iso: string): string {
   try {

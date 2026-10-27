@@ -4,9 +4,9 @@ import { z } from 'zod';
 import { readJsonBody } from '@/lib/api/json-request';
 import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import { requireApiAdmin } from '@/lib/api/route-guards';
-import { TOKEN_TTL_MS, createChallengeDemoToken } from '@/lib/challenge/demo-token';
-import { ensureChallengeOpsSchema } from '@/lib/challenge/ensure-challenge-schema';
-import { upsertDemoEnrollment, clearDemoEnrollment } from '@/lib/challenge/enrollment';
+import { TOKEN_TTL_MS, createChallengeDemoToken } from '@/lib/module-api/journey/lib-challenge-demo-token';
+import { ensureChallengeOpsSchema } from '@/lib/module-api/journey/lib-challenge-ensure-challenge-schema';
+import { upsertDemoEnrollment, clearDemoEnrollment } from '@/lib/module-api/journey/lib-challenge-enrollment';
 import { publicAppBaseNoSlashFromServer } from '@/lib/public-app-url';
 import { createAdminClient } from '@/lib/supabase/admin';
 

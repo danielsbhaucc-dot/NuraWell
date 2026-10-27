@@ -9,8 +9,8 @@ const SYSTEM = 'You review pseudonymous admin-access events. Each item has a ref
   'Return JSON {"findings":[{"ref":"e1","severity":"low|medium|high","summary":"<=200 chars, Hebrew"}]} only for items that look like misuse or attack. No other text.';
 
 export const groqAuditModel: AuditModel = async (payload) => {
-  const { getClientForModel, AI_MODELS } = await import('@/lib/ai/client');
-  const { withAiUsage } = await import('@/lib/ai/usage-meter');
+  const { getClientForModel, AI_MODELS } = await import('@/lib/module-api/agent/lib-ai-client');
+  const { withAiUsage } = await import('@/lib/module-api/agent/lib-ai-usage-meter');
   const r = await withAiUsage({ feature: 'access_audit' }, () => getClientForModel('background_groq').chat.completions.create({
     model: AI_MODELS.background_groq, temperature: 0, max_tokens: 800, response_format: { type: 'json_object' },
     messages: [{ role: 'system', content: SYSTEM }, { role: 'user', content: payload }],

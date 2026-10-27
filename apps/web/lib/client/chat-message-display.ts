@@ -2,17 +2,17 @@
  * חילוץ טקסט תצוגה בטוח מ-UIMessage (AI SDK v6) — ללא דליפת tool parts או פרוטוקול סטרימינג.
  */
 
-import { extractResolvedChatUi, stripAllChatUiMarkers, type ResolvedChatUi } from '@/lib/ai/chat-ui/blocks';
+import { extractResolvedChatUi, stripAllChatUiMarkers, type ResolvedChatUi } from '@/lib/module-api/agent/lib-ai-chat-ui-blocks';
 import type { UIMessage } from 'ai';
 import {
   extractEmojiReactionMarker,
   extractEmojiReactionFix,
   stripEmojiReactionMarker,
   type EmojiReactionFix,
-} from '../ai/emoji-reaction/marker';
-import type { MentorEmojiReaction } from '../ai/emoji-reaction/types';
-import { preferSanitizedWriterOutput } from '../ai/sanitize-writer-output';
-import { extractReplyQuoteIndex, stripReplyQuoteMarker } from '../ai/reply-quote';
+} from '@/lib/module-api/agent/lib-ai-emoji-reaction-marker';
+import type { MentorEmojiReaction } from '@/lib/module-api/agent/lib-ai-emoji-reaction-types';
+import { preferSanitizedWriterOutput } from '@/lib/module-api/agent/lib-ai-sanitize-writer-output';
+import { extractReplyQuoteIndex, stripReplyQuoteMarker } from '@/lib/module-api/agent/lib-ai-reply-quote';
 
 /** חלקי הודעה מינימליים לחילוץ — תואם UIMessage.parts בלי לייבא כל ה-union. */
 export type ChatMessageTextPart = {

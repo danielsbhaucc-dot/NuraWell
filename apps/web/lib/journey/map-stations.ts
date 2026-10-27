@@ -1,4 +1,4 @@
-import type { MapStation } from '@/components/plans/PlanMap';
+import type { MapStation } from '@/lib/module-api/billing/components-plans-PlanMap';
 
 type StationIn = { id: string; title: string; sort_order: number | null; habit_key?: string | null; track?: string | null };
 type StepIn = { id: string; station_id: string | null };

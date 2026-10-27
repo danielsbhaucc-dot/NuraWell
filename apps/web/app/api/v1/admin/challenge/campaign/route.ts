@@ -2,10 +2,10 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { readJsonBody } from '@/lib/api/json-request';
 import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
-import { logChallengeAdminAudit } from '@/lib/challenge/admin-audit';
-import { readChallengeEnabled, writeChallengeEnabled } from '@/lib/challenge/challenge-site-settings';
-import { ensureActiveChallengeCampaign, getChallengeCampaignForAdmin } from '@/lib/challenge/campaign-bootstrap';
-import { ensureChallengeOpsSchema } from '@/lib/challenge/ensure-challenge-schema';
+import { logChallengeAdminAudit } from '@/lib/module-api/journey/lib-challenge-admin-audit';
+import { readChallengeEnabled, writeChallengeEnabled } from '@/lib/module-api/journey/lib-challenge-challenge-site-settings';
+import { ensureActiveChallengeCampaign, getChallengeCampaignForAdmin } from '@/lib/module-api/journey/lib-challenge-campaign-bootstrap';
+import { ensureChallengeOpsSchema } from '@/lib/module-api/journey/lib-challenge-ensure-challenge-schema';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 export const dynamic = 'force-dynamic';

@@ -65,7 +65,7 @@ export async function isIpRangeBlocked(db: SupabaseClient, ip: string, now = Dat
   return hit;
 }
 
-type AlertExtras = { buttons?: import('@/lib/ceo/channel').CeoButton[][]; emailLink?: { href: string; label: string } };
+type AlertExtras = { buttons?: import('@/lib/module-api/gideon/lib-ceo-channel').CeoButton[][]; emailLink?: { href: string; label: string } };
 async function alertOnce(db: SupabaseClient, key: string, kind: string, detail: Record<string, unknown>, text: string, subject: string, withinMs = 3_600_000, extras: AlertExtras | (() => Promise<AlertExtras>) = {}): Promise<void> {
   const since = new Date(Date.now() - withinMs).toISOString();
   const { data: prev } = await db.from('ops_security_events').select('id').eq('kind', kind).gte('created_at', since).contains('facts', { key }).limit(1);

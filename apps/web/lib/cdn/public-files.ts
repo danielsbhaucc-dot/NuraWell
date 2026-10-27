@@ -1,4 +1,4 @@
-import { resolveAlmogPublicBaseUrl } from '../ai/almog-avatar';
+import { resolveAlmogPublicBaseUrl } from '@/lib/module-api/agent/lib-ai-almog-avatar';
 
 export function resolveCdnFilesPrefix(): string {
   const raw =

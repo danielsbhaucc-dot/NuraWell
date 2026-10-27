@@ -8,9 +8,9 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { readJsonBody } from '@/lib/api/json-request';
 import { buildAdminUserJourneyReport } from '@/lib/admin/build-user-journey-report';
 import { applyAdminProfilePatch } from '@/lib/admin/update-user-onboarding';
-import { deleteUserAccountCompletely } from '@/lib/privacy/delete-user-account';
-import { buildMealSchedule } from '@/lib/onboarding/meal-schedule';
-import { GENDERS, MAIN_GOALS, MAIN_OBSTACLES, WEAKEST_TIMES } from '@/lib/onboarding/types';
+import { deleteUserAccountCompletely } from '@/lib/module-api/privacy-retention/lib-privacy-delete-user-account';
+import { buildMealSchedule } from '@/lib/module-api/auth-signup/lib-onboarding-meal-schedule';
+import { GENDERS, MAIN_GOALS, MAIN_OBSTACLES, WEAKEST_TIMES } from '@/lib/module-api/auth-signup/lib-onboarding-types';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

@@ -5,10 +5,10 @@ import { requireApiAdmin } from '@/lib/api/route-guards';
 import { consumeRateLimit, rateLimitResponse } from '@/lib/api/rate-limit';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { decryptString } from '@/lib/crypto/pii';
-import { authenticationOptions, CHALLENGE_COOKIE, challengeCookieOpts, consumeChallenge, resolveRp, verifyAuthentication } from '@/lib/auth/passkeys';
-import { readCookie } from '@/lib/auth/http';
+import { authenticationOptions, CHALLENGE_COOKIE, challengeCookieOpts, consumeChallenge, resolveRp, verifyAuthentication } from '@/lib/module-api/auth-signup/lib-auth-passkeys';
+import { readCookie } from '@/lib/module-api/auth-signup/lib-auth-http';
 import { auditLegalAccess } from '@/lib/legal/evidence-verify';
-import { consumeGrant, readCookieFrom, STEPUP_COOKIE } from '@/lib/auth/stepup';
+import { consumeGrant, readCookieFrom, STEPUP_COOKIE } from '@/lib/module-api/auth-signup/lib-auth-stepup';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

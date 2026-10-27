@@ -16,10 +16,10 @@ import {
   loadJourneyAccessContext,
   pickNextJourneyStep,
 } from '../../../lib/journey/journey-access';
-import { buildFallback } from '../../../lib/ai/journey-adaptive-llm';
+import { buildFallback } from '@/lib/module-api/agent/lib-ai-journey-adaptive-llm';
 import { buildAdminUserJourneyReport } from '../../../lib/admin/build-user-journey-report';
-import { firstNameFromFull } from '../../../lib/onboarding/profile-summary-rows';
-import type { MainObstacle, WeakestTimeOfDay } from '../../../lib/onboarding/types';
+import { firstNameFromFull } from '@/lib/module-api/auth-signup/lib-onboarding-profile-summary-rows';
+import type { MainObstacle, WeakestTimeOfDay } from '@/lib/module-api/auth-signup/lib-onboarding-types';
 
 export const dynamic = 'force-dynamic';
 

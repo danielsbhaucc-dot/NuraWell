@@ -1,7 +1,7 @@
 import { z } from 'zod';
-import { stationCoverCreditSchema } from '@/lib/media/stock-image-attribution';
+import { stationCoverCreditSchema } from '@/lib/module-api/site-content/lib-media-stock-image-attribution';
 
-export { stationCoverCreditSchema, type StationCoverCredit } from '@/lib/media/stock-image-attribution';
+export { stationCoverCreditSchema, type StationCoverCredit } from '@/lib/module-api/site-content/lib-media-stock-image-attribution';
 
 export const journeyStationInsertSchema = z
   .object({

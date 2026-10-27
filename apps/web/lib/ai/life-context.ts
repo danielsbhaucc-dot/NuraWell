@@ -3,7 +3,7 @@ import { withAiUser } from '@/lib/ai/usage-meter';
  * הקשר חיים מהצ'אט — זיהוי אירועים (לא רק חופשה/אשפוז), regex בלי LLM.
  */
 
-import { insertNotification } from '@/lib/notifications/deliver';
+import { insertNotification } from '@/lib/module-api/notifications/lib-notifications-deliver';
 import { buildSlotDaypartPromptBlock } from './almog-notify-day-context';
 import { AI_MODELS } from './client';
 import { crisisCooldownUntilIso } from './avoid-push';
@@ -13,7 +13,7 @@ import type { AiUserContext } from './memory';
 import { updateAiContext } from './memory';
 import { fetchNotifyUserProfile } from './notify-user-profile';
 import { ALMOG_NOTIFY_MAX_OUTPUT_TOKENS, buildCompactAlmogNotifyPrompt } from './prompts';
-import { habitSlotFromCheckInTime } from '../workflows/personalized-check-in-journey';
+import { habitSlotFromCheckInTime } from '@/lib/module-api/reminders/lib-workflows-personalized-check-in-journey';
 
 const IL_TZ = 'Asia/Jerusalem';
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -392,7 +392,7 @@ export async function sendLifeContextTouch(
   lc: LifeContext,
   checkInTime?: string
 ): Promise<{ body: string; inserted: Record<string, unknown> | null } | null> {
-  const { gateAlmogUserFacingTouch } = await import('../notifications/almog-touch-send-gate');
+  const { gateAlmogUserFacingTouch } = await import('@/lib/module-api/notifications/lib-notifications-almog-touch-send-gate');
   const touchGate = await gateAlmogUserFacingTouch(admin, userId);
   if (!touchGate.ok) return null;
 

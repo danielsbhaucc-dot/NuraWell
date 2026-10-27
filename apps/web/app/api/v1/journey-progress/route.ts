@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
 
 import { readJsonBody } from '../../../../lib/api/json-request';
 import { requireApiSession } from '../../../../lib/api/route-guards';
-import { scheduleAlmogKickoff } from '../../../../lib/auth/schedule-almog-kickoff';
+import { scheduleAlmogKickoff } from '@/lib/module-api/auth-signup/lib-auth-schedule-almog-kickoff';
 import { journeyProgressUpsertSchema } from '../../../../lib/validation/journey-progress-upsert';
 import { jsonZodError } from '../../../../lib/validation/zod-http';
 

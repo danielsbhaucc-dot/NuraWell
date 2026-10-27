@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { requireApiAdmin } from '@/lib/api/route-guards';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { cookieOpts, DEVICE_COOKIE, DEVICE_MAX_AGE_S, PENDING_COOKIE, redeemEmailLink } from '@/lib/ops/device-trust';
-import { limitIp } from '@/lib/ceo/stepup-http';
+import { limitIp } from '@/lib/module-api/gideon/lib-ceo-stepup-http';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

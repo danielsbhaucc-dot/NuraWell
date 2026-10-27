@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { AI_MODELS, groq, openrouter } from '@/lib/ai/client';
+import { AI_MODELS, groq, openrouter } from '@/lib/module-api/agent/lib-ai-client';
 import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import { readJsonBody } from '@/lib/api/json-request';
 import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
-import { isGroqLaneAvailable } from '@/lib/ai/groq-compat';
+import { isGroqLaneAvailable } from '@/lib/module-api/agent/lib-ai-groq-compat';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

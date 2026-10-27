@@ -1,5 +1,5 @@
 import { normalizeMemoryText } from './memory-text';
-import { createHealthMemoryGate } from '@/lib/privacy/health-memory';
+import { createHealthMemoryGate } from '@/lib/module-api/privacy-retention/lib-privacy-health-memory';
 import { sealTableRow } from '@/lib/crypto/pii-seal';
 import { isStorableMemoryText } from '../safety/memory-text-guard';
 import type { ExtractedMemoryFact } from '../extract-memory-facts';

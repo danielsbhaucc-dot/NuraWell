@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { readJsonBody } from '@/lib/api/json-request';
 import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
-import { comingSoonLyricsSchema, DEFAULT_LYRICS, parseLyricsConfig } from '@/lib/coming-soon/lyrics';
+import { comingSoonLyricsSchema, DEFAULT_LYRICS, parseLyricsConfig } from '@/lib/module-api/site-content/lib-coming-soon-lyrics';
 import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
 
 export const runtime = 'nodejs';

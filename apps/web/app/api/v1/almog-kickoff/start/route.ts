@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { readJsonBody } from '../../../../../lib/api/json-request';
 import { requireApiSession } from '../../../../../lib/api/route-guards';
-import { scheduleAlmogKickoff } from '../../../../../lib/auth/schedule-almog-kickoff';
+import { scheduleAlmogKickoff } from '@/lib/module-api/auth-signup/lib-auth-schedule-almog-kickoff';
 import { createAdminClient } from '../../../../../lib/supabase/admin';
 import {
   checkKickoffEligibility,

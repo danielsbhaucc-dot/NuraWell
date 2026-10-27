@@ -2,9 +2,9 @@ import { createHash } from 'node:crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { parseLlmJsonObject } from '@/lib/ai/parse-llm-json';
 import { meteredFetch, withAiUser } from '@/lib/ai/usage-meter';
-import { gateAlmogUserFacingTouch } from '@/lib/notifications/almog-touch-send-gate';
-import { insertNotification } from '@/lib/notifications/deliver';
-import { levelInfo, resolveLadder, type TaskDefinitionLike } from '@/lib/tasks/ladder';
+import { gateAlmogUserFacingTouch } from '@/lib/module-api/notifications/lib-notifications-almog-touch-send-gate';
+import { insertNotification } from '@/lib/module-api/notifications/lib-notifications-deliver';
+import { levelInfo, resolveLadder, type TaskDefinitionLike } from '@/lib/module-api/journey/lib-tasks-ladder';
 import { loadDupCandidates, mergeTaskAssignments } from '@/lib/almog/task-dup-candidates';
 
 /**

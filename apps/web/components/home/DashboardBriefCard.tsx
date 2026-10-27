@@ -7,7 +7,7 @@ import { ArrowLeft, Heart, RefreshCw, Sparkles, TrendingUp } from 'lucide-react'
 import {
   dispatchOpenAlmogChat,
   dispatchOpenAlmogChatWithPrefill,
-} from '../../lib/notifications/open-almog-chat';
+} from '@/lib/module-api/notifications/lib-notifications-open-almog-chat';
 import { fetchDashboardBrief } from '../../lib/client/dashboard-brief';
 import { runWhenIdle } from '../../lib/client/run-when-idle';
 

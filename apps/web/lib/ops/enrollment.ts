@@ -9,7 +9,7 @@ import {
 import {
   ENROLL_MAX_OPEN_LINKS, ENROLL_TTL_MS, MATCH_TTL_MS, enrollStage, matchOptions, mayRegisterPasskey, wellFormedToken, type EnrollState,
 } from '@platform/access';
-import { consumeChallenge, storeChallenge, RP_NAME } from '@/lib/auth/passkeys';
+import { consumeChallenge, storeChallenge, RP_NAME } from '@/lib/module-api/auth-signup/lib-auth-passkeys';
 import { counterOk } from '@/lib/security-core/webauthn-policy';
 import { audit, createTrustedDevice, deviceLabel } from './device-trust';
 

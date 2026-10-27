@@ -9,11 +9,11 @@ import {
   planHabitCheckpointTriggers,
   type ProgressRow,
   type UserResponseInfo,
-} from '../../../../../lib/workflows/habit-checkpoint-batch';
-import { gateAlmogHabitCheckpoint } from '../../../../../lib/workflows/habit-checkpoint-gates';
-import { sendAlmogHabitCheckpointNotification } from '../../../../../lib/workflows/send-almog-habit-checkpoint';
-import { habitCheckpointSlotSchema } from '../../../../../lib/workflows/almog-habit-checkpoint-payload';
-import { workflowPublicBaseUrl } from '../../../../../lib/workflows/resolve-workflow-public-url';
+} from '@/lib/module-api/reminders/lib-workflows-habit-checkpoint-batch';
+import { gateAlmogHabitCheckpoint } from '@/lib/module-api/reminders/lib-workflows-habit-checkpoint-gates';
+import { sendAlmogHabitCheckpointNotification } from '@/lib/module-api/reminders/lib-workflows-send-almog-habit-checkpoint';
+import { habitCheckpointSlotSchema } from '@/lib/module-api/reminders/lib-workflows-almog-habit-checkpoint-payload';
+import { workflowPublicBaseUrl } from '@/lib/module-api/reminders/lib-workflows-resolve-workflow-public-url';
 
 export const runtime = 'nodejs';
 export const maxDuration = 120;

@@ -6,7 +6,7 @@ import {
   syncKnowledgeVectorsForRow,
   type AlmogKnowledgeRow,
 } from '@/lib/admin/almog-knowledge';
-import { isSystemKnowledgeVectorConfigured } from '@/lib/ai/system-knowledge-vector';
+import { isSystemKnowledgeVectorConfigured } from '@/lib/module-api/agent/lib-ai-system-knowledge-vector';
 import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { readJsonBody } from '@/lib/api/json-request';

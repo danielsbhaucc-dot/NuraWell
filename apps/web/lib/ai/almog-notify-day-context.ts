@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { getIsraelNowMinutes } from './almog-time-context';
-import type { HabitCheckpointSlot } from '../workflows/almog-habit-checkpoint-payload';
+import type { HabitCheckpointSlot } from '@/lib/module-api/reminders/lib-workflows-almog-habit-checkpoint-payload';
 
 const SLOT_HE: Record<HabitCheckpointSlot, string> = {
   morning: 'בוקר',

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { Loader2, Mic, Save } from 'lucide-react';
-import type { ChallengeIntroLine } from '@/lib/challenge/content';
+import type { ChallengeIntroLine } from '@/lib/module-api/journey/lib-challenge-content';
 
 export function AdminChallengeIntroEditor() {
   const [lines, setLines] = useState<ChallengeIntroLine[]>([]);
