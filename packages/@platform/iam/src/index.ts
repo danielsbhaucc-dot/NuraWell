@@ -4,3 +4,4 @@ export * from './escalation';
 export * from './catalog';
 export * from './audit';
 export * from './modules';
+export * from './gate';
