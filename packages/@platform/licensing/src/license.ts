@@ -28,6 +28,8 @@ export type License = {
   /** Signed terms-acceptance evidence (no raw PII). */
   termsVersion?: string;
   termsAcceptedAt?: string;
+  /** Paid add-on features (e.g. 'white_label'). Absent = none. */
+  features?: string[];
 };
 export type LicenseInput = Omit<License, 'v' | 'lid' | 'issuedAt' | 'expiresAt' | 'graceDays' | 'termsAcceptedAt'> & {
   lid?: string;
@@ -63,6 +65,7 @@ export function issueLicense(privatePem: string, input: LicenseInput, now = new 
     graceDays: grace,
     ...(input.contentKey ? { contentKey: input.contentKey } : {}),
     ...(input.termsVersion ? { termsVersion: input.termsVersion } : {}),
+    ...(input.features?.length ? { features: [...new Set(input.features)].filter((f) => /^[a-z][a-z0-9_]{1,31}$/.test(f)).sort() } : {}),
     ...(termsAcceptedAt ? { termsAcceptedAt } : {}),
   };
   const body = b64u(canonicalJson(license));
