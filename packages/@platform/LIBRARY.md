@@ -26,3 +26,6 @@ Design document. Implemented today: packages, module.json schema, versions, `new
 
 ## Selling a module (e.g. a11y)
 One-line embed (`<script src=".../a11y.js" data-key="pk_...">` or npm), per-customer key + allowed-origins list, customer theming via the same tokens, usage metering, tenant isolation, no NuraWell data or secrets in the bundle, signed release + SBOM per version. Declared in `module.json` `embed`.
+
+## Flexibility and order
+See root AGENTS.md (convention, 3 flexibility levels). Copy-paste config examples go in each module's README.he.md and llms.txt as modules are migrated.
