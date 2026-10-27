@@ -2,19 +2,71 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "App-area module manifest",
   "type": "object",
-  "required": ["id", "name", "kind", "distribution", "category", "core", "toggleable", "alwaysOn", "owns", "description"],
+  "required": [
+    "id",
+    "name",
+    "kind",
+    "distribution",
+    "category",
+    "core",
+    "toggleable",
+    "alwaysOn",
+    "owns",
+    "description"
+  ],
   "properties": {
-    "$schema": { "type": "string" },
-    "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
-    "name": { "type": "string" },
-    "kind": { "const": "area" },
-    "distribution": { "enum": ["internal", "shareable", "sellable"] },
-    "category": { "type": "string" },
-    "core": { "type": "boolean" },
-    "toggleable": { "type": "boolean" },
-    "alwaysOn": { "type": "array", "items": { "type": "string" } },
-    "owns": { "type": "array", "items": { "type": "string", "pattern": "^apps/" } },
-    "description": { "type": "string" }
+    "$schema": {
+      "type": "string"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*$"
+    },
+    "name": {
+      "type": "string"
+    },
+    "kind": {
+      "const": "area"
+    },
+    "distribution": {
+      "enum": [
+        "internal",
+        "shareable",
+        "sellable"
+      ]
+    },
+    "category": {
+      "type": "string"
+    },
+    "core": {
+      "type": "boolean"
+    },
+    "toggleable": {
+      "type": "boolean"
+    },
+    "alwaysOn": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "owns": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^apps/"
+      }
+    },
+    "description": {
+      "type": "string"
+    },
+    "api": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Public API entry files (the module's index). Other modules may import a non-core module only through these."
+    }
   },
   "additionalProperties": false
 }
