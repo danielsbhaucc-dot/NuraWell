@@ -47,4 +47,4 @@ TODO: describe what the module-library-ui module does (one sentence, 20+ chars).
 - חלק מהרכיבים עוד לא מחוברים למתג במוצר
 
 ## תמיכה
-תמיכה דרך דניאל (בעל הספרייה). תיקונים חוזרים לספרייה כ-PR לריפו NuraWell, עם בדיקות.
+תמיכה דרך בעל הספרייה. תיקונים חוזרים לספרייה כ-PR לריפו NuraWell, עם בדיקות.
