@@ -1,0 +1,16 @@
+{
+  "$schema": "../area.schema.json",
+  "id": "iam",
+  "name": "הרשאות",
+  "kind": "area",
+  "distribution": "shareable",
+  "category": "security",
+  "core": true,
+  "toggleable": false,
+  "alwaysOn": [
+    "roles",
+    "owner-super-access"
+  ],
+  "owns": [],
+  "description": "Permissions and the console shell: roles, module toggles, product picker, admin/ops screens."
+}

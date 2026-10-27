@@ -1,0 +1,9 @@
+# incident-response
+> Incident response: security events, lockdown, CEO security view.
+
+kind: area module (owns app code in place; see module.json "owns", longest prefix wins)
+tier: internal
+core: true  toggleable: false
+always-on features: incident-playbook
+gate: off for a customer product without an active entitlement => routes 404, no menu, crons skipped, data retained. Owned products: always on.
+rules: no owner names in code; server-side authz; behavior changes need a golden/regression test.

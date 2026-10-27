@@ -7,6 +7,7 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROOT } from './lib.mjs';
+import { findAreas, ownerOf } from './areas.mjs';
 
 export const GLUE_MAX_LINES = 80;
 // Routing/layout glue + non-code assets. Everything else under apps/* is feature code.
@@ -21,10 +22,16 @@ export const ALLOW = [
 ];
 const GLUE_SIZE_CHECKED = /\/app\/.*\.(tsx?|jsx?)$|\/(proxy|middleware)\.ts$/;
 
-export function classify(files, legacy, read = (f) => readFileSync(join(ROOT, f), 'utf8')) {
+export function classify(files, legacy, read = (f) => readFileSync(join(ROOT, f), 'utf8'), areas = findAreas()) {
   const errors = [];
   for (const f of files) {
-    if (!f.startsWith('apps/') || legacy.has(f)) continue;
+    if (!f.startsWith('apps/')) continue;
+    const owner = ownerOf(f, areas);
+    if (legacy.has(f)) {
+      if (owner) errors.push(`${f}: owned by module "${owner}" but still on modules/legacy-app-files.txt — remove the line (the list only shrinks).`);
+      continue;
+    }
+    if (owner) continue; // feature code inside an area module (modules/<id>/module.json "owns")
     if (!ALLOW.some((r) => r.test(f))) { errors.push(`${f}: feature code outside modules. Create it with \`npx @platform/modules new <id>\` and import it from the app.`); continue; }
     if (GLUE_SIZE_CHECKED.test(f)) {
       const n = read(f).split('\n').length;
@@ -49,6 +56,12 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     process.exit(0);
   }
   const errors = classify(files, readBaseline());
+  // The legacy list may only SHRINK: compare with the base branch when it is available (CI fetches it).
+  const base = process.env.MODULES_BASE_REF || 'origin/main';
+  try {
+    const old = new Set(execFileSync('git', ['show', `${base}:modules/legacy-app-files.txt`], { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).split('\n').filter((l) => l && !l.startsWith('#')));
+    for (const l of readBaseline()) if (!old.has(l)) errors.push(`${l}: added to modules/legacy-app-files.txt — new feature code must live in a module, the list may only shrink.`);
+  } catch { console.warn(`(skipping shrink-only check: ${base} not available)`); }
   if (errors.length) { console.error('✖ module-first boundary violations:\n  ' + errors.join('\n  ')); process.exit(1); }
   console.log('module boundaries: OK');
 }

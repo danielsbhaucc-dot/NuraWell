@@ -1,0 +1,15 @@
+{
+  "$schema": "../area.schema.json",
+  "id": "audit-log",
+  "name": "יומן ביקורת",
+  "kind": "area",
+  "distribution": "internal",
+  "category": "security",
+  "core": true,
+  "toggleable": false,
+  "alwaysOn": [
+    "append-only-audit"
+  ],
+  "owns": [],
+  "description": "Append-only audit trail and session-trail sealing."
+}

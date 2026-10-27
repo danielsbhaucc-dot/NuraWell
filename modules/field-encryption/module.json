@@ -1,0 +1,15 @@
+{
+  "$schema": "../area.schema.json",
+  "id": "field-encryption",
+  "name": "הצפנת שדות",
+  "kind": "area",
+  "distribution": "internal",
+  "category": "privacy",
+  "core": true,
+  "toggleable": false,
+  "alwaysOn": [
+    "pii-encryption"
+  ],
+  "owns": [],
+  "description": "Field-level PII encryption and backfill."
+}

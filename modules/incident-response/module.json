@@ -1,0 +1,15 @@
+{
+  "$schema": "../area.schema.json",
+  "id": "incident-response",
+  "name": "תגובה לאירועים",
+  "kind": "area",
+  "distribution": "internal",
+  "category": "security",
+  "core": true,
+  "toggleable": false,
+  "alwaysOn": [
+    "incident-playbook"
+  ],
+  "owns": [],
+  "description": "Incident response: security events, lockdown, CEO security view."
+}

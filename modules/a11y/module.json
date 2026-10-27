@@ -1,0 +1,13 @@
+{
+  "$schema": "../area.schema.json",
+  "id": "a11y",
+  "name": "נגישות",
+  "kind": "area",
+  "distribution": "sellable",
+  "category": "ui",
+  "core": false,
+  "toggleable": true,
+  "alwaysOn": [],
+  "owns": [],
+  "description": "Accessibility preferences and tools (behavior unchanged)."
+}

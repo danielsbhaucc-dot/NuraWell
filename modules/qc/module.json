@@ -1,0 +1,13 @@
+{
+  "$schema": "../area.schema.json",
+  "id": "qc",
+  "name": "בקרת איכות",
+  "kind": "area",
+  "distribution": "shareable",
+  "category": "ops",
+  "core": false,
+  "toggleable": true,
+  "alwaysOn": [],
+  "owns": [],
+  "description": "Quality-control checks screen."
+}
