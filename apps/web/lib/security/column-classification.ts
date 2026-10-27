@@ -598,6 +598,13 @@ export const COLUMN_CLASSIFICATION: Readonly<Record<string, Readonly<Record<stri
     detail: ["sensitive", "registered (system key: legal)"],
     product_id: ["non_sensitive", "identifier/key or public credential material, no personal content"],
   },
+  legal_reseal_checkpoint: {
+    batch: ["non_sensitive", "identifier/key or public credential material, no personal content"],
+    col: ["non_sensitive", "column name, no personal content"],
+    plain_sha256: ["non_sensitive", "hash/digest/signature, not reversible to content"],
+    row_id: ["non_sensitive", "identifier/key or public credential material, no personal content"],
+    table_name: ["non_sensitive", "table name, no personal content"],
+  },
   legal_export_secrets: {
     case_ref: ["sensitive", "registered (system key: legal)"],
     export_sha256: ["non_sensitive", "hash/digest/signature, not reversible to content"],

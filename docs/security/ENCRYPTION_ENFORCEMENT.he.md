@@ -62,3 +62,11 @@
 - **שמירה (retention) 24 חודשים:** ללא שינוי — שום שורה לא נמחקת ולא נוספת מלבד ה-checkpoint.
 - **media_receipts.search_text:** העמודה המחוללת (עותק גלוי של vendor/plan/subject/currency/amount) הוחלפה ב-`search_bidx` — טוקני HMAC מקוצרים (n-grams 1..3 ו-trigrams בסגנון pg_trgm) במפתח ה-blind-index. החיפוש: סינון מועמדים לפי טוקנים ← אותו פרדיקט ישן על הטקסט המפוענח באפליקציה; ציון fuzzy מ-`legal_word_similarity` (pg_trgm על ערכים שהאפליקציה שולחת). 000224 מסירה את ענף הקבלות מ-legal_hub_fuzzy ומוחקת את העמודה — רק אחרי פריסה, backfill ובדיקת שוויון תוצאות (`receipt_search_parity`).
 - **הבדל ידוע:** subject היה מוצפן גם קודם, כך שהחיפוש הישן לא מצא לפי נושא; החדש מוצא (על-קבוצה). סכומים: String(number) ב-JS משמיט אפסים בסוף (12.50 ← 12.5).
+
+## 000225 — הצפנה חד-פעמית של ראיות משפטיות ישנות (reseal)
+- טבלאות: consent_evidence, consent_evidence_attestations, legal_access_log (append-only).
+- לפני כל תא: sha256 של הערך המקורי נרשם ב-legal_reseal_checkpoint (append-only, האשים בלבד, ללא תוכן) + שורת batch עם digest על כל הפריטים וראש השרשרת.
+- טריגר ה-append-only נשאר חוסם UPDATE/DELETE/TRUNCATE. חריג יחיד: בתוך legal_reseal_apply (GUC legal.reseal מקומי), עמודה רשומה אחת עוברת מטקסט גלוי ל-enc:v2 וכל השאר זהה.
+- record_hash / prev_hash / signature לא משתנים (הם מכסים את ה-plaintext) ומאומתים מחדש אחרי פענוח (verifyChain).
+- אימות: `?action=legal_verify` — digest זהה של כל השורות המפוענחות לפני/אחרי, 0 mismatch מול ה-checkpoint, 0 תאים גלויים.
+- media_receipts: `?action=media_receipts_probe` — כתיבה אמיתית דרך נתיב האפליקציה, בתוך טרנזקציה שמתגלגלת לאחור, עם אכיפה פעילה; האכיפה הופעלה רק אחרי 'accepted'.
