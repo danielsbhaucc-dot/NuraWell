@@ -4,6 +4,7 @@ import { loadActor, productsFor } from '@/lib/platform/authorize';
 import { decide } from '@platform/iam';
 import { CATALOG } from '@/lib/platform/catalog';
 import { loadProductMetrics } from '@/lib/platform/product-metrics';
+import { creditVisible, isOwnedProduct, loadCreditSettings } from '@/lib/platform/credit-setting';
 import { ProductsControlPlane } from '@/components/ops-products/ProductsControlPlane';
 
 export const dynamic = 'force-dynamic';
@@ -22,5 +23,10 @@ export default async function OpsProductsPage() {
   const { founder } = productsFor(actor);
   const { rows, error } = await loadProductMetrics(admin);
   const visible = rows.filter((r) => founder || decide(CATALOG, actor, r.productId, 'costs.read').allow);
-  return <ProductsControlPlane rows={visible} error={error} />;
+  // owner-only toggle, owned products only (customers follow the white_label entitlement)
+  const settings = founder ? await loadCreditSettings(admin) : {};
+  const credit = founder
+    ? Object.fromEntries(visible.filter((r) => isOwnedProduct(r.productId)).map((r) => [r.productId, creditVisible({ productId: r.productId, setting: settings[r.productId], whiteLabel: false })]))
+    : undefined;
+  return <ProductsControlPlane rows={visible} error={error} credit={credit} />;
 }
