@@ -14,9 +14,9 @@ import {
   Trash2,
   type LucideIcon,
 } from 'lucide-react';
-import { useMediaManager } from '@/lib/module-api/site-content/components-media-manager-MediaManagerProvider';
-import type { MediaAsset } from '@/lib/module-api/site-content/components-media-manager-types';
-import { GlassConfirmDialog } from '@/lib/module-api/site-content/components-media-manager-GlassConfirmDialog';
+import { useMediaManager } from '@/components/media-manager/MediaManagerProvider';
+import type { MediaAsset } from '@/components/media-manager/types';
+import { GlassConfirmDialog } from '@/components/media-manager/GlassConfirmDialog';
 import { AdminComingSoonLyricsEditor } from '@/components/admin/AdminComingSoonLyricsEditor';
 import { AdminComingSoonRevolutionEditor } from '@/components/admin/AdminComingSoonRevolutionEditor';
 import { cn } from '@/lib/cn';
