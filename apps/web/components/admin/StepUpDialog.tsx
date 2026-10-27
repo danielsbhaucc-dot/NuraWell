@@ -97,11 +97,11 @@ export function StepUpDialog({ open, purpose, reason, onClose, onVerified, varia
 
   return (
     <div className="fixed inset-0 z-[60] grid place-items-end bg-primary-950/45 backdrop-blur-sm sm:place-items-center" role="dialog" aria-modal="true" aria-label="אימות זהות" dir="rtl" data-testid="stepup-dialog">
-      <div className="max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-[30px] border border-accent-200/40 bg-[linear-gradient(160deg,rgba(232,232,237,0.95),rgba(242,242,246,0.93))] p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-2xl backdrop-blur-xl sm:rounded-[30px]">
+      <div className="max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-[30px] border border-gc-canvas bg-background-card p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-[0_18px_50px_rgba(4,20,14,0.28)] sm:rounded-[30px]">
         <div className="mb-3 flex items-start justify-between gap-3">
           <div>
-            <p className="text-[11px] font-bold tracking-wide text-accent-700">{eyebrow ?? (variant === 'login' ? 'כניסה עם הטלפון' : 'אימות לפני פעולה רגישה')}</p>
-            <h3 className="font-[Rubik] text-lg font-bold text-ink">{reason}</h3>
+            <p className="text-[11px] font-bold tracking-wide text-forest-700">{eyebrow ?? (variant === 'login' ? 'כניסה עם הטלפון' : 'אימות לפני פעולה רגישה')}</p>
+            <h3 className="font-display text-lg font-bold text-ink">{reason}</h3>
           </div>
           <button type="button" onClick={onClose} aria-label="סגירה" className="rounded-full p-1.5 text-ink-soft hover:bg-glass/50"><X size={18} /></button>
         </div>
@@ -112,20 +112,20 @@ export function StepUpDialog({ open, purpose, reason, onClose, onVerified, varia
         ) : (
           <>
             {variant === 'ops' && (m?.totp || (m?.backup_left ?? 0) > 0) ? (
-              <div className="mb-4 flex gap-1 rounded-3xl border border-gc/50 bg-glass/30 p-1">
+              <div className="mb-4 flex gap-1 rounded-3xl border border-gc-canvas bg-surface-sunken p-1">
               {tab('qr', 'עם הטלפון')}{tab('totp', 'אפליקציית קודים', variant === 'ops' && !!m?.totp)}{tab('backup', 'קוד גיבוי', variant === 'ops' && (m?.backup_left ?? 0) > 0)}
               </div>
             ) : null}
             {mode === 'qr' ? (
               <div className="text-center">
                 <p className="mb-3 text-sm text-ink-soft">{variant === 'login' ? 'סורקים במצלמה של טלפון שכבר מחובר לחשבון, ומאשרים שם עם Face ID. המסך הזה ייכנס לבד.' : 'סורקים במצלמה של הטלפון שלך ומאשרים שם עם Face ID. המסך הזה ימשיך לבד.'}</p>
-                <div className="mx-auto grid h-52 w-52 place-items-center rounded-[26px] border border-accent-300/50 bg-accent-50/40 p-3 shadow-inner" data-testid="stepup-qr">
+                <div className="mx-auto grid h-52 w-52 place-items-center rounded-[26px] border border-forest-700/30 bg-surface-sunken p-3 shadow-inner" data-testid="stepup-qr">
                   {qr ? <div className="h-full w-full [&_svg]:h-full [&_svg]:w-full" dangerouslySetInnerHTML={{ __html: sanitizeSvg(qr.svg) }} /> : <Loader2 className="animate-spin text-ink-faint" />}
                 </div>
                 {qr?.match ? (
                   <div className="mx-auto mt-3 flex w-fit items-center gap-3 rounded-2xl border border-primary-700/25 bg-primary-900/[0.06] px-4 py-2" data-testid="stepup-match">
                     <span className="text-[13px] font-bold text-ink-soft">בטלפון בוחרים את המספר</span>
-                    <span className="font-[Rubik] text-3xl font-bold tabular-nums tracking-wider text-primary-900" dir="ltr">{qr.match}</span>
+                    <span className="font-display text-3xl font-bold tabular-nums tracking-wider text-primary-900" dir="ltr">{qr.match}</span>
                   </div>
                 ) : null}
                 <div className="mt-3 flex flex-wrap justify-center gap-2 text-[11.5px] font-bold">
@@ -148,7 +148,7 @@ export function StepUpDialog({ open, purpose, reason, onClose, onVerified, varia
                 {mode === 'backup' && m ? <p className="mt-2 text-center text-[11px] text-ink-faint">נשארו {m.backup_left} קודים</p> : null}
               </div>
             )}
-            {err ? <p role="alert" className="mt-3 rounded-xl border border-coral-300/60 bg-coral-100/50 px-3 py-2 text-sm font-semibold text-coral-800">{err}</p> : null}
+            {err ? <p role="alert" className="mt-3 rounded-xl border border-coral-800/60 bg-surface-sunken px-3 py-2 text-sm font-semibold text-coral-800">{err}</p> : null}
           </>
         )}
       </div>
@@ -186,7 +186,7 @@ export function FriendlyStepUp({ m, purpose, post, onDone }: { m: Methods; purpo
     <div data-testid="stepup-friendly">
       <p className="mb-3 text-sm text-ink-soft">כדי לשנות מודולים מאשרים שזה באמת אתם. בוחרים דרך אחת:</p>
       {methods.length > 1 ? (
-        <div className="mb-4 flex gap-1 rounded-3xl border border-gc/50 bg-glass/30 p-1" role="tablist">
+        <div className="mb-4 flex gap-1 rounded-3xl border border-gc-canvas bg-surface-sunken p-1" role="tablist">
           {methods.map((k) => (
             <button key={k} type="button" role="tab" aria-selected={mode === k} onClick={() => { setMode(k); setErr(null); setCode(''); }}
               className={cn('flex-1 rounded-2xl px-3 py-2 text-[13px] font-bold transition', mode === k ? 'bg-forest-800 text-on-dark shadow' : 'text-ink-soft hover:bg-glass/50')}>{LABEL[k]}</button>
@@ -213,7 +213,7 @@ export function FriendlyStepUp({ m, purpose, post, onDone }: { m: Methods; purpo
       )}
       <p className="mt-3 text-center text-[11.5px] font-bold text-forest-800"><ShieldCheck size={12} className="inline" /> חד-פעמי · תקף לכמה דקות · נרשם ביומן האבטחה</p>
       {m.upsell ? <p className="mt-2 text-center text-[11.5px] text-ink-soft" data-testid="stepup-upsell"><a href={m.upsell.href} target="_blank" rel="noopener" className="font-semibold text-forest-800 underline underline-offset-2">{m.upsell.label}</a></p> : null}
-      {err ? <p role="alert" className="mt-3 rounded-xl border border-coral-300/60 bg-coral-100/50 px-3 py-2 text-sm font-semibold text-coral-800">{err}</p> : null}
+      {err ? <p role="alert" className="mt-3 rounded-xl border border-coral-800/60 bg-surface-sunken px-3 py-2 text-sm font-semibold text-coral-800">{err}</p> : null}
     </div>
   );
 }
