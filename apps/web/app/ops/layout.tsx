@@ -8,6 +8,7 @@ import { publicAppBaseNoSlashSync } from '@/lib/public-app-url';
 import { ForcePasswordRotation } from '@/components/ops-access/ForcePasswordRotation';
 import { passwordRotationRequired } from '@/lib/ops/password-rotation';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { opsNavState } from '@/lib/platform/nav-state';
 
 export const metadata: Metadata = {
   title: 'פאנל ניהול',
@@ -33,6 +34,7 @@ export default async function OpsLayout({ children }: { children: React.ReactNod
   const adminFirstName = firstNameFromFullName(profile?.full_name ?? null);
   const adminDisplayName = profile?.full_name?.trim() || 'מנהל';
   const adminAvatarUrl = profile?.avatar_url ?? null;
+  const nav = await opsNavState();
 
   return (
     <AdminShell
@@ -40,6 +42,8 @@ export default async function OpsLayout({ children }: { children: React.ReactNod
       adminDisplayName={adminDisplayName}
       adminAvatarUrl={adminAvatarUrl}
       mainAppBase={mainAppBase}
+      hiddenPaths={nav.hiddenPaths}
+      licenseAlert={nav.licenseAlert}
     >
       {children}
       <OpsPendingLoginAlert />

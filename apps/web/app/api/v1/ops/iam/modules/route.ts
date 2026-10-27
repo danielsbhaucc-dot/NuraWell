@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { requireApiAdmin } from '@/lib/api/route-guards';
 import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { hasSensitiveStepUp } from '@/lib/ops/sensitive-stepup';
+import { hasFreshDeviceApproval } from '@/lib/ops/sensitive-stepup';
 import { alertOwnerSecurity } from '@/lib/ops/device-notify';
 import { loadActor, loadModuleStates, selectedProduct } from '@/lib/platform/authorize';
 import { toggleModule } from '@/lib/platform/iam-admin';
@@ -32,7 +32,8 @@ export async function POST(request: Request) {
   const rl = await consumeMultiRateLimits(uid, 'ops-iam-modules', [{ limit: 30, windowSeconds: 600 }]);
   if (!rl.ok) return rateLimitResponse(rl);
   const { data: sess } = await g.supabase.auth.getSession();
-  const steppedUp = await hasSensitiveStepUp({ accessToken: sess.session?.access_token, userId: uid, req: request });
+  // Every toggle needs a fresh, single-use device approval (not just a recent login).
+  const steppedUp = await hasFreshDeviceApproval({ accessToken: sess.session?.access_token, userId: uid, req: request });
   if (!steppedUp) return json({ error: 'נדרש אימות נוסף.', stepUp: true, code: 'stepup_required' }, 403);
   const db = createAdminClient();
   const out = await toggleModule(db, await loadActor(db, uid), p.data.productId, p.data.moduleId, p.data.enabled, {

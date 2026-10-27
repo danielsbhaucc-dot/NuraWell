@@ -38,3 +38,17 @@ export async function hasSensitiveStepUp(c: StepUpCtx): Promise<boolean> {
   }
   return false;
 }
+
+/**
+ * Fresh device approval: a single-use grant from <StepUpDialog purpose="ops.sensitive"> (passkey / cross-device
+ * approval / TOTP / backup code), consumed by this request. A recent login alone is NOT enough. Used for module
+ * enable/disable, so every toggle needs its own approval.
+ */
+export async function hasFreshDeviceApproval(c: StepUpCtx): Promise<boolean> {
+  if (c.req.method === 'GET') return false;
+  try {
+    return await grantVerifier(c);
+  } catch {
+    return false;
+  }
+}
