@@ -1,4 +1,5 @@
 'use client';
+import { GreetingOptions } from './GreetingOptions';
 
 import { motion } from 'framer-motion';
 import type { ReactNode } from 'react';
@@ -75,64 +76,12 @@ export function AlmogHeroHeader({
 
   return (
     <>
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35 }}
-        className="mb-3 rounded-2xl px-4 py-3"
-        style={{
-          background:
-            'var(--hero-inner)' /* solid: separated from the hero band */,
-          border: '1px solid var(--hero-inner-line)',
-          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3), 0 2px 12px rgba(0,0,0,0.06)',
-          isolation: 'isolate',
-        }}
-      >
-        <div
-          style={{
-            fontSize: '20px',
-            color: '#f2f2f6',
-            fontWeight: 900,
-            fontFamily: "'Rubik','Heebo',sans-serif",
-            lineHeight: 1.15,
-          }}
-        >
-          {greeting.timeGreeting} {firstName} <span aria-hidden>👋</span>
-        </div>
-        {greeting.occasionGreeting ? (
-          <div
-            style={{
-              marginTop: '4px',
-              fontSize: '13px',
-              color:
-                greeting.tone === 'festive'
-                  ? '#FFD97D'
-                  : greeting.tone === 'solemn'
-                    ? 'rgba(242,242,246,0.78)'
-                    : 'rgba(242,242,246,0.92)',
-              fontWeight: greeting.tone === 'solemn' ? 600 : 700,
-              fontStyle: greeting.tone === 'solemn' ? 'italic' : 'normal',
-              letterSpacing: '0.2px',
-              fontFamily: "'Rubik','Heebo',sans-serif",
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-            }}
-          >
-            <span aria-hidden style={{ fontSize: '13px' }}>
-              {greeting.tone === 'festive'
-                ? '✿'
-                : greeting.tone === 'solemn'
-                  ? '🕯️'
-                  : '✿'}
-            </span>
-            <span>{greeting.occasionGreeting}</span>
-          </div>
-        ) : null}
-        {showTaskBadge ? (
-          <TaskBadgeRow {...taskBadge!} onClick={onTaskBadgeClick} />
-        ) : null}
-      </motion.div>
+      <GreetingOptions
+        title={`${greeting.timeGreeting} ${firstName}`.trim()}
+        occasion={greeting.occasionGreeting}
+        badge={showTaskBadge ? taskBadge! : null}
+        onOpen={onTaskBadgeClick}
+      />
 
       <motion.div
         initial={{ opacity: 0, y: 12 }}
