@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { buildBusinessMetrics } from '@/lib/admin/business-metrics';
 import { deleteUserCompletely } from '@/lib/admin/delete-user-completely';
 import { opsLink } from './channel';
-import { searchReceiptIds } from '@/lib/legal/media/receipt-search';
+import { searchReceiptIds } from '@/lib/legal/media/receipts';
 import { pendingLicenseItems, unmatchedReceipts } from '@/lib/legal/media/pending';
 import { openOwnerTasks, setOwnerTask } from './owner-tasks';
 import { autoForward, forwardSchema, orWorkStatus, type ForwardArgs } from './dev-forward';

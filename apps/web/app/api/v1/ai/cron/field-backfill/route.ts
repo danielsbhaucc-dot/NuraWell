@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server';
 import { authorizeCronRequest, hasFieldBackfillSecret } from '@/lib/api/authorize-cron';
-import { backfillFieldV2, FIELD_V2_BACKFILL_TABLES, recordBackfillRun } from '@/lib/security/field-backfill';
 import { createAdminClient, createRawAdminClient } from '@/lib/supabase/admin';
-import { receiptSearchParity, resealAuditLog, verifyAuditLog } from '@/lib/security/enc-last-three';
-import { backfillReceiptSearch } from '@/lib/legal/media/receipt-search';
+import { backfillFieldV2, FIELD_V2_BACKFILL_TABLES, receiptSearchParity, recordBackfillRun, resealAuditLog, verifyAuditLog } from '@/lib/security/field-backfill';
+import { backfillReceiptSearch } from '@/lib/legal/media/receipts';
 
 /** ?action= one-off maintenance for 000222 (counts only). */
 const ACTIONS: Record<string, () => Promise<unknown>> = {

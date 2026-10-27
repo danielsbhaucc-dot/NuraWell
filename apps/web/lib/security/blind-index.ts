@@ -17,7 +17,7 @@
  *  - auth_session_trail.ip_bidx          = H(ip) — ops_session_trail(p_ip_bidx) cross-user IP lookup (000214); filled by
  *      the session-trail-seal cron in the same CAS update that seals ip/user_agent
  *
- *  - media_receipts.search_bidx         = [H(token) …] substring/trigram search tokens (lib/legal/media/receipt-search.ts,
+ *  - media_receipts.search_bidx         = [H(token) …] substring/trigram search tokens (lib/legal/media/receipts-core.ts,
  *      000222) — replaces the plaintext generated search_text; a partial update clears it and the writer refreshes it
  *
  * Computed by prepareWriteRow (insert/update with a plaintext source value) and by the backfill (migration 000208).
@@ -139,7 +139,7 @@ export async function blindIndexPatch(table: string, row: Row): Promise<Row> {
     out.ip_bidx = t ? await sessionTrailIpBidx(t) : null;
   }
   if (table === 'media_receipts') {
-    const { receiptSearchPatch } = await import('@/lib/legal/media/receipt-search');
+    const { receiptSearchPatch } = await import('@/lib/legal/media/receipts-core');
     Object.assign(out, await receiptSearchPatch(row));
   }
   return out;

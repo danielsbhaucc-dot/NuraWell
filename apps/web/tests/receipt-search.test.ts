@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { charGrams, matchesAnyWord, pgTrigrams, queryGrams, receiptSearchText } from '@/lib/legal/media/receipt-search';
+import { charGrams, matchesAnyWord, pgTrigrams, queryGrams, receiptSearchText } from '@/lib/legal/media/receipts-core';
 
 describe('receipt search (blind index)', () => {
   it('builds the same text as the dropped generated column', () => {
