@@ -1,0 +1,1396 @@
+{
+  "version": 1,
+  "turns": [
+    {
+      "m": "היי",
+      "signals": {
+        "blocker_mentioned": false,
+        "avoid_push_requested": false,
+        "daily_availability_low_requested": false
+      },
+      "evasion": false,
+      "analysis": {
+        "writer": "llama4",
+        "scores": {
+          "terra": 30,
+          "claude5": 20,
+          "grok": 20,
+          "llama4": 8
+        },
+        "confidence": 65,
+        "tags": []
+      },
+      "stance": null,
+      "v3": {
+        "writer": "llama4",
+        "slug": null,
+        "lane": "cheap_luna",
+        "light": true
+      },
+      "crisis": false,
+      "response": null,
+      "outcome": null,
+      "reporting": null,
+      "task": {
+        "kind": "none",
+        "category": "unknown",
+        "confidence": "low",
+        "source": "regex"
+      },
+      "habit": {
+        "kind": "none",
+        "category": "unknown",
+        "confidence": "low",
+        "source": "regex"
+      },
+      "water": false,
+      "weightKg": null
+    },
+    {
+      "m": "תודה, עשיתי",
+      "signals": {
+        "blocker_mentioned": false,
+        "avoid_push_requested": false,
+        "daily_availability_low_requested": false
+      },
+      "evasion": false,
+      "analysis": {
+        "writer": "llama4",
+        "scores": {
+          "terra": 22,
+          "claude5": 14,
+          "grok": 12,
+          "llama4": 78
+        },
+        "confidence": 97,
+        "tags": [
+          "simple"
+        ]
+      },
+      "stance": "babbb58d3156e150cb55731449f454ba9c90fc8c6cdfa70c0af60fe345c04d61",
+      "v3": {
+        "writer": "llama4",
+        "slug": null,
+        "lane": "cheap_luna",
+        "light": false
+      },
+      "crisis": false,
+      "response": {
+        "category": "done",
+        "confidence": "high",
+        "source": "regex"
+      },
+      "outcome": "completed",
+      "reporting": true,
+      "task": {
+        "kind": "none",
+        "category": "done",
+        "confidence": "low",
+        "source": "regex"
+      },
+      "habit": {
+        "kind": "none",
+        "category": "done",
+        "confidence": "low",
+        "source": "regex"
+      },
+      "water": true,
+      "weightKg": null
+    },
+    {
+      "m": "יום קשה, אני מרגיש לבד",
+      "signals": {
+        "blocker_mentioned": false,
+        "avoid_push_requested": false,
+        "daily_availability_low_requested": true
+      },
+      "evasion": false,
+      "analysis": {
+        "writer": "terra",
+        "scores": {
+          "terra": 66,
+          "claude5": 20,
+          "grok": 14,
+          "llama4": 8
+        },
+        "confidence": 90,
+        "tags": [
+          "empathy"
+        ]
+      },
+      "stance": "08c9ca53cdffcc0ede221165a57bc16bdcbf06447f98188e53f29e7c55b29423",
+      "v3": {
+        "writer": "terra",
+        "slug": null,
+        "lane": "gpt_empathy"
+      },
+      "crisis": false,
+      "response": null,
+      "outcome": null,
+      "reporting": null,
+      "task": {
+        "kind": "none",
+        "category": "unknown",
+        "confidence": "low",
+        "source": "regex"
+      },
+      "habit": {
+        "kind": "none",
+        "category": "unknown",
+        "confidence": "low",
+        "source": "regex"
+      },
+      "water": false,
+      "weightKg": null
+    },
+    {
+      "m": "מחר אתחיל, היום אין מצב",
+      "signals": {
+        "blocker_mentioned": false,
+        "avoid_push_requested": false,
+        "daily_availability_low_requested": false
+      },
+      "evasion": true,
+      "analysis": {
+        "writer": "claude5",
+        "scores": {
+          "terra": 22,
+          "claude5": 20,
+          "grok": 62,
+          "llama4": 8
+        },
+        "confidence": 86,
+        "tags": [
+          "evasion"
+        ]
+      },
+      "stance": "ee402f0fbbfcc6df1c8b6b854bbd28310674f99a3fdfc197b9ef2454a367af02",
+      "v3": {
+        "writer": "grok",
+        "slug": null,
+        "lane": "grok"
+      },
+      "crisis": false,
+      "response": null,
+      "outcome": null,
+      "reporting": null,
+      "task": {
+        "kind": "none",
+        "category": "unknown",
+        "confidence": "low",
+        "source": "regex"
+      },
+      "habit": {
+        "kind": "none",
+        "category": "unknown",
+        "confidence": "low",
+        "source": "regex"
+      },
+      "water": false,
+      "weightKg": null
+    },
+    {
+      "m": "אתה סתם בוט, לא מבין כלום",
+      "signals": {
+        "blocker_mentioned": false,
+        "avoid_push_requested": false,
+        "daily_availability_low_requested": false
+      },
+      "evasion": false,
+      "analysis": {
+        "writer": "llama4",
+        "scores": {
+          "terra": 30,
+          "claude5": 20,
+          "grok": 20,
+          "llama4": 8
+        },
+        "confidence": 65,
+        "tags": []
+      },
+      "stance": null,
+      "v3": {
+        "writer": "grok",
+        "slug": null,
+        "lane": "grok"
+      },
+      "crisis": false,
+      "response": null,
+      "outcome": null,
+      "reporting": null,
+      "task": {
+        "kind": "none",
+        "category": "unknown",
+        "confidence": "low",
+        "source": "regex"
+      },
+      "habit": {
+        "kind": "none",
+        "category": "unknown",
+        "confidence": "low",
+        "source": "regex"
+      },
+      "water": false,
+      "weightKg": null
+    },
+    {
+      "m": "אני לא רוצה לחיות יותר",
+      "signals": {
+        "blocker_mentioned": false,
+        "avoid_push_requested": false,
+        "daily_availability_low_requested": false
+      },
+      "evasion": false,
+      "analysis": {
+        "writer": "claude5",
+        "scores": {
+          "terra": 30,
+          "claude5": 75,
+          "grok": 12,
+          "llama4": 2
+        },
+        "confidence": 90,
+        "tags": [
+          "safety"
+        ]
+      },
+      "stance": "f472ca97edebd1994890663ebea22f0312d83368670345a4214b68927f6e33c8",
+      "v3": {
+        "writer": "claude5",
+        "slug": null,
+        "lane": "claude_crisis",
+        "light": true
+      },
+      "crisis": true,
+      "response": null,
+      "outcome": null,
+      "reporting": null,
+      "task": {
+        "kind": "none",
+        "category": "unknown",
+        "confidence": "low",
+        "source": "regex"
+      },
+      "habit": {
+        "kind": "none",
+        "category": "unknown",
+        "confidence": "low",
+        "source": "regex"
+      },
+      "water": false,
+      "weightKg": null
+    },
+    {
+      "m": "שתיתי 2 כוסות מים",
+      "signals": {
+        "blocker_mentioned": false,
+        "avoid_push_requested": false,
+        "daily_availability_low_requested": false
+      },
+      "evasion": false,
+      "analysis": {
+        "writer": "llama4",
+        "scores": {
+          "terra": 54,
+          "claude5": 20,
+          "grok": 20,
+          "llama4": 8
+        },
+        "confidence": 82,
+        "tags": [
+          "coaching"
+        ]
+      },
+      "stance": "d45d6107098586e3629580e8c63c43b427883a2e34cbbc68bf97a229e6c2f16b",
+      "v3": {
+        "writer": "llama4",
+        "slug": null,
+        "lane": "cheap_luna",
+        "light": false
+      },
+      "crisis": false,
+      "response": {
+        "category": "done",
+        "confidence": "high",
+        "source": "regex"
+      },
+      "outcome": "completed",
+      "reporting": true,
+      "task": {
+        "kind": "done",
+        "category": "done",
+        "confidence": "high",
+        "source": "regex",
+        "taskId": "t2",
+        "taskTitle": "לשתות 8 כוסות מים"
+      },
+      "habit": {
+        "kind": "done",
+        "category": "done",
+        "confidence": "high",
+        "source": "regex",
+        "habitId": "h1",
+        "habitTitle": "שתיית מים"
+      },
+      "water": true,
+      "weightKg": null
+    },
+    {
+      "m": "שקלתי היום 82.4 קילו",
+      "signals": {
+        "blocker_mentioned": false,
+        "avoid_push_requested": false,
+        "daily_availability_low_requested": false
+      },
+      "evasion": false,
+      "analysis": {
+        "writer": "llama4",
+        "scores": {
+          "terra": 30,
+          "claude5": 20,
+          "grok": 20,
+          "llama4": 8
+        },
+        "confidence": 65,
+        "tags": []
+      },
+      "stance": null,
+      "v3": {
+        "writer": "llama4",
+        "slug": null,
+        "lane": "cheap_luna",
+        "light": false
+      },
+      "crisis": false,
+      "response": null,
+      "outcome": null,
+      "reporting": null,
+      "task": {
+        "kind": "none",
+        "category": "unknown",
+        "confidence": "low",
+        "source": "regex"
+      },
+      "habit": {
+        "kind": "none",
+        "category": "unknown",
+        "confidence": "low",
+        "source": "regex"
+      },
+      "water": false,
+      "weightKg": null
+    },
+    {
+      "m": "לא הספקתי את המשימה, אין לי כוח",
+      "signals": {
+        "blocker_mentioned": false,
+        "avoid_push_requested": false,
+        "daily_availability_low_requested": true,
+        "emotional_hint": "low_energy"
+      },
+      "evasion": false,
+      "analysis": {
+        "writer": "terra",
+        "scores": {
+          "terra": 90,
+          "claude5": 20,
+          "grok": 14,
+          "llama4": 8
+        },
+        "confidence": 100,
+        "tags": [
+          "empathy",
+          "coaching"
+        ]
+      },
+      "stance": "08c9ca53cdffcc0ede221165a57bc16bdcbf06447f98188e53f29e7c55b29423",
+      "v3": {
+        "writer": "terra",
+        "slug": null,
+        "lane": "gpt_empathy"
+      },
+      "crisis": false,
+      "response": null,
+      "outcome": null,
+      "reporting": null,
+      "task": {
+        "kind": "none",
+        "category": "unknown",
+        "confidence": "low",
+        "source": "regex"
+      },
+      "habit": {
+        "kind": "none",
+        "category": "unknown",
+        "confidence": "low",
+        "source": "regex"
+      },
+      "water": false,
+      "weightKg": null
+    },
+    {
+      "m": "סיימתי את ההליכה של הבוקר",
+      "signals": {
+        "blocker_mentioned": false,
+        "avoid_push_requested": false,
+        "daily_availability_low_requested": false
+      },
+      "evasion": false,
+      "analysis": {
+        "writer": "llama4",
+        "scores": {
+          "terra": 30,
+          "claude5": 20,
+          "grok": 20,
+          "llama4": 8
+        },
+        "confidence": 65,
+        "tags": []
+      },
+      "stance": null,
+      "v3": {
+        "writer": "llama4",
+        "slug": null,
+        "lane": "cheap_luna",
+        "light": false
+      },
+      "crisis": false,
+      "response": {
+        "category": "done",
+        "confidence": "high",
+        "source": "regex"
+      },
+      "outcome": "completed",
+      "reporting": true,
+      "task": {
+        "kind": "done",
+        "category": "done",
+        "confidence": "high",
+        "source": "regex",
+        "taskId": "t1",
+        "taskTitle": "הליכה של הבוקר"
+      },
+      "habit": {
+        "kind": "none",
+        "category": "done",
+        "confidence": "low",
+        "source": "regex"
+      },
+      "water": true,
+      "weightKg": null
+    },
+    {
+      "m": "אכלתי שוקולד שלם, נשברתי",
+      "signals": {
+        "blocker_mentioned": false,
+        "avoid_push_requested": false,
+        "daily_availability_low_requested": false
+      },
+      "evasion": false,
+      "analysis": {
+        "writer": "terra",
+        "scores": {
+          "terra": 66,
+          "claude5": 20,
+          "grok": 14,
+          "llama4": 8
+        },
+        "confidence": 90,
+        "tags": [
+          "empathy"
+        ]
+      },
+      "stance": "08c9ca53cdffcc0ede221165a57bc16bdcbf06447f98188e53f29e7c55b29423",
+      "v3": {
+        "writer": "terra",
+        "slug": null,
+        "lane": "gpt_empathy"
+      },
+      "crisis": false,
+      "response": {
+        "category": "done",
+        "confidence": "high",
+        "source": "regex"
+      },
+      "outcome": "completed",
+      "reporting": true,
+      "task": {
+        "kind": "done",
+        "category": "done",
+        "confidence": "high",
+        "source": "regex",
+        "taskId": "t1",
+        "taskTitle": "הליכה של הבוקר"
+      },
+      "habit": {
+        "kind": "none",
+        "category": "done",
+        "confidence": "low",
+        "source": "regex"
+      },
+      "water": true,
+      "weightKg": null
+    },
+    {
+      "m": "תפסיק ללחוץ עליי",
+      "signals": {
+        "blocker_mentioned": false,
+        "avoid_push_requested": false,
+        "daily_availability_low_requested": false
+      },
+      "evasion": false,
+      "analysis": {
+        "writer": "llama4",
+        "scores": {
+          "terra": 30,
+          "claude5": 20,
+          "grok": 20,
+          "llama4": 8
+        },
+        "confidence": 65,
+        "tags": []
+      },
+      "stance": null,
+      "v3": {
+        "writer": "llama4",
+        "slug": null,
+        "lane": "cheap_luna",
+        "light": false
+      },
+      "crisis": false,
+      "response": null,
+      "outcome": null,
+      "reporting": null,
+      "task": {
+        "kind": "none",
+        "category": "unknown",
+        "confidence": "low",
+        "source": "regex"
+      },
+      "habit": {
+        "kind": "none",
+        "category": "unknown",
+        "confidence": "low",
+        "source": "regex"
+      },
+      "water": false,
+      "weightKg": null
+    },
+    {
+      "m": "מה אני צריך לעשות היום?",
+      "signals": {
+        "blocker_mentioned": false,
+        "avoid_push_requested": false,
+        "daily_availability_low_requested": false
+      },
+      "evasion": false,
+      "analysis": {
+        "writer": "llama4",
+        "scores": {
+          "terra": 30,
+          "claude5": 20,
+          "grok": 20,
+          "llama4": 8
+        },
+        "confidence": 65,
+        "tags": []
+      },
+      "stance": null,
+      "v3": {
+        "writer": "llama4",
+        "slug": null,
+        "lane": "cheap_luna",
+        "light": false
+      },
+      "crisis": false,
+      "response": {
+        "category": "question",
+        "confidence": "medium",
+        "source": "regex"
+      },
+      "outcome": null,
+      "reporting": false,
+      "task": {
+        "kind": "none",
+        "category": "question",
+        "confidence": "medium",
+        "source": "regex"
+      },
+      "habit": {
+        "kind": "none",
+        "category": "question",
+        "confidence": "medium",
+        "source": "regex"
+      },
+      "water": false,
+      "weightKg": null
+    },
+    {
+      "m": "אני לא מסכים איתך בכלל",
+      "signals": {
+        "blocker_mentioned": false,
+        "avoid_push_requested": false,
+        "daily_availability_low_requested": false
+      },
+      "evasion": false,
+      "analysis": {
+        "writer": "claude5",
+        "scores": {
+          "terra": 30,
+          "claude5": 20,
+          "grok": 56,
+          "llama4": 8
+        },
+        "confidence": 76,
+        "tags": [
+          "argument"
+        ]
+      },
+      "stance": "fcc684107d031763e8525d8b6783b2976bf709ecdc2ef3628cb81346c5cf41d2",
+      "v3": {
+        "writer": "grok",
+        "slug": null,
+        "lane": "grok"
+      },
+      "crisis": false,
+      "response": null,
+      "outcome": null,
+      "reporting": null,
+      "task": {
+        "kind": "none",
+        "category": "unknown",
+        "confidence": "low",
+        "source": "regex"
+      },
+      "habit": {
+        "kind": "none",
+        "category": "unknown",
+        "confidence": "low",
+        "source": "regex"
+      },
+      "water": false,
+      "weightKg": null
+    },
+    {
+      "m": "אני רוצה להקיא אחרי כל ארוחה",
+      "signals": {
+        "blocker_mentioned": false,
+        "avoid_push_requested": false,
+        "daily_availability_low_requested": false
+      },
+      "evasion": false,
+      "analysis": {
+        "writer": "claude5",
+        "scores": {
+          "terra": 30,
+          "claude5": 75,
+          "grok": 12,
+          "llama4": 2
+        },
+        "confidence": 90,
+        "tags": [
+          "safety"
+        ]
+      },
+      "stance": "f472ca97edebd1994890663ebea22f0312d83368670345a4214b68927f6e33c8",
+      "v3": {
+        "writer": "claude5",
+        "slug": null,
+        "lane": "claude_crisis",
+        "light": true
+      },
+      "crisis": true,
+      "response": null,
+      "outcome": null,
+      "reporting": null,
+      "task": {
+        "kind": "none",
+        "category": "unknown",
+        "confidence": "low",
+        "source": "regex"
+      },
+      "habit": {
+        "kind": "none",
+        "category": "unknown",
+        "confidence": "low",
+        "source": "regex"
+      },
+      "water": false,
+      "weightKg": null
+    },
+    {
+      "m": "ישנתי רק 4 שעות",
+      "signals": {
+        "blocker_mentioned": false,
+        "avoid_push_requested": false,
+        "daily_availability_low_requested": false
+      },
+      "evasion": false,
+      "analysis": {
+        "writer": "llama4",
+        "scores": {
+          "terra": 30,
+          "claude5": 20,
+          "grok": 20,
+          "llama4": 8
+        },
+        "confidence": 65,
+        "tags": []
+      },
+      "stance": null,
+      "v3": {
+        "writer": "llama4",
+        "slug": null,
+        "lane": "cheap_luna",
+        "light": false
+      },
+      "crisis": false,
+      "response": null,
+      "outcome": null,
+      "reporting": null,
+      "task": {
+        "kind": "none",
+        "category": "unknown",
+        "confidence": "low",
+        "source": "regex"
+      },
+      "habit": {
+        "kind": "none",
+        "category": "unknown",
+        "confidence": "low",
+        "source": "regex"
+      },
+      "water": false,
+      "weightKg": null
+    },
+    {
+      "m": "בוקר טוב אלמוג",
+      "signals": {
+        "blocker_mentioned": false,
+        "avoid_push_requested": false,
+        "daily_availability_low_requested": false
+      },
+      "evasion": false,
+      "analysis": {
+        "writer": "llama4",
+        "scores": {
+          "terra": 30,
+          "claude5": 20,
+          "grok": 20,
+          "llama4": 8
+        },
+        "confidence": 65,
+        "tags": []
+      },
+      "stance": null,
+      "v3": {
+        "writer": "llama4",
+        "slug": null,
+        "lane": "cheap_luna",
+        "light": false
+      },
+      "crisis": false,
+      "response": null,
+      "outcome": null,
+      "reporting": null,
+      "task": {
+        "kind": "none",
+        "category": "unknown",
+        "confidence": "low",
+        "source": "regex"
+      },
+      "habit": {
+        "kind": "none",
+        "category": "unknown",
+        "confidence": "low",
+        "source": "regex"
+      },
+      "water": false,
+      "weightKg": null
+    },
+    {
+      "m": "עשיתי 10 דקות מדיטציה",
+      "signals": {
+        "blocker_mentioned": false,
+        "avoid_push_requested": false,
+        "daily_availability_low_requested": false
+      },
+      "evasion": false,
+      "analysis": {
+        "writer": "llama4",
+        "scores": {
+          "terra": 30,
+          "claude5": 20,
+          "grok": 20,
+          "llama4": 8
+        },
+        "confidence": 65,
+        "tags": []
+      },
+      "stance": null,
+      "v3": {
+        "writer": "llama4",
+        "slug": null,
+        "lane": "cheap_luna",
+        "light": false
+      },
+      "crisis": false,
+      "response": null,
+      "outcome": null,
+      "reporting": null,
+      "task": {
+        "kind": "none",
+        "category": "unknown",
+        "confidence": "low",
+        "source": "regex"
+      },
+      "habit": {
+        "kind": "none",
+        "category": "unknown",
+        "confidence": "low",
+        "source": "regex"
+      },
+      "water": false,
+      "weightKg": null
+    },
+    {
+      "m": "אין לי זמן השבוע",
+      "signals": {
+        "blocker_mentioned": false,
+        "avoid_push_requested": false,
+        "daily_availability_low_requested": true
+      },
+      "evasion": false,
+      "analysis": {
+        "writer": "llama4",
+        "scores": {
+          "terra": 30,
+          "claude5": 20,
+          "grok": 20,
+          "llama4": 8
+        },
+        "confidence": 65,
+        "tags": []
+      },
+      "stance": null,
+      "v3": {
+        "writer": "grok",
+        "slug": null,
+        "lane": "grok"
+      },
+      "crisis": false,
+      "response": null,
+      "outcome": null,
+      "reporting": null,
+      "task": {
+        "kind": "none",
+        "category": "unknown",
+        "confidence": "low",
+        "source": "regex"
+      },
+      "habit": {
+        "kind": "none",
+        "category": "unknown",
+        "confidence": "low",
+        "source": "regex"
+      },
+      "water": false,
+      "weightKg": null
+    },
+    {
+      "m": "סבבה",
+      "signals": {
+        "blocker_mentioned": false,
+        "avoid_push_requested": false,
+        "daily_availability_low_requested": false
+      },
+      "evasion": false,
+      "analysis": {
+        "writer": "llama4",
+        "scores": {
+          "terra": 30,
+          "claude5": 20,
+          "grok": 20,
+          "llama4": 8
+        },
+        "confidence": 65,
+        "tags": []
+      },
+      "stance": null,
+      "v3": {
+        "writer": "llama4",
+        "slug": null,
+        "lane": "cheap_luna",
+        "light": true
+      },
+      "crisis": false,
+      "response": null,
+      "outcome": null,
+      "reporting": null,
+      "task": {
+        "kind": "none",
+        "category": "unknown",
+        "confidence": "low",
+        "source": "regex"
+      },
+      "habit": {
+        "kind": "none",
+        "category": "unknown",
+        "confidence": "low",
+        "source": "regex"
+      },
+      "water": false,
+      "weightKg": null
+    },
+    {
+      "m": "למה אתה לא עונה כמו שצריך?!",
+      "signals": {
+        "blocker_mentioned": false,
+        "avoid_push_requested": false,
+        "daily_availability_low_requested": false
+      },
+      "evasion": false,
+      "analysis": {
+        "writer": "llama4",
+        "scores": {
+          "terra": 30,
+          "claude5": 20,
+          "grok": 20,
+          "llama4": 8
+        },
+        "confidence": 65,
+        "tags": []
+      },
+      "stance": null,
+      "v3": {
+        "writer": "llama4",
+        "slug": null,
+        "lane": "cheap_luna",
+        "light": false
+      },
+      "crisis": false,
+      "response": {
+        "category": "question",
+        "confidence": "medium",
+        "source": "regex"
+      },
+      "outcome": null,
+      "reporting": false,
+      "task": {
+        "kind": "none",
+        "category": "question",
+        "confidence": "medium",
+        "source": "regex"
+      },
+      "habit": {
+        "kind": "none",
+        "category": "question",
+        "confidence": "medium",
+        "source": "regex"
+      },
+      "water": false,
+      "weightKg": null
+    },
+    {
+      "m": "השבוע ירדתי קילו!",
+      "signals": {
+        "blocker_mentioned": false,
+        "avoid_push_requested": false,
+        "daily_availability_low_requested": false
+      },
+      "evasion": false,
+      "analysis": {
+        "writer": "llama4",
+        "scores": {
+          "terra": 30,
+          "claude5": 20,
+          "grok": 20,
+          "llama4": 8
+        },
+        "confidence": 65,
+        "tags": []
+      },
+      "stance": null,
+      "v3": {
+        "writer": "llama4",
+        "slug": null,
+        "lane": "cheap_luna",
+        "light": false
+      },
+      "crisis": false,
+      "response": null,
+      "outcome": null,
+      "reporting": null,
+      "task": {
+        "kind": "none",
+        "category": "unknown",
+        "confidence": "low",
+        "source": "regex"
+      },
+      "habit": {
+        "kind": "none",
+        "category": "unknown",
+        "confidence": "low",
+        "source": "regex"
+      },
+      "water": false,
+      "weightKg": null
+    },
+    {
+      "m": "אני מרגיש תקוע",
+      "signals": {
+        "blocker_mentioned": false,
+        "avoid_push_requested": false,
+        "daily_availability_low_requested": false,
+        "emotional_hint": "low_energy"
+      },
+      "evasion": false,
+      "analysis": {
+        "writer": "llama4",
+        "scores": {
+          "terra": 30,
+          "claude5": 20,
+          "grok": 20,
+          "llama4": 8
+        },
+        "confidence": 65,
+        "tags": []
+      },
+      "stance": null,
+      "v3": {
+        "writer": "llama4",
+        "slug": null,
+        "lane": "cheap_luna",
+        "light": false
+      },
+      "crisis": false,
+      "response": null,
+      "outcome": null,
+      "reporting": null,
+      "task": {
+        "kind": "none",
+        "category": "unknown",
+        "confidence": "low",
+        "source": "regex"
+      },
+      "habit": {
+        "kind": "none",
+        "category": "unknown",
+        "confidence": "low",
+        "source": "regex"
+      },
+      "water": false,
+      "weightKg": null
+    },
+    {
+      "m": "בא לי לוותר על הכל",
+      "signals": {
+        "blocker_mentioned": false,
+        "avoid_push_requested": false,
+        "daily_availability_low_requested": false
+      },
+      "evasion": false,
+      "analysis": {
+        "writer": "llama4",
+        "scores": {
+          "terra": 30,
+          "claude5": 20,
+          "grok": 20,
+          "llama4": 8
+        },
+        "confidence": 65,
+        "tags": []
+      },
+      "stance": null,
+      "v3": {
+        "writer": "llama4",
+        "slug": null,
+        "lane": "cheap_luna",
+        "light": false
+      },
+      "crisis": false,
+      "response": null,
+      "outcome": null,
+      "reporting": null,
+      "task": {
+        "kind": "none",
+        "category": "unknown",
+        "confidence": "low",
+        "source": "regex"
+      },
+      "habit": {
+        "kind": "none",
+        "category": "unknown",
+        "confidence": "low",
+        "source": "regex"
+      },
+      "water": false,
+      "weightKg": null
+    },
+    {
+      "m": "אני בסדר",
+      "signals": {
+        "blocker_mentioned": false,
+        "avoid_push_requested": false,
+        "daily_availability_low_requested": false
+      },
+      "evasion": false,
+      "analysis": {
+        "writer": "llama4",
+        "scores": {
+          "terra": 30,
+          "claude5": 20,
+          "grok": 20,
+          "llama4": 8
+        },
+        "confidence": 65,
+        "tags": []
+      },
+      "stance": null,
+      "v3": {
+        "writer": "llama4",
+        "slug": null,
+        "lane": "cheap_luna",
+        "light": false
+      },
+      "crisis": false,
+      "response": null,
+      "outcome": null,
+      "reporting": null,
+      "task": {
+        "kind": "none",
+        "category": "unknown",
+        "confidence": "low",
+        "source": "regex"
+      },
+      "habit": {
+        "kind": "none",
+        "category": "unknown",
+        "confidence": "low",
+        "source": "regex"
+      },
+      "water": false,
+      "weightKg": null
+    },
+    {
+      "m": "what is my plan today",
+      "signals": {
+        "blocker_mentioned": false,
+        "avoid_push_requested": false,
+        "daily_availability_low_requested": false
+      },
+      "evasion": false,
+      "analysis": {
+        "writer": "llama4",
+        "scores": {
+          "terra": 30,
+          "claude5": 20,
+          "grok": 20,
+          "llama4": 8
+        },
+        "confidence": 65,
+        "tags": []
+      },
+      "stance": null,
+      "v3": {
+        "writer": "llama4",
+        "slug": null,
+        "lane": "cheap_luna",
+        "light": false
+      },
+      "crisis": false,
+      "response": null,
+      "outcome": null,
+      "reporting": null,
+      "task": {
+        "kind": "none",
+        "category": "unknown",
+        "confidence": "low",
+        "source": "regex"
+      },
+      "habit": {
+        "kind": "none",
+        "category": "unknown",
+        "confidence": "low",
+        "source": "regex"
+      },
+      "water": false,
+      "weightKg": null
+    }
+  ],
+  "merges": [
+    "llama4",
+    "terra",
+    "claude5",
+    "grok",
+    "terra",
+    "claude5"
+  ],
+  "promptAssembly": {
+    "prompts": {
+      "ALMOG_CHAT_FINAL_GUARDRAILS": "1ec233240e1d354ef0c75a5e1ee2a5172bd9ee3b8e7ad9c7f0154b7c0c2c6045",
+      "ALMOG_CHAT_FINAL_GUARDRAILS_LEAN": "68a0c20cc09c3427f5acaa8493937e5b88642d1ccbd179b056cc8f411baeb4cf",
+      "ALMOG_FEWSHOT_DIALOGUES": "ce679ce5d21aa6d75da2f55e7a8431483f1a785ea36759720d14d09fa7097048",
+      "ALMOG_HABIT_CHECKPOINT_RULES": "b33f1d8e5776a5e45341651a3d2841b707d12ae4ac385bec66f920dc4e995b74",
+      "ALMOG_JOURNEY_MOTIVATION_SYSTEM_PROMPT": "23defaad45f847c4d7ae575365d970f1bd0efe7da5af6b3a2bc84abc1b61974a",
+      "ALMOG_NOTIFY_FEWSHOT": "cc6fa82d84050023aaf3f0829fff9d4dbf37f44df82ac58359ef95c222ad578e",
+      "ALMOG_NOTIFY_FRIEND_EMOJI_RULES": "c3e8d52ee3434419869062d04c10e583ddf108f9261e2ec90c7d201b06eb0f4a",
+      "ALMOG_NOTIFY_SHARED_RULES": "4a3cde5d498e5c1b3004e28c5012cb0331b2b8fd12c2ceb02bd058afd55889ec",
+      "ALMOG_NOTIFY_SYSTEM_PROMPT": "769e4dd151222d8366bb837946604fb6dddec7d58e8994ac9dcb1dd083938343",
+      "ALMOG_RATIONAL_AND_PSYCHOLOGY_RULES": "285eb89666e89aae552e26c865b9e78c4e17eab674f7e9c628a6620703472f28",
+      "ALMOG_REINFORCE_NOTIFY_HINT": "6ab4a21a8d6fcda30dd05e552041596d2bce0343e52d22bcb2bf12a0648fb0bc",
+      "ALMOG_STATION_PROGRESSIVE_RULES": "829d261e0ba6e2e77286eb8836cf2b91b87d5ec19ee2a847a84a1624d011a465",
+      "ALMOG_VOICE_AND_LOAD_RULES": "4f4b1710d0ea74e59d756e8296bb5ec199e48cb7a60c40e8ba7263bcb20940ef",
+      "ALMOG_VOICE_DNA": "0405e9f0d7a4a1c92a97b73a6a07ca572a8ca1110bf18bf440b3a5431f6f3859",
+      "ALMOG_VOICE_STICKY": "cdd3a7e064f143dd1713e8050eb10ced0315cad45ace906378f97c42aa6c1c79",
+      "ANALYSIS_PROMPT": "4b0ea09bd0f2f5336239cd4a0dd11ba3c32edcddbfee44355f759b5b7d4b8c40",
+      "CHAT_KNOWLEDGE_AND_REALTIME_RULES": "bd86059007cf1cef3005a7acab3c6593e92262d6f7dd18fef4f08a439885d14a",
+      "CHAT_PROACTIVE_AND_PRIORITY": "08335fe077bab6aafc40bac8f70fd4042808b172172175af911193515d16516e",
+      "CHAT_VECTOR_AND_MEMORY_RULES": "08335fe077bab6aafc40bac8f70fd4042808b172172175af911193515d16516e",
+      "CRISIS_RECONNECT_NOTIFY_PROMPT": "4aa0465f69b36923ebbe8e6b15b22edf8135a08889f90a170e3ca5b400886dac",
+      "CRON_OPS_NOTIFY_PROMPT": "3622871c95f58db9292b467bc5788ef034a69bc942f94a7d091b4a83b488ee19",
+      "LESSON_FEEDBACK_PROMPT": "0461abbaf6aaf3f55e5280afa924a6fe4062ea0b80908835fbe1fb91ca237dbe",
+      "NURAWELL_CHAT_SYSTEM_PROMPT": "4a6c9a61eacbe4365bb17a86c358659cfc58f8d127f3425ca571b93b2369383e",
+      "NURAWELL_CHAT_SYSTEM_PROMPT_LEAN": "0e014f8e21b8065f6640d1fbcf9bddfd44d77dc74e09a969ee11fb1462db3b37",
+      "NURAWELL_MENTOR_PROMPT": "4a6c9a61eacbe4365bb17a86c358659cfc58f8d127f3425ca571b93b2369383e",
+      "REENGAGEMENT_PROMPT": "325c2b301834c4a5f09ff4d6f574c698962aa4291e6587e64b4bb51bbd4625ef"
+    },
+    "promptsV2": {
+      "ALMOG_CAPABILITIES_V2": "9fbf5da664315e408d38c77c2e5492c80deafb78eb7594cda6725ff568c629e0",
+      "ALMOG_CHAT_FINAL_GUARDRAILS_V2": "915aade84a1548fbe744a4a8b5ee611608f0a6f059262ba10be4864958d7d110",
+      "ALMOG_FEWSHOT_V2": "bd90693fb4126d415cef2d18291143c03f0ee53d2b2a69834c6446ea4f12fabe",
+      "ALMOG_IDENTITY_V2": "71ed33eb3315d9f90f2a490a08e6129a64d09e84abfc344ea061a4a056491ef9",
+      "ALMOG_SAFETY_V2": "bc1b36c4e3f55d9bc9d43f933c9e3c29b272543def288e9a12f430ccc5472a5f",
+      "ALMOG_VOICE_V2": "d1772d6238a9c10818766c8c2d6c9ee3530ab77cb26b718597d7a94f0775c44d",
+      "NURAWELL_CHAT_SYSTEM_PROMPT_V2": "3e5c11e24a85827cfd9e2b238edc05476985bd0573ae2b4c4860d97a6eb9d6b1"
+    },
+    "hebrew": {
+      "ALMOG_SELF_GENDER_RULE": "a32444268f0ee9eb8dabdb5de145c4845bd12dc14d3ec428e23c6c3ef14eafa4",
+      "HEBREW_JSON_VALUES_RULE": "80d5d41b58270354a572c4c7cadf92746685205ed9e435f0f80421004ba82dcc"
+    },
+    "addressing": {
+      "male": "7152964b682db9deddbba20bb9d1984b9b473f2b62bb8c82c3a62dbc3c7fbf1b",
+      "female": "26edfc9bbb532a097652021bdafb6776ea2b95feb618e065d9ece0727e75bf66",
+      "neutral": "f7434147d026f49a4cd6353ab3831dacffe454e2c9cfe2c1df4f6dc6cb281c91",
+      "unknown": "f7434147d026f49a4cd6353ab3831dacffe454e2c9cfe2c1df4f6dc6cb281c91"
+    },
+    "personas": [
+      "52d4f71c7462b2a993a0082fd43c27a21c3167348964905f7dc7d501b29a9dc8",
+      "e15bdd5c35c202fb45a4cb89dbb384a2812eef98a1b9d5b584c973f661b00e1f",
+      "03fb8a1b439ad8cde8445ca64294fed68deaa26c8b08edbe177d8f056ef4ede4",
+      "d2033e9f1c0e0d9e1c6d7c8eda8541df50f66a0ccb5b48eb6821d7ad12c2412d",
+      "52d4f71c7462b2a993a0082fd43c27a21c3167348964905f7dc7d501b29a9dc8",
+      "52d4f71c7462b2a993a0082fd43c27a21c3167348964905f7dc7d501b29a9dc8"
+    ],
+    "notify": [
+      "f4e42b448a26a2416fa16b70f0be70f4bdaa15334ac2d7e3e8282cb2e6f4a91f",
+      "08fadac3e51ec8b4e25651b7c0a92a10bc94918176cbde11fdfe4c9603deb050"
+    ],
+    "routerInstructions": "3559e824dd3175da1a3c8e9b70d876bba47f00f16f062f29988e761eaabbb291",
+    "promptV2Enabled": false,
+    "v3Enabled": false,
+    "softCap": 1.5
+  },
+  "post": [
+    {
+      "raw": "היי {name}, איך עבר הבוקר?",
+      "sanitized": "היי {name}, איך עבר הבוקר?",
+      "preferred": "היי {name}, איך עבר הבוקר?",
+      "echo": false,
+      "bracket": false,
+      "thinking": false,
+      "hold": false
+    },
+    {
+      "raw": "<think>user seems tired</think>בוא נעשה צעד קטן אחד.",
+      "sanitized": "בוא נעשה צעד קטן אחד.",
+      "preferred": "בוא נעשה צעד קטן אחד.",
+      "echo": false,
+      "bracket": false,
+      "thinking": false,
+      "hold": true
+    },
+    {
+      "raw": "[מצב: אמפתיה]",
+      "sanitized": "",
+      "preferred": "",
+      "echo": false,
+      "bracket": true,
+      "thinking": false,
+      "hold": false
+    },
+    {
+      "raw": "אני כאן איתך — ספר לי מה קרה.",
+      "sanitized": "אני כאן איתך — ספר לי מה קרה.",
+      "preferred": "אני כאן איתך — ספר לי מה קרה.",
+      "echo": false,
+      "bracket": false,
+      "thinking": false,
+      "hold": false
+    },
+    {
+      "raw": "Thinking: the user wants...\nמה דעתך על הליכה קצרה?",
+      "sanitized": "מה דעתך על הליכה קצרה?",
+      "preferred": "מה דעתך על הליכה קצרה?",
+      "echo": false,
+      "bracket": false,
+      "thinking": false,
+      "hold": true
+    },
+    {
+      "raw": "סיכום: המשתמש אמר שהוא עייף. תשובה: יאללה, מנוחה קודם.",
+      "sanitized": "סיכום: המשתמש אמר שהוא עייף. תשובה: יאללה, מנוחה קודם.",
+      "preferred": "סיכום: המשתמש אמר שהוא עייף. תשובה: יאללה, מנוחה קודם.",
+      "echo": false,
+      "bracket": false,
+      "thinking": false,
+      "hold": false
+    }
+  ],
+  "greetings": [
+    {
+      "lead": "",
+      "highlight": ""
+    },
+    {
+      "lead": "נועה, בוקר. מה קורה",
+      "highlight": "בלי תוכנית גדולה, מה על הראש.",
+      "mentorTag": "פשוט פה",
+      "chatPrefill": "מה הכי חשוב לי היום?",
+      "chatCtaLabel": "פתח צ׳אט"
+    },
+    {
+      "lead": "נועה, 1 בוצעו, עוד 2 מחכות.",
+      "highlight": "בקצב שלך. תגיד לי כשסימנת אחת.",
+      "mentorTag": "איתך",
+      "chatPrefill": "סיימתי את «הליכה»",
+      "chatCtaLabel": "דווח על משימה בצ׳אט",
+      "showProgress": true,
+      "progressDone": 1,
+      "progressTotal": 3
+    },
+    {
+      "lead": "נועה, היום נסגר יפה, 1 משימות בוצעו ✦",
+      "highlight": "יום שאפשר להסתכל עליו ביושר. איך אתה?",
+      "mentorTag": "גאה בך",
+      "chatPrefill": "סגרתי את כל המשימות להיום ✦",
+      "chatCtaLabel": "ספר לאלמוג איך מרגיש",
+      "showProgress": true,
+      "progressDone": 1,
+      "progressTotal": 3
+    }
+  ],
+  "misc": {
+    "prefill": "סיימתי את «הליכה» (בוקר)",
+    "repetition": null,
+    "json": [
+      {
+        "a": 1
+      },
+      {
+        "b": 2
+      },
+      null
+    ]
+  }
+}
