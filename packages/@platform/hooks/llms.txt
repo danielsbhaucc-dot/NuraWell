@@ -1,0 +1,11 @@
+# @platform/hooks 0.1.0
+WordPress-style hook registry. Pure, no I/O, no product imports.
+api: createHooks({ onError? }) -> { addFilter(name, fn, owner, priority=10), addAction(name, fn, owner, priority=10), applyFilters(name, value, ctx), doAction(name, ctx) -> errors[], removeOwner(owner), list() }
+names: "<module>.<event>" (e.g. "auth.after-signup", "agent.persona"). Lower priority runs first; ties keep registration order.
+safety: a throwing filter is skipped (value kept); action errors are returned, never thrown.
+example:
+  const hooks = createHooks();
+  hooks.addFilter('agent.persona', (p) => ({ ...p, tone: 'warm' }), 'my-product');
+  const persona = await hooks.applyFilters('agent.persona', basePersona);
+  await hooks.doAction('auth.after-signup', { userId });
+disable a module for a product: hooks.removeOwner('<module-id>')
