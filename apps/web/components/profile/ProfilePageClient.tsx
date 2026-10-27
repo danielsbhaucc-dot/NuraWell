@@ -293,7 +293,7 @@ export function ProfilePageClient({
                 <div
                   className="w-[72px] h-[72px] rounded-2xl flex items-center justify-center text-2xl font-black text-on-dark"
                   style={{
-                    background: 'linear-gradient(135deg, var(--color-header-from), var(--color-header-to))',
+                    background: 'linear-gradient(135deg, var(--hero-from), var(--hero-to))',
                     boxShadow: '0 8px 24px rgba(11,51,38,0.3)',
                   }}
                 >

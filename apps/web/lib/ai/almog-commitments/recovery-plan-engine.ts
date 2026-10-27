@@ -80,7 +80,7 @@ export function buildEncouragementReminder(
 
   if (rating === 'easy') {
     return {
-      title: 'מעולה! 🌟',
+      title: 'מעולה! 🌿',
       body: isMeal
         ? `איזה יופי עם "${short}" — תנסה שוב בארוחה הבאה, בקצב שלך.`
         : `איזה יופי עם "${short}" — מחר ננסה שוב, בקצב שלך.`,

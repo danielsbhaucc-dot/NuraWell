@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Brain, Sparkles } from 'lucide-react';
+import { Brain, Leaf } from 'lucide-react';
 import type { ChallengePatternInsight } from '@/lib/challenge/insights';
 
 export function ChallengeInsightsCard() {
@@ -35,7 +35,7 @@ export function ChallengeInsightsCard() {
             className="rounded-xl border border-iris-400/20 bg-iris-500/10 px-4 py-3"
           >
             <div className="flex items-start gap-2">
-              <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-iris-300" />
+              <Leaf className="mt-0.5 h-4 w-4 shrink-0 text-iris-300" />
               <div>
                 <p className="text-sm font-semibold text-iris-100">{item.title}</p>
                 <p className="mt-1 text-xs leading-relaxed text-on-dark/50">{item.description}</p>

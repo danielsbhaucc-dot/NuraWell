@@ -1,6 +1,6 @@
 import {
   Apple, Brain, Check, Cookie, Dumbbell, Footprints, GlassWater, HeartHandshake, Home, Leaf, Lock, Moon, Scale,
-  ShieldCheck, Sparkles, Sprout, Sun, Users, Utensils, Egg, CupSoda, Timer, Gauge, ClipboardList, Carrot, Wind, type LucideIcon,
+  ShieldCheck, Sprout, Sun, Users, Utensils, Egg, CupSoda, Timer, Gauge, ClipboardList, Carrot, Wind, type LucideIcon,
 } from 'lucide-react';
 
 /**
@@ -60,5 +60,5 @@ export function resolveHabitKey(habitKey: string | null | undefined, title: stri
 export function habitIcon(habitKey: string | null | undefined, title: string, state: 'done' | 'current' | 'locked'): LucideIcon {
   if (state === 'locked') return Lock;
   const key = resolveHabitKey(habitKey, title);
-  return (key && HABIT_ICONS[key]) || (state === 'done' ? Check : Sparkles);
+  return (key && HABIT_ICONS[key]) || (state === 'done' ? Check : Sprout);
 }

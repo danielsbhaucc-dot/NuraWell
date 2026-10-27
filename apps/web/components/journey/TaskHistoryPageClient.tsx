@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight, History, Loader2, Sparkles, CalendarDays } from 'lucide-react';
+import { ArrowRight, History, Loader2, Leaf, CalendarDays } from 'lucide-react';
 
 import { AlmogScreenCoach } from '../ai/AlmogScreenCoach';
 import { fetchUserTaskSnapshot } from '../../lib/client/user-task-snapshot';
@@ -322,7 +322,7 @@ export function TaskHistoryPageClient() {
             }}
           />
           <div className="relative flex items-center justify-center gap-2">
-            <Sparkles className="h-4 w-4 text-accent-500 shrink-0" />
+            <Leaf className="h-4 w-4 text-accent-500 shrink-0" />
             <p
               className="text-sm font-black text-primary-950 text-center"
               style={{ fontFamily: "'Rubik','Heebo',sans-serif" }}
@@ -406,7 +406,7 @@ export function TaskHistoryPageClient() {
                       style={{ border: '1px solid rgba(16,185,129,0.22)' }}
                     >
                       <span className="text-base shrink-0" aria-hidden>
-                        ✨
+                        🌿
                       </span>
                       <div className="min-w-0 flex-1 text-start">
                         <p className="text-[13px] font-bold text-primary-950 truncate">
@@ -423,7 +423,7 @@ export function TaskHistoryPageClient() {
                         style={{ background: 'rgba(16,185,129,0.16)', color: '#047857' }}
                         title="משימה אישית מאלמוג"
                       >
-                        <Sparkles className="h-3 w-3" />
+                        <Leaf className="h-3 w-3" />
                         <span>מאלמוג</span>
                       </span>
                       <span className="text-[10px] font-semibold text-primary-900/65 tabular-nums shrink-0">

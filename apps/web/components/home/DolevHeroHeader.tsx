@@ -1,4 +1,5 @@
 'use client';
+import { ChevronLeft, ListChecks } from 'lucide-react';
 
 import { motion } from 'framer-motion';
 import type { ReactNode } from 'react';
@@ -11,7 +12,7 @@ import { usePersonalGreeting } from '../../lib/time/usePersonalGreeting';
 interface AlmogHeroHeaderProps {
   firstName: string;
   bubbleContent: ReactNode;
-  /** כותרת משנה דינמית מתחת ל"✦ אלמוג" */
+  /** כותרת משנה דינמית מתחת ל"אלמוג" */
   mentorTag?: string;
   /** CTA לצ'אט מתוך הבועה */
   chatCta?: { label: string; prefill: string; hint?: TaskReportHint };
@@ -75,64 +76,12 @@ export function AlmogHeroHeader({
 
   return (
     <>
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35 }}
-        className="mb-3 rounded-2xl px-4 py-3"
-        style={{
-          background:
-            'var(--color-panel-dark)' /* solid: separated from the green header */,
-          border: '1px solid rgba(255,255,255,0.35)',
-          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3), 0 2px 12px rgba(0,0,0,0.06)',
-          isolation: 'isolate',
-        }}
-      >
-        <div
-          style={{
-            fontSize: '20px',
-            color: '#f2f2f6',
-            fontWeight: 900,
-            fontFamily: "'Rubik','Heebo',sans-serif",
-            lineHeight: 1.15,
-          }}
-        >
-          {greeting.timeGreeting} {firstName} <span aria-hidden>👋</span>
-        </div>
-        {greeting.occasionGreeting ? (
-          <div
-            style={{
-              marginTop: '4px',
-              fontSize: '13px',
-              color:
-                greeting.tone === 'festive'
-                  ? '#FFD97D'
-                  : greeting.tone === 'solemn'
-                    ? 'rgba(242,242,246,0.78)'
-                    : 'rgba(242,242,246,0.92)',
-              fontWeight: greeting.tone === 'solemn' ? 600 : 700,
-              fontStyle: greeting.tone === 'solemn' ? 'italic' : 'normal',
-              letterSpacing: '0.2px',
-              fontFamily: "'Rubik','Heebo',sans-serif",
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-            }}
-          >
-            <span aria-hidden style={{ fontSize: '13px' }}>
-              {greeting.tone === 'festive'
-                ? '✦'
-                : greeting.tone === 'solemn'
-                  ? '🕯️'
-                  : '✿'}
-            </span>
-            <span>{greeting.occasionGreeting}</span>
-          </div>
-        ) : null}
-        {showTaskBadge ? (
-          <TaskBadgeRow {...taskBadge!} onClick={onTaskBadgeClick} />
-        ) : null}
-      </motion.div>
+      <GreetingOptions
+        title={`${greeting.timeGreeting} ${firstName}`.trim()}
+        occasion={greeting.occasionGreeting}
+        badge={showTaskBadge ? taskBadge! : null}
+        onOpen={onTaskBadgeClick}
+      />
 
       <motion.div
         initial={{ opacity: 0, y: 12 }}
@@ -225,7 +174,7 @@ export function AlmogHeroHeader({
             style={{
               padding: '11px 14px',
               background:
-                'var(--color-panel-dark)' /* solid: separated from the green header */,
+                'var(--hero-inner)' /* solid: separated from the hero band */,
               border: '1px solid rgba(255,255,255,0.3)',
               borderRadius: '6px 18px 18px 18px',
               boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.28), 0 4px 20px rgba(0,0,0,0.1)',
@@ -244,7 +193,7 @@ export function AlmogHeroHeader({
                 gap: '6px',
               }}
             >
-              <span>✦ אלמוג · המנטור שלך</span>
+              <span>אלמוג · המנטור שלך</span>
               {mentorTag && !contentLoading ? (
                 <span
                   style={{
@@ -351,7 +300,7 @@ export const DolevHeroHeader = AlmogHeroHeader;
 
 /**
  * שורת "יש לך X משימות לביצוע" מעוצבת — מופיעה רק כשיש משימות פתוחות בפועל.
- * מצב 1 — כל המשימות בוצעו: ירוק חזק "סגרת הכל היום ✦"
+ * מצב 1 — כל המשימות בוצעו: ירוק חזק "סגרת הכל היום "
  * מצב 2 — יש משימות פתוחות: כתום-זהב "יש לך X משימות לביצוע היום"
  * מצב 3 — אין משימות מקובלות: ענן רך "המסע מחכה לך"
  */
@@ -441,7 +390,7 @@ function TaskBadgeRow({
         }}
       >
         <span style={{ fontSize: '14px' }} aria-hidden>
-          ✦
+          ✓
         </span>
         <span
           style={{
@@ -580,5 +529,85 @@ function TaskBadgeRow({
         </span>
       ) : null}
     </Wrapper>
+  );
+}
+
+
+/**
+ * Home greeting — 3 structural options for owner review (2026-10-27).
+ * Preview with ?gb=1|2|3 (persisted). All three render; CSS shows one (see globals.css .gbv-*).
+ * TEMPORARY: delete the two unused options and the ?gb switch once the owner picks.
+ */
+type Badge = { pending: number; done: number; accepted: number; dueToday?: number } | null;
+
+function summary(b: Badge) {
+  if (!b || b.accepted === 0) return { pill: 'המסע שלך מחכה', line: 'עוד אין משימות להיום. בלחיצה ממשיכים במסע.', done: 0, total: 0 };
+  const total = b.dueToday || b.accepted;
+  if (b.pending === 0) return { pill: `סגרת הכל · ${b.done}/${total}`, line: 'כל המשימות של היום הושלמו.', done: b.done, total };
+  return {
+    pill: b.pending === 1 ? 'משימה אחת להיום' : `${b.pending} משימות להיום`,
+    line: `${b.done} מתוך ${total} הושלמו היום`,
+    done: b.done,
+    total,
+  };
+}
+
+function Ring({ done, total }: { done: number; total: number }) {
+  const r = 22, c = 2 * Math.PI * r, pct = total ? done / total : 0;
+  return (
+    <svg width="56" height="56" viewBox="0 0 56 56" aria-hidden className="shrink-0">
+      <circle cx="28" cy="28" r={r} fill="none" stroke="var(--gb-ring-track)" strokeWidth="6" />
+      <circle cx="28" cy="28" r={r} fill="none" stroke="var(--gb-ring)" strokeWidth="6" strokeLinecap="round"
+        strokeDasharray={`${c * pct} ${c}`} transform="rotate(-90 28 28)" />
+      <text x="28" y="33" textAnchor="middle" fontSize="14" fontWeight="800" fill="var(--gb-ink)">{total ? `${done}/${total}` : '0'}</text>
+    </svg>
+  );
+}
+
+function GreetingOptions({ title, occasion, badge, onOpen }: { title: string; occasion?: string | null; badge: Badge; onOpen?: () => void }) {
+  const s = summary(badge);
+  return (
+    <div className="mb-3" dir="rtl">
+      {/* 1 — iOS large title straight on the hero band + a small solid tasks pill */}
+      <div className="gbv gbv-1">
+        <h2 className="gb1-title">{title}</h2>
+        {occasion ? <p className="gb1-sub">{occasion}</p> : null}
+        {// design-lint-allow: temporary owner-preview option (delete after pick)
+        }<button type="button" onClick={onOpen} className="gb1-pill" aria-label="פתח רשימת משימות היום">
+          <ListChecks className="size-4" aria-hidden />
+          <span>{s.pill}</span>
+          <ChevronLeft className="size-4 opacity-80" aria-hidden />
+        </button>
+      </div>
+
+      {/* 2 — clean solid card with a progress ring */}
+      {// design-lint-allow: temporary owner-preview option (delete after pick)
+        }<button type="button" onClick={onOpen} className="gbv gbv-2 gb2-card" aria-label="פתח רשימת משימות היום">
+        <Ring done={s.done} total={s.total} />
+        <span className="min-w-0 flex-1 text-start">
+          <span className="gb2-title">{title}</span>
+          <span className="gb2-line">{occasion || s.line}</span>
+          {occasion ? <span className="gb2-line">{s.line}</span> : null}
+        </span>
+        <ChevronLeft className="size-5 gb2-chev" aria-hidden />
+      </button>
+
+      {/* 3 — two-tier card: greeting on top, a tasks row with a count tile below a divider */}
+      <div className="gbv gbv-3 gb3-card">
+        <div className="gb3-head">
+          <p className="gb3-title">{title}</p>
+          {occasion ? <p className="gb3-sub">{occasion}</p> : null}
+        </div>
+        {// design-lint-allow: temporary owner-preview option (delete after pick)
+        }<button type="button" onClick={onOpen} className="gb3-row" aria-label="פתח רשימת משימות היום">
+          <span className="gb3-tile">{s.total ? s.total - s.done : 0}</span>
+          <span className="min-w-0 flex-1 text-start">
+            <span className="gb3-row-title">{s.pill}</span>
+            <span className="gb3-row-line">{s.line}</span>
+          </span>
+          <ChevronLeft className="size-5 gb3-chev" aria-hidden />
+        </button>
+      </div>
+    </div>
   );
 }

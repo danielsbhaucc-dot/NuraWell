@@ -120,7 +120,7 @@ export function CoursesClientWrapper({
                 {hebrewActiveGuidesLabel(stats.activeCoursesCount)}
               </p>
               <p style={{ fontSize: '12px', color: '#9896B8', margin: '2px 0 8px' }}>
-                {stats.totalLessonsCompleted} פרקים הושלמו ✦
+                {stats.totalLessonsCompleted} פרקים הושלמו
               </p>
               <div className="flex gap-1">
                 {Array.from({ length: totalSegments }).map((_, i) => {

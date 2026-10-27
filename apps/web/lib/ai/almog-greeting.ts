@@ -24,7 +24,7 @@ export type AlmogGreeting = {
   featuredTask?: AlmogGreetingTaskPreview;
   /** החלק המודגש (זהב) — ההזמנה/השאלה */
   highlight: string;
-  /** כותרת משנה קצרה מתחת ל"✦ אלמוג" — משתנה לפי מצב */
+  /** כותרת משנה קצרה מתחת ל"אלמוג" — משתנה לפי מצב */
   mentorTag?: string;
   /** טקסט פתיחה לצ'אט — ממולא בשדה הקלט */
   chatPrefill?: string;
@@ -177,7 +177,7 @@ function buildChatPrefill(params: {
   }
 
   if (taskState === 'done') {
-    return { prefill: 'סגרתי את כל המשימות להיום ✦', label: 'ספר לאלמוג איך מרגיש' };
+    return { prefill: 'סגרתי את כל המשימות להיום ', label: 'ספר לאלמוג איך מרגיש' };
   }
 
   return { prefill: 'מה הכי חשוב לי היום?', label: 'פתח צ׳אט' };
@@ -292,7 +292,7 @@ export function buildAlmogGreeting(params: {
       mentorTag: normalizeHebrewDashes(
         pickDaily(
           pendingCount === 1 && doneCount > 0
-            ? (['עוד אחת וסוגרים', 'כמעט שם ✦', 'הסוף קרוב'] as const)
+            ? (['עוד אחת וסוגרים', 'כמעט שם ', 'הסוף קרוב'] as const)
             : MENTOR_TAG_PENDING,
           seed
         )
@@ -307,9 +307,9 @@ export function buildAlmogGreeting(params: {
 
   if (taskState === 'done') {
     const doneVariants = [
-      `${name}סגרת את מה שהתחייבת אליו היום ✦`,
-      `${name}היום נסגר יפה, ${doneCount} משימות בוצעו ✦`,
-      `${name}עשית את שלך להיום, וזה מרגיש ✦`,
+      `${name}סגרת את מה שהתחייבת אליו היום `,
+      `${name}היום נסגר יפה, ${doneCount} משימות בוצעו `,
+      `${name}עשית את שלך להיום, וזה מרגיש `,
     ];
     return {
       lead: normalizeHebrewDashes(pickDaily(doneVariants, seed)),

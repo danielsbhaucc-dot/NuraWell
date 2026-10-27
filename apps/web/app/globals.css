@@ -5055,7 +5055,7 @@
     @apply list-none mb-4 space-y-2;
   }
   & ul li::before {
-    content: '✦ ';
+    content: '• ';
     @apply text-primary-500;
   }
   & ol {
@@ -7003,8 +7003,9 @@ body.overflow-hidden { overflow: hidden; }
 }
 
 .crystal-header {
-  background: linear-gradient(160deg, #0b3326 0%, #0f4232 55%, #145240 100%);
-  border-bottom: 1px solid #2f6352;
+  background: linear-gradient(135deg, var(--hero-from) 0%, var(--hero-mid) 55%, var(--hero-to) 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 10px 28px rgba(17, 19, 23, 0.12);
 }
 
 .crystal-divider {
@@ -7955,3 +7956,81 @@ html.a11y-reduce-motion .nw-chat-receive {
   :root { accent-color: var(--color-brand-accent); }
   :focus-visible { outline-color: var(--color-brand-accent); }
 }
+
+/* =============================================
+   Hero / header palette — owner picked "E" forest-emerald (2026-10-27).
+   Green stays an accent band on the neutral #dfe2e0 canvas.
+   ============================================= */
+:root {
+  --hero-from: #0f5132; --hero-mid: #047857; --hero-to: #059669;
+  --hero-inner: #0b4a2f; --hero-inner-line: #2f8a64;
+}
+
+.hero-gradient { background: linear-gradient(150deg, var(--hero-from) 0%, var(--hero-mid) 55%, var(--hero-to) 100%); }
+/* Header: transparent at the top, light clear glass once scrolled; solid green while the menu is open. */
+.app-header-bar { background: transparent; transition: background 0.25s ease, box-shadow 0.25s ease; }
+.app-header-bar[data-scrolled='true'] {
+  background: rgba(223, 226, 224, 0.42);
+  backdrop-filter: blur(6px) saturate(115%);
+  -webkit-backdrop-filter: blur(6px) saturate(115%);
+  box-shadow: 0 1px 0 rgba(17, 19, 23, 0.08);
+}
+.app-header-bar[data-menu='true'] {
+  background: linear-gradient(160deg, var(--hero-from) 0%, var(--hero-mid) 50%, var(--hero-to) 100%);
+  backdrop-filter: none; -webkit-backdrop-filter: none;
+  box-shadow: 0 10px 28px rgba(17, 19, 23, 0.12);
+}
+.app-header-bar .hdr-logo { filter: drop-shadow(0 0 6px rgba(223, 226, 224, 0.9)); }
+
+/* Hamburger menu card: pre-#384 neutral surface, restored per owner. */
+.app-menu-card { background: #f2f2f6; }
+
+/* =============================================
+   TEMPORARY owner preview (2026-10-27): home greeting ?gb=1|2|3 and plan focus ?fp=1|2|3.
+   Delete the unused options once one of each is picked.
+   ============================================= */
+.gbv, .fpv { display: none; }
+html:not([data-gb]) .gbv-1, html[data-gb='1'] .gbv-1, html[data-gb='2'] .gbv-2, html[data-gb='3'] .gbv-3 { display: block; }
+html[data-gb='2'] .gbv-2, html[data-gb='3'] .gb3-row { display: flex; }
+html:not([data-fp]) .fpv-1, html[data-fp='1'] .fpv-1, html[data-fp='2'] .fpv-2, html[data-fp='3'] .fpv-3 { display: block; }
+
+:root { --gb-ring: #047857; --gb-ring-track: #d3d6d4; --gb-ink: #1d211f; }
+/* Greeting 1: large title on the band */
+.gb1-title { font: 900 28px/1.15 'Rubik','Heebo',sans-serif; color: #f1f3f2; letter-spacing: -0.3px; }
+.gb1-sub { margin-top: 4px; font: 700 13px/1.4 'Rubik','Heebo',sans-serif; color: #dfe7e3; }
+.gb1-pill { margin-top: 10px; display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px;
+  background: #0a3a25; border: 1px solid #2f8a64; color: #f1f3f2; font: 800 13px/1 'Rubik','Heebo',sans-serif; box-shadow: 0 2px 8px rgba(0,0,0,0.18); }
+/* Greeting 2: neutral card + ring */
+.gb2-card { width: 100%; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 20px; background: #f2f2f4;
+  border: 1px solid #c9ccca; box-shadow: 0 6px 18px rgba(17,19,23,0.14); }
+.gb2-title { display: block; font: 900 19px/1.2 'Rubik','Heebo',sans-serif; color: #1d211f; }
+.gb2-line { display: block; margin-top: 3px; font: 600 13px/1.4 'Rubik','Heebo',sans-serif; color: #4a504d; }
+.gb2-chev { color: #0f5132; }
+/* Greeting 3: graphite two-tier card */
+.gb3-card { border-radius: 20px; background: #22282a; border: 1px solid #3f4846; box-shadow: 0 8px 22px rgba(0,0,0,0.22); overflow: hidden; }
+.gb3-head { padding: 14px 16px 12px; }
+.gb3-title { font: 900 20px/1.2 'Rubik','Heebo',sans-serif; color: #f1f3f2; }
+.gb3-sub { margin-top: 3px; font: 600 13px/1.4 'Rubik','Heebo',sans-serif; color: #c4cac7; }
+.gb3-row { width: 100%; align-items: center; gap: 12px; padding: 10px 16px; border-top: 1px solid #3f4846; background: #2b3133; }
+.gb3-tile { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 10px; background: #047857; color: #f1f3f2; font: 900 16px/1 'Rubik','Heebo',sans-serif; }
+.gb3-row-title { display: block; font: 800 14px/1.3 'Rubik','Heebo',sans-serif; color: #f1f3f2; }
+.gb3-row-line { display: block; font: 600 12px/1.4 'Rubik','Heebo',sans-serif; color: #c4cac7; }
+.gb3-chev { color: #c4cac7; }
+
+/* Focus 2: integrated row inside the hero (solid strip, icon, chevron) */
+.fp1-row { margin-top: 14px; display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 16px; background: #0a3a25; border: 1px solid #2f8a64; color: #f1f3f2; box-shadow: 0 4px 14px rgba(0,0,0,0.18); }
+.fp1-icon { display: inline-flex; width: 38px; height: 38px; align-items: center; justify-content: center; border-radius: 12px; background: #f1f3f2; color: #0f5132; flex-shrink: 0; font-size: 20px; }
+.fp1-label { font: 800 11px/1 'Rubik','Heebo',sans-serif; letter-spacing: 0.06em; color: #b9d8c9; }
+.fp1-text { margin-top: 4px; font: 800 15px/1.35 'Rubik','Heebo',sans-serif; }
+/* Focus 1 (lead, owner direction 'ירוק יער עמוק'): solid deep-forest card on the gray page, below the hero */
+.fp2-card { display: flex; align-items: center; gap: 14px; padding: 16px; border-radius: 22px; background: #0b3d28; border: 1px solid #2f8a64; box-shadow: 0 10px 24px rgba(11,61,40,0.28), inset 0 1px 0 rgba(241,243,242,0.08); color: #f1f3f2; }
+.fp2-tile { display: inline-flex; width: 52px; height: 52px; align-items: center; justify-content: center; border-radius: 16px; background: #e4e7e5; color: #0f5132; font-size: 26px; flex-shrink: 0; }
+.fp2-label { font: 800 11px/1 'Rubik','Heebo',sans-serif; letter-spacing: 0.06em; color: #b9d8c9; }
+.fp2-text { margin-top: 5px; font: 900 17px/1.35 'Rubik','Heebo',sans-serif; }
+.fp2-meta { margin-top: 3px; font: 600 12px/1.4 'Rubik','Heebo',sans-serif; color: #c3d3cb; }
+/* Focus 3: iOS large title + one grouped inset row */
+.fp3-title { font: 900 28px/1.1 'Rubik','Heebo',sans-serif; color: #1d211f; letter-spacing: -0.3px; padding: 0 4px 8px; }
+.fp3-row { display: flex; align-items: center; gap: 12px; padding: 13px 14px; border-radius: 14px; background: #0b4a2f; border: 1px solid #2f8a64; box-shadow: 0 4px 12px rgba(11,61,40,0.22); color: #f1f3f2; }
+.fp3-dot { width: 10px; height: 10px; border-radius: 999px; background: #9fdcc0; flex-shrink: 0; }
+.fp3-text { font: 800 15px/1.35 'Rubik','Heebo',sans-serif; }
+.fp3-meta { font: 600 12px/1.4 'Rubik','Heebo',sans-serif; color: #c3d3cb; }

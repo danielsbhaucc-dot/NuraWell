@@ -1,3 +1,4 @@
+import { ChevronLeft, Target } from 'lucide-react';
 import { decProfileResult } from '@/lib/crypto/pii-fields';
 import { summarizeJourneyProgress } from '@/lib/journey/journey-progress-summary';
 import Link from 'next/link';
@@ -84,12 +85,15 @@ export default async function PlansPage({ searchParams }: { searchParams: Promis
   const today = focusIdx >= 0 ? habits[focusIdx]! : null;
   const allDone = habits.length > 0 && !today;
   const you = (f: string, m: string, n: string) => (gender === 'female' ? f : gender === 'male' ? m : n);
+  const focusLabel = allDone ? 'היום' : 'הפוקוס של היום';
+  const focusEmpty = allDone ? you('סגרת את כל ההרגלים של היום. כל הכבוד, את בדרך הנכונה.', 'סגרת את כל ההרגלים של היום. כל הכבוד, אתה בדרך הנכונה.', 'כל ההרגלים של היום הושלמו. כל הכבוד.') : 'השיעור הבא במסע יפתח את ההרגל הראשון שלך.';
+  const focusMeta = today ? `${today.doneToday}/${today.targetToday} היום${today.streakDays > 0 ? ` · ${today.streakDays} ${today.streakDays === 1 ? 'יום' : 'ימים'} ברצף` : ''}` : null;
 
   return (
     <main className="mx-auto flex w-full max-w-xl flex-col gap-6 bg-cream px-4 pb-28 pt-4">
       <PlanTaskFocus taskId={focusTaskId} />
 
-      <header className="relative overflow-hidden rounded-[30px] bg-linear-to-br from-[#022c22] via-[#04503a] to-brand-700 p-5 text-cream shadow-[0_18px_44px_rgba(2,44,34,0.32)]">
+      <header className="relative overflow-hidden rounded-[30px] hero-gradient p-5 text-cream shadow-[0_18px_44px_rgba(2,44,34,0.32)]">
         <span aria-hidden className="pointer-events-none absolute -top-20 -left-16 size-56 rounded-full bg-primary-300/20 blur-3xl" />
         <span aria-hidden className="pointer-events-none absolute -bottom-24 -right-10 size-56 rounded-full bg-primary-500/15 blur-3xl" />
         <p className="relative text-[11px] font-bold tracking-[0.12em] text-primary-100/75">תוכנית אישית · אלמוג כותב ומעדכן</p>
@@ -102,7 +106,7 @@ export default async function PlansPage({ searchParams }: { searchParams: Promis
           <PlanProgressRing pct={pct} label="מהמסע" />
         </div>
         {curStation ? (
-          <div className="relative mt-4 flex items-center gap-3 rounded-2xl bg-hero-row px-3.5 py-2.5 border border-hero-row-line shadow-lg">
+          <div className="relative mt-4 flex items-center gap-3 rounded-2xl bg-(--hero-inner) px-3.5 py-2.5 border border-(--hero-inner-line) shadow-lg">
             <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary-300 text-xs font-black text-[#022c22]">{currentIdx + 1}</span>
             <div className="min-w-0 flex-1">
               <p className="text-[11px] font-semibold text-primary-100/70">השלב הנוכחי · {currentIdx + 1} מתוך {mapStations.length}</p>
@@ -112,26 +116,48 @@ export default async function PlansPage({ searchParams }: { searchParams: Promis
           </div>
         ) : null}
 
-        <div className="relative mt-3 rounded-[22px] bg-hero-card border border-hero-card-line p-4 text-brand shadow-xl">
-          <p className="text-[11px] font-bold tracking-[0.08em] text-primary-700">{allDone ? 'היום' : 'הפוקוס של היום'}</p>
+        {/* Focus option 2 (TEMP preview ?fp=2): integrated row inside the hero */}
+        <div className="fpv fpv-2">
           {today ? (
-            <a href={`#task-${today.id}`} className="mt-1 flex items-center gap-3">
-              <span className="text-3xl" aria-hidden>{today.emoji}</span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-[17px] font-extrabold leading-snug">{today.currentStep}</span>
-                <span className="mt-0.5 block text-xs text-primary-800/70">
-                  {today.doneToday}/{today.targetToday} היום{today.streakDays > 0 ? ` · ${today.streakDays} ${today.streakDays === 1 ? 'יום' : 'ימים'} ברצף` : ''}
-                </span>
-              </span>
-              <span aria-hidden className="text-lg text-primary-700">←</span>
+            <a href={`#task-${today.id}`} className="fp1-row">
+              <span className="fp1-icon" aria-hidden>{today.emoji}</span>
+              <span className="min-w-0 flex-1"><span className="block fp1-label">{focusLabel}</span><span className="block fp1-text">{today.currentStep}</span></span>
+              <ChevronLeft className="size-5 shrink-0" aria-hidden />
             </a>
           ) : (
-            <p className="mt-1 text-[15px] font-bold leading-snug">
-              {allDone ? you('סגרת את כל ההרגלים של היום. כל הכבוד, את בדרך הנכונה.', 'סגרת את כל ההרגלים של היום. כל הכבוד, אתה בדרך הנכונה.', 'כל ההרגלים של היום הושלמו. כל הכבוד.') : 'השיעור הבא במסע יפתח את ההרגל הראשון שלך.'}
-            </p>
+            <div className="fp1-row">
+              <span className="fp1-icon" aria-hidden><Target className="size-5" /></span>
+              <span className="min-w-0 flex-1"><span className="block fp1-label">{focusLabel}</span><span className="block fp1-text">{focusEmpty}</span></span>
+            </div>
           )}
         </div>
       </header>
+
+      {/* Focus option 1 (lead, TEMP ?fp=1): solid deep-forest card on the gray page below the hero */}
+      <div className="fpv fpv-1">
+        <a href={today ? `#task-${today.id}` : '/journey'} className="fp2-card">
+          <span className="fp2-tile" aria-hidden>{today ? today.emoji : <Target className="size-6" />}</span>
+          <span className="min-w-0 flex-1">
+            <span className="block fp2-label">{focusLabel}</span>
+            <span className="block fp2-text">{today ? today.currentStep : focusEmpty}</span>
+            {focusMeta ? <span className="block fp2-meta">{focusMeta}</span> : null}
+          </span>
+          <ChevronLeft className="size-5 shrink-0" aria-hidden />
+        </a>
+      </div>
+
+      {/* Focus option 3 (TEMP ?fp=3): iOS large title + one grouped row */}
+      <section className="fpv fpv-3" aria-label={focusLabel}>
+        <h2 className="fp3-title">{focusLabel}</h2>
+        <a href={today ? `#task-${today.id}` : '/journey'} className="fp3-row">
+          <span className="fp3-dot" aria-hidden />
+          <span className="min-w-0 flex-1">
+            <span className="block fp3-text">{today ? `${today.emoji} ${today.currentStep}` : focusEmpty}</span>
+            {focusMeta ? <span className="block fp3-meta">{focusMeta}</span> : null}
+          </span>
+          <ChevronLeft className="size-5 shrink-0" aria-hidden />
+        </a>
+      </section>
 
       <section aria-label="מילה מאלמוג" className="flex gap-3 px-1">
         <div className="size-10 shrink-0">

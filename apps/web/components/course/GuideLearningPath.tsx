@@ -6,7 +6,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   BookOpen, Clock, ChevronLeft, ChevronRight, Play,
-  CheckCircle2, Sparkles, Award,
+  CheckCircle2, Leaf, Award,
 } from 'lucide-react';
 import { cn } from '../../lib/cn';
 import { GuideBackIconButton } from './GuideBackIconButton';
@@ -123,7 +123,7 @@ export function GuideLearningPath({
           <div className="flex-1 min-w-0">
             <div className="mb-1 flex items-center justify-between text-[11px] font-bold text-on-dark/60">
               <span className="inline-flex items-center gap-1 truncate">
-                <Sparkles className="h-3 w-3 shrink-0 text-primary-300" />
+                <Leaf className="h-3 w-3 shrink-0 text-primary-300" />
                 {GUIDE_IMMERSIVE_MODE_LABEL}
               </span>
               <span className="shrink-0">{slideIdx + 1} / {totalSlides}</span>
@@ -379,7 +379,7 @@ function PathOutroSlide({
           boxShadow: '0 12px 32px rgba(20,184,166,0.35)',
         }}
       >
-        {done ? <Award className="h-8 w-8 text-on-dark" /> : <Sparkles className="h-8 w-8 text-on-dark" />}
+        {done ? <Award className="h-8 w-8 text-on-dark" /> : <Leaf className="h-8 w-8 text-on-dark" />}
       </motion.div>
       <h2 className="mb-2 text-2xl font-black text-on-dark">
         {done ? 'כל הכבוד! סיימת את המסלול' : 'מוכנים להתחיל?'}

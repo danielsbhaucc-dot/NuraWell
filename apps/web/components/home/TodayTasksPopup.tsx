@@ -9,7 +9,7 @@ import {
   ClipboardCheck,
   Loader2,
   MessageCircle,
-  Sparkles,
+  Leaf,
   X,
 } from 'lucide-react';
 import { useDialogA11y } from '@/lib/a11y/use-dialog-a11y';
@@ -372,7 +372,7 @@ export function TodayTasksPopup({
                   }}
                 >
                   <div className="flex items-center gap-2 mb-1">
-                    <Sparkles className="w-4 h-4 text-primary-600 shrink-0" />
+                    <Leaf className="w-4 h-4 text-primary-600 shrink-0" />
                     <p className="text-sm font-black text-primary-900">המסע מחכה לך</p>
                   </div>
                   <p className="text-xs text-primary-800/85 leading-relaxed mb-3">
@@ -425,7 +425,7 @@ export function TodayTasksPopup({
                             border: '1px solid rgba(110,231,183,0.4)',
                           }}
                         >
-                          ✨
+                          🌿
                         </div>
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-black text-primary-950 leading-snug">

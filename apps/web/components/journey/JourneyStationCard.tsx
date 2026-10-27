@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { MapPin, ArrowLeft, CheckCircle2, Sparkles } from 'lucide-react';
+import { MapPin, ArrowLeft, CheckCircle2, Leaf } from 'lucide-react';
 import type { JourneyStationGroup } from '../../lib/journey/group-journey-by-station';
 import { stationCoverAlt } from '../../lib/a11y/alt-text';
 import { cn } from '../../lib/cn';
@@ -170,7 +170,7 @@ export function JourneyStationCard({ group, index, onSelect }: JourneyStationCar
                 fontFamily: "'Rubik','Heebo',sans-serif",
               }}
             >
-              {/* ✦ specular highlight — קו אור עליון */}
+              {/* specular highlight — קו אור עליון */}
               <span
                 aria-hidden
                 className="pointer-events-none absolute inset-x-2 top-px h-px"
@@ -181,7 +181,7 @@ export function JourneyStationCard({ group, index, onSelect }: JourneyStationCar
               />
               {isCompleted ? (
                 <>
-                  <Sparkles className="h-3.5 w-3.5 text-accent-200" />
+                  <Leaf className="h-3.5 w-3.5 text-accent-200" />
                   הצג שוב
                 </>
               ) : (

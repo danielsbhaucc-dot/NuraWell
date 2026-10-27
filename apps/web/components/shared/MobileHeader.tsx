@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import { User } from '@supabase/supabase-js';
 import { BookOpen, TrendingUp, UserCircle, X, Menu, Home, LogOut, ListChecks } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { signOutClient } from '../../lib/auth/sign-out-client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { NotificationsBellButton } from '../notifications/NotificationsBellButton';
@@ -26,6 +27,30 @@ const menuItems = [
 export function MobileHeader({ user, profileFullName }: MobileHeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const pathname = usePathname();
+  const overHero = pathname === APP_HOME_PATH || pathname === '/';
+
+  useEffect(() => {
+    // TEMP owner preview: ?fp=1|2|3 (plan focus) and ?gb=1|2|3 (home greeting), persisted locally.
+    const q = new URLSearchParams(window.location.search);
+    for (const [param, key] of [['fp', 'nw-focus-panel'], ['gb', 'nw-greeting']] as const) {
+      const v = q.get(param);
+      if (v && /^[1-3]$/.test(v)) localStorage.setItem(key, v);
+      const saved = localStorage.getItem(key);
+      if (saved && saved !== '1') document.documentElement.dataset[param] = saved;
+      else delete document.documentElement.dataset[param];
+    }
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  // Over the green hero (top of home) the bar is clear with light icons; elsewhere / scrolled it is light glass.
+  // While the menu is open the bar is solid green.
+  const lightBar = !isMenuOpen && (scrolled || !overHero);
+  const iconCls = lightBar ? 'w-5 h-5 text-brand' : 'w-5 h-5 text-on-dark';
   const fullName = String(profileFullName || '').trim();
   const firstName = fullName.split(/\s+/)[0] || '';
 
@@ -38,8 +63,9 @@ export function MobileHeader({ user, profileFullName }: MobileHeaderProps) {
   return (
     <>
       <header
-        className="fixed top-0 inset-e-0 inset-s-0 z-50 safe-area-top overflow-hidden"
-        style={{ background: 'linear-gradient(160deg, var(--color-header-from) 0%, var(--color-header-to) 100%)' }}
+        className="app-header-bar fixed top-0 inset-e-0 inset-s-0 z-50 safe-area-top overflow-hidden"
+        data-scrolled={scrolled ? 'true' : 'false'}
+        data-menu={isMenuOpen ? 'true' : 'false'}
       >
         <div className="container-mobile h-16 flex items-center justify-between gap-3 relative z-10">
           {/* RTL: הילד הראשון בצד ימין — ההמבורגר בימין */}
@@ -47,17 +73,19 @@ export function MobileHeader({ user, profileFullName }: MobileHeaderProps) {
             <button
               aria-label={isMenuOpen ? 'סגור תפריט' : 'פתח תפריט'}
               className="w-[42px] h-[42px] rounded-[14px] flex flex-col items-center justify-center gap-[4px] transition-all duration-200 hover:scale-105 active:scale-90"
-              style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)', backdropFilter: 'blur(10px)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.15)' }}
+              style={lightBar
+                ? { background: 'var(--color-surface)', border: '1px solid var(--color-hairline)', boxShadow: '0 1px 3px rgba(17,19,23,0.06)' }
+                : { background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)', backdropFilter: 'blur(10px)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.15)' }}
               onClick={() => setIsMenuOpen(!isMenuOpen)}
             >
               <AnimatePresence mode="wait" initial={false}>
                 {isMenuOpen ? (
                   <motion.span key="close" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.15 }}>
-                    <X className="w-5 h-5 text-on-dark" />
+                    <X className={iconCls} />
                   </motion.span>
                 ) : (
                   <motion.span key="menu" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }} transition={{ duration: 0.15 }}>
-                    <Menu className="w-5 h-5 text-on-dark" />
+                    <Menu className={iconCls} />
                   </motion.span>
                 )}
               </AnimatePresence>
@@ -73,16 +101,17 @@ export function MobileHeader({ user, profileFullName }: MobileHeaderProps) {
           >
             {/* eslint-disable-next-line @next/next/no-img-element -- static brand SVG */}
             <img
-              src="/brand/nurawell-special-on-dark.svg"
+              src={lightBar ? '/brand/nurawell-special.svg' : '/brand/nurawell-special-on-dark.svg'}
               alt="NuraWell"
               width={122}
               height={24}
+              className={lightBar ? 'hdr-logo' : undefined}
               style={{ display: 'block', height: 24, width: 'auto' }}
             />
           </Link>
 
           <div className="flex min-w-[96px] items-center justify-end">
-            <NotificationsBellButton />
+            <NotificationsBellButton light={lightBar} />
           </div>
         </div>
 
@@ -95,7 +124,7 @@ export function MobileHeader({ user, profileFullName }: MobileHeaderProps) {
               transition={{ duration: 0.2, ease: 'easeOut' as const }}
               className="container-mobile pb-4 pt-2"
             >
-              <motion.div className="rounded-2xl overflow-hidden bg-background-card" style={{ border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 8px 32px rgba(0,0,0,0.1)' }}>
+              <motion.div className="app-menu-card rounded-2xl overflow-hidden" style={{ border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 8px 32px rgba(0,0,0,0.1)' }}>
                 {menuItems.map((item, idx) => (
                   <Link
                     key={item.href}

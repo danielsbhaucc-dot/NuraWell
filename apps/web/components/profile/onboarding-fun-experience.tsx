@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Sparkles, Zap } from 'lucide-react';
+import { Leaf, Zap } from 'lucide-react';
 
 export const FUN_TYPING_LINES = [
   'אלמוג מחפש את הבדיחה המושלמת…',
@@ -12,7 +12,7 @@ export const FUN_TYPING_LINES = [
   'אלמוג מכין פאנץ…',
 ] as const;
 
-const FLOAT_EMOJIS = ['✨', '🎉', '😅', '🍕', '💫', '🎭', '🔥', '🌈'] as const;
+const FLOAT_EMOJIS = ['🌿', '🎉', '😅', '🍕', '🎈', '🎭', '🔥', '🌈'] as const;
 
 const CONFETTI_COLORS = ['#c9a962', '#5a9a8a', '#8fb5a8', '#a8c4b8', '#d4c4a0', '#6b9080'];
 
@@ -211,7 +211,7 @@ export function FunPathSelectHero({ onSelect }: { onSelect: () => void }) {
         <div className="relative z-10">
           <div className="mb-3 flex items-center justify-between gap-2">
             <span className="inline-flex items-center gap-1 rounded-full bg-background-card/20 px-2.5 py-1 text-[10px] font-black text-on-dark backdrop-blur-sm">
-              <Sparkles className="h-3 w-3" />
+              <Leaf className="h-3 w-3" />
               הכי כיף
             </span>
             <motion.span

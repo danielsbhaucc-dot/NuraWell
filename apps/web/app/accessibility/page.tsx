@@ -8,7 +8,7 @@ import {
   Copyright,
   ScrollText,
   Scale,
-  Sparkles,
+  Leaf,
   SlidersHorizontal,
 } from 'lucide-react';
 import { AccessibilityRestoreWidget } from '@/components/a11y/AccessibilityRestoreWidget';
@@ -59,7 +59,7 @@ export default function AccessibilityPage() {
         </LegalSection>
 
         <LegalSection num="2.1" title="סטטוס תאימות (חשוב)">
-          <LegalCallout tone="warn" icon={<Sparkles className="w-5 h-5" />}>
+          <LegalCallout tone="warn" icon={<Leaf className="w-5 h-5" />}>
             <strong>השירות לא הוכרז כנגיש במלואו לפי WCAG 2.2 AA.</strong> ביצענו תשתית נגישות
             (תפריט התאמות, skip link, zoom, כלי alt בניהול) וממשיכים בתיקונים שיטתיים. הצהרה זו
             מתארת את המצב הנוכחי ואת המחויבות — ולא מהווה אישור ביקורת חיצונית.
@@ -129,7 +129,7 @@ export default function AccessibilityPage() {
         </LegalSection>
 
         <LegalSection num="7" title="פנייה ורכז נגישות">
-          <LegalCallout tone="info" icon={<Sparkles className="w-5 h-5" />}>
+          <LegalCallout tone="info" icon={<Leaf className="w-5 h-5" />}>
             נתקלת בקושי בנגישות, או יש לך הצעה לשיפור? נשמח לשמוע ונפעל לתקן בהקדם. אפשר לפנות לרכז הנגישות שלנו:{' '}
             <a href="mailto:accessibility@nurawell.ai">accessibility@nurawell.ai</a>.
           </LegalCallout>

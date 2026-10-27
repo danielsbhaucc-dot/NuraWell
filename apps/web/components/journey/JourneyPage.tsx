@@ -11,7 +11,7 @@ import {
   CheckCircle2,
   Lock,
   Play,
-  Sparkles,
+  Leaf,
   Droplets,
   ChevronRight,
   Trophy,
@@ -368,13 +368,13 @@ function HeroSection({
           `linear-gradient(160deg, ${tokens.primary[950]} 0%, ${tokens.primary[900]} 35%, ${tokens.primary[700]} 65%, ${tokens.primary[500]} 92%, ${tokens.primary[400]} 100%)`,
       }}
     >
-      {/* ✦ Aurora — מעטה אורות זוהר מונפש שזורם ברקע ה-HERO */}
+      {/* Aurora — מעטה אורות זוהר מונפש שזורם ברקע ה-HERO */}
       <AuroraField reduced={reduced} />
 
-      {/* ✦ Shooting star — חולף מדי כמה שניות, מוסיף תחושת קסם */}
+      {/* Shooting star — חולף מדי כמה שניות, מוסיף תחושת קסם */}
       {!reduced ? <ShootingStar /> : null}
 
-      {/* ✦ Light beam — קרן אור דיאגונלית שעוברת על ה-Hero אחת לפרק זמן ארוך */}
+      {/* Light beam — קרן אור דיאגונלית שעוברת על ה-Hero אחת לפרק זמן ארוך */}
       {!reduced ? <SweepingLightBeam /> : null}
 
       {!reduced ? <FloatingSparkles /> : null}
@@ -400,7 +400,7 @@ function HeroSection({
                 WebkitBackdropFilter: 'blur(8px)',
               }}
             >
-              <Sparkles className="h-3.5 w-3.5 shrink-0 text-accent-300" />
+              <Leaf className="h-3.5 w-3.5 shrink-0 text-accent-300" />
               <span className="text-[13px] font-bold text-on-dark">המסע שלי</span>
             </motion.div>
 
@@ -447,7 +447,7 @@ function HeroSection({
 
             {/* NAME — הזרקור: שם המשתמש בענק עם הילה זוהבת נושמת מאחור */}
             <div className="relative my-1 sm:my-1.5">
-              {/* ✦ הילה זוהבת נושמת מאחורי השם — wow factor */}
+              {/* הילה זוהבת נושמת מאחורי השם — wow factor */}
               <motion.div
                 aria-hidden
                 className="pointer-events-none absolute left-1/2 top-1/2 -z-10"
@@ -546,7 +546,7 @@ function HeroSection({
                 </p>
                 <p className="mt-0.5 text-[12px] text-primary-50/85">
                   {overall.stationsDone > 0
-                    ? `כבר סגרנו ${overall.stationsDone} תחנ${overall.stationsDone === 1 ? 'ה' : 'ות'} — יפה מאוד ✦`
+                    ? `כבר סגרנו ${overall.stationsDone} תחנ${overall.stationsDone === 1 ? 'ה' : 'ות'} — יפה מאוד`
                     : 'כל צעד מקרב אותך — אני איתך'}
                 </p>
               </div>
@@ -586,7 +586,7 @@ function TimeOfDayIcon({ tod }: { tod: TimeOfDay }) {
  * בונה את ארבעת מחרוזות ה-HERO לפי שלב במסע ושעת היום:
  *  • preamble — "בוקר טוב," / "צהריים טובים," וכו׳ (אם אין tod, בלי פסיק)
  *  • message  — המשפט ההקשרי הגדול שאחרי השם ("זה הרגע להתחיל", "ממשיכים את המסע" וכו׳)
- *  • sparkle  — סימן/אימוג'י זוהר בסוף המשפט (✿ ✦ 🏆)
+ *  • sparkle  — סימן/אימוג'י זוהר בסוף המשפט (✿ 🏆)
  *  • subline  — טקסט המעודד מתחת
  */
 function buildIntroText(
@@ -600,7 +600,7 @@ function buildIntroText(
     return {
       preamble,
       message: 'אני מחכה לך כאן',
-      sparkle: '✦',
+      sparkle: '✿',
       subline:
         'כשתרצה נצא לדרך — אני אכין לך תחנות, צעדים והרגלים שמתאימים לחיים שלך.',
     };
@@ -631,7 +631,7 @@ function buildIntroText(
     return {
       preamble,
       message: 'אנחנו כבר שם כמעט',
-      sparkle: '✦',
+      sparkle: '✿',
       subline:
         'ראיתי כמה השקעת — עברת יותר ממחצית. עוד צעד קטן ואנחנו שם.',
     };
@@ -1205,7 +1205,7 @@ function AlmogTouchBanner({
           '0 16px 38px rgba(2,44,34,0.28), 0 2px 10px rgba(2,44,34,0.10), inset 0 1px 0 rgba(255,255,255,0.18)',
       }}
     >
-      {/* ✦ זוהר זהב עדין מאחורי האווטאר */}
+      {/* זוהר זהב עדין מאחורי האווטאר */}
       <div
         aria-hidden
         className="pointer-events-none absolute -inset-s-10 -top-10 h-40 w-40 rounded-full"
@@ -1215,7 +1215,7 @@ function AlmogTouchBanner({
           filter: 'blur(22px)',
         }}
       />
-      {/* ✦ זוהר ירוק עדין בצד שני */}
+      {/* זוהר ירוק עדין בצד שני */}
       <div
         aria-hidden
         className="pointer-events-none absolute -inset-e-12 -bottom-12 h-44 w-44 rounded-full"
@@ -1327,7 +1327,7 @@ function StationDetailView({
           transition={{ duration: 0.4, delay: 0.15 }}
           className="glass-surface relative mb-5 overflow-hidden rounded-[22px]"
         >
-          {/* ✦ קו אור עליון — specular highlight */}
+          {/* קו אור עליון — specular highlight */}
           <div
             aria-hidden
             className="pointer-events-none absolute inset-x-4 top-px h-px"
@@ -1519,7 +1519,7 @@ function StationHeader({
                   WebkitBackdropFilter: 'blur(8px)',
                 }}
               >
-                <Sparkles className="h-3 w-3 text-accent-300" />
+                <Leaf className="h-3 w-3 text-accent-300" />
                 תחנה במסע
               </div>
             </div>
@@ -1662,7 +1662,7 @@ function StepsTimeline({
                       ) : null}
                       {isCompleted ? (
                         <span className="ms-auto flex items-center gap-1 text-xs font-bold text-primary-600">
-                          <CheckCircle2 className="h-3 w-3" /> הושלם ✨
+                          <CheckCircle2 className="h-3 w-3" /> הושלם 🌿
                         </span>
                       ) : null}
                     </div>
