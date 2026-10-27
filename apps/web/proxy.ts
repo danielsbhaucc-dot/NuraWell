@@ -275,6 +275,28 @@ export async function proxy(request: NextRequest) {
    * round-trip רשת מיותר על כל קריאת API. אין שינוי אבטחתי — ההחלטות כאן לא
    * השתמשו ב-user עבור /api/*.
    */
+  // ── Module gate (WordPress-style): a module turned off in central is off for users too: its APIs → 404,
+  // its crons/webhooks → 200 "skipped", its pages → the normal 404. Core/essential modules are never looked up or blocked;
+  // central outage → nothing blocked. Ops host pages use different paths, so only their APIs are gated there.
+  {
+    const { ownerFor, isGateable, gateRequest, blockedResponse } = await import('./lib/platform/module-gate');
+    const isServerPath = pathname.startsWith('/api/') || pathname.startsWith('/auth/') || pathname.startsWith('/.well-known/') || pathname === '/landing-v2';
+    const kind = isServerPath ? 'server' as const : 'page' as const;
+    if (isServerPath || !effectiveOpsHost) {
+      const owner = ownerFor(pathname, kind);
+      if (owner && owner.surface !== 'admin' && isGateable(owner.module)) {
+        const d = await gateRequest(pathname, kind);
+        if (d.blocked) {
+          if (kind === 'server') {
+            const r = blockedResponse(d);
+            return applySecurityHeaders(new NextResponse(r.body, { status: r.status, headers: r.headers }));
+          }
+          return applySecurityHeaders(NextResponse.rewrite(new URL('/__nf', request.url), { status: 404, request: { headers: requestHeaders } }));
+        }
+      }
+    }
+  }
+
   if (pathname.startsWith('/api/')) {
     return applySecurityHeaders(NextResponse.next({ request: { headers: requestHeaders } }));
   }
