@@ -2,7 +2,7 @@
   "$schema": "../../../modules/module.schema.json",
   "id": "licensing",
   "package": "@platform/licensing",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "distribution": "shareable",
   "category": "security",
   "toggleable": false,
