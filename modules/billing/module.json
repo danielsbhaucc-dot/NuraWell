@@ -1,0 +1,13 @@
+{
+  "$schema": "../area.schema.json",
+  "id": "billing",
+  "name": "תשלומים",
+  "kind": "area",
+  "distribution": "shareable",
+  "category": "commerce",
+  "core": false,
+  "toggleable": true,
+  "alwaysOn": [],
+  "owns": [],
+  "description": "Subscriptions, perpetual licenses, plans and module gating."
+}

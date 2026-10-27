@@ -1,0 +1,9 @@
+# legal
+> Terms, legal evidence and anchoring.
+
+kind: area module (owns app code in place; see module.json "owns", longest prefix wins)
+tier: shareable
+core: false  toggleable: false
+always-on features: terms-acceptance, legal-evidence
+gate: off for a customer product without an active entitlement => routes 404, no menu, crons skipped, data retained. Owned products: always on.
+rules: no owner names in code; server-side authz; behavior changes need a golden/regression test.

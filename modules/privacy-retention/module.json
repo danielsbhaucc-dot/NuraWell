@@ -1,0 +1,17 @@
+{
+  "$schema": "../area.schema.json",
+  "id": "privacy-retention",
+  "name": "פרטיות ושמירה",
+  "kind": "area",
+  "distribution": "shareable",
+  "category": "privacy",
+  "core": false,
+  "toggleable": false,
+  "alwaysOn": [
+    "consents",
+    "data-export",
+    "deletion-with-approval"
+  ],
+  "owns": [],
+  "description": "Consents, retention, export and deletion (never without approval)."
+}

@@ -1,0 +1,13 @@
+{
+  "$schema": "../area.schema.json",
+  "id": "notifications",
+  "name": "התראות למשתמשים",
+  "kind": "area",
+  "distribution": "shareable",
+  "category": "messaging",
+  "core": false,
+  "toggleable": true,
+  "alwaysOn": [],
+  "owns": [],
+  "description": "Event-driven email, Telegram, WhatsApp and push."
+}

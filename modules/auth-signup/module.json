@@ -1,0 +1,13 @@
+{
+  "$schema": "../area.schema.json",
+  "id": "auth-signup",
+  "name": "הרשמה וקליטה",
+  "kind": "area",
+  "distribution": "shareable",
+  "category": "identity",
+  "core": false,
+  "toggleable": true,
+  "alwaysOn": [],
+  "owns": [],
+  "description": "Sign-up, login, onboarding and profile settings."
+}

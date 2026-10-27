@@ -4,29 +4,29 @@
 Catalog modules: 21 (core: 8). Packaged modules (module.json): 9.
 App code already modular: 17.4% (259/1489 files; the rest is on modules/legacy-app-files.txt and may only shrink).
 
-| id | name | core (cannot disable) | packaged |
-|---|---|---|---|
-| `security-core` | אבטחה | yes | not yet |
-| `iam` | הרשאות | yes | yes |
-| `audit-log` | יומן ביקורת | yes | not yet |
-| `incident-response` | תגובה לאירועים | yes | not yet |
-| `alerts` | התראות אבטחה | yes | not yet |
-| `field-encryption` | הצפנת שדות | yes | not yet |
-| `logs` | יומנים | yes | not yet |
-| `app-shell` | מעטפת האפליקציה | yes | not yet |
-| `auth-signup` | הרשמה וקליטה | no | not yet |
-| `privacy-retention` | פרטיות ושמירה | no | not yet |
-| `billing` | תשלומים | no | not yet |
-| `notifications` | התראות למשתמשים | no | not yet |
-| `costs` | עלויות | no | not yet |
-| `legal` | משפטי | no | not yet |
-| `a11y` | נגישות | no | not yet |
-| `qc` | בקרת איכות | no | yes |
-| `agent` | מנוע סוכן | no | not yet |
-| `reminders` | תזכורות | no | not yet |
-| `journey` | מסע, מדריכים ואתגר | no | not yet |
-| `gideon` | גדעון (בוט מנכ"ל) | no | not yet |
-| `site-content` | תוכן האתר ומדיה | no | not yet |
+| id | name | core (cannot disable) | tier | always-on | area manifest | owned app files | packaged |
+|---|---|---|---|---|---|---|---|
+| `security-core` | אבטחה | yes | internal | trusted-device, nightly-scan, step-up-2fa | yes | 0 | not yet |
+| `iam` | הרשאות | yes | shareable | roles, owner-super-access | yes | 0 | yes |
+| `audit-log` | יומן ביקורת | yes | internal | append-only-audit | yes | 0 | not yet |
+| `incident-response` | תגובה לאירועים | yes | internal | incident-playbook | yes | 0 | not yet |
+| `alerts` | התראות אבטחה | yes | internal | security-alerts | yes | 0 | not yet |
+| `field-encryption` | הצפנת שדות | yes | internal | pii-encryption | yes | 0 | not yet |
+| `logs` | יומנים | yes | shareable | error-logs | yes | 0 | not yet |
+| `app-shell` | מעטפת האפליקציה | yes | internal | layout, error-pages | yes | 0 | not yet |
+| `auth-signup` | הרשמה וקליטה | no | shareable | - | yes | 0 | not yet |
+| `privacy-retention` | פרטיות ושמירה | no | shareable | consents, data-export, deletion-with-approval | yes | 0 | not yet |
+| `billing` | תשלומים | no | shareable | - | yes | 0 | not yet |
+| `notifications` | התראות למשתמשים | no | shareable | - | yes | 0 | not yet |
+| `costs` | עלויות | no | internal | - | yes | 0 | not yet |
+| `legal` | משפטי | no | shareable | terms-acceptance, legal-evidence | yes | 0 | not yet |
+| `a11y` | נגישות | no | sellable | - | yes | 0 | not yet |
+| `qc` | בקרת איכות | no | shareable | - | yes | 0 | yes |
+| `agent` | מנוע סוכן | no | internal | - | yes | 0 | not yet |
+| `reminders` | תזכורות | no | internal | - | yes | 0 | not yet |
+| `journey` | מסע, מדריכים ואתגר | no | internal | - | yes | 0 | not yet |
+| `gideon` | גדעון (בוט מנכ"ל) | no | internal | - | yes | 0 | not yet |
+| `site-content` | תוכן האתר ומדיה | no | internal | - | yes | 0 | not yet |
 
 ## Starter kit for every new product
 

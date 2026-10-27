@@ -1,0 +1,16 @@
+{
+  "$schema": "../area.schema.json",
+  "id": "legal",
+  "name": "משפטי",
+  "kind": "area",
+  "distribution": "shareable",
+  "category": "privacy",
+  "core": false,
+  "toggleable": false,
+  "alwaysOn": [
+    "terms-acceptance",
+    "legal-evidence"
+  ],
+  "owns": [],
+  "description": "Terms, legal evidence and anchoring."
+}
