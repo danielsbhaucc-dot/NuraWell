@@ -245,6 +245,33 @@
   "commits": 4
  },
  {
+  "asset_key": "inline:apps/web/components/home/DolevHeroHeader.tsx#0",
+  "origin": "inline",
+  "kind": "icon",
+  "path": "apps/web/components/home/DolevHeroHeader.tsx",
+  "title": "DolevHeroHeader · SVG 1",
+  "mime": "image/svg+xml",
+  "sha256": "0bbbc9648606c41e70fbabbd1e8fbddba9c84f027c87c0b37778326a0b21ba8f",
+  "content_b64": "PHN2ZyB3aWR0aD0iNTYiIGhlaWdodD0iNTYiIHZpZXdCb3g9IjAgMCA1NiA1NiIgYXJpYS1oaWRkZW4gY2xhc3NOYW1lPSJzaHJpbmstMCI+CiAgICAgIDxjaXJjbGUgY3g9IjI4IiBjeT0iMjgiIHI9e3J9IGZpbGw9Im5vbmUiIHN0cm9rZT0idmFyKC0tZ2ItcmluZy10cmFjaykiIHN0cm9rZVdpZHRoPSI2IiAvPgogICAgICA8Y2lyY2xlIGN4PSIyOCIgY3k9IjI4IiByPXtyfSBmaWxsPSJub25lIiBzdHJva2U9InZhcigtLWdiLXJpbmcpIiBzdHJva2VXaWR0aD0iNiIgc3Ryb2tlTGluZWNhcD0icm91bmQiCiAgICAgICAgc3Ryb2tlRGFzaGFycmF5PXtgJHtjICogcGN0fSAke2N9YH0gdHJhbnNmb3JtPSJyb3RhdGUoLTkwIDI4IDI4KSIgLz4KICAgICAgPHRleHQgeD0iMjgiIHk9IjMzIiB0ZXh0QW5jaG9yPSJtaWRkbGUiIGZvbnRTaXplPSIxNCIgZm9udFdlaWdodD0iODAwIiBmaWxsPSJ2YXIoLS1nYi1pbmspIj57dG90YWwgPyBgJHtkb25lfS8ke3RvdGFsfWAgOiAnMCd9PC90ZXh0PgogICAgPC9zdmc+",
+  "usages": [
+   "components/home/DolevHeroHeader.tsx",
+   "components/home/HomeClient.tsx"
+  ],
+  "first_commit": {
+   "sha": "4b0642d537446b2f697d9e7dc202c054859ea2b8",
+   "date": "2026-05-18T23:46:35+03:00",
+   "author": "דניאל רחמן",
+   "subject": "feat(home): add authenticated home page at /home"
+  },
+  "last_commit": {
+   "sha": "b77c2a2d9ca02ae74ff9653c53451b1159f7c03f",
+   "date": "2026-10-27T17:00:04+02:00",
+   "author": "Grok Bot",
+   "subject": "design(v5): inline GreetingOptions into DolevHeroHeader (module boundary rule)"
+  },
+  "commits": 27
+ },
+ {
   "asset_key": "inline:apps/web/components/journey/JourneyPage.tsx#0",
   "origin": "inline",
   "kind": "icon",
@@ -264,12 +291,12 @@
    "subject": "Force sync local code to GitHub"
   },
   "last_commit": {
-   "sha": "4cf5a2f86aa11d54aeef6d65ee7afc26805f0084",
-   "date": "2026-10-26T16:55:46+02:00",
-   "author": "danielsbhaucc-dot",
-   "subject": "design: neutral surfaces, no-mint guard, solid dark cards, brand-green accents"
+   "sha": "4cd42e5180017e67abd58a3b02155c08eb758cbb",
+   "date": "2026-10-27T16:15:35+02:00",
+   "author": "Grok Bot",
+   "subject": "design: lock E forest-emerald, clear glass header (solid green while menu open), focus-panel options (?fp=1-3), sweep AI sparkle icons + no-ai-sparkle test"
   },
-  "commits": 40
+  "commits": 42
  },
  {
   "asset_key": "inline:apps/web/components/journey/SummarySection.tsx#0",
@@ -291,12 +318,12 @@
    "subject": "Force sync local code to GitHub"
   },
   "last_commit": {
-   "sha": "4cf5a2f86aa11d54aeef6d65ee7afc26805f0084",
-   "date": "2026-10-26T16:55:46+02:00",
-   "author": "danielsbhaucc-dot",
-   "subject": "design: neutral surfaces, no-mint guard, solid dark cards, brand-green accents"
+   "sha": "4cd42e5180017e67abd58a3b02155c08eb758cbb",
+   "date": "2026-10-27T16:15:35+02:00",
+   "author": "Grok Bot",
+   "subject": "design: lock E forest-emerald, clear glass header (solid green while menu open), focus-panel options (?fp=1-3), sweep AI sparkle icons + no-ai-sparkle test"
   },
-  "commits": 30
+  "commits": 32
  },
  {
   "asset_key": "inline:apps/web/components/legal/cookies/CookieNotice.tsx#0",
@@ -319,12 +346,12 @@
    "subject": "feat(legal): cookie notice (jar art + forest-guard wink), designed panel, /cookies page (#219)"
   },
   "last_commit": {
-   "sha": "87128b55cf4ec3373e2c1e469e11fc22c77465fc",
-   "date": "2026-10-20T18:44:25+03:00",
-   "author": "danielsbhaucc-dot",
-   "subject": "feat(cookies): dark-forest theme (opt3) + rotating 🍪 headlines (#238)"
+   "sha": "eac1172a5ff3f62fec1408b468f4c1fcf26e6420",
+   "date": "2026-10-27T15:43:31+02:00",
+   "author": "Grok Bot",
+   "subject": "design: hero/header colour variants (a–e) + glass header, restore pre-#384 drawer & 404, reduce sparkle icons"
   },
-  "commits": 4
+  "commits": 5
  },
  {
   "asset_key": "inline:apps/web/components/legal/v2/HeroArt.tsx#0",
@@ -530,6 +557,7 @@
   "content_b64": null,
   "usages": [
    "/login",
+   "/plans",
    "/settings/privacy",
    "/about",
    "/accessibility",
@@ -539,8 +567,7 @@
    "/ops/audio",
    "/ops/billing",
    "/ops/ceo",
-   "/ops/demo-access",
-   "/ops/guides/[id]"
+   "/ops/demo-access"
   ],
   "library": {
    "name": "lucide-react",
@@ -945,7 +972,9 @@
   "mime": "image/svg+xml",
   "sha256": "71e0673b30c15df0147b8ff2db8297281c7327b545230927b000230a81b8e634",
   "content_b64": null,
-  "usages": [],
+  "usages": [
+   "components/shared/MobileHeader.tsx"
+  ],
   "first_commit": {
    "sha": "6b503bedb1e8975b625d28c74186aa32e2c15990",
    "date": "2026-10-12T20:05:31+03:00",
