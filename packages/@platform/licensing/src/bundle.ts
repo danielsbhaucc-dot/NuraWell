@@ -48,7 +48,7 @@ export function openBytes(key: Buffer, sealed: string): Buffer {
   if (iv.length !== 12 || raw.length < 17) throw new Error('bad_seal');
   const ct = raw.subarray(0, raw.length - 16);
   const tag = raw.subarray(raw.length - 16);
-  const d = createDecipheriv('aes-256-gcm', key, iv);
+  const d = createDecipheriv('aes-256-gcm', key, iv, { authTagLength: 16 });
   d.setAuthTag(tag);
   return Buffer.concat([d.update(ct), d.final()]);
 }
