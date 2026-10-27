@@ -1,7 +1,5 @@
 import { describe, expect, it } from 'vitest';
-// @ts-expect-error -- plain .mjs tooling module
 import { ownerOf, validateAreas, findAreas, catalogFlags, trackedAppFiles, REQUIRED_ALWAYS_ON } from '../../../scripts/modules/areas.mjs';
-// @ts-expect-error -- plain .mjs tooling module
 import { classify } from '../../../scripts/modules/boundaries.mjs';
 
 const area = (id: string, owns: string[]) => ({ dir: `modules/${id}`, json: { id, owns } });
