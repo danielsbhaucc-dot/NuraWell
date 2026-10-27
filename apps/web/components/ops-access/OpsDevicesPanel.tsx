@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { useRealtimePing } from '@/lib/hooks/useLiveRefresh';
 import { confirmDialog } from '@/components/shared/dialogs';
 import { Badge, Banner, Button, Card } from '@/components/ui';
 import { StepUpDialog } from '@/components/admin/StepUpDialog';
@@ -129,33 +130,16 @@ export function OpsDevicesPanel() {
   );
 }
 
-/** Floating alert in Ops: a new device is waiting for approval (live polling). */
+/** Floating alert in Ops: a new device is waiting for approval (Realtime-pushed). */
 export function OpsPendingLoginAlert() {
   const [reqs, setReqs] = useState<{ id: string; label: string; location: string; created_at: string }[]>([]);
-  useEffect(() => {
-    let alive = true;
-    const tick = async () => {
-      const j = await fetch('/api/v1/ops/device?view=pending').then((r) => (r.ok ? r.json() : null)).catch(() => null);
-      if (alive && j) setReqs(j.requests ?? []);
-    };
-    void tick();
-    // cost (Fluid Active CPU): this alert is mounted on every Ops page. It used to poll every 10s even
-    // from hidden/background tabs (~8.6k admin-guarded invocations per day per open tab). Now: every 15s
-    // only while the tab is visible, plus an immediate check whenever the tab becomes visible/focused/online.
-    // Security unchanged: the owner is also alerted by Telegram/email; this is only the in-panel prompt.
-    const t = setInterval(() => { if (document.visibilityState === 'visible') void tick(); }, 15_000);
-    let last = Date.now();
-    const onWake = () => { if (document.visibilityState === 'visible' && Date.now() - last > 2000) { last = Date.now(); void tick(); } };
-    document.addEventListener('visibilitychange', onWake);
-    window.addEventListener('focus', onWake);
-    window.addEventListener('online', onWake);
-    return () => {
-      alive = false; clearInterval(t);
-      document.removeEventListener('visibilitychange', onWake);
-      window.removeEventListener('focus', onWake);
-      window.removeEventListener('online', onWake);
-    };
-  }, []);
+  // cost (Fluid Active CPU): no polling. A DB trigger pings the private Realtime topic ops-login:<uid>
+  // (RLS: only that user) on every new/decided request; we then fetch once. Also on mount/focus/online.
+  // Security unchanged: the pending list still comes only from the admin + device-gated API.
+  useRealtimePing('ops-login:{uid}', () => {
+    void fetch('/api/v1/ops/device?view=pending').then((r) => (r.ok ? r.json() : null)).catch(() => null)
+      .then((j) => { if (j) setReqs(j.requests ?? []); });
+  }, 15_000); // security alert: old 15s cadence kept as fallback whenever Realtime is not connected
   if (!reqs.length) return null;
   const r = reqs[0];
   const decide = async (approve: boolean) => {
