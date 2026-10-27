@@ -26,6 +26,21 @@ export function isStaleSosFollowUp(fireAt: string, now: Date): boolean {
   return Number.isFinite(t) && now.getTime() - t > SOS_FOLLOWUP_STALE_MS;
 }
 
+/**
+ * Any pending reminder this long past fire_at is no longer relevant (e.g. stuck behind Almog's touch cap
+ * since days ago) — the regular drain run marks it skipped (skip_reason 'expired') instead of ever sending it.
+ * No extra cron/CPU: it piggybacks on the existing due-query. ALMOG_REMINDER_STALE_HOURS overrides (min 1).
+ */
+export const REMINDER_STALE_DEFAULT_HOURS = 24;
+export function reminderStaleMs(): number {
+  const h = Number(process.env.ALMOG_REMINDER_STALE_HOURS);
+  return (Number.isFinite(h) && h >= 1 ? h : REMINDER_STALE_DEFAULT_HOURS) * 60 * 60 * 1000;
+}
+export function isExpiredReminder(fireAt: string, now: Date, staleMs = reminderStaleMs()): boolean {
+  const t = Date.parse(fireAt);
+  return Number.isFinite(t) && now.getTime() - t > staleMs;
+}
+
 type ReminderRow = {
   id: string;
   user_id: string;
@@ -49,6 +64,7 @@ export interface DrainRemindersResult {
   due_count: number;
   sent: number;
   skipped: number;
+  expired?: number;
   deferred?: number;
   focus_ended: number;
   errors_count: number;
@@ -119,6 +135,8 @@ export async function drainAlmogReminders(
   let sent = 0;
   let skipped = 0;
   let deferred = 0;
+  let expired = 0;
+  const staleMs = reminderStaleMs();
   const errors: string[] = [];
 
   /**
@@ -149,6 +167,15 @@ export async function drainAlmogReminders(
           continue;
         }
         // SOS follow-up — חריג מכוון מתקרת 3 מגעים (קריטי).
+      } else if (isExpiredReminder(r.fire_at, now, staleMs)) {
+        await admin
+          .from('scheduled_reminders')
+          .update({ status: 'skipped', metadata: { ...(r.metadata ?? {}), skip_reason: 'expired' } })
+          .eq('id', r.id);
+        console.info('[almog-reminders] expired stale reminder', { id: r.id, fire_at: r.fire_at });
+        skipped += 1;
+        expired += 1;
+        continue;
       } else {
         const habitIdsRaw = r.metadata?.habit_ids;
         const habitIds = Array.isArray(habitIdsRaw)
@@ -233,6 +260,7 @@ export async function drainAlmogReminders(
     due_count: due.length,
     sent,
     skipped,
+    expired,
     deferred,
     focus_ended: focusEnded,
     errors_count: errors.length,
