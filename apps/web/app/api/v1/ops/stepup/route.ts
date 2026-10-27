@@ -12,7 +12,7 @@ import { consumeGrant, cookieOpts, GRANT_TTL_MS, issueGrant, STEPUP_COOKIE, totp
 import { createEmailCode, EMAIL_NONCE_COOKIE, verifyEmailCode } from '@/lib/security-core/email-stepup';
 import { sendResendEmail } from '@/lib/module-api/notifications/lib-email-resend';
 import { selectedProduct } from '@/lib/platform/authorize';
-import { FRIENDLY_PURPOSE, toggleConfirmMode } from '@/lib/platform/toggle-confirm';
+import { FRIENDLY_PURPOSE, toggleConfirmMode, upsellFor } from '@/lib/platform/toggle-confirm';
 
 const EMAIL_GRANTS = { ttlMs: GRANT_TTL_MS, issueGrant, consumeGrant };
 
@@ -67,7 +67,7 @@ export async function POST(request: Request) {
   switch (b.op) {
     case 'methods': {
       const [t, left, pk] = await Promise.all([totpStatus(db, uid), backupCodesLeft(db, uid), db.from('webauthn_credentials').select('id', { count: 'exact', head: true }).eq('user_id', uid).is('revoked_at', null)]);
-      return NextResponse.json({ totp: t.enrolled, backup_left: left, passkeys: pk.count ?? 0, friendly: friendly && b.purpose === FRIENDLY_PURPOSE }, { headers: NO_STORE });
+      return NextResponse.json({ totp: t.enrolled, backup_left: left, passkeys: pk.count ?? 0, friendly: friendly && b.purpose === FRIENDLY_PURPOSE, upsell: friendly && b.purpose === FRIENDLY_PURPOSE ? upsellFor(selectedProduct(request), { passkeys: pk.count ?? 0, totp: t.enrolled }) : null }, { headers: NO_STORE });
     }
     case 'email_send': {
       const to = auth.user.email;

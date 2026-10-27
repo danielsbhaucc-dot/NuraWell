@@ -110,3 +110,19 @@ describe('strict mode is unchanged', () => {
     expect(toggle).toContain('toggleConfirmMode(p.data.productId)');
   });
 });
+
+describe('security upsell slot (config-driven)', async () => {
+  const { upsellFor } = await import('@/lib/platform/toggle-confirm');
+  const cfg = { c1: { label: 'שדרוג לאבטחה מתקדמת', href: 'https://example.com/security' } };
+  it('only for customers without a strong method', () => {
+    expect(upsellFor('c1', { passkeys: 0, totp: false }, cfg, {})).toEqual({ label: cfg.c1.label, href: cfg.c1.href });
+    expect(upsellFor('c1', { passkeys: 1, totp: false }, cfg, {})).toBeNull();
+    expect(upsellFor('c1', { passkeys: 0, totp: true }, cfg, {})).toBeNull();
+    expect(upsellFor('c1', { passkeys: 0, totp: false }, cfg, { c1: true })).toBeNull();
+    expect(upsellFor('c2', { passkeys: 0, totp: false }, cfg, {})).toBeNull();
+  });
+  it('rejects unsafe config', () => {
+    expect(upsellFor('c1', { passkeys: 0, totp: false }, { c1: { label: 'x', href: 'javascript:alert(1)' } }, {})).toBeNull();
+    expect(upsellFor('c1', { passkeys: 0, totp: false }, { c1: { label: '<b>hi</b>', href: 'https://e.com' } }, {})).toBeNull();
+  });
+});
