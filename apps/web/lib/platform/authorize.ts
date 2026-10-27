@@ -1,7 +1,7 @@
 import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { ALL_PRODUCTS, createModuleGate, decide, isModuleEnabled, moduleForPath, permittedProducts, isFounder, type Actor, type Decision, type Grant, type ModuleState } from '@platform/iam';
-import { CATALOG, DEFAULT_PRODUCT, LICENSE_LOCK_POLICY, MODULES, PRODUCT_COOKIE } from './catalog';
+import { CATALOG, DEFAULT_PRODUCT, OWNED_BY_US, MODULES, PRODUCT_COOKIE } from './catalog';
 import { centralConfigured, createCentralModuleSource, syncModulesToCentral } from '@platform/module-library-ui/server';
 import { productLicenseFromEnv } from '@platform/licensing/product';
 import { createCentralAdminClient } from '@/lib/supabase/admin';
@@ -43,7 +43,7 @@ export function centralModuleSource(product: string) {
   if (!centralConfigured()) return null;
   let s = sources.get(product);
   if (!s) {
-    s = createCentralModuleSource({ db: createCentralAdminClient(), productId: product, coreIds: CORE_IDS, license: product === DEFAULT_PRODUCT ? nurawellLicense() : null, licenseLock: LICENSE_LOCK_POLICY[product] ?? 'modules-off' });
+    s = createCentralModuleSource({ db: createCentralAdminClient(), productId: product, coreIds: CORE_IDS, license: product === DEFAULT_PRODUCT ? nurawellLicense() : null, ownedByUs: OWNED_BY_US[product] ?? false });
     sources.set(product, s);
   }
   return s;
@@ -141,5 +141,5 @@ export const moduleGate = createModuleGate(MODULES, async () => {
   const src = centralModuleSource(DEFAULT_PRODUCT);
   if (!src) return null;
   const r = await src.get();
-  return { source: r.source, states: r.userStates, adminStates: r.states };
+  return { source: r.source, states: r.userStates, adminStates: r.states, failClosed: r.failClosed };
 });

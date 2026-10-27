@@ -4,17 +4,30 @@
 //    core app are never locked out; only non-core modules can turn off.
 //  * States are cached ~2 minutes. If central can't be reached, the last verified states keep working for up to 6 hours;
 //    after that non-core modules fail closed (off) until central answers again.
-//  * Optional license guard (same @platform/licensing guard as the sample product): if it isn't 'active', non-core modules are off
-//    for admin (`states`). For end users (`userStates`) that depends on the product's ONE switch `licenseLock`:
-//    'modules-off' (default) → same as admin; 'admin-only' → user features keep working, only admin/ops locks.
+//  * Ownership (central.products.owned_by_us, with a local `ownedByUs` fallback when central is unreachable):
+//    - OWNED (our own products): a license lock / licensing outage NEVER turns a module off. It only raises `licenseAlert`
+//      for admins. Manual toggles still apply.
+//    - CUSTOMER products: a non-core module works only if it is toggled on AND has an active entitlement:
+//      'perpetual' → forever; 'subscription' → until paid_through + grace_days. Fail closed: no central and no cache → off,
+//      and the gate blocks (see `failClosed`).
 import type { GuardStatus } from '@platform/licensing';
 
 type Rpc = { rpc(fn: string, args?: Record<string, unknown>): PromiseLike<{ data: unknown; error: { message: string } | null }> };
 export type RuntimeModuleState = { productId: string; moduleId: string; enabled: boolean };
 export type RuntimeSource = 'central' | 'cache' | 'failsafe';
-export type LicenseLockPolicy = 'modules-off' | 'admin-only';
-export type RuntimeResult = { states: RuntimeModuleState[]; userStates: RuntimeModuleState[]; source: RuntimeSource; license: GuardStatus['state'] | 'not_configured'; productStatus: string | null };
-type Snap = { productStatus: string | null; core: string[]; states: { moduleId: string; enabled: boolean }[] };
+export type LicenseType = 'subscription' | 'perpetual';
+export type Entitlement = { moduleId: string; licenseType: LicenseType; source?: 'purchase' | 'grant'; paidThrough?: string | null; graceDays?: number; updatesUntil?: string | null; active?: boolean; revoked?: boolean; status?: 'active' | 'past_due' | 'expired' | 'canceled' };
+export type RuntimeResult = { states: RuntimeModuleState[]; userStates: RuntimeModuleState[]; source: RuntimeSource; ownedByUs: boolean; failClosed: boolean; licenseAlert: boolean; entitlements: Entitlement[]; license: GuardStatus['state'] | 'not_configured'; productStatus: string | null };
+type Snap = { productStatus: string | null; ownedByUs?: boolean; core: string[]; states: { moduleId: string; enabled: boolean }[]; entitlements?: Entitlement[] };
+
+/** Re-evaluated locally so a cached snapshot still expires subscriptions on time. */
+export function entitlementActive(e: Entitlement, nowMs: number): boolean {
+  if (e.revoked || e.status === 'expired' || e.status === 'canceled') return false;
+  if (e.licenseType === 'perpetual') return true;
+  if (!e.paidThrough) return false;
+  const until = Date.parse(e.paidThrough) + (e.graceDays ?? 3) * 86_400_000;
+  return Number.isFinite(until) && nowMs <= until;
+}
 
 export const RUNTIME_POLL_MS = 2 * 60_000;
 export const RUNTIME_MAX_STALE_MS = 6 * 60 * 60_000;
@@ -28,7 +41,8 @@ export async function loadCentralModuleStates(db: Rpc, productId: string): Promi
 export function createCentralModuleSource(o: {
   db: Rpc; productId: string; coreIds: readonly string[];
   license?: { status(): Promise<GuardStatus> } | null;
-  licenseLock?: LicenseLockPolicy;
+  /** Local fallback for ownership when central can't be read. Central's value wins when present. */
+  ownedByUs?: boolean;
   now?: () => number; pollMs?: number; maxStaleMs?: number;
 }) {
   const now = o.now ?? Date.now, pollMs = o.pollMs ?? RUNTIME_POLL_MS, maxStale = o.maxStaleMs ?? RUNTIME_MAX_STALE_MS;
@@ -56,13 +70,15 @@ export function createCentralModuleSource(o: {
       const live = Boolean(snap) && snap!.productStatus !== 'disabled';
       const licOk = lic === 'active' || lic === 'not_configured';
       const ids = new Set([...core, ...(snap?.states ?? []).map((s) => s.moduleId)]);
-      const build = (nonCoreAllowed: boolean) => [...ids].map((moduleId) => ({
+      const owned = snap?.ownedByUs ?? o.ownedByUs ?? false;
+      const ents = snap?.entitlements ?? [];
+      const entitled = new Set(ents.filter((e) => entitlementActive(e, now())).map((e) => e.moduleId));
+      const build = (allow: (id: string) => boolean) => [...ids].map((moduleId) => ({
         productId: o.productId, moduleId,
-        enabled: core.has(moduleId) || (nonCoreAllowed && Boolean(snap!.states.find((s) => s.moduleId === moduleId)?.enabled)),
+        enabled: core.has(moduleId) || (allow(moduleId) && Boolean(snap!.states.find((s) => s.moduleId === moduleId)?.enabled)),
       }));
-      const states = build(live && licOk);
-      const userStates = (o.licenseLock ?? 'modules-off') === 'admin-only' ? build(live) : states;
-      return { states, userStates, source, license: lic, productStatus: snap?.productStatus ?? null };
+      const states = owned ? build(() => live) : build((id) => live && licOk && entitled.has(id));
+      return { states, userStates: states, source, ownedByUs: owned, failClosed: !owned, licenseAlert: owned && !licOk, entitlements: ents, license: lic, productStatus: snap?.productStatus ?? null };
     },
     invalidate() { if (last) last = { ...last, at: -Infinity }; },
   };

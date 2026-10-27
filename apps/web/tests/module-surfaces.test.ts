@@ -118,3 +118,18 @@ describe('module gate: audiences + scheduler', () => {
     expect(src).toContain('authorizeCronRequest(request)');
   });
 });
+
+describe('customer products fail closed (subscription ended = module absent)', () => {
+  it('failsafe + failClosed blocks non-core; owned failsafe never blocks; moduleOn false so crons skip', async () => {
+    const mk = (failClosed: boolean) => createModuleGate(MODULES, async () => ({ source: 'failsafe' as const, states: [], failClosed }));
+    expect((await mk(true).gateRequest('/journey', 'page')).blocked).toBe(true);
+    expect(await mk(true).moduleOn('notifications')).toBe(false);
+    expect((await mk(false).gateRequest('/journey', 'page')).blocked).toBe(false);
+    expect(await mk(true).moduleOn('security-core')).toBe(true);
+  });
+  it('a module missing from a customer product state list is absent (not entitled)', async () => {
+    const g = createModuleGate(MODULES, async () => ({ source: 'central' as const, states: [{ moduleId: 'journey', enabled: false }], failClosed: true }));
+    expect((await g.gateRequest('/journey', 'page')).blocked).toBe(true);
+    expect(await g.moduleOn('notifications')).toBe(false);
+  });
+});

@@ -7,7 +7,7 @@
 // Admin/ops APIs keep their existing (stricter) gate in requireApiAdmin → authorize().
 import { ownerOfPage, ownerOfPath, type ModuleManifest, type Surface } from './modules';
 
-export type GateStates = { source: 'central' | 'cache' | 'failsafe'; states: readonly { moduleId: string; enabled: boolean }[]; adminStates?: readonly { moduleId: string; enabled: boolean }[] };
+export type GateStates = { source: 'central' | 'cache' | 'failsafe'; states: readonly { moduleId: string; enabled: boolean }[]; adminStates?: readonly { moduleId: string; enabled: boolean }[]; failClosed?: boolean };
 export type GateDecision = { blocked: false; moduleId: string | null; surface: Surface | null } | { blocked: true; moduleId: string; surface: Surface; offModule: string };
 
 export function ownerFor(path: string, kind: 'server' | 'page', registry: readonly ModuleManifest[]) {
@@ -23,13 +23,13 @@ export function isGateable(m: ModuleManifest | undefined): m is ModuleManifest {
 export function decideGate(registry: readonly ModuleManifest[], owner: { module: ModuleManifest; surface: Surface } | undefined, st: GateStates | null): GateDecision {
   if (!owner) return { blocked: false, moduleId: null, surface: null };
   const { module: m, surface } = owner;
-  if (surface === 'admin' || !isGateable(m) || !st || st.source === 'failsafe') return { blocked: false, moduleId: m.id, surface };
+  if (surface === 'admin' || !isGateable(m) || !st || (st.source === 'failsafe' && !st.failClosed)) return { blocked: false, moduleId: m.id, surface };
   const seen = new Set<string>();
   const off = (id: string): string | null => {
     if (seen.has(id)) return null; seen.add(id);
     const mm = registry.find((x) => x.id === id);
     if (!mm || mm.core) return null;
-    if (st.states.some((s) => s.moduleId === id && s.enabled === false)) return id;
+    if (st.failClosed ? !st.states.some((s) => s.moduleId === id && s.enabled) : st.states.some((s) => s.moduleId === id && s.enabled === false)) return id;
     for (const d of mm.dependsOn) { const r = off(d); if (r) return r; }
     return null;
   };

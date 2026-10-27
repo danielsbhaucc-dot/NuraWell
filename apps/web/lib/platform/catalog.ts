@@ -9,7 +9,8 @@ export const PRODUCTS = [
 export const DEFAULT_PRODUCT = 'nurawell';
 /** THE licensing-lock switch, per product. 'modules-off': a locked license turns non-essential modules off for users too.
  *  'admin-only': users keep every feature, only admin/ops locks. Core/essential modules are never off either way. */
-export const LICENSE_LOCK_POLICY: Record<string, 'modules-off' | 'admin-only'> = { nurawell: 'modules-off' };
+/** Our own products: licensing never turns modules off (admin alert only). Fallback for when central can't be read; central.products.owned_by_us wins. */
+export const OWNED_BY_US: Record<string, boolean> = { nurawell: true, sample: true };
 export const PRODUCT_COOKIE = 'nw_product';
 
 export const CATALOG = defineCatalog(PRODUCTS);
