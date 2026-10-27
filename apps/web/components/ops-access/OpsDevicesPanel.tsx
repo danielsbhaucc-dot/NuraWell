@@ -139,8 +139,22 @@ export function OpsPendingLoginAlert() {
       if (alive && j) setReqs(j.requests ?? []);
     };
     void tick();
-    const t = setInterval(tick, 10_000);
-    return () => { alive = false; clearInterval(t); };
+    // cost (Fluid Active CPU): this alert is mounted on every Ops page. It used to poll every 10s even
+    // from hidden/background tabs (~8.6k admin-guarded invocations per day per open tab). Now: every 15s
+    // only while the tab is visible, plus an immediate check whenever the tab becomes visible/focused/online.
+    // Security unchanged: the owner is also alerted by Telegram/email; this is only the in-panel prompt.
+    const t = setInterval(() => { if (document.visibilityState === 'visible') void tick(); }, 15_000);
+    let last = Date.now();
+    const onWake = () => { if (document.visibilityState === 'visible' && Date.now() - last > 2000) { last = Date.now(); void tick(); } };
+    document.addEventListener('visibilitychange', onWake);
+    window.addEventListener('focus', onWake);
+    window.addEventListener('online', onWake);
+    return () => {
+      alive = false; clearInterval(t);
+      document.removeEventListener('visibilitychange', onWake);
+      window.removeEventListener('focus', onWake);
+      window.removeEventListener('online', onWake);
+    };
   }, []);
   if (!reqs.length) return null;
   const r = reqs[0];

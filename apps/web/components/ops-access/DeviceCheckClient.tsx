@@ -74,8 +74,11 @@ export function DeviceCheckClient({ initialError }: { initialError: string | nul
   }, [start]);
 
   useEffect(() => {
-    if (phase === 'approved' || phase === 'denied') return;
+    // cost: stop polling once the request reached a terminal state (expired used to poll every 3s forever)
+    // and skip ticks from hidden tabs; start() sets phase back to 'waiting', which restarts this effect.
+    if (phase === 'approved' || phase === 'denied' || phase === 'expired') return;
     const t = setInterval(async () => {
+      if (document.visibilityState !== 'visible') return;
       const s = (await fetch('/api/v1/ops/device?view=status', { credentials: 'include' }).then((r) => r.json()).catch(() => ({}))) as { status?: string };
       if (s.status === 'approved') go();
       else if (s.status === 'denied') setPhase('denied');
