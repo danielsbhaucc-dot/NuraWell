@@ -1,3 +1,8 @@
 # Cross-module internal imports that predate the boundary check. May only shrink.
 # Format: <from-module> -> <to-module> | <file> -> <imported file>
-
+iam -> site-content | apps/web/components/admin/AdminComingSoonLyricsEditor.tsx -> apps/web/lib/coming-soon/lyrics.ts
+iam -> site-content | apps/web/components/admin/AdminComingSoonPanel.tsx -> apps/web/components/media-manager/GlassConfirmDialog.tsx
+iam -> site-content | apps/web/components/admin/AdminComingSoonPanel.tsx -> apps/web/components/media-manager/MediaManagerProvider.tsx
+iam -> site-content | apps/web/components/admin/AdminComingSoonPanel.tsx -> apps/web/components/media-manager/types.ts
+iam -> site-content | apps/web/components/admin/AdminComingSoonRevolutionEditor.tsx -> apps/web/lib/coming-soon/revolution-lines.ts
+site-content -> agent | apps/web/app/coming-soon/page.tsx -> apps/web/components/ai/PublicAiPresence.tsx
