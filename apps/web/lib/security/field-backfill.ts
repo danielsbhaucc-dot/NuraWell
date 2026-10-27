@@ -321,7 +321,7 @@ export async function legalVerify(db: SupabaseClient, raw: SupabaseClient) {
   const items = [];
   for (const c of (cps ?? []) as Array<{ table_name: string; row_id: string; col: string }>) {
     const { data } = await db.from(c.table_name).select(c.col).eq('id', c.row_id).maybeSingle();
-    items.push({ t: c.table_name, id: c.row_id, col: c.col, value: data ? (data as Record<string, unknown>)[c.col] : null });
+    items.push({ t: c.table_name, id: c.row_id, col: c.col, value: data ? (data as unknown as Record<string, unknown>)[c.col] : null });
   }
   const { data: check } = items.length ? await raw.rpc('legal_reseal_check', { p: items }) : { data: { checked: 0, mismatch: 0, missing: 0 } };
   return { rows: snap.rows, chainsOk: snap.chainsOk, chainsBad: snap.chainsBad, unsealed: (await unsealed(raw)).length, checkpoint: check, digest: snap.digest };
@@ -336,8 +336,8 @@ export async function legalReseal(db: SupabaseClient, raw: SupabaseClient) {
     const spec = encryptedTable(c.t)!;
     const { data, error } = await raw.from(c.t).select(`id, ${c.col}`).eq('id', c.id).single();
     if (error || !data) return { error: 'read_failed', candidates: cells.length };
-    const plain = (data as Record<string, unknown>)[c.col];
-    const owner = ownerOf(spec, data as Record<string, unknown>)!;
+    const plain = (data as unknown as Record<string, unknown>)[c.col];
+    const owner = ownerOf(spec, data as unknown as Record<string, unknown>)!;
     const cipher = await encryptValue(c.t, c.col, owner, SYSTEM_ROW, plain);
     if (!isV2(cipher) || canonJson(await decryptValue(c.t, c.col, owner, SYSTEM_ROW, cipher)) !== canonJson(plain)) return { error: 'roundtrip_failed', candidates: cells.length };
     p.push({ ...c, cipher });
