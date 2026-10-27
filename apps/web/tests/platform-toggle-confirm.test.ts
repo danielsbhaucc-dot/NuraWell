@@ -31,8 +31,9 @@ vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => db }));
 
 import { friendlyMethods, toggleConfirmMode, togglePurpose } from '@/lib/platform/toggle-confirm';
 import { createEmailCode, verifyEmailCode } from '@/lib/security-core/email-stepup';
-import { issueGrant, STEPUP_COOKIE } from '@/lib/auth/stepup';
+import { consumeGrant, GRANT_TTL_MS, issueGrant, STEPUP_COOKIE } from '@/lib/auth/stepup';
 import { hasToggleApproval } from '@/lib/ops/sensitive-stepup';
+const G = { ttlMs: GRANT_TTL_MS, issueGrant, consumeGrant };
 
 const req = (cookie: string | null, method = 'POST') => new Request('https://x.test/api', { method, headers: cookie ? { cookie: `${STEPUP_COOKIE}=${cookie}` } : {} });
 const audit = () => (tables.admin_audit_log ?? []).map((r) => r.path);
@@ -72,21 +73,21 @@ describe('friendly step-up paths are server-verified and single-use', () => {
     expect(await hasToggleApproval({ accessToken: null, userId: 'u1', req: req(s) }, 'friendly')).toBe(false);
   });
   it('email path: right code once, wrong code / no nonce / old code fail, all audited', async () => {
-    const first = await createEmailCode(db as never, 'u1', 'ops.modules');
-    const { code, nonce } = await createEmailCode(db as never, 'u1', 'ops.modules');
-    expect(await verifyEmailCode(db as never, 'u1', 'ops.modules', first.nonce, first.code)).toBeNull();
-    expect(await verifyEmailCode(db as never, 'u1', 'ops.modules', null, code)).toBeNull();
-    expect(await verifyEmailCode(db as never, 'u1', 'ops.modules', nonce, code === '000000' ? '111111' : '000000')).toBeNull();
-    const grant = await verifyEmailCode(db as never, 'u1', 'ops.modules', nonce, code);
+    const first = await createEmailCode(G, db as never, 'u1', 'ops.modules');
+    const { code, nonce } = await createEmailCode(G, db as never, 'u1', 'ops.modules');
+    expect(await verifyEmailCode(G, db as never, 'u1', 'ops.modules', first.nonce, first.code)).toBeNull();
+    expect(await verifyEmailCode(G, db as never, 'u1', 'ops.modules', null, code)).toBeNull();
+    expect(await verifyEmailCode(G, db as never, 'u1', 'ops.modules', nonce, code === '000000' ? '111111' : '000000')).toBeNull();
+    const grant = await verifyEmailCode(G, db as never, 'u1', 'ops.modules', nonce, code);
     expect(grant).toBeTruthy();
-    expect(await verifyEmailCode(db as never, 'u1', 'ops.modules', nonce, code)).toBeNull();
+    expect(await verifyEmailCode(G, db as never, 'u1', 'ops.modules', nonce, code)).toBeNull();
     expect(await hasToggleApproval({ accessToken: null, userId: 'u1', req: req(grant) }, 'friendly')).toBe(true);
     expect(audit()).toEqual(expect.arrayContaining(['stepup_email_sent', 'stepup_email_failed', 'stepup_granted']));
   });
   it('expired codes fail (short TTL)', async () => {
-    const { code, nonce } = await createEmailCode(db as never, 'u1', 'ops.modules');
+    const { code, nonce } = await createEmailCode(G, db as never, 'u1', 'ops.modules');
     for (const r of tables.stepup_grants) r.expires_at = new Date(Date.now() - 1000).toISOString();
-    expect(await verifyEmailCode(db as never, 'u1', 'ops.modules', nonce, code)).toBeNull();
+    expect(await verifyEmailCode(G, db as never, 'u1', 'ops.modules', nonce, code)).toBeNull();
   });
   it('GET never grants', async () => {
     const g = await issueGrant(db as never, 'u1', 'ops.modules', 'passkey');
