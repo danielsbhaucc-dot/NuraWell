@@ -653,6 +653,11 @@ class journey_task_executions task_id -
 class legal_access_log action -
 class legal_access_log detail -
 class legal_access_log product_id -
+class legal_reseal_checkpoint batch -
+class legal_reseal_checkpoint col -
+class legal_reseal_checkpoint plain_sha256 -
+class legal_reseal_checkpoint row_id -
+class legal_reseal_checkpoint table_name -
 class legal_export_secrets case_ref -
 class legal_export_secrets export_sha256 -
 class legal_export_secrets file_name -

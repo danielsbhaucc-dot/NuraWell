@@ -13,6 +13,7 @@ import { createHash } from 'node:crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { decryptString, isEncrypted } from '@/lib/crypto/pii';
 import { createRawAdminClient } from '@/lib/supabase/admin';
+import { publicKeyPem, verifyChain } from '@/lib/legal/evidence-crypto';
 import { decryptValue, encryptValue, isV2 } from '@/lib/security/field-crypto';
 import { BLIND_INDEX_COLUMNS, BLIND_INDEX_SOURCES, blindIndexPatch } from '@/lib/security/blind-index';
 import { FUZZY_THRESHOLD, matchesAnyWord, receiptSearchText } from '@/lib/legal/media/receipts-core';
@@ -267,4 +268,123 @@ export async function receiptSearchParity(db: SupabaseClient): Promise<Record<st
     if (!(a && b && c && d)) out.mismatches++;
   }
   return out;
+}
+
+// ---- 000225: one-time reseal of legacy plaintext legal evidence (counts only) ----
+/**
+ * legalReseal: plaintext cells of consent_evidence / consent_evidence_attestations / legal_access_log -> enc:v2.
+ *  1. digest (sha256 of canonical JSON) of every row of the three tables as the app reads them (decrypting client),
+ *     plus verifyChain per user;
+ *  2. encrypt each plaintext cell and verify the round-trip in memory;
+ *  3. legal_reseal_apply records sha256 of each original value in legal_reseal_checkpoint, then swaps the cell;
+ *  4. digests and chains are recomputed and must be identical; legal_reseal_check re-hashes decrypted values.
+ * Nothing evidentiary changes: record_hash/prev_hash/signature are not touched (they cover the plaintext).
+ */
+const LEGAL_TABLES = ['consent_evidence', 'consent_evidence_attestations', 'legal_access_log'] as const;
+const canonJson = (v: unknown): string =>
+  v === null || typeof v !== 'object'
+    ? JSON.stringify(v ?? null)
+    : Array.isArray(v)
+      ? `[${v.map(canonJson).join(',')}]`
+      : `{${Object.keys(v as object).sort().map((k) => `${JSON.stringify(k)}:${canonJson((v as Record<string, unknown>)[k])}`).join(',')}}`;
+const sha256Of = (s: string) => createHash('sha256').update(s).digest('hex');
+
+async function legalSnapshot(db: SupabaseClient): Promise<{ digest: Record<string, string>; rows: number; chainsOk: number; chainsBad: number }> {
+  const digest: Record<string, string> = {};
+  let rows = 0;
+  for (const t of LEGAL_TABLES) {
+    const { data, error } = await db.from(t).select('*').order('id');
+    if (error) throw new Error(`read_${t}`);
+    rows += (data ?? []).length;
+    digest[t] = sha256Of(canonJson(data ?? []));
+  }
+  const { data: recs } = await db.from('consent_evidence').select('*').order('created_at').order('id');
+  const byUser = new Map<string, unknown[]>();
+  for (const r of (recs ?? []) as Array<{ user_id: string }>) byUser.set(r.user_id, [...(byUser.get(r.user_id) ?? []), r]);
+  let chainsOk = 0;
+  let chainsBad = 0;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- StoredRecord shape is the row shape
+  for (const list of byUser.values()) (verifyChain(list as any, publicKeyPem()).ok ? chainsOk++ : chainsBad++);
+  return { digest, rows, chainsOk, chainsBad };
+}
+
+type Cell = { t: string; id: string; col: string };
+async function unsealed(raw: SupabaseClient): Promise<Cell[]> {
+  const { data, error } = await raw.rpc('legal_unsealed');
+  if (error) throw new Error('list_failed');
+  return (data ?? []) as Cell[];
+}
+
+export async function legalVerify(db: SupabaseClient, raw: SupabaseClient) {
+  const snap = await legalSnapshot(db);
+  const { data: cps } = await raw.from('legal_reseal_checkpoint').select('table_name, row_id, col').neq('row_id', '*');
+  const items = [];
+  for (const c of (cps ?? []) as Array<{ table_name: string; row_id: string; col: string }>) {
+    const { data } = await db.from(c.table_name).select(c.col).eq('id', c.row_id).maybeSingle();
+    items.push({ t: c.table_name, id: c.row_id, col: c.col, value: data ? (data as unknown as Record<string, unknown>)[c.col] : null });
+  }
+  const { data: check } = items.length ? await raw.rpc('legal_reseal_check', { p: items }) : { data: { checked: 0, mismatch: 0, missing: 0 } };
+  return { rows: snap.rows, chainsOk: snap.chainsOk, chainsBad: snap.chainsBad, unsealed: (await unsealed(raw)).length, checkpoint: check, digest: snap.digest };
+}
+
+export async function legalReseal(db: SupabaseClient, raw: SupabaseClient) {
+  const before = await legalSnapshot(db);
+  if (before.chainsBad) return { error: 'chain_bad_before', before: { rows: before.rows, chainsBad: before.chainsBad } };
+  const cells = await unsealed(raw);
+  const p = [];
+  for (const c of cells) {
+    const spec = encryptedTable(c.t)!;
+    const { data, error } = await raw.from(c.t).select(`id, ${c.col}`).eq('id', c.id).single();
+    if (error || !data) return { error: 'read_failed', candidates: cells.length };
+    const plain = (data as unknown as Record<string, unknown>)[c.col];
+    const owner = ownerOf(spec, data as unknown as Record<string, unknown>)!;
+    const cipher = await encryptValue(c.t, c.col, owner, SYSTEM_ROW, plain);
+    if (!isV2(cipher) || canonJson(await decryptValue(c.t, c.col, owner, SYSTEM_ROW, cipher)) !== canonJson(plain)) return { error: 'roundtrip_failed', candidates: cells.length };
+    p.push({ ...c, cipher });
+  }
+  const { data: n, error: e } = p.length ? await raw.rpc('legal_reseal_apply', { p }) : { data: 0, error: null };
+  if (e) return { error: 'apply_failed', candidates: cells.length };
+  const after = await legalVerify(db, raw);
+  const identical = LEGAL_TABLES.every((t) => before.digest[t] === after.digest[t]);
+  return { candidates: cells.length, resealed: Number(n), identical, before: { rows: before.rows, chainsOk: before.chainsOk }, after: { ...after, digest: undefined } };
+}
+
+/**
+ * Rolled-back proof for media_receipts enforcement: the real write path (sealing client) builds an insert and an
+ * update; the sealed bodies are captured instead of sent and replayed inside media_receipts_write_probe, which turns
+ * enforcement on, writes, and rolls everything back. Returns 'accepted' or the rejection message.
+ */
+export async function mediaReceiptsProbe(raw: SupabaseClient) {
+  const { withFieldDecryption } = await import('@/lib/security/field-fetch');
+  const { createClient } = await import('@supabase/supabase-js');
+  const bodies: Record<string, unknown> = {};
+  const capture: typeof fetch = async (input, init) => {
+    const url = String(input instanceof Request ? input.url : input);
+    if (url.includes('/rest/v1/media_receipts') && init?.method && init.method !== 'GET') {
+      bodies[init.method] = JSON.parse(String(init.body));
+      return new Response(init.method === 'POST' ? '[{}]' : '[]', { status: 201, headers: { 'content-type': 'application/json' } });
+    }
+    return fetch(input, init);
+  };
+  const sealed = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+    auth: { persistSession: false },
+    global: { fetch: withFieldDecryption(capture) },
+  });
+  const { data: u } = await raw.from('media_receipts').select('user_id').limit(1).maybeSingle();
+  const row = {
+    user_id: (u as { user_id?: string } | null)?.user_id,
+    source: 'upload',
+    subject: 'probe subject',
+    original_from: 'probe@example.invalid',
+    confirmation_code: 'PROBE-1',
+    confirmation_link: 'https://example.invalid/probe',
+    attachments: [{ name: 'probe.pdf' }],
+  };
+  await sealed.from('media_receipts').insert(row);
+  await sealed.from('media_receipts').update({ confirmation_code: 'PROBE-2', confirmation_link: 'https://example.invalid/p2' }).eq('id', '00000000-0000-0000-0000-000000000000');
+  const ins = Array.isArray(bodies.POST) ? bodies.POST[0] : bodies.POST;
+  if (!ins || !bodies.PATCH) return { result: 'not_captured', captured: Object.keys(bodies) };
+  const allSealed = ['subject', 'original_from', 'confirmation_code', 'confirmation_link', 'attachments'].every((k) => isV2((ins as Record<string, unknown>)[k]));
+  const { data, error } = await raw.rpc('media_receipts_write_probe', { p_row: ins, p_update: bodies.PATCH });
+  return { result: error ? 'rpc_failed' : data, allSealed };
 }
