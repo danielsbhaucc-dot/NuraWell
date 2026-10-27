@@ -3,6 +3,9 @@ name: NuraWell Daily AI Cron
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   run-cron:
     runs-on: ubuntu-latest

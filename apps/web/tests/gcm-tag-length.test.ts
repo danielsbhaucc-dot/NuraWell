@@ -1,4 +1,6 @@
 import { randomBytes } from 'node:crypto';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('server-only', () => ({}));
@@ -44,5 +46,39 @@ describe('AES-GCM auth tag length is pinned to 16 bytes', () => {
     const f = JSON.parse(file) as { tag: string };
     f.tag = trunc(f.tag, 'base64');
     expect(() => openBackup(JSON.stringify(f), 'correct horse battery staple 42')).toThrow();
+  });
+
+  it('licensing bundle seal round-trips and rejects a tampered tag', async () => {
+    const { sealBytes, openBytes } = await import('../../../packages/@platform/licensing/src/bundle');
+    const k = randomBytes(32);
+    const sealed = sealBytes(k, 'export const x = 1;');
+    expect(openBytes(k, sealed).toString('utf8')).toBe('export const x = 1;');
+    const [v, iv, body] = sealed.split('.');
+    const raw = Buffer.from(body, 'base64url');
+    raw[raw.length - 1] ^= 1;
+    expect(() => openBytes(k, [v, iv, raw.toString('base64url')].join('.'))).toThrow();
+  });
+
+  it('every AES-GCM createDecipheriv in source pins authTagLength (regression guard)', () => {
+    const root = resolve(__dirname, '../../..');
+    const dirs = ['apps/web/lib', 'apps/web/app', 'packages', 'scripts', 'infra'].map((d) => join(root, d));
+    const skip = /node_modules|\.next|dist|coverage/;
+    const offenders: string[] = [];
+    const walk = (d: string) => {
+      let names: string[] = [];
+      try { names = readdirSync(d); } catch { return; }
+      for (const n of names) {
+        const p = join(d, n);
+        if (skip.test(p)) continue;
+        if (statSync(p).isDirectory()) { walk(p); continue; }
+        if (!/\.(ts|tsx|js|mjs|cjs)$/.test(n)) continue;
+        const src = readFileSync(p, 'utf8');
+        for (const m of src.matchAll(/createDecipheriv\(\s*['"`]aes-\d+-gcm['"`][^;]*/g)) {
+          if (!/authTagLength\s*:\s*16/.test(m[0])) offenders.push(p.slice(root.length + 1));
+        }
+      }
+    };
+    dirs.forEach(walk);
+    expect(offenders).toEqual([]);
   });
 });
