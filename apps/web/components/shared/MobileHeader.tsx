@@ -32,11 +32,15 @@ export function MobileHeader({ user, profileFullName }: MobileHeaderProps) {
   const overHero = pathname === APP_HOME_PATH || pathname === '/';
 
   useEffect(() => {
-    // Owner preview of the "today's focus" panel options (?fp=1|2|3) — temporary.
-    const fp = new URLSearchParams(window.location.search).get('fp');
-    if (fp && /^[1-3]$/.test(fp)) localStorage.setItem('nw-focus-panel', fp);
-    const saved = localStorage.getItem('nw-focus-panel');
-    if (saved && saved !== '1') document.documentElement.dataset.fp = saved;
+    // TEMP owner preview: ?fp=1|2|3 (plan focus) and ?gb=1|2|3 (home greeting), persisted locally.
+    const q = new URLSearchParams(window.location.search);
+    for (const [param, key] of [['fp', 'nw-focus-panel'], ['gb', 'nw-greeting']] as const) {
+      const v = q.get(param);
+      if (v && /^[1-3]$/.test(v)) localStorage.setItem(key, v);
+      const saved = localStorage.getItem(key);
+      if (saved && saved !== '1') document.documentElement.dataset[param] = saved;
+      else delete document.documentElement.dataset[param];
+    }
     const onScroll = () => setScrolled(window.scrollY > 8);
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
