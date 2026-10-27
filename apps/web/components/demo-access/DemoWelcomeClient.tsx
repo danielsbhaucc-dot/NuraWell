@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useTransition } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Loader2, LockKeyhole, Sparkles } from 'lucide-react';
+import { ArrowLeft, Loader2, LockKeyhole, Leaf } from 'lucide-react';
 
 type Preview = {
   guest_name: string | null;
@@ -126,7 +126,7 @@ export function DemoWelcomeClient({ token }: Props) {
             transition={{ delay: 0.12, duration: 0.45 }}
             className="mb-5 inline-flex items-center gap-2 rounded-full border border-secondary-200/25 bg-secondary-500/10 px-3 py-1 text-xs font-semibold tracking-wide text-secondary-50/95"
           >
-            <Sparkles className="h-3.5 w-3.5" />
+            <Leaf className="h-3.5 w-3.5" />
             גישה זמנית · NuraWell
           </motion.div>
 

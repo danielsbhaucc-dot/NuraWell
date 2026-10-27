@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Play, BookOpen, Clock, CheckCircle2, Lock,
   ChevronLeft, ChevronRight, Award, Zap, Video, Headphones, FileText, Presentation, AlignLeft, Layers, Crown,
-  Sparkles, AlignJustify,
+  Leaf, AlignJustify,
 } from 'lucide-react';
 import { AlmogScreenCoach } from '../ai/AlmogScreenCoach';
 import { GuideLearningPath } from './GuideLearningPath';
@@ -179,7 +179,7 @@ export function CourseDetailClient({
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-extrabold backdrop-blur-md transition hover:bg-background-card/25"
                 style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.3)', color: '#f2f2f6' }}
               >
-                <Sparkles className="w-3.5 h-3.5" /> שער כניסה
+                <Leaf className="w-3.5 h-3.5" /> שער כניסה
               </button>
             )}
             {course.is_premium && (
@@ -282,7 +282,7 @@ export function CourseDetailClient({
               onClick={() => setGuideMode('path')}
               className={cn('guide-mode-btn', viewMode === 'path' && 'active')}
             >
-              <Sparkles className="h-4 w-4" />
+              <Leaf className="h-4 w-4" />
               {GUIDE_IMMERSIVE_MODE_LABEL}
             </button>
           </div>
@@ -571,7 +571,7 @@ function GuideCover({
               boxShadow: '0 14px 38px rgba(20,184,166,0.4), inset 0 1px 0 rgba(255,255,255,0.25)',
             }}
           >
-            <Sparkles className="h-5 w-5 shrink-0" />
+            <Leaf className="h-5 w-5 shrink-0" />
             <span>{GUIDE_IMMERSIVE_MODE_LABEL}</span>
           </motion.button>
 

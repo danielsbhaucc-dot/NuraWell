@@ -10,7 +10,7 @@ import {
   type ReactNode,
 } from 'react';
 import { Drawer } from 'vaul';
-import { CheckCircle2, ClipboardCheck, Leaf, Loader2, Sparkles } from 'lucide-react';
+import { CheckCircle2, ClipboardCheck, Leaf, Loader2, } from 'lucide-react';
 import { useAppOverlayRoot } from '../../lib/dom/use-app-overlay-root';
 import { emojiFromWellnessText } from '../../lib/emoji-from-text';
 import { parseJourneyReportItems } from '../../lib/journey/journey-report-parse';
@@ -401,7 +401,7 @@ export function ProgressReportProvider({
                             }}
                           />
                           <div className="relative flex items-center gap-2 justify-end mb-3">
-                            <Sparkles className="h-4 w-4 text-accent-500 shrink-0" />
+                            <Leaf className="h-4 w-4 text-accent-500 shrink-0" />
                             <h3 className="text-sm font-black text-primary-950 truncate text-start">
                               משימות מאלמוג
                             </h3>
@@ -466,7 +466,7 @@ export function ProgressReportProvider({
                               }}
                             />
                             <div className="relative flex items-center gap-2 justify-end mb-3">
-                              <Sparkles className="h-4 w-4 text-accent-500 shrink-0" />
+                              <Leaf className="h-4 w-4 text-accent-500 shrink-0" />
                               <h3 className="text-sm font-black text-primary-950 truncate text-start">
                                 צעד {step.step_number}: {step.title}
                               </h3>

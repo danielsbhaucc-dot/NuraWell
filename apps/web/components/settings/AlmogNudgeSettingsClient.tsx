@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Bell, ChevronRight, Loader2, MessageCircle, Scale, Send, Shield, Sparkles } from 'lucide-react';
+import { Bell, ChevronRight, Loader2, MessageCircle, Scale, Send, Shield, Leaf } from 'lucide-react';
 import type { AlmogCoachingStyle } from '../../lib/ai/almog-coaching-style';
 import { cn } from '../../lib/cn';
 
@@ -397,7 +397,7 @@ export function AlmogNudgeSettingsClient({
               </p>
               <details className="group mt-2 text-xs text-slate-500" data-testid="quality-check-info">
                 <summary className="inline-flex min-h-[44px] cursor-pointer list-none items-center gap-1.5 rounded-lg text-violet-700 hover:text-violet-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-400">
-                  <Sparkles className="h-3.5 w-3.5" aria-hidden />
+                  <Leaf className="h-3.5 w-3.5" aria-hidden />
                   חלק מההתראות ומהתשובות עוברות בקרת איכות אוטומטית
                   <span className="text-slate-400 group-open:hidden" aria-hidden>ⓘ</span>
                 </summary>
@@ -460,7 +460,7 @@ export function AlmogNudgeSettingsClient({
                 boxShadow: '0 6px 18px rgba(5,150,105,0.35)',
               }}
             >
-              <Sparkles className="h-5 w-5" aria-hidden />
+              <Leaf className="h-5 w-5" aria-hidden />
             </div>
             <div>
               <h2 className="font-bold text-ink">פחות הודעות מעודדות</h2>

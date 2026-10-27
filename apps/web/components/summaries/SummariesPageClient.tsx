@@ -16,7 +16,7 @@
  */
 
 import { useMemo, useState } from 'react';
-import { Sparkles, Filter } from 'lucide-react';
+import { Leaf, Filter } from 'lucide-react';
 import type { SummaryType } from '../../lib/notifications/summaries/period-keys';
 import type { PeriodicSummaryRow } from '../../app/(dashboard)/summaries/page';
 import { SummaryCard, TYPE_COLORS } from './SummaryCard';
@@ -78,7 +78,7 @@ export function SummariesPageClient({
       <header className="pt-2 pb-5">
         <div className="flex items-center gap-2 mb-1.5">
           <span className="inline-flex items-center justify-center w-9 h-9 rounded-2xl bg-linear-to-br from-primary-400 to-primary-600 text-on-dark shadow-xs">
-            <Sparkles className="w-5 h-5" strokeWidth={2.4} />
+            <Leaf className="w-5 h-5" strokeWidth={2.4} />
           </span>
           <h1 className="text-2xl font-black tracking-tight text-ink-900">הסיכומים שלי</h1>
         </div>
@@ -94,7 +94,7 @@ export function SummariesPageClient({
         className="glass-card-strong p-4 mb-5"
       >
         <h2 className="text-sm font-extrabold text-ink-900 mb-3 flex items-center gap-1.5">
-          <Sparkles className="w-4 h-4 text-primary-600" />
+          <Leaf className="w-4 h-4 text-primary-600" />
           צור סיכום עכשיו
         </h2>
         <div className="grid grid-cols-2 gap-2.5">
@@ -194,7 +194,7 @@ function EmptyState({ filterApplied }: { filterApplied: boolean }) {
   return (
     <div className="glass-card p-6 text-center">
       <div className="mx-auto w-14 h-14 rounded-2xl bg-primary-50 ring-1 ring-primary-200 flex items-center justify-center mb-3">
-        <Sparkles className="w-6 h-6 text-primary-600" />
+        <Leaf className="w-6 h-6 text-primary-600" />
       </div>
       <h3 className="text-base font-extrabold text-ink-900 mb-1">
         {filterApplied ? 'אין עדיין סיכומים מהסוג הזה' : 'עוד אין סיכומים'}

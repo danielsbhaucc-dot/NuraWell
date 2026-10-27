@@ -15,7 +15,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Rocket, Heart, Sparkles, X } from 'lucide-react';
+import { Rocket, Heart, Leaf, X } from 'lucide-react';
 import { AnimatedDialog } from '../shared/AnimatedDialog';
 import { runWhenIdle } from '../../lib/client/run-when-idle';
 
@@ -40,7 +40,7 @@ type ProposalResponse = {
 
 const KIND_ICON: Record<ProposalKind, React.ElementType> = {
   level_up: Rocket,
-  daily_kickoff: Sparkles,
+  daily_kickoff: Leaf,
   pivot: Heart,
 };
 

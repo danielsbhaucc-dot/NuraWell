@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { getAppOverlayRoot } from '../../lib/dom/app-overlay-root';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, MapPin, Sparkles, Sunrise, X } from 'lucide-react';
+import { CheckCircle2, MapPin, Leaf, Sunrise, X } from 'lucide-react';
 import { slotLabel } from '../../lib/journey/task-schedule';
 import type { JourneyTaskSlot } from '../../lib/types/journey';
 import { formatHebrewRelativeFromDateKey } from '../../lib/time/hebrew-relative';
@@ -185,7 +185,7 @@ export function DayDetailPopup({ open, dateKey, todayKey, rows, onClose }: Props
                         <p className="text-sm font-black text-primary-900">
                           יום עתידי
                         </p>
-                        <Sparkles className="w-4 h-4 text-primary-700" />
+                        <Leaf className="w-4 h-4 text-primary-700" />
                       </div>
                       <p className="text-xs text-primary-900/80 leading-relaxed">
                         עוד לא הגענו לכאן — נמשיך צעד אחד בכל פעם.

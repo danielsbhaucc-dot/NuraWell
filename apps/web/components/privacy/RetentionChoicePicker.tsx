@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Check, Hourglass, Sparkles, Trash2 } from 'lucide-react';
+import { Check, Hourglass, Leaf, Trash2 } from 'lucide-react';
 import type { RetentionChoice } from '@saas/billing';
 
 type Props = {
@@ -32,7 +32,7 @@ export function RetentionChoicePicker({ value, onChange, disabled, tone = 'dark'
   return (
     <fieldset className="space-y-3" disabled={disabled}>
       <legend className={`flex items-center gap-2 text-sm font-black mb-1 ${dark ? 'text-primary-50' : 'text-ink-900'}`}>
-        <Sparkles className={`w-4 h-4 ${dark ? 'text-primary-300' : 'text-secondary-600'}`} aria-hidden />
+        <Leaf className={`w-4 h-4 ${dark ? 'text-primary-300' : 'text-secondary-600'}`} aria-hidden />
         מה יקרה למידע שלכם כשהמנוי יסתיים?
       </legend>
       <p className={`text-xs leading-relaxed ${dark ? 'text-primary-100/75' : 'text-ink-600'}`}>

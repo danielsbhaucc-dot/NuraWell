@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Sparkles } from 'lucide-react';
+import { ArrowLeft, Leaf } from 'lucide-react';
 import { AlmogAvatarChip } from './AlmogPresence';
 import {
   dispatchOpenAlmogChatWithPrefill,
@@ -125,7 +125,7 @@ export function JourneyNextStepCard({ initial = null }: { initial?: AdaptiveNext
           className="mb-3 flex items-start gap-2 rounded-xl p-2.5"
           style={{ background: 'rgba(16,185,129,0.10)', border: '1px solid rgba(16,185,129,0.2)' }}
         >
-          <Sparkles className="w-4 h-4 text-primary-600 shrink-0 mt-0.5" aria-hidden />
+          <Leaf className="w-4 h-4 text-primary-600 shrink-0 mt-0.5" aria-hidden />
           <span style={{ fontSize: '12.5px', color: '#065f46', lineHeight: 1.5 }}>
             אני מציע: {rec.commitment_suggestion}
           </span>

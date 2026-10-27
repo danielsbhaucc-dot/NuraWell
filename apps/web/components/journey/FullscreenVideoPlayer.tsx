@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Play, Pause, Sparkles, Clock3 } from 'lucide-react';
+import { X, Play, Pause, Leaf, Clock3 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { HlsVideoGate } from './HlsVideoGate';
 import type { ImmersiveAttentionStop } from '../../lib/journey/immersiveAttentionStops';
@@ -545,7 +545,7 @@ export function FullscreenVideoPlayer({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.08, duration: 0.2 }}
               >
-                <Sparkles className="w-3.5 h-3.5" />
+                <Leaf className="w-3.5 h-3.5" />
                 נקודת קשב
                 <span className="opacity-80">· {formatSecondsAsClock(activeAttentionStop.time_seconds)}</span>
               </motion.div>

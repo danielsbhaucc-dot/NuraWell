@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Award, Sparkles, Trophy } from 'lucide-react';
+import { Award, Leaf, Trophy } from 'lucide-react';
 import type { ChallengeCompletionSummary } from '@/lib/challenge/types';
 import { challengeFadeUp } from '@/lib/challenge/motion';
 import { useReducedMotion } from '@/lib/client/useReducedMotion';
@@ -71,7 +71,7 @@ export function ChallengeCompleteClient({ firstName, initialSummary }: Props) {
             className="mt-8 grid grid-cols-3 gap-3"
           >
             {[
-              { label: 'ימים פעילים', value: summary.days_active, icon: Sparkles },
+              { label: 'ימים פעילים', value: summary.days_active, icon: Leaf },
               { label: 'משימות', value: summary.total_task_completions, icon: Trophy },
               { label: 'הצלחות', value: summary.total_success_events, icon: Award },
             ].map(({ label, value, icon: Icon }) => (

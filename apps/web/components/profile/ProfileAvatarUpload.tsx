@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
-import { Camera, Heart, Loader2, Sparkles, Trash2, X } from 'lucide-react';
+import { Camera, Heart, Loader2, Leaf, Trash2, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { encodeProfileAvatarWebp } from '@/lib/client/encodeProfileAvatarWebp';
 import { isWebpEncodeUnsupportedError } from '@/lib/client/encodeAlmogAvatarWebp';
@@ -168,7 +168,7 @@ export function ProfileAvatarUpload({
         <div className="relative flex items-start justify-between gap-3">
           <div>
             <p className="text-[11px] font-bold text-primary-100/90 flex items-center gap-1">
-              <Sparkles className="h-3.5 w-3.5" />
+              <Leaf className="h-3.5 w-3.5" />
               הפרופיל שלך
             </p>
             <h3 className="mt-1 text-xl font-black text-on-dark leading-tight">תמונה שמייצגת אותך</h3>

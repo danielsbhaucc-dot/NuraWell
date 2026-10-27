@@ -9,7 +9,7 @@ import {
   ChevronDown,
   Clock,
   Repeat,
-  Sparkles,
+  Leaf,
   Snowflake,
   X,
 } from 'lucide-react';
@@ -647,7 +647,7 @@ function AssignmentCard({
             className="flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold"
             style={{ background: 'rgba(16,185,129,0.14)', color: '#047857' }}
           >
-            {isRecurring ? <Repeat className="h-3 w-3" /> : <Sparkles className="h-3 w-3" />}
+            {isRecurring ? <Repeat className="h-3 w-3" /> : <Leaf className="h-3 w-3" />}
             {SCHEDULE_LABEL[assignment.schedule]}
           </span>
           {given ? (

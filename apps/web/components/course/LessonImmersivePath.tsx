@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Clock, ChevronLeft, ChevronRight, Play, CheckCircle2, Sparkles,
+  Clock, ChevronLeft, ChevronRight, Play, CheckCircle2, Leaf,
   AlignLeft, ExternalLink as ExternalLinkIcon, MessageCircle,
 } from 'lucide-react';
 import { cn } from '../../lib/cn';
@@ -195,7 +195,7 @@ export function LessonImmersivePath({
           <div className="flex-1 min-w-0">
             <div className="mb-1 flex items-center justify-between text-[11px] font-bold text-on-dark/60">
               <span className="inline-flex items-center gap-1 truncate">
-                <Sparkles className="h-3 w-3 shrink-0 text-primary-300" />
+                <Leaf className="h-3 w-3 shrink-0 text-primary-300" />
                 {lessonImmersiveModeLabel()}
               </span>
               <span className="shrink-0">{slideIdx + 1} / {totalSlides}</span>

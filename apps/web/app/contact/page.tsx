@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Mail, MessageCircle, ShieldCheck, Sparkles } from 'lucide-react';
+import { Mail, MessageCircle, ShieldCheck, Leaf } from 'lucide-react';
 import { LegalShell } from '@/components/legal/LegalShell';
 import { LegalCard, LegalSection, LegalCallout } from '@/components/legal/LegalParts';
 
@@ -24,7 +24,7 @@ export default function ContactPage() {
       updatedAt={UPDATED_AT}
     >
       <LegalCard>
-        <LegalCallout tone="info" icon={<Sparkles className="w-5 h-5" />}>
+        <LegalCallout tone="info" icon={<Leaf className="w-5 h-5" />}>
           לשאלות כלליות ותמיכה במוצר:{' '}
           <a href="mailto:support@nurawell.ai" className="font-semibold underline">
             support@nurawell.ai

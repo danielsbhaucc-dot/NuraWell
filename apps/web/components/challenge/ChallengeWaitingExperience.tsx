@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { Clock, LogOut, Sparkles, Users } from 'lucide-react';
+import { Clock, LogOut, Leaf, Users } from 'lucide-react';
 import { getMentorAvatarUrl } from '@/lib/mentors/avatar-url';
 import { MENTORS } from '@/lib/mentors/registry';
 import type { ChallengeStateResponse } from '@/lib/challenge/types';
@@ -96,7 +96,7 @@ export function ChallengeWaitingExperience({ firstName, gender, initialState }: 
           <div className="relative mb-5 h-28 w-28 overflow-hidden rounded-full ring-4 ring-primary-400/50 ring-offset-4 ring-offset-[#05010f]">
             <Image src={almogUrl} alt="אלמוג" fill className="object-cover" priority />
           </div>
-          <Sparkles className="mb-2 h-6 w-6 text-primary-400" />
+          <Leaf className="mb-2 h-6 w-6 text-primary-400" />
           <h1 className="font-display text-2xl font-black sm:text-3xl">{waitingHeadline(name, g)}</h1>
           <p className="mt-3 max-w-sm text-base leading-relaxed text-on-dark/75">
             {excitedAlmogLine(name, g)}

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2, Mic, Send, Sparkles } from 'lucide-react';
+import { Loader2, Mic, Send, Leaf } from 'lucide-react';
 import { useAlmogAvatarUrl } from '@/lib/client/useAlmogAvatarUrl';
 import { ALMOG_AVATAR_FALLBACK } from '@/lib/ai/almog-avatar';
 import { DemoExitBanner } from './DemoExitBanner';
@@ -90,7 +90,7 @@ export function ChallengeInterviewGlass() {
               <h1 className="font-display text-lg font-bold text-on-dark">ריאיון עם אלמוג</h1>
               <p className="text-xs text-on-dark/50">כמה דקות — כדי שאזהה את ההצלחות שלך</p>
             </div>
-            <Sparkles className="ms-auto h-5 w-5 text-primary-400" />
+            <Leaf className="ms-auto h-5 w-5 text-primary-400" />
           </div>
         </div>
       </header>

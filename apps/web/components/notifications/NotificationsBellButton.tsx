@@ -13,6 +13,8 @@ type NotificationsBellButtonProps = {
   badgeClassName?: string;
   /** סגנון ויזואלי לדף האתגר (כהה) מול הכותרת הרגילה */
   variant?: 'header' | 'challenge';
+  /** כותרת בהירה (מצב זכוכית בגלילה) — אייקון כהה על משטח ניטרלי */
+  light?: boolean;
 };
 
 /**
@@ -23,6 +25,7 @@ export function NotificationsBellButton({
   className,
   badgeClassName,
   variant = 'header',
+  light = false,
 }: NotificationsBellButtonProps) {
   const { open, unreadCount } = useNotificationsDrawer();
   const isChallenge = variant === 'challenge';
@@ -41,7 +44,9 @@ export function NotificationsBellButton({
       style={
         isChallenge
           ? undefined
-          : {
+          : light
+            ? { background: 'var(--color-surface)', border: '1px solid var(--color-hairline)', boxShadow: '0 1px 3px rgba(17,19,23,0.06)' }
+            : {
               background:
                 'linear-gradient(145deg, rgba(255,255,255,0.22), rgba(255,255,255,0.08))',
               border: '1px solid rgba(255,255,255,0.35)',
@@ -52,7 +57,7 @@ export function NotificationsBellButton({
       }
     >
       <Bell
-        className={cn(isChallenge ? 'h-5 w-5' : 'w-5 h-5 text-on-dark drop-shadow-xs')}
+        className={cn(isChallenge ? 'h-5 w-5' : light ? 'w-5 h-5 text-brand' : 'w-5 h-5 text-on-dark drop-shadow-xs')}
         strokeWidth={2.2}
       />
       {unreadCount > 0 && (

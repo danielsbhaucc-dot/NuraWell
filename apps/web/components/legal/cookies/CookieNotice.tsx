@@ -239,9 +239,9 @@ export function CookieNotice() {
             </p>
             <CookieWink text={head.wink} />
             <div className="cn-chips" aria-hidden="true">
-              <span>✦ בלי מעקב</span>
-              <span>✦ בלי פרסום</span>
-              <span>✦ בלי מדידה</span>
+              <span>✓ בלי מעקב</span>
+              <span>✓ בלי פרסום</span>
+              <span>✓ בלי מדידה</span>
             </div>
             <div className="cn-btns">
               <button type="button" className="cn-btn p" onClick={accept}>

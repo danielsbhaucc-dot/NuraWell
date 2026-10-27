@@ -4,7 +4,7 @@ import { useId, useState, type CSSProperties, type ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FileCheck, RotateCcw, BookOpen, Download, CheckCircle2,
-  ChevronDown, ExternalLink, Award, Sparkles, ListChecks, Heart,
+  ChevronDown, ExternalLink, Award, Leaf, ListChecks, Heart,
   Check, X,
 } from 'lucide-react';
 import type {
@@ -649,7 +649,7 @@ export function SummarySection({ step, progress, onReplay, onComplete, onTaskDec
               className="w-full py-4 rounded-2xl font-bold text-lg text-on-dark flex items-center justify-center gap-2 transition-all hover:scale-[1.02] active:scale-95"
               style={{ background: 'linear-gradient(135deg, #047857, #10b981)', boxShadow: '0 6px 20px rgba(16,185,129,0.3)' }}
             >
-              <Sparkles className="w-5 h-5" />
+              <Leaf className="w-5 h-5" />
               <span>חזרה למסע</span>
             </Link>
           )}

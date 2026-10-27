@@ -38,7 +38,7 @@ function iconFor(href: string): LucideIcon {
 const secondaryBtnClass =
   'flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all hover:scale-[1.01] active:scale-95';
 const secondaryBtnStyle = {
-  background: 'var(--color-panel-dark)',
+  background: 'rgba(16,38,30,0.62)',
   border: '1px solid rgba(232,198,106,0.26)',
   color: 'var(--color-ink-soft)',
 } as const;
@@ -129,7 +129,7 @@ export default function NotFoundClient({ isAuthenticated, absoluteOrigin = null 
           <div className="px-6 py-5" style={{ background: 'linear-gradient(145deg, var(--color-forest-800), var(--color-forest-600) 60%, var(--color-primary-600))' }}>
             <h1 className="text-2xl font-black text-on-dark">אופס! הדף לא נמצא 🌱</h1>
           </div>
-          <div className="p-6 bg-panel-dark border-t border-panel-dark-line">
+          <div className="p-6 bg-forest-900/60 backdrop-blur-xl">
             <p className="text-ink-soft text-lg leading-relaxed mb-4">
               נראה שטיילתם קצת רחוק מדי בדרך לבריאות...
             </p>
@@ -185,7 +185,7 @@ export default function NotFoundClient({ isAuthenticated, absoluteOrigin = null 
           animate={{ opacity: 1 }}
           transition={{ delay: 0.6 }}
           className="mt-10 p-4 rounded-2xl"
-          style={{ background: 'var(--color-panel-dark)', border: '1px solid var(--color-panel-dark-line)', boxShadow: '0 18px 48px rgba(0,0,0,0.38)' }}
+          style={{ background: 'rgba(16,38,30,0.55)', border: '1px solid rgba(127,240,222,0.18)' }}
         >
           <div className="flex items-center justify-center gap-2 text-primary-700 text-sm font-bold mb-2">
             <Leaf className="w-4 h-4" />

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { AuthBackdrop } from './AuthBackdrop';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { HelpCircle, Sparkles } from 'lucide-react';
+import { HelpCircle, Leaf } from 'lucide-react';
 import { NuraWellLogo } from '@/components/shared/NuraWellLogo';
 import { RegisterStartModal } from './RegisterStartModal';
 import { RegisterHowItWorksModal } from './RegisterHowItWorksModal';
@@ -84,7 +84,7 @@ export function RegisterLandingClient() {
               onClick={() => setStartOpen(true)}
               className="w-full min-h-[52px] rounded-2xl font-black text-lg text-on-dark bg-linear-135 from-primary-700 to-primary-500 shadow-[0_8px_24px_rgba(16,185,129,0.4)] flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 transition-all focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500"
             >
-              <Sparkles className="w-5 h-5" aria-hidden />
+              <Leaf className="w-5 h-5" aria-hidden />
               בואו נתחיל
             </button>
 

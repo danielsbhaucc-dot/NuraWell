@@ -82,8 +82,8 @@ export function AlmogHeroHeader({
         className="mb-3 rounded-2xl px-4 py-3"
         style={{
           background:
-            'var(--color-panel-dark)' /* solid: separated from the green header */,
-          border: '1px solid rgba(255,255,255,0.35)',
+            'var(--hero-inner)' /* solid: separated from the hero band */,
+          border: '1px solid var(--hero-inner-line)',
           boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3), 0 2px 12px rgba(0,0,0,0.06)',
           isolation: 'isolate',
         }}
@@ -121,7 +121,7 @@ export function AlmogHeroHeader({
           >
             <span aria-hidden style={{ fontSize: '13px' }}>
               {greeting.tone === 'festive'
-                ? '✦'
+                ? '✿'
                 : greeting.tone === 'solemn'
                   ? '🕯️'
                   : '✿'}
@@ -225,7 +225,7 @@ export function AlmogHeroHeader({
             style={{
               padding: '11px 14px',
               background:
-                'var(--color-panel-dark)' /* solid: separated from the green header */,
+                'var(--hero-inner)' /* solid: separated from the hero band */,
               border: '1px solid rgba(255,255,255,0.3)',
               borderRadius: '6px 18px 18px 18px',
               boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.28), 0 4px 20px rgba(0,0,0,0.1)',
@@ -244,7 +244,7 @@ export function AlmogHeroHeader({
                 gap: '6px',
               }}
             >
-              <span>✦ אלמוג · המנטור שלך</span>
+              <span>אלמוג · המנטור שלך</span>
               {mentorTag && !contentLoading ? (
                 <span
                   style={{
@@ -441,7 +441,7 @@ function TaskBadgeRow({
         }}
       >
         <span style={{ fontSize: '14px' }} aria-hidden>
-          ✦
+          ✓
         </span>
         <span
           style={{

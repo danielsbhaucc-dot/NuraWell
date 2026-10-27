@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles } from 'lucide-react';
+import { Leaf } from 'lucide-react';
 
 import type {
   PendingTaskTodayRow,
@@ -90,7 +90,7 @@ export function DynamicMentorWidgetClient({
             boxShadow: '0 6px 16px rgba(4,120,87,0.22), inset 0 1px 0 rgba(255,255,255,0.25)',
           }}
         >
-          <Sparkles className="h-5 w-5 text-on-dark" strokeWidth={2.2} aria-hidden />
+          <Leaf className="h-5 w-5 text-on-dark" strokeWidth={2.2} aria-hidden />
         </div>
 
         <div className="min-w-0 flex-1 text-start">
