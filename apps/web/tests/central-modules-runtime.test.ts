@@ -13,7 +13,7 @@ import { createCentralModuleSource, setCentralModuleState, syncModulesToCentral,
 import type { GuardStatus } from '@platform/licensing';
 
 const CORE = ['security-core', 'iam'];
-const snap = (states: Record<string, boolean>, productStatus = 'active') => ({ productStatus, core: CORE, synced: true, states: Object.entries(states).map(([moduleId, enabled]) => ({ moduleId, enabled })) });
+const snap = (states: Record<string, boolean>, productStatus = 'active') => ({ productStatus, ownedByUs: true, core: CORE, synced: true, states: Object.entries(states).map(([moduleId, enabled]) => ({ moduleId, enabled })) });
 const on = (r: { states: { moduleId: string; enabled: boolean }[] }, id: string) => Boolean(r.states.find((s) => s.moduleId === id)?.enabled);
 
 function harness(first: unknown = snap({ qc: true, billing: false })) {
@@ -59,12 +59,50 @@ describe('NuraWell consumes module states from central (runtime source)', () => 
     const h = harness({ states: 'nope' });
     expect((await createCentralModuleSource({ db: h.db, productId: 'nurawell', coreIds: CORE, now: h.now }).get()).source).toBe('failsafe');
   });
-  it('license locked or expired → non-core off, core on; active → normal; guard error → locked', async () => {
-    for (const [l, qc] of [[lic('locked'), false], [lic('active'), true], [{ status: async () => { throw new Error('x'); } }, false]] as const) {
+  it('OWNED product: license locked / guard error never turns modules off, only raises an admin alert; manual toggles apply', async () => {
+    for (const [l, alert] of [[lic('locked'), true], [lic('active'), false], [{ status: async () => { throw new Error('x'); } }, true]] as const) {
       const h = harness();
       const r = await createCentralModuleSource({ db: h.db, productId: 'nurawell', coreIds: CORE, now: h.now, license: l }).get();
-      expect(on(r, 'qc')).toBe(qc); expect(on(r, 'iam')).toBe(true);
+      expect(on(r, 'qc')).toBe(true); expect(on(r, 'billing')).toBe(false); expect(on(r, 'iam')).toBe(true);
+      expect(r.licenseAlert).toBe(alert);
+      expect(r.failClosed).toBe(false);
     }
+  });
+  it('OWNED product: central down from cold start → gate never blocks (local ownedByUs fallback)', async () => {
+    const h = harness(); h.set(down);
+    const r = await createCentralModuleSource({ db: h.db, productId: 'nurawell', coreIds: CORE, now: h.now, ownedByUs: true }).get();
+    expect(r.failClosed).toBe(false);
+  });
+});
+
+describe('CUSTOMER products: entitlement allowlist with license type', () => {
+  const DAY = 86_400_000;
+  const cust = (ents: unknown[]) => ({ ...snap({ qc: true, billing: true, journey: true }), ownedByUs: false, entitlements: ents });
+  const iso = (ms: number) => new Date(ms).toISOString();
+  it('only entitled modules work; core always on', async () => {
+    const h = harness(cust([{ moduleId: 'qc', licenseType: 'perpetual' }]));
+    const r = await createCentralModuleSource({ db: h.db, productId: 'acme', coreIds: CORE, now: h.now }).get();
+    expect(on(r, 'qc')).toBe(true); expect(on(r, 'billing')).toBe(false); expect(on(r, 'iam')).toBe(true); expect(r.failClosed).toBe(true);
+  });
+  it('subscription unpaid past grace → locked (users too); within grace → works', async () => {
+    const h = harness();
+    h.set({ data: cust([{ moduleId: 'qc', licenseType: 'subscription', paidThrough: iso(1_000_000 - 2 * DAY), graceDays: 3 }]), error: null });
+    const s = createCentralModuleSource({ db: h.db, productId: 'acme', coreIds: CORE, now: h.now });
+    expect(on(await s.get(), 'qc')).toBe(true);
+    h.tick(2 * DAY); // cached snapshot still expires on time
+    const r = await s.get({ fresh: true });
+    expect(on(r, 'qc')).toBe(false); expect(on({ states: r.userStates }, 'qc')).toBe(false);
+  });
+  it('perpetual unpaid keeps working forever; revoked stops it', async () => {
+    const h = harness(cust([{ moduleId: 'qc', licenseType: 'perpetual', paidThrough: null }, { moduleId: 'journey', licenseType: 'perpetual', revoked: true }]));
+    const r2 = await createCentralModuleSource({ db: harness(cust([{ moduleId: 'qc', licenseType: 'perpetual' }])).db, productId: 'acme', coreIds: CORE, now: () => 1e15 }).get(); // ~30k years later, never paid
+    expect(on(r2, 'qc')).toBe(true);
+    expect(on(await createCentralModuleSource({ db: h.db, productId: 'acme', coreIds: CORE, now: h.now }).get(), 'journey')).toBe(false);
+  });
+  it('central down, no cache → customer non-core off and the gate blocks (fail closed)', async () => {
+    const h = harness(); h.set(down);
+    const r = await createCentralModuleSource({ db: h.db, productId: 'acme', coreIds: CORE, now: h.now, ownedByUs: false }).get();
+    expect(r.failClosed).toBe(true); expect(r.states.filter((x) => x.enabled).map((x) => x.moduleId).sort()).toEqual(CORE.slice().sort());
   });
   it('product disabled in central → non-core off, core on', async () => {
     const h = harness(snap({ qc: true }, 'disabled'));
@@ -137,5 +175,14 @@ describe('NuraWell hub writes go to central (single source of truth)', () => {
     expect(centralCalls.some((c) => c.fn === 'central_module_states')).toBe(true);
     delete process.env.CENTRAL_SUPABASE_URL;
     expect((await loadModuleStates(d.client, 'sample')).find((s) => s.moduleId === 'qc')?.enabled).toBe(true);
+  });
+});
+
+describe('entitlementActive', () => {
+  it('status expired/canceled ends even a perpetual; past_due within grace still works', async () => {
+    const { entitlementActive } = await import('../../../packages/@platform/module-library-ui/src/server/central-runtime');
+    expect(entitlementActive({ moduleId: 'qc', licenseType: 'perpetual', status: 'canceled' }, 0)).toBe(false);
+    expect(entitlementActive({ moduleId: 'qc', licenseType: 'subscription', status: 'past_due', paidThrough: new Date(0).toISOString(), graceDays: 3 }, 86_400_000)).toBe(true);
+    expect(entitlementActive({ moduleId: 'qc', licenseType: 'subscription', paidThrough: null }, 0)).toBe(false);
   });
 });

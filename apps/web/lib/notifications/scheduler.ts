@@ -30,6 +30,21 @@ export const NOTIFICATION_JOBS = {
 
 export type NotificationJob = keyof typeof NOTIFICATION_JOBS;
 
+/** Owning module of each job's notifications. Turned off in central → the (authorized) job is skipped with 200;
+ *  the master route's retention purge (privacy-retention, essential) still runs after it. */
+export const NOTIFICATION_JOB_MODULE: Record<NotificationJob, string> = {
+  'habit-checkpoints': 'notifications', 'onboarding-check-ins': 'notifications', 'passive-presence': 'notifications', master: 'notifications', guardian: 'notifications',
+};
+
+async function skippedIfModuleOff(job: NotificationJob, request: Request): Promise<Response | null> {
+  const { moduleGate } = await import('@/lib/platform/authorize');
+  if (await moduleGate.moduleOn(NOTIFICATION_JOB_MODULE[job])) return null;
+  const { authorizeCronRequest } = await import('@/lib/api/authorize-cron');
+  const denied = await authorizeCronRequest(request);
+  if (denied) return denied;
+  return Response.json({ ok: true, skipped: true, reason: 'module_disabled', module: NOTIFICATION_JOB_MODULE[job] }, { status: 200, headers: { 'x-module-gate': NOTIFICATION_JOB_MODULE[job] } });
+}
+
 type JobModule = {
   handlePost: (request: Request) => Promise<Response>;
   handleGet: (request: Request) => Promise<Response>;
@@ -40,6 +55,8 @@ export async function runNotificationJob(
   method: 'GET' | 'POST',
   request: Request
 ): Promise<Response> {
+  const skipped = await skippedIfModuleOff(job, request);
+  if (skipped) return skipped;
   const mod = (await NOTIFICATION_JOBS[job]()) as unknown as JobModule;
   const started = Date.now();
   const res = await withAiUsage({ feature: `notify:${job}` }, () => (method === 'POST' ? mod.handlePost(request) : mod.handleGet(request)));

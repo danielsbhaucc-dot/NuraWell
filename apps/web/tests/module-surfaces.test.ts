@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync, statSync } from 'fs';
 import path from 'path';
 import { describe, expect, it } from 'vitest';
-import { checkToggle, decideGate, dependentsOf, ownerOfPage, ownerOfPath, validateRegistry, type ModuleState } from '@platform/iam';
+import { checkToggle, createModuleGate, decideGate, dependentsOf, ownerOfPage, ownerOfPath, validateRegistry, type ModuleState } from '@platform/iam';
 import { MODULES } from '@/lib/platform/catalog';
 
 const APP = path.join(__dirname, '../app');
@@ -42,7 +42,7 @@ describe('every surface belongs to a module (WordPress-style registry)', () => {
   });
   it('the proxy runs the shared gate', () => {
     const src = readFileSync(path.join(__dirname, '../proxy.ts'), 'utf8');
-    expect(src).toContain("moduleGate.gateRequest(pathname, kind)");
+    expect(src).toContain("moduleGate.gateRequest(gatePath, kind");
   });
 });
 
@@ -93,5 +93,43 @@ describe('toggle rules', () => {
   });
   it('core can never be disabled', () => {
     expect(checkToggle(MODULES, on(nonCore), 'p', 'security-core', false)).toMatchObject({ ok: false, reason: 'core_module' });
+  });
+});
+
+describe('module gate: audiences + scheduler', () => {
+  const all = MODULES.map((m) => ({ moduleId: m.id, enabled: true }));
+  const userOn = { source: 'central' as const, states: all, adminStates: all.map((s) => (s.moduleId === 'journey' ? { ...s, enabled: false } : s)) };
+  it('ops-host pages use the admin view; user pages the user view', async () => {
+    const g = createModuleGate(MODULES, async () => userOn);
+    expect((await g.gateRequest('/ops/journey', 'page', 'admin')).blocked).toBe(true);
+    expect((await g.gateRequest('/journey', 'page')).blocked).toBe(false);
+    expect((await g.gateRequest('/ops/modules', 'page', 'admin')).blocked).toBe(false);
+  });
+  it('moduleOn: off → false, failsafe/throw → true, core always true', async () => {
+    const off = { source: 'central' as const, states: all.map((s) => (s.moduleId === 'notifications' ? { ...s, enabled: false } : s)) };
+    expect(await createModuleGate(MODULES, async () => off).moduleOn('notifications')).toBe(false);
+    expect(await createModuleGate(MODULES, async () => ({ source: 'failsafe' as const, states: [] })).moduleOn('notifications')).toBe(true);
+    expect(await createModuleGate(MODULES, async () => { throw new Error('x'); }).moduleOn('notifications')).toBe(true);
+    expect(await createModuleGate(MODULES, async () => off).moduleOn('security-core')).toBe(true);
+  });
+  it('notification scheduler checks the module before running a job', () => {
+    const src = readFileSync(path.join(__dirname, '../lib/notifications/scheduler.ts'), 'utf8');
+    expect(src).toContain('skippedIfModuleOff(job, request)');
+    expect(src).toContain('authorizeCronRequest(request)');
+  });
+});
+
+describe('customer products fail closed (subscription ended = module absent)', () => {
+  it('failsafe + failClosed blocks non-core; owned failsafe never blocks; moduleOn false so crons skip', async () => {
+    const mk = (failClosed: boolean) => createModuleGate(MODULES, async () => ({ source: 'failsafe' as const, states: [], failClosed }));
+    expect((await mk(true).gateRequest('/journey', 'page')).blocked).toBe(true);
+    expect(await mk(true).moduleOn('notifications')).toBe(false);
+    expect((await mk(false).gateRequest('/journey', 'page')).blocked).toBe(false);
+    expect(await mk(true).moduleOn('security-core')).toBe(true);
+  });
+  it('a module missing from a customer product state list is absent (not entitled)', async () => {
+    const g = createModuleGate(MODULES, async () => ({ source: 'central' as const, states: [{ moduleId: 'journey', enabled: false }], failClosed: true }));
+    expect((await g.gateRequest('/journey', 'page')).blocked).toBe(true);
+    expect(await g.moduleOn('notifications')).toBe(false);
   });
 });
