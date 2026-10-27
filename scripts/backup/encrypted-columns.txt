@@ -215,6 +215,9 @@ enforce media_receipts confirmation_code text
 enforce media_receipts confirmation_link text
 enforce media_receipts original_from text
 enforce media_receipts subject text
+enforce iam_grants reason text
+pending iam_audit_log detail json refs:iam_audit_row_ok
+pending iam_audit_log target text refs:iam_audit_row_ok
 gap access_audit_findings signals any
 gap access_audit_findings summary any
 gap access_audit_runs error any
@@ -224,11 +227,7 @@ gap gideon_device_requests chat_id any
 gap gideon_stranger_sim attempts any
 gap gideon_stranger_sim chat_id any
 gap gideon_telegram_identities from_id any
-gap iam_audit_log detail any
-gap iam_audit_log target any
-gap iam_grants reason any
 gap ip_block_ranges reason any
-gap media_receipts search_text any
 gap ops_device_enrollments label any
 gap ops_device_enrollments location any
 gap ops_probe_daily country any
@@ -576,6 +575,7 @@ class guide_access_grants granted_by -
 class guide_access_grants granted_reason -
 class guide_access_grants signal_text -
 class iam_audit_log detail -
+class iam_audit_log hash_input -
 class iam_audit_log hash -
 class iam_audit_log kind -
 class iam_audit_log prev_hash -
@@ -749,7 +749,7 @@ class media_receipts eml_sha -
 class media_receipts original_from -
 class media_receipts plan -
 class media_receipts record_hash -
-class media_receipts search_text -
+class media_receipts search_bidx -
 class media_receipts service -
 class media_receipts source -
 class media_receipts spf -

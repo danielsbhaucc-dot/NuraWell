@@ -7,6 +7,8 @@
 #   append   append-only evidence table: only rows created after activation count; enforce once active
 #   sweep    SQL-trigger-written table sealed by cron: plaintext rows older than N minutes FAIL (fields 5-6: minutes, ts col)
 #   owner:<col> (5th field, enforce/pending) only rows with a non-NULL owner count (shared catalog rows stay plain)
+#   refs:<fn> (5th field, pending/enforce) only rows where public.<fn>(row) is false count (hash-chained tables whose
+#            SQL-trigger rows hold references only, e.g. iam_audit_log -> iam_audit_row_ok); column kind check skipped
 #   gap      sensitive, not yet encryptable (not in field-registry) -> reported (warning)
 #   class    every classified column; a prod text/json/bytea column missing from it FAILS (unclassified)
 set -euo pipefail
@@ -29,6 +31,9 @@ while read -r mode t c k mins tscol; do
     owner:*) oc="${mins#owner:}"
       case "$oc" in ""|*[!a-z0-9_]*) echo "plaintext-guard: bad owner field for $t.$c"; exit 2 ;; esac
       extra=" and \"$oc\" is not null" ;;
+    refs:*) rf="${mins#refs:}"
+      case "$rf" in ""|*[!a-z0-9_]*) echo "plaintext-guard: bad refs field for $t.$c"; exit 2 ;; esac
+      extra=" and not public.\"$rf\"(\"$t\")" ;;
   esac
   if [ "$mode" = append ]; then
     if [ -n "${act[$t]:-}" ]; then mode=enforce; extra=" and created_at >= to_timestamp(${act[$t]})"; else mode=pending; fi
@@ -40,6 +45,7 @@ while read -r mode t c k mins tscol; do
     any) cond="\"$c\"::text !~ '^\"?enc:' and \"$c\"::text not in ('','null','{}','[]','\"\"')" ;;
     *) continue ;;
   esac
+  case "${mins:-}" in refs:*) cond="true" ;; esac
   q+="select '$mode $t.$c' k, count(*) n from public.\"$t\" where \"$c\" is not null and ($cond)$extra union all "
 done < "$list"
 q="${q% union all }"

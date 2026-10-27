@@ -300,6 +300,12 @@ export const ENCRYPTED_TABLES = {
   consent_evidence_attestations: { system: 'legal', userCol: '', rowCol: 'id', guardCols: [], columns: { payload: 'json' } },
   legal_access_log: { system: 'legal', userCol: '', rowCol: 'id', guardCols: [], columns: { detail: 'json' } },
   media_receipts: { system: 'legal', userCol: '', rowCol: 'id', columns: { attachments: 'json', confirmation_code: 'text', confirmation_link: 'text', original_from: 'text', subject: 'text' } },
+  // 000222: IAM (system key: audit). iam_grants.reason is sealed by the app write path (changeGrant); the SQL audit
+  // trigger copies the sealed value. iam_audit_log is append-only + hash-chained: rows written by the app (audit())
+  // are sealed before insert, so the chain hashes the stored ciphertext; SQL-trigger rows carry references only
+  // (ids, role/module codes, counts, flags) — see public.iam_audit_row_ok and CHAINED_TABLES below.
+  iam_grants: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { reason: 'text' } },
+  iam_audit_log: { system: 'audit', userCol: '', rowCol: 'seq', guardCols: [], columns: { detail: 'json', target: 'text' } },
 } as const satisfies Record<string, EncryptedTable>;
 
 /**
@@ -330,6 +336,8 @@ export const FIELD_V2_TABLES: readonly string[] = [
   'task_events', 'task_definitions', 'user_task_assignments', 'challenge_enrollments', 'admin_audit_log',
   // 000214: audit/security detail split (plain facts + sealed detail); session trail swept by cron
   'ops_security_events', 'auth_session_trail',
+  // 000222: IAM grant reason + IAM audit log
+  'iam_grants', 'iam_audit_log',
 ];
 
 /**
@@ -345,9 +353,8 @@ export const SWEEP_TABLES: Readonly<Record<string, { maxPlainMinutes: number; ts
  * GATED — admin/IAM tables created by the unmerged migrations 000191-000201 (#357-#362). NOT live: nothing reads
  * this constant for sealing or triggers. After those PRs merge, apply supabase/gated/000211_iam_admin_enc_prep.sql,
  * move these into ENCRYPTED_TABLES + FIELD_V2_TABLES, and regenerate the enc-reject triggers.
- * Not listed (stay pending): iam_audit_log.detail/target, iam_grants.reason and ops_probe_daily.country are written
- * by SQL functions in 000191/000198 (iam_audit_log on every grant/revoke inside the same transaction; probe counter
- * upsert); ops_enroll_blocks.reason is verified fixed-code only (single writer lib/ops/enrollment.ts upserts 'wrong_number').
+ * iam_audit_log.detail/target and iam_grants.reason are live since 000222 (ENCRYPTED_TABLES). Not listed (stays
+ * pending): ops_probe_daily.country (SQL probe counter upsert, 000198); ops_enroll_blocks.reason is verified fixed-code only (single writer lib/ops/enrollment.ts upserts 'wrong_number').
  */
 export const GATED_AFTER_IAM_MERGE: Readonly<Record<string, EncryptedTable>> = {
   access_audit_findings: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { signals: 'json', summary: 'text' } },
@@ -364,9 +371,21 @@ export const GATED_AFTER_IAM_MERGE: Readonly<Record<string, EncryptedTable>> = {
  * chain verifies across both row formats. The backfill skips these; the reject trigger enforces new rows.
  */
 export const APPEND_ONLY_TABLES: Readonly<Record<string, string>> = {
+  iam_audit_log: 'append-only hash-chained IAM audit (iam_audit_immutable); one-time documented reseal, see CHAINED_TABLES',
   consent_evidence: 'append-only legal evidence (trg_consent_evidence_append_only)',
   consent_evidence_attestations: 'append-only legal evidence (trg_consent_evidence_append_only)',
   legal_access_log: 'append-only legal access log (trg_consent_evidence_append_only)',
+};
+
+/**
+ * Hash-chained append-only tables with a hand-written plaintext rule (migration 000222). Rows written by SQL
+ * triggers hold references only and stay as written; app rows are sealed. `rowOk` is the SQL predicate (one row)
+ * used by the table's own zz_enc_reject_plaintext trigger and by the nightly monitor. Historical plaintext rows were
+ * resealed once under a documented chain checkpoint (kind 'audit_epoch', hash_input 'plain_v1'); see
+ * lib/security/iam-audit-reseal.ts.
+ */
+export const CHAINED_TABLES: Readonly<Record<string, { rowOk: string }>> = {
+  iam_audit_log: { rowOk: 'iam_audit_row_ok' },
 };
 
 /**
