@@ -2,7 +2,9 @@ import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { checkGrantChange, decide, isFounder, type Actor } from '@platform/iam';
 import { CATALOG, MODULES } from './catalog';
-import { audit } from './authorize';
+import { audit, centralModuleSource, ensureCentralSync } from './authorize';
+import { setCentralModuleState } from '@platform/module-library-ui/server';
+import { createCentralAdminClient } from '@/lib/supabase/admin';
 
 export type GrantInput = { action: 'grant'; targetUserId: string; roleId: string; productId: string; expiresAt: string | null; reason: string }
   | { action: 'revoke'; grantId: string; reason: string };
@@ -72,8 +74,23 @@ export async function toggleModule(db: SupabaseClient, actor: Actor, productId: 
   const m = MODULES.find((x) => x.id === moduleId);
   if (!m) return { ok: false, status: 404, error: 'מודול לא מוכר.' };
   if (m.core && !enabled) return { ok: false, status: 409, error: 'מודול אבטחה ליבה לא ניתן לכיבוי.', reason: 'core_module' };
-  const { error } = await db.from('iam_product_modules').upsert({ product_id: productId, module_id: moduleId, enabled, updated_by: actor.userId });
-  if (error) return { ok: false, status: 409, error: 'מסד הנתונים דחה את השינוי (ייתכן שתלות כבויה).', reason: 'db_refused' };
+  const src = centralModuleSource(productId);
+  if (src) {
+    // Central is the single source of truth: write there only (audited centrally). If central is down, nothing is written.
+    await ensureCentralSync(db, productId, actor.userId);
+    const r = await setCentralModuleState(createCentralAdminClient(), { actorId: actor.userId, productId, moduleId, enabled });
+    if (!r.ok) {
+      await audit(db, 'module_central_refused', actor.userId, productId, moduleId, { reason: r.reason, enabled });
+      return r.reason === 'dependency_disabled'
+        ? { ok: false, status: 409, error: 'מודול שהוא תלוי בו כבוי. צריך להפעיל אותו קודם.', reason: 'db_refused' }
+        : { ok: false, status: 503, error: 'השרת המרכזי לא זמין כרגע, השינוי לא נשמר. נסו שוב בעוד כמה דקות.', reason: 'central_unavailable' };
+    }
+    src.invalidate();
+    await audit(db, 'module_central', actor.userId, productId, moduleId, { enabled });
+  } else {
+    const { error } = await db.from('iam_product_modules').upsert({ product_id: productId, module_id: moduleId, enabled, updated_by: actor.userId });
+    if (error) return { ok: false, status: 409, error: 'מסד הנתונים דחה את השינוי (ייתכן שתלות כבויה).', reason: 'db_refused' };
+  }
   await o.alert(`🧩 מודול ${moduleId} ${enabled ? 'הופעל' : 'כובה'} במוצר ${productId}.`).catch(() => undefined);
   return { ok: true };
 }
