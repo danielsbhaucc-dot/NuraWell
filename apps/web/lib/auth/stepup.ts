@@ -25,7 +25,7 @@ export const REQUEST_TTL_MS = 2 * 60_000;
 export const TOTP_MAX_FAILS = 5;
 export const TOTP_LOCK_MIN = 15;
 
-export type StepUpMethod = 'phone_passkey' | 'passkey' | 'totp' | 'backup_code';
+export type StepUpMethod = 'phone_passkey' | 'passkey' | 'totp' | 'backup_code' | 'email_code';
 const sha = (s: string) => createHash('sha256').update(s).digest('hex');
 const tok = () => randomBytes(32).toString('base64url');
 export const validPurpose = (p: unknown): p is string => typeof p === 'string' && /^[a-z0-9_.:-]{2,64}$/.test(p);

@@ -3,7 +3,8 @@
 import { sanitizeSvg } from '@/lib/sanitize-lesson-html';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { browserSupportsWebAuthn, startAuthentication } from '@simplewebauthn/browser';
-import { CheckCircle2, Fingerprint, KeyRound, Loader2, ShieldCheck, Smartphone, X } from 'lucide-react';
+import { CheckCircle2, Fingerprint, KeyRound, Loader2, Mail, ShieldCheck, Smartphone, X } from 'lucide-react';
+import { friendlyMethods, type FriendlyMethod } from '@/lib/platform/toggle-confirm';
 import { opsGlassBtnClass, opsGlassBtnPrimaryClass, opsInputClass } from '@/components/admin/OpsPanel';
 import { cn } from '@/lib/cn';
 
@@ -13,7 +14,7 @@ import { cn } from '@/lib/cn';
  * On success the server sets a single-use grant cookie for `purpose`; call the protected route right after.
  * Usage: <StepUpDialog open purpose="ops.sensitive" reason="יצירת גיבוי מפתחות" onClose={..} onVerified={..} />
  */
-type Methods = { totp: boolean; backup_left: number; passkeys: number };
+type Methods = { totp: boolean; backup_left: number; passkeys: number; friendly?: boolean };
 export type StepUpVariant = 'ops' | 'user' | 'login';
 const APIS: Record<StepUpVariant, string> = { ops: '/api/v1/ops/stepup', user: '/api/v1/account/stepup', login: '/api/v1/auth/qr' };
 
@@ -52,10 +53,11 @@ export function StepUpDialog({ open, purpose, reason, onClose, onVerified, varia
 
   useEffect(() => {
     if (!open) { if (poll.current) clearInterval(poll.current); setDone(false); setCode(''); setErr(null); return; }
-    if (variant !== 'login') post({ op: 'methods' }).then((r) => r.json()).then(setM).catch(() => undefined);
-    void startQr();
+    const wantsFriendly = variant === 'ops' && purpose === 'ops.modules';
+    if (variant !== 'login') post(wantsFriendly ? { op: 'methods', purpose } : { op: 'methods' }).then((r) => r.json()).then((x: Methods) => { setM(x); if (wantsFriendly && !x.friendly) void startQr(); }).catch(() => undefined);
+    if (!wantsFriendly) void startQr();
     return () => { if (poll.current) clearInterval(poll.current); };
-  }, [open, startQr, post, variant]);
+  }, [open, startQr, post, variant, purpose]);
   useEffect(() => {
     if (!qr) return;
     const t = setInterval(() => setLeft(Math.max(0, Math.round((qr.expires - Date.now()) / 1000))), 500);
@@ -98,6 +100,8 @@ export function StepUpDialog({ open, purpose, reason, onClose, onVerified, varia
         </div>
         {done ? (
           <div className="grid place-items-center gap-2 py-10 text-primary-800"><CheckCircle2 size={44} /><p className="font-bold">אומת. ממשיכים…</p></div>
+        ) : m?.friendly ? (
+          <FriendlyStepUp m={m} purpose={purpose} post={post} onDone={finish} />
         ) : (
           <>
             {variant === 'ops' && (m?.totp || (m?.backup_left ?? 0) > 0) ? (
@@ -141,6 +145,67 @@ export function StepUpDialog({ open, purpose, reason, onClose, onVerified, varia
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+/** Customer step-up (purpose ops.modules): passkey if enrolled → authenticator code → one-time email code. */
+function FriendlyStepUp({ m, purpose, post, onDone }: { m: Methods; purpose: string; post: (b: unknown) => Promise<Response>; onDone: () => void }) {
+  const methods = friendlyMethods({ passkeys: m.passkeys, totp: m.totp, webauthn: browserSupportsWebAuthn() });
+  const [mode, setMode] = useState<FriendlyMethod>(methods[0]);
+  const [code, setCode] = useState('');
+  const [sent, setSent] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const LABEL: Record<FriendlyMethod, string> = { passkey: 'מפתח גישה', totp: 'אפליקציית קודים', email: 'קוד במייל' };
+  const run = async (f: () => Promise<Response>, okMsg?: () => void) => {
+    setErr(null); setBusy(true);
+    try {
+      const r = await f();
+      if (r.status === 429) { setErr('יותר מדי ניסיונות. נסו שוב בעוד כמה דקות.'); return; }
+      if (!r.ok) { setErr(mode === 'passkey' ? 'האימות לא הושלם. אפשר לנסות שוב או לבחור דרך אחרת.' : mode === 'email' && !sent ? 'לא הצלחנו לשלוח את הקוד. נסו שוב.' : 'הקוד לא נכון או שפג תוקפו. בודקים ומקלידים שוב.'); return; }
+      (okMsg ?? onDone)();
+    } catch { setErr('האימות לא הושלם. אפשר לנסות שוב או לבחור דרך אחרת.'); } finally { setBusy(false); }
+  };
+  const passkey = () => run(async () => {
+    const c = await post({ op: 'passkey_challenge' });
+    const { options } = await c.json();
+    const response = await startAuthentication({ optionsJSON: options });
+    return post({ op: 'passkey', purpose, response });
+  });
+  const verify = () => run(() => post(mode === 'totp' ? { op: 'totp', purpose, code } : { op: 'email_verify', purpose, code }));
+  const send = () => run(() => post({ op: 'email_send', purpose }), () => setSent(true));
+  return (
+    <div data-testid="stepup-friendly">
+      <p className="mb-3 text-sm text-ink-soft">כדי לשנות מודולים מאשרים שזה באמת אתם. בוחרים דרך אחת:</p>
+      {methods.length > 1 ? (
+        <div className="mb-4 flex gap-1 rounded-3xl border border-gc/50 bg-glass/30 p-1" role="tablist">
+          {methods.map((k) => (
+            <button key={k} type="button" role="tab" aria-selected={mode === k} onClick={() => { setMode(k); setErr(null); setCode(''); }}
+              className={cn('flex-1 rounded-2xl px-3 py-2 text-[13px] font-bold transition', mode === k ? 'bg-primary-800 text-accent-50 shadow' : 'text-ink-soft hover:bg-glass/50')}>{LABEL[k]}</button>
+          ))}
+        </div>
+      ) : null}
+      {mode === 'passkey' ? (
+        <button type="button" onClick={() => void passkey()} disabled={busy} className={cn(opsGlassBtnPrimaryClass, 'w-full justify-center gap-2')}>
+          {busy ? <Loader2 size={16} className="animate-spin" /> : <Fingerprint size={16} />}אימות עם Face ID או טביעת אצבע
+        </button>
+      ) : mode === 'email' && !sent ? (
+        <div>
+          <p className="mb-2 flex items-center gap-2 text-sm text-ink-soft"><Mail size={16} />נשלח קוד חד-פעמי לכתובת המייל של החשבון. הקוד תקף ל-5 דקות.</p>
+          <button type="button" onClick={() => void send()} disabled={busy} className={cn(opsGlassBtnPrimaryClass, 'w-full justify-center')}>{busy ? <Loader2 size={16} className="animate-spin" /> : 'שליחת קוד למייל'}</button>
+        </div>
+      ) : (
+        <div>
+          <p className="mb-2 flex items-center gap-2 text-sm text-ink-soft">{mode === 'totp' ? <><Smartphone size={16} />מקלידים את 6 הספרות מאפליקציית הקודים</> : <><Mail size={16} />מקלידים את 6 הספרות שנשלחו למייל</>}</p>
+          <input autoFocus value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))} onKeyDown={(e) => { if (e.key === 'Enter' && code.length === 6) void verify(); }} inputMode="numeric" autoComplete="one-time-code" dir="ltr" maxLength={6}
+            aria-label="קוד אימות" placeholder="123456" className={cn(opsInputClass, 'text-center font-mono text-xl tracking-[0.35em]')} data-testid="stepup-code" />
+          <button type="button" onClick={() => void verify()} disabled={busy || code.length !== 6} className={cn(opsGlassBtnPrimaryClass, 'mt-3 w-full justify-center')}>{busy ? <Loader2 size={16} className="animate-spin" /> : 'אימות'}</button>
+          {mode === 'email' ? <button type="button" onClick={() => void send()} disabled={busy} className="mt-2 w-full text-center text-[12px] font-bold text-primary-800 underline">שליחת קוד חדש</button> : null}
+        </div>
+      )}
+      <p className="mt-3 text-center text-[11.5px] font-bold text-primary-800"><ShieldCheck size={12} className="inline" /> חד-פעמי · תקף לכמה דקות · נרשם ביומן האבטחה</p>
+      {err ? <p role="alert" className="mt-3 rounded-xl border border-coral-300/60 bg-coral-100/50 px-3 py-2 text-sm font-semibold text-coral-800">{err}</p> : null}
     </div>
   );
 }
