@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Sparkles } from 'lucide-react';
+import { Leaf } from 'lucide-react';
 import { AlmogAvatarChipWithNameTag } from '../journey/AlmogPresence';
 
 interface GuideImmersiveSlideHeaderProps {
@@ -24,7 +24,7 @@ export function GuideImmersiveSlideHeader({ eyebrow, title, subtitle }: GuideImm
         <AlmogAvatarChipWithNameTag size={36} />
         <div className="min-w-0 flex-1 text-start">
           <p className="flex items-center justify-end gap-1 text-[11px] font-bold text-primary-200/90">
-            <Sparkles className="h-3 w-3 shrink-0 text-primary-300" aria-hidden />
+            <Leaf className="h-3 w-3 shrink-0 text-primary-300" aria-hidden />
             <span className="min-w-0 wrap-break-word">{eyebrow}</span>
           </p>
           {title ? (

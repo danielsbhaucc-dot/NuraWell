@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { Drawer } from 'vaul';
-import { Bell, ChevronLeft, Heart, Shield, Sparkles, X } from 'lucide-react';
+import { Bell, ChevronLeft, Heart, Shield, Leaf, X } from 'lucide-react';
 import { useAppOverlayRoot } from '../../lib/dom/use-app-overlay-root';
 
 type SettingsItem = {
@@ -67,7 +67,7 @@ export function ProfileSettingsDrawer({ open, onOpenChange }: Props) {
 
           <div className="flex items-center justify-between px-5 py-4">
             <h3 className="text-lg font-black text-ink-900 flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-primary-600" />
+              <Leaf className="h-5 w-5 text-primary-600" />
               ההגדרות שלך
             </h3>
             <button

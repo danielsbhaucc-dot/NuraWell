@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Heart, Leaf, Route, Sparkles, Users } from 'lucide-react';
+import { Heart, Leaf, Route, Users } from 'lucide-react';
 import { LegalShell } from '@/components/legal/LegalShell';
 import { LegalCard, LegalSection, LegalCallout } from '@/components/legal/LegalParts';
 
@@ -25,7 +25,7 @@ export default function AboutPage() {
       updatedAt={UPDATED_AT}
     >
       <LegalCard>
-        <LegalCallout tone="info" icon={<Sparkles className="w-5 h-5" />}>
+        <LegalCallout tone="info" icon={<Leaf className="w-5 h-5" />}>
           <strong>NuraWell</strong> היא פלטפורמה לשינוי אורח חיים בריא: מסע אישי מובנה, מדריכים,
           הרגלים יומיים ומנטור AI (אלמוג) שמלווה אתכם ברגעים האמיתיים של היום — לא רק בתכנון.
         </LegalCallout>

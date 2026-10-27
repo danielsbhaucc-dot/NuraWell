@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import {
   ChevronLeft,
   GraduationCap,
-  Sparkles,
+  Leaf,
 } from 'lucide-react';
 import { AlmogHeroHeader } from './DolevHeroHeader';
 import { DashboardBriefCard } from './DashboardBriefCard';
@@ -234,7 +234,7 @@ export function HomeClient({
         className="-mt-16 relative overflow-hidden pt-16"
         style={{
           background:
-            'linear-gradient(155deg, #034d3a 0%, #059669 35%, #0d9488 65%, #10b981 85%, #34d399 100%)',
+            'linear-gradient(155deg, var(--hero-from) 0%, var(--hero-mid) 55%, var(--hero-to) 100%)',
           boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2)',
           isolation: 'isolate',
         }}
@@ -358,7 +358,7 @@ export function HomeClient({
                               ? 'משימה אחת מחכה לך היום'
                               : taskCounts.pending > 0
                               ? `${taskCounts.pending} משימות מחכות לך היום`
-                              : 'סיימת את כל מה שלהיום! גאה בך ✦'}
+                              : 'סיימת את כל מה שלהיום! גאה בך'}
                   </p>
                   {(taskCounts.dueToday > 0 || taskCounts.accepted > 0) && (
                     <div className="flex gap-1">
@@ -499,7 +499,7 @@ export function HomeClient({
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-on-dark"
                 style={{ background: 'linear-gradient(145deg, #047857, #10b981)' }}
               >
-                <Sparkles className="w-4 h-4" />
+                <Leaf className="w-4 h-4" />
                 למסע שלי
               </Link>
             </motion.div>

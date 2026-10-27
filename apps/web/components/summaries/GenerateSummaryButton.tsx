@@ -17,7 +17,7 @@
  * הרבה זמן (LLM פר רמה תחתונה). UI מציג רק spinner — אין eta מדויק.
  */
 
-import { Loader2, Sparkles } from 'lucide-react';
+import { Loader2, Leaf } from 'lucide-react';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { SummaryType } from '../../lib/notifications/summaries/period-keys';
@@ -127,7 +127,7 @@ export function GenerateSummaryButton({
           </>
         ) : (
           <>
-            <Sparkles className="w-3 h-3" />
+            <Leaf className="w-3 h-3" />
             <span>צור עכשיו</span>
           </>
         )}

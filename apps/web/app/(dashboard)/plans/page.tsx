@@ -89,7 +89,7 @@ export default async function PlansPage({ searchParams }: { searchParams: Promis
     <main className="mx-auto flex w-full max-w-xl flex-col gap-6 bg-cream px-4 pb-28 pt-4">
       <PlanTaskFocus taskId={focusTaskId} />
 
-      <header className="relative overflow-hidden rounded-[30px] bg-linear-to-br from-[#022c22] via-[#04503a] to-brand-700 p-5 text-cream shadow-[0_18px_44px_rgba(2,44,34,0.32)]">
+      <header className="relative overflow-hidden rounded-[30px] hero-gradient p-5 text-cream shadow-[0_18px_44px_rgba(2,44,34,0.32)]">
         <span aria-hidden className="pointer-events-none absolute -top-20 -left-16 size-56 rounded-full bg-primary-300/20 blur-3xl" />
         <span aria-hidden className="pointer-events-none absolute -bottom-24 -right-10 size-56 rounded-full bg-primary-500/15 blur-3xl" />
         <p className="relative text-[11px] font-bold tracking-[0.12em] text-primary-100/75">תוכנית אישית · אלמוג כותב ומעדכן</p>
@@ -102,7 +102,7 @@ export default async function PlansPage({ searchParams }: { searchParams: Promis
           <PlanProgressRing pct={pct} label="מהמסע" />
         </div>
         {curStation ? (
-          <div className="relative mt-4 flex items-center gap-3 rounded-2xl bg-hero-row px-3.5 py-2.5 border border-hero-row-line shadow-lg">
+          <div className="relative mt-4 flex items-center gap-3 rounded-2xl bg-(--hero-inner) px-3.5 py-2.5 border border-(--hero-inner-line) shadow-lg">
             <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary-300 text-xs font-black text-[#022c22]">{currentIdx + 1}</span>
             <div className="min-w-0 flex-1">
               <p className="text-[11px] font-semibold text-primary-100/70">השלב הנוכחי · {currentIdx + 1} מתוך {mapStations.length}</p>

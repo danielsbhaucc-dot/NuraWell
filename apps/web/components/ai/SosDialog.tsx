@@ -4,7 +4,7 @@ import { PageBackButton } from '@/components/shared/PageBackButton';
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Check, Loader2, MessageCircle, Snowflake, Sparkles, Volume2, X, ArrowRight } from 'lucide-react';
+import { Check, Loader2, MessageCircle, Snowflake, Leaf, Volume2, X, ArrowRight } from 'lucide-react';
 
 import { useDialogA11y } from '@/lib/a11y/use-dialog-a11y';
 import { AnimatedDialog } from '../shared/AnimatedDialog';
@@ -975,7 +975,7 @@ export function SosDialog({
 
               <div className={`${sosSurface('amber')} relative overflow-hidden p-4`}>
                 <div className="mb-2 flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-accent-600" />
+                  <Leaf className="h-4 w-4 text-accent-600" />
                   <p className={SOS_LABEL}>הצעד שלך עכשיו</p>
                 </div>
                 <p className="text-base font-black text-ink-900">{response.intervention.label}</p>

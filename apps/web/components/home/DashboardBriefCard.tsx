@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Heart, RefreshCw, Sparkles, TrendingUp } from 'lucide-react';
+import { ArrowLeft, Heart, RefreshCw, Leaf, TrendingUp } from 'lucide-react';
 import {
   dispatchOpenAlmogChat,
   dispatchOpenAlmogChatWithPrefill,
@@ -28,9 +28,9 @@ const MOOD_STYLE: Record<
   { from: string; to: string; chip: string; icon: React.ElementType }
 > = {
   celebrate: { from: '#047857', to: '#10b981', chip: 'rgba(16,185,129,0.16)', icon: TrendingUp },
-  encourage: { from: '#0d9488', to: '#14b8a6', chip: 'rgba(20,184,166,0.16)', icon: Sparkles },
+  encourage: { from: '#0d9488', to: '#14b8a6', chip: 'rgba(20,184,166,0.16)', icon: Leaf },
   gentle: { from: '#7c3aed', to: '#a855f7', chip: 'rgba(168,85,247,0.16)', icon: Heart },
-  neutral: { from: '#0f766e', to: '#10b981', chip: 'rgba(16,185,129,0.14)', icon: Sparkles },
+  neutral: { from: '#0f766e', to: '#10b981', chip: 'rgba(16,185,129,0.14)', icon: Leaf },
 };
 
 interface DashboardBriefCardProps {

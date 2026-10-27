@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { Drawer } from 'vaul';
-import { X, Sparkles, Heart, Bell } from 'lucide-react';
+import { X, Leaf, Heart, Bell } from 'lucide-react';
 import { useMediaMobile } from '@/lib/client/useMediaMobile';
 import { MentorBubble } from './MentorBubble';
 import {
@@ -17,7 +17,7 @@ type RegisterHowItWorksModalProps = {
 };
 
 const STEPS = [
-  { icon: Sparkles, title: 'מכירים אותך', text: 'שאלון קצר — בלי חפירות, רק מה שחשוב באמת.' },
+  { icon: Leaf, title: 'מכירים אותך', text: 'שאלון קצר — בלי חפירות, רק מה שחשוב באמת.' },
   { icon: Heart, title: 'מנטור אישי', text: 'אלמוג (AI) לומד את הקצב, המטרות והאתגרים שלך — אחרי שהכרנו אותך כאן.' },
   { icon: Bell, title: '3 מגעים ביום', text: 'הודעות בזמנים שמתאימים לך — במיוחד לפני הרגעים הקשים.' },
 ];

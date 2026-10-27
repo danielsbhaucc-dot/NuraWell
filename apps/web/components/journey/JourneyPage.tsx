@@ -11,7 +11,7 @@ import {
   CheckCircle2,
   Lock,
   Play,
-  Sparkles,
+  Leaf,
   Droplets,
   ChevronRight,
   Trophy,
@@ -400,7 +400,7 @@ function HeroSection({
                 WebkitBackdropFilter: 'blur(8px)',
               }}
             >
-              <Sparkles className="h-3.5 w-3.5 shrink-0 text-accent-300" />
+              <Leaf className="h-3.5 w-3.5 shrink-0 text-accent-300" />
               <span className="text-[13px] font-bold text-on-dark">המסע שלי</span>
             </motion.div>
 
@@ -546,7 +546,7 @@ function HeroSection({
                 </p>
                 <p className="mt-0.5 text-[12px] text-primary-50/85">
                   {overall.stationsDone > 0
-                    ? `כבר סגרנו ${overall.stationsDone} תחנ${overall.stationsDone === 1 ? 'ה' : 'ות'} — יפה מאוד ✦`
+                    ? `כבר סגרנו ${overall.stationsDone} תחנ${overall.stationsDone === 1 ? 'ה' : 'ות'} — יפה מאוד`
                     : 'כל צעד מקרב אותך — אני איתך'}
                 </p>
               </div>
@@ -600,7 +600,7 @@ function buildIntroText(
     return {
       preamble,
       message: 'אני מחכה לך כאן',
-      sparkle: '✦',
+      sparkle: '✿',
       subline:
         'כשתרצה נצא לדרך — אני אכין לך תחנות, צעדים והרגלים שמתאימים לחיים שלך.',
     };
@@ -631,7 +631,7 @@ function buildIntroText(
     return {
       preamble,
       message: 'אנחנו כבר שם כמעט',
-      sparkle: '✦',
+      sparkle: '✿',
       subline:
         'ראיתי כמה השקעת — עברת יותר ממחצית. עוד צעד קטן ואנחנו שם.',
     };
@@ -1519,7 +1519,7 @@ function StationHeader({
                   WebkitBackdropFilter: 'blur(8px)',
                 }}
               >
-                <Sparkles className="h-3 w-3 text-accent-300" />
+                <Leaf className="h-3 w-3 text-accent-300" />
                 תחנה במסע
               </div>
             </div>
