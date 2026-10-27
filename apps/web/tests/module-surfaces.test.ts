@@ -42,7 +42,7 @@ describe('every surface belongs to a module (WordPress-style registry)', () => {
   });
   it('the proxy runs the shared gate', () => {
     const src = readFileSync(path.join(__dirname, '../proxy.ts'), 'utf8');
-    expect(src).toContain("moduleGate.gateRequest(pathname, kind)");
+    expect(src).toContain("moduleGate.gateRequest(gatePath, kind");
   });
 });
 
