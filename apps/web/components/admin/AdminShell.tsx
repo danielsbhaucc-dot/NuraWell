@@ -626,7 +626,7 @@ export function AdminShell({
           className="mx-auto w-full max-w-5xl flex-1 space-y-6 px-3 py-5 sm:space-y-8 sm:px-4 sm:py-6 md:px-6 md:py-8 safe-area-bottom"
         >
           {licenseNotices.length ? (
-            <div role="status" data-testid="license-notice" className="rounded-2xl border border-amber-400/50 bg-amber-100/70 px-4 py-3 text-sm text-amber-950">
+            <div role="status" data-testid="license-notice" className="rounded-2xl border border-accent-300/70 bg-accent-50 px-4 py-3 text-sm font-semibold text-accent-900 shadow-sm">
               יש לטפל ברישיון או בחיוב של: {licenseNotices.map((n) => n.name).join(', ')}. המודולים ממשיכים לפעול; ההודעה מוצגת רק למנהלים.
             </div>
           ) : null}

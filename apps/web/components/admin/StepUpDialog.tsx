@@ -150,7 +150,7 @@ export function StepUpDialog({ open, purpose, reason, onClose, onVerified, varia
 }
 
 /** Customer step-up (purpose ops.modules): passkey if enrolled → authenticator code → one-time email code. */
-function FriendlyStepUp({ m, purpose, post, onDone }: { m: Methods; purpose: string; post: (b: unknown) => Promise<Response>; onDone: () => void }) {
+export function FriendlyStepUp({ m, purpose, post, onDone }: { m: Methods; purpose: string; post: (b: unknown) => Promise<Response>; onDone: () => void }) {
   const methods = friendlyMethods({ passkeys: m.passkeys, totp: m.totp, webauthn: browserSupportsWebAuthn() });
   const [mode, setMode] = useState<FriendlyMethod>(methods[0]);
   const [code, setCode] = useState('');
