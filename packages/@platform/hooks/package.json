@@ -1,0 +1,8 @@
+{
+  "name": "@platform/hooks",
+  "version": "0.1.0",
+  "private": true,
+  "description": "WordPress-style actions and filters (hook registry) for any product. Pure logic, no I/O, no product imports.",
+  "main": "src/index.ts",
+  "types": "src/index.ts"
+}
