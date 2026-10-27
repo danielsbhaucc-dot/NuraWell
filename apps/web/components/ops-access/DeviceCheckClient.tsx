@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useRealtimePing } from '@/lib/hooks/useRealtimePing';
 import { KeyRound, Loader2, Mail, Send, ShieldAlert, ShieldCheck, Smartphone, Usb } from 'lucide-react';
 import { startAuthentication } from '@simplewebauthn/browser';
 import { cn } from '@/lib/cn';
@@ -73,19 +74,25 @@ export function DeviceCheckClient({ initialError }: { initialError: string | nul
     })();
   }, [start]);
 
+  // cost: no 3s polling. Approve/deny writes ops_login_requests → DB trigger pings the private Realtime
+  // topic ops-login:<uid> (RLS: only this user) → one status fetch. Expiry is time-based (no DB write),
+  // so a single timer checks right after `until`. Plus mount/focus/online fallback (inside the hook).
+  const waiting = phase === 'waiting';
+  const check = async () => {
+    const s = (await fetch('/api/v1/ops/device?view=status', { credentials: 'include' }).then((r) => r.json()).catch(() => ({}))) as { status?: string };
+    if (s.status === 'approved') go();
+    else if (s.status === 'denied') setPhase('denied');
+    else if ((s.status === 'expired' || s.status === 'none') && phaseRef.current === 'waiting') setPhase('expired');
+  };
+  const phaseRef = useRef(phase);
+  phaseRef.current = phase;
+  useRealtimePing(waiting ? 'ops-login:{uid}' : null, () => { void check(); }, 3000);
   useEffect(() => {
-    // cost: stop polling once the request reached a terminal state (expired used to poll every 3s forever)
-    // and skip ticks from hidden tabs; start() sets phase back to 'waiting', which restarts this effect.
-    if (phase === 'approved' || phase === 'denied' || phase === 'expired') return;
-    const t = setInterval(async () => {
-      if (document.visibilityState !== 'visible') return;
-      const s = (await fetch('/api/v1/ops/device?view=status', { credentials: 'include' }).then((r) => r.json()).catch(() => ({}))) as { status?: string };
-      if (s.status === 'approved') go();
-      else if (s.status === 'denied') setPhase('denied');
-      else if ((s.status === 'expired' || s.status === 'none') && phase === 'waiting') setPhase('expired');
-    }, 3000);
-    return () => clearInterval(t);
-  }, [phase]);
+    if (phase !== 'waiting' || !until) return;
+    const t = setTimeout(() => { void check(); }, Math.max(0, until - Date.now()) + 1500);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, until]);
 
   const submit = async () => {
     setBusy('code'); setErr(null);

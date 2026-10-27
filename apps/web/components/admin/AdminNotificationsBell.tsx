@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useRealtimePing } from '@/lib/hooks/useRealtimePing';
 import Link from 'next/link';
 import { Bell, CheckCheck, Loader2, X } from 'lucide-react';
 import { cn } from '@/lib/cn';
@@ -86,14 +87,9 @@ export function AdminNotificationsBell({ opsHref }: AdminNotificationsBellProps)
     }
   }, []);
 
-  useEffect(() => {
-    void load();
-    const interval = setInterval(() => {
-      // perf: לא שולפים כשהטאב מוסתר
-      if (document.visibilityState === 'visible') load().catch(() => undefined);
-    }, 120_000);
-    return () => clearInterval(interval);
-  }, [load]);
+  // perf(cpu): no 120s polling — a DB trigger pings the private, admin-only Realtime topic on each new
+  // admin notification; we fetch once then (and on mount/focus/online). Data still comes only from the admin API.
+  useRealtimePing('ops-admin-notify', () => { load().catch(() => undefined); }, 120_000);
 
   useEffect(() => {
     if (open) void load();

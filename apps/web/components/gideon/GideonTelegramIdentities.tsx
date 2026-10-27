@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
+import { useRealtimePing } from '@/lib/hooks/useRealtimePing';
 import { confirmDialog } from '@/components/shared/dialogs';
 import { StepUpDialog } from '@/components/admin/StepUpDialog';
 
@@ -22,12 +23,8 @@ export function GideonTelegramIdentities() {
     const d = await r.json().catch(() => ({}));
     if (r.ok) setRows(d.identities ?? []);
   }, []);
-  useEffect(() => {
-    void load();
-    // cost: no polling from hidden tabs (each tick = one admin-guarded function invocation).
-    const t = setInterval(() => { if (document.visibilityState === 'visible') void load(); }, 30_000);
-    return () => clearInterval(t);
-  }, [load]);
+  // cost: no polling — a DB trigger pings the private, admin-only Realtime topic on any identity change.
+  useRealtimePing('gideon-identities', () => { void load(); }, 30_000);
 
   const run = async (a: Act) => {
     setNote(null);
