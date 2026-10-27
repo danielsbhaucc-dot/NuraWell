@@ -6,12 +6,13 @@ import { linkReceipt } from './links';
  * a signed + chained + timestamped 'receipt' evidence record, and an index row with the paid period.
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { isV2 } from '@/lib/security/field-crypto';
 import { sha256Hex } from '../evidence-crypto';
 import { appendMediaEvidence } from './record';
 import { loadMediaBlob, storeMediaBlob } from './store';
 import { normalizeReceiptCost } from '@/lib/admin/cost-normalize';
 import {
-  FUZZY_THRESHOLD, matchesAnyWord, receiptSearchText, receiptSearchTokens, substringFilter, fuzzyFilter,
+  FUZZY_THRESHOLD, matchesAnyWord, receiptSearchText, RECEIPT_SEARCH_SOURCES, TOKEN_HEX, queryGrams, pgTrigrams, charGrams,
   VENDORS, detectVendor, parseInvoiceRef, parseVat, forwarderAllowed, extractGmailConfirmation, isGmailForwardingConfirmation, parseAmount, parsePeriod, parsePlan,
 } from './receipts-core';
 
@@ -212,6 +213,48 @@ export async function markGmailConfirmationResolved(admin: SupabaseClient, id: s
 }
 
 // ---- receipt search on search_bidx (see receipts-core) ----
+async function tok(kind: 'g' | 't', v: string): Promise<string> {
+  const { blindIndexFor } = await import('@/lib/security/field-crypto');
+  return blindIndexFor('media_receipts', `search.${kind}`, v).slice(0, TOKEN_HEX);
+}
+
+export async function receiptSearchTokens(text: string): Promise<string[]> {
+  const g = new Set(text.split(' ').filter(Boolean).flatMap(charGrams));
+  const t = pgTrigrams(text);
+  const out = await Promise.all([...[...g].map((x) => tok('g', x)), ...t.map((x) => tok('t', x))]);
+  return [...new Set(out)].sort();
+}
+
+/**
+ * Write path (prepareWriteRow): a full row (all five sources, subject still plaintext) gets its tokens; a partial
+ * update of a source column clears the index (row stays findable through the NULL branch) and the writer refreshes it.
+ */
+export async function receiptSearchPatch(row: Row): Promise<Row> {
+  const touched = RECEIPT_SEARCH_SOURCES.filter((c) => c in row);
+  if (!touched.length) return {};
+  const full = touched.length === RECEIPT_SEARCH_SOURCES.length && !isV2(row.subject);
+  return { search_bidx: full ? await receiptSearchTokens(receiptSearchText(row)) : null };
+}
+
+const pgArr = (xs: string[]) => `{${xs.join(',')}}`;
+
+/** PostgREST or-filter selecting candidates for any of `words` (substring) — plus not-yet-indexed rows. */
+export async function substringFilter(words: string[]): Promise<string | null> {
+  const parts: string[] = [];
+  for (const w of words.filter(Boolean)) {
+    // a phrase with spaces: each space-free part lies inside one chunk, so all their grams must be present
+    const grams = [...new Set(w.split(' ').filter(Boolean).flatMap(queryGrams))];
+    if (grams.length) parts.push(`search_bidx.cs.${pgArr(await Promise.all(grams.map((x) => tok('g', x))))}`);
+  }
+  return parts.length ? [...parts, 'search_bidx.is.null'].join(',') : null;
+}
+export async function fuzzyFilter(q: string): Promise<string | null> {
+  const t = pgTrigrams(q);
+  if (!t.length) return null;
+  return `search_bidx.ov.${pgArr(await Promise.all(t.map((x) => tok('t', x))))},search_bidx.is.null`;
+}
+
+/** The old predicate: any word is a substring of the text (ILIKE '%w%'; words are already lower-case). */
 type Row = Record<string, unknown>;
 /** Recompute one receipt's index from its decrypted values (after a partial update). */
 export async function refreshReceiptSearch(db: SupabaseClient, id: string): Promise<boolean> {

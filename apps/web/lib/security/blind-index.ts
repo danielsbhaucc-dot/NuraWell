@@ -139,7 +139,7 @@ export async function blindIndexPatch(table: string, row: Row): Promise<Row> {
     out.ip_bidx = t ? await sessionTrailIpBidx(t) : null;
   }
   if (table === 'media_receipts') {
-    const { receiptSearchPatch } = await import('@/lib/legal/media/receipts-core');
+    const { receiptSearchPatch } = await import('@/lib/legal/media/receipts');
     Object.assign(out, await receiptSearchPatch(row));
   }
   return out;

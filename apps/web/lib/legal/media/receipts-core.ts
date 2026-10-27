@@ -4,7 +4,6 @@
  * Rules instead of a model: receipts carry names/addresses, so no text leaves the server.
  */
 import type { GeneratorId } from './labels';
-import { isV2 } from '@/lib/security/field-crypto';
 
 export const VENDORS = {
   suno: { label: 'Suno', generators: ['suno'] },
@@ -234,7 +233,7 @@ export function coverageFor(generator: GeneratorId | null | undefined, createdOn
 
 type Row = Record<string, unknown>;
 export const RECEIPT_SEARCH_SOURCES = ['vendor', 'plan', 'subject', 'currency', 'amount'] as const;
-const TOKEN_HEX = 16;
+export const TOKEN_HEX = 16;
 /** pg_trgm.word_similarity_threshold default (the old `p_q <% search_text`) */
 export const FUZZY_THRESHOLD = 0.6;
 
@@ -269,47 +268,5 @@ export function pgTrigrams(text: string): string[] {
   return [...out];
 }
 
-async function tok(kind: 'g' | 't', v: string): Promise<string> {
-  const { blindIndexFor } = await import('@/lib/security/field-crypto');
-  return blindIndexFor('media_receipts', `search.${kind}`, v).slice(0, TOKEN_HEX);
-}
-
-export async function receiptSearchTokens(text: string): Promise<string[]> {
-  const g = new Set(text.split(' ').filter(Boolean).flatMap(charGrams));
-  const t = pgTrigrams(text);
-  const out = await Promise.all([...[...g].map((x) => tok('g', x)), ...t.map((x) => tok('t', x))]);
-  return [...new Set(out)].sort();
-}
-
-/**
- * Write path (prepareWriteRow): a full row (all five sources, subject still plaintext) gets its tokens; a partial
- * update of a source column clears the index (row stays findable through the NULL branch) and the writer refreshes it.
- */
-export async function receiptSearchPatch(row: Row): Promise<Row> {
-  const touched = RECEIPT_SEARCH_SOURCES.filter((c) => c in row);
-  if (!touched.length) return {};
-  const full = touched.length === RECEIPT_SEARCH_SOURCES.length && !isV2(row.subject);
-  return { search_bidx: full ? await receiptSearchTokens(receiptSearchText(row)) : null };
-}
-
-const pgArr = (xs: string[]) => `{${xs.join(',')}}`;
-
-/** PostgREST or-filter selecting candidates for any of `words` (substring) — plus not-yet-indexed rows. */
-export async function substringFilter(words: string[]): Promise<string | null> {
-  const parts: string[] = [];
-  for (const w of words.filter(Boolean)) {
-    // a phrase with spaces: each space-free part lies inside one chunk, so all their grams must be present
-    const grams = [...new Set(w.split(' ').filter(Boolean).flatMap(queryGrams))];
-    if (grams.length) parts.push(`search_bidx.cs.${pgArr(await Promise.all(grams.map((x) => tok('g', x))))}`);
-  }
-  return parts.length ? [...parts, 'search_bidx.is.null'].join(',') : null;
-}
-export async function fuzzyFilter(q: string): Promise<string | null> {
-  const t = pgTrigrams(q);
-  if (!t.length) return null;
-  return `search_bidx.ov.${pgArr(await Promise.all(t.map((x) => tok('t', x))))},search_bidx.is.null`;
-}
-
-/** The old predicate: any word is a substring of the text (ILIKE '%w%'; words are already lower-case). */
 export const matchesAnyWord = (text: string, words: string[]) => words.some((w) => w && text.includes(w.toLowerCase()));
 
