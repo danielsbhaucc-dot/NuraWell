@@ -24,7 +24,8 @@ export function GideonTelegramIdentities() {
   }, []);
   useEffect(() => {
     void load();
-    const t = setInterval(() => void load(), 30_000);
+    // cost: no polling from hidden tabs (each tick = one admin-guarded function invocation).
+    const t = setInterval(() => { if (document.visibilityState === 'visible') void load(); }, 30_000);
     return () => clearInterval(t);
   }, [load]);
 
