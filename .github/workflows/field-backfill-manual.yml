@@ -6,6 +6,10 @@ on:
       tables:
         description: 'Comma-separated backfill tables (required)'
         required: true
+      action:
+        description: 'Optional one-off action (media_receipts_search, receipt_search_parity, iam_audit_reseal, iam_audit_verify); tables is then ignored'
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -18,11 +22,14 @@ jobs:
       - name: Trigger scoped backfill (counts only)
         env:
           TABLES: ${{ inputs.tables }}
+          ACTION: ${{ inputs.action }}
           FIELD_BACKFILL_SECRET: ${{ secrets.FIELD_BACKFILL_SECRET }}
           APP_URL: ${{ secrets.VERCEL_APP_URL }}
         run: |
           [[ "$TABLES" =~ ^[a-z_,]+$ ]] || { echo "bad tables"; exit 1; }
-          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST -H "Authorization: Bearer $FIELD_BACKFILL_SECRET" -H "Content-Length: 0" "$APP_URL/api/v1/ai/cron/field-backfill?tables=$TABLES")
+          [[ "$ACTION" =~ ^[a-z_]*$ ]] || { echo "bad action"; exit 1; }
+          Q="tables=$TABLES"; [ -n "$ACTION" ] && Q="action=$ACTION"
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST -H "Authorization: Bearer $FIELD_BACKFILL_SECRET" -H "Content-Length: 0" "$APP_URL/api/v1/ai/cron/field-backfill?$Q")
           CODE=$(echo "$RESPONSE" | tail -n1)
           echo "$RESPONSE" | head -n-1
           echo "HTTP $CODE"

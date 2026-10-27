@@ -9,17 +9,20 @@
  *            plaintext row older than maxPlainMinutes (5th field)
  *   owner:<col>  optional 5th field on enforce/pending lines of ownerOptional tables: only rows WITH an owner count
  *            (shared catalog rows, owner NULL, are plaintext by design — same rule as enc_reject_plaintext_owned)
+ *   refs:<fn> optional 5th field (CHAINED_TABLES): a row counts as plaintext only when public.<fn>(row) is false
+ *            (SQL-trigger rows carrying references only are allowed); pending until the table is activated
  *   gap      classified sensitive but not yet in field-registry         -> warning, listed (must become enforce)
  * Plus every classified column (`class` lines) so the monitor can fail on prod columns nobody classified.
  */
 import { COLUMN_CLASSIFICATION } from './column-classification';
-import { APPEND_ONLY_TABLES, ENCRYPTED_TABLES, FIELD_V2_BACKFILL_COMPLETE, SWEEP_TABLES, isBlocked } from './field-registry';
+import { APPEND_ONLY_TABLES, CHAINED_TABLES, ENCRYPTED_TABLES, FIELD_V2_BACKFILL_COMPLETE, SWEEP_TABLES, isBlocked } from './field-registry';
 
 export function plaintextGuardLines(): string[] {
   const out: string[] = [];
   for (const [t, v] of Object.entries(ENCRYPTED_TABLES))
     for (const [c, k] of Object.entries(v.columns))
       if (isBlocked(t, c)) continue;
+      else if (t in CHAINED_TABLES) out.push(`pending ${t} ${c} ${k} refs:${CHAINED_TABLES[t].rowOk}`);
       else if (t in SWEEP_TABLES) out.push(`sweep ${t} ${c} ${k} ${SWEEP_TABLES[t].maxPlainMinutes} ${SWEEP_TABLES[t].tsCol}`);
       else
         out.push(`${t in APPEND_ONLY_TABLES ? 'append' : FIELD_V2_BACKFILL_COMPLETE.includes(t) ? 'enforce' : 'pending'} ${t} ${c} ${k}${

@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { ENC_TRIGGER_MARK, encRejectSpec, encRejectTriggersSql } from '@/lib/security/enc-reject-triggers';
-import { ENCRYPTED_TABLES, FIELD_V2_TABLES, SWEEP_TABLES, isBlocked } from '@/lib/security/field-registry';
+import { CHAINED_TABLES, ENCRYPTED_TABLES, FIELD_V2_TABLES, SWEEP_TABLES, isBlocked } from '@/lib/security/field-registry';
 import { plaintextGuardLines } from '@/lib/security/plaintext-guard-list';
 
 const DIR = join(__dirname, '../../../supabase/migrations');
@@ -21,6 +21,7 @@ describe('enc-reject triggers stay in sync with field-registry', () => {
     const reg = ENCRYPTED_TABLES as Record<string, { columns: Record<string, string> }>;
     for (const t of FIELD_V2_TABLES) {
       if (t in SWEEP_TABLES) { expect(spec.has(t), `${t} is swept, no reject trigger`).toBe(false); continue; }
+      if (t in CHAINED_TABLES) { expect(spec.has(t), `${t} has a hand-written trigger`).toBe(false); continue; }
       for (const c of Object.keys(reg[t]?.columns ?? {})) if (!isBlocked(t, c)) expect(spec.get(t), `${t}.${c}`).toContain(c);
     }
   });
@@ -29,6 +30,17 @@ describe('enc-reject triggers stay in sync with field-registry', () => {
     const lines = plaintextGuardLines().filter((l) => l.startsWith('sweep auth_session_trail '));
     expect(lines.map((l) => l.split(' ')[2]).sort()).toEqual(['ip', 'user_agent']);
     for (const l of lines) expect(l.endsWith(' 1500 created_at')).toBe(true);
+  });
+
+  it('chained tables have a hand-written per-kind reject trigger and a refs-aware nightly line', () => {
+    const all = files.map((f) => readFileSync(join(DIR, f), 'utf8')).join('\n');
+    for (const [t, { rowOk }] of Object.entries(CHAINED_TABLES)) {
+      expect(all).toContain(`create trigger zz_enc_reject_plaintext before insert on public.${t}`);
+      expect(all).toContain(`function public.${rowOk}(`);
+      const lines = plaintextGuardLines().filter((l) => l.split(' ')[0] !== 'class' && l.split(' ')[1] === t);
+      expect(lines.length).toBeGreaterThan(0);
+      for (const l of lines) expect(l.endsWith(` refs:${rowOk}`)).toBe(true);
+    }
   });
 
   it('the enforcement function and one-way activation flag exist in the migrations', () => {

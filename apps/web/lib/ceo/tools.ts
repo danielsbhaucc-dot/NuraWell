@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { buildBusinessMetrics } from '@/lib/admin/business-metrics';
 import { deleteUserCompletely } from '@/lib/admin/delete-user-completely';
 import { opsLink } from './channel';
+import { searchReceiptIds } from '@/lib/legal/media/receipt-search';
 import { pendingLicenseItems, unmatchedReceipts } from '@/lib/legal/media/pending';
 import { openOwnerTasks, setOwnerTask } from './owner-tasks';
 import { autoForward, forwardSchema, orWorkStatus, type ForwardArgs } from './dev-forward';
@@ -190,7 +191,7 @@ export const CEO_TOOLS: CeoTool[] = [
       const like = `%${String((a as { q: string }).q).toLowerCase().replace(/[%_\\]/g, '')}%`;
       const [m, r] = await Promise.all([
         rows<{ asset_key: string; title: string | null; status: string }>(db.from('media_provenance_assets').select('asset_key, title, status').ilike('search_text', like).limit(10)),
-        rows<{ id: string; vendor: string; plan: string | null; period_start: string | null; period_end: string | null }>(db.from('media_receipts').select('id, vendor, plan, period_start, period_end').ilike('search_text', like).limit(10)),
+        searchReceiptIds(db, [like.slice(1, -1)], 10).then((ids) => (ids.length ? rows<{ id: string; vendor: string; plan: string | null; period_start: string | null; period_end: string | null }>(db.from('media_receipts').select('id, vendor, plan, period_start, period_end').in('id', ids)) : [])),
       ]);
       return { media: m.map((x) => ({ title: x.title ?? x.asset_key, status: x.status, link: opsLink(`/legal?tab=media&asset=${encodeURIComponent(x.asset_key)}`) })), receipts: r.map((x) => ({ vendor: x.vendor, plan: x.plan, period: [x.period_start, x.period_end], link: opsLink('/legal?tab=media#receipts') })) };
     },

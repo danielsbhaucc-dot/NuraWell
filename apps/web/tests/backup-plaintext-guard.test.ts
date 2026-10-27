@@ -17,6 +17,7 @@ describe('backup plaintext guard column list', () => {
     for (const l of plaintextGuardLines().filter((x) => /^(enforce|pending) /.test(x))) {
       const [, t, , , extra] = l.split(' ');
       const spec = (ENCRYPTED_TABLES as Record<string, { userCol: string; ownerOptional?: boolean }>)[t];
+      if (extra?.startsWith('refs:')) continue; // CHAINED_TABLES (checked in enc-reject-triggers.test.ts)
       expect(extra).toBe(spec.ownerOptional ? `owner:${spec.userCol}` : undefined);
     }
   });

@@ -1,5 +1,6 @@
 import 'server-only';
 import { linkReceipt } from './links';
+import { refreshReceiptSearch } from './receipt-search';
 /**
  * Receipt intake: raw RFC 822 message (from the receipts@ email worker or a manual upload) →
  * vendor DKIM/SPF check, rules-based parse, original .eml + attachments as content-addressed blobs,
@@ -120,6 +121,8 @@ export async function updateReceipt(admin: SupabaseClient, id: string, patch: { 
   if (!rec.ok) return { ok: false as const, error: rec.error };
   const { error } = await admin.from('media_receipts').update({ ...patch, record_hash: rec.recordHash, updated_at: new Date().toISOString() }).eq('id', id);
   if (error) return { ok: false as const, error: error.message };
+  // a partial update clears search_bidx (write path); rebuild it from the decrypted row
+  if (['vendor', 'plan'].some((k) => k in patch)) await refreshReceiptSearch(admin, id).catch(() => false);
   await linkReceipt(admin, id).catch(() => null);
   return { ok: true as const };
 }

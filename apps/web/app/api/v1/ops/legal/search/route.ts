@@ -4,6 +4,7 @@ import { requireApiAdmin } from '@/lib/api/route-guards';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { expand, inRange, normalize, parseDates, wantsSemantic } from '@/lib/legal/hub/search-core';
 import { semanticAssets } from '@/lib/legal/hub/semantic';
+import { fuzzyReceipts, searchReceiptIds } from '@/lib/legal/media/receipt-search';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -28,12 +29,20 @@ export async function GET(request: Request) {
   const hex = /^[0-9a-f]{6,64}$/.test(q);
   const db = createAdminClient();
   const semP = rest && wantsSemantic(rest) ? semanticAssets(rest).catch(() => []) : Promise.resolve([] as Array<{ id: string; score: number }>);
-  const fuzP = rest.length >= 3 ? db.rpc('legal_hub_fuzzy', { p_q: rest, p_limit: 40 }).then((x) => (x.data ?? []) as Array<{ kind: string; id: string; score: number }>, () => []) : Promise.resolve([] as Array<{ kind: string; id: string; score: number }>);
+  type Fz = Array<{ kind: string; id: string; score: number }>;
+  // assets: SQL trigram branch; receipts: blind-index candidates + exact word_similarity on decrypted text
+  const fuzP = rest.length >= 3
+    ? Promise.all([
+        db.rpc('legal_hub_fuzzy', { p_q: rest, p_limit: 40 }).then((x) => ((x.data ?? []) as Fz).filter((f) => f.kind === 'asset'), () => [] as Fz),
+        fuzzyReceipts(db, rest, 40).then((r) => r.map((x) => ({ kind: 'receipt', ...x })), () => [] as Fz),
+      ]).then(([a, r]) => [...a, ...r])
+    : Promise.resolve([] as Fz);
   const mSel = 'asset_key, title, path, source_type, provenance, first_seen_at';
   const rSel = 'id, vendor, plan, subject, period_start, period_end, trust, receipt_date';
   const [mLike, rLike, prof, ev, ce, sem, fuz] = await Promise.all([
     orLike ? db.from('media_provenance_assets').select(mSel).or(orLike).eq('present', true).limit(60) : range ? db.from('media_provenance_assets').select(mSel).eq('present', true).limit(500) : Promise.resolve({ data: [] }),
-    orLike ? db.from('media_receipts').select(rSel).or(orLike).limit(40) : range ? db.from('media_receipts').select(rSel).gte('receipt_date', range.from).lte('receipt_date', range.to).limit(100) : Promise.resolve({ data: [] }),
+    // receipts: no plaintext search column — blind-index candidates, exact substring match on decrypted values
+    words.length ? searchReceiptIds(db, words.map(esc).filter(Boolean), 40).then(async (ids) => (ids.length ? db.from('media_receipts').select(rSel).in('id', ids) : { data: [] })) : range ? db.from('media_receipts').select(rSel).gte('receipt_date', range.from).lte('receipt_date', range.to).limit(100) : Promise.resolve({ data: [] }),
     // full_name is encrypted at rest (enc:v2): match in app after the read path decrypts, never ilike on ciphertext
     db.from('profiles').select('id, full_name').not('full_name', 'is', null).limit(5000).then((r) => ({ ...r, data: ((r.data ?? []) as Array<{ id: string; full_name: string | null }>).filter((x) => nameMatches(x.full_name, q)).slice(0, 10) })),
     hex ? db.from('media_evidence').select('asset_key, event, record_hash, created_at').like('record_hash', `${q}%`).limit(10) : Promise.resolve({ data: [] }),

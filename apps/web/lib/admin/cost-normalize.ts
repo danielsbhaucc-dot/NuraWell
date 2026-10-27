@@ -8,6 +8,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { costVendor } from './cost-vendors';
 import { boiUrl, parseBoiCsv, vatIncluded } from './fx-core';
 import { parseInvoiceRef, parseVat } from '@/lib/legal/media/receipts-core';
+import { receiptSearchText } from '@/lib/legal/media/receipt-search';
 
 const memo = new Map<string, number>();
 
@@ -71,11 +72,12 @@ export async function normalizeReceiptCost(admin: SupabaseClient, r: NormInput) 
 /** Lazily normalizes up to `limit` receipts that predate this feature or were stored by another path. */
 export async function normalizePending(admin: SupabaseClient, limit = 50): Promise<number> {
   const { data } = await admin.from('media_receipts')
-    .select('id, vendor, amount, currency, receipt_date, subject, search_text, dedupe_key, source')
+    .select('id, vendor, plan, amount, currency, receipt_date, subject, dedupe_key, source')
     .is('normalized_at', null).neq('source', 'gmail_confirmation').limit(limit);
   let n = 0;
-  for (const row of (data ?? []) as Array<{ id: string; vendor: string; amount: number | null; currency: string | null; receipt_date: string | null; subject: string | null; search_text: string | null; dedupe_key: string | null }>) {
-    const text = row.search_text ?? '';
+  for (const row of (data ?? []) as Array<{ id: string; vendor: string; amount: number | null; currency: string | null; receipt_date: string | null; plan: string | null; subject: string | null; dedupe_key: string | null }>) {
+    // same text the dropped generated search_text held, built from decrypted values
+    const text = receiptSearchText(row);
     const dedupe = row.dedupe_key ? null : parseInvoiceRef(row.vendor, row.subject ?? '', text);
     await normalizeReceiptCost(admin, { id: row.id, vendor: row.vendor, amount: row.amount == null ? null : Number(row.amount), currency: row.currency, receipt_date: row.receipt_date, vat: parseVat(text), dedupe }).catch(() => null);
     n++;
