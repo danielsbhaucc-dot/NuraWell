@@ -1,4 +1,4 @@
-import { ALMOG_AVATAR_OBJECT_KEY } from '../storage/r2-almog';
+import { ALMOG_AVATAR_OBJECT_KEY } from '@/lib/module-api/site-content/lib-storage-r2-almog';
 import { avatarFallbackSvg } from '../ui/avatar-fallback-svg';
 
 const DEFAULT_AVATAR = avatarFallbackSvg('א');

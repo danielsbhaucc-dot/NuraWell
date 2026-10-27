@@ -2,7 +2,7 @@ import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 
-import { findNutritionSafetyViolation } from '@/lib/ai/safety/nutrition-safety';
+import { findNutritionSafetyViolation } from '@/lib/module-api/agent/lib-ai-safety-nutrition-safety';
 import {
   chatJson,
   enrichResearchesFromLinks,

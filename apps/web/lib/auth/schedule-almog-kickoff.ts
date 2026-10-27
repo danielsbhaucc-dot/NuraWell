@@ -1,6 +1,6 @@
 import { Client as WorkflowClient } from '@upstash/workflow';
-import { almogOnboardingKickoffPayloadSchema } from '@/lib/workflows/almog-onboarding-kickoff-payload';
-import { workflowPublicBaseUrl } from '@/lib/workflows/resolve-workflow-public-url';
+import { almogOnboardingKickoffPayloadSchema } from '@/lib/module-api/reminders/lib-workflows-almog-onboarding-kickoff-payload';
+import { workflowPublicBaseUrl } from '@/lib/module-api/reminders/lib-workflows-resolve-workflow-public-url';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { markKickoffScheduled } from './kickoff-status';
 

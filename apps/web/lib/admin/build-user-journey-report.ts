@@ -1,9 +1,9 @@
-import { parseJourneyReportItems, parseJourneyTasksFull } from '@/lib/journey/journey-report-parse';
+import { parseJourneyReportItems, parseJourneyTasksFull } from '@/lib/module-api/journey/lib-journey-journey-report-parse';
 import {
   isTaskActiveToday,
   jerusalemDateKey,
   resolveTaskSchedule,
-} from '@/lib/journey/task-schedule';
+} from '@/lib/module-api/journey/lib-journey-task-schedule';
 import type { JourneyTask } from '@/lib/types/journey';
 
 /** היסטוריית ביצוע משימה — שורה אחת לכל יום שבו היה לפחות slot אחד. */

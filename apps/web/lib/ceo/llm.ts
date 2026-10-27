@@ -1,5 +1,5 @@
 import type OpenAI from 'openai';
-import { AI_MODELS, deepseek, groq, openrouter } from '@/lib/ai/client';
+import { AI_MODELS, deepseek, groq, openrouter } from '@/lib/module-api/agent/lib-ai-client';
 
 /**
  * LLM routing for the CEO agent.

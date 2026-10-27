@@ -13,7 +13,7 @@ import {
   updateAiContext,
   type AiUserContext,
 } from '../../../../../lib/ai/memory';
-import { firstNameFromFull } from '../../../../../lib/onboarding/profile-summary-rows';
+import { firstNameFromFull } from '@/lib/module-api/auth-signup/lib-onboarding-profile-summary-rows';
 
 /** Node — משתמש ב-admin client (service role) + OpenRouter SDK singleton. */
 export const runtime = 'nodejs';

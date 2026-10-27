@@ -14,17 +14,17 @@ import type {
   Research, JourneyTask, JourneyHabit, QuestionTtsMeta,
   JourneyTaskLevelingConfig,
 } from '../../lib/types/journey';
-import { useMediaManager } from '@/components/media-manager/MediaManagerProvider';
+import { useMediaManager } from '@/lib/module-api/site-content/components-media-manager-MediaManagerProvider';
 import { ConfirmDialog, type ConfirmDialogTone } from '@/components/admin/ConfirmDialog';
-import type { MediaAsset } from '@/components/media-manager/types';
-import { buildJourneyStepUploadFolder } from '@/lib/media-manager/folders';
+import type { MediaAsset } from '@/lib/module-api/site-content/components-media-manager-types';
+import { buildJourneyStepUploadFolder } from '@/lib/module-api/site-content/lib-media-manager-folders';
 import {
   formatSecondsAsClock,
   parseClockToSeconds,
   parseImmersiveAttentionStops,
   serializeImmersiveAttentionStops,
   type ImmersiveAttentionStop,
-} from '../../lib/journey/immersiveAttentionStops';
+} from '@/lib/module-api/journey/lib-journey-immersiveAttentionStops';
 
 interface StepEditorProps {
   step: JourneyStep | null;

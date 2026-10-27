@@ -8,8 +8,8 @@
  * Privacy: the recipient's first name is masked as [NAME] before the call; nothing else identifying is sent.
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { meteredFetch } from '@/lib/ai/usage-meter';
-import { REPLY_QC_MODEL, parseReplyQcVerdict, validateReplyQcFix } from '@/lib/ai/reply-quality/core';
+import { meteredFetch } from '@/lib/module-api/agent/lib-ai-usage-meter';
+import { REPLY_QC_MODEL, parseReplyQcVerdict, validateReplyQcFix } from '@/lib/module-api/agent/lib-ai-reply-quality-core';
 import { lintNotifyHebrew, type NotifyGender } from './notify-hebrew-lint';
 
 export const NOTIFY_QC_FEATURE = 'almog_notify_qc';
@@ -43,8 +43,8 @@ Light natural slang ("וואלה", "סבבה", "יאללה") is the intended sty
 Do not touch correct greetings ("בוקר אור", "וואלה") or anything that is already fine. Keep meaning, length, emojis and tokens like [NAME] exactly. Never add advice, facts or numbers. If it is already natural and correct, answer {"ok":true}. When unsure: {"ok":true}.
 Otherwise answer {"ok":false,"fixed":"<the full corrected notification>"}. Hebrew only. JSON only.`;
 
-export { maskName, unmaskName } from '@/lib/ai/privacy/name-mask';
-import { maskName, unmaskName } from '@/lib/ai/privacy/name-mask';
+export { maskName, unmaskName } from '@/lib/module-api/agent/lib-ai-privacy-name-mask';
+import { maskName, unmaskName } from '@/lib/module-api/agent/lib-ai-privacy-name-mask';
 
 let capCache: { day: string; spent: number; at: number } | null = null;
 

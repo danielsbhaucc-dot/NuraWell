@@ -9,8 +9,8 @@ export function setProfileOnboardingChatVisible(open: boolean): void {
   );
 }
 
-import type { TaskReportHint } from '../ai/task-report-hint';
-import type { GuideContextHint } from '../ai/guide-context-hint';
+import type { TaskReportHint } from '@/lib/module-api/agent/lib-ai-task-report-hint';
+import type { GuideContextHint } from '@/lib/module-api/agent/lib-ai-guide-context-hint';
 
 export type OpenAlmogChatDetail = {
   notificationId?: string;

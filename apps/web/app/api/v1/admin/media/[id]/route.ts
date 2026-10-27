@@ -5,9 +5,9 @@ import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import { readJsonBody } from '@/lib/api/json-request';
 import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { resolvePublicUrlForAsset } from '@/lib/cdn/public-media';
+import { resolvePublicUrlForAsset } from '@/lib/module-api/site-content/lib-cdn-public-media';
 import { mediaAssetPatchSchema } from '@/lib/validation/media-asset';
-import { getR2Client, r2BucketNameForMediaBucket } from '@/lib/storage/r2-almog';
+import { getR2Client, r2BucketNameForMediaBucket } from '@/lib/module-api/site-content/lib-storage-r2-almog';
 
 export const runtime = 'nodejs';
 

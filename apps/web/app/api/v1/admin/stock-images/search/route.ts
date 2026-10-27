@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { unstable_cache } from 'next/cache';
 import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
-import { searchStockImages, stockImageSearchQuerySchema } from '@/lib/media/stock-images';
+import { searchStockImages, stockImageSearchQuerySchema } from '@/lib/module-api/site-content/lib-media-stock-images';
 import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
 
 export const runtime = 'nodejs';

@@ -13,10 +13,10 @@ import {
   detectUnansweredRecoverySignals,
   type UnansweredRecoverySignal,
 } from './recovery-response-detection';
-import { parseJourneyTasksFull } from '../../journey/journey-report-parse';
-import { tryGraduateJourneyRecovery } from '../../journey/graduate-journey-recovery';
-import { applyPivotOverride } from '../orchestrator/daily-action-instances';
-import type { UserMealProfile } from '../../journey/task-schedule';
+import { parseJourneyTasksFull } from '@/lib/module-api/journey/lib-journey-journey-report-parse';
+import { tryGraduateJourneyRecovery } from '@/lib/module-api/journey/lib-journey-graduate-journey-recovery';
+import { applyPivotOverride } from '@/lib/module-api/agent/lib-ai-orchestrator-daily-action-instances';
+import type { UserMealProfile } from '@/lib/module-api/journey/lib-journey-task-schedule';
 
 export type RecoveryOrchestrationResult = {
   userId: string;

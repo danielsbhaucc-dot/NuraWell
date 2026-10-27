@@ -1,6 +1,6 @@
 import { sealTableRow } from '@/lib/crypto/pii-seal';
 import { meteredFetch } from '@/lib/ai/usage-meter';
-import { isHealthText } from '@/lib/privacy/health-text';
+import { isHealthText } from '@/lib/module-api/privacy-retention/lib-privacy-health-text';
 /**
  * שם ענייני לשיחה — מודל זול ללא reasoning (Llama 4 Maverick) ברקע, לא בנתיב ה-UI.
  */

@@ -1,7 +1,7 @@
 import { notificationMetaKeyBidx } from '@/lib/security/blind-index';
-import { insertNotification } from '@/lib/notifications/deliver';
+import { insertNotification } from '@/lib/module-api/notifications/lib-notifications-deliver';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { deliverWebPushAfterAlmogNotification } from '@/lib/push/deliver-after-notification';
+import { deliverWebPushAfterAlmogNotification } from '@/lib/module-api/notifications/lib-push-deliver-after-notification';
 
 export type ChallengeNotifyParams = {
   userId: string;

@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { getUserAvatarCdnUrl } from '@/lib/storage/user-avatar';
+import { getUserAvatarCdnUrl } from '@/lib/module-api/site-content/lib-storage-user-avatar';
 
 type AvatarMeta = {
   avatarUrl: string | null;

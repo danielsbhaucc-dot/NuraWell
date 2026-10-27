@@ -1,18 +1,18 @@
 import { decProfileResult } from '@/lib/crypto/pii-fields';
-import { withAiUser } from '@/lib/ai/usage-meter';
+import { withAiUser } from '@/lib/module-api/agent/lib-ai-usage-meter';
 /**
  * send-passive-presence-notification.ts
  * -------------------------------------
  * שליחת נוכחות פסיבית (14+ / churned) דרך LLM — תוכן מותאם אישית במקום templates.
  */
 
-import { insertNotification } from '@/lib/notifications/deliver';
+import { insertNotification } from '@/lib/module-api/notifications/lib-notifications-deliver';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { AI_MODELS } from '../ai/client';
-import { completeEmpathyNotifyBody } from '../ai/empathy-notify-completion';
-import { fetchNotifyUserProfile } from '../ai/notify-user-profile';
-import { ALMOG_NOTIFY_MAX_OUTPUT_TOKENS } from '../ai/prompts';
-import { gateAlmogUserFacingTouch } from '../notifications/almog-touch-send-gate';
+import { AI_MODELS } from '@/lib/module-api/agent/lib-ai-client';
+import { completeEmpathyNotifyBody } from '@/lib/module-api/agent/lib-ai-empathy-notify-completion';
+import { fetchNotifyUserProfile } from '@/lib/module-api/agent/lib-ai-notify-user-profile';
+import { ALMOG_NOTIFY_MAX_OUTPUT_TOKENS } from '@/lib/module-api/agent/lib-ai-prompts';
+import { gateAlmogUserFacingTouch } from '@/lib/module-api/notifications/lib-notifications-almog-touch-send-gate';
 import {
   daysBetween,
   fetchTrueLastActiveByUser,

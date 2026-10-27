@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Drawer } from 'vaul';
 import { motion } from 'framer-motion';
 import { Check, ChevronRight, MessageCircle, Send, X } from 'lucide-react';
-import { SecureVaultBox } from '@/components/ai/SecureVaultBox';
+import { SecureVaultBox } from '@/lib/module-api/agent/components-ai-SecureVaultBox';
 import {
   FUN_ASSISTANT_BUBBLE,
   FUN_AVATAR_RING,
@@ -25,18 +25,18 @@ import {
   HeaderTypingDots,
   QuickPathSelectCard,
 } from '@/components/profile/onboarding-fun-experience';
-import { ALMOG_AVATAR_FALLBACK } from '@/lib/ai/almog-avatar';
+import { ALMOG_AVATAR_FALLBACK } from '@/lib/module-api/agent/lib-ai-almog-avatar';
 import { useAlmogAvatarUrl } from '@/lib/client/useAlmogAvatarUrl';
 import { useProfileAvatarUrl } from '@/lib/client/useProfileAvatarUrl';
 import { useChatBackground } from '@/lib/client/useChatBackground';
 import { useVisualDrawerLayout } from '@/lib/client/use-visual-drawer-layout';
-import type { OnboardingExtracted } from '@/lib/ai/onboarding-chat-llm';
-import type { DiscreteFieldKey } from '@/lib/ai/onboarding-discrete-fields';
+import type { OnboardingExtracted } from '@/lib/module-api/agent/lib-ai-onboarding-chat-llm';
+import type { DiscreteFieldKey } from '@/lib/module-api/agent/lib-ai-onboarding-discrete-fields';
 import {
   DISCRETE_FIELD_LABELS,
   DISCRETE_FIELD_PLACEHOLDERS,
   discreteFieldPrivacyIntro,
-} from '@/lib/ai/onboarding-discrete-fields';
+} from '@/lib/module-api/agent/lib-ai-onboarding-discrete-fields';
 import { type ProfileFieldFlags } from '@/lib/profile/extracted-field-flags';
 import {
   buildProfileChatBootstrap,
@@ -47,7 +47,7 @@ import { firstNameFrom } from '@/lib/profile/personalized-copy';
 import {
   dispatchOpenAlmogChat,
   setProfileOnboardingChatVisible,
-} from '@/lib/notifications/open-almog-chat';
+} from '@/lib/module-api/notifications/lib-notifications-open-almog-chat';
 
 type Turn = { role: 'user' | 'assistant'; content: string; secret?: boolean };
 

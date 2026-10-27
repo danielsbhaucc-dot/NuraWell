@@ -2,11 +2,11 @@ import type { Metadata } from 'next';
 import { createClient } from '../../../../lib/supabase/server';
 import { createAdminClient } from '../../../../lib/supabase/admin';
 import { redirect, notFound } from 'next/navigation';
-import { canAccessStationById } from '@/lib/billing/gate';
+import { canAccessStationById } from '@/lib/module-api/billing/lib-billing-gate';
 import { StepLesson } from '../../../../components/journey/StepLesson';
 import type { JourneyStep, JourneyStepProgress } from '../../../../lib/types/journey';
 import type { LessonAudioTrack } from '../../../../lib/types/audio';
-import { getPublicCdnAudioUrl } from '../../../../lib/cdn/public-audio';
+import { getPublicCdnAudioUrl } from '@/lib/module-api/site-content/lib-cdn-public-audio';
 import { isJourneyStepNumber, isJourneyStepUuid } from '../../../../lib/journey/resolve-step';
 import { buildAdminUserJourneyReport } from '../../../../lib/admin/build-user-journey-report';
 import {

@@ -17,7 +17,7 @@
 
 import { useMemo, useState } from 'react';
 import { Sparkles, Filter } from 'lucide-react';
-import type { SummaryType } from '../../lib/notifications/summaries/period-keys';
+import type { SummaryType } from '@/lib/module-api/notifications/lib-notifications-summaries-period-keys';
 import type { PeriodicSummaryRow } from '../../app/(dashboard)/summaries/page';
 import { SummaryCard, TYPE_COLORS } from './SummaryCard';
 import { GenerateSummaryButton } from './GenerateSummaryButton';

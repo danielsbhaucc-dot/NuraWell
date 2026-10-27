@@ -1,5 +1,5 @@
-import type { OnboardingProfileForChat } from '@/lib/ai/onboarding-chat-context';
-import type { OnboardingGender } from '@/lib/onboarding/types';
+import type { OnboardingProfileForChat } from '@/lib/module-api/agent/lib-ai-onboarding-chat-context';
+import type { OnboardingGender } from '@/lib/module-api/auth-signup/lib-onboarding-types';
 import { welcomeEmailCopy } from '@/lib/email/welcome-email-copy';
 import { publicAppOriginSync } from '@/lib/public-app-url';
 import { dolevSignature, emailDivider, EMAIL_SUPPORT_ADDRESS, emailParagraph, emailSummaryTable, escapeHtml, renderEmailLayout } from '@/lib/email/layout';

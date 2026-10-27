@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight, History, Loader2, Sparkles, CalendarDays } from 'lucide-react';
 
-import { AlmogScreenCoach } from '../ai/AlmogScreenCoach';
+import { AlmogScreenCoach } from '@/lib/module-api/agent/components-ai-AlmogScreenCoach';
 import { fetchUserTaskSnapshot } from '../../lib/client/user-task-snapshot';
 import type { JourneyTaskExecution, JourneyTaskSlot } from '../../lib/types/journey';
 import { slotEmoji, slotLabel } from '../../lib/journey/task-schedule';

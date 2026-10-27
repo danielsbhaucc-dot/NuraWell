@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 
-import type { FrictionCategory } from './almog-commitments/friction';
+import type { FrictionCategory } from '@/lib/module-api/reminders/lib-ai-almog-commitments-friction';
 
 /** רקע גוף הפופאפ — חם וניטרלי */
 export const SOS_BODY_BG =

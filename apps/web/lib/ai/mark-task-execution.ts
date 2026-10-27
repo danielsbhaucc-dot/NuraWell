@@ -22,7 +22,7 @@ import {
   jerusalemDateKey,
   resolveTaskSchedule,
   slotsForSchedule,
-} from '../journey/task-schedule';
+} from '@/lib/module-api/journey/lib-journey-task-schedule';
 import type { TaskExecutionOutcomeFromCategory } from './response-classifier';
 import { encryptString } from '@/lib/crypto/pii';
 

@@ -1,6 +1,6 @@
-import { groq, openrouter, AI_MODELS } from '../ai/client';
+import { groq, openrouter, AI_MODELS } from '@/lib/module-api/agent/lib-ai-client';
 import type { GuideProgressSummary } from './progress';
-import { isGroqLaneAvailable } from '@/lib/ai/groq-compat';
+import { isGroqLaneAvailable } from '@/lib/module-api/agent/lib-ai-groq-compat';
 
 export interface GuideCatalogEntry {
   id: string;

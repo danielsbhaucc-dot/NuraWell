@@ -7,9 +7,9 @@ import {
   encodeImageToWebpBlob,
   isWebpEncodeUnsupportedError,
 } from '../../lib/client/encodeAlmogAvatarWebp';
-import { OpenMediaManagerButton } from '@/components/media-manager/OpenMediaManagerButton';
-import { applyAlmogAvatarFromAsset } from '@/lib/media-manager/apply-asset';
-import type { MediaAsset } from '@/components/media-manager/types';
+import { OpenMediaManagerButton } from '@/lib/module-api/site-content/components-media-manager-OpenMediaManagerButton';
+import { applyAlmogAvatarFromAsset } from '@/lib/module-api/site-content/lib-media-manager-apply-asset';
+import type { MediaAsset } from '@/lib/module-api/site-content/components-media-manager-types';
 
 type UploadResult = {
   ok?: boolean;

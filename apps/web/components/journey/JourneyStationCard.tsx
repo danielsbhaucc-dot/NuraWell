@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion';
 import { MapPin, ArrowLeft, CheckCircle2, Sparkles } from 'lucide-react';
 import type { JourneyStationGroup } from '../../lib/journey/group-journey-by-station';
-import { stationCoverAlt } from '../../lib/a11y/alt-text';
+import { stationCoverAlt } from '@/lib/module-api/a11y/lib-a11y-alt-text';
 import { cn } from '../../lib/cn';
 import { useStepCredit } from './practicing-context';
 

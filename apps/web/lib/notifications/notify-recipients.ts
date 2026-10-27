@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { jerusalemTodayStartIso } from '../ai/almog-notify-day-context';
+import { jerusalemTodayStartIso } from '@/lib/module-api/agent/lib-ai-almog-notify-day-context';
 import {
   decideInactivityFade,
   FADE_DAILY_FROM_DAYS,

@@ -1,4 +1,4 @@
-import { createHealthMemoryGate } from '@/lib/privacy/health-memory';
+import { createHealthMemoryGate } from '@/lib/module-api/privacy-retention/lib-privacy-health-memory';
 import { sealTableRow } from '@/lib/crypto/pii-seal';
 import { decTableResult } from '@/lib/crypto/pii-fields';
 import { isStorableMemoryText } from '../safety/memory-text-guard';

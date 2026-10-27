@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { TOOL_BY_NAME } from '@/lib/ceo/tools';
+import { TOOL_BY_NAME } from '@/lib/module-api/gideon/lib-ceo-tools';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

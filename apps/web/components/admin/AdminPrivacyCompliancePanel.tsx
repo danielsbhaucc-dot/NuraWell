@@ -8,7 +8,7 @@ import { cn } from '@/lib/cn';
 import {
   COMPLIANCE_DOCS, COMPLIANCE_ITEMS, THRESHOLDS, intervalLabel, itemState, rowDone,
   type AutoFacts, type ComplianceItem, type ComplianceRow, type ItemState,
-} from '@/lib/privacy/compliance-checklist';
+} from '@/lib/module-api/privacy-retention/lib-privacy-compliance-checklist';
 
 type Data = { rows: ComplianceRow[]; facts: AutoFacts; drillMeta: Record<string, unknown>; lastUpdated: string | null; docs: { slug: string; updated_at: string }[]; status?: Record<string, { state: ItemState; nextDue: string | null }> };
 

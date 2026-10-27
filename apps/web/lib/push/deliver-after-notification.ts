@@ -7,7 +7,7 @@ import { decProfileResult } from '@/lib/crypto/pii-fields';
 import 'server-only';
 
 import { createAdminClient } from '@/lib/supabase/admin';
-import { isAvoidPushActive } from '@/lib/ai/avoid-push';
+import { isAvoidPushActive } from '@/lib/module-api/agent/lib-ai-avoid-push';
 import type { WebPushStored } from './types';
 import { truncateAtWordBoundary } from '@/lib/text/truncate-graphemes';
 import { parseNotificationPrefs } from '@/lib/notifications/inactivity-fade';

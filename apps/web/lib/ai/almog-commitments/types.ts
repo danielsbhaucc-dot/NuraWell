@@ -201,5 +201,5 @@ export interface AlmogCommitmentContext {
   unansweredRecovery: import('./recovery-response-detection').UnansweredRecoverySignal[];
   activeStruggles: import('./struggle-detection').StruggleSignal[];
   /** SOS אחרונים — רגעים קשים מהבית */
-  recentSosMoments: import('../guardian/sos-memory').RecentSosForChat[];
+  recentSosMoments: import('@/lib/module-api/agent/lib-ai-guardian-sos-memory').RecentSosForChat[];
 }

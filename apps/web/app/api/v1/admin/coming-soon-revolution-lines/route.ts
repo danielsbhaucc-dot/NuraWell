@@ -5,7 +5,7 @@ import {
   comingSoonRevolutionLinesSchema,
   DEFAULT_REVOLUTION_LINES,
   parseRevolutionLines,
-} from '@/lib/coming-soon/revolution-lines';
+} from '@/lib/module-api/site-content/lib-coming-soon-revolution-lines';
 import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
 
 export const runtime = 'nodejs';

@@ -2,8 +2,8 @@ import {
   deleteKnowledgeDocVectors,
   ingestKnowledgeDoc,
   type AlmogKnowledgeDocInput,
-} from '@/lib/ai/system-knowledge-store';
-import { isSystemKnowledgeVectorConfigured } from '@/lib/ai/system-knowledge-vector';
+} from '@/lib/module-api/agent/lib-ai-system-knowledge-store';
+import { isSystemKnowledgeVectorConfigured } from '@/lib/module-api/agent/lib-ai-system-knowledge-vector';
 
 export type AlmogKnowledgeRow = {
   id: string;

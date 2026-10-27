@@ -3,8 +3,8 @@
 import { piiFetch } from '@/lib/platform/access/pii-fetch';
 import { useCallback, useEffect, useState } from 'react';
 import { Brain, Loader2, Trash2, Sparkles } from 'lucide-react';
-import { glassCardStyle, glassPanelStyle } from '@/components/media-manager/glass-styles';
-import type { MemoryVectorCategory, UserMemoryListItem } from '@/lib/ai/upstash-vector-rest';
+import { glassCardStyle, glassPanelStyle } from '@/lib/module-api/site-content/components-media-manager-glass-styles';
+import type { MemoryVectorCategory, UserMemoryListItem } from '@/lib/module-api/agent/lib-ai-upstash-vector-rest';
 
 const CATEGORY_LABELS: Partial<Record<MemoryVectorCategory, string>> = {
   strength: 'חוזק',

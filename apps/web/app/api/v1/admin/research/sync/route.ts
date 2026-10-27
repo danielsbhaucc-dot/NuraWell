@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { syncStepResearchesToAlmogKnowledge } from '@/lib/admin/sync-research-knowledge';
-import { isSystemKnowledgeVectorConfigured } from '@/lib/ai/system-knowledge-vector';
+import { isSystemKnowledgeVectorConfigured } from '@/lib/module-api/agent/lib-ai-system-knowledge-vector';
 import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import { readJsonBody } from '@/lib/api/json-request';
 import type { Research } from '@/lib/types/journey';

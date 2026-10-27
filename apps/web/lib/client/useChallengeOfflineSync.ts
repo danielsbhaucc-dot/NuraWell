@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { listPendingCompletions, syncPendingCompletions } from '@/lib/challenge/offline-queue';
+import { listPendingCompletions, syncPendingCompletions } from '@/lib/module-api/journey/lib-challenge-offline-queue';
 
 export function useChallengeOfflineSync(onSynced?: () => void) {
   const [pending, setPending] = useState(0);

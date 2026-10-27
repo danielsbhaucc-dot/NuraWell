@@ -1,6 +1,6 @@
 import type OpenAI from 'openai';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { AI_MODELS } from '@/lib/ai/client';
+import { AI_MODELS } from '@/lib/module-api/agent/lib-ai-client';
 import type { CeoButton } from './channel';
 import { approvalCardFor, audit, proposeAction } from './actions';
 import { detectDemoIntent } from './intents';

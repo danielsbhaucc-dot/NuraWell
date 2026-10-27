@@ -1,12 +1,12 @@
-import { ALMOG_NUTRITION_SAFETY_RULES } from '../safety/nutrition-safety';
-import { hebrewAddressingRule, type HebrewGender } from '../hebrew-output-rules';
+import { ALMOG_NUTRITION_SAFETY_RULES } from '@/lib/module-api/agent/lib-ai-safety-nutrition-safety';
+import { hebrewAddressingRule, type HebrewGender } from '@/lib/module-api/agent/lib-ai-hebrew-output-rules';
 /**
  * מנוע התערבויות — יצירת אופציות A/B ו-pivot לחסמים.
  * רץ על Llama 4 Scout דרך OpenRouter (רקע, לא צ'אט אלמוג).
  */
 
-import { openrouter } from '../client';
-import { MEMORY_EXTRACTION_MODEL_OPENROUTER } from '../rag-config';
+import { openrouter } from '@/lib/module-api/agent/lib-ai-client';
+import { MEMORY_EXTRACTION_MODEL_OPENROUTER } from '@/lib/module-api/agent/lib-ai-rag-config';
 import type { AssignmentRelation, BlockerOption, BlockerProposal } from './types';
 import {
   FRICTION_META,

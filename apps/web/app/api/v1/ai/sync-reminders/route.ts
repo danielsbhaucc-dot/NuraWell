@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { requireApiSession } from '../../../../../lib/api/route-guards';
 import { createAdminClient } from '../../../../../lib/supabase/admin';
-import { drainAlmogReminders } from '../../../../../lib/ai/almog-commitments/drain-reminders';
-import { processPendingAlmogCommitmentJobs } from '../../../../../lib/ai/almog-commitments/process-pending-commitment-jobs';
+import { drainAlmogReminders } from '@/lib/module-api/reminders/lib-ai-almog-commitments-drain-reminders';
+import { processPendingAlmogCommitmentJobs } from '@/lib/module-api/reminders/lib-ai-almog-commitments-process-pending-commitment-jobs';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

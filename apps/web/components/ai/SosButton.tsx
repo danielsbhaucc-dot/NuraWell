@@ -4,7 +4,7 @@ import dynamic from 'next/dynamic';
 import { useState } from 'react';
 import { HandHeart } from 'lucide-react';
 
-import type { OnboardingGender } from '../../lib/onboarding/types';
+import type { OnboardingGender } from '@/lib/module-api/auth-signup/lib-onboarding-types';
 
 const SosDialog = dynamic(() => import('./SosDialog').then((m) => m.SosDialog), {
   ssr: false,

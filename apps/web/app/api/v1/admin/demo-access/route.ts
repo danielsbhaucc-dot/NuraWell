@@ -3,7 +3,7 @@ import { requireOpsApiAdmin } from '@/lib/api/require-ops-api-admin';
 import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
 import { readJsonBody } from '@/lib/api/json-request';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { getPublicCdnImageUrl } from '@/lib/cdn/public-images';
+import { getPublicCdnImageUrl } from '@/lib/module-api/site-content/lib-cdn-public-images';
 import { createDemoAccessSchema } from '@/lib/demo-access/validation';
 import { createDemoAccessLink } from '@/lib/demo-access/create';
 

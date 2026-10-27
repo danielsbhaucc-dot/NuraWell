@@ -5,7 +5,7 @@ import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit'
 import { readJsonBody } from '@/lib/api/json-request';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { killDeadDemoAuthSessions, revokeDemoSessionsForLink } from '@/lib/demo-access/claim';
-import { deleteImageFromR2 } from '@/lib/cdn/public-images';
+import { deleteImageFromR2 } from '@/lib/module-api/site-content/lib-cdn-public-images';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

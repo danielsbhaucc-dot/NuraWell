@@ -19,7 +19,7 @@ import { SecurityDocs } from './SecurityDocs';
 import { LogsSection } from './LogsSection';
 import { ComplianceTasks } from './ComplianceTasks';
 import { AssetSheet } from './AssetSheet';
-import { fuzzyScore, normalize, expand } from '@/lib/legal/hub/search-core';
+import { fuzzyScore, normalize, expand } from '@/lib/module-api/legal/lib-legal-hub-search-core';
 
 export type HubTab = 'overview' | 'media' | 'receipts' | 'consent' | 'evidence' | 'keys' | 'security';
 export type HubAsset = { key: string; title: string | null; kind: string; status: string; mime: string | null; thumb: Thumb; updated_at: string; created_on: string | null; source_type: string;

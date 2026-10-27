@@ -9,9 +9,13 @@
   "toggleable": true,
   "alwaysOn": [],
   "owns": [
-    "apps/web/lib/a11y/",
+    "apps/web/app/accessibility/",
     "apps/web/components/a11y/",
-    "apps/web/app/accessibility/"
+    "apps/web/lib/a11y/",
+    "apps/web/lib/module-api/a11y/"
   ],
-  "description": "Accessibility preferences and tools (behavior unchanged)."
+  "description": "Accessibility preferences and tools (behavior unchanged).",
+  "api": [
+    "apps/web/lib/module-api/a11y/"
+  ]
 }

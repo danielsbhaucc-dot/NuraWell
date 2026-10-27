@@ -2,11 +2,11 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Ban, Lock, Smartphone } from 'lucide-react';
 import '../legal-v2.css';
-import { LegalDoc, LegalDataTable, type LegalDocSection } from '@/components/legal/v2/LegalDoc';
-import { LEGAL_THEME } from '@/components/legal/v2/theme';
-import { LEGAL_PRIVACY_EMAIL } from '@/lib/legal/contact';
-import { COOKIE_GROUPS } from '@/lib/legal/cookie-inventory';
-import { CookieWink, OpenCookiePanelButton } from '@/components/legal/cookies/CookieNotice';
+import { LegalDoc, LegalDataTable, type LegalDocSection } from '@/lib/module-api/legal/components-legal-v2-LegalDoc';
+import { LEGAL_THEME } from '@/lib/module-api/legal/components-legal-v2-theme';
+import { LEGAL_PRIVACY_EMAIL } from '@/lib/module-api/legal/lib-legal-contact';
+import { COOKIE_GROUPS } from '@/lib/module-api/legal/lib-legal-cookie-inventory';
+import { CookieWink, OpenCookiePanelButton } from '@/lib/module-api/legal/components-legal-cookies-CookieNotice';
 
 export const metadata: Metadata = {
   title: 'מדיניות עוגיות',

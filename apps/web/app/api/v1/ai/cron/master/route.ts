@@ -2,7 +2,7 @@ export const runtime = 'nodejs';
 export const maxDuration = 300;
 export const dynamic = 'force-dynamic';
 
-import { runNotificationJob } from '@/lib/notifications/scheduler';
+import { runNotificationJob } from '@/lib/module-api/notifications/lib-notifications-scheduler';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 /** Retention (data minimization) — runs after an authorized master job. Never blocks the job. */

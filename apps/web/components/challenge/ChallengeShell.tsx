@@ -1,7 +1,7 @@
 'use client';
 
 import type { User } from '@supabase/supabase-js';
-import { NotificationsProvider } from '@/components/notifications/NotificationsProvider';
+import { NotificationsProvider } from '@/lib/module-api/notifications/components-notifications-NotificationsProvider';
 import { ChallengeNotificationsBell } from './ChallengeNotificationsBell';
 
 type Props = {

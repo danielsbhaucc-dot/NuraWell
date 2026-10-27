@@ -5,8 +5,8 @@ import { useParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowRight, Loader2, Save, ImagePlus, Trash2, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
 import { resolveGuideBackgroundUrl } from '@/lib/guides/resolve-background';
-import { useMediaManager } from '@/components/media-manager/MediaManagerProvider';
-import type { MediaAsset } from '@/components/media-manager/types';
+import { useMediaManager } from '@/lib/module-api/site-content/components-media-manager-MediaManagerProvider';
+import type { MediaAsset } from '@/lib/module-api/site-content/components-media-manager-types';
 import { GuideLessonEditor } from '@/components/admin/GuideLessonEditor';
 import { promptDialog } from '@/components/shared/dialogs';
 

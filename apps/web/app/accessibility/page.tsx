@@ -12,8 +12,8 @@ import {
   SlidersHorizontal,
 } from 'lucide-react';
 import { AccessibilityRestoreWidget } from '@/components/a11y/AccessibilityRestoreWidget';
-import { LegalShell } from '@/components/legal/LegalShell';
-import { LegalCard, LegalSection, LegalCallout } from '@/components/legal/LegalParts';
+import { LegalShell } from '@/lib/module-api/legal/components-legal-LegalShell';
+import { LegalCard, LegalSection, LegalCallout } from '@/lib/module-api/legal/components-legal-LegalParts';
 
 const UPDATED_AT = '20 ביוני 2026';
 
