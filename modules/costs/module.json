@@ -8,6 +8,8 @@
   "core": false,
   "toggleable": true,
   "alwaysOn": [],
-  "owns": [],
+  "owns": [
+    "apps/web/app/api/v1/admin/costs/"
+  ],
   "description": "AI and infra cost tracking and caps."
 }

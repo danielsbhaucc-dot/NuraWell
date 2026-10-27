@@ -10,6 +10,8 @@
   "alwaysOn": [
     "append-only-audit"
   ],
-  "owns": [],
+  "owns": [
+    "apps/web/app/api/v1/ai/cron/session-trail-seal/"
+  ],
   "description": "Append-only audit trail and session-trail sealing."
 }

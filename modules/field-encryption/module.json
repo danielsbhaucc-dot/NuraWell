@@ -10,6 +10,12 @@
   "alwaysOn": [
     "pii-encryption"
   ],
-  "owns": [],
+  "owns": [
+    "apps/web/lib/crypto/",
+    "apps/web/app/api/v1/ai/cron/field-backfill/",
+    "apps/web/scripts/encrypt-existing-pii.ts",
+    "apps/web/scripts/gen-enc-triggers.mts",
+    "apps/web/scripts/gen-plaintext-guard.mts"
+  ],
   "description": "Field-level PII encryption and backfill."
 }

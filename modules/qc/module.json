@@ -8,6 +8,9 @@
   "core": false,
   "toggleable": true,
   "alwaysOn": [],
-  "owns": [],
+  "owns": [
+    "apps/web/app/api/v1/ops/qc/",
+    "apps/web/components/ops-qc/"
+  ],
   "description": "Quality-control checks screen."
 }
