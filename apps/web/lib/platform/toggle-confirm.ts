@@ -30,3 +30,18 @@ export function friendlyMethods(has: { passkeys: number; totp: boolean; webauthn
   out.push('email');
   return out;
 }
+
+/**
+ * Optional, config-driven upsell for our own security module, shown subtly only when the customer has no
+ * strong method (no passkey, no authenticator). No vendor names in code; label/href come from config.
+ * We never add extra security layers to the customer's site; this is only a link.
+ */
+export type SecurityUpsell = { label: string; href: string };
+export const SECURITY_UPSELL: Record<string, SecurityUpsell> = {};
+
+export function upsellFor(productId: string, has: { passkeys: number; totp: boolean }, cfg: Record<string, SecurityUpsell> = SECURITY_UPSELL, owned: Record<string, boolean> = OWNED_BY_US): SecurityUpsell | null {
+  if (owned[productId] || has.passkeys > 0 || has.totp) return null;
+  const u = cfg[productId];
+  if (!u || typeof u.label !== 'string' || !/^[\p{L}\p{N} ,.'"!?:()-]{2,60}$/u.test(u.label)) return null;
+  try { const url = new URL(u.href); if (url.protocol !== 'https:') return null; return { label: u.label, href: url.toString() }; } catch { return null; }
+}

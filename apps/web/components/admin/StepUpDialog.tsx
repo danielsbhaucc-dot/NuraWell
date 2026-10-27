@@ -21,7 +21,7 @@ export const STEPUP_SECONDARY_BTN =
  * On success the server sets a single-use grant cookie for `purpose`; call the protected route right after.
  * Usage: <StepUpDialog open purpose="ops.sensitive" reason="יצירת גיבוי מפתחות" onClose={..} onVerified={..} />
  */
-type Methods = { totp: boolean; backup_left: number; passkeys: number; friendly?: boolean };
+type Methods = { totp: boolean; backup_left: number; passkeys: number; friendly?: boolean; upsell?: { label: string; href: string } | null };
 export type StepUpVariant = 'ops' | 'user' | 'login';
 const APIS: Record<StepUpVariant, string> = { ops: '/api/v1/ops/stepup', user: '/api/v1/account/stepup', login: '/api/v1/auth/qr' };
 
@@ -211,7 +211,8 @@ export function FriendlyStepUp({ m, purpose, post, onDone }: { m: Methods; purpo
           {mode === 'email' ? <button type="button" onClick={() => void send()} disabled={busy} className="mt-2 w-full text-center text-[12px] font-bold text-primary-800 underline">שליחת קוד חדש</button> : null}
         </div>
       )}
-      <p className="mt-3 text-center text-[11.5px] font-bold text-primary-800"><ShieldCheck size={12} className="inline" /> חד-פעמי · תקף לכמה דקות · נרשם ביומן האבטחה</p>
+      <p className="mt-3 text-center text-[11.5px] font-bold text-forest-800"><ShieldCheck size={12} className="inline" /> חד-פעמי · תקף לכמה דקות · נרשם ביומן האבטחה</p>
+      {m.upsell ? <p className="mt-2 text-center text-[11.5px] text-ink-soft" data-testid="stepup-upsell"><a href={m.upsell.href} target="_blank" rel="noopener" className="font-semibold text-forest-800 underline underline-offset-2">{m.upsell.label}</a></p> : null}
       {err ? <p role="alert" className="mt-3 rounded-xl border border-coral-300/60 bg-coral-100/50 px-3 py-2 text-sm font-semibold text-coral-800">{err}</p> : null}
     </div>
   );
