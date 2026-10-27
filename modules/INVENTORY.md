@@ -2,12 +2,12 @@
 # Module inventory
 
 Catalog modules: 21 (core: 8). Packaged modules (module.json): 10.
-App code already modular: 100% (1815/1815 files; the rest is on modules/legacy-app-files.txt and may only shrink).
+App code already modular: 100% (1818/1818 files; the rest is on modules/legacy-app-files.txt and may only shrink).
 
 | id | name | core (cannot disable) | tier | always-on | area manifest | owned app files | packaged |
 |---|---|---|---|---|---|---|---|
-| `security-core` | אבטחה | yes | internal | trusted-device, nightly-scan, step-up-2fa | yes | 64 | not yet |
-| `iam` | הרשאות | yes | shareable | roles, owner-super-access | yes | 214 | yes |
+| `security-core` | אבטחה | yes | internal | trusted-device, nightly-scan, step-up-2fa | yes | 65 | not yet |
+| `iam` | הרשאות | yes | shareable | roles, owner-super-access | yes | 216 | yes |
 | `audit-log` | יומן ביקורת | yes | internal | append-only-audit | yes | 1 | not yet |
 | `incident-response` | תגובה לאירועים | yes | internal | incident-playbook | yes | 6 | not yet |
 | `alerts` | התראות אבטחה | yes | internal | security-alerts | yes | 1 | not yet |

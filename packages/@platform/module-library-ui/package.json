@@ -1,6 +1,6 @@
 {
   "name": "@platform/module-library-ui",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "description": "Ops hub: product sidebar + overview/costs/security/legal/licenses, module library (icon/list) from the real registry, per-product toggles via IAM, store pages, share/sell packaging.",
   "main": "src/index.ts",
