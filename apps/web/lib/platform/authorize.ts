@@ -2,6 +2,10 @@ import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { ALL_PRODUCTS, decide, isModuleEnabled, moduleForPath, permittedProducts, isFounder, type Actor, type Decision, type Grant, type ModuleState } from '@platform/iam';
 import { CATALOG, DEFAULT_PRODUCT, MODULES, PRODUCT_COOKIE } from './catalog';
+import { centralConfigured, createCentralModuleSource, syncModulesToCentral } from '@platform/module-library-ui/server';
+import { productLicenseFromEnv } from '@platform/licensing/product';
+import { createCentralAdminClient } from '@/lib/supabase/admin';
+import pkg from '../../package.json';
 
 type Row = { id: string; user_id: string; role_id: string; product_id: string; expires_at: string | null; revoked_at: string | null };
 
@@ -16,9 +20,52 @@ export async function loadActor(db: SupabaseClient, userId: string): Promise<Act
   return { userId, kind: 'human', grants };
 }
 
-export async function loadModuleStates(db: SupabaseClient, product: string): Promise<ModuleState[]> {
+/** NuraWell's own (read-only) module table: the source before central, and the one-time sync input. */
+async function loadLocalModuleStates(db: SupabaseClient, product: string): Promise<ModuleState[]> {
   const { data } = await db.from('iam_product_modules').select('product_id, module_id, enabled').eq('product_id', product);
   return ((data ?? []) as { product_id: string; module_id: string; enabled: boolean }[]).map((r) => ({ productId: r.product_id, moduleId: r.module_id, enabled: r.enabled }));
+}
+
+// Central = single source of truth when CENTRAL_SUPABASE_URL + CENTRAL_SUPABASE_SECRET_KEY are set.
+// NuraWell's license is enforced only when NURAWELL_LICENSE_TOKEN (+ _PUBLIC_KEY, _STATUS_URL, NURAWELL_HOST) are set.
+// Either way core modules stay on and end users are never locked out (module gates only cover admin/ops paths).
+const CORE_IDS = MODULES.filter((m) => m.core).map((m) => m.id);
+const sources = new Map<string, ReturnType<typeof createCentralModuleSource>>();
+function nurawellLicense() {
+  const e = process.env;
+  if (!e.NURAWELL_LICENSE_TOKEN) return null;
+  return productLicenseFromEnv({ productId: DEFAULT_PRODUCT, moduleId: DEFAULT_PRODUCT, version: pkg.version ?? '0.0.0' }, {
+    PRODUCT_LICENSE_TOKEN: e.NURAWELL_LICENSE_TOKEN, PRODUCT_LICENSE_PUBLIC_KEY: e.NURAWELL_LICENSE_PUBLIC_KEY,
+    PRODUCT_LICENSE_STATUS_URL: e.NURAWELL_LICENSE_STATUS_URL, PRODUCT_HOST: e.NURAWELL_HOST,
+  });
+}
+export function centralModuleSource(product: string) {
+  if (!centralConfigured()) return null;
+  let s = sources.get(product);
+  if (!s) {
+    s = createCentralModuleSource({ db: createCentralAdminClient(), productId: product, coreIds: CORE_IDS, license: product === DEFAULT_PRODUCT ? nurawellLicense() : null });
+    sources.set(product, s);
+  }
+  return s;
+}
+
+const synced = new Set<string>();
+/** Safe one-time copy of iam_product_modules into central (central keeps a marker; later calls are no-ops). Never throws. */
+export async function ensureCentralSync(db: SupabaseClient, product: string, actorId: string | null = null): Promise<void> {
+  if (!centralConfigured() || synced.has(product)) return;
+  try {
+    const rows = (await loadLocalModuleStates(db, product)).map((r) => ({ moduleId: r.moduleId, enabled: r.enabled }));
+    if (rows.length === 0) return;
+    await syncModulesToCentral(createCentralAdminClient(), { actorId, productId: product, rows });
+    synced.add(product);
+  } catch { /* retried on the next call; reads keep working */ }
+}
+
+export async function loadModuleStates(db: SupabaseClient, product: string, opts: { fresh?: boolean } = {}): Promise<ModuleState[]> {
+  const src = centralModuleSource(product);
+  if (!src) return loadLocalModuleStates(db, product);
+  await ensureCentralSync(db, product);
+  return (await src.get(opts)).states;
 }
 
 /** Selected product: cookie / header, validated against the catalog. Unknown values fall back to deny-path ('' → unknown_product). */
