@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest';
 
 vi.mock('@/lib/ai/client', () => ({
   AI_MODELS: { background_groq: 'openai/gpt-oss-20b', background_groq_strong: 'openai/gpt-oss-120b', empathy: 'openai/gpt-5-mini' },
@@ -71,6 +71,10 @@ describe('security', () => {
     expect(verifyTelegramSecret('good', 'good')).toBe(true);
   });
   it('ignores chats not on the allowlist', async () => {
+    // Owner alerts are held on Shabbat / quiet hours, so pin a weekday daytime clock (Date only) to keep this deterministic.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-13T09:00:00Z'));
+    onTestFinished(() => { vi.useRealTimers(); });
     const { db } = fakeDb();
     const f = tgFetch();
     const runTurn = vi.fn();

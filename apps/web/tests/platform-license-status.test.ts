@@ -7,7 +7,8 @@ import { createVerifierHandler, memoryStatusStore, statusStorage, signStatusUpda
 import { licenseAction, type Deps, type LicenseStore } from '../../../packages/@platform/module-library-ui/src/server/actions';
 
 const K = generateSigningKeyPair();
-const T0 = new Date('2026-10-01T00:00:00Z').getTime();
+// Relative to the real clock: the online verifier checks expiry against Date.now(), so a fixed date turns this test into a time bomb.
+const T0 = Math.floor(Date.now() / 60_000) * 60_000 - 86_400_000;
 const min = (n: number) => n * 60_000;
 const { token, license } = issueLicense(K.privatePem, { moduleId: 'm', versionRange: '^1.0.0', licensee: { id: 'c1', name: 'c1' }, domains: ['shop.example.com'], mode: 'bundle' }, new Date(T0));
 const doc = (version: number, entries: RevocationEntry[]) => signRevocationList(K.privatePem, { version, issuedAt: new Date(T0).toISOString(), entries });
