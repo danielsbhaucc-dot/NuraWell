@@ -59,15 +59,29 @@ const ingestOne = async (admin: SupabaseClient, entry: ManifestEntry) => {
   return processEntry(admin, { ...entry, content_b64: null }, bytes);
 };
 
-export const syncRepoManifest = async (admin: SupabaseClient) => {
-  const out = { new: 0, changed: 0, unchanged: 0, error: 0, cost: 0, absent: 0 };
+type SyncCounts = { new: number; changed: number; unchanged: number; error: number; cost: number; absent: number };
+
+const knownHashes = async (admin: SupabaseClient) => {
   const { data: known } = await admin.from('media_provenance_assets').select('asset_key, sha256').in('origin', REPO_ORIGINS);
-  const have = new Map(((known ?? []) as Array<{ asset_key: string; sha256: string | null }>).map((row) => [row.asset_key, row.sha256]));
-  const todo = entries.filter((entry) => needsSync(have, entry));
+  const rows = (known ?? []) as Array<{ asset_key: string; sha256: string | null }>;
+  return new Map(rows.map((row) => [row.asset_key, row.sha256]));
+};
+
+const ingestInBatches = async (admin: SupabaseClient, todo: ManifestEntry[], out: SyncCounts) => {
   for (let start = 0; start < todo.length; start += 3) {
     const results = await Promise.all(todo.slice(start, start + 3).map((entry) => ingestOne(admin, entry)));
-    for (const result of results) { out[result.outcome] += 1; out.cost += result.cost ?? 0; }
+    for (const result of results) {
+      out[result.outcome] += 1;
+      out.cost += result.cost ?? 0;
+    }
   }
+};
+
+export const syncRepoManifest = async (admin: SupabaseClient) => {
+  const out: SyncCounts = { new: 0, changed: 0, unchanged: 0, error: 0, cost: 0, absent: 0 };
+  const have = await knownHashes(admin);
+  const todo = entries.filter((entry) => needsSync(have, entry));
+  await ingestInBatches(admin, todo, out);
   out.unchanged = entries.length - todo.length;
   out.absent = await markAbsent(admin, REPO_ORIGINS, entries.map((entry) => entry.asset_key));
   if (!out.error) await admin.from('media_scan_state').upsert({ key: 'repo_manifest', value: REPO_MANIFEST_HASH, updated_at: new Date().toISOString() });
