@@ -27,6 +27,7 @@ export function PasswordErrorDialog({
       open={!!message}
       alert
       tone="warning"
+      surface="solid-dark"
       title="צריך לבחור סיסמה אחרת"
       message={message ?? undefined}
       confirmLabel="הבנתי"

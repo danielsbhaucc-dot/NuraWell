@@ -16,6 +16,8 @@ describe('password error popup (no native dialogs)', () => {
     expect(dialog).toMatch(/\balert\b/);
     expect(dialog).toContain('confirmLabel="הבנתי"');
     expect(dialog).toContain('fieldRef?.current?.focus()');
+    expect(dialog).toContain('surface="solid-dark"');
+    expect(confirm).toContain("surface = 'glass'");
   });
 
   it('alert dialogs expose role=alertdialog', () => {

@@ -19,6 +19,8 @@ interface ConfirmDialogProps {
   alert?: boolean;
   /** מצב קלט (מחליף window.prompt) — שדה טקסט מעוצב. */
   input?: { value: string; onChange: (v: string) => void; placeholder?: string; label?: string };
+  /** 'solid-dark': opaque high-contrast card for dark pages (WCAG AA). Default 'glass'. */
+  surface?: 'glass' | 'solid-dark';
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -61,12 +63,14 @@ export function ConfirmDialog({
   busy = false,
   alert = false,
   input,
+  surface = 'glass',
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
   const resolvedTone: ConfirmDialogTone = tone ?? (danger ? 'danger' : 'success');
   const style = TONE_STYLES[resolvedTone];
   const Icon = style.Icon;
+  const solid = surface === 'solid-dark';
   const resolvedConfirmLabel = confirmLabel ?? (alert ? 'הבנתי' : 'אישור');
 
   return (
@@ -78,15 +82,19 @@ export function ConfirmDialog({
       aria-describedby={message ? 'confirm-dialog-message' : undefined}
       role={alert ? 'alertdialog' : 'dialog'}
       backdropClassName="absolute inset-0 cursor-default bg-ink-900/30 backdrop-blur-sm"
-      panelClassName="max-w-sm overflow-hidden rounded-3xl border border-gc/40 bg-background-card/20 p-5 shadow-[0_20px_60px_-12px_rgba(15,23,42,0.5)] ring-1 ring-inset ring-gc/30 backdrop-blur-2xl backdrop-saturate-150"
+      panelClassName={solid
+        ? 'max-w-sm overflow-hidden rounded-3xl border border-[#3a4256] bg-[#1e2433] p-5 shadow-[0_20px_60px_-12px_rgba(0,0,0,0.6)]'
+        : 'max-w-sm overflow-hidden rounded-3xl border border-gc/40 bg-background-card/20 p-5 shadow-[0_20px_60px_-12px_rgba(15,23,42,0.5)] ring-1 ring-inset ring-gc/30 backdrop-blur-2xl backdrop-saturate-150'}
     >
-      <div className="pointer-events-none absolute inset-x-4 top-0 h-px bg-linear-to-r from-transparent via-background-card/80 to-transparent" />
+      {!solid && <div className="pointer-events-none absolute inset-x-4 top-0 h-px bg-linear-to-r from-transparent via-background-card/80 to-transparent" />}
 
       <button
         type="button"
         onClick={() => !busy && onCancel()}
         aria-label="סגור"
-        className="absolute inset-e-3 top-3 inline-flex h-7 w-7 items-center justify-center rounded-lg border border-gc/50 bg-background-card/40 text-ink-soft hover:bg-background-card/70"
+        className={solid
+          ? 'absolute inset-e-3 top-3 inline-flex h-7 w-7 items-center justify-center rounded-lg border border-[#3a4256] bg-[#2a3142] text-[#d5dae3] hover:bg-[#343c50]'
+          : 'absolute inset-e-3 top-3 inline-flex h-7 w-7 items-center justify-center rounded-lg border border-gc/50 bg-background-card/40 text-ink-soft hover:bg-background-card/70'}
       >
         <X className="h-4 w-4" />
       </button>
@@ -95,14 +103,14 @@ export function ConfirmDialog({
         <span
           className={[
             'flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border',
-            style.iconWrap,
+            solid ? 'border-[#b45309] bg-[#3b2a12] text-[#fcd34d]' : style.iconWrap,
           ].join(' ')}
         >
           <Icon className="h-5 w-5" />
         </span>
         <div className="min-w-0 flex-1 pt-0.5">
-          <h3 className="text-base font-black text-ink">{title}</h3>
-          {message && <p id="confirm-dialog-message" className="mt-1 text-sm leading-snug text-ink-soft">{message}</p>}
+          <h3 className={`text-base font-black ${solid ? 'text-[#f1f3f7]' : 'text-ink'}`}>{title}</h3>
+          {message && <p id="confirm-dialog-message" className={`mt-1 text-sm leading-snug ${solid ? 'text-[#d5dae3]' : 'text-ink-soft'}`}>{message}</p>}
         </div>
       </div>
 
@@ -136,8 +144,8 @@ export function ConfirmDialog({
           onClick={onConfirm}
           disabled={busy}
           className={[
-            'inline-flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-black text-gc shadow-lg disabled:opacity-60',
-            style.btn,
+            'inline-flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-black shadow-lg disabled:opacity-60',
+            solid ? 'bg-[#f5a524] text-[#1e2433] focus-visible:ring-2 focus-visible:ring-[#fcd34d] focus-visible:ring-offset-2 focus-visible:ring-offset-[#1e2433]' : `text-gc ${style.btn}`,
           ].join(' ')}
         >
           {busy && <Loader2 className="h-4 w-4 animate-spin" />}
