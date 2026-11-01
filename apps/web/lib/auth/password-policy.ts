@@ -35,14 +35,16 @@ export type PasswordCheckResult =
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 /** Returns true (found), false (not found), or null (API unavailable). Delegates to the security-privacy kit (k-anonymity, padding, 2 s timeout). */
+// skipcq: JS-0067, JS-R1005 -- ES module scope (not a global); kept flat for auditability
 export async function isPwnedPassword(
   password: string,
   fetchImpl: typeof fetch = fetch,
 ): Promise<boolean | null> {
-  const r = await checkPwnedPassword(password, { fetchImpl, timeoutMs: HIBP_TIMEOUT_MS, userAgent: 'NuraWell-password-check' });
-  return r.status === 'unavailable' ? null : r.status === 'pwned';
+  const lookup = await checkPwnedPassword(password, { fetchImpl, timeoutMs: HIBP_TIMEOUT_MS, userAgent: 'NuraWell-password-check' });
+  return lookup.status === 'unavailable' ? null : lookup.status === 'pwned';
 }
 
+// skipcq: JS-0067, JS-R1005 -- ES module scope (not a global); kept flat for auditability
 export async function checkPasswordPolicy(
   password: unknown,
   opts: { source: string; email?: string | null; fetchImpl?: typeof fetch } = { source: 'auth' },

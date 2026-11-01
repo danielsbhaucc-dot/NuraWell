@@ -20,6 +20,7 @@ export async function GET(request: Request) {
 }
 
 /** Set a NEW password, proven with one recovery code. Only while rotation is pending. */
+// skipcq: JS-0067, JS-R1005 -- ES module scope (not a global); kept flat for auditability
 export async function POST(request: Request) {
   const g = await requireApiAdmin(request);
   if (!g.ok) return g.response;

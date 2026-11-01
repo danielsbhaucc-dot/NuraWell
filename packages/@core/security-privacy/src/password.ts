@@ -25,9 +25,9 @@ export async function checkPwnedPassword(pw: string, opts: PwnedOptions = {}): P
   const digest = await globalThis.crypto.subtle.digest('SHA-1', new TextEncoder().encode(pw));
   const hash = Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('').toUpperCase();
   const prefix = hash.slice(0, 5), suffix = hash.slice(5);
-  const f = opts.fetchImpl ?? fetch;
+  const doFetch = opts.fetchImpl ?? fetch;
   try {
-    const res = await f(`${opts.endpoint ?? 'https://api.pwnedpasswords.com/range/'}${prefix}`, {
+    const res = await doFetch(`${opts.endpoint ?? 'https://api.pwnedpasswords.com/range/'}${prefix}`, {
       method: 'GET', cache: 'no-store',
       headers: { 'Add-Padding': 'true', 'User-Agent': opts.userAgent ?? 'core-security-privacy-kit' },
       signal: AbortSignal.timeout(opts.timeoutMs ?? 2000),
@@ -35,9 +35,9 @@ export async function checkPwnedPassword(pw: string, opts: PwnedOptions = {}): P
     if (!res.ok) return { status: 'unavailable' };
     const body = await res.text();
     for (const line of body.split('\n')) {
-      const [s, c] = line.trim().split(':');
-      if (s === suffix) {
-        const count = Number.parseInt(c ?? '0', 10);
+      const [rowSuffix, rowCount] = line.trim().split(':');
+      if (rowSuffix === suffix) {
+        const count = Number.parseInt(rowCount ?? '0', 10);
         if (count > 0) return { status: 'pwned', count }; // padding rows have count 0
       }
     }
@@ -68,14 +68,14 @@ export const PASSWORD_MESSAGES_HE = {
 /** Full server-side policy: min length, not equal to email, not in a known breach. */
 // skipcq: JS-0067, JS-R1005 -- ES module scope (not a global); kept flat for auditability
 export async function checkPasswordPolicy(pw: string, opts: PolicyOptions = {}): Promise<PolicyResult> {
-  const min = opts.minLength ?? 12;
-  if (typeof pw !== 'string' || [...pw].length < min) return { ok: false, code: 'too_short', message: PASSWORD_MESSAGES_HE.too_short(min) };
+  const minLen = opts.minLength ?? 12;
+  if (typeof pw !== 'string' || [...pw].length < minLen) return { ok: false, code: 'too_short', message: PASSWORD_MESSAGES_HE.too_short(minLen) };
   const email = opts.email?.trim().toLowerCase();
   if (email && (pw.trim().toLowerCase() === email || pw.trim().toLowerCase() === email.split('@')[0])) return { ok: false, code: 'equals_email', message: PASSWORD_MESSAGES_HE.equals_email };
-  const r = await checkPwnedPassword(pw, opts);
-  const emit = opts.onEvent ?? ((k) => { void sendSecurityEvent(k, k === 'password_pwned_unavailable' ? 'medium' : 'low'); });
-  if (r.status === 'pwned') { emit('password_pwned_rejected'); return { ok: false, code: 'pwned', message: PASSWORD_MESSAGES_HE.pwned }; }
-  if (r.status === 'unavailable') {
+  const lookup = await checkPwnedPassword(pw, opts);
+  const emit = opts.onEvent ?? ((kind) => { sendSecurityEvent(kind, kind === 'password_pwned_unavailable' ? 'medium' : 'low').catch(() => undefined); });
+  if (lookup.status === 'pwned') { emit('password_pwned_rejected'); return { ok: false, code: 'pwned', message: PASSWORD_MESSAGES_HE.pwned }; }
+  if (lookup.status === 'unavailable') {
     emit('password_pwned_unavailable');
     // skipcq: JS-0002 -- security event log line (no password material)
     console.warn('[security-privacy] pwned-password check unavailable');
