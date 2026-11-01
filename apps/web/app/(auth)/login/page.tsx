@@ -40,7 +40,7 @@ function isOpsHostClient(): boolean {
 }
 
 /** S5: asks the server whether the just-used password appears in known breaches. Fails open (false) on any error or after 2.5s. */
-async function isPasswordLeaked(password: string): Promise<boolean> {
+const isPasswordLeaked = async (password: string): Promise<boolean> => {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 2500);
   try {
@@ -51,9 +51,9 @@ async function isPasswordLeaked(password: string): Promise<boolean> {
   } finally {
     clearTimeout(timer);
   }
-}
+};
 
-function LoginFormContent() {
+const LoginFormContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = sanitizeRedirectPath(searchParams?.get('redirect'));
@@ -135,6 +135,13 @@ function LoginFormContent() {
     };
   }, []);
 
+  /** S5: leaked-password check after a successful sign-in (k-anonymity, server side). Never blocks the login. */
+  const warnIfLeaked = async (pw: string): Promise<boolean> => {
+    const leaked = await isPasswordLeaked(pw);
+    if (leaked) toast.warning('הסיסמה שלך הופיעה בדליפות מידע', 'היא עלולה להיות קלה לניחוש. מומלץ להחליף אותה בהקדם ולהוסיף מפתח גישה.');
+    return leaked;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.includes('@')) {
@@ -153,9 +160,7 @@ function LoginFormContent() {
         return;
       }
 
-      // S5: leaked-password check after a successful sign-in (k-anonymity, server side). Never blocks the login.
-      const leaked = await isPasswordLeaked(password);
-      if (leaked) toast.warning('הסיסמה שלך הופיעה בדליפות מידע', 'היא עלולה להיות קלה לניחוש. מומלץ להחליף אותה בהקדם ולהוסיף מפתח גישה.');
+      const leaked = await warnIfLeaked(password);
 
       if (isOpsHost) {
         // Full navigation so the proxy re-checks admin + rewrites to the panel on this host.
@@ -540,7 +545,7 @@ function LoginFormContent() {
       </main>
     </>
   );
-}
+};
 
 export default function LoginPage() {
   return (

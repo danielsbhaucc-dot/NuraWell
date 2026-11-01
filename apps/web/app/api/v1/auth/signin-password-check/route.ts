@@ -18,14 +18,14 @@ const NO_STORE = { 'Cache-Control': 'no-store, max-age=0', Pragma: 'no-cache' };
 const reply = (body: Record<string, unknown>, status = 200): Response => NextResponse.json(body, { status, headers: NO_STORE });
 
 /** Reads `password` from the JSON body only; returns null when missing, not a string, or outside 1..128 chars. */
-async function readPassword(req: Request): Promise<string | null> {
+const readPassword = async (req: Request): Promise<string | null> => {
   if (new URL(req.url).searchParams.has('password')) return null;
   const body = (await req.json().catch(() => null)) as { password?: unknown } | null;
   const password = body?.password;
   return typeof password === 'string' && password.length >= 1 && password.length <= 128 ? password : null;
-}
+};
 
-export async function POST(req: Request): Promise<Response> {
+export const POST = async (req: Request): Promise<Response> => {
   const { data } = await (await createClient()).auth.getUser();
   const userId = data.user?.id;
   if (!userId) return reply({ ok: false, error: 'unauthorized' }, 401);
@@ -36,9 +36,8 @@ export async function POST(req: Request): Promise<Response> {
   const pwned = await isPwnedPassword(password);
   if (pwned) reportEvent('password_pwned_signin', { source: 'login' }, 'warning').catch(() => undefined);
   return reply({ ok: true, pwned });
-}
+};
 
 /** Only POST is supported; the password must never travel in a URL. */
-export function GET(): Response {
-  return NextResponse.json({ ok: false, error: 'method_not_allowed' }, { status: 405, headers: { ...NO_STORE, Allow: 'POST' } });
-}
+export const GET = (): Response =>
+  NextResponse.json({ ok: false, error: 'method_not_allowed' }, { status: 405, headers: { ...NO_STORE, Allow: 'POST' } });

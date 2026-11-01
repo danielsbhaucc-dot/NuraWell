@@ -55,7 +55,7 @@ describe('S5 sign-in leaked-password check', () => {
   it('GET is 405', () => { expect(GET().status).toBe(405); });
   it('login page calls the check only after a successful sign-in and never blocks it', () => {
     const src = readFileSync(join(__dirname, '..', 'app/(auth)/login/page.tsx'), 'utf8');
-    const callAt = src.indexOf('await isPasswordLeaked('), errAt = src.indexOf('if (authError)');
+    const callAt = src.indexOf('await warnIfLeaked('), errAt = src.indexOf('if (authError)');
     expect(callAt).toBeGreaterThan(errAt);
     expect(src).toMatch(/AbortController/);
   });
