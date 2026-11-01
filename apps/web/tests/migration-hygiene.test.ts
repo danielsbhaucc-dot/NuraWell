@@ -52,35 +52,30 @@ function migrationIssues(sql: string): string[] {
   return issues;
 }
 
+function inScope(filename: string): boolean {
+  const n = /^(\d+)_.*\.sql$/.exec(filename);
+  return n != null && Number(n[1]) >= HYGIENE_FROM;
+}
+
 /**
  * Default privileges used to grant ALL on a new public table to authenticated, including
  * TRUNCATE, which row level security does not cover (000180 / 000228). A new table must
  * revoke that role in the same file before any narrower grant.
  */
-function authenticatedRevokeIssues(sql: string): string[] {
+const authenticatedRevokeIssues = (sql: string): string[] => {
   const src = stripSqlComments(sql);
   const issues: string[] = [];
   const tableRe = /create\s+table\s+(?:if\s+not\s+exists\s+)?public\.([a-zA-Z_][a-zA-Z0-9_]*)/gi;
-  let m: RegExpExecArray | null;
-  while ((m = tableRe.exec(src))) {
-    const name = m[1];
+  let found: RegExpExecArray | null;
+  while ((found = tableRe.exec(src))) {
+    const name = found[1];
     const revoke = new RegExp(`revoke\\s+all\\s+on\\s+(?:table\\s+)?(?:public\\.)?${name}\\s+from\\b[^;]*\\bauthenticated\\b`, 'i');
     if (!revoke.test(src)) {
       issues.push(`public.${name}: create table must revoke all on public.${name} from authenticated (TRUNCATE bypasses row level security)`);
     }
   }
   return issues;
-}
-
-function inScope(filename: string): boolean {
-  const n = /^(\d+)_.*\.sql$/.exec(filename);
-  return n != null && Number(n[1]) >= HYGIENE_FROM;
-}
-
-function migrationNumber(filename: string): number | null {
-  const n = /^(\d+)_.*\.sql$/.exec(filename);
-  return n ? Number(n[1]) : null;
-}
+};
 
 describe('migration hygiene parser', () => {
   it('accepts set search_path before the body', () => {
@@ -220,8 +215,8 @@ describe('migrations from 000227 onward', () => {
     for (const f of files) {
       const sql = readFileSync(join(DIR, f), 'utf8');
       expect(migrationIssues(sql), f).toEqual([]);
-      const n = migrationNumber(f);
-      if (n != null && n >= 228) expect(authenticatedRevokeIssues(sql), f).toEqual([]);
+      const prefix = /^(\d+)_/.exec(f);
+      if (prefix && Number(prefix[1]) >= 228) expect(authenticatedRevokeIssues(sql), f).toEqual([]);
     }
   });
 
