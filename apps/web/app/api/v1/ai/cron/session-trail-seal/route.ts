@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { authorizeCronRequest } from '@/lib/api/authorize-cron';
 import { backfillFieldV2 } from '@/lib/security/field-backfill';
 import { SWEEP_TABLES } from '@/lib/security/field-registry';
+import { sendUsageFeed } from '@/lib/central/usage-feed';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -20,6 +21,8 @@ export async function POST(request: Request) {
     const result = await backfillFieldV2(40_000, Object.keys(SWEEP_TABLES));
     console.log('[cron/session-trail-seal]', JSON.stringify(result));
     const failed = Object.values(result).some((r) => r.error || r.verifyFail);
+    // Once-daily aggregates to the parent-company console. Isolated: never changes this job's status.
+    console.log('[cron/session-trail-seal] usage-feed', await sendUsageFeed());
     return NextResponse.json({ ok: !failed, result }, { status: failed ? 500 : 200 });
   } catch (e) {
     console.error('[cron/session-trail-seal] failed', e instanceof Error ? e.message : 'error');
