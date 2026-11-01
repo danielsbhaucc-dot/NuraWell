@@ -6,7 +6,7 @@ import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit'
 import { passwordRotationRequired, rotatePasswordWithCode } from '@/lib/ops/password-rotation';
 import { alertOwnerSecurity } from '@/lib/ops/device-notify';
 import { audit } from '@/lib/ops/device-trust';
-import { checkPasswordPolicy } from '@/lib/auth/password-policy';
+import { checkPasswordPolicy } from '@/lib/module-api/auth-signup/lib-auth-password-policy';
 
 export const dynamic = 'force-dynamic';
 const Body = z.object({ code: z.string().max(20), password: z.string().max(200) });

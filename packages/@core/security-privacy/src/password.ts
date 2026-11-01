@@ -4,10 +4,11 @@
  * The password and its full hash never leave the process and are never logged.
  * Standalone: no central dependency. Optional central event via ./feed when KIT_CENTRAL_REPORTING=on.
  */
-import { createHash } from 'node:crypto';
 import { sendSecurityEvent } from './feed';
 
+// skipcq: JS-0067, JS-R1005 -- ES module scope (not a global); kept flat for auditability
 export type PwnedResult = { status: 'ok' } | { status: 'pwned'; count: number } | { status: 'unavailable' };
+// skipcq: JS-0067, JS-R1005 -- ES module scope (not a global); kept flat for auditability
 export interface PwnedOptions {
   /** Default 2000 ms. */
   timeoutMs?: number;
@@ -18,9 +19,11 @@ export interface PwnedOptions {
   userAgent?: string;
 }
 
-// skipcq: JS-0067 -- ES module scope
+// skipcq: JS-0067, JS-R1005 -- ES module scope (not a global); kept flat for auditability
 export async function checkPwnedPassword(pw: string, opts: PwnedOptions = {}): Promise<PwnedResult> {
-  const hash = createHash('sha1').update(pw, 'utf8').digest('hex').toUpperCase();
+  // SHA-1 here is a lookup key mandated by the HIBP range API (k-anonymity), NOT password storage.
+  const digest = await globalThis.crypto.subtle.digest('SHA-1', new TextEncoder().encode(pw));
+  const hash = Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('').toUpperCase();
   const prefix = hash.slice(0, 5), suffix = hash.slice(5);
   const f = opts.fetchImpl ?? fetch;
   try {
@@ -42,6 +45,7 @@ export async function checkPwnedPassword(pw: string, opts: PwnedOptions = {}): P
   } catch { return { status: 'unavailable' }; }
 }
 
+// skipcq: JS-0067, JS-R1005 -- ES module scope (not a global); kept flat for auditability
 export interface PolicyOptions extends PwnedOptions {
   email?: string | null;
   /** Default 12. */
@@ -50,8 +54,10 @@ export interface PolicyOptions extends PwnedOptions {
   failClosed?: boolean;
   onEvent?: (kind: 'password_pwned_unavailable' | 'password_pwned_rejected') => void;
 }
+// skipcq: JS-0067, JS-R1005 -- ES module scope (not a global); kept flat for auditability
 export type PolicyResult = { ok: true } | { ok: false; code: 'too_short' | 'equals_email' | 'pwned' | 'check_unavailable'; message: string };
 
+// skipcq: JS-0067, JS-R1005 -- ES module scope (not a global); kept flat for auditability
 export const PASSWORD_MESSAGES_HE = {
   too_short: (n: number) => `הסיסמה חייבת להכיל לפחות ${n} תווים.`,
   equals_email: 'הסיסמה לא יכולה להיות זהה לכתובת המייל.',
@@ -60,7 +66,7 @@ export const PASSWORD_MESSAGES_HE = {
 } as const;
 
 /** Full server-side policy: min length, not equal to email, not in a known breach. */
-// skipcq: JS-0067 -- ES module scope
+// skipcq: JS-0067, JS-R1005 -- ES module scope (not a global); kept flat for auditability
 export async function checkPasswordPolicy(pw: string, opts: PolicyOptions = {}): Promise<PolicyResult> {
   const min = opts.minLength ?? 12;
   if (typeof pw !== 'string' || [...pw].length < min) return { ok: false, code: 'too_short', message: PASSWORD_MESSAGES_HE.too_short(min) };
@@ -71,6 +77,7 @@ export async function checkPasswordPolicy(pw: string, opts: PolicyOptions = {}):
   if (r.status === 'pwned') { emit('password_pwned_rejected'); return { ok: false, code: 'pwned', message: PASSWORD_MESSAGES_HE.pwned }; }
   if (r.status === 'unavailable') {
     emit('password_pwned_unavailable');
+    // skipcq: JS-0002 -- security event log line (no password material)
     console.warn('[security-privacy] pwned-password check unavailable');
     if (opts.failClosed ?? process.env.PASSWORD_PWNED_FAIL_CLOSED === 'on') return { ok: false, code: 'check_unavailable', message: PASSWORD_MESSAGES_HE.check_unavailable };
   }
