@@ -1,8 +1,9 @@
 'use client';
+import { PasswordErrorDialog } from '@/components/auth/PasswordErrorDialog';
 import { AuthBackdrop } from './AuthBackdrop';
 
 import { PageBackButton } from '@/components/shared/PageBackButton';
-import { useMemo, useState, useTransition } from 'react';
+import { useMemo, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -59,6 +60,10 @@ export function OnboardingFormClient() {
   const [mealTimes, setMealTimes] = useState<string[]>([]);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [pwError, setPwErrorState] = useState<string | null>(null);
+  const [pwInvalid, setPwInvalid] = useState(false);
+  const setPwError = (m: string | null) => { setPwErrorState(m); if (m) setPwInvalid(true); };
+  const passwordRef = useRef<HTMLInputElement>(null);
   const [birthDate, setBirthDate] = useState('');
   const [healthConsent, setHealthConsent] = useState(false);
   const [consentEvidence, setConsentEvidence] = useState<ConsentCollected | null>(null);
@@ -221,8 +226,12 @@ export function OnboardingFormClient() {
       toast.warning('אישור משפטי', 'יש לאשר את תנאי השימוש ומדיניות הפרטיות');
       return;
     }
-    if (!email.trim() || !password || password.length < 12) {
-      toast.warning('חשבון', `${gc.fill} אימייל וסיסמה (לפחות 12 תווים, אותיות וספרה)`);
+    if (!email.trim()) {
+      toast.warning('חשבון', `${gc.fill} אימייל`);
+      return;
+    }
+    if (!password || password.length < 12) {
+      setPwError('הסיסמה חייבת להכיל לפחות 12 תווים, אותיות וספרה.');
       return;
     }
     const metricsErr = validateBodyMetrics({ currentWeight, targetWeight, height });
@@ -281,6 +290,8 @@ export function OnboardingFormClient() {
           router.push(result.redirectTo);
           router.refresh();
         }, 900);
+      } else if (result.fieldErrors?.password?.length) {
+        setPwError(result.fieldErrors.password[0] ?? result.error);
       } else {
         toast.error('לא הצלחנו', result.error);
       }
@@ -290,6 +301,7 @@ export function OnboardingFormClient() {
   return (
     <>
       <ToastContainer toasts={toast.toasts} onDismiss={toast.dismiss} />
+      <PasswordErrorDialog message={pwError} fieldRef={passwordRef} onClose={() => setPwError(null)} />
       <main id="main-content" className="onboarding-shell-dark relative px-4 pb-28 pt-[max(1.5rem,env(safe-area-inset-top))]">
         <AuthBackdrop />
         <div className="onboarding-page-inner max-w-lg mx-auto w-full">
@@ -699,13 +711,13 @@ export function OnboardingFormClient() {
                       </span>
                       <input
                         type="password"
+                        ref={passwordRef}
                         autoComplete="new-password"
-                        minLength={12}
                         value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="onboarding-input-dark w-full"
+                        onChange={(e) => { setPassword(e.target.value); setPwInvalid(false); }}
+                        aria-invalid={pwInvalid || undefined}
+                        className={`onboarding-input-dark w-full${pwInvalid ? ' ring-2 ring-rose-400' : ''}`}
                         dir="ltr"
-                        required
                       />
                     </label>
                     <div className="mb-4" data-testid="onboarding-retention-choice">

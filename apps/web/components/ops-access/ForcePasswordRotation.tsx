@@ -2,7 +2,8 @@
 
 import { Button } from '@/components/ui';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import { PasswordErrorDialog } from '@/components/auth/PasswordErrorDialog';
 import { Eye, EyeOff, KeyRound, ShieldAlert } from 'lucide-react';
 
 const MIN = 12;
@@ -17,6 +18,8 @@ export function ForcePasswordRotation() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const [pwError, setPwError] = useState<string | null>(null);
+  const pwRef = useRef<HTMLInputElement>(null);
   const strong = pw.length >= MIN && classes(pw) >= 3;
   const can = strong && pw === pw2 && code.replace(/[^A-Za-z0-9]/g, '').length === 10 && !busy;
 
@@ -27,7 +30,12 @@ export function ForcePasswordRotation() {
     try {
       const r = await fetch('/api/v1/ops/security/rotate-password', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ code, password: pw }) });
       const j = await r.json().catch(() => ({}));
-      if (!r.ok) { setErr(j.error ?? 'משהו השתבש. נסו שוב.'); setBusy(false); return; }
+      if (!r.ok) {
+        if (j.field === 'password' && j.error) setPwError(j.error);
+        else setErr(j.error ?? 'משהו השתבש. נסו שוב.');
+        setBusy(false);
+        return;
+      }
       setDone(true);
       setTimeout(() => window.location.reload(), 1200);
     } catch {
@@ -37,7 +45,7 @@ export function ForcePasswordRotation() {
 
   return (
     <main dir="rtl" className="flex min-h-dvh items-center justify-center bg-linear-to-b from-primary-900 to-primary-950 p-4">
-      <form onSubmit={submit} className="w-full max-w-md space-y-4 rounded-3xl bg-primary-50/5 p-6 shadow-2xl ring-1 ring-primary-100/15 backdrop-blur-2xl">
+      <form noValidate onSubmit={submit} className="w-full max-w-md space-y-4 rounded-3xl bg-primary-50/5 p-6 shadow-2xl ring-1 ring-primary-100/15 backdrop-blur-2xl">
         <div className="flex items-center gap-3">
           <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-400/15 text-amber-200 ring-1 ring-amber-300/30"><ShieldAlert /></span>
           <div>
@@ -51,7 +59,7 @@ export function ForcePasswordRotation() {
         </label>
         <label className="block text-sm font-semibold text-primary-50">סיסמה חדשה
           <div className="relative mt-1">
-            <input dir="ltr" type={show ? 'text' : 'password'} autoComplete="new-password" value={pw} onChange={(e) => setPw(e.target.value)}
+            <input ref={pwRef} aria-invalid={!!pwError || undefined} dir="ltr" type={show ? 'text' : 'password'} autoComplete="new-password" value={pw} onChange={(e) => setPw(e.target.value)}
               className="block min-h-12 w-full rounded-2xl border border-primary-100/20 bg-primary-950/40 px-4 text-primary-50 outline-hidden backdrop-blur-md transition placeholder:text-primary-100/40 focus:border-primary-300/50 focus:ring-2 focus:ring-primary-400/40 pe-12" />
             <button type="button" onClick={() => setShow((s) => !s)} aria-label={show ? 'הסתר סיסמה' : 'הצג סיסמה'} className="absolute inset-y-0 end-0 flex w-12 items-center justify-center text-primary-100/70 hover:text-primary-50">
               {show ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -70,6 +78,7 @@ export function ForcePasswordRotation() {
           {!busy && <KeyRound size={18} />} שמירת סיסמה חדשה
         </Button>
       </form>
+      <PasswordErrorDialog message={pwError} fieldRef={pwRef} onClose={() => setPwError(null)} />
     </main>
   );
 }

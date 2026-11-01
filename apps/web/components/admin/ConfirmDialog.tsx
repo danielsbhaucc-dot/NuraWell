@@ -75,6 +75,8 @@ export function ConfirmDialog({
       onClose={() => !busy && onCancel()}
       zIndex={320}
       aria-label={title}
+      aria-describedby={message ? 'confirm-dialog-message' : undefined}
+      role={alert ? 'alertdialog' : 'dialog'}
       backdropClassName="absolute inset-0 cursor-default bg-ink-900/30 backdrop-blur-sm"
       panelClassName="max-w-sm overflow-hidden rounded-3xl border border-gc/40 bg-background-card/20 p-5 shadow-[0_20px_60px_-12px_rgba(15,23,42,0.5)] ring-1 ring-inset ring-gc/30 backdrop-blur-2xl backdrop-saturate-150"
     >
@@ -100,7 +102,7 @@ export function ConfirmDialog({
         </span>
         <div className="min-w-0 flex-1 pt-0.5">
           <h3 className="text-base font-black text-ink">{title}</h3>
-          {message && <p className="mt-1 text-sm leading-snug text-ink-soft">{message}</p>}
+          {message && <p id="confirm-dialog-message" className="mt-1 text-sm leading-snug text-ink-soft">{message}</p>}
         </div>
       </div>
 

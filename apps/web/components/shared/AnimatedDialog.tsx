@@ -31,6 +31,8 @@ export type AnimatedDialogProps = {
   'aria-labelledby'?: string;
   'aria-describedby'?: string;
   'aria-label'?: string;
+  /** 'alertdialog' for error/alert popups (screen readers announce immediately). */
+  role?: 'dialog' | 'alertdialog';
   /** לחיצה על הרקע סוגרת (ברירת מחדל: כן) */
   dismissOnBackdrop?: boolean;
   /** נקרא אחרי שאנימציית הסגירה מסתיימת */
@@ -58,6 +60,7 @@ export function AnimatedDialog({
   'aria-labelledby': ariaLabelledBy,
   'aria-describedby': ariaDescribedBy,
   'aria-label': ariaLabel,
+  role = 'dialog',
   dismissOnBackdrop = true,
   onExitComplete,
 }: AnimatedDialogProps) {
@@ -176,7 +179,7 @@ export function AnimatedDialog({
           <motion.div
             ref={setPanelRef}
             tabIndex={-1}
-            role="dialog"
+            role={role}
             aria-modal="true"
             aria-labelledby={ariaLabelledBy}
             aria-describedby={ariaDescribedBy}

@@ -31,7 +31,7 @@ export async function POST(request: Request) {
   if (!rl.ok) return rateLimitResponse(rl);
   // Leaked-password check BEFORE a recovery code is burned (kit HIBP k-anonymity).
   const leak = await checkPasswordPolicy(p.data.password, { source: 'ops-rotate', email: g.user.email });
-  if (!leak.ok) return json({ error: leak.error }, 400);
+  if (!leak.ok) return json({ error: leak.error, field: 'password' }, 400);
   const db = createAdminClient();
   if (!(await passwordRotationRequired(db, uid))) return json({ error: 'אין החלפת סיסמה ממתינה.' }, 409);
   const out = await rotatePasswordWithCode(db, uid, p.data.code, p.data.password, {
