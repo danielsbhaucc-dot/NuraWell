@@ -139,6 +139,17 @@ function LoginFormContent() {
         return;
       }
 
+      // S5: leaked-password check after a successful sign-in (k-anonymity, server side). Never blocks the login.
+      let leaked = false;
+      try {
+        const ctl = new AbortController();
+        const t = setTimeout(() => ctl.abort(), 2500);
+        const r = await fetch('/api/v1/auth/signin-password-check', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password }), signal: ctl.signal });
+        clearTimeout(t);
+        leaked = r.ok && ((await r.json()) as { pwned?: boolean | null }).pwned === true;
+      } catch {}
+      if (leaked) toast.warning('הסיסמה שלך הופיעה בדליפות מידע', 'היא עלולה להיות קלה לניחוש. מומלץ להחליף אותה בהקדם ולהוסיף מפתח גישה.');
+
       if (isOpsHost) {
         // Full navigation so the proxy re-checks admin + rewrites to the panel on this host.
         window.location.assign(redirect === APP_HOME_PATH ? '/' : redirect);
@@ -151,7 +162,7 @@ function LoginFormContent() {
       setTimeout(() => {
         router.push(redirect);
         router.refresh();
-      }, 800);
+      }, leaked ? 4000 : 800);
     } catch (e) {
       console.error('[login] unexpected', e);
       toast.error(
