@@ -5,6 +5,7 @@ import { accessibilityBootstrapScript } from '@/lib/module-api/a11y/lib-a11y-app
 import { DialogHost } from '@/components/shared/dialogs';
 import { CookieNotice } from '@/lib/module-api/legal/components-legal-cookies-CookieNotice';
 import { fontVariables } from './fonts';
+import { moduleGate } from '@/lib/platform/authorize';
 import './globals.css';
 
 /** Same-origin metadata (manifest, OG URLs) — avoids manifest fetch getting HTML from the wrong host on Vercel. */
@@ -100,14 +101,18 @@ export default async function RootLayout({
 }>) {
   const nonce = (await headers()).get('x-nonce') ?? undefined;
   const siteOrigin = metadataBaseUrl().origin;
+  // Console toggle drives the toolbar. moduleOn never throws and fails open on central outage.
+  const a11yOn = await moduleGate.moduleOn('a11y').catch(() => true);
   return (
     <html lang="he" dir="rtl" translate="no" className={`notranslate ${fontVariables}`} suppressHydrationWarning>
       <head>
         <meta name="google" content="notranslate" />
-        <script
-          nonce={nonce}
-          dangerouslySetInnerHTML={{ __html: accessibilityBootstrapScript() }}
-        />
+        {a11yOn ? (
+          <script
+            nonce={nonce}
+            dangerouslySetInnerHTML={{ __html: accessibilityBootstrapScript() }}
+          />
+        ) : null}
         <script
           nonce={nonce}
           type="application/ld+json"
@@ -130,7 +135,7 @@ export default async function RootLayout({
         >
           דלג לתוכן הראשי
         </a>
-        <AccessibilityToolbarClient>{children}</AccessibilityToolbarClient>
+        <AccessibilityToolbarClient enabled={a11yOn}>{children}</AccessibilityToolbarClient>
         <DialogHost />
         <CookieNotice />
       </body>

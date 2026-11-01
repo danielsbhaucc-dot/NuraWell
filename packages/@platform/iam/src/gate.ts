@@ -1,6 +1,7 @@
 // One server-side gate for every user surface (API, cron, webhook/workflow, page), WordPress-plugin style.
 // Rules (security + "users never locked out"):
-//  * Core and essential modules are never blocked for users, whatever central says.
+//  * Core modules are never blocked. Essential modules obey an EXPLICIT admin "off" in a verified snapshot, but fail open:
+//    outage, missing row, or license fail-closed mode never block them (essential = legal/usability floor on outage, not "ignore the toggle").
 //  * A module is blocked only when a VERIFIED central snapshot (live or ≤6h cache) says it — or a module it depends on — is off.
 //    Central down with no verified snapshot ("failsafe") → nothing is blocked here (admin areas keep failing closed in authorize()).
 //  * Unknown modules / no row → not blocked (a newly registered module behaves exactly as before until someone turns it off).
@@ -14,13 +15,19 @@ export function ownerFor(path: string, kind: 'server' | 'page', registry: readon
   return kind === 'page' ? ownerOfPage(registry, path) : ownerOfPath(registry, path);
 }
 
-/** Does this module need a central lookup at all? (Core/essential never do: zero cost on those paths.) */
+/** Does this module need a central lookup at all? (Core never does: zero cost on those paths.) */
 export function isGateable(m: ModuleManifest | undefined): m is ModuleManifest {
-  return Boolean(m && !m.core && !m.essential);
+  return Boolean(m && !m.core);
 }
 
+/** Legal / money / access floor: these surfaces stay up even when their module is switched off
+ *  (accessibility statement is legally required; real payment webhooks must never be dropped; sign-in and account deletion never locked). */
+export const GATE_FLOOR: readonly string[] = ['/accessibility', '/api/webhooks/billing', '/api/v1/billing/webhook', '/auth/', '/api/v1/auth/', '/api/v1/account/delete'];
+export const onFloor = (path: string) => GATE_FLOOR.some((f) => (f.endsWith('/') ? path.startsWith(f) : path === f || path.startsWith(f + '/')));
+
 /** Pure decision (unit-tested). */
-export function decideGate(registry: readonly ModuleManifest[], owner: { module: ModuleManifest; surface: Surface } | undefined, st: GateStates | null): GateDecision {
+export function decideGate(registry: readonly ModuleManifest[], owner: { module: ModuleManifest; surface: Surface } | undefined, st: GateStates | null, path?: string): GateDecision {
+  if (owner && path && onFloor(path)) return { blocked: false, moduleId: owner.module.id, surface: owner.surface };
   if (!owner) return { blocked: false, moduleId: null, surface: null };
   const { module: m, surface } = owner;
   if (surface === 'admin' || !isGateable(m) || !st || (st.source === 'failsafe' && !st.failClosed)) return { blocked: false, moduleId: m.id, surface };
@@ -29,7 +36,8 @@ export function decideGate(registry: readonly ModuleManifest[], owner: { module:
     if (seen.has(id)) return null; seen.add(id);
     const mm = registry.find((x) => x.id === id);
     if (!mm || mm.core) return null;
-    if (st.failClosed ? !st.states.some((s) => s.moduleId === id && s.enabled) : st.states.some((s) => s.moduleId === id && s.enabled === false)) return id;
+    const explicitOff = st.states.some((s) => s.moduleId === id && s.enabled === false);
+    if (mm.essential ? explicitOff : st.failClosed ? !st.states.some((s) => s.moduleId === id && s.enabled) : explicitOff) return id;
     for (const d of mm.dependsOn) { const r = off(d); if (r) return r; }
     return null;
   };
@@ -46,7 +54,7 @@ export function createModuleGate(registry: readonly ModuleManifest[], loadStates
     if (!owner || owner.surface === 'admin' || !isGateable(owner.module)) return pass;
     try {
       const st = await loadStates();
-      return decideGate(registry, owner, st && audience === 'admin' ? { ...st, states: st.adminStates ?? st.states } : st);
+      return decideGate(registry, owner, st && audience === 'admin' ? { ...st, states: st.adminStates ?? st.states } : st, path);
     } catch { return pass; }
   }
   /** For code outside a request (scheduler fan-out, server actions): `if (!(await gate.moduleOn('reminders'))) return;` */

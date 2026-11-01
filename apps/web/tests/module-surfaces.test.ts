@@ -62,10 +62,23 @@ describe('shared module gate', () => {
   it('a dependency off blocks the dependent (reminders needs agent)', () => {
     expect(decideGate(MODULES, owner('/api/v1/ai/cron/almog-reminders'), st(['agent']))).toMatchObject({ blocked: true, offModule: 'agent' });
   });
-  it('core and essential modules are never blocked for users', () => {
+  it('core modules are never blocked; essential ones obey an explicit admin off', () => {
     const all = MODULES.map((m) => m.id);
-    for (const p of ['/api/v1/billing/checkout', '/api/webhooks/billing', '/api/v1/account/delete', '/api/v1/ai/cron/master', '/api/v1/auth/post-verify', '/api/v1/legal/anchor', '/api/v1/profile', '/api/v1/stepup/approve'])
-      expect([p, decideGate(MODULES, owner(p), st(all)).blocked]).toEqual([p, false]);
+    const coreOnly = MODULES.filter((m) => m.core).map((m) => m.id);
+    for (const p of ['/api/v1/account/delete', '/api/v1/ai/cron/master', '/api/v1/profile', '/api/v1/stepup/approve'])
+      expect([p, decideGate(MODULES, owner(p), st(coreOnly)).blocked]).toEqual([p, false]);
+    expect(decideGate(MODULES, ownerOfPage(MODULES, '/accessibility'), st(['a11y'])).blocked).toBe(true);
+    expect(all.length).toBeGreaterThan(0);
+  });
+  it('legal/money/access floor stays up even when its module is off', () => {
+    const off = st(MODULES.filter((m) => !m.core).map((m) => m.id));
+    expect(decideGate(MODULES, ownerOfPage(MODULES, '/accessibility'), off, '/accessibility').blocked).toBe(false);
+    for (const p of ['/api/webhooks/billing', '/api/v1/auth/post-verify', '/api/v1/account/delete']) expect([p, decideGate(MODULES, owner(p), off, p).blocked]).toEqual([p, false]);
+  });
+  it('essential modules fail open: outage, no row, or license fail-closed mode never block them', () => {
+    expect(decideGate(MODULES, ownerOfPage(MODULES, '/accessibility'), st(['a11y'], 'failsafe')).blocked).toBe(false);
+    expect(decideGate(MODULES, ownerOfPage(MODULES, '/accessibility'), { source: 'central', states: [], failClosed: true }).blocked).toBe(false);
+    expect(decideGate(MODULES, ownerOfPage(MODULES, '/accessibility'), { source: 'central', states: [{ moduleId: 'a11y', enabled: true }] }).blocked).toBe(false);
   });
   it('central outage without a verified snapshot never blocks users; a cached snapshot still applies', () => {
     expect(decideGate(MODULES, owner('/api/v1/ai/chat'), st(['agent'], 'failsafe')).blocked).toBe(false);

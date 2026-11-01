@@ -4,11 +4,12 @@ import type { ReactNode } from 'react';
 import { AccessibilityProvider } from './AccessibilityProvider';
 import { AccessibilityWidget } from './AccessibilityWidget';
 
-export function AccessibilityToolbarClient({ children }: { children?: React.ReactNode }) {
+/** `enabled` = central module state for 'a11y' (console toggle). Off → no widget; provider stays so children never break. */
+export function AccessibilityToolbarClient({ children, enabled = true }: { children?: React.ReactNode; enabled?: boolean }) {
   return (
     <AccessibilityProvider>
       {children}
-      <AccessibilityWidget />
+      {enabled ? <AccessibilityWidget /> : null}
     </AccessibilityProvider>
   );
 }
