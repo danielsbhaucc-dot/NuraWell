@@ -22,8 +22,9 @@ export async function POST(request: Request) {
     console.log('[cron/session-trail-seal]', JSON.stringify(result));
     const failed = Object.values(result).some((r) => r.error || r.verifyFail);
     // Once-daily aggregates to the parent-company console. Isolated: never changes this job's status.
-    console.log('[cron/session-trail-seal] usage-feed', await sendUsageFeed());
-    console.log('[cron/session-trail-seal] security-feed', await sendSecurityStatusFeed(!failed));
+    const encOk = !failed;
+    const feeds = { usage: await sendUsageFeed(), security: await sendSecurityStatusFeed(encOk) };
+    console.log('[cron/session-trail-seal] feeds', JSON.stringify(feeds)); // skipcq: JS-0002 -- server-only cron route
     return NextResponse.json({ ok: !failed, result }, { status: failed ? 500 : 200 });
   } catch (e) {
     console.error('[cron/session-trail-seal] failed', e instanceof Error ? e.message : 'error');

@@ -44,9 +44,10 @@ function isUpstashRedisConfigured(): boolean {
 }
 
 /** Upstash window + memory fallback come from the shared platform-core package (@core/security-privacy/rate-limit). */
+// skipcq: JS-0067 -- ES module scope
 function checkUpstashRedis(input: RateLimitInput, now: number): Promise<RateLimitResult | null> {
   return fixedWindowUpstash(
-    { url: process.env.UPSTASH_REDIS_REST_URL!.trim(), token: process.env.UPSTASH_REDIS_REST_TOKEN!.trim() },
+    { url: (process.env.UPSTASH_REDIS_REST_URL ?? '').trim(), token: (process.env.UPSTASH_REDIS_REST_TOKEN ?? '').trim() },
     input,
     now
   );
@@ -231,6 +232,7 @@ export async function consumeMultiRateLimits(
 /**
  * בונה תגובת 429 סטנדרטית עם כותרות `X-RateLimit-*` ו-`Retry-After` (shared: @core/security-privacy/rate-limit).
  */
+// skipcq: JS-0067 -- ES module export
 export function rateLimitResponse(result: RateLimitResult, message?: string): Response {
   return sharedRateLimitResponse(result, message ?? 'יותר מדי בקשות. נסה שוב בעוד מספר שניות.');
 }
