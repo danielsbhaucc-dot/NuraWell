@@ -39,6 +39,20 @@ function isOpsHostClient(): boolean {
   return Boolean(opsHost) && window.location.hostname.toLowerCase() === opsHost;
 }
 
+/** S5: asks the server whether the just-used password appears in known breaches. Fails open (false) on any error or after 2.5s. */
+async function isPasswordLeaked(password: string): Promise<boolean> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 2500);
+  try {
+    const res = await fetch('/api/v1/auth/signin-password-check', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password }), signal: controller.signal });
+    return res.ok && ((await res.json()) as { pwned?: boolean | null }).pwned === true;
+  } catch {
+    return false;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 function LoginFormContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -140,14 +154,7 @@ function LoginFormContent() {
       }
 
       // S5: leaked-password check after a successful sign-in (k-anonymity, server side). Never blocks the login.
-      let leaked = false;
-      try {
-        const ctl = new AbortController();
-        const t = setTimeout(() => ctl.abort(), 2500);
-        const r = await fetch('/api/v1/auth/signin-password-check', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password }), signal: ctl.signal });
-        clearTimeout(t);
-        leaked = r.ok && ((await r.json()) as { pwned?: boolean | null }).pwned === true;
-      } catch {}
+      const leaked = await isPasswordLeaked(password);
       if (leaked) toast.warning('הסיסמה שלך הופיעה בדליפות מידע', 'היא עלולה להיות קלה לניחוש. מומלץ להחליף אותה בהקדם ולהוסיף מפתח גישה.');
 
       if (isOpsHost) {

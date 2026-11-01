@@ -4,10 +4,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const user = { id: null as string | null };
 const pwned = vi.fn<(p: string) => Promise<boolean | null>>();
-const rl = vi.fn(async () => ({ ok: true }));
+const rl = vi.fn(() => Promise.resolve({ ok: true }));
 const report = vi.fn(() => Promise.resolve());
 vi.mock('server-only', () => ({}));
-vi.mock('@/lib/supabase/server', () => ({ createClient: async () => ({ auth: { getUser: async () => ({ data: { user: user.id ? { id: user.id } : null } }) } }) }));
+vi.mock('@/lib/supabase/server', () => ({ createClient: () => Promise.resolve({ auth: { getUser: () => Promise.resolve({ data: { user: user.id ? { id: user.id } : null } }) } }) }));
 vi.mock('@/lib/auth/password-policy', () => ({ isPwnedPassword: (p: string) => pwned(p) }));
 vi.mock('@/lib/api/rate-limit', () => ({ consumeRateLimit: () => rl() }));
 vi.mock('@/lib/monitoring/report-error', () => ({ reportEvent: (...a: unknown[]) => report(...(a as [])) }));
@@ -21,16 +21,16 @@ beforeEach(() => { user.id = 'u1'; pwned.mockReset(); rl.mockClear(); report.moc
 describe('S5 sign-in leaked-password check', () => {
   it('requires a real session (no anonymous HIBP oracle)', async () => {
     user.id = null;
-    const r = await POST(req({ password: 'whatever12345' }));
-    expect(r.status).toBe(401); expect(pwned).not.toHaveBeenCalled();
+    const res = await POST(req({ password: 'whatever12345' }));
+    expect(res.status).toBe(401); expect(pwned).not.toHaveBeenCalled();
   });
   it('reports pwned and logs an event without the password', async () => {
     pwned.mockResolvedValue(true);
-    const r = await POST(req({ password: 'password1234' }));
-    expect(await r.json()).toEqual({ ok: true, pwned: true });
+    const res = await POST(req({ password: 'password1234' }));
+    expect(await res.json()).toEqual({ ok: true, pwned: true });
     expect(report).toHaveBeenCalledTimes(1);
     expect(JSON.stringify(report.mock.calls)).not.toContain('password1234');
-    expect(r.headers.get('cache-control')).toContain('no-store');
+    expect(res.headers.get('cache-control')).toContain('no-store');
   });
   it('clean password', async () => {
     pwned.mockResolvedValue(false);
@@ -54,9 +54,9 @@ describe('S5 sign-in leaked-password check', () => {
   });
   it('GET is 405', () => { expect(GET().status).toBe(405); });
   it('login page calls the check only after a successful sign-in and never blocks it', () => {
-    const s = readFileSync(join(__dirname, '..', 'app/(auth)/login/page.tsx'), 'utf8');
-    const i = s.indexOf('signin-password-check'), err = s.indexOf('if (authError)');
-    expect(i).toBeGreaterThan(err);
-    expect(s).toMatch(/AbortController/);
+    const src = readFileSync(join(__dirname, '..', 'app/(auth)/login/page.tsx'), 'utf8');
+    const callAt = src.indexOf('await isPasswordLeaked('), errAt = src.indexOf('if (authError)');
+    expect(callAt).toBeGreaterThan(errAt);
+    expect(src).toMatch(/AbortController/);
   });
 });

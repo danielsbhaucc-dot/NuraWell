@@ -15,23 +15,30 @@ const NO_STORE = { 'Cache-Control': 'no-store, max-age=0', Pragma: 'no-cache' };
  * k-anonymity via the security-privacy kit: only 5 hex chars of the SHA-1 leave the server.
  * The password is never logged, stored or echoed. Fails open ({ pwned: null }) when HIBP is unavailable.
  */
-export async function POST(req: Request): Promise<Response> {
-  const { data } = await (await createClient()).auth.getUser();
-  const uid = data.user?.id;
-  if (!uid) return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401, headers: NO_STORE });
-  const rl = await consumeRateLimit({ key: uid, namespace: 'auth-signin-password-check', limit: 5, windowSeconds: 3600 });
-  if (!rl.ok) return NextResponse.json({ ok: true, pwned: null }, { status: 200, headers: NO_STORE });
-  if (new URL(req.url).searchParams.has('password')) return NextResponse.json({ ok: false, error: 'bad_request' }, { status: 400, headers: NO_STORE });
-  let password: unknown;
-  try { password = ((await req.json()) as { password?: unknown })?.password; } catch { password = null; }
-  if (typeof password !== 'string' || password.length < 1 || password.length > 128) {
-    return NextResponse.json({ ok: false, error: 'bad_request' }, { status: 400, headers: NO_STORE });
-  }
-  const pwned = await isPwnedPassword(password);
-  if (pwned) void reportEvent('password_pwned_signin', { source: 'login' }, 'warning').catch(() => undefined);
-  return NextResponse.json({ ok: true, pwned }, { status: 200, headers: NO_STORE });
+const reply = (body: Record<string, unknown>, status = 200): Response => NextResponse.json(body, { status, headers: NO_STORE });
+
+/** Reads `password` from the JSON body only; returns null when missing, not a string, or outside 1..128 chars. */
+async function readPassword(req: Request): Promise<string | null> {
+  if (new URL(req.url).searchParams.has('password')) return null;
+  const body = (await req.json().catch(() => null)) as { password?: unknown } | null;
+  const password = body?.password;
+  return typeof password === 'string' && password.length >= 1 && password.length <= 128 ? password : null;
 }
 
+export async function POST(req: Request): Promise<Response> {
+  const { data } = await (await createClient()).auth.getUser();
+  const userId = data.user?.id;
+  if (!userId) return reply({ ok: false, error: 'unauthorized' }, 401);
+  const limit = await consumeRateLimit({ key: userId, namespace: 'auth-signin-password-check', limit: 5, windowSeconds: 3600 });
+  if (!limit.ok) return reply({ ok: true, pwned: null });
+  const password = await readPassword(req);
+  if (password === null) return reply({ ok: false, error: 'bad_request' }, 400);
+  const pwned = await isPwnedPassword(password);
+  if (pwned) reportEvent('password_pwned_signin', { source: 'login' }, 'warning').catch(() => undefined);
+  return reply({ ok: true, pwned });
+}
+
+/** Only POST is supported; the password must never travel in a URL. */
 export function GET(): Response {
   return NextResponse.json({ ok: false, error: 'method_not_allowed' }, { status: 405, headers: { ...NO_STORE, Allow: 'POST' } });
 }
