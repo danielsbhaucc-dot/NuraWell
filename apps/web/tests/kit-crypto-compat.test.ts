@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
+// skipcq: JS-C1003 -- namespace import keeps the two implementations side by side
 import * as nw from '@platform/security-crypto';
+// skipcq: JS-C1003 -- see above
 import * as kit from '@core/security-privacy/crypto';
 
 // Frozen vectors produced by NuraWell's production implementation (test keys only: KEK=0x07×32, index key=0x09×32).
@@ -22,8 +24,8 @@ describe('security-privacy kit crypto is byte-compatible with NuraWell enc:v2 (z
     kit.setCryptoNamespace('nurawell');
     const { dek, wrapped } = kit.newDataKey(KEK, 2, 'user-2');
     expect(nw.unwrapDataKey(KEK, wrapped, 'user-2').equals(dek)).toBe(true);
-    const v = kit.encryptField(dek, 'x@y.z', kit.fieldAad('t', 'c', 'r'));
-    expect(nw.decryptField(dek, v, nw.fieldAad('t', 'c', 'r'))).toBe('x@y.z');
-    expect(() => nw.decryptField(dek, v, nw.fieldAad('t', 'c', 'other'))).toThrow();
+    const sealed = kit.encryptField(dek, 'x@y.z', kit.fieldAad('t', 'c', 'r'));
+    expect(nw.decryptField(dek, sealed, nw.fieldAad('t', 'c', 'r'))).toBe('x@y.z');
+    expect(() => nw.decryptField(dek, sealed, nw.fieldAad('t', 'c', 'other'))).toThrow();
   });
 });

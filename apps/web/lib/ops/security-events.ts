@@ -3,6 +3,7 @@ import { alertOwnerSecurity } from './device-notify';
 import { logDetail } from '@/lib/logs/facts';
 
 /** Break-glass and similar: Telegram + email to the owner, bypassing quiet hours. Idempotent. */
+// skipcq: JS-0067 -- ES module export, not a global
 export async function dispatchSecurityEvents(db: SupabaseClient): Promise<number> {
   const { data } = await db.from('ops_security_events').select('id, kind, facts, detail, created_at').is('alerted_at', null).order('created_at').limit(20);
   let n = 0;

@@ -62,6 +62,7 @@ const nextConfig = {
       { source: '/courses/:id', destination: '/guides/:id', permanent: true },
     ];
   },
+  // skipcq: JS-0116 -- Next.js config contract: headers() returns a Promise
   async headers() {
     return [
       {

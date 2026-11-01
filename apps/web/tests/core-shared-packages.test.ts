@@ -9,6 +9,7 @@ describe('platform-core shared packages (installed, not copied)', () => {
     expect(execFileSync('node', ['scripts/core-sync.mjs', '--check'], { cwd: root, encoding: 'utf8' })).toMatch(/files match platform-core@/);
   });
   it('static security headers are exactly the previous production set', async () => {
+    // skipcq: JS-0359 -- next.config.js is CommonJS
     const cfg = require('../next.config.js');
     const rules = await cfg.headers();
     const all = Object.fromEntries(rules[0].headers.map((h: { key: string; value: string }) => [h.key, h.value]));
@@ -20,9 +21,9 @@ describe('platform-core shared packages (installed, not copied)', () => {
     });
   });
   it('NuraWell code imports the shared packages', () => {
-    const r = (f: string) => readFileSync(join(__dirname, '..', f), 'utf8');
-    expect(r('lib/api/rate-limit.ts')).toMatch(/from '@core\/security-privacy\/rate-limit'/);
-    expect(r('lib/central/usage-feed.ts')).toMatch(/from '@core\/security-privacy\/feed'/);
-    expect(r('lib/logs/signals.ts')).toMatch(/@core\/security-privacy\/feed/);
+    const read = (f: string) => readFileSync(join(__dirname, '..', f), 'utf8');
+    expect(read('lib/api/rate-limit.ts')).toMatch(/from '@core\/security-privacy\/rate-limit'/);
+    expect(read('lib/central/usage-feed.ts')).toMatch(/from '@core\/security-privacy\/feed'/);
+    expect(read('lib/logs/signals.ts')).toMatch(/@core\/security-privacy\/feed/);
   });
 });

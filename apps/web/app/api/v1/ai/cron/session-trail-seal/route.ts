@@ -14,6 +14,7 @@ export const maxDuration = 60;
  * sealSessionTrailFor (lib/security/session-trail-seal). enc:v2 under the user's DEK + ip_bidx in one verified CAS update (field-backfill).
  * The nightly plaintext monitor FAILS on any plaintext row older than 15 minutes. Counts only — never values.
  */
+// skipcq: JS-0067 -- ES module export (Next.js route handler), not a global
 export async function POST(request: Request) {
   const denied = await authorizeCronRequest(request);
   if (denied) return denied;

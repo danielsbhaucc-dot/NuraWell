@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { signUsage } from '@/lib/central/usage-feed';
 
 describe('central usage feed', () => {
-  it('signs HMAC-SHA256 over `${ts}.${body}` (platform-core connector spec)', async () => {
+  it('signs HMAC-SHA256 over ts.body (platform-core connector spec)', () => {
     const { ts, sig } = signUsage('k', '{"users":3}', 1700000000000);
     expect(ts).toBe('1700000000000');
     expect(sig).toBe(createHmac('sha256', 'k').update('1700000000000.{"users":3}').digest('hex'));
@@ -26,12 +26,12 @@ describe('central usage feed', () => {
     if (old) process.env.CENTRAL_METRICS_FEED_SECRET = old;
   });
   it('security feed: aggregate keys only, wired into the admin guard, alerts and dispatcher', () => {
-    const r = (f: string) => readFileSync(join(__dirname, '..', f), 'utf8');
-    expect(r('lib/logs/signals.ts')).toMatch(/sendSecurityEvent\('admin_denied', 'low'\)/);
-    expect(r('lib/logs/signals.ts')).toMatch(/sendSecurityEvent\(kind, 'high', 0\)/);
-    expect(r('lib/ops/security-events.ts')).toMatch(/sendSecurityEvent\(e\.kind/);
-    expect(r('app/api/v1/ai/cron/session-trail-seal/route.ts')).toMatch(/await sendSecurityStatusFeed\(encOk\)/);
-    expect(r('../../packages/@core/security-privacy/src/feed.ts')).not.toMatch(/email|user_id|actor/i);
+    const read = (f: string) => readFileSync(join(__dirname, '..', f), 'utf8');
+    expect(read('lib/logs/signals.ts')).toMatch(/sendSecurityEvent\('admin_denied', 'low'\)/);
+    expect(read('lib/logs/signals.ts')).toMatch(/sendSecurityEvent\(kind, 'high', 0\)/);
+    expect(read('lib/ops/security-events.ts')).toMatch(/sendSecurityEvent\(e\.kind/);
+    expect(read('app/api/v1/ai/cron/session-trail-seal/route.ts')).toMatch(/await sendSecurityStatusFeed\(encOk\)/);
+    expect(read('../../packages/@core/security-privacy/src/feed.ts')).not.toMatch(/email|user_id|actor/i);
   });
   it('feed client signs sec.ts.nonce.body and skips when unconfigured', async () => {
     const { signSecurityBody, sendSecurityEvent } = await import('@core/security-privacy/feed');
