@@ -10,6 +10,7 @@ export interface KitConfig {
   licenseActive?: () => boolean | Promise<boolean>;
 }
 /** One init call per product (server start / config). Sets the crypto AAD namespace and returns the kit descriptor for the feed. */
+// skipcq: JS-0067, JS-R1005 -- ES module scope (not a global); kept flat for auditability
 export async function initSecurityPrivacy(cfg: KitConfig) {
   const { setCryptoNamespace } = await import('./crypto');
   setCryptoNamespace(cfg.productId);

@@ -1,5 +1,6 @@
 /** Strict security headers; nonce-based CSP, no unsafe-inline/eval. */
 /** `overrides`: per-product values; `null` removes a header (e.g. CSP set per request by middleware). */
+// skipcq: JS-0067, JS-R1005 -- ES module scope (not a global); kept flat for auditability
 export function securityHeaders(o: { nonce?: string; api?: boolean; overrides?: Record<string, string | null> } = {}): Record<string, string> {
   const csp = o.api
     ? "default-src 'none'; frame-ancestors 'none'; base-uri 'none'"
@@ -22,4 +23,5 @@ export function securityHeaders(o: { nonce?: string; api?: boolean; overrides?: 
 }
 
 /** Next.js `headers()` shape. */
+// skipcq: JS-0067, JS-R1005 -- ES module scope (not a global); kept flat for auditability
 export const toNextHeaders = (h: Record<string, string>) => Object.entries(h).map(([key, value]) => ({ key, value }));
