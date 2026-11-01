@@ -1,6 +1,6 @@
 {
   "repo": "danielsbhaucc-dot/platform-core",
-  "sha": "578580765ed143c9f183d3084db0460b7a571906",
+  "sha": "023f3cb9074882a9e98faf7592c51ca289d1e421",
   "files": {
     "security-privacy/CHANGELOG.md": "8ccd714d321e4205e84886ff08e56fd5524ffb2f69f75bfeb078491c3794dc07",
     "security-privacy/README.he.md": "574307d02fc8a307b061cdd5752d1c87e2cecb4ae8f454f2100c4d5d05057488",
@@ -11,7 +11,7 @@
     "security-privacy/src/authz.ts": "45c1690683f6e2c715033bce7b1ed2df850efd685aef7a6ef1db19beddad4479",
     "security-privacy/src/crypto.ts": "5769d7cca22b20a54cc4ce74dc1d33735e5f0054550014bce15f5e97ad46fd51",
     "security-privacy/src/feed.ts": "d3b7da4a5e7fd663f4ce968744c710c28f6891ffdd9ea9c2789f3ccee722ee7f",
-    "security-privacy/src/headers.ts": "9779c2649a35e6957accf3d3b2b6aec92c7547501a0da5673ab6186741025a12",
+    "security-privacy/src/headers.ts": "9014665a1ed4fd8fa090de2ea826f8b2fcd379fd437ccfad050eab26af537a4e",
     "security-privacy/src/index.ts": "d3cbe5afa917850887da0e82daa77ae791ab42f3be2e304ebe2d904eb89a4d37",
     "security-privacy/src/rate-limit.ts": "88e6ac1bb79938ac6f7c7d3dde1f14494459fe2fa4bd0163d3219188f7bd03ac"
   }

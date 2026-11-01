@@ -6,8 +6,8 @@
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
-const readOr = (f, d) => { try { return readFileSync(f); } catch { return d; } }; // no exists→read race
 import { dirname, join } from 'node:path';
+const readOr = (f, d) => { try { return readFileSync(f); } catch { return d; } }; // no exists→read race
 const REPO = 'danielsbhaucc-dot/platform-core', ROOT = process.env.CORE_SYNC_ROOT || 'packages/@core', LOCK = join(ROOT, 'core-lock.json');
 const sha256 = (b) => createHash('sha256').update(b).digest('hex');
 const args = process.argv.slice(2);

@@ -18,8 +18,8 @@ export function securityHeaders(opts: { nonce?: string; api?: boolean; overrides
     'X-Frame-Options': 'DENY',
     'Cache-Control': opts.api ? 'no-store' : 'public, max-age=0, must-revalidate',
   };
-  for (const [name, value] of Object.entries(opts.overrides ?? {})) { if (value === null) delete out[name]; else out[name] = value; }
-  return out;
+  const merged: Record<string, string | null> = { ...out, ...opts.overrides };
+  return Object.fromEntries(Object.entries(merged).filter((entry): entry is [string, string] => entry[1] !== null));
 }
 
 /** Next.js "headers()" shape. */
