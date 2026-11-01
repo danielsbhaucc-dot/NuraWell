@@ -30,7 +30,7 @@ describe('central usage feed', () => {
     expect(r('lib/logs/signals.ts')).toMatch(/sendSecurityEvent\('admin_denied', 'low'\)/);
     expect(r('lib/logs/signals.ts')).toMatch(/sendSecurityEvent\(kind, 'high', 0\)/);
     expect(r('lib/ops/security-events.ts')).toMatch(/sendSecurityEvent\(e\.kind/);
-    expect(r('app/api/v1/ai/cron/session-trail-seal/route.ts')).toMatch(/await sendSecurityStatusFeed\(!failed\)/);
+    expect(r('app/api/v1/ai/cron/session-trail-seal/route.ts')).toMatch(/await sendSecurityStatusFeed\(encOk\)/);
     expect(r('../../packages/@core/security-privacy/src/feed.ts')).not.toMatch(/email|user_id|actor/i);
   });
   it('feed client signs sec.ts.nonce.body and skips when unconfigured', async () => {
