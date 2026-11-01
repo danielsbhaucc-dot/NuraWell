@@ -25,14 +25,14 @@ export function useStepUpRetry(reason: string) {
  * `ops:stepup-required` with { detail: { reason, retry } }; this host opens StepUpDialog and calls retry once verified.
  */
 export function StepUpEventHost() {
-  const [req, setReq] = useState<null | { reason: string; retry: () => void }>(null);
+  const [req, setReq] = useState<null | { reason: string; purpose: string; retry: () => void }>(null);
   useEffect(() => {
-    const on = (e: Event) => { const d = (e as CustomEvent<{ reason?: string; retry?: () => void }>).detail; if (d?.retry) setReq({ reason: d.reason ?? 'פעולה רגישה', retry: d.retry }); };
+    const on = (e: Event) => { const d = (e as CustomEvent<{ reason?: string; purpose?: string; retry?: () => void }>).detail; if (d?.retry) setReq({ reason: d.reason ?? 'פעולה רגישה', purpose: d.purpose === 'ops.modules' ? 'ops.modules' : 'ops.sensitive', retry: d.retry }); };
     window.addEventListener('ops:stepup-required', on);
     return () => window.removeEventListener('ops:stepup-required', on);
   }, []);
   return (
-    <StepUpDialog open={!!req} purpose="ops.sensitive" reason={req?.reason ?? ''} onClose={() => setReq(null)}
+    <StepUpDialog open={!!req} purpose={req?.purpose ?? 'ops.sensitive'} reason={req?.reason ?? ''} onClose={() => setReq(null)}
       onVerified={() => { const f = req?.retry; setReq(null); f?.(); }} />
   );
 }
