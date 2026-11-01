@@ -1,6 +1,8 @@
+// Shared platform-core package, installed by scripts/core-sync.mjs (Node 24 loads the .ts source directly).
+const { securityHeaders, toNextHeaders } = require('../../packages/@core/security-privacy/src/headers.ts');
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  transpilePackages: ['@saas/billing', '@platform/iam', '@platform/qc', '@platform/access', '@platform/ui', '@platform/ai-engine', '@platform/auth', '@platform/security-crypto', '@platform/module-library-ui', '@platform/licensing'],
+  transpilePackages: ['@core/security-privacy', '@saas/billing', '@platform/iam', '@platform/qc', '@platform/access', '@platform/ui', '@platform/ai-engine', '@platform/auth', '@platform/security-crypto', '@platform/module-library-ui', '@platform/licensing'],
   /** Native / heavy deps must not be bundled into Route Handlers (avoids 503 on Vercel). */
   serverExternalPackages: ['@aws-sdk/client-s3', 'web-push', 'sharp', 'isomorphic-dompurify', 'jsdom'],
   outputFileTracingIncludes: { '/api/v1/ops/legal/**': ['./lib/legal/fonts/**', './lib/legal/templates/**'] },
@@ -64,34 +66,21 @@ const nextConfig = {
     return [
       {
         source: '/(.*)',
-        headers: [
-          { key: 'Cross-Origin-Embedder-Policy', value: 'unsafe-none' },
-          { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
-          { key: 'Cross-Origin-Resource-Policy', value: 'same-site' },
-          { key: 'X-Permitted-Cross-Domain-Policies', value: 'none' },
-          { key: 'X-Content-Type-Options', value: 'nosniff' },
-          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
-          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-          {
-            key: 'Permissions-Policy',
-            value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()',
-          },
-          // ── Content-Security-Policy ──────────────────────────────
-          // מוגדר ב-middleware.ts עם nonce אקראי לכל request,
-          // במקום 'unsafe-inline'. Next.js App Router קורא אוטומטית
-          // את ה-header x-nonce ומשתמש בו ב-inline scripts.
-          // ראה: middleware.ts -> CSP_DIRECTIVES
-          // CSP header מוחל ב-middleware עבור כל ה-HTML pages,
-          // API routes, ו-redirects.
-          // HEADER זה מוסר מ-next.config כי middleware גובר.
-          // ── Strict-Transport-Security (HSTS) ────────────────────
-          // מחייב HTTPS למשך שנה, כולל תתי-דומיינים.
-          // מופעל רק ב-production (ב-dev localhost עובד HTTP).
-          {
-            key: 'Strict-Transport-Security',
-            value: 'max-age=31536000; includeSubDomains; preload',
-          },
-        ],
+        // Shared platform-core kit (@core/security-privacy/headers). CSP is set per request (nonce) in proxy.ts, so removed here.
+        headers: toNextHeaders(
+          securityHeaders({
+            overrides: {
+              'Content-Security-Policy': null,
+              'Cache-Control': null,
+              'Cross-Origin-Embedder-Policy': 'unsafe-none',
+              'Cross-Origin-Resource-Policy': 'same-site',
+              'X-Permitted-Cross-Domain-Policies': 'none',
+              'X-Frame-Options': 'SAMEORIGIN',
+              'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), interest-cohort=()',
+              'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
+            },
+          })
+        ),
       },
       {
         /**

@@ -1,12 +1,12 @@
 /**
- * Drop-in product → parent ("head") feed client. One file, Node only, no dependencies.
- * Vendored from platform-core packages/product-connector/src/feed-client.ts — do not edit here; fix there and re-copy.
+ * OPTIONAL central adapter (product → parent console). OFF by default: sends only when KIT_CENTRAL_REPORTING=on
+ * and the four CENTRAL_* env vars are set. The kit works fully without it (external customers never need it).
  * Never throws, never blocks the caller for more than 3 s, silently skips when env is missing.
  */
 import { createHmac, randomBytes } from 'node:crypto';
 
 export type Severity = 'low' | 'medium' | 'high' | 'critical';
-export interface SecurityStatus { lockdown?: boolean | null; ipBlocksActive?: number | null; openIncidents?: number | null; denied24h?: number | null; loginFail24h?: number | null;
+export interface SecurityStatus { kits?: Record<string, string>; lockdown?: boolean | null; ipBlocksActive?: number | null; openIncidents?: number | null; denied24h?: number | null; loginFail24h?: number | null;
   events24h?: number | null; encOk?: boolean | null; lastAccessAudit?: string | null; accessAuditFlagged7d?: number | null }
 type Result = 'sent' | 'skipped' | 'throttled' | 'failed';
 
@@ -18,7 +18,7 @@ export function signSecurityBody(secret: string, body: string, ts = Date.now(), 
 
 async function post(body: object): Promise<Result> {
   const e = env();
-  if (!e.product || !e.url || !e.key || !e.secret) return 'skipped';
+  if (process.env.KIT_CENTRAL_REPORTING !== 'on' || !e.product || !e.url || !e.key || !e.secret) return 'skipped';
   try {
     const b = JSON.stringify(body), { ts, nonce, sig } = signSecurityBody(e.secret, b);
     const r = await fetch(`${e.url.replace(/\/$/, '')}/rest/v1/rpc/central_ingest_security`, {
@@ -41,3 +41,8 @@ export async function sendSecurityEvent(kind: string, severity: Severity, everyM
 }
 /** Daily status snapshot (call from an existing daily job). Only whitelisted aggregate keys are accepted centrally. */
 export const sendSecurityStatus = (status: SecurityStatus): Promise<Result> => post({ type: 'status', status });
+
+/** Usage totals feed signature (central_ingest_metrics): HMAC-SHA256 over `${ts}.${body}`. */
+export function signUsage(secret: string, body: string, ts = Date.now()) {
+  return { ts: String(ts), sig: createHmac('sha256', secret).update(`${ts}.${body}`).digest('hex') };
+}

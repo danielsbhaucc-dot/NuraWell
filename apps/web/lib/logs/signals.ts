@@ -71,7 +71,7 @@ async function alertOnce(db: SupabaseClient, key: string, kind: string, detail: 
   const { data: prev } = await db.from('ops_security_events').select('id').eq('kind', kind).gte('created_at', since).contains('facts', { key }).limit(1);
   if (prev?.length) return;
   await db.from('ops_security_events').insert({ kind, facts: { key }, detail: { key, ...detail }, alerted_at: new Date().toISOString() });
-  await import('@/lib/central/feed-client').then((f) => f.sendSecurityEvent(kind, 'high', 0)).catch(() => undefined);
+  await import('@core/security-privacy/feed').then((f) => f.sendSecurityEvent(kind, 'high', 0)).catch(() => undefined);
   const { alertOwnerSecurity } = await import('@/lib/ops/device-notify');
   const x = typeof extras === 'function' ? await extras().catch(() => ({})) : extras;
   // null user = system alert → Telegram + every admin owner's email (before 2026-10 the email leg was skipped)
@@ -95,7 +95,7 @@ async function trustedIp(db: SupabaseClient, ipHash: string): Promise<boolean> {
 export async function recordAdminDenial(db: SupabaseClient, request: Request, status: number, actorId: string | null): Promise<void> {
   try {
     const ipHash = hashIp(requestIp(request));
-    await import('@/lib/central/feed-client').then((f) => f.sendSecurityEvent('admin_denied', 'low')).catch(() => undefined);
+    await import('@core/security-privacy/feed').then((f) => f.sendSecurityEvent('admin_denied', 'low')).catch(() => undefined);
     await db.from('security_signals').insert({ kind: status === 401 ? 'admin_401' : 'admin_403', ip_hash: ipHash, actor_id: actorId, path: safePath(request), country: requestCountry(request) });
     if (!ipHash) return;
     const { count } = await db.from('security_signals').select('id', { count: 'exact', head: true })

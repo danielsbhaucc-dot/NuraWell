@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { signUsage } from '@/lib/central/usage-feed';
 
 describe('central usage feed', () => {
-  it('signs HMAC-SHA256 over `${ts}.${body}` (platform-core connector spec)', () => {
+  it('signs HMAC-SHA256 over `${ts}.${body}` (platform-core connector spec)', async () => {
     const { ts, sig } = signUsage('k', '{"users":3}', 1700000000000);
     expect(ts).toBe('1700000000000');
     expect(sig).toBe(createHmac('sha256', 'k').update('1700000000000.{"users":3}').digest('hex'));
@@ -31,10 +31,10 @@ describe('central usage feed', () => {
     expect(r('lib/logs/signals.ts')).toMatch(/sendSecurityEvent\(kind, 'high', 0\)/);
     expect(r('lib/ops/security-events.ts')).toMatch(/sendSecurityEvent\(e\.kind/);
     expect(r('app/api/v1/ai/cron/session-trail-seal/route.ts')).toMatch(/await sendSecurityStatusFeed\(!failed\)/);
-    expect(r('lib/central/feed-client.ts')).not.toMatch(/email|user_id|actor/i);
+    expect(r('../../packages/@core/security-privacy/src/feed.ts')).not.toMatch(/email|user_id|actor/i);
   });
   it('feed client signs sec.ts.nonce.body and skips when unconfigured', async () => {
-    const { signSecurityBody, sendSecurityEvent } = await import('@/lib/central/feed-client');
+    const { signSecurityBody, sendSecurityEvent } = await import('@core/security-privacy/feed');
     const { ts, nonce, sig } = signSecurityBody('k', 'b', 1700000000000, 'ab'.repeat(16));
     expect(sig).toBe(createHmac('sha256', 'k').update(`sec.${ts}.${nonce}.b`).digest('hex'));
     const old = process.env.CENTRAL_PRODUCT_ID; delete process.env.CENTRAL_PRODUCT_ID;

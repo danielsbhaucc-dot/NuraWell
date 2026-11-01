@@ -1,4 +1,4 @@
-import { createHmac } from 'node:crypto';
+import { signUsage as kitSignUsage } from '@core/security-privacy/feed';
 import { createAdminClient, createCentralAdminClient } from '@/lib/supabase/admin';
 
 /**
@@ -9,9 +9,8 @@ import { createAdminClient, createCentralAdminClient } from '@/lib/supabase/admi
  */
 export interface UsageTotals { users: number | null; active7d: number | null; aiCost30dUsd: number | null; errors7d: number | null }
 
-export function signUsage(secret: string, body: string, ts = Date.now()) {
-  return { ts: String(ts), sig: createHmac('sha256', secret).update(`${ts}.${body}`).digest('hex') };
-}
+/** Same signature as central's verifier — the shared platform-core implementation. */
+export const signUsage = kitSignUsage;
 
 const since = (days: number) => new Date(Date.now() - days * 86_400_000).toISOString();
 
@@ -56,8 +55,9 @@ export async function sendSecurityStatusFeed(encOk: boolean): Promise<string> {
       db.from('access_audit_runs').select('started_at, flagged').gte('started_at', since(7)).order('started_at', { ascending: false }).limit(50),
     ]);
     const runs = (audit.data ?? []) as { started_at: string; flagged: number }[];
-    const { sendSecurityStatus } = await import('@/lib/central/feed-client');
-    return await sendSecurityStatus({ encOk, denied24h, loginFail24h, ipBlocksActive, openIncidents, events24h,
+    const { sendSecurityStatus } = await import('@core/security-privacy/feed');
+    const { KIT } = await import('@core/security-privacy');
+    return await sendSecurityStatus({ kits: { [KIT.name]: KIT.version }, encOk, denied24h, loginFail24h, ipBlocksActive, openIncidents, events24h,
       lockdown: lock.error ? null : !!(lock.data as { active?: boolean } | null)?.active,
       lastAccessAudit: runs[0] ? new Date(runs[0].started_at).toISOString() : null,
       accessAuditFlagged7d: audit.error ? null : runs.reduce((a, r) => a + (r.flagged || 0), 0) });
