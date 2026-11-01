@@ -1,8 +1,10 @@
 #!/usr/bin/env node
+// skipcq: JS-0833 -- ES module (.mjs); analyzer parses .mjs as a script
 // Installs platform-core packages into a product as workspace packages (packages/@core/<name>), pinned to a commit.
 // Usage (in the product repo):  node scripts/core-sync.mjs <sha> pkg1 pkg2 ...   → fetch via `gh api` (read access to platform-core)
 //                               node scripts/core-sync.mjs --check               → CI: fail if any installed file was edited locally
 // Writes packages/@core/core-lock.json { repo, sha, files: { path: sha256 } }. Never edit installed files; fix in platform-core and re-sync.
+// skipcq: JS-0833
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
