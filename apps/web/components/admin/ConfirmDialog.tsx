@@ -145,7 +145,7 @@ export function ConfirmDialog({
           disabled={busy}
           className={[
             'inline-flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-black shadow-lg disabled:opacity-60',
-            solid ? 'bg-[#f5a524] text-[#1e2433] focus-visible:ring-2 focus-visible:ring-[#fcd34d] focus-visible:ring-offset-2 focus-visible:ring-offset-[#1e2433]' : `text-gc ${style.btn}`,
+            solid ? 'bg-[#f5a524] text-[#1e2433] focus:outline-none focus-visible:outline-3! focus-visible:outline-solid! focus-visible:outline-offset-2! focus-visible:outline-[#fcd34d]! focus-visible:shadow-none!' : `text-gc ${style.btn}`,
           ].join(' ')}
         >
           {busy && <Loader2 className="h-4 w-4 animate-spin" />}
