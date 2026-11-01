@@ -2,7 +2,7 @@
 # Module inventory
 
 Catalog modules: 21 (core: 8). Packaged modules (module.json): 10.
-App code already modular: 100% (1817/1817 files; the rest is on modules/legacy-app-files.txt and may only shrink).
+App code already modular: 100% (1818/1818 files; the rest is on modules/legacy-app-files.txt and may only shrink).
 
 | id | name | core (cannot disable) | tier | always-on | area manifest | owned app files | packaged |
 |---|---|---|---|---|---|---|---|
@@ -14,7 +14,7 @@ App code already modular: 100% (1817/1817 files; the rest is on modules/legacy-a
 | `field-encryption` | הצפנת שדות | yes | internal | pii-encryption | yes | 8 | not yet |
 | `logs` | יומנים | yes | shareable | error-logs | yes | 16 | not yet |
 | `app-shell` | מעטפת האפליקציה | yes | internal | layout, error-pages | yes | 138 | not yet |
-| `auth-signup` | הרשמה וקליטה | no | shareable | - | yes | 100 | not yet |
+| `auth-signup` | הרשמה וקליטה | no | shareable | - | yes | 101 | not yet |
 | `privacy-retention` | פרטיות ושמירה | no | shareable | consents, data-export, deletion-with-approval | yes | 38 | not yet |
 | `billing` | תשלומים | no | shareable | - | yes | 47 | not yet |
 | `notifications` | התראות למשתמשים | no | shareable | - | yes | 71 | not yet |
