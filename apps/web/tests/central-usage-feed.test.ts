@@ -1,0 +1,28 @@
+import { describe, it, expect } from 'vitest';
+import { createHmac } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { signUsage } from '@/lib/central/usage-feed';
+
+describe('central usage feed', () => {
+  it('signs HMAC-SHA256 over `${ts}.${body}` (platform-core connector spec)', () => {
+    const { ts, sig } = signUsage('k', '{"users":3}', 1700000000000);
+    expect(ts).toBe('1700000000000');
+    expect(sig).toBe(createHmac('sha256', 'k').update('1700000000000.{"users":3}').digest('hex'));
+    expect(sig).toMatch(/^[a-f0-9]{64}$/);
+  });
+  it('sends aggregates only and never throws into the cron', () => {
+    const src = readFileSync(join(__dirname, '../lib/central/usage-feed.ts'), 'utf8');
+    expect(src).not.toMatch(/select\('(?!id'|cost_usd')/);
+    expect(src).toMatch(/catch \{/);
+    const cron = readFileSync(join(__dirname, '../app/api/v1/ai/cron/session-trail-seal/route.ts'), 'utf8');
+    expect(cron).toMatch(/await sendUsageFeed\(\)/);
+    expect(cron).not.toMatch(/sendUsageFeed\(\)[^\n]*failed/);
+  });
+  it('skips when not configured', async () => {
+    const { sendUsageFeed } = await import('@/lib/central/usage-feed');
+    const old = process.env.CENTRAL_METRICS_FEED_SECRET; delete process.env.CENTRAL_METRICS_FEED_SECRET;
+    expect(await sendUsageFeed()).toBe('skipped');
+    if (old) process.env.CENTRAL_METRICS_FEED_SECRET = old;
+  });
+});
