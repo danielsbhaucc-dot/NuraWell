@@ -53,7 +53,7 @@ const isPasswordLeaked = async (password: string): Promise<boolean> => {
   }
 };
 
-const LoginFormContent = () => {
+function LoginFormContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = sanitizeRedirectPath(searchParams?.get('redirect'));
@@ -142,6 +142,22 @@ const LoginFormContent = () => {
     return leaked;
   };
 
+  /** After a successful sign-in: ops host does a full navigation (proxy re-checks admin); app host routes client-side. */
+  const finishLogin = (leaked: boolean) => {
+    if (isOpsHost) {
+      window.location.assign(redirect === APP_HOME_PATH ? '/' : redirect);
+      return;
+    }
+    try {
+      sessionStorage.setItem(AFTER_LOGIN_KEY, String(Date.now()));
+    } catch {}
+    toast.success('התחברת בהצלחה!', 'מעבירים אותך לקורסים...');
+    setTimeout(() => {
+      router.push(redirect);
+      router.refresh();
+    }, leaked ? 4000 : 800);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.includes('@')) {
@@ -162,19 +178,7 @@ const LoginFormContent = () => {
 
       const leaked = await warnIfLeaked(password);
 
-      if (isOpsHost) {
-        // Full navigation so the proxy re-checks admin + rewrites to the panel on this host.
-        window.location.assign(redirect === APP_HOME_PATH ? '/' : redirect);
-        return;
-      }
-      try {
-        sessionStorage.setItem(AFTER_LOGIN_KEY, String(Date.now()));
-      } catch {}
-      toast.success('התחברת בהצלחה!', 'מעבירים אותך לקורסים...');
-      setTimeout(() => {
-        router.push(redirect);
-        router.refresh();
-      }, leaked ? 4000 : 800);
+      finishLogin(leaked);
     } catch (e) {
       console.error('[login] unexpected', e);
       toast.error(
@@ -545,7 +549,7 @@ const LoginFormContent = () => {
       </main>
     </>
   );
-};
+}
 
 export default function LoginPage() {
   return (
