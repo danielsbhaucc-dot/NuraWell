@@ -1,4 +1,23 @@
-{ "id": "security-privacy", "version": "1.0.0", "core": true, "kit": true, "distribution": "sellable", "license": "@core/licensing",
-  "requires": { "modules": {} }, "permissions": [],
-  "env": ["KIT_CENTRAL_REPORTING", "CENTRAL_PRODUCT_ID", "CENTRAL_SUPABASE_URL", "CENTRAL_SUPABASE_SECRET_KEY", "CENTRAL_METRICS_FEED_SECRET", "UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN"],
-  "theme": [] }
+{
+  "id": "security-privacy",
+  "package": "@core/security-privacy",
+  "version": "1.0.0",
+  "core": true,
+  "kit": true,
+  "distribution": "sellable",
+  "license": "@core/licensing",
+  "requires": {
+    "modules": {}
+  },
+  "permissions": [],
+  "env": [
+    "KIT_CENTRAL_REPORTING",
+    "CENTRAL_PRODUCT_ID",
+    "CENTRAL_SUPABASE_URL",
+    "CENTRAL_SUPABASE_SECRET_KEY",
+    "CENTRAL_METRICS_FEED_SECRET",
+    "UPSTASH_REDIS_REST_URL",
+    "UPSTASH_REDIS_REST_TOKEN"
+  ],
+  "theme": []
+}

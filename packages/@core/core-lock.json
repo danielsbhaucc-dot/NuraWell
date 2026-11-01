@@ -1,15 +1,18 @@
 {
   "repo": "danielsbhaucc-dot/platform-core",
-  "sha": "617b9bdd4751b044ab6bb736bb0bdec4052f503a",
+  "sha": "b60de188e3b4686a0757aa51863ac4cf8dda0ff7",
   "files": {
+    "security-privacy/CHANGELOG.md": "8ccd714d321e4205e84886ff08e56fd5524ffb2f69f75bfeb078491c3794dc07",
+    "security-privacy/README.he.md": "574307d02fc8a307b061cdd5752d1c87e2cecb4ae8f454f2100c4d5d05057488",
     "security-privacy/README.md": "9d62194bb6aa749b286118decbc6d88bd48122f085f5b87089968e3cb68d4a88",
-    "security-privacy/module.json": "0c17128b95a627e029843142e9fb5510f4fbc4ec45a49dabc77f15c6ef8d770f",
+    "security-privacy/llms.txt": "79ea0263edd15afb98420e3defb1d7d9664038f1b78549926d2193993d1a2ba4",
+    "security-privacy/module.json": "ea8aee65edff8d91fe9d7770ac22d5ef17f45ae6def923707636027258e1d65b",
     "security-privacy/package.json": "127303ac88cc68b0afb4fc34a078b79aee61863144ddcf71b99c16df13df56c3",
     "security-privacy/src/authz.ts": "de211e0702f9fb6a471a8723c66abe3ce9cf9a53574da20a0ff46e2b453d96cd",
     "security-privacy/src/crypto.ts": "c5a944d2e041f0e36549b7462207768d37a3a551a6b43586c0a5a9690ae3b934",
     "security-privacy/src/feed.ts": "c195b4631f1065ee96484f23c5870e9ba44a08a998ed5e8f32201ab05a4a642d",
     "security-privacy/src/headers.ts": "c0f3b5c8dcb28af6e42df58ec699119d36fdf3062f1aa75213197382406016e8",
     "security-privacy/src/index.ts": "69b6d584795eaaf0295ba33b44f778c546a869fad7288aa4748538e1058596fa",
-    "security-privacy/src/rate-limit.ts": "7d86a15f8a2571c1347d47d3bb9a8fd04cdb2759236907e8c81d27afdb5a83e9"
+    "security-privacy/src/rate-limit.ts": "9e4fc58626c708c77d493fe1e6a0393e57b1d25f3b0ca960c637e1f25b1204ed"
   }
 }

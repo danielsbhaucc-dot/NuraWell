@@ -43,7 +43,8 @@ export async function fixedWindowUpstash(cfg: { url: string; token: string }, in
   const resetAt = (bucket + 1) * input.windowSeconds * 1000;
   let count = 0;
   try {
-    const res = await f(`${cfg.url.replace(/\/+$/, '')}/pipeline`, {
+    let base = cfg.url; while (base.endsWith('/')) base = base.slice(0, -1);
+    const res = await f(`${base}/pipeline`, {
       method: 'POST', headers: { Authorization: `Bearer ${cfg.token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify([['INCR', redisKey], ['EXPIRE', redisKey, String(input.windowSeconds + 5)]]),
     });
