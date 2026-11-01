@@ -10,15 +10,9 @@ const floors: Record<string, Record<string, string>> = {
   killswitch: { starlette: '1.3.1', anyio: '4.14.2', idna: '3.15', pyasn1: '0.6.5' },
 };
 
-function versionAtLeast(spec: string, min: string): boolean {
-  const got = (spec.trim().split(/[\s,#;]/)[0] ?? '').split('.').map(Number);
-  const want = min.split('.').map(Number);
-  for (let i = 0; i < want.length; i += 1) {
-    const diff = (got[i] ?? 0) - (want[i] ?? 0);
-    if (diff !== 0) return diff > 0;
-  }
-  return true;
-}
+// Zero-padded 3-part key so plain string comparison orders versions correctly.
+const versionKey = (v: string): string =>
+  [...v.split('.'), '0', '0'].slice(0, 3).map((n) => n.padStart(6, '0')).join('.');
 
 describe('KMS function requirements keep security minimums', () => {
   for (const [fn, pins] of Object.entries(floors)) {
@@ -27,7 +21,8 @@ describe('KMS function requirements keep security minimums', () => {
       it(`${fn}: ${pkg}>=${min}`, () => {
         const line = req.split('\n').find((l) => l.trim().toLowerCase().startsWith(`${pkg}>=`)) ?? '';
         expect(line, `${pkg} floor missing in ${fn}/requirements.txt`).not.toBe('');
-        expect(versionAtLeast(line.split('>=')[1] ?? '', min), `${pkg} floor in ${fn} is below ${min}`).toBe(true);
+        const spec = (line.split('>=')[1] ?? '').trim().split(/[\s,#;]/)[0] ?? '';
+        expect(versionKey(spec) >= versionKey(min), `${pkg} floor in ${fn} is below ${min}`).toBe(true);
       });
     }
   }
