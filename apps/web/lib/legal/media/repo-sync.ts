@@ -18,38 +18,20 @@ export const REPO_MANIFEST_HASH = sha256Hex(entries.map((e) => `${e.asset_key}=$
 export async function repoSyncNeeded(admin: SupabaseClient) {
   const { data } = await admin.from('media_scan_state').select('value').eq('key', 'repo_manifest').maybeSingle();
   return (data as { value?: string } | null)?.value !== REPO_MANIFEST_HASH;
-};
+}
 
-const FONT_PREFIX = 'apps/web/lib/legal/fonts/';
-const FONT_NAME = /^[\w.-]+\.ttf$/;
-
-const publicBytes = async (publicUrl: string): Promise<Buffer | null> => {
+async function bytesFor(e: ManifestEntry): Promise<Buffer | null> {
+  if (e.content_b64) return Buffer.from(e.content_b64, 'base64');
   const origin = publicAppOriginFromEnv() ?? PUBLIC_APP_URL_DEFAULT; // fixed origin, never request-derived
-  try {
-    const r = await fetch(`${origin}${publicUrl}`, { signal: AbortSignal.timeout(10_000) });
-    return r.ok ? Buffer.from(await r.arrayBuffer()) : null;
-  } catch {
+  if (e.public_url && /^\/[\w./-]+$/.test(e.public_url)) {
+    try { const r = await fetch(`${origin}${e.public_url}`, { signal: AbortSignal.timeout(10_000) }); if (r.ok) return Buffer.from(await r.arrayBuffer()); } catch { /* fall through */ }
     return null;
   }
-};
-
-/** Statically scoped to lib/legal/fonts (flat dir, .ttf only) so the tracer does not bundle the whole project. */
-const fontBytes = async (repoPath: string): Promise<Buffer | null> => {
-  const name = path.basename(repoPath);
-  if (!FONT_NAME.test(name)) return null;
-  try {
-    return await readFile(path.join(process.cwd(), 'lib', 'legal', 'fonts', name));
-  } catch {
-    return null;
+  if (e.path?.startsWith('apps/web/lib/legal/fonts/') && e.path.endsWith('.ttf')) {
+    try { return await readFile(path.join(process.cwd(), 'lib', 'legal', 'fonts', path.basename(e.path))); } catch { return null; }
   }
-};
-
-const bytesFor = (e: ManifestEntry): Promise<Buffer | null> => {
-  if (e.content_b64) return Promise.resolve(Buffer.from(e.content_b64, 'base64'));
-  if (e.public_url && /^\/[\w./-]+$/.test(e.public_url)) return publicBytes(e.public_url);
-  if (e.path?.startsWith(FONT_PREFIX)) return fontBytes(e.path);
-  return Promise.resolve(null);
-};
+  return null;
+}
 
 export async function syncRepoManifest(admin: SupabaseClient) {
   const out = { new: 0, changed: 0, unchanged: 0, error: 0, cost: 0, absent: 0 };
@@ -68,4 +50,4 @@ export async function syncRepoManifest(admin: SupabaseClient) {
   out.absent = await markAbsent(admin, ['repo', 'inline', 'font', 'library'], entries.map((e) => e.asset_key));
   if (!out.error) await admin.from('media_scan_state').upsert({ key: 'repo_manifest', value: REPO_MANIFEST_HASH, updated_at: new Date().toISOString() });
   return out;
-};
+}
