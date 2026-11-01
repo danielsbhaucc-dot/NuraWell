@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { authorizeCronRequest } from '@/lib/api/authorize-cron';
 import { backfillFieldV2 } from '@/lib/security/field-backfill';
 import { SWEEP_TABLES } from '@/lib/security/field-registry';
-import { sendUsageFeed } from '@/lib/central/usage-feed';
+import { sendUsageFeed, sendSecurityStatusFeed } from '@/lib/central/usage-feed';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -23,6 +23,7 @@ export async function POST(request: Request) {
     const failed = Object.values(result).some((r) => r.error || r.verifyFail);
     // Once-daily aggregates to the parent-company console. Isolated: never changes this job's status.
     console.log('[cron/session-trail-seal] usage-feed', await sendUsageFeed());
+    console.log('[cron/session-trail-seal] security-feed', await sendSecurityStatusFeed(!failed));
     return NextResponse.json({ ok: !failed, result }, { status: failed ? 500 : 200 });
   } catch (e) {
     console.error('[cron/session-trail-seal] failed', e instanceof Error ? e.message : 'error');

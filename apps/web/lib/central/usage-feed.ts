@@ -40,3 +40,26 @@ export async function sendUsageFeed(): Promise<'sent' | 'skipped' | 'failed'> {
     return 'failed';
   }
 }
+
+/** Daily security status for the parent console (aggregates only). Piggybacks on the same daily cron; never throws. */
+export async function sendSecurityStatusFeed(encOk: boolean): Promise<string> {
+  try {
+    const db = createAdminClient(), now = new Date().toISOString();
+    const c = (q: PromiseLike<{ count: number | null; error: unknown }>) => Promise.resolve(q).then((r) => (r.error ? null : r.count ?? null), () => null);
+    const [denied24h, loginFail24h, ipBlocksActive, openIncidents, events24h, lock, audit] = await Promise.all([
+      c(db.from('security_signals').select('id', { count: 'exact', head: true }).in('kind', ['admin_401', 'admin_403']).gte('created_at', since(1))),
+      c(db.from('security_signals').select('id', { count: 'exact', head: true }).eq('kind', 'login_fail').gte('created_at', since(1))),
+      c(db.from('ip_blocks').select('ip_hash', { count: 'exact', head: true }).gt('blocked_until', now)),
+      c(db.from('security_incidents').select('id', { count: 'exact', head: true }).neq('status', 'closed')),
+      c(db.from('ops_security_events').select('id', { count: 'exact', head: true }).gte('created_at', since(1))),
+      db.from('ops_lockdown').select('active').eq('id', 1).maybeSingle(),
+      db.from('access_audit_runs').select('started_at, flagged').gte('started_at', since(7)).order('started_at', { ascending: false }).limit(50),
+    ]);
+    const runs = (audit.data ?? []) as { started_at: string; flagged: number }[];
+    const { sendSecurityStatus } = await import('@/lib/central/feed-client');
+    return await sendSecurityStatus({ encOk, denied24h, loginFail24h, ipBlocksActive, openIncidents, events24h,
+      lockdown: lock.error ? null : !!(lock.data as { active?: boolean } | null)?.active,
+      lastAccessAudit: runs[0] ? new Date(runs[0].started_at).toISOString() : null,
+      accessAuditFlagged7d: audit.error ? null : runs.reduce((a, r) => a + (r.flagged || 0), 0) });
+  } catch { return 'failed'; }
+}
