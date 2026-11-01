@@ -91,3 +91,13 @@ describe('checkPasswordPolicy', () => {
     expect(Math.abs(a - b)).toBeLessThan(60);
   });
 });
+
+describe('kit-backed policy additions', () => {
+  it('min length is 12 and password may not equal the email', async () => {
+    const { checkPasswordPolicy: c, PASSWORD_MIN_LENGTH: m } = await import('@/lib/auth/password-policy');
+    expect(m).toBe(12);
+    const f = (async () => ({ ok: true, text: async () => '' })) as unknown as typeof fetch;
+    expect(await c('abcdefghij12', { source: 't', fetchImpl: f, email: 'abcdefghij12@example.com' })).toMatchObject({ ok: false, reason: 'equals_email' });
+    expect(await c('abcdefgh123', { source: 't', fetchImpl: f })).toMatchObject({ ok: false, reason: 'too_short' });
+  });
+});

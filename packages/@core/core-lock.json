@@ -1,18 +1,19 @@
 {
   "repo": "danielsbhaucc-dot/platform-core",
-  "sha": "023f3cb9074882a9e98faf7592c51ca289d1e421",
+  "sha": "81ca24534e41d75552b8abad42a3da10593e6d03",
   "files": {
-    "security-privacy/CHANGELOG.md": "8ccd714d321e4205e84886ff08e56fd5524ffb2f69f75bfeb078491c3794dc07",
-    "security-privacy/README.he.md": "574307d02fc8a307b061cdd5752d1c87e2cecb4ae8f454f2100c4d5d05057488",
-    "security-privacy/README.md": "9d62194bb6aa749b286118decbc6d88bd48122f085f5b87089968e3cb68d4a88",
-    "security-privacy/llms.txt": "79ea0263edd15afb98420e3defb1d7d9664038f1b78549926d2193993d1a2ba4",
-    "security-privacy/module.json": "ea8aee65edff8d91fe9d7770ac22d5ef17f45ae6def923707636027258e1d65b",
-    "security-privacy/package.json": "127303ac88cc68b0afb4fc34a078b79aee61863144ddcf71b99c16df13df56c3",
+    "security-privacy/CHANGELOG.md": "ce1b193eb615ec02128a9e4a9d94c9c1ff707160a0807a13b44bbad30bf4584b",
+    "security-privacy/README.he.md": "b5a76d6d3c9703eb39ffcfdcef6793b507948e698e24eb0fb5fc2922beae8edb",
+    "security-privacy/README.md": "c5e6d2150127632d4ed74e57a85d8024613cb05ae2cb7cae3728930b69721692",
+    "security-privacy/llms.txt": "b0f3c03c83787497889b440ccf737a697621995058eb6c7b1856b37643a62764",
+    "security-privacy/module.json": "0cab195c25ad5693632b20faba87c5d34874636ac50293996715df77545ea9a3",
+    "security-privacy/package.json": "d61a0c4fe14b3036b52d7e6c47d98cd0bda6c320e8525577bb6e062e748e562a",
     "security-privacy/src/authz.ts": "45c1690683f6e2c715033bce7b1ed2df850efd685aef7a6ef1db19beddad4479",
     "security-privacy/src/crypto.ts": "5769d7cca22b20a54cc4ce74dc1d33735e5f0054550014bce15f5e97ad46fd51",
     "security-privacy/src/feed.ts": "d3b7da4a5e7fd663f4ce968744c710c28f6891ffdd9ea9c2789f3ccee722ee7f",
     "security-privacy/src/headers.ts": "9014665a1ed4fd8fa090de2ea826f8b2fcd379fd437ccfad050eab26af537a4e",
-    "security-privacy/src/index.ts": "d3cbe5afa917850887da0e82daa77ae791ab42f3be2e304ebe2d904eb89a4d37",
+    "security-privacy/src/index.ts": "6e57dc5ec9619fa70285d67834a529c81684d51df2c42f6689dd310b19b3e00b",
+    "security-privacy/src/password.ts": "8648f24b4fafdccd35964cd25f9b5fe5fed958f85651c20692e2a6f6589999b8",
     "security-privacy/src/rate-limit.ts": "88e6ac1bb79938ac6f7c7d3dde1f14494459fe2fa4bd0163d3219188f7bd03ac"
   }
 }

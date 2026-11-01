@@ -3,7 +3,7 @@
  * Parts (import the subpath you need): ./headers ./rate-limit ./feed ./authz ./crypto (Node).
  * The kit reports its own name+version to the parent console in the daily security status.
  */
-export const KIT = { name: 'security-privacy', version: '1.0.0' } as const;
+export const KIT = { name: 'security-privacy', version: '1.1.0' } as const;
 export interface KitConfig {
   productId: string;
   /** Sellable use: the buyer's @core/licensing gate. Security kits fail SAFE — an inactive licence never turns protections off, it only disables the central adapter and is reported back. */

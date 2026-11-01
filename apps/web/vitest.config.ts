@@ -9,6 +9,7 @@ export default defineConfig({
       '@core/security-privacy/rate-limit': path.resolve(__dirname, '../../packages/@core/security-privacy/src/rate-limit.ts'),
       '@core/security-privacy/headers': path.resolve(__dirname, '../../packages/@core/security-privacy/src/headers.ts'),
       '@core/security-privacy/crypto': path.resolve(__dirname, '../../packages/@core/security-privacy/src/crypto.ts'),
+      '@core/security-privacy/password': path.resolve(__dirname, '../../packages/@core/security-privacy/src/password.ts'),
       '@core/security-privacy': path.resolve(__dirname, '../../packages/@core/security-privacy/src/index.ts'),
       '@saas/billing': path.resolve(__dirname, '../../packages/billing/src/index.ts'),
       '@platform/iam': path.resolve(__dirname, '../../packages/@platform/iam/src/index.ts'),
