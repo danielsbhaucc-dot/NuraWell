@@ -15,6 +15,7 @@ import { PublicAiPresence } from '@/lib/module-api/agent/components-ai-PublicAiP
 import { LegalLinksRow } from '@/lib/module-api/legal/components-legal-LegalLinksRow';
 import { useToast, ToastContainer } from '../../../components/shared/Toast';
 import { APP_HOME_PATH } from '../../../lib/navigation/app-home-path';
+import { isPasswordLeaked } from '../../../lib/auth/password-leak-client';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,20 +39,6 @@ function isOpsHostClient(): boolean {
   const opsHost = process.env.NEXT_PUBLIC_OPS_HOSTNAME?.trim().toLowerCase();
   return Boolean(opsHost) && window.location.hostname.toLowerCase() === opsHost;
 }
-
-/** S5: asks the server whether the just-used password appears in known breaches. Fails open (false) on any error or after 2.5s. */
-const isPasswordLeaked = async (password: string): Promise<boolean> => {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 2500);
-  try {
-    const res = await fetch('/api/v1/auth/signin-password-check', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password }), signal: controller.signal });
-    return res.ok && ((await res.json()) as { pwned?: boolean | null }).pwned === true;
-  } catch {
-    return false;
-  } finally {
-    clearTimeout(timer);
-  }
-};
 
 function LoginFormContent() {
   const router = useRouter();

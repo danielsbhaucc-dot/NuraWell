@@ -57,6 +57,7 @@ describe('S5 sign-in leaked-password check', () => {
     const src = readFileSync(join(__dirname, '..', 'app/(auth)/login/page.tsx'), 'utf8');
     const callAt = src.indexOf('await warnIfLeaked('), errAt = src.indexOf('if (authError)');
     expect(callAt).toBeGreaterThan(errAt);
-    expect(src).toMatch(/AbortController/);
+    expect(src).toMatch(/isPasswordLeaked/);
+    expect(readFileSync(join(__dirname, '..', 'lib/auth/password-leak-client.ts'), 'utf8')).toMatch(/AbortController/);
   });
 });
