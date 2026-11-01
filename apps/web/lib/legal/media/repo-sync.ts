@@ -28,7 +28,10 @@ async function bytesFor(e: ManifestEntry): Promise<Buffer | null> {
     return null;
   }
   if (e.path?.startsWith('apps/web/lib/legal/fonts/')) {
-    try { return await readFile(path.join(process.cwd(), e.path.replace(/^apps\/web\//, ''))); } catch { return null; }
+    // Statically scoped to lib/legal/fonts (flat dir) so the tracer does not bundle the whole project into every function.
+    const name = path.basename(e.path);
+    if (!/^[\w.-]+\.ttf$/.test(name)) return null;
+    try { return await readFile(path.join(process.cwd(), 'lib', 'legal', 'fonts', name)); } catch { return null; }
   }
   return null;
 }
