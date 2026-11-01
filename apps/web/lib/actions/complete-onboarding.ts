@@ -210,7 +210,7 @@ export async function completeOnboarding(
   if (!rl.ok) return { ok: false, error: 'יותר מדי ניסיונות. נסו שוב בעוד כמה דקות.' };
 
   // Server-side password policy (min length + HIBP k-anonymity). Cannot be bypassed client-side.
-  const pw = await checkPasswordPolicy(data.password, { source: 'signup' });
+  const pw = await checkPasswordPolicy(data.password, { source: 'signup', email: data.email });
   if (!pw.ok) return { ok: false, error: pw.error, fieldErrors: { password: [pw.error] } };
 
   const supabase = await createClient();

@@ -6,6 +6,7 @@ import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit'
 import { passwordRotationRequired, rotatePasswordWithCode } from '@/lib/ops/password-rotation';
 import { alertOwnerSecurity } from '@/lib/ops/device-notify';
 import { audit } from '@/lib/ops/device-trust';
+import { checkPasswordPolicy } from '@/lib/module-api/auth-signup/lib-auth-password-policy';
 
 export const dynamic = 'force-dynamic';
 const Body = z.object({ code: z.string().max(20), password: z.string().max(200) });
@@ -19,6 +20,7 @@ export async function GET(request: Request) {
 }
 
 /** Set a NEW password, proven with one recovery code. Only while rotation is pending. */
+// skipcq: JS-0067, JS-R1005 -- ES module scope (not a global); kept flat for auditability
 export async function POST(request: Request) {
   const g = await requireApiAdmin(request);
   if (!g.ok) return g.response;
@@ -27,6 +29,9 @@ export async function POST(request: Request) {
   const uid = g.user.id;
   const rl = await consumeMultiRateLimits(uid, 'ops-rotate-password', [{ limit: 6, windowSeconds: 600 }]);
   if (!rl.ok) return rateLimitResponse(rl);
+  // Leaked-password check BEFORE a recovery code is burned (kit HIBP k-anonymity).
+  const leak = await checkPasswordPolicy(p.data.password, { source: 'ops-rotate', email: g.user.email });
+  if (!leak.ok) return json({ error: leak.error }, 400);
   const db = createAdminClient();
   if (!(await passwordRotationRequired(db, uid))) return json({ error: 'אין החלפת סיסמה ממתינה.' }, 409);
   const out = await rotatePasswordWithCode(db, uid, p.data.code, p.data.password, {

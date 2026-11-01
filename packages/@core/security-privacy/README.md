@@ -1,4 +1,4 @@
-# @core/security-privacy — kit (v1.0.0, distribution: sellable)
+# @core/security-privacy — kit (v1.1.0, distribution: sellable)
 Same security level in every product, built once. Backend only (no UI → no theme tokens).
 
 ## Install (one step)
@@ -13,6 +13,7 @@ Same security level in every product, built once. Backend only (no UI → no the
 | `@core/security-privacy/rate-limit` | `fixedWindowUpstash`, `fixedWindowMemory`, `rateLimitResponse`, token-bucket `rateLimiter` |
 | `@core/security-privacy/authz` | default-deny server authz (grants, expiry, anti-escalation) |
 | `@core/security-privacy/crypto` | enc:v2 field envelope (AES-256-GCM, per-user DEK wrapped by KEK, AAD `<productId>:field:t:c:row`), blind index — byte-compatible with NuraWell production data |
+| `@core/security-privacy/password` | `checkPasswordPolicy(pw,{email})` → Hebrew reason; `checkPwnedPassword` (HIBP range API, only 5-char SHA-1 prefix sent, `Add-Padding`, 2 s timeout, fail-open + event; `PASSWORD_PWNED_FAIL_CLOSED=on` to reject). Call it in EVERY server path that sets a password, and from the auth hook. |
 | `@core/security-privacy/feed` | optional central adapter: `sendSecurityEvent`, `sendSecurityStatus`, `signUsage` |
 
 ## Contract

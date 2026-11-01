@@ -1,7 +1,7 @@
 {
   "id": "security-privacy",
   "package": "@core/security-privacy",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "core": true,
   "kit": true,
   "distribution": "sellable",
@@ -17,7 +17,8 @@
     "CENTRAL_SUPABASE_SECRET_KEY",
     "CENTRAL_METRICS_FEED_SECRET",
     "UPSTASH_REDIS_REST_URL",
-    "UPSTASH_REDIS_REST_TOKEN"
+    "UPSTASH_REDIS_REST_TOKEN",
+    "PASSWORD_PWNED_FAIL_CLOSED"
   ],
   "theme": []
 }
