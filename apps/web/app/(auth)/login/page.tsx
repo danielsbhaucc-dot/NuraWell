@@ -40,7 +40,7 @@ function isOpsHostClient(): boolean {
   return Boolean(opsHost) && window.location.hostname.toLowerCase() === opsHost;
 }
 
-function LoginFormContent() {
+const LoginFormContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = sanitizeRedirectPath(searchParams?.get('redirect'));
@@ -137,7 +137,9 @@ function LoginFormContent() {
     }
     try {
       sessionStorage.setItem(AFTER_LOGIN_KEY, String(Date.now()));
-    } catch {}
+    } catch {
+      /* storage unavailable (private mode): non-critical */
+    }
     toast.success('התחברת בהצלחה!', 'מעבירים אותך לקורסים...');
     setTimeout(() => {
       router.push(redirect);
@@ -536,7 +538,7 @@ function LoginFormContent() {
       </main>
     </>
   );
-}
+};
 
 export default function LoginPage() {
   return (
