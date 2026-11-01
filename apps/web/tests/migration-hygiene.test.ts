@@ -52,9 +52,34 @@ function migrationIssues(sql: string): string[] {
   return issues;
 }
 
+/**
+ * Default privileges used to grant ALL on a new public table to authenticated, including
+ * TRUNCATE, which row level security does not cover (000180 / 000228). A new table must
+ * revoke that role in the same file before any narrower grant.
+ */
+function authenticatedRevokeIssues(sql: string): string[] {
+  const src = stripSqlComments(sql);
+  const issues: string[] = [];
+  const tableRe = /create\s+table\s+(?:if\s+not\s+exists\s+)?public\.([a-zA-Z_][a-zA-Z0-9_]*)/gi;
+  let m: RegExpExecArray | null;
+  while ((m = tableRe.exec(src))) {
+    const name = m[1];
+    const revoke = new RegExp(`revoke\\s+all\\s+on\\s+(?:table\\s+)?(?:public\\.)?${name}\\s+from\\b[^;]*\\bauthenticated\\b`, 'i');
+    if (!revoke.test(src)) {
+      issues.push(`public.${name}: create table must revoke all on public.${name} from authenticated (TRUNCATE bypasses row level security)`);
+    }
+  }
+  return issues;
+}
+
 function inScope(filename: string): boolean {
   const n = /^(\d+)_.*\.sql$/.exec(filename);
   return n != null && Number(n[1]) >= HYGIENE_FROM;
+}
+
+function migrationNumber(filename: string): number | null {
+  const n = /^(\d+)_.*\.sql$/.exec(filename);
+  return n ? Number(n[1]) : null;
 }
 
 describe('migration hygiene parser', () => {
@@ -146,6 +171,27 @@ describe('migration hygiene parser', () => {
     expect(migrationIssues(sql)).toEqual([]);
   });
 
+  it('requires a revoke from authenticated on a new table', () => {
+    const sql = `
+      create table public.widget (id int);
+      alter table public.widget enable row level security;
+      grant all on public.widget to service_role;
+      grant select on public.widget to authenticated;
+    `;
+    expect(authenticatedRevokeIssues(sql).join('\n')).toMatch(/public\.widget/);
+  });
+
+  it('accepts revoke all from anon, authenticated before a narrower grant', () => {
+    const sql = `
+      create table if not exists public.widget (id int);
+      revoke all on table public.widget from public, anon, authenticated;
+      grant select on public.widget to authenticated;
+      grant all on public.widget to service_role;
+      alter table public.widget enable row level security;
+    `;
+    expect(authenticatedRevokeIssues(sql)).toEqual([]);
+  });
+
   it('grandfathered prefixes stay out of scope', () => {
     expect(inScope('000226_modules_wp_stage1.sql')).toBe(false);
     expect(inScope('000225_legal_evidence_reseal.sql')).toBe(false);
@@ -172,7 +218,20 @@ describe('migrations from 000227 onward', () => {
   it('every in-scope migration passes', () => {
     expect(files.length).toBeGreaterThan(0);
     for (const f of files) {
-      expect(migrationIssues(readFileSync(join(DIR, f), 'utf8')), f).toEqual([]);
+      const sql = readFileSync(join(DIR, f), 'utf8');
+      expect(migrationIssues(sql), f).toEqual([]);
+      const n = migrationNumber(f);
+      if (n != null && n >= 228) expect(authenticatedRevokeIssues(sql), f).toEqual([]);
     }
+  });
+
+  it('000228 revokes the compliance_tasks leftover and tightens postgres defaults', () => {
+    const sql = readFileSync(join(DIR, '000228_api_grant_defaults.sql'), 'utf8');
+    expect(sql).toMatch(/revoke all on table public\.compliance_tasks from public, anon, authenticated/i);
+    expect(sql).toMatch(/grant select, update on table public\.compliance_tasks to authenticated/i);
+    expect(sql).toMatch(/revoke all on sequences from public, anon, authenticated/i);
+    expect(sql).toMatch(/revoke all on tables from authenticated/i);
+    expect(migrationIssues(sql)).toEqual([]);
+    expect(authenticatedRevokeIssues(sql)).toEqual([]);
   });
 });
