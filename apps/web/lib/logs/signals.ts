@@ -66,11 +66,13 @@ export async function isIpRangeBlocked(db: SupabaseClient, ip: string, now = Dat
 }
 
 type AlertExtras = { buttons?: import('@/lib/module-api/gideon/lib-ceo-channel').CeoButton[][]; emailLink?: { href: string; label: string } };
+// skipcq: JS-0067 -- ES module scope, not a global
 async function alertOnce(db: SupabaseClient, key: string, kind: string, detail: Record<string, unknown>, text: string, subject: string, withinMs = 3_600_000, extras: AlertExtras | (() => Promise<AlertExtras>) = {}): Promise<void> {
   const since = new Date(Date.now() - withinMs).toISOString();
   const { data: prev } = await db.from('ops_security_events').select('id').eq('kind', kind).gte('created_at', since).contains('facts', { key }).limit(1);
   if (prev?.length) return;
   await db.from('ops_security_events').insert({ kind, facts: { key }, detail: { key, ...detail }, alerted_at: new Date().toISOString() });
+  await import('@core/security-privacy/feed').then((f) => f.sendSecurityEvent(kind, 'high', 0)).catch(() => undefined);
   const { alertOwnerSecurity } = await import('@/lib/ops/device-notify');
   const x = typeof extras === 'function' ? await extras().catch(() => ({})) : extras;
   // null user = system alert → Telegram + every admin owner's email (before 2026-10 the email leg was skipped)
@@ -91,9 +93,11 @@ async function trustedIp(db: SupabaseClient, ipHash: string): Promise<boolean> {
 }
 
 /** Called on every 401/403 from the admin guard. Best-effort; never throws. */
+// skipcq: JS-0067 -- ES module export, not a global
 export async function recordAdminDenial(db: SupabaseClient, request: Request, status: number, actorId: string | null): Promise<void> {
   try {
     const ipHash = hashIp(requestIp(request));
+    await import('@core/security-privacy/feed').then((f) => f.sendSecurityEvent('admin_denied', 'low')).catch(() => undefined);
     await db.from('security_signals').insert({ kind: status === 401 ? 'admin_401' : 'admin_403', ip_hash: ipHash, actor_id: actorId, path: safePath(request), country: requestCountry(request) });
     if (!ipHash) return;
     const { count } = await db.from('security_signals').select('id', { count: 'exact', head: true })

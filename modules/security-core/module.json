@@ -13,6 +13,7 @@
     "step-up-2fa"
   ],
   "owns": [
+    "apps/web/lib/central/",
     "apps/web/lib/security/",
     "apps/web/lib/security-core/",
     "apps/web/lib/secure-vault/",

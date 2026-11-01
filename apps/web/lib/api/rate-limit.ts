@@ -13,18 +13,7 @@
  * Edge-friendly: בלי תלות ב-Node API. השימוש ב-REST של Upstash מתאים גם ל-edge.
  */
 
-const memoryWindows = new Map<string, { count: number; resetAt: number }>();
-
-let lastMemoryCleanupAt = 0;
-const MEMORY_CLEANUP_INTERVAL_MS = 60_000;
-
-function gcMemoryWindows(now: number) {
-  if (now - lastMemoryCleanupAt < MEMORY_CLEANUP_INTERVAL_MS) return;
-  lastMemoryCleanupAt = now;
-  for (const [key, entry] of memoryWindows.entries()) {
-    if (entry.resetAt <= now) memoryWindows.delete(key);
-  }
-}
+import { fixedWindowMemory, fixedWindowUpstash, rateLimitResponse as sharedRateLimitResponse } from '@core/security-privacy/rate-limit';
 
 export type RateLimitResult = {
   ok: boolean;
@@ -54,84 +43,17 @@ function isUpstashRedisConfigured(): boolean {
   );
 }
 
-/**
- * INCR+EXPIRE atomic לתוך Upstash Redis REST. שורד restart של edge instance ומכסה
- * את כל ה-instances ביחד.
- */
-async function checkUpstashRedis(input: RateLimitInput, now: number): Promise<RateLimitResult | null> {
-  const url = process.env.UPSTASH_REDIS_REST_URL!.trim().replace(/\/+$/, '');
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN!.trim();
-  const bucket = Math.floor(now / 1000 / input.windowSeconds);
-  const redisKey = `rl:${input.namespace}:${input.key}:${bucket}`;
-  const resetAt = (bucket + 1) * input.windowSeconds * 1000;
-
-  /**
-   * `pipeline` שולח קבוצת פקודות באטומיות-סבירה (לא transaction אמיתי אבל
-   * מספיק טוב לחלון fixed window — אם אחת נפלה, השנייה לא תהרוס את הגישה).
-   */
-  const body = JSON.stringify([
-    ['INCR', redisKey],
-    ['EXPIRE', redisKey, String(input.windowSeconds + 5)],
-  ]);
-
-  let count = 0;
-  try {
-    const res = await fetch(`${url}/pipeline`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body,
-    });
-    if (!res.ok) {
-      throw new Error(`upstash redis ${res.status}`);
-    }
-    const json = (await res.json()) as Array<{ result?: unknown; error?: string }> | null;
-    const first = json?.[0];
-    if (first && typeof first.result === 'number') {
-      count = first.result;
-    }
-  } catch {
-    // Redis down → fail over to Postgres/memory instead of blocking all traffic.
-    return null;
-  }
-
-  const remaining = Math.max(0, input.limit - count);
-  return {
-    ok: count <= input.limit,
-    limit: input.limit,
-    remaining,
-    resetAt,
-  };
+/** Upstash window + memory fallback come from the shared platform-core package (@core/security-privacy/rate-limit). */
+// skipcq: JS-0067 -- ES module scope
+function checkUpstashRedis(input: RateLimitInput, now: number): Promise<RateLimitResult | null> {
+  return fixedWindowUpstash(
+    { url: (process.env.UPSTASH_REDIS_REST_URL ?? '').trim(), token: (process.env.UPSTASH_REDIS_REST_TOKEN ?? '').trim() },
+    input,
+    now
+  );
 }
 
-function checkMemory(input: RateLimitInput, now: number): RateLimitResult {
-  gcMemoryWindows(now);
-  const mapKey = `${input.namespace}:${input.key}`;
-  const existing = memoryWindows.get(mapKey);
-  const windowMs = input.windowSeconds * 1000;
-
-  if (!existing || existing.resetAt <= now) {
-    const fresh = { count: 1, resetAt: now + windowMs };
-    memoryWindows.set(mapKey, fresh);
-    return {
-      ok: true,
-      limit: input.limit,
-      remaining: input.limit - 1,
-      resetAt: fresh.resetAt,
-    };
-  }
-
-  existing.count += 1;
-  const remaining = Math.max(0, input.limit - existing.count);
-  return {
-    ok: existing.count <= input.limit,
-    limit: input.limit,
-    remaining,
-    resetAt: existing.resetAt,
-  };
-}
+const checkMemory = (input: RateLimitInput, now: number): RateLimitResult => fixedWindowMemory(input, now);
 
 // skipcq: JS-0067, JS-R1005 -- module-scoped (ES module)
 function supabaseRest(): { url: string; key: string } | null {
@@ -308,25 +230,9 @@ export async function consumeMultiRateLimits(
 }
 
 /**
- * בונה תגובת 429 סטנדרטית עם כותרות `X-RateLimit-*` ו-`Retry-After`.
+ * בונה תגובת 429 סטנדרטית עם כותרות `X-RateLimit-*` ו-`Retry-After` (shared: @core/security-privacy/rate-limit).
  */
+// skipcq: JS-0067 -- ES module export
 export function rateLimitResponse(result: RateLimitResult, message?: string): Response {
-  const retryAfterSec = Math.max(1, Math.ceil((result.resetAt - Date.now()) / 1000));
-  return new Response(
-    JSON.stringify({
-      error: message ?? 'יותר מדי בקשות. נסה שוב בעוד מספר שניות.',
-      retry_after_seconds: retryAfterSec,
-    }),
-    {
-      status: 429,
-      headers: {
-        'Content-Type': 'application/json; charset=utf-8',
-        'Retry-After': String(retryAfterSec),
-        'X-RateLimit-Limit': String(result.limit),
-        'X-RateLimit-Remaining': String(result.remaining),
-        'X-RateLimit-Reset': String(Math.floor(result.resetAt / 1000)),
-        'Cache-Control': 'no-cache, no-transform',
-      },
-    }
-  );
+  return sharedRateLimitResponse(result, message ?? 'יותר מדי בקשות. נסה שוב בעוד מספר שניות.');
 }
