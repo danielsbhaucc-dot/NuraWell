@@ -7,3 +7,4 @@ export * from './guard';
 export { canonicalJson } from './b64';
 export * from './publish';
 export * from './online';
+export * from './credit';

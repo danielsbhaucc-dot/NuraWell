@@ -3,11 +3,12 @@ import { OpsPageHeader } from '@/components/admin/OpsPageHeader';
 import { opsGlassCardClass } from '@/components/admin/OpsPanel';
 import type { ProductMetrics } from '@/lib/platform/product-metrics';
 import { cn } from '@/lib/cn';
+import { CreditToggle } from './CreditToggle';
 
 const usd = (n: number) => `$${n.toFixed(n < 1 ? 3 : 2)}`;
 const num = (n: number) => n.toLocaleString('he-IL');
 
-export function ProductsControlPlane({ rows, error }: { rows: ProductMetrics[]; error: string | null }) {
+export function ProductsControlPlane({ rows, error, credit }: { rows: ProductMetrics[]; error: string | null; credit?: Record<string, boolean> }) {
   const totalCost = rows.reduce((s, r) => s + r.aiCost30dUsd, 0);
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-5 p-3 sm:p-6" dir="rtl">
@@ -61,6 +62,7 @@ export function ProductsControlPlane({ rows, error }: { rows: ProductMetrics[]; 
               <KeyRound size={14} aria-hidden />
               מפתח הצפנה נפרד למוצר הזה
             </p>
+            {credit && r.productId in credit ? <CreditToggle productId={r.productId} initial={credit[r.productId]} /> : null}
           </li>
         ))}
       </ul>
