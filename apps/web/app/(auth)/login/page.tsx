@@ -40,7 +40,8 @@ function isOpsHostClient(): boolean {
   return Boolean(opsHost) && window.location.hostname.toLowerCase() === opsHost;
 }
 
-const LoginFormContent = () => {
+// Pre-existing JSX-heavy login screen; branches are render ternaries, splitting is out of scope for S5.
+const LoginFormContent = () => { // skipcq: JS-R1005
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = sanitizeRedirectPath(searchParams?.get('redirect'));
