@@ -1,13 +1,13 @@
 /** Strict security headers; nonce-based CSP, no unsafe-inline/eval. */
-/** `overrides`: per-product values; `null` removes a header (e.g. CSP set per request by middleware). */
+/** "overrides": per-product values; "null" removes a header (e.g. CSP set per request by middleware). */
 // skipcq: JS-0067, JS-R1005 -- ES module scope (not a global); kept flat for auditability
-export function securityHeaders(o: { nonce?: string; api?: boolean; overrides?: Record<string, string | null> } = {}): Record<string, string> {
-  const csp = o.api
+export function securityHeaders(opts: { nonce?: string; api?: boolean; overrides?: Record<string, string | null> } = {}): Record<string, string> {
+  const csp = opts.api
     ? "default-src 'none'; frame-ancestors 'none'; base-uri 'none'"
-    : [`default-src 'self'`, `script-src 'self'${o.nonce ? ` 'nonce-${o.nonce}'` : ''} 'strict-dynamic'`, `style-src 'self'`,
-       `img-src 'self' data:`, `font-src 'self'`, `connect-src 'self'`, `object-src 'none'`, `base-uri 'none'`,
-       `form-action 'self'`, `frame-ancestors 'none'`, `upgrade-insecure-requests`].join('; ');
-  const h: Record<string, string> = {
+    : ["default-src 'self'", `script-src 'self'${opts.nonce ? ` 'nonce-${opts.nonce}'` : ''} 'strict-dynamic'`, "style-src 'self'",
+       "img-src 'self' data:", "font-src 'self'", "connect-src 'self'", "object-src 'none'", "base-uri 'none'",
+       "form-action 'self'", "frame-ancestors 'none'", "upgrade-insecure-requests"].join('; ');
+  const out: Record<string, string> = {
     'Content-Security-Policy': csp,
     'Strict-Transport-Security': 'max-age=63072000; includeSubDomains; preload',
     'X-Content-Type-Options': 'nosniff',
@@ -16,12 +16,12 @@ export function securityHeaders(o: { nonce?: string; api?: boolean; overrides?: 
     'Cross-Origin-Opener-Policy': 'same-origin',
     'Cross-Origin-Resource-Policy': 'same-origin',
     'X-Frame-Options': 'DENY',
-    'Cache-Control': o.api ? 'no-store' : 'public, max-age=0, must-revalidate',
+    'Cache-Control': opts.api ? 'no-store' : 'public, max-age=0, must-revalidate',
   };
-  for (const [k, v] of Object.entries(o.overrides ?? {})) { if (v === null) delete h[k]; else h[k] = v; }
-  return h;
+  for (const [name, value] of Object.entries(opts.overrides ?? {})) { if (value === null) delete out[name]; else out[name] = value; }
+  return out;
 }
 
-/** Next.js `headers()` shape. */
+/** Next.js "headers()" shape. */
 // skipcq: JS-0067, JS-R1005 -- ES module scope (not a global); kept flat for auditability
 export const toNextHeaders = (h: Record<string, string>) => Object.entries(h).map(([key, value]) => ({ key, value }));

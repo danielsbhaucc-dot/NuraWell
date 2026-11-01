@@ -20,27 +20,27 @@ export function signSecurityBody(secret: string, body: string, ts = Date.now(), 
 
 // skipcq: JS-0067, JS-R1005 -- ES module scope (not a global); kept flat for auditability
 async function post(body: object): Promise<Result> {
-  const e = env();
-  if (process.env.KIT_CENTRAL_REPORTING !== 'on' || !e.product || !e.url || !e.key || !e.secret) return 'skipped';
+  const cfg = env();
+  if (process.env.KIT_CENTRAL_REPORTING !== 'on' || !cfg.product || !cfg.url || !cfg.key || !cfg.secret) return 'skipped';
   try {
-    const b = JSON.stringify(body), { ts, nonce, sig } = signSecurityBody(e.secret, b);
-    const r = await fetch(`${e.url.replace(/\/$/, '')}/rest/v1/rpc/central_ingest_security`, {
+    const payload = JSON.stringify(body), { ts, nonce, sig } = signSecurityBody(cfg.secret, payload);
+    const res = await fetch(`${cfg.url.replace(/\/$/, '')}/rest/v1/rpc/central_ingest_security`, {
       method: 'POST', signal: AbortSignal.timeout(3000),
-      headers: { apikey: e.key, authorization: `Bearer ${e.key}`, 'content-type': 'application/json' },
-      body: JSON.stringify({ p_product: e.product, p_body: b, p_ts: ts, p_nonce: nonce, p_sig: sig }),
+      headers: { apikey: cfg.key, authorization: `Bearer ${cfg.key}`, 'content-type': 'application/json' },
+      body: JSON.stringify({ p_product: cfg.product, p_body: payload, p_ts: ts, p_nonce: nonce, p_sig: sig }),
     });
-    return r.ok ? 'sent' : 'failed';
+    return res.ok ? 'sent' : 'failed';
   } catch { return 'failed'; }
 }
 
 const last = new Map<string, { at: number; n: number }>();
 /** One security event (kind = short code, no user data). Throttled per kind: at most one send per `everyMs`; skipped hits are counted into the next send. */
 // skipcq: JS-0067, JS-R1005 -- ES module scope (not a global); kept flat for auditability
-export async function sendSecurityEvent(kind: string, severity: Severity, everyMs = 600_000): Promise<Result> {
-  if (!/^[a-z0-9_]{1,40}$/.test(kind)) return 'skipped';
-  const now = Date.now(), l = last.get(kind);
-  if (l && now - l.at < everyMs) { l.n += 1; return 'throttled'; }
-  const n = (l?.n ?? 0) + 1; last.set(kind, { at: now, n: 0 });
+export function sendSecurityEvent(kind: string, severity: Severity, everyMs = 600_000): Promise<Result> {
+  if (!/^[a-z0-9_]{1,40}$/.test(kind)) return Promise.resolve('skipped');
+  const now = Date.now(), prev = last.get(kind);
+  if (prev && now - prev.at < everyMs) { prev.n += 1; return Promise.resolve('throttled'); }
+  const n = (prev?.n ?? 0) + 1; last.set(kind, { at: now, n: 0 });
   return post({ type: 'event', kind, severity, n });
 }
 /** Daily status snapshot (call from an existing daily job). Only whitelisted aggregate keys are accepted centrally. */

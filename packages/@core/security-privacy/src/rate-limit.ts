@@ -1,7 +1,7 @@
 /** Token-bucket rate limiter with pluggable store (Workers: Durable Object / KV; tests: memory). Fails CLOSED on store error. */
 export interface Store { get(k: string): Promise<{ tokens: number; at: number } | null>; set(k: string, v: { tokens: number; at: number }): Promise<void> }
 // skipcq: JS-0067, JS-R1005 -- ES module scope (not a global); kept flat for auditability
-export const memoryStore = (): Store => { const m = new Map<string, { tokens: number; at: number }>(); return { async get(k) { return m.get(k) ?? null; }, async set(k, v) { m.set(k, v); } }; };
+export const memoryStore = (): Store => { const buckets = new Map<string, { tokens: number; at: number }>(); return { get(key) { return Promise.resolve(buckets.get(key) ?? null); }, set(key, val) { buckets.set(key, val); return Promise.resolve(); } }; };
 // skipcq: JS-0067, JS-R1005 -- ES module scope (not a global); kept flat for auditability
 export function rateLimiter(o: { store: Store; capacity: number; refillPerSec: number; now?: () => number }) {
   return async (key: string): Promise<{ ok: boolean; retryAfterSec: number }> => {
@@ -26,7 +26,7 @@ let lastMemoryCleanupAt = 0;
 export function fixedWindowMemory(input: FixedWindowInput, now: number): FixedWindowResult {
   if (now - lastMemoryCleanupAt >= 60_000) {
     lastMemoryCleanupAt = now;
-    for (const [k, e] of memoryWindows.entries()) if (e.resetAt <= now) memoryWindows.delete(k);
+    for (const [key, win] of memoryWindows.entries()) if (win.resetAt <= now) memoryWindows.delete(key);
   }
   const mapKey = `${input.namespace}:${input.key}`;
   const existing = memoryWindows.get(mapKey);
