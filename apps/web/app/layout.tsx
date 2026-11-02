@@ -94,6 +94,7 @@ export const viewport: Viewport = {
   ],
 };
 
+// skipcq: JS-0067
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -110,6 +111,7 @@ export default async function RootLayout({
         {a11yOn ? (
           <script
             nonce={nonce}
+            // skipcq: JS-0440 -- static bootstrap script from our own code, CSP nonce
             dangerouslySetInnerHTML={{ __html: accessibilityBootstrapScript() }}
           />
         ) : null}

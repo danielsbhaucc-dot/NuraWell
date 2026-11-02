@@ -23,15 +23,17 @@ export function isGateable(m: ModuleManifest | undefined): m is ModuleManifest {
 /** Legal / money / access floor: these surfaces stay up even when their module is switched off
  *  (accessibility statement is legally required; real payment webhooks must never be dropped; sign-in and account deletion never locked). */
 export const GATE_FLOOR: readonly string[] = ['/accessibility', '/api/webhooks/billing', '/api/v1/billing/webhook', '/auth/', '/api/v1/auth/', '/api/v1/account/delete'];
-export const onFloor = (path: string) => GATE_FLOOR.some((f) => (f.endsWith('/') ? path.startsWith(f) : path === f || path.startsWith(f + '/')));
+export const onFloor = (path: string) => GATE_FLOOR.some((f) => (f.endsWith('/') ? path.startsWith(f) : path === f || path.startsWith(`${f}/`)));
 
 /** Pure decision (unit-tested). */
+// skipcq: JS-0067, JS-R1005
 export function decideGate(registry: readonly ModuleManifest[], owner: { module: ModuleManifest; surface: Surface } | undefined, st: GateStates | null, path?: string): GateDecision {
   if (owner && path && onFloor(path)) return { blocked: false, moduleId: owner.module.id, surface: owner.surface };
   if (!owner) return { blocked: false, moduleId: null, surface: null };
   const { module: m, surface } = owner;
   if (surface === 'admin' || !isGateable(m) || !st || (st.source === 'failsafe' && !st.failClosed)) return { blocked: false, moduleId: m.id, surface };
   const seen = new Set<string>();
+  // skipcq: JS-R1005
   const off = (id: string): string | null => {
     if (seen.has(id)) return null; seen.add(id);
     const mm = registry.find((x) => x.id === id);
