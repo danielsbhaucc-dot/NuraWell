@@ -17,13 +17,14 @@ const since = (days: number) => new Date(Date.now() - days * 86_400_000).toISOSt
 // skipcq: JS-0067, JS-R1005 -- ES module export
 export async function collectUsageTotals(): Promise<UsageTotals> {
   const db = createAdminClient();
-  const [users, errors, cost] = await Promise.all([
+  const [users, active, errors, cost] = await Promise.all([
     db.from('profiles').select('id', { count: 'exact', head: true }),
+    db.from('profiles').select('id', { count: 'exact', head: true }).gte('last_active_at', since(7)),
     db.from('error_events').select('id', { count: 'exact', head: true }).gte('created_at', since(7)).in('severity', ['error', 'fatal']),
     db.from('ai_usage_events').select('cost_usd').gte('created_at', since(30)).limit(50_000),
   ]);
   const sum = cost.error ? null : Math.round((cost.data ?? []).reduce((a, r) => a + Number((r as { cost_usd: number | string }).cost_usd || 0), 0) * 10_000) / 10_000;
-  return { users: users.error ? null : users.count ?? null, active7d: null, aiCost30dUsd: sum, errors7d: errors.error ? null : errors.count ?? null };
+  return { users: users.error ? null : users.count ?? null, active7d: active.error ? null : active.count ?? null, aiCost30dUsd: sum, errors7d: errors.error ? null : errors.count ?? null };
 }
 
 // skipcq: JS-0067, JS-R1005 -- ES module export
