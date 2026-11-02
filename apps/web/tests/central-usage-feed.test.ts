@@ -19,6 +19,11 @@ describe('central usage feed', () => {
     expect(cron).toMatch(/await sendUsageFeed\(\)/);
     expect(cron).not.toMatch(/sendUsageFeed\(\)[^\n]*failed/);
   });
+  it('reports active7d from profiles.last_active_at, not a hard-coded null', () => {
+    const src = readFileSync(join(__dirname, '../lib/central/usage-feed.ts'), 'utf8');
+    expect(src).toMatch(/gte\('last_active_at', since\(7\)\)/);
+    expect(src).not.toMatch(/active7d: null/);
+  });
   it('skips when not configured', async () => {
     const { sendUsageFeed } = await import('@/lib/central/usage-feed');
     const old = process.env.CENTRAL_METRICS_FEED_SECRET; delete process.env.CENTRAL_METRICS_FEED_SECRET;
