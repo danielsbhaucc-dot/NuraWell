@@ -15,6 +15,7 @@ import { PublicAiPresence } from '@/lib/module-api/agent/components-ai-PublicAiP
 import { LegalLinksRow } from '@/lib/module-api/legal/components-legal-LegalLinksRow';
 import { useToast, ToastContainer } from '../../../components/shared/Toast';
 import { APP_HOME_PATH } from '../../../lib/navigation/app-home-path';
+import { isPasswordLeaked } from '../../../lib/auth/password-leak-client';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,7 +40,8 @@ function isOpsHostClient(): boolean {
   return Boolean(opsHost) && window.location.hostname.toLowerCase() === opsHost;
 }
 
-function LoginFormContent() {
+// Pre-existing JSX-heavy login screen; branches are render ternaries, splitting is out of scope for S5.
+const LoginFormContent = () => { // skipcq: JS-R1005
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = sanitizeRedirectPath(searchParams?.get('redirect'));
@@ -121,6 +123,31 @@ function LoginFormContent() {
     };
   }, []);
 
+  /** S5: leaked-password check after a successful sign-in (k-anonymity, server side). Never blocks the login. */
+  const warnIfLeaked = async (pw: string): Promise<boolean> => {
+    const leaked = await isPasswordLeaked(pw);
+    if (leaked) toast.warning('הסיסמה שלך הופיעה בדליפות מידע', 'היא עלולה להיות קלה לניחוש. מומלץ להחליף אותה בהקדם ולהוסיף מפתח גישה.');
+    return leaked;
+  };
+
+  /** After a successful sign-in: ops host does a full navigation (proxy re-checks admin); app host routes client-side. */
+  const finishLogin = (leaked: boolean) => {
+    if (isOpsHost) {
+      window.location.assign(redirect === APP_HOME_PATH ? '/' : redirect);
+      return;
+    }
+    try {
+      sessionStorage.setItem(AFTER_LOGIN_KEY, String(Date.now()));
+    } catch {
+      /* storage unavailable (private mode): non-critical */
+    }
+    toast.success('התחברת בהצלחה!', 'מעבירים אותך לקורסים...');
+    setTimeout(() => {
+      router.push(redirect);
+      router.refresh();
+    }, leaked ? 4000 : 800);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.includes('@')) {
@@ -139,19 +166,9 @@ function LoginFormContent() {
         return;
       }
 
-      if (isOpsHost) {
-        // Full navigation so the proxy re-checks admin + rewrites to the panel on this host.
-        window.location.assign(redirect === APP_HOME_PATH ? '/' : redirect);
-        return;
-      }
-      try {
-        sessionStorage.setItem(AFTER_LOGIN_KEY, String(Date.now()));
-      } catch {}
-      toast.success('התחברת בהצלחה!', 'מעבירים אותך לקורסים...');
-      setTimeout(() => {
-        router.push(redirect);
-        router.refresh();
-      }, 800);
+      const leaked = await warnIfLeaked(password);
+
+      finishLogin(leaked);
     } catch (e) {
       console.error('[login] unexpected', e);
       toast.error(
@@ -522,7 +539,7 @@ function LoginFormContent() {
       </main>
     </>
   );
-}
+};
 
 export default function LoginPage() {
   return (
