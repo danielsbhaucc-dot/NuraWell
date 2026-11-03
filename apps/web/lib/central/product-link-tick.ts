@@ -132,14 +132,16 @@ const shadowDecision = async (link: { base: string; keyId: string; secret: strin
 
 type LinkConf = { base: string; keyId: string; secret: string };
 
-const readLinkConf = (env: Env): LinkConf | null => {
-  const conf = { base: trimSlash(env.CENTRAL_SUPABASE_URL), keyId: env.PRODUCT_LINK_KEY_ID ?? '', secret: env.PRODUCT_LINK_SECRET ?? '' };
-  return isLinkConf(conf) ? conf : null;
-};
+const asText = (value: string | undefined): string => value ?? '';
 
-const trimSlash = (url: string | undefined): string => (url ?? '').replace(/\/$/, '');
+const trimSlash = (url: string | undefined): string => asText(url).replace(/\/$/, '');
 
 const isLinkConf = (conf: LinkConf): boolean => [conf.base.startsWith('https://'), conf.keyId !== '', conf.secret !== ''].every(Boolean);
+
+const readLinkConf = (env: Env): LinkConf | null => {
+  const conf = { base: trimSlash(env.CENTRAL_SUPABASE_URL), keyId: asText(env.PRODUCT_LINK_KEY_ID), secret: asText(env.PRODUCT_LINK_SECRET) };
+  return isLinkConf(conf) ? conf : null;
+};
 
 const makePoster = (conf: LinkConf, fetchImpl: typeof fetch, nowMs: number) => async (path: string, payload: unknown): Promise<number> => {
   try {
@@ -169,7 +171,7 @@ const SKIPPED_BASE = { status: 'skipped', heartbeat: 0, usage: 0, decisions: [],
 
 const tickHealth = (daily: unknown, users: unknown): Health => ([daily, users].includes(null) ? 'degraded' : 'ok');
 
-const sendHeartbeat = async (beat: { instance: string; version: string; health: Health }, post: (path: string, payload: unknown) => Promise<number>): Promise<number> =>
+const sendHeartbeat = (beat: { instance: string; version: string; health: Health }, post: (path: string, payload: unknown) => Promise<number>): Promise<number> =>
   (checkHeartbeat(beat).ok ? post('/v1/heartbeat', beat) : 422);
 
 // skipcq: JS-0067 -- ES module export
