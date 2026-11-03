@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import LicenseRequired from '@/components/license/LicenseRequired';
+import LicenseRequired from '@/components/shared/LicenseRequired';
 import { licenseGate, profileRole, purchaseUrl } from '@/lib/central/license-gate';
 
 export const dynamic = 'force-dynamic';

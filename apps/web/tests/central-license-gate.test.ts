@@ -45,7 +45,7 @@ describe('license gate decision', () => {
     expect(purchaseUrl({ PLATFORM_PURCHASE_URL: 'https://shop.example.com/buy' })).toBe('https://shop.example.com/buy');
   });
   it('block screen: Hebrew RTL, no native dialogs; gate wired into dashboard + Almog chat', () => {
-    const ui = readFileSync('components/license/LicenseRequired.tsx', 'utf8');
+    const ui = readFileSync('components/shared/LicenseRequired.tsx', 'utf8');
     expect(ui).toMatch(/dir="rtl"/);
     expect(ui).not.toMatch(/\b(alert|confirm|prompt)\(/);
     expect(readFileSync('app/(dashboard)/layout.tsx', 'utf8')).toMatch(/redirect\('\/license-required'\)/);
