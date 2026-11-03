@@ -303,7 +303,7 @@ const LoginFormContent = () => { // skipcq: JS-R1005
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: bgReady ? 1 : 0, y: bgReady ? 0 : 12 }}
           transition={{ duration: 0.3, ease: 'easeOut' as const }}
-          className="relative z-10 flex min-h-0 flex-1 flex-col justify-center-safe overflow-y-auto overscroll-contain px-4 pb-6 pt-[max(1.25rem,env(safe-area-inset-top))] max-w-md mx-auto w-full max-[380px]:px-2"
+          className="relative z-10 flex min-h-0 flex-1 flex-col justify-center-safe overflow-y-auto overscroll-contain px-4 pb-6 pt-[max(1.25rem,env(safe-area-inset-top))] max-w-md mx-auto w-full max-[380px]:px-2 max-[300px]:px-1.5"
         >
           <div className="text-center mb-6">
             <div className="flex justify-center mb-3">
@@ -359,7 +359,7 @@ const LoginFormContent = () => { // skipcq: JS-R1005
 
           <div
             className={[
-              'rounded-3xl p-8 max-[380px]:px-4 max-[300px]:py-6', // narrow phones / large text: give the secondary-button labels one line
+              'rounded-3xl p-8 max-[380px]:px-4 max-[300px]:px-3 max-[300px]:py-6', // narrow phones / large text: give the secondary-button labels one line
               hasPhotoBg
                 ? 'onboarding-hero-card-photo shadow-[0_16px_48px_rgba(0,0,0,0.28)]'
                 : 'bg-background-card',
@@ -500,7 +500,7 @@ const LoginFormContent = () => { // skipcq: JS-R1005
                     isDarkUi ? 'bg-on-dark/10 text-on-dark ring-1 ring-accent-200/50 backdrop-blur' : 'bg-glass/80 text-primary-800 ring-1 ring-accent-300/70 shadow-[0_6px_18px_rgba(217,119,6,0.12)]',
                   ].join(' ')}
                 >
-                  {passkeyBusy ? <div className="w-5 h-5 border-2 border-current/30 border-t-current rounded-full animate-spin" /> : <Fingerprint className="w-5 h-5" aria-hidden />}
+                  {passkeyBusy ? <div className="w-5 h-5 border-2 border-current/30 border-t-current rounded-full animate-spin" /> : <Fingerprint className="w-5 h-5 max-[300px]:w-4.5 max-[300px]:h-4.5" aria-hidden />}
                   <span className="text-balance leading-tight">Face ID או טביעת אצבע</span>
                 </button>
               ) : null}
@@ -519,7 +519,7 @@ const LoginFormContent = () => { // skipcq: JS-R1005
                     isDarkUi ? 'bg-on-dark/10 text-on-dark ring-1 ring-accent-200/50' : 'bg-glass/80 text-primary-800 ring-1 ring-accent-300/70',
                   ].join(' ')}
                 >
-                  <KeyRound className="w-5 h-5" aria-hidden />
+                  <KeyRound className="w-5 h-5 max-[300px]:w-4.5 max-[300px]:h-4.5" aria-hidden />
                   <span className="text-balance leading-tight">כניסה בחשבון המרכזי</span>
                 </a>
               ) : null}
@@ -533,7 +533,7 @@ const LoginFormContent = () => { // skipcq: JS-R1005
                   isDarkUi ? 'bg-on-dark/5 text-primary-50 ring-1 ring-on-dark/20' : 'bg-glass/50 text-primary-800 ring-1 ring-primary-300/60',
                 ].join(' ')}
               >
-                <QrCode className="w-5 h-5" aria-hidden />
+                <QrCode className="w-5 h-5 max-[300px]:w-4.5 max-[300px]:h-4.5" aria-hidden />
                 <span className="text-balance leading-tight">סריקת קוד מהטלפון</span>
               </button>
               <StepUpDialog open={qrOpen} variant="login" purpose="auth.login" reason="סורקים ומאשרים בטלפון" onClose={() => setQrOpen(false)}
