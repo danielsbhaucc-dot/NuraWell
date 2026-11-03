@@ -50,10 +50,10 @@ const Actions = ({ purchaseHref, signOut }: Props) => (
 
 /**
  * purchaseHref is null until the parent site has a public NuraWell purchase page; then the button stays hidden
- * (no dead controls). Bottom padding keeps every control clear of the floating accessibility button.
+ * (no dead controls). Bottom padding (12rem) stays clear of the floating accessibility button (bottom 6.75rem + its height), at any text size.
  */
 const LicenseRequired = ({ purchaseHref, signOut }: Props) => (
-  <main id="main-content" dir="rtl" lang="he" className="min-h-screen flex flex-col items-center justify-center px-4 pt-10 pb-32 public-dark public-dark-bg">
+  <main id="main-content" dir="rtl" lang="he" className="min-h-screen flex flex-col items-center justify-center px-4 pt-10 pb-[calc(12rem+env(safe-area-inset-bottom,0px))] public-dark public-dark-bg">
     <div className="max-w-md w-full text-center">
       <Notice hint={purchaseHref ? `אפשר להסדיר רישיון בעמוד הרכישה. ${MISTAKE}` : MISTAKE} />
       <Actions purchaseHref={purchaseHref} signOut={signOut} />
