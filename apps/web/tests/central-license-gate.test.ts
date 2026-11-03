@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => { throw new Error('no db in tests'); } }));
-import { decideGate, licenseGate, purchaseUrl, PURCHASE_URL_DEFAULT, type Settings } from '@/lib/central/license-gate';
+import { decideGate, licenseGate, purchaseUrl, type Settings } from '@/lib/central/license-gate';
 
 const on: Settings = { mode: 'enforce', scope: 'all' };
 const v = (reason: string) => ({ allow: reason === 'active', wouldBlock: reason !== 'active', reason, mode: 'enforce' }) as never;
@@ -40,8 +40,8 @@ describe('license gate decision', () => {
     await expect(licenseGate(u({ pl_enforce_test: true }), 'user', { PLATFORM_LICENSE_MODE: 'enforce' })).resolves.toMatchObject({ block: false });
   });
   it('purchase URL: https only, safe default', () => {
-    expect(purchaseUrl({})).toBe(PURCHASE_URL_DEFAULT);
-    expect(purchaseUrl({ PLATFORM_PURCHASE_URL: 'javascript:alert(1)' })).toBe(PURCHASE_URL_DEFAULT);
+    expect(purchaseUrl({})).toBeNull();
+    expect(purchaseUrl({ PLATFORM_PURCHASE_URL: 'javascript:alert(1)' })).toBeNull();
     expect(purchaseUrl({ PLATFORM_PURCHASE_URL: 'https://shop.example.com/buy' })).toBe('https://shop.example.com/buy');
   });
   it('block screen: Hebrew RTL, no native dialogs; gate wired into dashboard + Almog chat', () => {

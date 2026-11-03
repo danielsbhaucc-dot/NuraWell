@@ -2,9 +2,13 @@ import { KeyRound, Mail, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
 /** Hebrew, RTL, no native dialogs. Server component (no client JS). Shown only to identities the gate actually blocks. */
-export default function LicenseRequired({ purchaseHref, signOut }: { purchaseHref: string; signOut: () => Promise<void> }) {
+/**
+ * purchaseHref is null until the parent site has a public NuraWell purchase page; then the button stays hidden
+ * (no dead controls). Bottom padding keeps every control clear of the floating accessibility button.
+ */
+export default function LicenseRequired({ purchaseHref, signOut }: { purchaseHref: string | null; signOut: () => Promise<void> }) {
   return (
-    <main id="main-content" dir="rtl" lang="he" className="min-h-screen flex flex-col items-center justify-center px-4 py-10 public-dark public-dark-bg">
+    <main id="main-content" dir="rtl" lang="he" className="min-h-screen flex flex-col items-center justify-center px-4 pt-10 pb-32 public-dark public-dark-bg">
       <div className="max-w-md w-full text-center">
         <div
           className="rounded-2xl overflow-hidden mb-6"
@@ -19,36 +23,37 @@ export default function LicenseRequired({ purchaseHref, signOut }: { purchaseHre
               לחשבון הזה אין כרגע רישיון פעיל, ולכן אין גישה לאפליקציה.
             </p>
             <p className="text-ink-faint text-base leading-relaxed">
-              אפשר להסדיר רישיון בעמוד הרכישה. אם זו טעות — כדאי לפנות אלינו ונבדוק.
+              {purchaseHref ? 'אפשר להסדיר רישיון בעמוד הרכישה. ' : ''}אם נראה שזו טעות, אפשר לפנות אלינו ונבדוק.
             </p>
           </div>
         </div>
 
-        <div className="space-y-3">
-          <a
-            href={purchaseHref}
-            rel="noopener"
-            className="flex items-center justify-center gap-2 w-full min-h-12 py-4 rounded-2xl font-bold text-lg text-on-dark bg-linear-to-br from-primary-700 to-primary-500 shadow-btn transition-all hover:brightness-105 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-          >
-            <KeyRound className="w-5 h-5" aria-hidden="true" />
-            <span>לעמוד הרכישה</span>
-          </a>
-          <div className="flex flex-wrap gap-3">
+        <div className="flex flex-col gap-3">
+          {purchaseHref ? (
             <a
-              href="/contact"
-              className="flex-1 min-w-[8rem] min-h-12 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-base focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-              style={{ background: 'var(--color-panel-dark)', border: '1px solid rgba(232,198,106,0.26)', color: 'var(--color-ink-soft)' }}
+              href={purchaseHref}
+              rel="noopener"
+              className="flex items-center justify-center gap-2 w-full min-h-12 py-4 rounded-2xl font-bold text-lg text-forest-950 bg-linear-to-br from-accent-300 to-accent-500 shadow-btn ring-1 ring-accent-200/50 hover:brightness-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
             >
-              <Mail className="w-4 h-4" aria-hidden="true" />
-              <span>יצירת קשר</span>
+              <KeyRound className="w-5 h-5" aria-hidden="true" />
+              <span>לעמוד הרכישה</span>
             </a>
-            <form action={signOut} className="flex-1 min-w-[8rem] flex">
-              <Button type="submit" variant="dark" size="lg" className="w-full text-base">
-                <LogOut className="w-4 h-4" aria-hidden="true" />
-                <span>התנתקות</span>
-              </Button>
-            </form>
-          </div>
+          ) : null}
+          <a
+            href="/contact"
+            className={purchaseHref
+              ? 'flex items-center justify-center gap-2 w-full min-h-12 py-3 rounded-2xl font-bold text-base text-on-dark bg-panel-dark ring-1 ring-accent-200/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2'
+              : 'flex items-center justify-center gap-2 w-full min-h-12 py-4 rounded-2xl font-bold text-lg text-forest-950 bg-linear-to-br from-accent-300 to-accent-500 shadow-btn ring-1 ring-accent-200/50 hover:brightness-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2'}
+          >
+            <Mail className="w-5 h-5" aria-hidden="true" />
+            <span>יצירת קשר</span>
+          </a>
+          <form action={signOut} className="flex">
+            <Button type="submit" variant="dark" size="lg" className="w-full text-base">
+              <LogOut className="w-4 h-4" aria-hidden="true" />
+              <span>התנתקות</span>
+            </Button>
+          </form>
         </div>
       </div>
     </main>

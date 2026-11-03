@@ -88,8 +88,8 @@ export async function profileRole(userId: string): Promise<string | null> {
   } catch { return null; }
 }
 
-export const PURCHASE_URL_DEFAULT = 'https://platform-core-preview.vercel.app';
-export function purchaseUrl(env: Record<string, string | undefined> = process.env): string {
+/** No default: until the parent site has a public NuraWell purchase page, the button is hidden. */
+export function purchaseUrl(env: Record<string, string | undefined> = process.env): string | null {
   const u = env.PLATFORM_PURCHASE_URL ?? '';
-  return /^https:\/\/[a-z0-9.-]+(\/[\w./?=&%-]*)?$/i.test(u) ? u : PURCHASE_URL_DEFAULT;
+  return /^https:\/\/[a-z0-9.-]+(\/[\w./?=&%-]*)?$/i.test(u) ? u : null;
 }
