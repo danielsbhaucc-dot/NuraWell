@@ -130,40 +130,53 @@ const shadowDecision = async (link: { base: string; keyId: string; secret: strin
   }
 }
 
-// skipcq: JS-0067, JS-R1005 -- ES module export; linear guard clauses, each step isolated and never throws
+type LinkConf = { base: string; keyId: string; secret: string };
+
+const readLinkConf = (env: Env): LinkConf | null => {
+  const base = env.CENTRAL_SUPABASE_URL?.replace(/\/$/, '') ?? '';
+  const keyId = env.PRODUCT_LINK_KEY_ID ?? '';
+  const secret = env.PRODUCT_LINK_SECRET ?? '';
+  const valid = base.startsWith('https://') && keyId.length > 0 && secret.length > 0;
+  return valid ? { base, keyId, secret } : null;
+};
+
+const makePoster = (conf: LinkConf, fetchImpl: typeof fetch, nowMs: number) => async (path: string, payload: unknown): Promise<number> => {
+  try {
+    const bytes = new TextEncoder().encode(JSON.stringify(payload));
+    const signed = await signRequest(conf.keyId, conf.secret, path, bytes, nowMs);
+    const response = await fetchImpl(`${conf.base}/functions/v1/product-link${path}`, {
+      method: 'POST', body: bytes, signal: AbortSignal.timeout(8000), headers: { 'content-type': 'application/json', ...signed },
+    });
+    await response.body?.cancel().catch(() => null);
+    return response.status;
+  } catch {
+    return 0;
+  }
+};
+
+const sendUsage = async (
+  daily: Awaited<ReturnType<typeof collectDaily>>, users: Awaited<ReturnType<typeof activeUsers>>,
+  post: (path: string, payload: unknown) => Promise<number>, nowMs: number,
+): Promise<number> => {
+  if (!daily) return 0;
+  const events = await usageEvents(daily, users);
+  if (!events.length) return 204;
+  return checkUsage({ events }, nowMs).ok ? post('/v1/usage', { events }) : 422;
+};
+
+// skipcq: JS-0067 -- ES module export
 export async function runLinkTick(env: Env = process.env, fetchImpl: typeof fetch = fetch, nowMs = Date.now()): Promise<TickResult> {
   const version = linkVersion(env);
-  const base = env.CENTRAL_SUPABASE_URL?.replace(/\/$/, '');
-  const keyId = env.PRODUCT_LINK_KEY_ID;
-  const secret = env.PRODUCT_LINK_SECRET;
-  if (!base || !base.startsWith('https://') || !keyId || !secret) return { status: 'skipped', heartbeat: 0, usage: 0, decisions: [], health: 'ok', version };
-
-  const post = async (path: string, payload: unknown): Promise<number> => {
-    try {
-      const bytes = new TextEncoder().encode(JSON.stringify(payload));
-      const signed = await signRequest(keyId, secret, path, bytes, nowMs);
-      const response = await fetchImpl(`${base}/functions/v1/product-link${path}`, {
-        method: 'POST', body: bytes, signal: AbortSignal.timeout(8000), headers: { 'content-type': 'application/json', ...signed },
-      });
-      await response.body?.cancel().catch(() => null);
-      return response.status;
-    } catch {
-      return 0;
-    }
-  };
+  const conf = readLinkConf(env);
+  if (!conf) return { status: 'skipped', heartbeat: 0, usage: 0, decisions: [], health: 'ok', version };
+  const post = makePoster(conf, fetchImpl, nowMs);
 
   const daily = await collectDaily(nowMs);
   const users = await activeUsers();
   const health: Health = daily === null || users === null ? 'degraded' : 'ok';
   const beat = { instance: 'web', version, health };
   const heartbeat = checkHeartbeat(beat).ok ? await post('/v1/heartbeat', beat) : 422;
-
-  let usage = 0;
-  if (daily) {
-    const events = await usageEvents(daily, users);
-    if (!events.length) usage = 204;
-    else usage = checkUsage({ events }, nowMs).ok ? await post('/v1/usage', { events }) : 422;
-  }
-  const decisions = await shadowDecision({ base, keyId, secret, version }, fetchImpl, nowMs);
+  const usage = await sendUsage(daily, users, post, nowMs);
+  const decisions = await shadowDecision({ ...conf, version }, fetchImpl, nowMs);
   return { status: 'sent', heartbeat, usage, decisions, health, version };
 }
