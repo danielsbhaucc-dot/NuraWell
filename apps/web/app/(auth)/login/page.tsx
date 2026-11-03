@@ -326,7 +326,7 @@ const LoginFormContent = () => { // skipcq: JS-R1005
                 isDarkUi ? 'text-primary-100/90' : 'text-ink-500',
               ].join(' ')}
             >
-              התחברו כדי להמשיך את המסע שלכם
+              התחברות להמשך המסע
             </p>
             <div className="flex items-center justify-center gap-2 mt-4">
               <div
