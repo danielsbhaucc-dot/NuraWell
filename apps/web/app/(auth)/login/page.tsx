@@ -303,7 +303,7 @@ const LoginFormContent = () => { // skipcq: JS-R1005
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: bgReady ? 1 : 0, y: bgReady ? 0 : 12 }}
           transition={{ duration: 0.3, ease: 'easeOut' as const }}
-          className="relative z-10 flex min-h-0 flex-1 flex-col justify-center-safe overflow-y-auto overscroll-contain px-4 pb-6 pt-[max(1.25rem,env(safe-area-inset-top))] max-w-md mx-auto w-full"
+          className="relative z-10 flex min-h-0 flex-1 flex-col justify-center-safe overflow-y-auto overscroll-contain px-4 pb-6 pt-[max(1.25rem,env(safe-area-inset-top))] max-w-md mx-auto w-full max-[300px]:px-2"
         >
           <div className="text-center mb-6">
             <div className="flex justify-center mb-3">
@@ -312,7 +312,7 @@ const LoginFormContent = () => { // skipcq: JS-R1005
             <div className="mt-3 mb-2">
               <h1
                 className={[
-                  'text-3xl font-black leading-tight',
+                  'text-3xl max-[300px]:text-2xl font-black leading-tight',
                   isDarkUi
                     ? 'bg-linear-to-l from-primary-200 via-secondary-100 to-accent-100 bg-clip-text text-transparent'
                     : 'text-ink-900',
@@ -359,7 +359,7 @@ const LoginFormContent = () => { // skipcq: JS-R1005
 
           <div
             className={[
-              'rounded-3xl p-8',
+              'rounded-3xl p-8 max-[300px]:px-4 max-[300px]:py-6', // very narrow (320 + text 130% + zoom): give the labels room
               hasPhotoBg
                 ? 'onboarding-hero-card-photo shadow-[0_16px_48px_rgba(0,0,0,0.28)]'
                 : 'bg-background-card',
@@ -486,7 +486,7 @@ const LoginFormContent = () => { // skipcq: JS-R1005
             <div className="mt-5 space-y-3">
               <div className="flex items-center gap-3" aria-hidden>
                 <div className={`h-px flex-1 ${isDarkUi ? 'bg-on-dark/15' : 'bg-accent-300/60'}`} />
-                <span className={`text-xs font-bold ${isDarkUi ? 'text-primary-100/70' : 'text-ink-400'}`}>או</span>
+                <span className={`text-xs font-bold ${isDarkUi ? 'text-primary-100/70' : 'text-ink-600'}`}>או</span>
                 <div className={`h-px flex-1 ${isDarkUi ? 'bg-on-dark/15' : 'bg-accent-300/60'}`} />
               </div>
               {passkeySupported ? (
@@ -520,7 +520,7 @@ const LoginFormContent = () => { // skipcq: JS-R1005
                   ].join(' ')}
                 >
                   <KeyRound className="w-5 h-5" aria-hidden />
-                  <span className="text-balance leading-tight">החשבון המרכזי</span>
+                  <span className="text-balance leading-tight">כניסה בחשבון המרכזי</span>
                 </a>
               ) : null}
               <button
@@ -563,7 +563,7 @@ const LoginFormContent = () => { // skipcq: JS-R1005
                     isDarkUi ? 'text-primary-300 hover:text-primary-200' : 'text-primary-600 hover:text-primary-700',
                   ].join(' ')}
                 >
-                  הרשמה חינם
+                  הרשמה
                 </Link>
               </p>
             </div>}
