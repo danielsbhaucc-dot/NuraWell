@@ -16,6 +16,7 @@ import {
 } from '../../lib/supabase/cached-auth';
 import { DemoAccessBanner } from '../../components/demo-access/DemoAccessBanner';
 import { ConsentSheetHost } from '@/lib/module-api/legal/components-legal-ConsentSheetHost';
+import { licenseGate, profileRole } from '@/lib/central/license-gate';
 import { PasskeyNudgeHost } from '@/lib/module-api/auth-signup/components-settings-PasskeyNudge';
 
 export const viewport: Viewport = {
@@ -38,6 +39,12 @@ export default async function DashboardLayout({
   }
 
   const profile = await getCachedDashboardProfile(user.id);
+
+  // Phase 2b parent-license gate (off unless armed by env AND the DB kill switch; admins never blocked; fail-open).
+  if (process.env.PLATFORM_LICENSE_MODE === 'enforce') {
+    const gate = await licenseGate(user, await profileRole(user.id));
+    if (gate.block) redirect('/license-required');
+  }
 
   const showDolevWelcome =
     Boolean(user.email_confirmed_at) &&

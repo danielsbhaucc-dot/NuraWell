@@ -1157,6 +1157,11 @@ export const COLUMN_CLASSIFICATION: Readonly<Record<string, Readonly<Record<stri
     rp_id: ["non_sensitive", "identifier/key or public credential material, no personal content"],
     transports: ["non_sensitive", "identifier/key or public credential material, no personal content"],
   },
+  platform_link_settings: {
+    mode: ["non_sensitive", "enum (license enforcement kill switch), no personal content"],
+    scope: ["non_sensitive", "enum (enforcement scope), no personal content"],
+    note: ["non_sensitive", "operator note about the switch, no personal content"],
+  },
   platform_product_registry: {
     product_id: ["non_sensitive", "product slug identifier, no personal content"],
     description: ["non_sensitive", "public product description written by the operator, no personal content"],

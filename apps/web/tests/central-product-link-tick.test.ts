@@ -9,6 +9,8 @@ const aiRows = [
   { feature: 'embeddings', prompt_tokens: 50, completion_tokens: 0, cost_usd: 0.000003 },
 ];
 const dbState = { fail: false };
+const profileRows = ['u1', 'u2', 'u3', 'u4'].map((id) => ({ id }));
+const authUsers = [{ id: 'u1', app_metadata: { pl_lic: 'lic_comp_nw_0123456789abcdef' } }, { id: 'u2', app_metadata: {} }, { id: 'u3' }, { id: 'u4', app_metadata: { pl_lic: 'lic_comp_nw_fedcba9876543210' } }];
 const mockQuery = (count: number, data?: unknown) => {
   const chain: Record<string, unknown> = {};
   for (const method of ['select', 'gte', 'lt', 'in', 'eq', 'limit']) chain[method] = () => chain;
@@ -16,7 +18,10 @@ const mockQuery = (count: number, data?: unknown) => {
   return chain;
 };
 vi.mock('@/lib/supabase/admin', () => ({
-  createAdminClient: () => ({ from: (table: string) => (table === 'ai_usage_events' ? mockQuery(0, aiRows) : mockQuery(table === 'profiles' ? 4 : 0)) }),
+  createAdminClient: () => ({
+    from: (table: string) => (table === 'ai_usage_events' ? mockQuery(0, aiRows) : mockQuery(table === 'profiles' ? 4 : 0, table === 'profiles' ? profileRows : undefined)),
+    auth: { admin: { listUsers: () => Promise.resolve(dbState.fail ? { data: null, error: { message: 'down' } } : { data: { users: authUsers }, error: null }) } },
+  }),
 }));
 
 import { runLinkTick, eventId, linkVersion, isAlmogFeature, collectDaily } from '@/lib/central/product-link-tick';
@@ -95,11 +100,13 @@ describe('NuraWell ↔ platform link tick (shadow)', () => {
     expect(checkUsage(byPath('/v1/usage'), NOW).ok).toBe(true);
     expect(checkDecisions(byPath('/v1/decisions'), NOW).ok).toBe(true);
     const events = (byPath('/v1/usage') as { events: { metric: string; n: number }[] }).events;
-    expect(events.find((event) => event.metric === 'shadow.would_block')?.n).toBe(4);
+    // status unreachable (503) ⇒ enforcement would fail open ⇒ no would_block number is reported
+    expect(events.find((event) => event.metric === 'shadow.would_block')).toBeUndefined();
     const decisions = (byPath('/v1/decisions') as { decisions: { local: string; reason: string; lic: unknown }[] }).decisions;
-    expect(decisions).toHaveLength(1);
-    expect(decisions[0]).toMatchObject({ local: 'block', lic: null });
-    expect(['no_status', 'no_license']).toContain(decisions[0]?.reason);
+    expect(decisions).toHaveLength(4);
+    expect(decisions.map((d) => d.lic)).toEqual(['lic_comp_nw_0123456789abcdef', null, null, 'lic_comp_nw_fedcba9876543210']);
+    expect(decisions.every((d) => d.reason === 'no_status')).toBe(true);
+    expect(JSON.stringify(calls)).not.toMatch(/"u[1-4]"/);
   });
 
   it('DB failure ⇒ degraded heartbeat, no usage, never throws', async () => {

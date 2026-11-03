@@ -7,7 +7,7 @@ import pkg from '../../package.json';
  * Triggered by central every 15 min (POST /api/v1/central/link-tick, per-product bearer). Never runs on a user request,
  * never touches Almog, sign-in or onboarding code paths, and can never block or change anyone's access.
  * Sends ONLY: version + health, yesterday's daily counts (no ids, names, emails or text), and one shadow license
- * decision ("an existing user with no parent license") so central can show what enforcement WOULD do.
+ * decision per existing user (by license id only) so central can show what enforcement WOULD do.
  * Missing env ⇒ 'skipped'. Never throws.
  */
 const PRODUCT_ID = 'nurawell';
@@ -95,18 +95,28 @@ export async function collectDaily(nowMs = Date.now()): Promise<DailyCounts | nu
   }
 }
 
-/** Existing users with app access today. Used only for the shadow "would block" count. */
-const activeUsers = async (): Promise<number | null> => {
+/** License ids (app_metadata.pl_lic, server-written) of existing users with app access today. Null on any DB error. */
+const activeUserLics = async (): Promise<Array<string | null> | null> => {
   try {
-    const result = await createAdminClient().from('profiles').select('id', { count: 'exact', head: true }).eq('is_active', true);
-    return result.error ? null : result.count ?? 0;
+    const db = createAdminClient();
+    const result = await db.from('profiles').select('id').eq('is_active', true).limit(5000);
+    if (result.error) return null;
+    const active = new Set((result.data ?? []).map((r: { id: string }) => r.id));
+    const lics = new Map<string, string | null>();
+    for (let page = 1; page <= 20 && lics.size < active.size; page++) {
+      const { data, error } = await db.auth.admin.listUsers({ page, perPage: 1000 });
+      if (error) return null;
+      for (const u of data.users) if (active.has(u.id)) lics.set(u.id, typeof u.app_metadata?.pl_lic === 'string' ? u.app_metadata.pl_lic : null);
+      if (data.users.length < 1000) break;
+    }
+    return [...active].map(id => lics.get(id) ?? null);
   } catch {
     return null;
   }
 }
 
-const usageEvents = async (daily: DailyCounts, users: number | null): Promise<UsageEvent[]> => {
-  const metrics = users ? { ...daily.metrics, 'shadow.would_block': clampCount(users) } : daily.metrics;
+const usageEvents = async (daily: DailyCounts, wouldBlock: number | null): Promise<UsageEvent[]> => {
+  const metrics = wouldBlock ? { ...daily.metrics, 'shadow.would_block': clampCount(wouldBlock) } : daily.metrics;
   const events: UsageEvent[] = [];
   for (const [metric, amount] of Object.entries(metrics)) {
     if (amount >= 1) events.push({ id: await eventId(daily.day, metric), metric, n: amount, day: daily.day });
@@ -114,8 +124,8 @@ const usageEvents = async (daily: DailyCounts, users: number | null): Promise<Us
   return events;
 }
 
-/** Shadow license check: logs what enforcement WOULD decide for an existing NuraWell user (no parent license yet). Never blocks. */
-const shadowDecision = async (link: { base: string; keyId: string; secret: string; version: string }, fetchImpl: typeof fetch, nowMs: number): Promise<number[]> => {
+/** Shadow license check per existing user (by license id only; no user ids leave NuraWell). Never blocks. */
+const shadowDecision = async (link: { base: string; keyId: string; secret: string; version: string }, fetchImpl: typeof fetch, nowMs: number, lics: Array<string | null> | null): Promise<{ decisions: number[]; wouldBlock: number | null }> => {
   try {
     const publicKey = await crypto.subtle.importKey('jwk', STATUS_PUBLIC_JWK, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['verify']);
     const client = new ProductLink({
@@ -123,10 +133,15 @@ const shadowDecision = async (link: { base: string; keyId: string; secret: strin
       endpoint: `${link.base}/functions/v1/product-link`, statusUrl: `${link.base}/functions/v1/admin-api/license-status`,
       publicKey, fetch: fetchImpl, now: () => nowMs,
     });
-    await client.check('*', { lic: null });
-    return (await client.flush(true)).decisions;
+    let wouldBlock = 0, outage = false;
+    for (const lic of (lics ?? [null]).slice(0, 500)) {
+      const verdict = await client.check('*', { lic });
+      if (verdict.reason === 'no_status' || verdict.reason === 'stale_status') outage = true; // enforcement fails open here
+      else if (verdict.wouldBlock) wouldBlock += 1;
+    }
+    return { decisions: (await client.flush(true)).decisions, wouldBlock: lics && !outage ? wouldBlock : null };
   } catch {
-    return [0];
+    return { decisions: [0], wouldBlock: null };
   }
 }
 
@@ -158,7 +173,7 @@ const makePoster = (conf: LinkConf, fetchImpl: typeof fetch, nowMs: number) => a
 };
 
 const sendUsage = async (
-  daily: Awaited<ReturnType<typeof collectDaily>>, users: Awaited<ReturnType<typeof activeUsers>>,
+  daily: Awaited<ReturnType<typeof collectDaily>>, users: number | null,
   post: (path: string, payload: unknown) => Promise<number>, nowMs: number,
 ): Promise<number> => {
   if (!daily) return 0;
@@ -181,10 +196,11 @@ export async function runLinkTick(env: Env, fetchImpl: typeof fetch, nowMs: numb
   if (!conf) return { ...SKIPPED_BASE, decisions: [], version };
   const post = makePoster(conf, fetchImpl, nowMs);
   const daily = await collectDaily(nowMs);
-  const users = await activeUsers();
-  const health = tickHealth(daily, users);
+  const lics = await activeUserLics();
+  const health = tickHealth(daily, lics);
   const heartbeat = await sendHeartbeat({ instance: 'web', version, health }, post);
-  const usage = await sendUsage(daily, users, post, nowMs);
-  const decisions = await shadowDecision({ ...conf, version }, fetchImpl, nowMs);
+  const shadow = await shadowDecision({ ...conf, version }, fetchImpl, nowMs, lics);
+  const usage = await sendUsage(daily, shadow.wouldBlock, post, nowMs);
+  const decisions = shadow.decisions;
   return { status: 'sent', heartbeat, usage, decisions, health, version };
 }

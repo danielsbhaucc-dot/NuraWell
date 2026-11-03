@@ -27,7 +27,7 @@ export const MODULES: ModuleManifest[] = [
   { id: 'logs', name: 'יומנים', core: true, dependsOn: [], permissions: ['logs.read'], routes: ['/api/v1/ops/legal/logs'], migrations: ['000181'], crons: ['/api/v1/ai/cron/log-retention'], pages: ['/ops/errors'] },
   /** App shell: home, profile, public/static pages. Core so a product always has a working frame. */
   { id: 'app-shell', name: 'מעטפת האפליקציה', core: true, dependsOn: [], permissions: [], routes: [], migrations: [],
-    api: ['/api/v1/profile'], pages: ['/', '/home', '/profile', '/about', '/contact', '/safety', '/terms', '/privacy', '/cookies'] },
+    api: ['/api/v1/profile'], pages: ['/', '/home', '/profile', '/about', '/contact', '/safety', '/terms', '/privacy', '/cookies', '/license-required'] },
   { id: 'auth-signup', name: 'הרשמה וקליטה', core: false, essential: true, dependsOn: ['security-core'], permissions: [], routes: [], migrations: [],
     api: ['/api/v1/auth/login-event', '/api/v1/auth/password-check', '/api/v1/auth/signin-password-check', '/api/v1/auth/post-verify', '/api/v1/account/passkey-nudge', '/auth/callback'], webhooks: ['/api/workflows/welcome-after-verify'], pages: ['/login', '/register'] },
   { id: 'privacy-retention', name: 'פרטיות ושמירה', core: false, essential: true, dependsOn: ['logs'], permissions: ['users.pii.read', 'data.export'], routes: ['/api/v1/admin/privacy-compliance'], migrations: ['000187'],
