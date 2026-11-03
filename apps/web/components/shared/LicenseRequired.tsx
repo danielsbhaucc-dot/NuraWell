@@ -6,7 +6,13 @@ import { Button } from '@/components/ui/Button';
  * purchaseHref is null until the parent site has a public NuraWell purchase page; then the button stays hidden
  * (no dead controls). Bottom padding keeps every control clear of the floating accessibility button.
  */
+const CTA = 'flex items-center justify-center gap-2 w-full min-h-12 py-4 rounded-2xl font-bold text-lg text-forest-950 bg-linear-to-br from-accent-300 to-accent-500 shadow-btn ring-1 ring-accent-200/50 hover:brightness-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2';
+const QUIET = 'flex items-center justify-center gap-2 w-full min-h-12 py-3 rounded-2xl font-bold text-base text-on-dark bg-panel-dark ring-1 ring-accent-200/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2';
+const MISTAKE = 'אם נראה שזו טעות, אפשר לפנות אלינו ונבדוק.';
+
 export default function LicenseRequired({ purchaseHref, signOut }: { purchaseHref: string | null; signOut: () => Promise<void> }) {
+  const contactClass = purchaseHref ? QUIET : CTA;
+  const hint = purchaseHref ? `אפשר להסדיר רישיון בעמוד הרכישה. ${MISTAKE}` : MISTAKE;
   return (
     <main id="main-content" dir="rtl" lang="he" className="min-h-screen flex flex-col items-center justify-center px-4 pt-10 pb-32 public-dark public-dark-bg">
       <div className="max-w-md w-full text-center">
@@ -23,7 +29,7 @@ export default function LicenseRequired({ purchaseHref, signOut }: { purchaseHre
               לחשבון הזה אין כרגע רישיון פעיל, ולכן אין גישה לאפליקציה.
             </p>
             <p className="text-ink-faint text-base leading-relaxed">
-              {purchaseHref ? 'אפשר להסדיר רישיון בעמוד הרכישה. ' : ''}אם נראה שזו טעות, אפשר לפנות אלינו ונבדוק.
+              {hint}
             </p>
           </div>
         </div>
@@ -33,7 +39,7 @@ export default function LicenseRequired({ purchaseHref, signOut }: { purchaseHre
             <a
               href={purchaseHref}
               rel="noopener"
-              className="flex items-center justify-center gap-2 w-full min-h-12 py-4 rounded-2xl font-bold text-lg text-forest-950 bg-linear-to-br from-accent-300 to-accent-500 shadow-btn ring-1 ring-accent-200/50 hover:brightness-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+              className={CTA}
             >
               <KeyRound className="w-5 h-5" aria-hidden="true" />
               <span>לעמוד הרכישה</span>
@@ -41,9 +47,7 @@ export default function LicenseRequired({ purchaseHref, signOut }: { purchaseHre
           ) : null}
           <a
             href="/contact"
-            className={purchaseHref
-              ? 'flex items-center justify-center gap-2 w-full min-h-12 py-3 rounded-2xl font-bold text-base text-on-dark bg-panel-dark ring-1 ring-accent-200/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2'
-              : 'flex items-center justify-center gap-2 w-full min-h-12 py-4 rounded-2xl font-bold text-lg text-forest-950 bg-linear-to-br from-accent-300 to-accent-500 shadow-btn ring-1 ring-accent-200/50 hover:brightness-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2'}
+            className={contactClass}
           >
             <Mail className="w-5 h-5" aria-hidden="true" />
             <span>יצירת קשר</span>
