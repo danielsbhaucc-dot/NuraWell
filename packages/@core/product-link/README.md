@@ -36,8 +36,9 @@
 
 ```ts
 import { ProductLink } from '@core/product-link';
+// ‏keyId + secret נקראים מ־env של השרת בלבד (לעולם לא בקוד), למשל: readLinkCredentials() → { keyId, secret }
 const link = new ProductLink({
-  productId: 'sample', keyId: env.PL_KEY, secret: env.PL_SECRET, version: '1.1.0',
+  productId: 'sample', ...readLinkCredentials(), version: '1.1.0',
   endpoint: `${SUPABASE_URL}/functions/v1/product-link`,
   statusUrl: `${SUPABASE_URL}/functions/v1/admin-api/license-status`,
   publicKey, // ‏CryptoKey: המפתח הציבורי של רשימת המצבים, מיובא מ־packages/customers-licensing/keys/status-public.jwk.json
