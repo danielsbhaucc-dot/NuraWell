@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { timingSafeEqualStr } from '@/lib/api/timing-safe-equal';
 import { runLinkTick } from '@/lib/central/product-link-tick';
+import { pushClaims } from '@/lib/central/push-claims';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -31,5 +32,6 @@ export async function POST(request: Request) {
   if (!authorized(request)) return NextResponse.json({ ok: false }, { status: 401 });
   if (!(await bodyIsEmpty(request))) return NextResponse.json({ ok: false }, { status: 400 });
   const result = await runLinkTick(process.env, fetch, Date.now());
-  return NextResponse.json({ ok: result.status === 'sent', ...result }, { headers: { 'cache-control': 'no-store' } });
+  const claims = await pushClaims();
+  return NextResponse.json({ ok: result.status === 'sent', ...result, claims }, { headers: { 'cache-control': 'no-store' } });
 }
