@@ -513,13 +513,14 @@ const LoginFormContent = () => { // skipcq: JS-R1005
                 <a
                   href={`/api/v1/central/signin${plHint === 'parent' ? '?pl=parent' : ''}`}
                   data-testid="login-parent"
+                  aria-label="כניסה עם החשבון המרכזי"
                   className={[
                     'w-full min-h-[48px] rounded-2xl font-bold flex items-center justify-center gap-2 transition-all active:scale-95',
                     isDarkUi ? 'bg-on-dark/10 text-on-dark ring-1 ring-accent-200/50' : 'bg-glass/80 text-primary-800 ring-1 ring-accent-300/70',
                   ].join(' ')}
                 >
                   <KeyRound className="w-5 h-5" aria-hidden />
-                  כניסה עם החשבון המרכזי
+                  <span className="text-balance leading-tight">החשבון המרכזי</span>
                 </a>
               ) : null}
               <button
