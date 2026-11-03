@@ -43,10 +43,10 @@ export const unpackTx = (raw: string | undefined): { state: string; verifier: st
 
 /** Sign-in transaction cookie: state.verifier.nonce. */
 export const packSigninTx = (state: string, verifier: string, nonce: string) => `${state}.${verifier}.${nonce}`;
+const SIGNIN_TX_RE = /^([A-Za-z0-9_-]{32,64})\.([A-Za-z0-9_-]{43,128})\.([A-Za-z0-9_-]{16,128})$/;
 export const unpackSigninTx = (raw: string | undefined): { state: string; verifier: string; nonce: string } | null => {
-  const match = /^([A-Za-z0-9_-]{32,64})\.([A-Za-z0-9_-]{43,128})\.([A-Za-z0-9_-]{16,128})$/.exec(raw ?? '');
-  const [, state, verifier, nonce] = match ?? [];
-  return state && verifier && nonce ? { state, verifier, nonce } : null;
+  const match = SIGNIN_TX_RE.exec(raw ?? '');
+  return match ? { state: match[1] as string, verifier: match[2] as string, nonce: match[3] as string } : null;
 };
 
 export type Claims = { iss: string; aud: string; sub: string; lic: string; exp: number; iat: number; email?: string; email_verified?: boolean; nonce?: string };
