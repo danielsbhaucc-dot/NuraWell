@@ -50,22 +50,31 @@ const signatureOk = async (jwk: Jwk, signed: string, signature: string): Promise
   return crypto.subtle.verify({ name: 'ECDSA', hash: 'SHA-256' }, key, fromB64u(signature), new TextEncoder().encode(signed));
 };
 
-const claimsOk = (claims: Claims, nowS: number): boolean => {
-  const timeOk = typeof claims.exp === 'number' && claims.exp >= nowS - 30;
-  const whoOk = claims.iss === ISSUER && claims.aud === CLIENT_ID && typeof claims.sub === 'string';
-  const licOk = typeof claims.lic === 'string' && /^lic_[A-Za-z0-9_-]{4,80}$/.test(claims.lic);
-  return timeOk && whoOk && licOk;
+const timeOk = (claims: Claims, nowS: number) => typeof claims.exp === 'number' && claims.exp >= nowS - 30;
+const whoOk = (claims: Claims) => claims.iss === ISSUER && claims.aud === CLIENT_ID && typeof claims.sub === 'string';
+const licOk = (claims: Claims) => typeof claims.lic === 'string' && /^lic_[A-Za-z0-9_-]{4,80}$/.test(claims.lic);
+const claimsOk = (claims: Claims, nowS: number): boolean => timeOk(claims, nowS) && whoOk(claims) && licOk(claims);
+
+type Parts = { header: string; payload: string; signature: string };
+const splitToken = (token: string): Parts | null => {
+  if (token.length > 4000) return null;
+  const [header = '', payload = '', signature = '', extra] = token.split('.');
+  return header && payload && signature && extra === undefined ? { header, payload, signature } : null;
+};
+
+const keyFor = (jwks: { keys: Jwk[] }, header: string): Jwk | undefined => {
+  const head = decodeJson<Head>(header);
+  return head.alg === 'ES256' ? pickKey(jwks, head) : undefined;
 };
 
 /** Verify an ES256 JWT against a JWKS. Returns the claims or null (never throws). */
 export const verifyAccessToken = async (token: string, jwks: { keys: Jwk[] }, nowS = Math.floor(Date.now() / 1000)): Promise<Claims | null> => {
   try {
-    const [header, payload, signature] = token.split('.');
-    if (!header || !payload || !signature || token.length > 4000) return null;
-    const head = decodeJson<Head>(header);
-    const jwk = head.alg === 'ES256' ? pickKey(jwks, head) : undefined;
-    if (!jwk || !(await signatureOk(jwk, `${header}.${payload}`, signature))) return null;
-    const claims = decodeJson<Claims>(payload);
+    const parts = splitToken(token);
+    const jwk = parts ? keyFor(jwks, parts.header) : undefined;
+    if (!parts || !jwk) return null;
+    if (!(await signatureOk(jwk, `${parts.header}.${parts.payload}`, parts.signature))) return null;
+    const claims = decodeJson<Claims>(parts.payload);
     return claimsOk(claims, nowS) ? claims : null;
   } catch { return null; }
 };

@@ -64,6 +64,7 @@ function getLink(env: Record<string, string | undefined>): Promise<ProductLink |
 }
 
 /** Runtime gate. Never throws; any failure ⇒ allow. */
+// skipcq: JS-0067 -- ES module export, not a global
 export async function licenseGate(user: GateUser, role: string | null | undefined, env: Record<string, string | undefined> = process.env): Promise<GateDecision> {
   try {
     if (env.PLATFORM_LICENSE_MODE !== 'enforce') return { block: false, why: 'off' };
