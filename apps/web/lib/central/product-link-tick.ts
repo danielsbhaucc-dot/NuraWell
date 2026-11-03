@@ -172,7 +172,7 @@ const SKIPPED_BASE = { status: 'skipped', heartbeat: 0, usage: 0, decisions: [],
 const tickHealth = (daily: unknown, users: unknown): Health => ([daily, users].includes(null) ? 'degraded' : 'ok');
 
 const sendHeartbeat = (beat: { instance: string; version: string; health: Health }, post: (path: string, payload: unknown) => Promise<number>): Promise<number> =>
-  (checkHeartbeat(beat).ok ? post('/v1/heartbeat', beat) : 422);
+  (checkHeartbeat(beat).ok ? post('/v1/heartbeat', beat) : Promise.resolve(422));
 
 // skipcq: JS-0067 -- ES module export
 export async function runLinkTick(env: Env, fetchImpl: typeof fetch, nowMs: number): Promise<TickResult> {
