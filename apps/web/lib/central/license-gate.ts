@@ -48,6 +48,7 @@ async function readSettings(nowMs: number): Promise<Settings | null> {
 }
 
 let link: Promise<ProductLink | null> | null = null;
+let lastForced = 0;
 function getLink(env: Record<string, string | undefined>): Promise<ProductLink | null> {
   link ??= (async () => {
     const base = (env.CENTRAL_SUPABASE_URL ?? '').replace(/\/$/, '');
@@ -63,18 +64,23 @@ function getLink(env: Record<string, string | undefined>): Promise<ProductLink |
 }
 
 /** Runtime gate. Never throws; any failure ⇒ allow. */
+// skipcq: JS-0067 -- ES module export, not a global
 export async function licenseGate(user: GateUser, role: string | null | undefined, env: Record<string, string | undefined> = process.env): Promise<GateDecision> {
   try {
     if (env.PLATFORM_LICENSE_MODE !== 'enforce') return { block: false, why: 'off' };
     const settings = await readSettings(Date.now());
-    const d = await decideGate(env.PLATFORM_LICENSE_MODE, settings, user, role, async () => {
-      const l = await getLink(env);
-      if (!l) throw new Error('no_link');
-      return l.check('*', { lic: asLic(user.app_metadata?.pl_lic) });
+    const decision = await decideGate(env.PLATFORM_LICENSE_MODE, settings, user, role, async () => {
+      const link = await getLink(env);
+      if (!link) throw new Error('no_link');
+      const lic = asLic(user.app_metadata?.pl_lic);
+      const verdict = await link.check('*', { lic });
+      // A license bought minutes ago is not in the cached status yet: pull a fresh copy (at most every 15 s) and re-check.
+      if (verdict.reason === 'unknown_license' && Date.now() - lastForced > 15_000) { lastForced = Date.now(); if (await link.refresh()) return link.check('*', { lic }); }
+      return verdict;
     });
-    if (d.why === 'outage') console.warn('[license-gate]', { why: 'outage', reason: d.reason ?? 'error' });
-    if (d.block) console.info('[license-gate]', { why: 'blocked', reason: d.reason });
-    return d;
+    if (decision.why === 'outage') console.warn('[license-gate]', { why: 'outage', reason: decision.reason ?? 'error' });
+    if (decision.block) console.info('[license-gate]', { why: 'blocked', reason: decision.reason });
+    return decision;
   } catch {
     return { block: false, why: 'outage' };
   }

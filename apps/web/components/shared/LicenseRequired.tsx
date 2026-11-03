@@ -53,7 +53,7 @@ const Actions = ({ purchaseHref, signOut }: Props) => (
  * (no dead controls). Bottom padding (12rem) stays clear of the floating accessibility button (bottom 6.75rem + its height), at any text size.
  */
 const LicenseRequired = ({ purchaseHref, signOut }: Props) => (
-  <main id="main-content" dir="rtl" lang="he" className="min-h-screen flex flex-col items-center justify-center px-4 pt-10 pb-[calc(12rem+env(safe-area-inset-bottom,0px))] public-dark public-dark-bg">
+  <main id="main-content" dir="rtl" lang="he" className="min-h-screen flex flex-col items-center justify-center px-4 pt-10 pb-[calc(12rem+env(safe-area-inset-bottom,0px))] public-dark public-dark-bg lr-page">
     <div className="max-w-md w-full text-center">
       <Notice hint={purchaseHref ? `אפשר להסדיר רישיון בעמוד הרכישה. ${MISTAKE}` : MISTAKE} />
       <Actions purchaseHref={purchaseHref} signOut={signOut} />

@@ -21,6 +21,8 @@
     "apps/web/components/demo-access/",
     "apps/web/components/ops-access/",
     "apps/web/app/api/v1/central/link-tick/",
+    "apps/web/app/api/v1/central/connect/",
+    "apps/web/app/api/v1/central/callback/",
     "apps/web/app/api/v1/ops/stepup/",
     "apps/web/app/api/v1/ops/device/",
     "apps/web/app/api/v1/ops/enroll/",
