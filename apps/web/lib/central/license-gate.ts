@@ -48,6 +48,7 @@ async function readSettings(nowMs: number): Promise<Settings | null> {
 }
 
 let link: Promise<ProductLink | null> | null = null;
+let lastForced = 0;
 function getLink(env: Record<string, string | undefined>): Promise<ProductLink | null> {
   link ??= (async () => {
     const base = (env.CENTRAL_SUPABASE_URL ?? '').replace(/\/$/, '');
@@ -70,7 +71,11 @@ export async function licenseGate(user: GateUser, role: string | null | undefine
     const d = await decideGate(env.PLATFORM_LICENSE_MODE, settings, user, role, async () => {
       const l = await getLink(env);
       if (!l) throw new Error('no_link');
-      return l.check('*', { lic: asLic(user.app_metadata?.pl_lic) });
+      const lic = asLic(user.app_metadata?.pl_lic);
+      const v = await l.check('*', { lic });
+      // A license bought minutes ago is not in the cached status yet: pull a fresh copy (at most every 15 s) and re-check.
+      if (v.reason === 'unknown_license' && Date.now() - lastForced > 15_000) { lastForced = Date.now(); if (await l.refresh()) return l.check('*', { lic }); }
+      return v;
     });
     if (d.why === 'outage') console.warn('[license-gate]', { why: 'outage', reason: d.reason ?? 'error' });
     if (d.block) console.info('[license-gate]', { why: 'blocked', reason: d.reason });
