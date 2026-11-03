@@ -44,18 +44,19 @@ export async function eventId(day: string, metric: string): Promise<string> {
   return `${hash.slice(0, 8)}-${hash.slice(8, 12)}-4${hash.slice(13, 16)}-${variant}${hash.slice(17, 20)}-${hash.slice(20, 32)}`;
 }
 
-function clampCount(value: number): number {
+const clampCount = (value: number): number => {
   return Math.min(MAX_COUNT, Math.max(0, Math.round(value)));
 }
 
-async function countOrThrow(query: CountResult): Promise<number> {
+const countOrThrow = async (query: CountResult): Promise<number> => {
   const result = await query;
   if (result.error) throw new Error('db');
   return result.count ?? 0;
 }
 
 /** Adds AI totals (all features) and the Almog subset. Cost is sent in 1/100,000 USD so it stays an integer. */
-function addAiTotals(metrics: Record<string, number>, rows: AiRow[]): void {
+// skipcq: JS-R1005 -- simple numeric fallbacks per field
+const addAiTotals = (metrics: Record<string, number>, rows: AiRow[]): void => {
   const add = (key: string, amount: number) => { metrics[key] = (metrics[key] ?? 0) + amount; };
   for (const row of rows) {
     const tokensIn = Number(row.prompt_tokens) || 0;
@@ -95,7 +96,7 @@ export async function collectDaily(nowMs = Date.now()): Promise<DailyCounts | nu
 }
 
 /** Existing users with app access today. Used only for the shadow "would block" count. */
-async function activeUsers(): Promise<number | null> {
+const activeUsers = async (): Promise<number | null> => {
   try {
     const result = await createAdminClient().from('profiles').select('id', { count: 'exact', head: true }).eq('is_active', true);
     return result.error ? null : result.count ?? 0;
@@ -104,7 +105,7 @@ async function activeUsers(): Promise<number | null> {
   }
 }
 
-async function usageEvents(daily: DailyCounts, users: number | null): Promise<UsageEvent[]> {
+const usageEvents = async (daily: DailyCounts, users: number | null): Promise<UsageEvent[]> => {
   const metrics = users ? { ...daily.metrics, 'shadow.would_block': clampCount(users) } : daily.metrics;
   const events: UsageEvent[] = [];
   for (const [metric, amount] of Object.entries(metrics)) {
@@ -114,7 +115,7 @@ async function usageEvents(daily: DailyCounts, users: number | null): Promise<Us
 }
 
 /** Shadow license check: logs what enforcement WOULD decide for an existing NuraWell user (no parent license yet). Never blocks. */
-async function shadowDecision(link: { base: string; keyId: string; secret: string; version: string }, fetchImpl: typeof fetch, nowMs: number): Promise<number[]> {
+const shadowDecision = async (link: { base: string; keyId: string; secret: string; version: string }, fetchImpl: typeof fetch, nowMs: number): Promise<number[]> => {
   try {
     const publicKey = await crypto.subtle.importKey('jwk', STATUS_PUBLIC_JWK, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['verify']);
     const client = new ProductLink({
@@ -129,7 +130,7 @@ async function shadowDecision(link: { base: string; keyId: string; secret: strin
   }
 }
 
-// skipcq: JS-0067 -- ES module export, not a global
+// skipcq: JS-0067, JS-R1005 -- ES module export; linear guard clauses, each step isolated and never throws
 export async function runLinkTick(env: Env = process.env, fetchImpl: typeof fetch = fetch, nowMs = Date.now()): Promise<TickResult> {
   const version = linkVersion(env);
   const base = env.CENTRAL_SUPABASE_URL?.replace(/\/$/, '');

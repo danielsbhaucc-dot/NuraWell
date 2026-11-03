@@ -9,12 +9,12 @@ const aiRows = [
   { feature: 'embeddings', prompt_tokens: 50, completion_tokens: 0, cost_usd: 0.000003 },
 ];
 const dbState = { fail: false };
-function mockQuery(count: number, data?: unknown) {
+const mockQuery = (count: number, data?: unknown) => {
   const chain: Record<string, unknown> = {};
   for (const method of ['select', 'gte', 'lt', 'in', 'eq', 'limit']) chain[method] = () => chain;
   chain.then = (resolve: (value: unknown) => unknown) => resolve(dbState.fail ? { error: { message: 'down' }, count: null, data: null } : { error: null, count, data });
   return chain;
-}
+};
 vi.mock('@/lib/supabase/admin', () => ({
   createAdminClient: () => ({ from: (table: string) => (table === 'ai_usage_events' ? mockQuery(0, aiRows) : mockQuery(table === 'profiles' ? 4 : 0)) }),
 }));
@@ -30,17 +30,17 @@ const testEnv = {
 const NOW = Date.parse('2026-11-03T08:00:00Z');
 interface Captured { path: string; body: unknown; headers: Record<string, string>; raw: Uint8Array }
 
-function fakeFetch() {
+const fakeFetch = () => {
   const calls: Captured[] = [];
-  const fetchImpl = (async (url: string, init?: RequestInit) => {
+  const fetchImpl = ((url: string, init?: RequestInit) => {
     const parsed = new URL(url);
-    if (parsed.pathname.endsWith('/license-status')) return new Response('unavailable', { status: 503 });
+    if (parsed.pathname.endsWith('/license-status')) return Promise.resolve(new Response('unavailable', { status: 503 }));
     const raw = init?.body as Uint8Array;
     calls.push({ path: parsed.pathname.replace('/functions/v1/product-link', ''), body: JSON.parse(new TextDecoder().decode(raw)), headers: init?.headers as Record<string, string>, raw });
-    return new Response(null, { status: 202 });
+    return Promise.resolve(new Response(null, { status: 202 }));
   }) as unknown as typeof fetch;
   return { fetchImpl, calls };
-}
+};
 
 describe('NuraWell ↔ platform link tick (shadow)', () => {
   beforeEach(() => { dbState.fail = false; });
@@ -111,7 +111,7 @@ describe('NuraWell ↔ platform link tick (shadow)', () => {
   });
 
   it('network down never throws', async () => {
-    const failing = (async () => { throw new Error('down'); }) as unknown as typeof fetch;
+    const failing = (() => Promise.reject(new Error('down'))) as unknown as typeof fetch;
     expect(await runLinkTick(testEnv, failing, NOW)).toMatchObject({ status: 'sent', heartbeat: 0 });
   });
 

@@ -9,13 +9,13 @@ export const maxDuration = 30;
 const MIN_BEARER_LENGTH = 32;
 const MAX_BODY_BYTES = 64;
 
-function authorized(request: Request): boolean {
+const authorized = (request: Request): boolean => {
   const expected = process.env.PLATFORM_LINK_TICK_SECRET ?? '';
   const header = request.headers.get('authorization') ?? '';
   return expected.length >= MIN_BEARER_LENGTH && timingSafeEqualStr(header, `Bearer ${expected}`);
 }
 
-async function bodyIsEmpty(request: Request): Promise<boolean> {
+const bodyIsEmpty = async (request: Request): Promise<boolean> => {
   const declared = Number(request.headers.get('content-length') ?? '0');
   if (!Number.isFinite(declared) || declared > MAX_BODY_BYTES) return false;
   const text = (await request.text()).trim();

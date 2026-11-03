@@ -15,6 +15,7 @@ exclude_patterns = [
   "apps/web/public/**",
   # installed platform-core kits: vendored, pinned by core-lock.json, linted in platform-core
   "packages/@core/**",
+  "packages/*core/**/*",
   "scripts/core-sync.mjs",
 ]
 
