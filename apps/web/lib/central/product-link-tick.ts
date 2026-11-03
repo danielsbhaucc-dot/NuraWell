@@ -133,12 +133,13 @@ const shadowDecision = async (link: { base: string; keyId: string; secret: strin
 type LinkConf = { base: string; keyId: string; secret: string };
 
 const readLinkConf = (env: Env): LinkConf | null => {
-  const base = env.CENTRAL_SUPABASE_URL?.replace(/\/$/, '') ?? '';
-  const keyId = env.PRODUCT_LINK_KEY_ID ?? '';
-  const secret = env.PRODUCT_LINK_SECRET ?? '';
-  const valid = base.startsWith('https://') && keyId.length > 0 && secret.length > 0;
-  return valid ? { base, keyId, secret } : null;
+  const conf = { base: trimSlash(env.CENTRAL_SUPABASE_URL), keyId: env.PRODUCT_LINK_KEY_ID ?? '', secret: env.PRODUCT_LINK_SECRET ?? '' };
+  return isLinkConf(conf) ? conf : null;
 };
+
+const trimSlash = (url: string | undefined): string => (url ?? '').replace(/\/$/, '');
+
+const isLinkConf = (conf: LinkConf): boolean => [conf.base.startsWith('https://'), conf.keyId !== '', conf.secret !== ''].every(Boolean);
 
 const makePoster = (conf: LinkConf, fetchImpl: typeof fetch, nowMs: number) => async (path: string, payload: unknown): Promise<number> => {
   try {
@@ -164,18 +165,23 @@ const sendUsage = async (
   return checkUsage({ events }, nowMs).ok ? post('/v1/usage', { events }) : 422;
 };
 
+const SKIPPED_BASE = { status: 'skipped', heartbeat: 0, usage: 0, decisions: [], health: 'ok' } as const;
+
+const tickHealth = (daily: unknown, users: unknown): Health => ([daily, users].includes(null) ? 'degraded' : 'ok');
+
+const sendHeartbeat = async (beat: { instance: string; version: string; health: Health }, post: (path: string, payload: unknown) => Promise<number>): Promise<number> =>
+  (checkHeartbeat(beat).ok ? post('/v1/heartbeat', beat) : 422);
+
 // skipcq: JS-0067 -- ES module export
-export async function runLinkTick(env: Env = process.env, fetchImpl: typeof fetch = fetch, nowMs = Date.now()): Promise<TickResult> {
+export async function runLinkTick(env: Env, fetchImpl: typeof fetch, nowMs: number): Promise<TickResult> {
   const version = linkVersion(env);
   const conf = readLinkConf(env);
-  if (!conf) return { status: 'skipped', heartbeat: 0, usage: 0, decisions: [], health: 'ok', version };
+  if (!conf) return { ...SKIPPED_BASE, decisions: [], version };
   const post = makePoster(conf, fetchImpl, nowMs);
-
   const daily = await collectDaily(nowMs);
   const users = await activeUsers();
-  const health: Health = daily === null || users === null ? 'degraded' : 'ok';
-  const beat = { instance: 'web', version, health };
-  const heartbeat = checkHeartbeat(beat).ok ? await post('/v1/heartbeat', beat) : 422;
+  const health = tickHealth(daily, users);
+  const heartbeat = await sendHeartbeat({ instance: 'web', version, health }, post);
   const usage = await sendUsage(daily, users, post, nowMs);
   const decisions = await shadowDecision({ ...conf, version }, fetchImpl, nowMs);
   return { status: 'sent', heartbeat, usage, decisions, health, version };

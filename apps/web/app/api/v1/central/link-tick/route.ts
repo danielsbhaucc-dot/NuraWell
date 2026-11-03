@@ -30,6 +30,6 @@ const bodyIsEmpty = async (request: Request): Promise<boolean> => {
 export async function POST(request: Request) {
   if (!authorized(request)) return NextResponse.json({ ok: false }, { status: 401 });
   if (!(await bodyIsEmpty(request))) return NextResponse.json({ ok: false }, { status: 400 });
-  const result = await runLinkTick();
+  const result = await runLinkTick(process.env, fetch, Date.now());
   return NextResponse.json({ ok: result.status === 'sent', ...result }, { headers: { 'cache-control': 'no-store' } });
 }
