@@ -282,9 +282,11 @@ const LoginFormContent = () => { // skipcq: JS-R1005
       <main
         id="main-content"
         className={[
-          'relative flex flex-col overflow-hidden h-dvh max-h-dvh',
+          'relative flex flex-col overflow-hidden h-dvh max-h-dvh max-sm:pb-[calc(12rem+env(safe-area-inset-bottom,0px))]!',
           useDarkShell ? 'onboarding-shell-dark' : 'onboarding-shell-light',
         ].join(' ')}
+        // Below sm the floating accessibility button (bottom 6.75rem + its height) sits over the full-width column.
+        // Same clearance as LicenseRequired (#443): the scroll area ends above it, so it never covers a control.
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         {hasPhotoBg ? (
@@ -317,7 +319,7 @@ const LoginFormContent = () => { // skipcq: JS-R1005
                 ].join(' ')}
                 style={{ fontFamily: 'Rubik, Heebo, sans-serif' }}
               >
-                ברוכים הבאים
+                שמחים לראות אותך
               </h1>
             </div>
             <p
