@@ -303,7 +303,7 @@ const LoginFormContent = () => { // skipcq: JS-R1005
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: bgReady ? 1 : 0, y: bgReady ? 0 : 12 }}
           transition={{ duration: 0.3, ease: 'easeOut' as const }}
-          className="relative z-10 flex min-h-0 flex-1 flex-col justify-center-safe overflow-y-auto overscroll-contain px-4 pb-6 pt-[max(1.25rem,env(safe-area-inset-top))] max-w-md mx-auto w-full max-[300px]:px-2"
+          className="relative z-10 flex min-h-0 flex-1 flex-col justify-center-safe overflow-y-auto overscroll-contain px-4 pb-6 pt-[max(1.25rem,env(safe-area-inset-top))] max-w-md mx-auto w-full max-[380px]:px-2"
         >
           <div className="text-center mb-6">
             <div className="flex justify-center mb-3">
@@ -359,7 +359,7 @@ const LoginFormContent = () => { // skipcq: JS-R1005
 
           <div
             className={[
-              'rounded-3xl p-8 max-[300px]:px-4 max-[300px]:py-6', // very narrow (320 + text 130% + zoom): give the labels room
+              'rounded-3xl p-8 max-[380px]:px-4 max-[300px]:py-6', // narrow phones / large text: give the secondary-button labels one line
               hasPhotoBg
                 ? 'onboarding-hero-card-photo shadow-[0_16px_48px_rgba(0,0,0,0.28)]'
                 : 'bg-background-card',
@@ -496,7 +496,7 @@ const LoginFormContent = () => { // skipcq: JS-R1005
                   aria-label="כניסה עם Face ID או טביעת אצבע"
                   disabled={passkeyBusy}
                   className={[
-                    'w-full min-h-[52px] rounded-2xl font-bold flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-60',
+                    'w-full min-h-[52px] rounded-2xl font-bold flex items-center justify-center gap-2 max-[380px]:gap-1.5 transition-all active:scale-95 disabled:opacity-60',
                     isDarkUi ? 'bg-on-dark/10 text-on-dark ring-1 ring-accent-200/50 backdrop-blur' : 'bg-glass/80 text-primary-800 ring-1 ring-accent-300/70 shadow-[0_6px_18px_rgba(217,119,6,0.12)]',
                   ].join(' ')}
                 >
@@ -515,7 +515,7 @@ const LoginFormContent = () => { // skipcq: JS-R1005
                   data-testid="login-parent"
                   aria-label="כניסה עם החשבון המרכזי"
                   className={[
-                    'w-full min-h-[48px] rounded-2xl font-bold flex items-center justify-center gap-2 transition-all active:scale-95',
+                    'w-full min-h-[48px] rounded-2xl font-bold flex items-center justify-center gap-2 max-[380px]:gap-1.5 transition-all active:scale-95',
                     isDarkUi ? 'bg-on-dark/10 text-on-dark ring-1 ring-accent-200/50' : 'bg-glass/80 text-primary-800 ring-1 ring-accent-300/70',
                   ].join(' ')}
                 >
@@ -529,7 +529,7 @@ const LoginFormContent = () => { // skipcq: JS-R1005
                 data-testid="login-qr"
                 aria-label="כניסה בסריקת קוד מהטלפון"
                 className={[
-                  'w-full min-h-[48px] rounded-2xl font-bold flex items-center justify-center gap-2 transition-all active:scale-95',
+                  'w-full min-h-[48px] rounded-2xl font-bold flex items-center justify-center gap-2 max-[380px]:gap-1.5 transition-all active:scale-95',
                   isDarkUi ? 'bg-on-dark/5 text-primary-50 ring-1 ring-on-dark/20' : 'bg-glass/50 text-primary-800 ring-1 ring-primary-300/60',
                 ].join(' ')}
               >
