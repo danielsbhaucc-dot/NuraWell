@@ -20,7 +20,7 @@
     "packages/@core/*"
   ],
   "devDependencies": {
-    "next": "16.4.3",
+    "next": "16.4.4",
     "prettier": "^3.9.6",
     "turbo": "^2.10.12",
     "typescript": "^6.0.3"
