@@ -57,9 +57,10 @@ const claimsOk = (claims: Claims, nowS: number): boolean => timeOk(claims, nowS)
 
 type Parts = { header: string; payload: string; signature: string };
 const splitToken = (token: string): Parts | null => {
-  if (token.length > 4000) return null;
-  const [header = '', payload = '', signature = '', extra] = token.split('.');
-  return header && payload && signature && extra === undefined ? { header, payload, signature } : null;
+  const match = /^([\w-]{1,1500})\.([\w-]{1,2000})\.([\w-]{1,400})$/.exec(token);
+  if (!match) return null;
+  const [, header, payload, signature] = match as unknown as [string, string, string, string];
+  return { header, payload, signature };
 };
 
 const keyFor = (jwks: { keys: Jwk[] }, header: string): Jwk | undefined => {
@@ -67,13 +68,16 @@ const keyFor = (jwks: { keys: Jwk[] }, header: string): Jwk | undefined => {
   return head.alg === 'ES256' ? pickKey(jwks, head) : undefined;
 };
 
+const partsVerified = async (parts: Parts, jwks: { keys: Jwk[] }): Promise<boolean> => {
+  const jwk = keyFor(jwks, parts.header);
+  return jwk ? signatureOk(jwk, `${parts.header}.${parts.payload}`, parts.signature) : false;
+};
+
 /** Verify an ES256 JWT against a JWKS. Returns the claims or null (never throws). */
 export const verifyAccessToken = async (token: string, jwks: { keys: Jwk[] }, nowS = Math.floor(Date.now() / 1000)): Promise<Claims | null> => {
   try {
     const parts = splitToken(token);
-    const jwk = parts ? keyFor(jwks, parts.header) : undefined;
-    if (!parts || !jwk) return null;
-    if (!(await signatureOk(jwk, `${parts.header}.${parts.payload}`, parts.signature))) return null;
+    if (!parts || !(await partsVerified(parts, jwks))) return null;
     const claims = decodeJson<Claims>(parts.payload);
     return claimsOk(claims, nowS) ? claims : null;
   } catch { return null; }

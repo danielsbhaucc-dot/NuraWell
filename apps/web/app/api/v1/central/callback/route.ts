@@ -24,8 +24,8 @@ const codeOk = (code: string) => /^[A-Za-z0-9_-]{16,100}$/.test(code);
 const readRedirect = (request: NextRequest): { tx: Tx; code: string } | { why: string } => {
   const tx = unpackTx(request.cookies.get(TX_COOKIE)?.value);
   const params = request.nextUrl.searchParams;
-  const code = params.get('code') ?? '';
-  if (!stateMatches(tx, params.get('state') ?? '')) return { why: 'state' };
+  const code = String(params.get('code'));
+  if (!stateMatches(tx, String(params.get('state')))) return { why: 'state' };
   const err = params.get('error');
   if (err) return { why: err };
   return codeOk(code) ? { tx, code } : { why: 'code' };
@@ -72,6 +72,18 @@ const saveLicense = async (userId: string, claims: Claims): Promise<boolean> => 
   return !error;
 };
 
+/** Exchange, verify and save for the signed-in user. Returns null on success, else a failure reason. */
+const connect = async (config: { central: string; secret: string }, tx: Tx, code: string): Promise<string | null> => {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return 'signed_out';
+    const result = await exchange(config.central, config.secret, tx, code);
+    if (typeof result === 'string') return result;
+    return (await saveLicense(user.id, result)) ? null : 'save';
+  } catch { return 'error'; }
+};
+
 /** Parent identity redirect target: exchange the code, verify the token, store the license id, then go home. */
 // skipcq: JS-0067 -- Next.js route handler export, not a global
 export async function GET(request: NextRequest) {
@@ -80,14 +92,8 @@ export async function GET(request: NextRequest) {
   if ('why' in redirect) return fail(redirect.why);
   const config = readConfig();
   if (!config) return fail('config');
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return fail('signed_out');
-  try {
-    const result = await exchange(config.central, config.secret, redirect.tx, redirect.code);
-    if (typeof result === 'string') return fail(result);
-    if (!(await saveLicense(user.id, result))) return fail('save');
-    console.info('[platform-connect]', { why: 'connected' });
-    return finish(request, '/home');
-  } catch { return fail('error'); }
+  const why = await connect(config, redirect.tx, redirect.code);
+  if (why) return fail(why);
+  console.info('[platform-connect]', { why: 'connected' });
+  return finish(request, '/home');
 }
