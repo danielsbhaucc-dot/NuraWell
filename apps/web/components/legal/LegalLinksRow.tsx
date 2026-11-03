@@ -5,13 +5,13 @@ import { LEGAL_NAV } from './legal-nav';
  * שורת קישורים קומפקטית למסמכים המשפטיים (תנאי שימוש / פרטיות / בטיחות / נגישות).
  * מיועדת ל-footer של דפים פנימיים, התחברות והרשמה.
  */
-export function LegalLinksRow({
+export const LegalLinksRow = ({
   tone = 'light',
   className = '',
 }: {
   tone?: 'light' | 'dark';
   className?: string;
-}) {
+}) => {
   const linkClass =
     tone === 'dark'
       ? 'text-primary-100/80 hover:text-on-dark'
@@ -31,4 +31,4 @@ export function LegalLinksRow({
       ))}
     </nav>
   );
-}
+};
