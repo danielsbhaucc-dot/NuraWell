@@ -493,6 +493,7 @@ const LoginFormContent = () => { // skipcq: JS-R1005
                 <button
                   type="button"
                   onClick={() => void handlePasskey()}
+                  aria-label="כניסה עם Face ID או טביעת אצבע"
                   disabled={passkeyBusy}
                   className={[
                     'w-full min-h-[52px] rounded-2xl font-bold flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-60',
@@ -500,7 +501,7 @@ const LoginFormContent = () => { // skipcq: JS-R1005
                   ].join(' ')}
                 >
                   {passkeyBusy ? <div className="w-5 h-5 border-2 border-current/30 border-t-current rounded-full animate-spin" /> : <Fingerprint className="w-5 h-5" aria-hidden />}
-                  כניסה עם Face ID או טביעת אצבע
+                  <span className="text-balance leading-tight">Face ID או טביעת אצבע</span>
                 </button>
               ) : null}
               {parentError && SIGNIN_ERRORS[parentError] ? (
@@ -525,13 +526,14 @@ const LoginFormContent = () => { // skipcq: JS-R1005
                 type="button"
                 onClick={() => setQrOpen(true)}
                 data-testid="login-qr"
+                aria-label="כניסה בסריקת קוד מהטלפון"
                 className={[
                   'w-full min-h-[48px] rounded-2xl font-bold flex items-center justify-center gap-2 transition-all active:scale-95',
                   isDarkUi ? 'bg-on-dark/5 text-primary-50 ring-1 ring-on-dark/20' : 'bg-glass/50 text-primary-800 ring-1 ring-primary-300/60',
                 ].join(' ')}
               >
                 <QrCode className="w-5 h-5" aria-hidden />
-                כניסה עם הטלפון (סריקת קוד)
+                <span className="text-balance leading-tight">סריקת קוד מהטלפון</span>
               </button>
               <StepUpDialog open={qrOpen} variant="login" purpose="auth.login" reason="סורקים ומאשרים בטלפון" onClose={() => setQrOpen(false)}
                 onVerified={() => { setQrOpen(false); toast.success('התחברת בהצלחה!'); afterSignIn(); }} />
@@ -552,7 +554,7 @@ const LoginFormContent = () => { // skipcq: JS-R1005
 
             {!isOpsHost && <div className="mt-5 text-center">
               <p className={['text-sm', isDarkUi ? 'text-primary-100/80' : 'text-ink-500'].join(' ')}>
-                אין לכם חשבון?{' '}
+                עוד אין חשבון?{' '}
                 <Link
                   href="/register"
                   className={[
