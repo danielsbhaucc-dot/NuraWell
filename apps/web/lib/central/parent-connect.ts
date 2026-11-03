@@ -68,9 +68,9 @@ const keyFor = (jwks: { keys: Jwk[] }, header: string): Jwk | undefined => {
   return head.alg === 'ES256' ? pickKey(jwks, head) : undefined;
 };
 
-const partsVerified = async (parts: Parts, jwks: { keys: Jwk[] }): Promise<boolean> => {
+const partsVerified = (parts: Parts, jwks: { keys: Jwk[] }): Promise<boolean> => {
   const jwk = keyFor(jwks, parts.header);
-  return jwk ? signatureOk(jwk, `${parts.header}.${parts.payload}`, parts.signature) : false;
+  return jwk ? signatureOk(jwk, `${parts.header}.${parts.payload}`, parts.signature) : Promise.resolve(false);
 };
 
 /** Verify an ES256 JWT against a JWKS. Returns the claims or null (never throws). */
