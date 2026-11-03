@@ -68,18 +68,18 @@ export async function licenseGate(user: GateUser, role: string | null | undefine
   try {
     if (env.PLATFORM_LICENSE_MODE !== 'enforce') return { block: false, why: 'off' };
     const settings = await readSettings(Date.now());
-    const d = await decideGate(env.PLATFORM_LICENSE_MODE, settings, user, role, async () => {
-      const l = await getLink(env);
-      if (!l) throw new Error('no_link');
+    const decision = await decideGate(env.PLATFORM_LICENSE_MODE, settings, user, role, async () => {
+      const link = await getLink(env);
+      if (!link) throw new Error('no_link');
       const lic = asLic(user.app_metadata?.pl_lic);
-      const v = await l.check('*', { lic });
+      const verdict = await link.check('*', { lic });
       // A license bought minutes ago is not in the cached status yet: pull a fresh copy (at most every 15 s) and re-check.
-      if (v.reason === 'unknown_license' && Date.now() - lastForced > 15_000) { lastForced = Date.now(); if (await l.refresh()) return l.check('*', { lic }); }
-      return v;
+      if (verdict.reason === 'unknown_license' && Date.now() - lastForced > 15_000) { lastForced = Date.now(); if (await link.refresh()) return link.check('*', { lic }); }
+      return verdict;
     });
-    if (d.why === 'outage') console.warn('[license-gate]', { why: 'outage', reason: d.reason ?? 'error' });
-    if (d.block) console.info('[license-gate]', { why: 'blocked', reason: d.reason });
-    return d;
+    if (decision.why === 'outage') console.warn('[license-gate]', { why: 'outage', reason: decision.reason ?? 'error' });
+    if (decision.block) console.info('[license-gate]', { why: 'blocked', reason: decision.reason });
+    return decision;
   } catch {
     return { block: false, why: 'outage' };
   }

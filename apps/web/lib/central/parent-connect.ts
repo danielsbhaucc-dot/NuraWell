@@ -9,42 +9,63 @@ export const CLIENT_ID = 'nurawell';
 export const REDIRECT_URI = 'https://nurawell.vercel.app/api/v1/central/callback';
 export const TX_COOKIE = 'pl_connect';
 
-const b64u = (b: Uint8Array) => Buffer.from(b).toString('base64url');
-const fromB64u = (s: string) => new Uint8Array(Buffer.from(s, 'base64url'));
-export const randomToken = (n = 32) => b64u(crypto.getRandomValues(new Uint8Array(n)));
-export async function pkceChallenge(verifier: string): Promise<string> {
-  return b64u(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier))));
-}
+const b64u = (bytes: Uint8Array) => Buffer.from(bytes).toString('base64url');
+const fromB64u = (text: string) => new Uint8Array(Buffer.from(text, 'base64url'));
+const decodeJson = <T>(part: string): T => JSON.parse(new TextDecoder().decode(fromB64u(part))) as T;
 
-export function authorizeUrl(state: string, challenge: string): string {
-  const u = new URL(`${PARENT}/id/authorize`);
-  for (const [k, v] of Object.entries({ response_type: 'code', client_id: CLIENT_ID, redirect_uri: REDIRECT_URI, state, code_challenge: challenge, code_challenge_method: 'S256' })) u.searchParams.set(k, v);
-  return u.toString();
-}
+/** Random base64url token of `size` bytes. */
+export const randomToken = (size = 32) => b64u(crypto.getRandomValues(new Uint8Array(size)));
+
+/** PKCE S256 challenge for a verifier. */
+export const pkceChallenge = async (verifier: string): Promise<string> =>
+  b64u(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier))));
+
+/** Parent authorize URL for this client. */
+export const authorizeUrl = (state: string, challenge: string): string => {
+  const url = new URL(`${PARENT}/id/authorize`);
+  const params = { response_type: 'code', client_id: CLIENT_ID, redirect_uri: REDIRECT_URI, state, code_challenge: challenge, code_challenge_method: 'S256' };
+  for (const [name, value] of Object.entries(params)) url.searchParams.set(name, value);
+  return url.toString();
+};
 
 /** Transaction cookie value: state.verifier (both random, base64url). */
 export const packTx = (state: string, verifier: string) => `${state}.${verifier}`;
-export function unpackTx(v: string | undefined): { state: string; verifier: string } | null {
-  const m = /^([A-Za-z0-9_-]{32,64})\.([A-Za-z0-9_-]{43,128})$/.exec(v ?? '');
-  return m ? { state: m[1]!, verifier: m[2]! } : null;
-}
+
+/** Parse the transaction cookie; null when missing or malformed. */
+export const unpackTx = (raw: string | undefined): { state: string; verifier: string } | null => {
+  const match = /^([A-Za-z0-9_-]{32,64})\.([A-Za-z0-9_-]{43,128})$/.exec(raw ?? '');
+  const [, state, verifier] = match ?? [];
+  return state && verifier ? { state, verifier } : null;
+};
 
 export type Claims = { iss: string; aud: string; sub: string; lic: string; exp: number; iat: number; email_verified?: boolean };
 type Jwk = JsonWebKey & { kid?: string };
+type Head = { alg?: string; kid?: string };
+
+const pickKey = (jwks: { keys: Jwk[] }, head: Head): Jwk | undefined =>
+  jwks.keys.find((key) => key.kty === 'EC' && key.crv === 'P-256' && (!head.kid || !key.kid || key.kid === head.kid));
+
+const signatureOk = async (jwk: Jwk, signed: string, signature: string): Promise<boolean> => {
+  const key = await crypto.subtle.importKey('jwk', { kty: 'EC', crv: 'P-256', x: jwk.x, y: jwk.y }, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['verify']);
+  return crypto.subtle.verify({ name: 'ECDSA', hash: 'SHA-256' }, key, fromB64u(signature), new TextEncoder().encode(signed));
+};
+
+const claimsOk = (claims: Claims, nowS: number): boolean => {
+  const timeOk = typeof claims.exp === 'number' && claims.exp >= nowS - 30;
+  const whoOk = claims.iss === ISSUER && claims.aud === CLIENT_ID && typeof claims.sub === 'string';
+  const licOk = typeof claims.lic === 'string' && /^lic_[A-Za-z0-9_-]{4,80}$/.test(claims.lic);
+  return timeOk && whoOk && licOk;
+};
 
 /** Verify an ES256 JWT against a JWKS. Returns the claims or null (never throws). */
-export async function verifyAccessToken(token: string, jwks: { keys: Jwk[] }, nowS = Math.floor(Date.now() / 1000)): Promise<Claims | null> {
+export const verifyAccessToken = async (token: string, jwks: { keys: Jwk[] }, nowS = Math.floor(Date.now() / 1000)): Promise<Claims | null> => {
   try {
-    const [h, p, s] = token.split('.'); if (!h || !p || !s || token.length > 4000) return null;
-    const head = JSON.parse(new TextDecoder().decode(fromB64u(h))) as { alg?: string; kid?: string };
-    if (head.alg !== 'ES256') return null;
-    const jwk = jwks.keys.find((k) => k.kty === 'EC' && k.crv === 'P-256' && (!head.kid || !k.kid || k.kid === head.kid)); if (!jwk) return null;
-    const key = await crypto.subtle.importKey('jwk', { kty: 'EC', crv: 'P-256', x: jwk.x, y: jwk.y }, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['verify']);
-    const ok = await crypto.subtle.verify({ name: 'ECDSA', hash: 'SHA-256' }, key, fromB64u(s), new TextEncoder().encode(`${h}.${p}`));
-    if (!ok) return null;
-    const c = JSON.parse(new TextDecoder().decode(fromB64u(p))) as Claims;
-    if (c.iss !== ISSUER || c.aud !== CLIENT_ID || typeof c.exp !== 'number' || c.exp < nowS - 30 || typeof c.sub !== 'string') return null;
-    if (typeof c.lic !== 'string' || !/^lic_[A-Za-z0-9_-]{4,80}$/.test(c.lic)) return null;
-    return c;
+    const [header, payload, signature] = token.split('.');
+    if (!header || !payload || !signature || token.length > 4000) return null;
+    const head = decodeJson<Head>(header);
+    const jwk = head.alg === 'ES256' ? pickKey(jwks, head) : undefined;
+    if (!jwk || !(await signatureOk(jwk, `${header}.${payload}`, signature))) return null;
+    const claims = decodeJson<Claims>(payload);
+    return claimsOk(claims, nowS) ? claims : null;
   } catch { return null; }
-}
+};
