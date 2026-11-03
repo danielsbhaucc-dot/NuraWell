@@ -1161,6 +1161,7 @@ export const COLUMN_CLASSIFICATION: Readonly<Record<string, Readonly<Record<stri
     mode: ["non_sensitive", "enum (license enforcement kill switch), no personal content"],
     scope: ["non_sensitive", "enum (enforcement scope), no personal content"],
     note: ["non_sensitive", "operator note about the switch, no personal content"],
+    signin: ["non_sensitive", "enum (parent sign-in kill switch), no personal content"],
   },
   platform_product_registry: {
     product_id: ["non_sensitive", "product slug identifier, no personal content"],
