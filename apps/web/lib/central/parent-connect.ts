@@ -44,6 +44,7 @@ export const unpackTx = (raw: string | undefined): { state: string; verifier: st
 /** Sign-in transaction cookie: state.verifier.nonce. */
 export const packSigninTx = (state: string, verifier: string, nonce: string) => `${state}.${verifier}.${nonce}`;
 const SIGNIN_TX_RE = /^([A-Za-z0-9_-]{32,64})\.([A-Za-z0-9_-]{43,128})\.([A-Za-z0-9_-]{16,128})$/;
+// skipcq: JS-R1005 -- one regex, typed fallbacks
 export const unpackSigninTx = (raw: string | undefined): { state: string; verifier: string; nonce: string } | null => {
   const match = SIGNIN_TX_RE.exec(raw ?? '');
   return match ? { state: match[1] as string, verifier: match[2] as string, nonce: match[3] as string } : null;

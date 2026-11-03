@@ -28,7 +28,7 @@ const claimOne = async (config: Config, user: User): Promise<string | null> => {
 };
 
 /** Push claims for up to `max` accounts. Returns counts only. */
-// skipcq: JS-0067 -- ES module export, not a global
+// skipcq: JS-0067, JS-R1005 -- ES module export; linear guard-and-loop
 export async function pushClaims(env: Record<string, string | undefined> = process.env, max = 50): Promise<{ sent: number; applied: number }> {
   const out = { sent: 0, applied: 0 };
   const config = configOf(env);

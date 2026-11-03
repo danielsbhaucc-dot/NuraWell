@@ -54,6 +54,7 @@ const linkedElsewhere = (user: NwUser, sub: string) => typeof meta(user).pl_sub 
  * Pure matching: which NuraWell account does this parent identity sign in to? Parent email must be verified.
  * Never takes over an account already linked to a different parent identity. No account ⇒ normal NuraWell registration.
  */
+// skipcq: JS-R1005 -- flat ordered refusal guards
 export const matchUser = (users: NwUser[], claims: ParentClaims, mode: SigninMode): Match => {
   if (claims.email_verified !== true || !norm(claims.email)) return { refuse: 'unverified' };
   const hit = findHit(users, claims);

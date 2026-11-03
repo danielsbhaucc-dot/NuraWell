@@ -121,6 +121,7 @@ const signinClaims = async (tx: SigninTx, code: string): Promise<Claims | string
 };
 
 /** R20 sign-in branch: verify (incl. nonce + verified email), find the NuraWell account, mint a NuraWell session. */
+// skipcq: JS-R1005 -- flat sequence of fail-closed guards
 const signIn = async (request: NextRequest): Promise<string | null> => {
   const redirect = readSigninRedirect(request);
   if ('why' in redirect) return redirect.why;
@@ -147,7 +148,7 @@ const finishSignin = async (request: NextRequest) => {
 };
 
 /** Parent identity redirect target: exchange the code, verify the token, store the license id, then go home. */
-// skipcq: JS-0067 -- Next.js route handler export, not a global
+// skipcq: JS-0067, JS-R1005 -- Next.js route handler export; flat guards
 export async function GET(request: NextRequest) {
   if (isSignin(request)) return finishSignin(request);
   const fail = (why: string) => { console.warn('[platform-connect]', { why }); return finish(request, '/license-required'); };
