@@ -8,6 +8,8 @@ export const ISSUER = `${PARENT}/id`;
 export const CLIENT_ID = 'nurawell';
 export const REDIRECT_URI = 'https://nurawell.vercel.app/api/v1/central/callback';
 export const TX_COOKIE = 'pl_connect';
+/** R20 sign-in transaction (no NuraWell session yet): state.verifier.nonce. */
+export const SIGNIN_COOKIE = 'pl_signin';
 
 const b64u = (bytes: Uint8Array) => Buffer.from(bytes).toString('base64url');
 const fromB64u = (text: string) => new Uint8Array(Buffer.from(text, 'base64url'));
@@ -21,10 +23,11 @@ export const pkceChallenge = async (verifier: string): Promise<string> =>
   b64u(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier))));
 
 /** Parent authorize URL for this client. */
-export const authorizeUrl = (state: string, challenge: string): string => {
+export const authorizeUrl = (state: string, challenge: string, nonce?: string): string => {
   const url = new URL(`${PARENT}/id/authorize`);
   const params = { response_type: 'code', client_id: CLIENT_ID, redirect_uri: REDIRECT_URI, state, code_challenge: challenge, code_challenge_method: 'S256' };
   for (const [name, value] of Object.entries(params)) url.searchParams.set(name, value);
+  if (nonce) url.searchParams.set('nonce', nonce);
   return url.toString();
 };
 
@@ -38,7 +41,15 @@ export const unpackTx = (raw: string | undefined): { state: string; verifier: st
   return state && verifier ? { state, verifier } : null;
 };
 
-export type Claims = { iss: string; aud: string; sub: string; lic: string; exp: number; iat: number; email_verified?: boolean };
+/** Sign-in transaction cookie: state.verifier.nonce. */
+export const packSigninTx = (state: string, verifier: string, nonce: string) => `${state}.${verifier}.${nonce}`;
+export const unpackSigninTx = (raw: string | undefined): { state: string; verifier: string; nonce: string } | null => {
+  const match = /^([A-Za-z0-9_-]{32,64})\.([A-Za-z0-9_-]{43,128})\.([A-Za-z0-9_-]{16,128})$/.exec(raw ?? '');
+  const [, state, verifier, nonce] = match ?? [];
+  return state && verifier && nonce ? { state, verifier, nonce } : null;
+};
+
+export type Claims = { iss: string; aud: string; sub: string; lic: string; exp: number; iat: number; email?: string; email_verified?: boolean; nonce?: string };
 type Jwk = JsonWebKey & { kid?: string };
 type Head = { alg?: string; kid?: string };
 

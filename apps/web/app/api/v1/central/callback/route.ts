@@ -2,7 +2,9 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { timingSafeEqualStr } from '@/lib/api/timing-safe-equal';
-import { CLIENT_ID, ISSUER, REDIRECT_URI, TX_COOKIE, unpackTx, verifyAccessToken, type Claims } from '@/lib/central/parent-connect';
+import { CLIENT_ID, ISSUER, REDIRECT_URI, SIGNIN_COOKIE, TX_COOKIE, unpackSigninTx, unpackTx, verifyAccessToken, type Claims } from '@/lib/central/parent-connect';
+import { errorFor, matchUser, signinMode, type NwUser } from '@/lib/central/parent-signin';
+import { issueSessionForUser } from '@/lib/auth/issue-session';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -13,6 +15,7 @@ type Tx = { state: string; verifier: string };
 const finish = (request: NextRequest, path: string) => {
   const res = NextResponse.redirect(new URL(path, request.url));
   res.cookies.set(TX_COOKIE, '', { httpOnly: true, secure: true, sameSite: 'lax', path: '/api/v1/central', maxAge: 0 });
+  res.cookies.set(SIGNIN_COOKIE, '', { httpOnly: true, secure: true, sameSite: 'lax', path: '/api/v1/central', maxAge: 0 });
   res.headers.set('cache-control', 'no-store');
   return res;
 };
@@ -84,9 +87,49 @@ const connect = async (config: { central: string; secret: string }, tx: Tx, code
   } catch { return 'error'; }
 };
 
+/** All NuraWell accounts (small user base; paged, capped). */
+const listUsers = async (): Promise<NwUser[]> => {
+  const admin = createAdminClient(), out: NwUser[] = [];
+  for (let page = 1; page <= 20; page++) {
+    const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 1000 });
+    if (error) throw error;
+    out.push(...(data.users as NwUser[]));
+    if (data.users.length < 1000) break;
+  }
+  return out;
+};
+
+/** R20 sign-in branch: verify (incl. nonce + verified email), find the NuraWell account, mint a NuraWell session. */
+const signIn = async (request: NextRequest): Promise<string | null> => {
+  const tx = unpackSigninTx(request.cookies.get(SIGNIN_COOKIE)?.value);
+  const params = request.nextUrl.searchParams;
+  if (!tx || !stateMatches(tx, String(params.get('state')))) return 'state';
+  if (params.get('error')) return String(params.get('error')).slice(0, 40);
+  const code = String(params.get('code'));
+  if (!codeOk(code)) return 'code';
+  const mode = await signinMode();
+  if (mode === 'off') return 'off';
+  const config = readConfig();
+  if (!config) return 'config';
+  const claims = await exchange(config.central, config.secret, tx, code);
+  if (typeof claims === 'string') return claims;
+  if (!claims.nonce || !timingSafeEqualStr(claims.nonce, tx.nonce)) return 'nonce';
+  const m = matchUser(await listUsers(), claims, mode);
+  if ('refuse' in m) return m.refuse;
+  if (!(await saveLicense(m.user.id, claims))) return 'save';
+  const s = await issueSessionForUser(createAdminClient(), m.user.id);
+  console.info('[platform-signin]', { why: s.ok ? 'signed_in' : s.error, by: m.by });
+  return s.ok ? null : 'session';
+};
+
 /** Parent identity redirect target: exchange the code, verify the token, store the license id, then go home. */
 // skipcq: JS-0067 -- Next.js route handler export, not a global
 export async function GET(request: NextRequest) {
+  if (request.cookies.get(SIGNIN_COOKIE)?.value && !request.cookies.get(TX_COOKIE)?.value) {
+    const why = await signIn(request).catch(() => 'error');
+    if (why) { console.warn('[platform-signin]', { why }); return finish(request, `/login?e=${errorFor(why)}`); }
+    return finish(request, '/home');
+  }
   const fail = (why: string) => { console.warn('[platform-connect]', { why }); return finish(request, '/license-required'); };
   const redirect = readRedirect(request);
   if ('why' in redirect) return fail(redirect.why);

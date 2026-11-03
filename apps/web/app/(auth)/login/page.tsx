@@ -16,6 +16,7 @@ import { LegalLinksRow } from '@/lib/module-api/legal/components-legal-LegalLink
 import { useToast, ToastContainer } from '../../../components/shared/Toast';
 import { APP_HOME_PATH } from '../../../lib/navigation/app-home-path';
 import { isPasswordLeaked } from '../../../lib/auth/password-leak-client';
+import { SIGNIN_ERRORS } from '../../../lib/central/parent-signin-text';
 
 export const dynamic = 'force-dynamic';
 
@@ -65,6 +66,17 @@ const LoginFormContent = () => { // skipcq: JS-R1005
   /** Ops host serves its own admin login (same-origin cookies); hide public-app links there. */
   const isOpsHost = useSyncExternalStore(noopSubscribe, isOpsHostClient, () => false);
   const reason = searchParams?.get('reason');
+  /** R20: parent-account sign-in (server kill switch decides; 'test' needs ?pl=parent). */
+  const plHint = searchParams?.get('pl');
+  const parentError = searchParams?.get('e');
+  const [parentOn, setParentOn] = useState(false);
+  useEffect(() => {
+    if (isOpsHost) return undefined;
+    const ctl = new AbortController();
+    fetch(`/api/v1/central/signin?probe=1${plHint === 'parent' ? '&pl=parent' : ''}`, { signal: ctl.signal, cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : { on: false })).then((d: { on?: boolean }) => setParentOn(d.on === true)).catch(() => setParentOn(false));
+    return () => ctl.abort();
+  }, [plHint, isOpsHost]);
 
   useEffect(() => {
     if (reason === 'ops_idle') toast.info('נותקת אחרי זמן ללא פעילות', 'התחבר שוב כדי להמשיך');
@@ -488,6 +500,24 @@ const LoginFormContent = () => { // skipcq: JS-R1005
                   {passkeyBusy ? <div className="w-5 h-5 border-2 border-current/30 border-t-current rounded-full animate-spin" /> : <Fingerprint className="w-5 h-5" aria-hidden />}
                   כניסה עם Face ID או טביעת אצבע
                 </button>
+              ) : null}
+              {parentError && SIGNIN_ERRORS[parentError] ? (
+                <p role="alert" data-testid="login-parent-error" className={`text-sm font-medium leading-relaxed rounded-xl px-3 py-2 ${isDarkUi ? 'bg-on-dark/10 text-on-dark' : 'bg-glass/70 text-ink-700 ring-1 ring-accent-300/60'}`}>
+                  {SIGNIN_ERRORS[parentError]}
+                </p>
+              ) : null}
+              {parentOn ? (
+                <a
+                  href={`/api/v1/central/signin${plHint === 'parent' ? '?pl=parent' : ''}`}
+                  data-testid="login-parent"
+                  className={[
+                    'w-full min-h-[48px] rounded-2xl font-bold flex items-center justify-center gap-2 transition-all active:scale-95',
+                    isDarkUi ? 'bg-on-dark/10 text-on-dark ring-1 ring-accent-200/50' : 'bg-glass/80 text-primary-800 ring-1 ring-accent-300/70',
+                  ].join(' ')}
+                >
+                  <KeyRound className="w-5 h-5" aria-hidden />
+                  כניסה עם החשבון המרכזי
+                </a>
               ) : null}
               <button
                 type="button"
