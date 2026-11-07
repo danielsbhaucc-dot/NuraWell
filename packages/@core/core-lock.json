@@ -1,0 +1,30 @@
+{
+  "repo": "danielsbhaucc-dot/platform-core",
+  "sha": "aba917814cf849039bd8655585ad9370c851393e",
+  "files": {
+    "audit/package.json": "09f089dcfcee3667d5a269a751151edcf729799240c67961aa7900dcf53e1695",
+    "audit/src/index.ts": "33d5168a151db6330958fe91189b04df9e588447b02e50d52ea77e8daffd742e",
+    "crypto/package.json": "5ace169ccff93d414f7736b9d242ea0a1bc96b3fb51c90da63285c8a35caef16",
+    "crypto/src/index.ts": "36197a6f6b78fd96c73a26e01d7d0c7b3cb67a6b5abc8d914a3fea635532ce3b",
+    "licensing/package.json": "28c94e37062c374fb61e3a39fe9f7fc847d99c82723ce60bdf2d3dfaf4a06f10",
+    "licensing/src/index.ts": "46d1a594c9994bc657570f90fc4aa6814e1e61458e156a2759e30740c42712b0",
+    "product-link/README.md": "4f502eae8019b41c84837700c46f05cefe50dc915c9e21129d312b3d993cb332",
+    "product-link/package.json": "cbab6d67e53699ff102a7136f8d3b09bf41fd05688f2ed8a09622b00c4e408d4",
+    "product-link/src/index.ts": "6dd1664ec29d71350fcd3b8cfb3baf2564773de55d3613bcbae76acb0dd4e141",
+    "product-link/src/schema.ts": "068ba30ace6d290f4ad82d805d03a079efa0bae8f6e9684354323299f1510d7c",
+    "product-link/src/sign.ts": "b7ba46afb37dcbbe36a071742292388842864fca7f672383a09df0e174ba7ced",
+    "security-privacy/CHANGELOG.md": "ce1b193eb615ec02128a9e4a9d94c9c1ff707160a0807a13b44bbad30bf4584b",
+    "security-privacy/README.he.md": "b5a76d6d3c9703eb39ffcfdcef6793b507948e698e24eb0fb5fc2922beae8edb",
+    "security-privacy/README.md": "c5e6d2150127632d4ed74e57a85d8024613cb05ae2cb7cae3728930b69721692",
+    "security-privacy/llms.txt": "b0f3c03c83787497889b440ccf737a697621995058eb6c7b1856b37643a62764",
+    "security-privacy/module.json": "0cab195c25ad5693632b20faba87c5d34874636ac50293996715df77545ea9a3",
+    "security-privacy/package.json": "d61a0c4fe14b3036b52d7e6c47d98cd0bda6c320e8525577bb6e062e748e562a",
+    "security-privacy/src/authz.ts": "45c1690683f6e2c715033bce7b1ed2df850efd685aef7a6ef1db19beddad4479",
+    "security-privacy/src/crypto.ts": "5769d7cca22b20a54cc4ce74dc1d33735e5f0054550014bce15f5e97ad46fd51",
+    "security-privacy/src/feed.ts": "d3b7da4a5e7fd663f4ce968744c710c28f6891ffdd9ea9c2789f3ccee722ee7f",
+    "security-privacy/src/headers.ts": "9014665a1ed4fd8fa090de2ea826f8b2fcd379fd437ccfad050eab26af537a4e",
+    "security-privacy/src/index.ts": "6e57dc5ec9619fa70285d67834a529c81684d51df2c42f6689dd310b19b3e00b",
+    "security-privacy/src/password.ts": "598148e17fce5038bac76ea4ac3d146aa229e613bd013d9d1b51481d6b565dbc",
+    "security-privacy/src/rate-limit.ts": "88e6ac1bb79938ac6f7c7d3dde1f14494459fe2fa4bd0163d3219188f7bd03ac"
+  }
+}

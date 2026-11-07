@@ -15,6 +15,8 @@ import { PublicAiPresence } from '@/lib/module-api/agent/components-ai-PublicAiP
 import { LegalLinksRow } from '@/lib/module-api/legal/components-legal-LegalLinksRow';
 import { useToast, ToastContainer } from '../../../components/shared/Toast';
 import { APP_HOME_PATH } from '../../../lib/navigation/app-home-path';
+import { isPasswordLeaked } from '../../../lib/auth/password-leak-client';
+import { SIGNIN_ERRORS } from '../../../lib/central/parent-signin-text';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,7 +41,8 @@ function isOpsHostClient(): boolean {
   return Boolean(opsHost) && window.location.hostname.toLowerCase() === opsHost;
 }
 
-function LoginFormContent() {
+// Pre-existing JSX-heavy login screen; branches are render ternaries, splitting is out of scope for S5.
+const LoginFormContent = () => { // skipcq: JS-R1005
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = sanitizeRedirectPath(searchParams?.get('redirect'));
@@ -63,6 +66,17 @@ function LoginFormContent() {
   /** Ops host serves its own admin login (same-origin cookies); hide public-app links there. */
   const isOpsHost = useSyncExternalStore(noopSubscribe, isOpsHostClient, () => false);
   const reason = searchParams?.get('reason');
+  /** R20: parent-account sign-in (server kill switch decides; 'test' needs ?pl=parent). */
+  const plHint = searchParams?.get('pl');
+  const parentError = searchParams?.get('e');
+  const [parentOn, setParentOn] = useState(false);
+  useEffect(() => {
+    if (isOpsHost) return undefined;
+    const ctl = new AbortController();
+    fetch(`/api/v1/central/signin?probe=1${plHint === 'parent' ? '&pl=parent' : ''}`, { signal: ctl.signal, cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : { on: false })).then((d: { on?: boolean }) => setParentOn(d.on === true)).catch(() => setParentOn(false));
+    return () => ctl.abort();
+  }, [plHint, isOpsHost]);
 
   useEffect(() => {
     if (reason === 'ops_idle') toast.info('נותקת אחרי זמן ללא פעילות', 'התחבר שוב כדי להמשיך');
@@ -121,6 +135,31 @@ function LoginFormContent() {
     };
   }, []);
 
+  /** S5: leaked-password check after a successful sign-in (k-anonymity, server side). Never blocks the login. */
+  const warnIfLeaked = async (pw: string): Promise<boolean> => {
+    const leaked = await isPasswordLeaked(pw);
+    if (leaked) toast.warning('הסיסמה שלך הופיעה בדליפות מידע', 'היא עלולה להיות קלה לניחוש. מומלץ להחליף אותה בהקדם ולהוסיף מפתח גישה.');
+    return leaked;
+  };
+
+  /** After a successful sign-in: ops host does a full navigation (proxy re-checks admin); app host routes client-side. */
+  const finishLogin = (leaked: boolean) => {
+    if (isOpsHost) {
+      window.location.assign(redirect === APP_HOME_PATH ? '/' : redirect);
+      return;
+    }
+    try {
+      sessionStorage.setItem(AFTER_LOGIN_KEY, String(Date.now()));
+    } catch {
+      /* storage unavailable (private mode): non-critical */
+    }
+    toast.success('התחברת בהצלחה!', 'מעבירים אותך לקורסים...');
+    setTimeout(() => {
+      router.push(redirect);
+      router.refresh();
+    }, leaked ? 4000 : 800);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.includes('@')) {
@@ -139,19 +178,9 @@ function LoginFormContent() {
         return;
       }
 
-      if (isOpsHost) {
-        // Full navigation so the proxy re-checks admin + rewrites to the panel on this host.
-        window.location.assign(redirect === APP_HOME_PATH ? '/' : redirect);
-        return;
-      }
-      try {
-        sessionStorage.setItem(AFTER_LOGIN_KEY, String(Date.now()));
-      } catch {}
-      toast.success('התחברת בהצלחה!', 'מעבירים אותך לקורסים...');
-      setTimeout(() => {
-        router.push(redirect);
-        router.refresh();
-      }, 800);
+      const leaked = await warnIfLeaked(password);
+
+      finishLogin(leaked);
     } catch (e) {
       console.error('[login] unexpected', e);
       toast.error(
@@ -253,9 +282,11 @@ function LoginFormContent() {
       <main
         id="main-content"
         className={[
-          'relative flex flex-col overflow-hidden h-dvh max-h-dvh',
+          'relative flex flex-col overflow-hidden h-dvh max-h-dvh max-sm:pb-[calc(12rem+env(safe-area-inset-bottom,0px))]!',
           useDarkShell ? 'onboarding-shell-dark' : 'onboarding-shell-light',
         ].join(' ')}
+        // Below sm the floating accessibility button (bottom 6.75rem + its height) sits over the full-width column.
+        // Same clearance as LicenseRequired (PR 443): the scroll area ends above it, so it never covers a control.
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         {hasPhotoBg ? (
@@ -272,7 +303,7 @@ function LoginFormContent() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: bgReady ? 1 : 0, y: bgReady ? 0 : 12 }}
           transition={{ duration: 0.3, ease: 'easeOut' as const }}
-          className="relative z-10 flex min-h-0 flex-1 flex-col justify-center-safe overflow-y-auto overscroll-contain px-4 pb-6 pt-[max(1.25rem,env(safe-area-inset-top))] max-w-md mx-auto w-full"
+          className="relative z-10 flex min-h-0 flex-1 flex-col justify-center-safe overflow-y-auto overscroll-contain px-4 pb-6 pt-[max(1.25rem,env(safe-area-inset-top))] max-w-md mx-auto w-full max-[380px]:px-2 max-[300px]:px-1.5"
         >
           <div className="text-center mb-6">
             <div className="flex justify-center mb-3">
@@ -281,14 +312,14 @@ function LoginFormContent() {
             <div className="mt-3 mb-2">
               <h1
                 className={[
-                  'text-3xl font-black leading-tight',
+                  'text-3xl max-[300px]:text-2xl font-black leading-tight',
                   isDarkUi
                     ? 'bg-linear-to-l from-primary-200 via-secondary-100 to-accent-100 bg-clip-text text-transparent'
                     : 'text-ink-900',
                 ].join(' ')}
                 style={{ fontFamily: 'Rubik, Heebo, sans-serif' }}
               >
-                ברוכים הבאים
+                שמחים לראות אותך
               </h1>
             </div>
             <p
@@ -297,7 +328,7 @@ function LoginFormContent() {
                 isDarkUi ? 'text-primary-100/90' : 'text-ink-500',
               ].join(' ')}
             >
-              התחברו כדי להמשיך את המסע שלכם
+              התחברות להמשך המסע
             </p>
             <div className="flex items-center justify-center gap-2 mt-4">
               <div
@@ -328,7 +359,7 @@ function LoginFormContent() {
 
           <div
             className={[
-              'rounded-3xl p-8',
+              'rounded-3xl p-8 max-[380px]:px-4 max-[300px]:px-3 max-[300px]:py-6', // narrow phones / large text: give the secondary-button labels one line
               hasPhotoBg
                 ? 'onboarding-hero-card-photo shadow-[0_16px_48px_rgba(0,0,0,0.28)]'
                 : 'bg-background-card',
@@ -455,34 +486,55 @@ function LoginFormContent() {
             <div className="mt-5 space-y-3">
               <div className="flex items-center gap-3" aria-hidden>
                 <div className={`h-px flex-1 ${isDarkUi ? 'bg-on-dark/15' : 'bg-accent-300/60'}`} />
-                <span className={`text-xs font-bold ${isDarkUi ? 'text-primary-100/70' : 'text-ink-400'}`}>או</span>
+                <span className={`text-xs font-bold ${isDarkUi ? 'text-primary-100/70' : 'text-ink-600'}`}>או</span>
                 <div className={`h-px flex-1 ${isDarkUi ? 'bg-on-dark/15' : 'bg-accent-300/60'}`} />
               </div>
               {passkeySupported ? (
                 <button
                   type="button"
                   onClick={() => void handlePasskey()}
+                  aria-label="כניסה עם Face ID או טביעת אצבע"
                   disabled={passkeyBusy}
                   className={[
-                    'w-full min-h-[52px] rounded-2xl font-bold flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-60',
+                    'w-full min-h-[52px] rounded-2xl font-bold flex items-center justify-center gap-2 max-[380px]:gap-1.5 transition-all active:scale-95 disabled:opacity-60',
                     isDarkUi ? 'bg-on-dark/10 text-on-dark ring-1 ring-accent-200/50 backdrop-blur' : 'bg-glass/80 text-primary-800 ring-1 ring-accent-300/70 shadow-[0_6px_18px_rgba(217,119,6,0.12)]',
                   ].join(' ')}
                 >
-                  {passkeyBusy ? <div className="w-5 h-5 border-2 border-current/30 border-t-current rounded-full animate-spin" /> : <Fingerprint className="w-5 h-5" aria-hidden />}
-                  כניסה עם Face ID או טביעת אצבע
+                  {passkeyBusy ? <div className="w-5 h-5 border-2 border-current/30 border-t-current rounded-full animate-spin" /> : <Fingerprint className="w-5 h-5 max-[300px]:w-4.5 max-[300px]:h-4.5" aria-hidden />}
+                  <span className="text-balance leading-tight">Face ID או טביעת אצבע</span>
                 </button>
+              ) : null}
+              {parentError && SIGNIN_ERRORS[parentError] ? (
+                <p role="alert" data-testid="login-parent-error" className={`text-sm font-medium leading-relaxed rounded-xl px-3 py-2 ${isDarkUi ? 'bg-on-dark/10 text-on-dark' : 'bg-glass/70 text-ink-700 ring-1 ring-accent-300/60'}`}>
+                  {SIGNIN_ERRORS[parentError]}
+                </p>
+              ) : null}
+              {parentOn ? (
+                <a
+                  href={`/api/v1/central/signin${plHint === 'parent' ? '?pl=parent' : ''}`}
+                  data-testid="login-parent"
+                  aria-label="כניסה עם החשבון המרכזי"
+                  className={[
+                    'w-full min-h-[48px] rounded-2xl font-bold flex items-center justify-center gap-2 max-[380px]:gap-1.5 transition-all active:scale-95',
+                    isDarkUi ? 'bg-on-dark/10 text-on-dark ring-1 ring-accent-200/50' : 'bg-glass/80 text-primary-800 ring-1 ring-accent-300/70',
+                  ].join(' ')}
+                >
+                  <KeyRound className="w-5 h-5 max-[300px]:w-4.5 max-[300px]:h-4.5" aria-hidden />
+                  <span className="text-balance leading-tight">כניסה בחשבון המרכזי</span>
+                </a>
               ) : null}
               <button
                 type="button"
                 onClick={() => setQrOpen(true)}
                 data-testid="login-qr"
+                aria-label="כניסה בסריקת קוד מהטלפון"
                 className={[
-                  'w-full min-h-[48px] rounded-2xl font-bold flex items-center justify-center gap-2 transition-all active:scale-95',
+                  'w-full min-h-[48px] rounded-2xl font-bold flex items-center justify-center gap-2 max-[380px]:gap-1.5 transition-all active:scale-95',
                   isDarkUi ? 'bg-on-dark/5 text-primary-50 ring-1 ring-on-dark/20' : 'bg-glass/50 text-primary-800 ring-1 ring-primary-300/60',
                 ].join(' ')}
               >
-                <QrCode className="w-5 h-5" aria-hidden />
-                כניסה עם הטלפון (סריקת קוד)
+                <QrCode className="w-5 h-5 max-[300px]:w-4.5 max-[300px]:h-4.5" aria-hidden />
+                <span className="text-balance leading-tight">סריקת קוד מהטלפון</span>
               </button>
               <StepUpDialog open={qrOpen} variant="login" purpose="auth.login" reason="סורקים ומאשרים בטלפון" onClose={() => setQrOpen(false)}
                 onVerified={() => { setQrOpen(false); toast.success('התחברת בהצלחה!'); afterSignIn(); }} />
@@ -503,7 +555,7 @@ function LoginFormContent() {
 
             {!isOpsHost && <div className="mt-5 text-center">
               <p className={['text-sm', isDarkUi ? 'text-primary-100/80' : 'text-ink-500'].join(' ')}>
-                אין לכם חשבון?{' '}
+                עוד אין חשבון?{' '}
                 <Link
                   href="/register"
                   className={[
@@ -511,7 +563,7 @@ function LoginFormContent() {
                     isDarkUi ? 'text-primary-300 hover:text-primary-200' : 'text-primary-600 hover:text-primary-700',
                   ].join(' ')}
                 >
-                  הרשמה חינם
+                  הרשמה
                 </Link>
               </p>
             </div>}
@@ -522,7 +574,7 @@ function LoginFormContent() {
       </main>
     </>
   );
-}
+};
 
 export default function LoginPage() {
   return (

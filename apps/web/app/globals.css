@@ -7935,6 +7935,12 @@ html.a11y-reduce-motion .nw-chat-receive {
   }
 }
 
+/* /license-required only: the night background covers the whole scroll height (gradient scrolls with the page, not
+   viewport-fixed) and html/body share its base colour, so overscroll / rubber-band never flashes the light page colour. */
+/* Unlayered on purpose: .public-dark-bg (fixed attachment) and body's bg-background are outside/above the components layer. */
+main.lr-page { background-color: #071210; background-attachment: scroll; }
+html:has(main.lr-page), html:has(main.lr-page) body { background-color: #071210; }
+
 /* Coming-soon is frozen: keep main's pre-Apple neutral token values inside its root. */
 :is(html:has(.cs-orb), [data-cs-legacy]) {
   --color-canvas: oklch(90% 0.04 168);

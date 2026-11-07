@@ -1,0 +1,2 @@
+{ "name": "@core/security-privacy", "version": "1.1.0", "private": true, "type": "module", "main": "src/index.ts",
+  "exports": { ".": "./src/index.ts", "./headers": "./src/headers.ts", "./rate-limit": "./src/rate-limit.ts", "./feed": "./src/feed.ts", "./authz": "./src/authz.ts", "./crypto": "./src/crypto.ts", "./password": "./src/password.ts" } }

@@ -3,6 +3,8 @@
 import { readdirSync, existsSync, readFileSync } from 'node:fs';
 const REQ = ['package.json', 'module.json', 'src/index.ts', 'README.he.md', 'llms.txt', 'CHANGELOG.md'];
 const EXEMPT = new Set(['packages/@platform/modules', 'packages/billing']); // CLI tool / legacy package, documented in LIBRARY.md
+// Plain @core libraries installed by core-sync as dependencies of a kit (not modules): byte-checked by core-lock.json, documented in platform-core.
+for (const n of ['audit', 'crypto', 'licensing', 'product-link']) EXEMPT.add(`packages/@core/${n}`);
 const dirs = [];
 for (const s of readdirSync('packages')) {
   if (s.startsWith('@')) for (const n of readdirSync(`packages/${s}`)) dirs.push(`packages/${s}/${n}`);

@@ -1,0 +1,3 @@
+security-privacy kit 1.1.0. Install: core-sync <sha> security-privacy; dependency "@core/security-privacy": "*"; call initSecurityPrivacy({ productId }).
+Exports: ./headers (securityHeaders, toNextHeaders), ./rate-limit (fixedWindowMemory, fixedWindowUpstash, rateLimitResponse, rateLimiter), ./authz, ./crypto (enc:v2 envelope, setCryptoNamespace), ./password (checkPasswordPolicy, checkPwnedPassword — server-side, every password-setting path), ./feed (central adapter, OFF unless KIT_CENTRAL_REPORTING=on).
+Never edit installed files; fix in platform-core and re-sync. See README.md and docs/KIT_STANDARD.md.

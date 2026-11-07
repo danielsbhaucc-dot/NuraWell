@@ -13,6 +13,11 @@ exclude_patterns = [
   "supabase/migrations/**",
   "**/*.generated.ts",
   "apps/web/public/**",
+  # installed platform-core kits: vendored, pinned by core-lock.json, linted in platform-core
+  # "@" is an extglob operator in DeepSource matching; "?" matches it literally
+  "packages/?core/**",
+  "packages/?core/**/*",
+  "scripts/core-sync.mjs",
 ]
 
 [[analyzers]]

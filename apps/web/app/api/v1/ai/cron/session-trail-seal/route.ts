@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { authorizeCronRequest } from '@/lib/api/authorize-cron';
 import { backfillFieldV2 } from '@/lib/security/field-backfill';
 import { SWEEP_TABLES } from '@/lib/security/field-registry';
+import { sendUsageFeed, sendSecurityStatusFeed } from '@/lib/central/usage-feed';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -13,6 +14,7 @@ export const maxDuration = 60;
  * sealSessionTrailFor (lib/security/session-trail-seal). enc:v2 under the user's DEK + ip_bidx in one verified CAS update (field-backfill).
  * The nightly plaintext monitor FAILS on any plaintext row older than 15 minutes. Counts only — never values.
  */
+// skipcq: JS-0067 -- ES module export (Next.js route handler), not a global
 export async function POST(request: Request) {
   const denied = await authorizeCronRequest(request);
   if (denied) return denied;
@@ -20,6 +22,10 @@ export async function POST(request: Request) {
     const result = await backfillFieldV2(40_000, Object.keys(SWEEP_TABLES));
     console.log('[cron/session-trail-seal]', JSON.stringify(result));
     const failed = Object.values(result).some((r) => r.error || r.verifyFail);
+    // Once-daily aggregates to the parent-company console. Isolated: never changes this job's status.
+    const encOk = !failed;
+    const feeds = { usage: await sendUsageFeed(), security: await sendSecurityStatusFeed(encOk) };
+    console.log('[cron/session-trail-seal] feeds', JSON.stringify(feeds)); // skipcq: JS-0002 -- server-only cron route
     return NextResponse.json({ ok: !failed, result }, { status: failed ? 500 : 200 });
   } catch (e) {
     console.error('[cron/session-trail-seal] failed', e instanceof Error ? e.message : 'error');

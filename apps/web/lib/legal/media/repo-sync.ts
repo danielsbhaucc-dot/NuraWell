@@ -13,41 +13,77 @@ import { PUBLIC_APP_URL_DEFAULT, publicAppOriginFromEnv } from '@/lib/public-app
 import { markAbsent, processEntry, type ManifestEntry } from './ingest';
 
 const entries = manifest as unknown as ManifestEntry[];
-export const REPO_MANIFEST_HASH = sha256Hex(entries.map((e) => `${e.asset_key}=${e.sha256}`).join('\n'));
+export const REPO_MANIFEST_HASH = sha256Hex(entries.map((entry) => `${entry.asset_key}=${entry.sha256}`).join('\n'));
+const REPO_ORIGINS: Parameters<typeof markAbsent>[1] = ['repo', 'inline', 'font', 'library'];
+const FONT_PREFIX = 'apps/web/lib/legal/fonts/';
+const PUBLIC_PATH = /^\/[\w./-]+$/;
 
-export async function repoSyncNeeded(admin: SupabaseClient) {
+export const repoSyncNeeded = async (admin: SupabaseClient) => {
   const { data } = await admin.from('media_scan_state').select('value').eq('key', 'repo_manifest').maybeSingle();
   return (data as { value?: string } | null)?.value !== REPO_MANIFEST_HASH;
-}
+};
 
-async function bytesFor(e: ManifestEntry): Promise<Buffer | null> {
-  if (e.content_b64) return Buffer.from(e.content_b64, 'base64');
+const publicBytes = async (publicUrl: string): Promise<Buffer | null> => {
   const origin = publicAppOriginFromEnv() ?? PUBLIC_APP_URL_DEFAULT; // fixed origin, never request-derived
-  if (e.public_url && /^\/[\w./-]+$/.test(e.public_url)) {
-    try { const r = await fetch(`${origin}${e.public_url}`, { signal: AbortSignal.timeout(10_000) }); if (r.ok) return Buffer.from(await r.arrayBuffer()); } catch { /* fall through */ }
+  try {
+    const response = await fetch(`${origin}${publicUrl}`, { signal: AbortSignal.timeout(10_000) });
+    return response.ok ? Buffer.from(await response.arrayBuffer()) : null;
+  } catch {
     return null;
   }
-  if (e.path?.startsWith('apps/web/lib/legal/fonts/')) {
-    try { return await readFile(path.join(process.cwd(), e.path.replace(/^apps\/web\//, ''))); } catch { return null; }
-  }
-  return null;
-}
+};
 
-export async function syncRepoManifest(admin: SupabaseClient) {
-  const out = { new: 0, changed: 0, unchanged: 0, error: 0, cost: 0, absent: 0 };
-  const { data: known } = await admin.from('media_provenance_assets').select('asset_key, sha256').in('origin', ['repo', 'inline', 'font', 'library']);
-  const have = new Map(((known ?? []) as Array<{ asset_key: string; sha256: string | null }>).map((r) => [r.asset_key, r.sha256]));
-  const todo = entries.filter((e) => !have.has(e.asset_key) || (e.sha256 && have.get(e.asset_key) !== e.sha256));
-  for (let i = 0; i < todo.length; i += 3) {
-    const res = await Promise.all(todo.slice(i, i + 3).map(async (e) => {
-      const b = await bytesFor(e);
-      if (b && e.sha256 && sha256Hex(b) !== e.sha256) return { outcome: 'error' as const, cost: null }; // deployed file ≠ manifest
-      return processEntry(admin, { ...e, content_b64: null }, b);
-    }));
-    for (const r of res) { out[r.outcome] += 1; out.cost += r.cost ?? 0; }
+/** Statically scoped to lib/legal/fonts (flat dir, .ttf only) so the build tracer does not bundle the whole project. */
+const fontBytes = async (repoPath: string): Promise<Buffer | null> => {
+  if (!repoPath.endsWith('.ttf')) return null;
+  try {
+    return await readFile(path.join(process.cwd(), 'lib', 'legal', 'fonts', path.basename(repoPath)));
+  } catch {
+    return null;
   }
+};
+
+const bytesFor = (entry: ManifestEntry): Promise<Buffer | null> => {
+  if (entry.content_b64) return Promise.resolve(Buffer.from(entry.content_b64, 'base64'));
+  if (entry.public_url && PUBLIC_PATH.test(entry.public_url)) return publicBytes(entry.public_url);
+  if (entry.path?.startsWith(FONT_PREFIX)) return fontBytes(entry.path);
+  return Promise.resolve(null);
+};
+
+const needsSync = (have: Map<string, string | null>, entry: ManifestEntry) =>
+  !have.has(entry.asset_key) || Boolean(entry.sha256 && have.get(entry.asset_key) !== entry.sha256);
+
+const ingestOne = async (admin: SupabaseClient, entry: ManifestEntry) => {
+  const bytes = await bytesFor(entry);
+  if (bytes && entry.sha256 && sha256Hex(bytes) !== entry.sha256) return { outcome: 'error' as const, cost: null }; // deployed file ≠ manifest
+  return processEntry(admin, { ...entry, content_b64: null }, bytes);
+};
+
+type SyncCounts = { new: number; changed: number; unchanged: number; error: number; cost: number; absent: number };
+
+const knownHashes = async (admin: SupabaseClient) => {
+  const { data: known } = await admin.from('media_provenance_assets').select('asset_key, sha256').in('origin', REPO_ORIGINS);
+  const rows = (known ?? []) as Array<{ asset_key: string; sha256: string | null }>;
+  return new Map(rows.map((row) => [row.asset_key, row.sha256]));
+};
+
+const ingestInBatches = async (admin: SupabaseClient, todo: ManifestEntry[], out: SyncCounts) => {
+  for (let start = 0; start < todo.length; start += 3) {
+    const results = await Promise.all(todo.slice(start, start + 3).map((entry) => ingestOne(admin, entry)));
+    for (const result of results) {
+      out[result.outcome] += 1;
+      out.cost += result.cost ?? 0;
+    }
+  }
+};
+
+export const syncRepoManifest = async (admin: SupabaseClient) => {
+  const out: SyncCounts = { new: 0, changed: 0, unchanged: 0, error: 0, cost: 0, absent: 0 };
+  const have = await knownHashes(admin);
+  const todo = entries.filter((entry) => needsSync(have, entry));
+  await ingestInBatches(admin, todo, out);
   out.unchanged = entries.length - todo.length;
-  out.absent = await markAbsent(admin, ['repo', 'inline', 'font', 'library'], entries.map((e) => e.asset_key));
+  out.absent = await markAbsent(admin, REPO_ORIGINS, entries.map((entry) => entry.asset_key));
   if (!out.error) await admin.from('media_scan_state').upsert({ key: 'repo_manifest', value: REPO_MANIFEST_HASH, updated_at: new Date().toISOString() });
   return out;
-}
+};
