@@ -58,13 +58,25 @@ function counts() {
   };
 }
 
+async function acceptCookies(page) {
+  // Lab-only: cookie notice overlays the first Continue control. Product UI unchanged.
+  const btn = page.locator('.cn-root [data-testid="cookie-accept"], .cn-root button:has-text("אשר"), .cn-root button:has-text("הבנתי"), .cn-root button:has-text("אישור")').first();
+  try {
+    if (await btn.count()) await btn.click({ timeout: 2000 });
+  } catch { /* already dismissed */ }
+  await page.evaluate(() => {
+    for (const el of document.querySelectorAll('.cn-root, [aria-label="הודעה על עוגיות"]')) el.remove();
+  }).catch(() => {});
+}
+
 async function fill(page, origin, accountEmail) {
   await page.goto(new URL('/register/form', origin).toString(), { waitUntil: 'domcontentloaded' });
   if (page.url().includes('/login') || page.url().includes('/api/v1/central/signin')) {
     throw new Error('form redirected before submit');
   }
+  await acceptCookies(page);
   await page.locator('#onboarding-full-name').fill('בדיקת גדר');
-  await page.getByRole('button', { name: 'המשך' }).click();
+  await page.getByRole('button', { name: 'המשך' }).click({ force: true });
   await page.getByRole('radio', { name: /גבר/ }).click();
   await page.getByRole('radio', { name: /סיגול אורח חיים/ }).click();
   await page.locator('input[type="date"]').fill('1990-01-15');
