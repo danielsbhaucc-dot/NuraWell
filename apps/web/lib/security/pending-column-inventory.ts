@@ -35,16 +35,7 @@ export const PENDING_COLUMN_INVENTORY: readonly PendingFinding[] = [
     verdict: 'פער_תוכן',
     write: 'audit-job.ts מכניס את מערך האותות ב-insert גלוי',
     read: 'AccessAuditFindings.tsx בוחר signals לתצוגה',
-    next: 'הניסוח "מחוץ לענף" ישן: 000200 כבר בקוד. לא מצפינים לבד; אחרי summary, במפתח מערכת audit, בלי אינדקס.',
-  },
-  {
-    table: 'access_audit_findings',
-    column: 'summary',
-    sensitivity: 'טקסט חופשי של ממצא ביקורת',
-    verdict: 'פער_תוכן',
-    write: 'audit-job.ts כותב summary מהמודל או מאותות, עד 400 תווים',
-    read: 'AccessAuditFindings.tsx בוחר summary',
-    next: 'אחרי pii_access_grants.reason: חתימה במפתח מערכת audit ופענוח בקורא. GATED_AFTER_IAM_MERGE לא נקרא על ידי החותם.',
+    next: 'summary כבר רשום. האותות נשארים מערך תצוגה. לא מצפינים אותם באותו שינוי.',
   },
   {
     table: 'access_audit_runs',
@@ -165,15 +156,6 @@ export const PENDING_COLUMN_INVENTORY: readonly PendingFinding[] = [
   },
   {
     table: 'pii_access_grants',
-    column: 'reason',
-    sensitivity: 'נימוק גישה חופשי',
-    verdict: 'פער_תוכן',
-    write: 'createPiiGrant מכניס reason אחרי validateJustification',
-    read: 'liveGrant קורא את השורה ומעביר reason לאובייקט ההרשאה',
-    next: 'זה השלב הבא: חתימת מפתח מערכת audit, פענוח לפני liveGrant, בלי לשנות subject_id או את חלון התוקף.',
-  },
-  {
-    table: 'pii_access_grants',
     column: 'ticket_ref',
     sensitivity: 'מזהה פנייה קצר',
     verdict: 'פער_תוכן',
@@ -202,4 +184,4 @@ export const PENDING_COLUMN_INVENTORY: readonly PendingFinding[] = [
 ];
 
 export const NEXT_ENCRYPTION_STEP =
-  'השלב הבא הוא רק pii_access_grants.reason: חתימת enc:v2 במפתח מערכת audit, פענוח לפני הקריאה, על נתוני דמה, בלי להפעיל דחיית טקסט גלוי על טבלה ש-SQL כותב אליה ובלי להצפין מזהי שוויון.';
+  'השלב נעצר ב-access_audit_findings.summary. אין המשך אוטומטי לעמודות שוויון בלי אינדקס עיוור.';

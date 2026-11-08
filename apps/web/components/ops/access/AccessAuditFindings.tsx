@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { Badge, Card, CardTitle, EmptyState, ListRow } from '@/components/ui';
+import { CLOSED_FINDING, findingTitle } from '@/lib/platform/access/finding-title';
 import { AckFindingButton } from './AckFindingButton';
 
 const SEV: Record<string, { label: string; tone: 'dark' | 'warm' | 'soft' }> = { high: { label: 'חמור', tone: 'dark' }, medium: { label: 'בינוני', tone: 'warm' }, low: { label: 'נמוך', tone: 'soft' } };
@@ -9,11 +10,29 @@ const fmt = (s: string) => new Intl.DateTimeFormat('he-IL', { dateStyle: 'short'
 export async function AccessAuditFindings() {
   const db = createAdminClient();
   const since = new Date(Date.now() - 14 * 86_400_000).toISOString();
-  const [{ data: f }, { data: runs }] = await Promise.all([
-    db.from('access_audit_findings').select('id, created_at, severity, signals, summary, event_kind, acknowledged_at, acknowledged_by').gte('created_at', since).order('created_at', { ascending: false }).limit(30),
-    db.from('access_audit_runs').select('started_at, events, flagged, model_called').order('started_at', { ascending: false }).limit(1),
-  ]);
-  const rows = (f ?? []) as { id: string; created_at: string; severity: string; signals: string[]; summary: string; event_kind: string; acknowledged_at: string | null; acknowledged_by: string | null }[];
+  let failed = false;
+  let f: unknown[] | null = null;
+  let runs: unknown[] | null = null;
+  try {
+    const [findings, latest] = await Promise.all([
+      db.from('access_audit_findings').select('id, created_at, severity, signals, summary, event_kind, acknowledged_at, acknowledged_by').gte('created_at', since).order('created_at', { ascending: false }).limit(30),
+      db.from('access_audit_runs').select('started_at, events, flagged, model_called').order('started_at', { ascending: false }).limit(1),
+    ]);
+    if (findings.error || latest.error) failed = true;
+    else { f = findings.data; runs = latest.data; }
+  } catch {
+    failed = true;
+  }
+  if (failed) {
+    return (
+      <Card className="space-y-3">
+        <CardTitle>ביקורת גישה לילית</CardTitle>
+        <p className="text-sm text-ink-soft">{CLOSED_FINDING}</p>
+      </Card>
+    );
+  }
+  const rows = ((f ?? []) as { id: string; created_at: string; severity: string; signals: string[]; summary: string; event_kind: string; acknowledged_at: string | null; acknowledged_by: string | null }[])
+    .map((r) => ({ ...r, summary: findingTitle(r.summary) }));
   const open = rows.filter((r) => !r.acknowledged_at);
   const done = rows.filter((r) => r.acknowledged_at);
   const sev = (r: (typeof rows)[number]) => <Badge tone={SEV[r.severity]?.tone ?? 'soft'}>{SEV[r.severity]?.label ?? r.severity}</Badge>;
