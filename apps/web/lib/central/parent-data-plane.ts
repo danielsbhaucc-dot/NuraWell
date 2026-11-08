@@ -87,7 +87,7 @@ export function dataPlaneAllows(input: {
 
 /**
  * Live parent status only. app_metadata is not an input: a cached license id is not a verdict.
- * no_status and stale_status do not renew and do not mark the row revoked.
+ * no_status, stale_status and wrong_product do not renew and do not mark the row revoked.
  * A real non-active reason does. An expired row can still be renewed when this says revalidated and eligible.
  */
 export function renewalDecision(input: {
@@ -96,10 +96,10 @@ export function renewalDecision(input: {
   parentSubMatches: boolean;
   liveReason: string;
 }): { eligible: boolean; revalidated: boolean } {
-  const outage = input.liveReason === 'no_status' || input.liveReason === 'stale_status' || input.liveReason === '';
+  const rejected = input.liveReason === 'no_status' || input.liveReason === 'stale_status' || input.liveReason === '' || input.liveReason === 'wrong_product';
   return {
     eligible: input.liveReason === 'active',
-    revalidated: input.sessionLive && input.sessionMatchesGrant && input.parentSubMatches && !outage,
+    revalidated: input.sessionLive && input.sessionMatchesGrant && input.parentSubMatches && !rejected,
   };
 }
 
@@ -156,11 +156,12 @@ export function planParentAccess(input: {
   if (row.revokedAt !== null || row.entitlementRevokedAt !== null) return deny(row.revokedAt !== null);
   const renewing = input.entitlement === 'active';
   const marking = input.entitlement === 'revoked';
+  if (marking) return { access: 'deny', slide: false, markEntitlement: true, clearCookie: false };
   if (row.expiresAt <= input.nowS && !renewing) return deny(false);
   return {
     access: 'allow',
     slide: renewing,
-    markEntitlement: marking,
+    markEntitlement: false,
     clearCookie: false,
   };
 }

@@ -43,6 +43,12 @@ describe('parent grant decisions', () => {
     expect(renewalDecision({
       sessionLive: true, sessionMatchesGrant: true, parentSubMatches: true, liveReason: 'expired',
     })).toEqual({ eligible: false, revalidated: true });
+    expect(renewalDecision({
+      sessionLive: true, sessionMatchesGrant: true, parentSubMatches: true, liveReason: 'wrong_product',
+    }).revalidated).toBe(false);
+    expect(renewalDecision({
+      sessionLive: true, sessionMatchesGrant: true, parentSubMatches: true, liveReason: 'revoked',
+    })).toEqual({ eligible: false, revalidated: true });
     expect(slideGrant(grant(), now, 'revoked', 'sess-1')?.entitlementRevokedAt).toBe(now);
     expect(slideGrant(grant(), now, 'unknown', 'sess-1')).toBeNull();
   });
@@ -70,6 +76,9 @@ describe('parent grant decisions', () => {
     expect(planParentAccess({
       continued, grant: { kind: 'row', row: grant({ expiresAt: now - 1 }) }, nowS: now, sessionId: 'sess-1', entitlement: 'active',
     }).slide).toBe(true);
+    expect(planParentAccess({
+      continued, grant: { kind: 'row', row: grant({ expiresAt: now - 1 }) }, nowS: now, sessionId: 'sess-1', entitlement: 'revoked',
+    })).toMatchObject({ access: 'deny', slide: false, markEntitlement: true });
     expect(planParentAccess({
       continued, grant: { kind: 'row', row: grant() }, nowS: now, sessionId: 'sess-1', entitlement: 'active',
     })).toMatchObject({ access: 'allow', slide: true });
