@@ -44,6 +44,7 @@ describe('product provisioning gate', () => {
     expect(localMethodAllowed('off')).toBe(true);
     expect(localMethodAllowed('test')).toBe(false);
     expect(localMethodAllowed('all')).toBe(false);
+    expect(localMethodAllowed('unreadable')).toBe(false);
     const passkey = readFileSync('app/api/v1/auth/passkey/route.ts', 'utf8');
     const qr = readFileSync('app/api/v1/auth/qr/route.ts', 'utf8');
     expect(passkey.indexOf('localMethodAllowed(')).toBeLessThan(passkey.indexOf('issueSessionForUser('));

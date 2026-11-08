@@ -2,17 +2,25 @@ import { describe, it, expect, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => { throw new Error('no db in tests'); } }));
-import { centralAuthOn, errorFor, matchUser, signinFailurePath, signinMode, SIGNIN_ERRORS, NO_LICENSE_COPY, type NwUser } from '@/lib/central/parent-signin';
+import { accessClosed, centralAuthOn, errorFor, matchUser, resetSigninModeCache, signinFailurePath, signinMode, SIGNIN_ERRORS, NO_LICENSE_COPY, type NwUser } from '@/lib/central/parent-signin';
 import { authorizeUrl, packSigninTx, unpackSigninTx } from '@/lib/central/parent-connect';
 
 const mkUser = (id: string, email: string, meta: Record<string, unknown> = {}, confirmed = true): NwUser => ({ id, email, email_confirmed_at: confirmed ? '2026-01-01' : null, app_metadata: meta });
 const claims = { sub: 'sub_A', lic: 'lic_comp_nw_1111', email: 'a@x.co', email_verified: true };
 
 describe('R20 parent sign-in', () => {
-  it('kill switch: env arm required, unreadable settings ⇒ off', async () => {
-    expect(await signinMode({})).toBe('off');
-    expect(await signinMode({ PLATFORM_SIGNIN_MODE: 'on' })).toBe('off');
+  it('the signin column is the only switch; a failed read is not off', async () => {
+    resetSigninModeCache();
+    expect(await signinMode({ PLATFORM_SIGNIN_MODE: 'on' }, 0, async () => 'off')).toBe('off');
+    resetSigninModeCache();
+    expect(await signinMode({}, 10_000, async () => 'all')).toBe('all');
+    resetSigninModeCache();
+    expect(await signinMode({ PLATFORM_SIGNIN_MODE: 'on' }, 20_000, async () => 'unreadable')).toBe('unreadable');
+    expect(accessClosed('off')).toBe(false);
+    expect(accessClosed('unreadable')).toBe(true);
+    expect(accessClosed('all')).toBe(true);
     expect(centralAuthOn('off')).toBe(false);
+    expect(centralAuthOn('unreadable')).toBe(false);
     expect(centralAuthOn('test')).toBe(true);
     expect(centralAuthOn('all')).toBe(true);
   });
@@ -74,7 +82,8 @@ describe('R20 parent sign-in', () => {
     const route = readFileSync('app/api/v1/central/signin/route.ts', 'utf8');
     expect(login).not.toMatch(/כניסה בחשבון המרכזי/);
     expect(login).not.toMatch(/login-parent"/);
-    expect(login).toMatch(/centralArmed && !isOpsHost/);
+    expect(login).not.toMatch(/centralArmed && !isOpsHost/);
+    expect(login).toMatch(/if \(centralArmed\)/);
     expect(login).toMatch(/NO_LICENSE_LINK/);
     expect(register).toMatch(/intent=signup/);
     expect(register).toMatch(/בואו נתחיל/);

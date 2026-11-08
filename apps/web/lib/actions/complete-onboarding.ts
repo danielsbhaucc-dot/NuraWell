@@ -36,7 +36,7 @@ import { clearChallengeGateCookie } from '@/lib/module-api/journey/lib-challenge
 import { recordRetentionChoice } from '@/lib/module-api/privacy-retention/lib-privacy-subscription-retention';
 import { recordConsentEvidence, validateSubmission } from '@/lib/module-api/legal/lib-legal-record-evidence';
 import { allowProductProvision, PROVISION_COOKIE, unpackProvision } from '@/lib/central/parent-provision';
-import { centralAuthOn, signinMode } from '@/lib/central/parent-signin';
+import { accessClosed, signinMode } from '@/lib/central/parent-signin';
 
 const timeRegex = /^([01]\d|2[0-3]):[0-5]\d$/;
 
@@ -228,7 +228,7 @@ export async function completeOnboarding(
   // sent by Supabase via `resend` (works with disable_signup=true).
   const admin = createAdminClient();
   const mode = await signinMode();
-  const proof = centralAuthOn(mode)
+  const proof = accessClosed(mode)
     ? unpackProvision((await cookies()).get(PROVISION_COOKIE)?.value, process.env.PLATFORM_ID_CLIENT_SECRET ?? '')
     : null;
   const provision = allowProductProvision(mode, proof, data.email);

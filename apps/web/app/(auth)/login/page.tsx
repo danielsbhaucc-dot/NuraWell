@@ -70,12 +70,11 @@ const LoginFormContent = () => { // skipcq: JS-R1005
   const parentError = searchParams?.get('e');
   const [centralArmed, setCentralArmed] = useState(false);
   useEffect(() => {
-    if (isOpsHost) return undefined;
     const ctl = new AbortController();
     fetch('/api/v1/central/signin?probe=1', { signal: ctl.signal, cache: 'no-store' })
-      .then((r) => (r.ok ? r.json() : { on: false })).then((d: { on?: boolean }) => setCentralArmed(d.on === true)).catch(() => setCentralArmed(false));
+      .then((r) => (r.ok ? r.json() : { on: true })).then((d: { on?: boolean }) => setCentralArmed(d.on === true)).catch(() => setCentralArmed(true));
     return () => ctl.abort();
-  }, [isOpsHost]);
+  }, []);
 
   useEffect(() => {
     if (reason === 'ops_idle') toast.info('נותקת אחרי זמן ללא פעילות', 'התחבר שוב כדי להמשיך');
@@ -165,7 +164,7 @@ const LoginFormContent = () => { // skipcq: JS-R1005
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (centralArmed && !isOpsHost) {
+    if (centralArmed) {
       startCentralLogin();
       return;
     }
@@ -211,7 +210,7 @@ const LoginFormContent = () => { // skipcq: JS-R1005
   };
 
   const handlePasskey = async () => {
-    if (centralArmed && !isOpsHost) {
+    if (centralArmed) {
       window.location.assign('/api/v1/central/signin?mode=passkey');
       return;
     }
@@ -542,7 +541,7 @@ const LoginFormContent = () => { // skipcq: JS-R1005
                 <QrCode className="w-5 h-5 max-[300px]:w-4.5 max-[300px]:h-4.5" aria-hidden />
                 <span className="text-balance leading-tight">סריקת קוד מהטלפון</span>
               </button>
-              <StepUpDialog open={qrOpen} variant="login" central={centralArmed && !isOpsHost} purpose="auth.login" reason="סורקים ומאשרים בטלפון" onClose={() => setQrOpen(false)}
+              <StepUpDialog open={qrOpen} variant="login" central={centralArmed} purpose="auth.login" reason="סורקים ומאשרים בטלפון" onClose={() => setQrOpen(false)}
                 onVerified={() => { setQrOpen(false); toast.success('התחברת בהצלחה!'); afterSignIn(); }} />
               {isOpsHost ? (
               <button

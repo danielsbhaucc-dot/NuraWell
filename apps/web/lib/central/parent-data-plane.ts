@@ -11,11 +11,9 @@ import {
 } from './parent-session';
 
 /**
- * Data-plane authorization for central mode.
- * The HMAC cookie is an app proof. Postgres never sees it. A password JWT still
- * satisfies today's auth.uid() policies. The grant row is the record RLS can see,
- * and only after parent-session-rls.design.sql is applied — it is not applied here.
- * Missing table ⇒ the app decision stands and the direct-call bypass stays open.
+ * App-side mirror of parent_session_ok / parent_session_renew in migration 000232.
+ * The database is the authority for table access. A missing grant table is a denial
+ * when protected access is closed. An expired grant is not renewed.
  */
 
 export type Entitlement = 'active' | 'revoked' | 'unknown';
@@ -28,15 +26,13 @@ export type GrantRow = {
   entitlementRevokedAt: number | null;
 };
 
-export type SigninColumn = 'off' | 'test' | 'all' | null;
+export type SigninColumn = 'off' | 'test' | 'all' | 'unreadable' | null;
 
 export type Continuation = {
   decision: ParentSessionDecision;
   next: ParentSessionProof | null;
   entitlementRevoked: boolean;
 };
-
-const SLIDE_WITHIN_SECONDS = 3600;
 
 export function continueParentSession(input: {
   modeOn: boolean;
@@ -58,26 +54,9 @@ export function continueParentSession(input: {
     userMetadata: input.userMetadata,
     appMetadata: input.appMetadata,
   });
-  if (!input.proof) return { decision: base, next: null, entitlementRevoked: false };
-  if (input.proof.revoked) return { decision: 'revoked', next: null, entitlementRevoked: false };
-  const same = input.proof.userId === input.userId && input.proof.sessionId === input.sessionId && input.sessionId.length > 0;
-  if (!same) return { decision: base === 'ok' ? 'mismatch' : base, next: null, entitlementRevoked: false };
-  if (input.entitlement === 'revoked') {
-    return { decision: input.proof.exp < input.nowS ? 'expired' : 'ok', next: null, entitlementRevoked: true };
-  }
-  if (input.entitlement === 'active' && (base === 'ok' || base === 'expired')) {
-    return {
-      decision: 'ok',
-      next: { ...input.proof, revoked: false, iat: input.nowS, exp: input.nowS + PARENT_SESSION_TTL_SECONDS },
-      entitlementRevoked: false,
-    };
-  }
-  return { decision: base, next: null, entitlementRevoked: false };
-}
-
-/** True when the signed window should be rewritten so the browser still sends it. */
-export function shouldPersistSlide(proof: ParentSessionProof, nowS: number): boolean {
-  return proof.exp < nowS + SLIDE_WITHIN_SECONDS;
+  if (base !== 'ok') return { decision: base, next: null, entitlementRevoked: false };
+  if (input.entitlement === 'revoked') return { decision: 'ok', next: null, entitlementRevoked: true };
+  return { decision: 'ok', next: null, entitlementRevoked: false };
 }
 
 /**
@@ -95,20 +74,19 @@ export function dataPlaneAllows(input: {
 }): boolean {
   void input.userMetadata;
   void input.appMetadata;
-  if (input.signinColumn !== 'test' && input.signinColumn !== 'all') return true;
+  if (input.signinColumn === 'off') return true;
+  if (input.signinColumn !== 'test' && input.signinColumn !== 'all') return false;
   if (!input.sub || !input.sessionId) return false;
   const grant = input.grants.find((row) => row.userId === input.sub && row.sessionId === input.sessionId);
   if (!grant || grant.revokedAt !== null || grant.entitlementRevokedAt !== null) return false;
   return grant.expiresAt >= input.nowS;
 }
 
-/** Same session id, active entitlement: move expires_at forward. Revoked entitlement does not. */
+/** Renewal is refused once the lease has ended, the row is revoked, or entitlement is not active. */
 export function slideGrant(grant: GrantRow, nowS: number, entitlement: Entitlement, sessionId: string): GrantRow | null {
-  if (grant.sessionId !== sessionId || grant.revokedAt !== null) return null;
-  if (entitlement === 'revoked') {
-    return { ...grant, entitlementRevokedAt: grant.entitlementRevokedAt ?? nowS };
-  }
-  if (entitlement !== 'active') return { ...grant };
+  if (grant.sessionId !== sessionId || grant.revokedAt !== null || grant.expiresAt <= nowS) return null;
+  if (entitlement === 'revoked') return { ...grant, entitlementRevokedAt: grant.entitlementRevokedAt ?? nowS };
+  if (entitlement !== 'active') return null;
   return { ...grant, expiresAt: nowS + PARENT_SESSION_TTL_SECONDS, entitlementRevokedAt: null };
 }
 
@@ -151,27 +129,16 @@ export function planParentAccess(input: {
       clearCookie: input.continued.decision === 'revoked',
     };
   }
-  if (input.grant.kind === 'error') return deny(false);
-  if (input.grant.kind === 'absent-table') {
-    return {
-      access: 'allow',
-      slide: false,
-      markEntitlement: input.continued.entitlementRevoked,
-      clearCookie: false,
-    };
-  }
+  if (input.grant.kind !== 'row') return deny(false);
   const row = input.grant.row;
   if (!row || row.sessionId !== input.sessionId) return deny(false);
   if (row.revokedAt !== null) return deny(true);
-  const renew = input.entitlement === 'active'
-    && (row.expiresAt < input.nowS + SLIDE_WITHIN_SECONDS || row.entitlementRevokedAt !== null);
-  if (row.expiresAt < input.nowS && input.entitlement !== 'active') {
-    return { access: 'deny', slide: false, markEntitlement: input.continued.entitlementRevoked, clearCookie: false };
-  }
+  if (row.expiresAt <= input.nowS) return deny(false);
+  const mark = input.continued.entitlementRevoked || row.entitlementRevokedAt !== null;
   return {
     access: 'allow',
-    slide: renew,
-    markEntitlement: input.continued.entitlementRevoked,
+    slide: input.entitlement === 'active' && !mark,
+    markEntitlement: input.entitlement === 'revoked' && row.entitlementRevokedAt === null,
     clearCookie: false,
   };
 }
@@ -206,16 +173,10 @@ type GrantClient = {
   };
 };
 
-const classify = (error: GrantError): GrantWrite => (!error ? 'recorded' : missingRelation(error) ? 'unapplied' : 'failed');
-
-let grantsTableAbsentUntil = 0;
+const classify = (error: GrantError): GrantWrite => (error ? 'failed' : 'recorded');
 
 export function resetGrantTableProbe(): void {
-  grantsTableAbsentUntil = 0;
-}
-
-function stampAbsent(): void {
-  grantsTableAbsentUntil = Date.now() + 30_000;
+  return;
 }
 
 export async function recordParentSessionGrant(admin: unknown, input: {
@@ -226,6 +187,14 @@ export async function recordParentSessionGrant(admin: unknown, input: {
   expiresAt: number;
 }): Promise<GrantWrite> {
   try {
+    const rpc = (admin as { rpc?: (name: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: GrantError }> }).rpc;
+    if (rpc) {
+      const { data, error } = await rpc('parent_session_issue', {
+        p_user: input.userId, p_session: input.sessionId, p_parent_sub: input.parentSub,
+      });
+      if (error || data == null) return 'failed';
+      return 'recorded';
+    }
     const { error } = await (admin as GrantClient).from('parent_session_grants').upsert({
       user_id: input.userId,
       session_id: input.sessionId,
@@ -236,19 +205,21 @@ export async function recordParentSessionGrant(admin: unknown, input: {
       entitlement_revoked_at: null,
     }, { onConflict: 'user_id,session_id' });
     return classify(error);
-  } catch (error) {
-    return missingRelation(error) ? 'unapplied' : 'failed';
+  } catch {
+    return 'failed';
   }
 }
 
-async function patchGrant(admin: unknown, userId: string, sessionId: string, values: Record<string, unknown>): Promise<GrantWrite> {
+async function rpcRenew(userId: string, sessionId: string, eligible: boolean): Promise<string | null> {
   try {
-    const { error } = await (admin as GrantClient).from('parent_session_grants').update(values).eq('user_id', userId).eq('session_id', sessionId);
-    if (missingRelation(error)) stampAbsent();
-    return classify(error);
-  } catch (error) {
-    if (missingRelation(error)) stampAbsent();
-    return missingRelation(error) ? 'unapplied' : 'failed';
+    const { createAdminClient } = await import('@/lib/supabase/admin');
+    const { data, error } = await createAdminClient().rpc('parent_session_renew', {
+      p_user: userId, p_session: sessionId, p_eligible: eligible,
+    });
+    if (error || data == null || data === '') return null;
+    return String(data);
+  } catch {
+    return null;
   }
 }
 
@@ -290,7 +261,6 @@ function grantFrom(data: Record<string, unknown> | null): GrantRow | null {
 }
 
 async function readGrant(userId: string, sessionId: string): Promise<GrantRead> {
-  if (Date.now() < grantsTableAbsentUntil) return { kind: 'absent-table' };
   try {
     const { createAdminClient } = await import('@/lib/supabase/admin');
     const { data, error } = await createAdminClient()
@@ -299,36 +269,18 @@ async function readGrant(userId: string, sessionId: string): Promise<GrantRead> 
       .eq('user_id', userId)
       .eq('session_id', sessionId)
       .maybeSingle();
-    if (missingRelation(error)) {
-      stampAbsent();
-      return { kind: 'absent-table' };
-    }
+    if (missingRelation(error)) return { kind: 'absent-table' };
     if (error) return { kind: 'error' };
     return { kind: 'row', row: grantFrom(data as Record<string, unknown> | null) };
   } catch (error) {
-    if (missingRelation(error)) {
-      stampAbsent();
-      return { kind: 'absent-table' };
-    }
+    if (missingRelation(error)) return { kind: 'absent-table' };
     return { kind: 'error' };
   }
 }
 
-async function applyPlan(plan: AccessPlan, userId: string, sessionId: string, nowS: number, entitlement: Entitlement): Promise<void> {
-  if (!plan.slide && !plan.markEntitlement) return;
-  try {
-    const { createAdminClient } = await import('@/lib/supabase/admin');
-    const admin = createAdminClient();
-    if (plan.markEntitlement) {
-      await patchGrant(admin, userId, sessionId, { entitlement_revoked_at: new Date(nowS * 1000).toISOString() });
-      return;
-    }
-    const values: Record<string, unknown> = { expires_at: new Date((nowS + PARENT_SESSION_TTL_SECONDS) * 1000).toISOString() };
-    if (entitlement === 'active') values.entitlement_revoked_at = null;
-    await patchGrant(admin, userId, sessionId, values);
-  } catch {
-    /* table not applied, or the admin client is unavailable: app decision already stands */
-  }
+async function applyPlan(plan: AccessPlan, userId: string, sessionId: string): Promise<string | null> {
+  if (!plan.slide && !plan.markEntitlement) return null;
+  return rpcRenew(userId, sessionId, plan.slide);
 }
 
 type SessionUser = { id: string; user_metadata?: Record<string, unknown> | null; app_metadata?: Record<string, unknown> | null };
@@ -340,6 +292,8 @@ async function evaluate(user: SessionUser, proofRaw: string | undefined, supabas
   sessionId: string;
   nowS: number;
   entitlement: Entitlement;
+  renewed: string | null;
+  proof: ParentSessionProof | null;
 }> {
   const { data } = await supabase.auth.getSession();
   const sessionId = sessionIdFromAccessToken(data.session?.access_token) ?? '';
@@ -360,44 +314,57 @@ async function evaluate(user: SessionUser, proofRaw: string | undefined, supabas
     ? await readGrant(user.id, sessionId)
     : { kind: 'absent-table' as const };
   const plan = planParentAccess({ continued, grant, nowS, sessionId, entitlement });
-  await applyPlan(plan, user.id, sessionId, nowS, entitlement);
-  return { plan, continued, sessionId, nowS, entitlement };
+  const renewed = await applyPlan(plan, user.id, sessionId);
+  return { plan, continued, sessionId, nowS, entitlement, renewed, proof };
 }
 
-function packedSlide(continued: Continuation, proof: ParentSessionProof | null, nowS: number): string | null {
-  if (!continued.next || !proof || !shouldPersistSlide(proof, nowS)) return null;
-  return packParentSession(continued.next, secret());
+function packRenewed(proof: ParentSessionProof | null, renewed: string | null): string | null {
+  if (!proof || !renewed) return null;
+  const exp = Math.floor(Date.parse(renewed) / 1000);
+  const iat = Math.floor(Date.now() / 1000);
+  if (!Number.isFinite(exp) || exp <= iat) return null;
+  return packParentSession({ ...proof, iat, exp, revoked: false }, secret());
 }
 
-/** Page layouts. Mode off keeps today's password session. */
+async function closedMode(): Promise<'off' | 'closed' | 'unreadable'> {
+  const { accessClosed, signinMode } = await import('@/lib/central/parent-signin');
+  const mode = await signinMode();
+  if (!accessClosed(mode)) return 'off';
+  return mode === 'unreadable' ? 'unreadable' : 'closed';
+}
+
+/** Page layouts. Explicit off keeps today's password session. Unreadable denies. */
 export async function enforceParentSessionPage(user: SessionUser): Promise<void> {
-  const { centralAuthOn, signinMode } = await import('@/lib/central/parent-signin');
-  if (!centralAuthOn(await signinMode())) return;
+  const mode = await closedMode();
+  if (mode === 'off') return;
+  const { redirect } = await import('next/navigation');
+  if (mode === 'unreadable') redirect('/login?e=parent_session');
   const { cookies } = await import('next/headers');
   const { createClient } = await import('@/lib/supabase/server');
   const jar = await cookies();
   const proofRaw = jar.get(PARENT_SESSION_COOKIE)?.value;
   const supabase = await createClient();
-  const { plan, continued, nowS } = await evaluate(user, proofRaw, supabase);
-  const packed = packedSlide(continued, unpackParentSession(proofRaw, secret()), nowS);
+  const { plan, renewed, proof } = await evaluate(user, proofRaw, supabase);
+  const packed = packRenewed(proof, renewed);
   if (packed) {
     try { jar.set(PARENT_SESSION_COOKIE, packed, cookieOptions(PARENT_SESSION_COOKIE_MAX_AGE)); } catch { /* server components cannot always write cookies */ }
   }
   if (plan.clearCookie) {
     try { jar.set(PARENT_SESSION_COOKIE, '', cookieOptions(0)); } catch { /* same */ }
   }
-  if (plan.access === 'deny') {
-    const { redirect } = await import('next/navigation');
-    redirect('/login?e=parent_session');
-  }
+  if (plan.access === 'deny') redirect('/login?e=parent_session');
 }
 
 /** Product API routes. Returns a 401 response, or null when the request may continue. */
 export async function refuseParentSession(request: { headers: { get: (name: string) => string | null } }, supabase: SessionSource, user: SessionUser): Promise<Response | null> {
+  const mode = await closedMode();
+  if (mode === 'off') return null;
   const { cookies } = await import('next/headers');
+  const { NextResponse } = await import('next/server');
+  if (mode === 'unreadable') return NextResponse.json({ error: 'parent_session_required' }, { status: 401, headers: { 'Cache-Control': 'no-store' } });
   const proofRaw = readRequestCookie(request, PARENT_SESSION_COOKIE);
-  const { plan, continued, nowS } = await evaluate(user, proofRaw, supabase);
-  const packed = packedSlide(continued, unpackParentSession(proofRaw, secret()), nowS);
+  const { plan, renewed, proof } = await evaluate(user, proofRaw, supabase);
+  const packed = packRenewed(proof, renewed);
   if (packed || plan.clearCookie) {
     try {
       const jar = await cookies();
@@ -405,14 +372,14 @@ export async function refuseParentSession(request: { headers: { get: (name: stri
     } catch { /* route test doubles have no cookie store */ }
   }
   if (plan.access === 'allow') return null;
-  const { NextResponse } = await import('next/server');
   return NextResponse.json({ error: 'parent_session_required' }, { status: 401, headers: { 'Cache-Control': 'no-store' } });
 }
 
 /** User-scoped server actions. Same decision as the API. Service-role actions are not covered here. */
 export async function allowUserServerAction(): Promise<boolean> {
-  const { centralAuthOn, signinMode } = await import('@/lib/central/parent-signin');
-  if (!centralAuthOn(await signinMode())) return true;
+  const mode = await closedMode();
+  if (mode === 'off') return true;
+  if (mode === 'unreadable') return false;
   const { cookies } = await import('next/headers');
   const { createClient } = await import('@/lib/supabase/server');
   const supabase = await createClient();
@@ -423,25 +390,18 @@ export async function allowUserServerAction(): Promise<boolean> {
   return plan.access === 'allow';
 }
 
-/**
- * Page proxy: refresh the browser cookie when the same session is still entitled,
- * so a 12h maxAge does not drop a session GoTrue has already refreshed.
- * Does not clear the cookie and does not redirect — layouts do that.
- */
+/** Page proxy: rewrite the cookie only after the database accepts a renewal. */
 export async function rememberParentSession(
   request: { cookies: { get: (name: string) => { value: string } | undefined } },
   response: { cookies: { set: (name: string, value: string, options: { httpOnly: boolean; secure: boolean; sameSite: 'lax'; path: string; maxAge: number }) => unknown } },
   supabase: SessionSource,
   user: SessionUser,
 ): Promise<string | null> {
-  const { centralAuthOn, signinMode } = await import('@/lib/central/parent-signin');
-  if (!centralAuthOn(await signinMode())) return null;
+  if (await closedMode() !== 'closed') return null;
   const proofRaw = request.cookies.get(PARENT_SESSION_COOKIE)?.value;
-  const proof = unpackParentSession(proofRaw, secret());
-  if (!proof || !shouldPersistSlide(proof, Math.floor(Date.now() / 1000))) return null;
-  const { continued, nowS, plan } = await evaluate(user, proofRaw, supabase);
+  const { plan, renewed, proof } = await evaluate(user, proofRaw, supabase);
   if (plan.access !== 'allow') return null;
-  const packed = packedSlide(continued, proof, nowS);
+  const packed = packRenewed(proof, renewed);
   if (packed) response.cookies.set(PARENT_SESSION_COOKIE, packed, cookieOptions(PARENT_SESSION_COOKIE_MAX_AGE));
   return packed;
 }
@@ -458,7 +418,7 @@ export async function revokeBrowserParentSession(): Promise<void> {
     const sessionId = sessionIdFromAccessToken(data.session?.access_token) ?? '';
     if (user && sessionId) {
       const { createAdminClient } = await import('@/lib/supabase/admin');
-      await patchGrant(createAdminClient(), user.id, sessionId, { revoked_at: new Date().toISOString() });
+      await createAdminClient().rpc('parent_session_revoke', { p_user: user.id, p_session: sessionId });
     }
   } catch { /* still clear the cookie */ }
   jar.set(PARENT_SESSION_COOKIE, '', cookieOptions(0));

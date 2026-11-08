@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { authorizeUrl, packSigninTx, pkceChallenge, randomToken, SIGNIN_COOKIE, type AuthorizeMode } from '@/lib/central/parent-connect';
-import { centralAuthOn, signinMode } from '@/lib/central/parent-signin';
+import { accessClosed, centralAuthOn, signinMode } from '@/lib/central/parent-signin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -14,9 +14,9 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const mode = await signinMode();
-  const on = centralAuthOn(mode);
+  const on = accessClosed(mode);
   if (url.searchParams.get('probe') === '1') return NextResponse.json({ on }, { headers: { 'cache-control': 'no-store' } });
-  if (!on) return NextResponse.redirect(new URL('/login?e=parent_unavailable', request.url));
+  if (!centralAuthOn(mode)) return NextResponse.redirect(new URL('/login?e=parent_unavailable', request.url));
   const rawMode = url.searchParams.get('mode');
   const modeParam: AuthorizeMode | undefined = rawMode === 'passkey' || rawMode === 'qr' ? rawMode : undefined;
   if (rawMode && !modeParam) return NextResponse.redirect(new URL('/login?e=parent_unsupported', request.url));

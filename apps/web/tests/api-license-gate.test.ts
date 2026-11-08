@@ -13,6 +13,11 @@ vi.mock('@/lib/central/license-gate', () => ({
   profileRole: () => Promise.resolve('user'),
 }));
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => { throw new Error('no db in tests'); } }));
+vi.mock('@/lib/central/parent-signin', () => ({
+  signinMode: async () => 'off',
+  centralAuthOn: () => false,
+  accessClosed: () => false,
+}));
 
 import { requireApiSession, licenseExemptPath } from '@/lib/api/route-guards';
 

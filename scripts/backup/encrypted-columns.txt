@@ -1068,6 +1068,7 @@ class webauthn_credentials label -
 class webauthn_credentials public_key -
 class webauthn_credentials rp_id -
 class webauthn_credentials transports -
+class parent_session_grants parent_sub -
 class platform_link_settings mode -
 class platform_link_settings scope -
 class platform_link_settings note -

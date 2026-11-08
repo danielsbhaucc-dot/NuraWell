@@ -80,8 +80,8 @@ export async function requireApiSession(request: Request): Promise<SessionOk | G
 }
 
 async function parentSessionRefusal(request: Request, supabase: AuthenticatedApiResult['supabase'], user: User): Promise<NextResponse | null> {
-  const { centralAuthOn, signinMode } = await import('@/lib/central/parent-signin');
-  if (!centralAuthOn(await signinMode())) return null;
+  const { accessClosed, signinMode } = await import('@/lib/central/parent-signin');
+  if (!accessClosed(await signinMode())) return null;
   const { refuseParentSession } = await import('@/lib/central/parent-data-plane');
   const refused = await refuseParentSession(request, supabase, user);
   return refused ? (refused as NextResponse) : null;
@@ -129,6 +129,8 @@ async function noteAdminDenial(request: Request, status: number, actorId: string
 async function requireApiAdminInner(request: Request, opts: { skipDeviceGate?: boolean }): Promise<SessionOk | GuardFail> {
   const session = await resolveApiSession(request);
   if (!session.ok) return session;
+  const parent = await parentSessionRefusal(request, session.supabase, session.user);
+  if (parent) return { ok: false, response: parent };
 
   const { supabase, user } = session;
 

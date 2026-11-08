@@ -2,36 +2,54 @@ import { createAdminClient } from '@/lib/supabase/admin';
 
 /**
  * R20 — sign in to NuraWell with the parent account (OIDC code + PKCE + state + nonce).
- * Layers: env PLATFORM_SIGNIN_MODE=on (arm) AND platform_link_settings.signin ('off' | 'test' | 'all', kill switch).
- * The parent proves identity + license only; the NuraWell session, onboarding and data stay NuraWell's own.
- * Fail-closed (unreadable settings ⇒ off). Off keeps the existing product password login.
- * Test or all: the product's own login and signup start this flow. There is no second button.
+ * Enforcement follows platform_link_settings.signin, the same column parent_session_ok() reads.
+ * PLATFORM_SIGNIN_MODE is not a second switch: it cannot leave the database enforcing while the app
+ * accepts a password session, and it cannot turn a positive test/all back into off.
+ * Explicit 'off' is the break-glass for product users and ops together.
+ * A missing row, an unexpected value, or a read error is 'unreadable' and closes protected access.
  * Do not enable until a restorable platform-central backup exists, migration 000039 is applied,
- * and the parent mail sender is a no-reply address. This file does not turn those on.
+ * migration 000232 is applied, ops can complete parent sign-in, and the parent mail sender is no-reply.
  */
-export type SigninMode = 'off' | 'test' | 'all';
+export type SigninMode = 'off' | 'test' | 'all' | 'unreadable';
 const TTL_MS = 30_000;
-let cached: { at: number; value: SigninMode } | null = null;
+let cached: { at: number; value: Exclude<SigninMode, 'unreadable'> } | null = null;
 
-const asMode = (raw: unknown): SigninMode => (raw === 'test' || raw === 'all' ? raw : 'off');
+const asMode = (raw: unknown): SigninMode => (raw === 'off' || raw === 'test' || raw === 'all' ? raw : 'unreadable');
 
 const readMode = async (): Promise<SigninMode> => {
   try {
     const { data, error } = await createAdminClient().from('platform_link_settings').select('signin').eq('id', 1).maybeSingle();
-    return error ? 'off' : asMode(data?.signin);
-  } catch { return 'off'; }
+    if (error || !data) return 'unreadable';
+    return asMode(data.signin);
+  } catch { return 'unreadable'; }
 };
 
-/** Effective sign-in mode (env arm AND DB switch), cached ≤30 s. */
-export const signinMode = async (env: Record<string, string | undefined> = process.env, nowMs = Date.now()): Promise<SigninMode> => {
-  if (env.PLATFORM_SIGNIN_MODE !== 'on') return 'off';
+export function resetSigninModeCache(): void {
+  cached = null;
+}
+
+/**
+ * Column value. A positive result is cached ≤30 s. A failed read is never cached and never reported as off.
+ * `env` is accepted so existing callers keep compiling; it does not weaken the column.
+ */
+export const signinMode = async (
+  env: Record<string, string | undefined> = process.env,
+  nowMs = Date.now(),
+  read: () => Promise<SigninMode> = readMode,
+): Promise<SigninMode> => {
+  void env;
   if (cached && nowMs - cached.at < TTL_MS) return cached.value;
-  cached = { at: nowMs, value: await readMode() };
-  return cached.value;
+  const value = await read();
+  if (value === 'unreadable') return 'unreadable';
+  cached = { at: nowMs, value };
+  return value;
 };
 
-/** Parent identity is the authenticator for the product's own login and signup. Off keeps local password login. */
+/** Parent OIDC can start. Unreadable cannot start OIDC and is not local password. */
 export const centralAuthOn = (mode: SigninMode) => mode === 'test' || mode === 'all';
+
+/** Protected data and local password success are closed unless the column is explicitly off. */
+export const accessClosed = (mode: SigninMode) => mode !== 'off';
 
 export type NwUser = { id: string; email?: string | null; email_confirmed_at?: string | null; app_metadata?: Record<string, unknown> | null };
 export type ParentClaims = { sub: string; lic: string; email?: string; email_verified?: boolean };

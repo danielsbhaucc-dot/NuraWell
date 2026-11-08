@@ -171,7 +171,7 @@ const finishSignin = async (request: NextRequest) => {
       userId: outcome.userId, sessionId: outcome.sessionId, parentSub: outcome.parentSub,
       issuedAt: nowS, expiresAt: nowS + PARENT_SESSION_TTL_SECONDS,
     }).catch((error: unknown) => (missingRelation(error) ? 'unapplied' as const : 'failed' as const));
-    if (recorded === 'failed') {
+    if (recorded !== 'recorded') {
       try { await (await createClient()).auth.signOut({ scope: 'local' }); } catch { /* withhold the parent cookie either way */ }
       return finish(request, signinFailurePath('session', intent));
     }
