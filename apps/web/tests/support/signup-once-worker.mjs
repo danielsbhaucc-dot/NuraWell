@@ -30,6 +30,10 @@ function begin() {
   return psql(`select public.parent_signup_begin('${nonce}', '${sub}', '${email}')`);
 }
 
+function attemptOf(word) {
+  return word.startsWith('claimed:') ? word.slice('claimed:'.length) : '';
+}
+
 async function admin(path, body) {
   const token = jwt();
   const response = await fetch(`${base}${path}`, {
@@ -43,13 +47,13 @@ async function admin(path, body) {
   return { status: response.status, parsed };
 }
 
-async function mint(userId, finish) {
+async function mint(userId, finish, attempt) {
   const linked = userId
     ? await admin('/admin/generate_link', { type: 'magiclink', email })
     : await (async () => {
       const created = await admin('/admin/users', { email, password: 'Oncepass12345', email_confirm: true });
       if (created.status !== 200 || !created.parsed?.id) return { created: created.status, linked: 0, verified: 0 };
-      const noted = psql(`select public.parent_signup_note_user('${nonce}', '${created.parsed.id}')`);
+      const noted = psql(`select public.parent_signup_note_user('${nonce}', '${attempt}', '${created.parsed.id}')`);
       if (noted !== 't') return { created: created.status, linked: 0, verified: 0 };
       return { created: 200, id: created.parsed.id, ...(await admin('/admin/generate_link', { type: 'magiclink', email })) };
     })();
@@ -67,7 +71,7 @@ async function mint(userId, finish) {
   const id = userId || linked.id || psql(`select id::text from auth.users where email = '${email}'`);
   const sessionId = psql(`select id::text from auth.sessions where user_id = '${id}' order by created_at desc limit 1`);
   const issued = psql(`select public.parent_session_issue('${id}', '${sessionId}', '${sub}') is not null`);
-  const finished = finish ? psql(`select public.parent_signup_finish('${nonce}', '${id}', '${sessionId}')`) : 'open';
+  const finished = finish ? psql(`select public.parent_signup_finish('${nonce}', '${attempt}', '${id}', '${sessionId}')`) : 'open';
   return {
     created: linked.created ?? 200,
     linked: linkStatus,
@@ -81,43 +85,43 @@ async function mint(userId, finish) {
 }
 
 const word = begin();
+const attempt = attemptOf(word);
 if (mode === 'race') {
-  if (word !== 'claimed') {
+  if (!attempt) {
     process.stdout.write(word);
   } else {
-    const minted = await mint(null, true);
+    const minted = await mint(null, true, attempt);
     process.stdout.write(minted.finished === 't' && minted.verified === 200 && minted.issued === 't' ? 'minted' : 'mint-failed');
   }
 } else if (mode === 'late' || mode === 'mismatch') {
-  process.stdout.write(word);
+  process.stdout.write(word.startsWith('claimed:') ? 'claimed' : word);
 } else if (mode === 'foreign') {
-  if (word !== 'claimed') {
+  if (!attempt) {
     process.stdout.write(word);
   } else {
     const created = await admin('/admin/users', { email, password: 'Oncepass12345', email_confirm: true });
-    psql(`select public.parent_signup_abort('${nonce}')`);
+    psql(`select public.parent_signup_fail('${nonce}', '${attempt}', null)`);
     process.stdout.write(created.status === 200 ? 'leaked' : 'blocked');
   }
 } else if (mode === 'fail') {
-  if (word !== 'claimed') {
+  if (!attempt) {
     process.stdout.write(word);
   } else {
-    const first = await mint(null, false);
-    psql(`select public.parent_session_revoke('${first.userId}', '${first.sessionId}')`);
-    const token = jwt();
-    const loggedOut = await fetch(`${base}/logout?scope=global`, {
-      method: 'POST',
-      headers: { authorization: `Bearer ${first.access}`, apikey: token },
-    });
-    const aborted = psql(`select public.parent_signup_abort('${nonce}')`);
+    const first = await mint(null, false, attempt);
+    const aborted = psql(`select public.parent_signup_fail('${nonce}', '${attempt}', '${first.sessionId}')`);
+    const left = psql(`select count(*)::text from auth.sessions where user_id = '${first.userId}'`);
     const again = begin();
-    const known = psql(`select public.parent_signup_user('${nonce}')`);
-    const second = again === 'claimed' && known === first.userId ? await mint(known, true) : { finished: 'f' };
+    const nextAttempt = attemptOf(again);
+    const known = nextAttempt ? psql(`select public.parent_signup_user('${nonce}', '${nextAttempt}')`) : '';
+    const second = nextAttempt && known === first.userId ? await mint(known, true, nextAttempt) : { finished: 'f', sessionId: '' };
+    const stale = psql(`select public.parent_signup_fail('${nonce}', '${attempt}', '${second.sessionId || first.sessionId}')`);
+    const kept = psql(`select count(*)::text from auth.sessions where id = '${second.sessionId}'`);
     process.stdout.write([
       aborted === 't' ? 'aborted' : 'abort-failed',
-      loggedOut.status,
-      again,
+      left,
+      again.startsWith('claimed:') ? 'claimed' : again,
       second.finished === 't' ? 'retried' : 'retry-failed',
+      stale === 'f' && kept === '1' ? 'fenced' : 'leaked',
     ].join(' '));
   }
 } else {

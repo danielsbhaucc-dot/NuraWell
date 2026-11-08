@@ -38,7 +38,7 @@ import { recordConsentEvidence, validateSubmission } from '@/lib/module-api/lega
 import { allowProductProvision, PROVISION_COOKIE, unpackProvision } from '@/lib/central/parent-provision';
 import { accessClosed, signinMode } from '@/lib/central/parent-signin';
 import { issueSessionForUser } from '@/lib/auth/issue-session';
-import { abortSignupClaim, beginSignupClaim, finishSignupClaim, noteSignupUser, signupClaimUser } from '@/lib/central/signup-claim';
+import { beginSignupClaim, failSignupClaim, finishSignupClaim, noteSignupUser, signupClaimUser } from '@/lib/central/signup-claim';
 import { recordParentSessionGrant } from '@/lib/central/parent-data-plane';
 import { packParentSession, PARENT_SESSION_COOKIE, PARENT_SESSION_COOKIE_MAX_AGE, PARENT_SESSION_TTL_SECONDS } from '@/lib/central/parent-session';
 
@@ -247,16 +247,22 @@ async function runOnboarding(
   // Only the signed parent proof for this exact email confirms the new account. Off mode still sends the product letter.
   const parentVerified = provision === 'ok' && proof !== null;
   let claimedNonce: string | null = null;
+  let claimAttempt: string | null = null;
   if (parentVerified && proof) {
     const claim = await beginSignupClaim(admin, proof);
-    if (claim !== 'claimed') {
-      return claim === 'busy' || claim === 'done'
-        ? { ok: false, error: 'ההרשמה הזו כבר נפתחה. אפשר להתחיל שוב מהחשבון המרכזי.' }
-        : { ok: true, redirectTo: '/login?e=parent_restart', needsEmailVerification: false };
+    if (claim.status === 'done') {
+      return { ok: false, error: 'החשבון כבר נפתח. אפשר להיכנס עם הכניסה הקיימת.' };
+    }
+    if (claim.status === 'busy') {
+      return { ok: false, error: 'ההרשמה הזו כבר נפתחה. אם לא נכנסת, אפשר להתחיל שוב מהחשבון המרכזי.' };
+    }
+    if (claim.status !== 'claimed') {
+      return { ok: true, redirectTo: '/login?e=parent_restart', needsEmailVerification: false };
     }
     claimedNonce = proof.nonce;
+    claimAttempt = claim.attempt;
   }
-  const knownUser = claimedNonce ? await signupClaimUser(admin, claimedNonce) : null;
+  const knownUser = claimedNonce && claimAttempt ? await signupClaimUser(admin, claimedNonce, claimAttempt) : null;
   const { data: created, error: createError } = knownUser
     ? { data: { user: { id: knownUser, email_confirmed_at: new Date().toISOString() } }, error: null }
     : await admin.auth.admin.createUser({
@@ -276,13 +282,13 @@ async function runOnboarding(
       code === 'email_exists' ||
       code === 'user_already_exists' ||
       /already (been )?registered/i.test(createError?.message ?? '');
-    if (claimedNonce) await abortSignupClaim(admin, claimedNonce);
+    if (claimedNonce && claimAttempt) await failSignupClaim(admin, claimedNonce, claimAttempt, null);
     return {
       ok: false,
       error: exists ? 'כתובת האימייל כבר רשומה — נסו להתחבר' : 'לא הצלחנו ליצור משתמש. נסו שוב.',
     };
   }
-  if (claimedNonce) await noteSignupUser(admin, claimedNonce, created.user.id);
+  if (claimedNonce && claimAttempt) await noteSignupUser(admin, claimedNonce, claimAttempt, created.user.id);
 
   if (parentVerified && created.user && !created.user.email_confirmed_at) {
     const { data: confirmed, error: confirmError } = await admin.auth.admin.updateUserById(created.user.id, { email_confirm: true });
@@ -303,7 +309,7 @@ async function runOnboarding(
 
   const userId = signUpData.user?.id;
   if (!userId) {
-    if (claimedNonce) await abortSignupClaim(admin, claimedNonce);
+    if (claimedNonce && claimAttempt) await failSignupClaim(admin, claimedNonce, claimAttempt, null);
     return { ok: false, error: 'לא הצלחנו ליצור משתמש. נסו שוב.' };
   }
 
@@ -425,7 +431,7 @@ async function runOnboarding(
     .eq('id', userId);
 
   if (profileError) {
-    if (claimedNonce) await abortSignupClaim(admin, claimedNonce);
+    if (claimedNonce && claimAttempt) await failSignupClaim(admin, claimedNonce, claimAttempt, null);
     return { ok: false, error: 'החשבון נוצר אך שמירת הפרופיל נכשלה. פנו לתמיכה.' };
   }
 
@@ -489,13 +495,11 @@ async function runOnboarding(
         issuedAt: nowS, expiresAt: nowS + PARENT_SESSION_TTL_SECONDS,
       })
       : 'failed';
-    const finished = recorded === 'recorded' && sessionId ? await finishSignupClaim(admin, proof.nonce, userId, sessionId) : false;
+    const finished = recorded === 'recorded' && sessionId && claimAttempt
+      ? await finishSignupClaim(admin, proof.nonce, claimAttempt, userId, sessionId)
+      : false;
     if (!sessionId || !packed || recorded !== 'recorded' || !finished) {
-      if (sessionId) {
-        try { await admin.rpc('parent_session_revoke', { p_user: userId, p_session: sessionId }); } catch { /* no grant row is left usable */ }
-      }
-      try { await supabase.auth.signOut({ scope: 'global' }); } catch { /* still withhold the cookie */ }
-      await abortSignupClaim(admin, proof.nonce);
+      if (claimAttempt) await failSignupClaim(admin, proof.nonce, claimAttempt, sessionId);
       return { ok: true, redirectTo: '/login?e=parent_restart', needsEmailVerification: false };
     }
     (await cookies()).set(PROVISION_COOKIE, '', { httpOnly: true, secure: true, sameSite: 'lax', path: '/', maxAge: 0 });

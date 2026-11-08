@@ -85,7 +85,8 @@ describe('product provisioning gate', () => {
     expect(action.indexOf('finishSignupClaim')).toBeLessThan(action.indexOf("PROVISION_COOKIE, ''"));
     expect(action.indexOf('email_exists')).toBeLessThan(action.indexOf('updateUserById'));
     expect(action).toMatch(/recorded !== 'recorded'/);
-    expect(action).toMatch(/signOut\(\{ scope: 'global' \}\)/);
+    expect(action).toMatch(/failSignupClaim/);
+    expect(action).not.toMatch(/signOut\(\{ scope: 'global' \}\)/);
     const callback = readFileSync('app/api/v1/central/callback/route.ts', 'utf8');
     expect(callback.indexOf('entitlementAllowsProvision')).toBeLessThan(callback.indexOf('packProvision'));
     expect(callback).toMatch(/provisionOutcome\(claims, redirect\.tx\.nonce\)/);

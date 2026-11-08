@@ -86,6 +86,7 @@ describe('one verified signup mints one session', () => {
     const grants = readFileSync(join(process.cwd(), '../../supabase/migrations/000232_parent_session_grants.sql'), 'utf8');
     const grantFns = grants.slice(0, grants.indexOf('\n-- Boolean helpers.'));
     psqlScript(DB, readFileSync(join(process.cwd(), '../../supabase/migrations/000239_parent_signup_claim.sql'), 'utf8'));
+    psqlScript(DB, readFileSync(join(process.cwd(), '../../supabase/migrations/000241_parent_signup_attempt.sql'), 'utf8'));
     psqlScript(DB, grantFns);
     expect(psql(DB, 'select count(*)::text from public.parent_signup_claims')).toBe('0');
 
@@ -134,9 +135,10 @@ describe('one verified signup mints one session', () => {
     const failNonce = randomBytes(16).toString('hex');
     const failed = await worker(secret, 'fail', failNonce, SUB, FAIL_EMAIL);
     expect(failed.split(' ')[0]).toBe('aborted');
-    expect(['200', '204']).toContain(failed.split(' ')[1]);
+    expect(failed.split(' ')[1]).toBe('0');
     expect(failed.split(' ')[2]).toBe('claimed');
     expect(failed.split(' ')[3]).toBe('retried');
+    expect(failed.split(' ')[4]).toBe('fenced');
     const failUser = psql(DB, `select id::text from auth.users where email = '${FAIL_EMAIL}'`);
     const failSession = psql(DB, `select session_id::text from public.parent_signup_claims where nonce = '${failNonce}'`);
     expect(psql(DB, `select state from public.parent_signup_claims where nonce = '${failNonce}'`)).toBe('done');
@@ -147,9 +149,9 @@ describe('one verified signup mints one session', () => {
     expect(failSession).not.toBe(raceSession);
 
     const abandoned = randomBytes(16).toString('hex');
-    expect(psql(DB, `select public.parent_signup_begin('${abandoned}', '${SUB}', 'later@example.test')`)).toBe('claimed');
+    expect(psql(DB, `select public.parent_signup_begin('${abandoned}', '${SUB}', 'later@example.test')`)).toMatch(/^claimed:/);
     psql(DB, `update public.parent_signup_claims set updated_at = now() - interval '3 minutes' where nonce = '${abandoned}'`);
-    expect(psql(DB, `select public.parent_signup_begin('${abandoned}', '${SUB}', 'later@example.test')`)).toBe('claimed');
+    expect(psql(DB, `select public.parent_signup_begin('${abandoned}', '${SUB}', 'later@example.test')`)).toMatch(/^claimed:/);
     expect(psql(DB, `select count(*)::text from public.parent_session_grants where revoked_at is null`)).toBe('2');
 
     serve.kill('SIGTERM');

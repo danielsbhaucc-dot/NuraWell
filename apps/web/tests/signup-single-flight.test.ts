@@ -8,10 +8,12 @@ describe('signup is bound to the verified nonce', () => {
     expect(action).not.toMatch(/beginSignupFlight|signupFlights/);
     expect(action.indexOf('beginSignupClaim')).toBeLessThan(action.indexOf('createUser'));
     expect(action.indexOf('finishSignupClaim')).toBeLessThan(action.indexOf('PARENT_SESSION_COOKIE, packed'));
-    expect(action).toMatch(/abortSignupClaim/);
+    expect(action).toMatch(/failSignupClaim/);
+    expect(action).not.toMatch(/signOut\(\{ scope: 'global' \}\)/);
+    expect(action).toMatch(/החשבון כבר נפתח\. אפשר להיכנס עם הכניסה הקיימת\./);
     const profileAt = action.indexOf('if (profileError)');
     const profileFail = action.slice(profileAt, action.indexOf('החשבון נוצר אך שמירת הפרופיל', profileAt));
-    expect(profileFail).toMatch(/abortSignupClaim/);
+    expect(profileFail).toMatch(/failSignupClaim/);
     expect(form).toMatch(/submitLock\.current \|\| pending/);
     const off = action.slice(action.indexOf('if (!parentVerified)'), action.indexOf('const signUpData'));
     expect(off).toMatch(/auth\.resend/);
