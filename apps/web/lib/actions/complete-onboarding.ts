@@ -395,9 +395,11 @@ async function runOnboarding(
     console.warn('[complete-onboarding] retention choice record failed', retentionResult.error);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error: profileError } = await (admin.from('profiles') as any)
-    .update(await sealProfilePatch({
+  // Seal first: a missing PII root key (or DEK failure) must fail closed without writing plaintext,
+  // and must release an open signup claim — previously the throw skipped failSignupClaim.
+  let sealedProfile: Record<string, unknown>;
+  try {
+    sealedProfile = await sealProfilePatch({
       full_name: data.full_name,
       gender: data.gender,
       date_of_birth: data.date_of_birth,
@@ -427,7 +429,15 @@ async function runOnboarding(
         ...(screening.no_weight ? { safety_no_weight: true } : {}),
         ...(screening.fluid_restriction ? { safety_fluid_restriction: true } : {}),
       },
-    }, userId))
+    }, userId);
+  } catch {
+    if (claimedNonce && claimAttempt) await failSignupClaim(admin, claimedNonce, claimAttempt, null);
+    return { ok: false, error: 'החשבון נוצר אך שמירת הפרופיל נכשלה. פנו לתמיכה.' };
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error: profileError } = await (admin.from('profiles') as any)
+    .update(sealedProfile)
     .eq('id', userId);
 
   if (profileError) {
