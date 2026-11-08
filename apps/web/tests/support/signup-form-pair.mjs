@@ -84,7 +84,8 @@ async function fill(page, origin, accountEmail) {
   await page.getByRole('radio', { name: /סיגול אורח חיים/ }).click();
   await page.locator('input[type="date"]').fill('1990-01-15');
   await page.getByTestId('onboarding-consent-open').click();
-  await page.getByTestId('consent-checkbox').check({ force: true });
+  // sr-only checkbox is clipped; users click the label (visible control).
+  await page.locator('label:has([data-testid="consent-checkbox"])').click();
   await page.getByTestId('consent-typed').fill('מסכים');
   await page.getByTestId('consent-submit').click();
   await page.getByRole('button', { name: 'המשך' }).click();
