@@ -18,7 +18,7 @@ export const COLUMN_CLASSIFICATION: Readonly<Record<string, Readonly<Record<stri
     event_kind: ["non_sensitive", "enum/status/routing code, no personal content"],
     product_id: ["non_sensitive", "identifier/key or public credential material, no personal content"],
     severity: ["non_sensitive", "enum/status/routing code, no personal content"],
-    signals: ["sensitive", "pending (not encrypted yet): table created/written outside this branch (prod schema drift: IAM/admin-access migrations 000191-000201); register after those land"],
+    signals: ["sensitive", "registered (system key: audit)"],
     summary: ["sensitive", "registered"],
   },
   access_audit_runs: {
@@ -905,11 +905,11 @@ export const COLUMN_CLASSIFICATION: Readonly<Record<string, Readonly<Record<stri
     ticket_ref: ["sensitive", "registered (system key: audit)"],
   },
   pii_access_log: {
-    country: ["sensitive", "pending (not encrypted yet): table created/written outside this branch (prod schema drift: IAM/admin-access migrations 000191-000201); register after those land"],
+    country: ["sensitive", "registered (system key: audit)"],
     event: ["non_sensitive", "enum/status/routing code, no personal content"],
     ip_hash: ["non_sensitive", "hash/digest/signature, not reversible to content"],
     product_id: ["non_sensitive", "identifier/key or public credential material, no personal content"],
-    resource: ["sensitive", "pending (not encrypted yet): table created/written outside this branch (prod schema drift: IAM/admin-access migrations 000191-000201); register after those land"],
+    resource: ["sensitive", "registered (system key: audit)"],
   },
   plan_waitlist: {
     billing_interval: ["non_sensitive", "enum/status/routing code, no personal content"],

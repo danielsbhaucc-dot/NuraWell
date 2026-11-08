@@ -225,9 +225,11 @@ pending iam_audit_log target text refs:iam_audit_row_ok
 pending pii_access_grants reason text
 pending pii_access_grants ticket_ref text
 pending pii_access_grants country text
+append pii_access_log country text
+append pii_access_log resource text
 pending access_audit_findings summary text
+pending access_audit_findings signals text[]
 pending access_audit_runs error text
-gap access_audit_findings signals any
 gap admin_passkeys telegram_user_id any
 gap billing_invoices doc_url any
 gap gideon_device_requests chat_id any
@@ -236,8 +238,6 @@ gap gideon_stranger_sim chat_id any
 gap gideon_telegram_identities from_id any
 gap ip_block_ranges reason any
 gap ops_probe_daily country any
-gap pii_access_log country any
-gap pii_access_log resource any
 gap parent_signup_claims email any
 class field_enc_enforcement table_name -
 class access_audit_findings event_kind -

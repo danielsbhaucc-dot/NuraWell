@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { grantCovers, grantExpiry, validateJustification, type PiiGrant } from '@platform/access';
 import { readableGrantReason, readableTicketRef, sealTicketRef, sealGrantCountry } from './grant-fields';
+import { sealLogCountry, sealLogResource } from './log-fields';
 import { requestFacts } from './request-facts';
 
 /**
@@ -24,7 +25,12 @@ export function piiEnforced(): boolean {
 }
 
 async function log(db: SupabaseClient, row: Record<string, unknown>): Promise<boolean> {
-  const { error } = await db.from('pii_access_log').insert(row);
+  const sealed = {
+    ...row,
+    country: await sealLogCountry(row.country ?? null),
+    resource: await sealLogResource(row.resource ?? ''),
+  };
+  const { error } = await db.from('pii_access_log').insert(sealed);
   return !error;
 }
 

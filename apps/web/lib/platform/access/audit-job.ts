@@ -2,6 +2,7 @@ import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { prefilter, toModelPayload, type AccessEvent, type Flagged } from '@platform/access';
 import { readableGrantReason, readableTicketRef, readableCountry } from './grant-fields';
+import { sealFindingSignals } from './finding-signals';
 import { sealRunError } from './run-error';
 
 export type AuditModel = (payload: string) => Promise<{ ref: string; severity: 'low' | 'medium' | 'high'; summary: string }[]>;
@@ -83,7 +84,11 @@ export async function runAccessAudit(db: SupabaseClient, deps: AuditDeps = {}) {
       event_at: e ? new Date(e.at).toISOString() : null, actor_id: e && /^[0-9a-f-]{36}$/.test(e.actorId) ? e.actorId : null }];
   });
   if (summaryTooLong) error = error && !error.includes('summary_too_long') ? `${error.slice(0, 80)},summary_too_long` : (error ?? 'summary_too_long');
-  if (rows.length && runId) await db.from('access_audit_findings').insert(rows);
+  if (rows.length && runId) {
+    const sealedRows = [];
+    for (const row of rows) sealedRows.push({ ...row, signals: await sealFindingSignals(row.signals as string[]) });
+    await db.from('access_audit_findings').insert(sealedRows);
+  }
   if (runId) await db.from('access_audit_runs').update({ flagged: flagged.length, model_called: modelCalled, findings: rows.length, error: await sealRunError(error) }).eq('id', runId);
   const serious = rows.filter((r) => r.severity !== 'low');
   const alertRows = serious.filter((r) => !String(r.summary).startsWith('enc:')).slice(0, 5);

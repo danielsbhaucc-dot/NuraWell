@@ -44,7 +44,11 @@ describe('access audit summary', () => {
     await fn(`${BASE}/access_audit_findings`, { method: 'POST', body: JSON.stringify({ id: 'new', summary: SUMMARY, signals: ['odd_hours'] }) });
     expect(String(store[1].summary)).toMatch(/^enc:v2:/);
     expect(String(store[1].summary)).not.toContain(SUMMARY);
-    expect(store[1].signals).toEqual(['odd_hours']);
+    const sealedSignals = store[1].signals as string[];
+    expect(Array.isArray(sealedSignals)).toBe(true);
+    expect(sealedSignals).toHaveLength(1);
+    expect(sealedSignals[0]).toMatch(/^enc:v2:/);
+    expect(sealedSignals[0]).not.toContain('odd_hours');
     const rows = await (await fn(`${BASE}/access_audit_findings?select=summary&order=created_at.desc`, { method: 'GET' })).json() as Row[];
     expect(rows.map((r) => findingTitle(r.summary))).toEqual([SUMMARY, SUMMARY]);
     expect(findingTitle(store[1].summary)).toBe(CLOSED_FINDING);

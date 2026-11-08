@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { Badge, Card, CardTitle, EmptyState, ListRow } from '@/components/ui';
-import { CLOSED_FINDING, findingTitle } from '@/lib/platform/access/finding-title';
+import { CLOSED_FINDING, findingTitle } from '@/lib/platform/access/finding-title'
+import { readableFindingSignals } from '@/lib/platform/access/finding-signals';
 import { AckFindingButton } from './AckFindingButton';
 
 const SEV: Record<string, { label: string; tone: 'dark' | 'warm' | 'soft' }> = { high: { label: 'חמור', tone: 'dark' }, medium: { label: 'בינוני', tone: 'warm' }, low: { label: 'נמוך', tone: 'soft' } };
@@ -45,7 +46,7 @@ export async function AccessAuditFindings() {
         <>
           <h3 className="text-sm font-extrabold text-ink">פתוחים ({open.length})</h3>
           {open.length ? open.map((r) => (
-            <ListRow key={r.id} title={r.summary} meta={`${fmt(r.created_at)} · ${r.event_kind} · ${r.signals.join(', ')}`} trailing={<div className="flex items-center gap-2">{sev(r)}<AckFindingButton id={r.id} /></div>} />
+            <ListRow key={r.id} title={r.summary} meta={`${fmt(r.created_at)} · ${r.event_kind} · ${readableFindingSignals(r.signals).join(', ')}`} trailing={<div className="flex items-center gap-2">{sev(r)}<AckFindingButton id={r.id} /></div>} />
           )) : <p className="text-sm text-ink-soft">אין ממצאים פתוחים.</p>}
           {done.length ? (
             <>
