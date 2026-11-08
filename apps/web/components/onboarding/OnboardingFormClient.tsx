@@ -2,7 +2,7 @@
 import { AuthBackdrop } from './AuthBackdrop';
 
 import { PageBackButton } from '@/components/shared/PageBackButton';
-import { useMemo, useState, useTransition } from 'react';
+import { useMemo, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -43,6 +43,7 @@ export function OnboardingFormClient() {
   const toast = useToast();
   const [step, setStep] = useState(1);
   const [pending, startTransition] = useTransition();
+  const submitLock = useRef(false);
 
   const [fullName, setFullName] = useState('');
   const [gender, setGender] = useState<OnboardingGender | ''>('');
@@ -213,20 +214,26 @@ export function OnboardingFormClient() {
   );
 
   const submit = () => {
+    if (submitLock.current || pending) return;
+    submitLock.current = true;
     if (!retentionChoice) {
+      submitLock.current = false;
       toast.warning('שמירת מידע', 'יש לבחור מה יקרה למידע כשהמנוי יסתיים');
       return;
     }
     if (!legalConsent) {
+      submitLock.current = false;
       toast.warning('אישור משפטי', 'יש לאשר את תנאי השימוש ומדיניות הפרטיות');
       return;
     }
     if (!email.trim() || !password || password.length < 12) {
+      submitLock.current = false;
       toast.warning('חשבון', `${gc.fill} אימייל וסיסמה (לפחות 12 תווים, אותיות וספרה)`);
       return;
     }
     const metricsErr = validateBodyMetrics({ currentWeight, targetWeight, height });
     if (metricsErr) {
+      submitLock.current = false;
       bodyMetricsErrorToast(metricsErr);
       setStep(2);
       return;
@@ -271,18 +278,22 @@ export function OnboardingFormClient() {
     }
 
     startTransition(async () => {
-      const result = await completeOnboarding(null, fd);
-      if (result.ok) {
-        const sub = result.needsEmailVerification
-          ? 'שלחנו קישור לאימות — אחרי האישור דולב ישלח סיכום במייל.'
-          : 'מעבירים אותך לאפליקציה...';
-        toast.success(`${gc.welcome}, ${firstName(fullName)}!`, sub);
-        setTimeout(() => {
-          router.push(result.redirectTo);
-          router.refresh();
-        }, 900);
-      } else {
-        toast.error('לא הצלחנו', result.error);
+      try {
+        const result = await completeOnboarding(null, fd);
+        if (result.ok) {
+          const sub = result.needsEmailVerification
+            ? 'שלחנו קישור לאימות — אחרי האישור דולב ישלח סיכום במייל.'
+            : 'מעבירים אותך לאפליקציה...';
+          toast.success(`${gc.welcome}, ${firstName(fullName)}!`, sub);
+          setTimeout(() => {
+            router.push(result.redirectTo);
+            router.refresh();
+          }, 900);
+        } else {
+          toast.error('לא הצלחנו', result.error);
+        }
+      } finally {
+        submitLock.current = false;
       }
     });
   };

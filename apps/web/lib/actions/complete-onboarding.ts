@@ -38,6 +38,7 @@ import { recordConsentEvidence, validateSubmission } from '@/lib/module-api/lega
 import { allowProductProvision, PROVISION_COOKIE, unpackProvision } from '@/lib/central/parent-provision';
 import { accessClosed, signinMode } from '@/lib/central/parent-signin';
 import { issueSessionForUser } from '@/lib/auth/issue-session';
+import { beginSignupFlight } from '@/lib/actions/signup-flight';
 import { recordParentSessionGrant } from '@/lib/central/parent-data-plane';
 import { packParentSession, PARENT_SESSION_COOKIE, PARENT_SESSION_COOKIE_MAX_AGE, PARENT_SESSION_TTL_SECONDS } from '@/lib/central/parent-session';
 
@@ -176,7 +177,13 @@ export async function completeOnboarding(
   }
 
   const data = parsed.data;
+  return beginSignupFlight(data.email.trim().toLowerCase(), () => runOnboarding(data, formData));
+}
 
+async function runOnboarding(
+  data: z.infer<typeof onboardingSchema>,
+  formData: FormData,
+): Promise<OnboardingActionState> {
   const ageCheck = validateBirthDate(data.date_of_birth);
   if (!ageCheck.ok) {
     const msg =
