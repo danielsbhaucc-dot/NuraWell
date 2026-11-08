@@ -6,7 +6,7 @@ import { decryptJson, decryptString, encryptJson, encryptString, isEncrypted } f
 
 export const PROFILE_ENC_NUMERIC = ['current_weight_kg', 'goal_weight_kg', 'height_cm'] as const;
 export const PROFILE_ENC_JSON = ['health_conditions', 'dietary_preferences'] as const;
-export const PROFILE_ENC_TEXT = ['main_obstacle_detail', 'ai_system_prompt'] as const;
+export const PROFILE_ENC_TEXT = ['main_obstacle_detail', 'ai_system_prompt', 'date_of_birth', 'birth_date'] as const;
 
 export const MEASUREMENT_ENC_NUMERIC = ['weight_kg', 'height_cm', 'bmi'] as const;
 export const MEASUREMENT_ENC_TEXT = ['notes'] as const;

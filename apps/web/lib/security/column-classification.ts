@@ -923,6 +923,8 @@ export const COLUMN_CLASSIFICATION: Readonly<Record<string, Readonly<Record<stri
     almog_register: ["non_sensitive", "speech-register enum"],
     avatar_url: ["sensitive", "registered"],
     current_weight_kg: ["sensitive", "registered"],
+    date_of_birth: ["sensitive", "registered"],
+    birth_date: ["sensitive", "registered"],
     daily_task: ["sensitive", "registered"],
     dietary_preferences: ["sensitive", "registered"],
     engagement_status: ["non_sensitive", "enum/status/routing code, no personal content"],
