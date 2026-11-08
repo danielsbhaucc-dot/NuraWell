@@ -3,7 +3,8 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { timingSafeEqualStr } from '@/lib/api/timing-safe-equal';
 import { CLIENT_ID, ISSUER, PARENT, REDIRECT_URI, SIGNIN_COOKIE, TX_COOKIE, tokenRequest, unpackSigninTx, unpackTx, verifyAccessToken, type Claims } from '@/lib/central/parent-connect';
-import { boundNonceOk, packParentSession, PARENT_SESSION_COOKIE, PARENT_SESSION_TTL_SECONDS } from '@/lib/central/parent-session';
+import { boundNonceOk, packParentSession, PARENT_SESSION_COOKIE, PARENT_SESSION_COOKIE_MAX_AGE, PARENT_SESSION_TTL_SECONDS } from '@/lib/central/parent-session';
+import { missingRelation, recordParentSessionGrant } from '@/lib/central/parent-data-plane';
 import { licenseReasonFor } from '@/lib/central/license-gate';
 import { entitlementAllowsProvision, packProvision, PROVISION_COOKIE, provisionRefusal } from '@/lib/central/parent-provision';
 import { matchUser, signinFailurePath, signinMode, type NwUser } from '@/lib/central/parent-signin';
@@ -166,8 +167,16 @@ const finishSignin = async (request: NextRequest) => {
       iat: nowS, exp: nowS + PARENT_SESSION_TTL_SECONDS,
     }, process.env.PLATFORM_ID_CLIENT_SECRET ?? '');
     if (!packed) return finish(request, signinFailurePath('config', intent));
+    const recorded = await recordParentSessionGrant(createAdminClient(), {
+      userId: outcome.userId, sessionId: outcome.sessionId, parentSub: outcome.parentSub,
+      issuedAt: nowS, expiresAt: nowS + PARENT_SESSION_TTL_SECONDS,
+    }).catch((error: unknown) => (missingRelation(error) ? 'unapplied' as const : 'failed' as const));
+    if (recorded === 'failed') {
+      try { await (await createClient()).auth.signOut({ scope: 'local' }); } catch { /* withhold the parent cookie either way */ }
+      return finish(request, signinFailurePath('session', intent));
+    }
     const res = finish(request, '/home');
-    res.cookies.set(PARENT_SESSION_COOKIE, packed, { httpOnly: true, secure: true, sameSite: 'lax', path: '/', maxAge: PARENT_SESSION_TTL_SECONDS });
+    res.cookies.set(PARENT_SESSION_COOKIE, packed, { httpOnly: true, secure: true, sameSite: 'lax', path: '/', maxAge: PARENT_SESSION_COOKIE_MAX_AGE });
     return res;
   }
   if (typeof outcome === 'object' && outcome.kind === 'provision') {

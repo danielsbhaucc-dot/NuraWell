@@ -82,16 +82,9 @@ export async function requireApiSession(request: Request): Promise<SessionOk | G
 async function parentSessionRefusal(request: Request, supabase: AuthenticatedApiResult['supabase'], user: User): Promise<NextResponse | null> {
   const { centralAuthOn, signinMode } = await import('@/lib/central/parent-signin');
   if (!centralAuthOn(await signinMode())) return null;
-  const { parentSessionDecision, sessionIdFromAccessToken, unpackParentSession, PARENT_SESSION_COOKIE } = await import('@/lib/central/parent-session');
-  const { data } = await supabase.auth.getSession();
-  const sessionId = sessionIdFromAccessToken(data.session?.access_token) ?? '';
-  const proof = unpackParentSession(readCookie(request, PARENT_SESSION_COOKIE) ?? undefined, process.env.PLATFORM_ID_CLIENT_SECRET ?? '');
-  const decision = parentSessionDecision({
-    modeOn: true, proof, userId: user.id, sessionId, nowS: Math.floor(Date.now() / 1000),
-    userMetadata: user.user_metadata, appMetadata: user.app_metadata,
-  });
-  if (decision === 'ok') return null;
-  return NextResponse.json({ error: 'parent_session_required' }, { status: 401, headers: { 'Cache-Control': 'no-store' } });
+  const { refuseParentSession } = await import('@/lib/central/parent-data-plane');
+  const refused = await refuseParentSession(request, supabase, user);
+  return refused ? (refused as NextResponse) : null;
 }
 
 

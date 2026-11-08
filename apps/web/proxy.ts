@@ -567,6 +567,7 @@ export async function proxy(request: NextRequest) {
       response,
     );
     if (challengeRedirect) {
+      await slideParentSession(request, challengeRedirect, supabase, user);
       if (shouldTouchLastActive) {
         challengeRedirect.cookies.set(LAST_ACTIVE_COOKIE, String(nowMs), lastActiveCookieOpts);
       }
@@ -590,11 +591,24 @@ export async function proxy(request: NextRequest) {
    */
   if (pathname === '/' && !effectiveOpsHost && (incomingHost.endsWith('.vercel.app') || isLocal)) {
     const rw = NextResponse.rewrite(new URL('/landing-v2', request.url), { request: { headers: requestHeaders } });
+    await slideParentSession(request, response, supabase, user);
     copyCookies(response, rw);
     return applySecurityHeaders(rw);
   }
 
+  await slideParentSession(request, response, supabase, user);
   return applySecurityHeaders(response);
+}
+
+async function slideParentSession(
+  request: NextRequest,
+  target: { cookies: { set: (name: string, value: string, options: { httpOnly: boolean; secure: boolean; sameSite: 'lax'; path: string; maxAge: number }) => unknown } },
+  supabase: { auth: { getSession: () => Promise<{ data: { session: { access_token?: string } | null } }> } },
+  user: { id: string; user_metadata?: Record<string, unknown> | null; app_metadata?: Record<string, unknown> | null } | null,
+): Promise<void> {
+  if (!user || process.env.PLATFORM_SIGNIN_MODE !== 'on') return;
+  const { rememberParentSession } = await import('@/lib/central/parent-data-plane');
+  await rememberParentSession(request, target, supabase, user);
 }
 
 export const config = {

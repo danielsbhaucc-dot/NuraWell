@@ -63,10 +63,12 @@ describe('parent session proof (unit, not a live session)', () => {
   });
 
   it('does not invent an admin exemption for the session proof', () => {
-    const guards = readFileSync('lib/api/route-guards.ts', 'utf8');
-    expect(guards).toMatch(/parentSessionDecision/);
-    expect(guards).not.toMatch(/parentSessionDecision[\s\S]{0,200}role === 'admin'/);
-    expect(readFileSync('app/(dashboard)/layout.tsx', 'utf8')).toMatch(/parentSessionDecision/);
+    const plane = readFileSync('lib/central/parent-data-plane.ts', 'utf8');
+    expect(plane).toMatch(/parentSessionDecision\(/);
+    expect(plane).not.toMatch(/role === 'admin'/);
+    expect(readFileSync('lib/api/route-guards.ts', 'utf8')).toMatch(/refuseParentSession/);
+    expect(readFileSync('app/(dashboard)/layout.tsx', 'utf8')).toMatch(/enforceParentSessionPage/);
+    expect(readFileSync('app/challenge/layout.tsx', 'utf8')).toMatch(/enforceParentSessionPage/);
   });
 
   it('guards direct signup and leaves Almog copy behind the existing license decision', () => {

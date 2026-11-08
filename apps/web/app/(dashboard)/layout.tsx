@@ -17,10 +17,7 @@ import {
 import { DemoAccessBanner } from '../../components/demo-access/DemoAccessBanner';
 import { ConsentSheetHost } from '@/lib/module-api/legal/components-legal-ConsentSheetHost';
 import { licenseGate, profileRole } from '@/lib/central/license-gate';
-import { centralAuthOn, signinMode } from '@/lib/central/parent-signin';
-import { parentSessionDecision, sessionIdFromAccessToken, unpackParentSession, PARENT_SESSION_COOKIE } from '@/lib/central/parent-session';
-import { cookies } from 'next/headers';
-import { createClient } from '../../lib/supabase/server';
+import { enforceParentSessionPage } from '@/lib/central/parent-data-plane';
 import { PasskeyNudgeHost } from '@/lib/module-api/auth-signup/components-settings-PasskeyNudge';
 
 export const viewport: Viewport = {
@@ -44,21 +41,7 @@ export default async function DashboardLayout({
 
   const profile = await getCachedDashboardProfile(user.id);
 
-  if (centralAuthOn(await signinMode())) {
-    const supabase = await createClient();
-    const { data } = await supabase.auth.getSession();
-    const proof = unpackParentSession((await cookies()).get(PARENT_SESSION_COOKIE)?.value, process.env.PLATFORM_ID_CLIENT_SECRET ?? '');
-    const decision = parentSessionDecision({
-      modeOn: true,
-      proof,
-      userId: user.id,
-      sessionId: sessionIdFromAccessToken(data.session?.access_token) ?? '',
-      nowS: Math.floor(Date.now() / 1000),
-      userMetadata: user.user_metadata,
-      appMetadata: user.app_metadata,
-    });
-    if (decision !== 'ok') redirect('/login?e=parent_session');
-  }
+  await enforceParentSessionPage(user);
 
   // Phase 2b parent-license gate (off unless armed by env AND the DB kill switch; admins never blocked; fail-open).
   if (process.env.PLATFORM_LICENSE_MODE === 'enforce') {

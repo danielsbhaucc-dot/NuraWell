@@ -8,8 +8,14 @@ import { timingSafeEqualStr } from '@/lib/api/timing-safe-equal';
  * account link, not proof that this session was opened by the parent.
  */
 export const PARENT_SESSION_COOKIE = 'pl_parent_session';
-/** Matches the parent session TTL in the identity contract. */
+/** Signed proof window. A confirmed refresh of the same session id slides this forward. */
 export const PARENT_SESSION_TTL_SECONDS = 43_200;
+/**
+ * Browser lifetime of the cookie. The signed exp stays 12h, but the browser must still
+ * present the cookie after GoTrue refreshes the access token, or a live session is stranded.
+ * Logout sets maxAge 0. This does not extend a revoked grant.
+ */
+export const PARENT_SESSION_COOKIE_MAX_AGE = 30 * 24 * 3600;
 export const QR_POLL_COOKIE = 'pl_qr_poll';
 
 export type ParentSessionProof = {
