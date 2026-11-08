@@ -60,6 +60,8 @@ export const ENCRYPTED_TABLES = {
     goal_weight_kg: 'text',
     height_cm: 'text',
     gender: 'text',
+    date_of_birth: 'text',
+    birth_date: 'text',
     activity_level: 'text',
     weakest_time_of_day: 'text',
   } },

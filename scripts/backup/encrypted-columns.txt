@@ -18,6 +18,8 @@ enforce profiles current_weight_kg text
 enforce profiles goal_weight_kg text
 enforce profiles height_cm text
 enforce profiles gender text
+enforce profiles date_of_birth text
+enforce profiles birth_date text
 enforce profiles activity_level text
 enforce profiles weakest_time_of_day text
 enforce ai_interactions content text
@@ -893,6 +895,8 @@ class profiles ai_system_prompt -
 class profiles almog_register -
 class profiles avatar_url -
 class profiles current_weight_kg -
+class profiles date_of_birth -
+class profiles birth_date -
 class profiles daily_task -
 class profiles dietary_preferences -
 class profiles engagement_status -
