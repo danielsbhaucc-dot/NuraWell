@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import type { SigninMode } from './parent-signin';
 import { accessClosed } from './parent-signin';
+import { boundNonceOk } from './parent-session';
 
 /** Short-lived proof that this browser finished parent OIDC with an active NuraWell license. */
 export const PROVISION_COOKIE = 'pl_provision';
@@ -29,6 +30,24 @@ export function provisionRefusal(claims: ParentIdentity): 'unverified' | 'no_lic
   if (claims.email_verified !== true || !norm(claims.email)) return 'unverified';
   if (!LIC.test(claims.lic) || typeof claims.sub !== 'string' || claims.sub.length < 4) return 'no_license';
   return null;
+}
+
+/**
+ * The cookie bit is the signed parent claim, copied only when it is exactly true and the token nonce
+ * matches this browser transaction. An email string alone does not set it.
+ */
+export function provisionProofFromClaims(
+  claims: ParentIdentity & { nonce?: string },
+  txNonce: string,
+): Omit<ProvisionProof, 'exp'> | 'unverified' | 'no_license' | 'nonce' {
+  if (claims.email_verified !== true) return 'unverified';
+  if (typeof claims.nonce !== 'string' || !boundNonceOk(claims.nonce, txNonce)) return 'nonce';
+  const refusal = provisionRefusal(claims);
+  if (refusal) return refusal;
+  return {
+    product: 'nurawell', sub: claims.sub, lic: claims.lic, email: norm(claims.email),
+    nonce: claims.nonce, verified: claims.email_verified,
+  };
 }
 
 /** Only an explicit active entitlement may open product onboarding. Missing or stale status does not. */

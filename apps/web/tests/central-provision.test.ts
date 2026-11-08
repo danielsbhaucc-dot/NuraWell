@@ -6,6 +6,7 @@ import {
   entitlementAllowsProvision,
   localMethodAllowed,
   packProvision,
+  provisionProofFromClaims,
   provisionRefusal,
   unpackProvision,
 } from '@/lib/central/parent-provision';
@@ -19,6 +20,17 @@ describe('product provisioning gate', () => {
     expect(provisionRefusal({ sub: 'sub_A', lic: 'lic_comp_nw_1111', email: 'a@x.co' })).toBe('unverified');
     expect(provisionRefusal({ sub: 'sub_A', lic: 'nope', email: 'a@x.co', email_verified: true })).toBe('no_license');
     expect(provisionRefusal({ sub: 'sub_A', lic: 'lic_comp_nw_1111', email: 'a@x.co', email_verified: true })).toBeNull();
+  });
+
+  it('copies verified only from a signed true claim bound to this transaction nonce', () => {
+    const nonce = 'n'.repeat(32);
+    const base = { sub: 'sub_A', lic: 'lic_comp_nw_1111', email: 'a@x.co', nonce };
+    expect(provisionProofFromClaims({ ...base, email_verified: undefined }, nonce)).toBe('unverified');
+    expect(provisionProofFromClaims({ ...base, email_verified: false }, nonce)).toBe('unverified');
+    expect(provisionProofFromClaims({ sub: 'sub_A', lic: 'lic_comp_nw_1111', email: 'a@x.co', email_verified: true }, nonce)).toBe('nonce');
+    expect(provisionProofFromClaims({ ...base, email_verified: true }, 'm'.repeat(32))).toBe('nonce');
+    expect(provisionProofFromClaims({ ...base, lic: 'nope', email_verified: true }, nonce)).toBe('no_license');
+    expect(provisionProofFromClaims({ ...base, email_verified: true }, nonce)).toMatchObject({ verified: true, nonce, email: 'a@x.co' });
   });
 
   it('opens onboarding only for an active entitlement', () => {
@@ -76,7 +88,8 @@ describe('product provisioning gate', () => {
     const callback = readFileSync('app/api/v1/central/callback/route.ts', 'utf8');
     expect(callback.indexOf('entitlementAllowsProvision')).toBeLessThan(callback.indexOf('packProvision'));
     expect(callback).toMatch(/provisionOutcome\(claims, redirect\.tx\.nonce\)/);
-    expect(callback).toMatch(/verified: true/);
+    expect(callback).toMatch(/provisionProofFromClaims\(claims, txNonce\)/);
+    expect(callback).not.toMatch(/provision:\s*\{[^}]*verified:\s*true/);
     expect(action).toMatch(/email_confirm: parentVerified/);
     expect(action.indexOf('if (!parentVerified)')).toBeLessThan(action.indexOf('auth.resend'));
     expect(action).toMatch(/updateUserById\(created\.user\.id, \{ email_confirm: true \}\)/);

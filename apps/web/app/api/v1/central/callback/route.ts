@@ -6,7 +6,7 @@ import { CLIENT_ID, ISSUER, PARENT, REDIRECT_URI, SIGNIN_COOKIE, TX_COOKIE, toke
 import { boundNonceOk, packParentSession, PARENT_SESSION_COOKIE, PARENT_SESSION_COOKIE_MAX_AGE, PARENT_SESSION_TTL_SECONDS } from '@/lib/central/parent-session';
 import { missingRelation, recordParentSessionGrant } from '@/lib/central/parent-data-plane';
 import { licenseReasonFor } from '@/lib/central/license-gate';
-import { entitlementAllowsProvision, packProvision, PROVISION_COOKIE, provisionRefusal } from '@/lib/central/parent-provision';
+import { entitlementAllowsProvision, packProvision, PROVISION_COOKIE, provisionProofFromClaims } from '@/lib/central/parent-provision';
 import { matchUser, signinFailurePath, signinMode, type NwUser } from '@/lib/central/parent-signin';
 import { issueSessionForUser } from '@/lib/module-api/auth-signup/lib-auth-issue-session';
 
@@ -128,12 +128,12 @@ const signinClaims = async (tx: SigninTx, code: string): Promise<Claims | string
 };
 
 /** New product account: verified parent email plus an active license. No parent user is created. */
-const provisionOutcome = async (claims: { sub: string; lic: string; email?: string; email_verified?: boolean }, nonce: string): Promise<SigninOutcome> => {
-  const refusal = provisionRefusal(claims);
-  if (refusal) return refusal;
+const provisionOutcome = async (claims: { sub: string; lic: string; email?: string; email_verified?: boolean; nonce?: string }, txNonce: string): Promise<SigninOutcome> => {
+  const proof = provisionProofFromClaims(claims, txNonce);
+  if (typeof proof === 'string') return proof;
   const reason = await licenseReasonFor(claims.lic);
   if (!entitlementAllowsProvision(reason)) return 'no_license';
-  return { kind: 'provision', provision: { product: 'nurawell', sub: claims.sub, lic: claims.lic, email: String(claims.email), nonce, verified: true } };
+  return { kind: 'provision', provision: proof };
 };
 
 /** R20 sign-in branch: verify (incl. nonce + verified email), find the NuraWell account, mint a NuraWell session. */
