@@ -221,8 +221,8 @@ enforce iam_grants reason text
 pending iam_audit_log detail json refs:iam_audit_row_ok
 pending iam_audit_log target text refs:iam_audit_row_ok
 pending pii_access_grants reason text
+pending access_audit_findings summary text
 gap access_audit_findings signals any
-gap access_audit_findings summary any
 gap access_audit_runs error any
 gap admin_passkeys telegram_user_id any
 gap billing_invoices doc_url any

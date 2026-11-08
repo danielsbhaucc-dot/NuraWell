@@ -80,6 +80,7 @@ export async function runAccessAudit(db: SupabaseClient, deps: AuditDeps = {}) {
   if (rows.length && runId) await db.from('access_audit_findings').insert(rows);
   if (runId) await db.from('access_audit_runs').update({ flagged: flagged.length, model_called: modelCalled, findings: rows.length, error }).eq('id', runId);
   const serious = rows.filter((r) => r.severity !== 'low');
-  if (serious.length && deps.alert) await deps.alert(`🛡️ ביקורת גישה לילית: ${serious.length} ממצאים (${rows.filter((r) => r.severity === 'high').length} חמורים).\n${serious.slice(0, 5).map((r) => `• [${r.severity}] ${r.summary}`).join('\n')}\nפירוט: Ops ← אבטחה.`);
+  const alertRows = serious.filter((r) => !String(r.summary).startsWith('enc:')).slice(0, 5);
+  if (serious.length && deps.alert) await deps.alert(`🛡️ ביקורת גישה לילית: ${serious.length} ממצאים (${rows.filter((r) => r.severity === 'high').length} חמורים).\n${alertRows.map((r) => `• [${r.severity}] ${r.summary}`).join('\n')}\nפירוט: Ops ← אבטחה.`);
   return { runId, events: ev.length, flagged: flagged.length, modelCalled, findings: rows.length };
 }

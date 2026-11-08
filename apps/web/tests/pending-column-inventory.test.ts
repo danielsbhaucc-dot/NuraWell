@@ -18,10 +18,10 @@ describe('pending column inventory', () => {
   it('maps each sensitive pending column once and leaves the other pending words out', () => {
     const mapped = PENDING_COLUMN_INVENTORY.map((row) => `${row.table}.${row.column}`).sort();
     expect(mapped).toEqual(classifiedPending());
-    expect(mapped).toHaveLength(18);
+    expect(mapped).toHaveLength(17);
     expect(PENDING_WORD_NOT_A_PLAINTEXT_COLUMN).toHaveLength(8);
     const source = readFileSync(new URL('../lib/security/column-classification.ts', import.meta.url), 'utf8');
-    expect(source.split('\n').filter((line) => line.toLowerCase().includes('pending'))).toHaveLength(26);
+    expect(source.split('\n').filter((line) => line.toLowerCase().includes('pending'))).toHaveLength(25);
   });
 
   it('does not treat query keys or the SQL probe counter as ready to encrypt', () => {
@@ -36,7 +36,7 @@ describe('pending column inventory', () => {
     ]);
     for (const row of held) expect(row.next).toMatch(/לא מצפינים/);
     expect(PENDING_COLUMN_INVENTORY.find((row) => row.table === 'error_events')?.verdict).toBe('סיווג_ישן');
-    expect(NEXT_ENCRYPTION_STEP).toMatch(/access_audit_findings\.summary/);
+    expect(NEXT_ENCRYPTION_STEP).toMatch(/נעצר ב-access_audit_findings\.summary/);
     expect(NEXT_ENCRYPTION_STEP).not.toMatch(/chat_id|from_id|telegram_user_id/);
   });
 
