@@ -354,14 +354,14 @@ function packRenewed(proof: ParentSessionProof | null, renewed: string | null): 
   return packParentSession({ ...proof, iat, exp, revoked: false }, secret());
 }
 
-async function closedMode(): Promise<'off' | 'closed'> {
-  const { accessClosed, signinMode } = await import('@/lib/central/parent-signin');
-  return accessClosed(await signinMode()) ? 'closed' : 'off';
+async function closedMode(user: { app_metadata?: Record<string, unknown> | null }): Promise<'off' | 'closed'> {
+  const { sessionProofRequired, signinMode } = await import('@/lib/central/parent-signin');
+  return sessionProofRequired(await signinMode(), user.app_metadata) ? 'closed' : 'off';
 }
 
 /** Page layouts. Explicit off, and an unreadable switch, keep today's password session. */
 export async function enforceParentSessionPage(user: SessionUser): Promise<void> {
-  const mode = await closedMode();
+  const mode = await closedMode(user);
   if (mode === 'off') return;
   const { redirect } = await import('next/navigation');
   const { cookies } = await import('next/headers');
@@ -382,7 +382,7 @@ export async function enforceParentSessionPage(user: SessionUser): Promise<void>
 
 /** Product API routes. Returns a 401 response, or null when the request may continue. */
 export async function refuseParentSession(request: { headers: { get: (name: string) => string | null } }, supabase: SessionSource, user: SessionUser): Promise<Response | null> {
-  const mode = await closedMode();
+  const mode = await closedMode(user);
   if (mode === 'off') return null;
   const { cookies } = await import('next/headers');
   const { NextResponse } = await import('next/server');
@@ -401,13 +401,13 @@ export async function refuseParentSession(request: { headers: { get: (name: stri
 
 /** User-scoped server actions. Same decision as the API. Service-role actions are not covered here. */
 export async function allowUserServerAction(): Promise<boolean> {
-  const mode = await closedMode();
-  if (mode === 'off') return true;
   const { cookies } = await import('next/headers');
   const { createClient } = await import('@/lib/supabase/server');
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return false;
+  const mode = await closedMode(user);
+  if (mode === 'off') return true;
   const jar = await cookies();
   const { plan } = await evaluate(user, jar.get(PARENT_SESSION_COOKIE)?.value, supabase);
   return plan.access === 'allow';
@@ -420,7 +420,7 @@ export async function rememberParentSession(
   supabase: SessionSource,
   user: SessionUser,
 ): Promise<string | null> {
-  if (await closedMode() !== 'closed') return null;
+  if (await closedMode(user) !== 'closed') return null;
   const proofRaw = request.cookies.get(PARENT_SESSION_COOKIE)?.value;
   const { plan, renewed, proof } = await evaluate(user, proofRaw, supabase);
   if (plan.access !== 'allow') return null;

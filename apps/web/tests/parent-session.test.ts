@@ -74,6 +74,9 @@ describe('parent session proof (unit, not a live session)', () => {
     expect(slide).toMatch(/if \(!user\) return;/);
     expect(slide).not.toMatch(/PLATFORM_SIGNIN_MODE/);
     expect(slide).toMatch(/rememberParentSession/);
+    expect(proxy).toMatch(/restart === 'parent_session' \|\| restart === 'parent_restart'/);
+    expect(proxy).toMatch(/protocol !== 'http:'/);
+    expect(proxy).toMatch(/hostname !== '127.0.0.1'/);
   });
 
   it('guards direct signup and leaves Almog copy behind the existing license decision', () => {

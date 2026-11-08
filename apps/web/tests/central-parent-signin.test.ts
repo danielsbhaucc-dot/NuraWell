@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => { throw new Error('no db in tests'); } }));
-import { accessClosed, centralAuthOn, errorFor, matchUser, resetSigninModeCache, signinFailurePath, signinMode, SIGNIN_ERRORS, NO_LICENSE_COPY, type NwUser } from '@/lib/central/parent-signin';
+import { accessClosed, centralAuthOn, errorFor, matchUser, resetSigninModeCache, sessionProofRequired, signinFailurePath, signinMode, SIGNIN_ERRORS, NO_LICENSE_COPY, type NwUser } from '@/lib/central/parent-signin';
 import { authorizeUrl, packSigninTx, unpackSigninTx } from '@/lib/central/parent-connect';
 
 const mkUser = (id: string, email: string, meta: Record<string, unknown> = {}, confirmed = true): NwUser => ({ id, email, email_confirmed_at: confirmed ? '2026-01-01' : null, app_metadata: meta });
@@ -23,6 +23,11 @@ describe('R20 parent sign-in', () => {
     expect(centralAuthOn('unreadable')).toBe(false);
     expect(centralAuthOn('test')).toBe(true);
     expect(centralAuthOn('all')).toBe(true);
+    expect(sessionProofRequired('off', { pl_enforce_test: true })).toBe(false);
+    expect(sessionProofRequired('test', {})).toBe(false);
+    expect(sessionProofRequired('test', { pl_enforce_test: true })).toBe(true);
+    expect(sessionProofRequired('test', { pl_enforce_test: 'true' })).toBe(true);
+    expect(sessionProofRequired('all', {})).toBe(true);
   });
   it('matches by sub, then license, then verified email on both sides', () => {
     const users = [mkUser('1', 'a@x.co', { pl_enforce_test: true }), mkUser('2', 'b@x.co', { pl_lic: 'lic_comp_nw_1111', pl_enforce_test: true }), mkUser('3', 'c@x.co', { pl_sub: 'sub_A', pl_enforce_test: true })];
@@ -60,6 +65,17 @@ describe('R20 parent sign-in', () => {
   });
   it('every error code has neutral Hebrew text', () => {
     for (const why of ['state', 'nonce', 'no_account', 'linked_elsewhere', 'no_license', 'off', 'token', 'email_unverified', 'unsupported_mode', 'not_migrated']) expect(SIGNIN_ERRORS[errorFor(why)]).toMatch(/[א-ת]/);
+    expect(errorFor('state')).toBe('parent_restart');
+    expect(errorFor('nonce')).toBe('parent_restart');
+    expect(errorFor('token')).toBe('parent_restart');
+    expect(errorFor('code')).toBe('parent_restart');
+    expect(SIGNIN_ERRORS.parent_restart).not.toMatch(/סיסמה/);
+    expect(errorFor('off')).toBe('parent_unavailable');
+    const start = readFileSync('app/api/v1/central/signin/route.ts', 'utf8');
+    expect(start).toMatch(/maxAge: 600/);
+    expect(start).not.toMatch(/maxAge: [1-9][0-9]{3,}/);
+    expect(start).toMatch(/randomToken\(32\), verifier = randomToken\(48\), nonce = randomToken\(24\)/);
+    expect(start).not.toMatch(/cookies\(\)/);
     for (const text of Object.values(SIGNIN_ERRORS)) expect(text).not.toMatch(/תוכלו|תוכל |לכם|שלכם/);
     for (const key of ['parent_unverified', 'parent_no_license', 'parent_unsupported', 'parent_not_migrated']) expect(SIGNIN_ERRORS[key]).not.toMatch(/סיסמה/);
     expect(SIGNIN_ERRORS.parent_no_license).toBe(NO_LICENSE_COPY);

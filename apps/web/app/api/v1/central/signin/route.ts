@@ -8,6 +8,7 @@ export const dynamic = 'force-dynamic';
 /**
  * R20: start parent-identity authentication for the product's own login or signup.
  * ?probe=1 → { on }. Otherwise top-level GET → parent /authorize (state + PKCE + nonce).
+ * Every start replaces the previous transaction. An expired parent request is not resumed and this cookie is not lengthened.
  * ?intent=signup marks a new registration; the callback continues into product onboarding when there is no account yet.
  */
 // skipcq: JS-0067 -- Next.js route handler export, not a global

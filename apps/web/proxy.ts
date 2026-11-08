@@ -31,6 +31,18 @@ import { hasActiveDemoAccessSession } from './lib/demo-access/active-session';
 // See: https://nextjs.org/docs/app/building-your-application/configuring/content-security-policy
 
 const IS_DEV = process.env.NODE_ENV === 'development';
+/** Browser calls the configured auth server directly. A loopback http URL is the local lab only. */
+function localAuthOrigin(): string | null {
+  try {
+    const url = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? '');
+    if (url.protocol !== 'http:') return null;
+    if (url.hostname !== '127.0.0.1' && url.hostname !== 'localhost') return null;
+    return url.origin;
+  } catch {
+    return null;
+  }
+}
+const LOCAL_AUTH_ORIGIN = localAuthOrigin();
 
 const CSP_DIRECTIVES: Record<string, string[]> = {
   'default-src': ["'self'"],
@@ -67,6 +79,7 @@ const CSP_DIRECTIVES: Record<string, string[]> = {
     "'self'",
     'https://*.supabase.co',
     'wss://*.supabase.co',
+    ...(LOCAL_AUTH_ORIGIN ? [LOCAL_AUTH_ORIGIN] : []),
     'https://openrouter.ai',
     'https://api.openrouter.ai',
     'https://*.upstash.io',
@@ -167,6 +180,9 @@ const signedInRedirectTarget = (
   origin: string,
 ): string | null => {
   if (pathname === '/login') {
+    // A GoTrue session without a parent grant must stay on this screen. Sending it home loops.
+    const restart = searchParams.get('e');
+    if (restart === 'parent_session' || restart === 'parent_restart') return null;
     const rawRedirect = searchParams.get('redirect');
     if (rawRedirect && isOpsLoginRedirectUrl(rawRedirect)) {
       const bridge = new URL('/auth/bridge-to-ops', origin);

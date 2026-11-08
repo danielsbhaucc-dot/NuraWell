@@ -53,6 +53,18 @@ export const centralAuthOn = (mode: SigninMode) => mode === 'test' || mode === '
 /** Protected data is closed only when the column positively says test or all. */
 export const accessClosed = (mode: SigninMode) => mode === 'test' || mode === 'all';
 
+/**
+ * Who must present a parent session. `all` means every signed-in account.
+ * `test` means only an account whose server-written app_metadata.pl_enforce_test is true.
+ * Everyone else keeps today's session, matching parent_session_ok().
+ */
+export function sessionProofRequired(mode: SigninMode, appMetadata?: Record<string, unknown> | null): boolean {
+  if (mode === 'all') return true;
+  if (mode !== 'test') return false;
+  const value = appMetadata?.pl_enforce_test;
+  return value === true || value === 'true';
+}
+
 export type NwUser = { id: string; email?: string | null; email_confirmed_at?: string | null; app_metadata?: Record<string, unknown> | null };
 export type ParentClaims = { sub: string; lic: string; email?: string; email_verified?: boolean };
 type Hit = { user: NwUser; by: 'sub' | 'lic' | 'email' };
@@ -93,8 +105,10 @@ const ERROR_KEYS: Record<string, string> = {
   no_account: 'parent_no_account', linked_elsewhere: 'parent_linked', no_license: 'parent_no_license', access_denied: 'parent_no_license',
   email_unverified: 'parent_unverified', unsupported_mode: 'parent_unsupported', not_migrated: 'parent_not_migrated',
 };
-/** Failure reason → /login?e= key (anything unknown ⇒ "unavailable"). */
-export const errorFor = (why: string): string => ERROR_KEYS[why] ?? 'parent_unavailable';
+/** A stale or missing one-time transaction. The same login button starts a new one. It is not a password fallback. */
+const RESTART_REASONS = new Set(['state', 'nonce', 'code', 'token', 'token_invalid']);
+/** Failure reason → /login?e= key. An expired parent request restarts. Anything else unknown is "unavailable". */
+export const errorFor = (why: string): string => (RESTART_REASONS.has(why) ? 'parent_restart' : ERROR_KEYS[why] ?? 'parent_unavailable');
 
 /**
  * Where a failed parent sign-in returns.
