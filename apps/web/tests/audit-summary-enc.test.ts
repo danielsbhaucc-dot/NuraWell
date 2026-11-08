@@ -63,6 +63,20 @@ describe('access audit summary', () => {
     expect(again.failed).toBe(0);
   });
 
+  it('keeps a readable row when another summary cannot be opened', async () => {
+    const plan = await planAuditSummary(SUMMARY);
+    if (plan.action !== 'write') throw new Error('plan');
+    const rows = [
+      { id: 'good', summary: plan.ciphertext, created_at: '2026-11-08T00:00:00Z' },
+      { id: 'old', summary: SUMMARY, created_at: '2026-11-07T00:00:00Z' },
+      { id: 'bad', summary: 'enc:v2:not-a-real-cipher', created_at: '2026-11-06T00:00:00Z' },
+    ];
+    const fn = withFieldDecryption((async () => new Response(JSON.stringify(rows), { status: 200, headers: { 'content-type': 'application/json' } })) as unknown as typeof fetch);
+    const opened = await (await fn(`${BASE}/access_audit_findings?select=id,summary`, { method: 'GET' })).json() as Row[];
+    expect(opened.map((r) => findingTitle(r.summary))).toEqual([SUMMARY, SUMMARY, CLOSED_FINDING]);
+    expect(JSON.stringify(opened)).not.toContain('enc:v2');
+  });
+
   it('does not widen privileges or log the summary', () => {
     const sql = readFileSync(new URL('../../../supabase/migrations/000237_access_audit_summary_ciphertext.sql', import.meta.url), 'utf8');
     expect(sql).not.toMatch(/^\s*grant\s|disable row level security|drop policy/im);

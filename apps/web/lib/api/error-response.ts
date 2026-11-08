@@ -58,8 +58,9 @@ export function apiErrorResponse(opts: ApiErrorOptions = {}): NextResponse {
 
   // Logging — תמיד עם requestId כדי לקשר לתגובת לקוח.
   if (opts.internal !== undefined) {
+    const scrubbed = scrubSqlError(opts.internal);
     // eslint-disable-next-line no-console
-    console.error(`[${tag}] [${requestId}]`, opts.internal);
+    console.error(`[${tag}] [${requestId}]`, scrubbed.code ?? '', scrubbed.message ?? '');
   } else {
     // eslint-disable-next-line no-console
     console.warn(`[${tag}] [${requestId}] ${publicMessage}`);
@@ -115,16 +116,18 @@ function defaultMessageForStatus(status: number): string {
   }
 }
 
-function sanitizeInternalForDev(internal: unknown): unknown {
-  if (!internal || typeof internal !== 'object') return internal;
-  /** הסר רק properties רגישות שעלולות להיות בלוג Error */
-  const e = internal as Record<string, unknown>;
+/** Postgres attaches the row to DETAIL. That text is not a client message and not an audit value. */
+export function scrubSqlError(error: unknown): { code?: string; message?: string } {
+  if (!error || typeof error !== 'object') return {};
+  const e = error as Record<string, unknown>;
+  let message = typeof e.message === 'string' ? e.message : undefined;
+  if (message) message = message.split(/Failing row contains/i)[0].trim();
   return {
-    name: e.name,
-    code: e.code,
-    message: typeof e.message === 'string' ? e.message : undefined,
-    details: typeof e.details === 'string' ? e.details : undefined,
-    hint: typeof e.hint === 'string' ? e.hint : undefined,
-    stack: typeof e.stack === 'string' ? e.stack : undefined,
+    code: typeof e.code === 'string' ? e.code : undefined,
+    message: message || undefined,
   };
+}
+
+function sanitizeInternalForDev(internal: unknown): unknown {
+  return scrubSqlError(internal);
 }

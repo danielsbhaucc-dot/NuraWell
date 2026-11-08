@@ -50,7 +50,7 @@ export async function GET(request: Request) {
         .is('archived_at', null)
         .eq('is_read', false);
       if (badgeErr) {
-        console.error('[notifications GET] badge count error', badgeErr);
+        console.error('[notifications GET] badge count error', (badgeErr as { code?: string }).code ?? '');
         return NextResponse.json({ error: 'Failed to load notifications' }, { status: 500 });
       }
       return NextResponse.json({ unread_total: count ?? 0 });
@@ -100,27 +100,15 @@ export async function GET(request: Request) {
     const [{ data, error }, countResult] = await Promise.all([q, countPromise]);
 
     if (error) {
-      console.error('[notifications GET] supabase error', error);
+      console.error('[notifications GET] supabase error', (error as { code?: string }).code ?? '');
       return NextResponse.json(
-        {
-          error: 'Failed to load notifications',
-          ...(process.env.NODE_ENV !== 'production'
-            ? {
-                debug: {
-                  message: error.message,
-                  code: (error as { code?: string }).code,
-                  hint: (error as { hint?: string }).hint,
-                  details: (error as { details?: string }).details,
-                },
-              }
-            : {}),
-        },
+        { error: 'Failed to load notifications' },
         { status: 500 }
       );
     }
 
     if (countResult?.error) {
-      console.error('[notifications GET] count error', countResult.error);
+      console.error('[notifications GET] count error', (countResult.error as { code?: string }).code ?? '');
       return NextResponse.json(
         { error: 'Failed to load notifications' },
         { status: 500 }
@@ -143,16 +131,8 @@ export async function GET(request: Request) {
       ...(unread_total !== undefined ? { unread_total } : {}),
     });
   } catch (error) {
-    console.error('[notifications GET] unexpected', error);
-    return NextResponse.json(
-      {
-        error: 'Internal server error',
-        ...(process.env.NODE_ENV !== 'production' && error instanceof Error
-          ? { debug: { message: error.message, stack: error.stack } }
-          : {}),
-      },
-      { status: 500 }
-    );
+    console.error('[notifications GET] unexpected', error instanceof Error ? error.name : '');
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 

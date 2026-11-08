@@ -86,6 +86,11 @@ describe.skipIf(!databaseReady)('migrations 233 through 239 on one database', ()
     const raw = psql(`select date_of_birth from public.profiles where id = '${USER}'`).out.trim();
     const age = validateBirthDate(raw, NOW);
     expect(age).toEqual({ ok: true, age: 36 });
+    const ageNow = validateBirthDate(raw, new Date());
+    expect(ageNow.ok).toBe(true);
+    if (ageNow.ok) expect(ageNow.age).toBe(36);
+    const policy = psql(`select case when enforce_from <= now() then 't' else 'f' end from public.ops_device_policy`).out.trim();
+    expect(policy).toBe('t');
 
     const trigger = psql(`
       select (position('date_of_birth' in pg_get_triggerdef(t.oid)) > 0)::text
@@ -94,7 +99,7 @@ describe.skipIf(!databaseReady)('migrations 233 through 239 on one database', ()
       from pg_trigger t
       where t.tgname = 'zz_enc_reject_plaintext' and t.tgrelid = 'public.profiles'::regclass and not t.tgisinternal
     `).out.trim();
-    expect(trigger).toBe('false false true');
+    expect(trigger).toBe('true true true');
     const flags = psql(`select table_name || '=' || active::text from public.field_enc_enforcement where table_name in ('profiles', 'pii_access_grants', 'access_audit_findings') order by 1`).out.trim().split('\n');
     expect(flags).toEqual(['access_audit_findings=false', 'pii_access_grants=false', 'profiles=false']);
 
@@ -102,7 +107,7 @@ describe.skipIf(!databaseReady)('migrations 233 through 239 on one database', ()
       begin;
       update public.field_enc_enforcement set active = true where table_name = 'profiles';
       do $$
-      declare name_rejected boolean := false; dob_saved boolean := false; name_err text := '';
+      declare name_rejected boolean := false; dob_rejected boolean := false; name_err text := ''; dob_err text := '';
       begin
         begin
           update public.profiles set full_name = 'גלם גלוי' where id = '${USER}';
@@ -110,9 +115,14 @@ describe.skipIf(!databaseReady)('migrations 233 through 239 on one database', ()
           name_rejected := true;
           name_err := sqlerrm;
         end;
-        update public.profiles set date_of_birth = '1991-06-15' where id = '${USER}';
-        dob_saved := true;
-        if not name_rejected or not dob_saved or position('גלם' in name_err) > 0 then
+        begin
+          update public.profiles set date_of_birth = '1991-06-15', birth_date = '1991-06-15' where id = '${USER}';
+        exception when others then
+          dob_rejected := true;
+          dob_err := sqlerrm;
+        end;
+        if not name_rejected or not dob_rejected
+           or position('גלם' in name_err) > 0 or position('1991-06-15' in dob_err) > 0 then
           raise exception 'enforcement regression failed';
         end if;
       end $$;
@@ -225,7 +235,9 @@ describe.skipIf(!databaseReady)('migrations 233 through 239 on one database', ()
       age: 36,
       enforcementOff: true,
       plaintextNameRejectedWhenProfilesFlagOn: true,
-      plaintextDobStillWrittenWhenProfilesFlagOn: true,
+      plaintextDobRejectedWhenProfilesFlagOn: true,
+      policyClockNotInTheFuture: true,
+      ageOnMachineClock: 36,
       hebrew400Stored: true,
       hebrew401Rejected: true,
       writerStoresSummaryTooLongWithoutText: true,

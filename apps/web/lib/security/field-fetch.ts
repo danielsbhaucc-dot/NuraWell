@@ -166,7 +166,15 @@ export function withFieldDecryption(base: FetchFn = fetch): FetchFn {
     }
     const fix = async (row: unknown) => {
       if (!row || typeof row !== 'object' || Array.isArray(row)) return row;
-      const top = text.includes(FIELD_PREFIX_MARK) ? await (await import('@/lib/security/field-crypto')).decryptRow(table, row as Record<string, unknown>) : (row as Record<string, unknown>);
+      let top = row as Record<string, unknown>;
+      if (text.includes(FIELD_PREFIX_MARK)) {
+        try {
+          top = await (await import('@/lib/security/field-crypto')).decryptRow(table, top);
+        } catch {
+          // A bad key must not throw away the other rows or return the ciphertext.
+          top = Object.fromEntries(Object.entries(top).map(([k, v]) => [k, typeof v === 'string' && v.startsWith('enc:') ? '' : v]));
+        }
+      }
       const dec = await fixEmbeds(top, plan.embeds, text.includes(FIELD_PREFIX_MARK));
       if (!plan.added.length) return dec;
       const copy = { ...dec };
