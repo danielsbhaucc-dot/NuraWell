@@ -2,6 +2,7 @@ import type { Viewport } from 'next';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { ChallengeShell } from '@/components/challenge/ChallengeShell';
+import { licenseGate, profileRole } from '@/lib/central/license-gate';
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -17,6 +18,12 @@ export default async function ChallengeLayout({ children }: { children: React.Re
 
   if (!user) {
     redirect('/login?redirect=/challenge');
+  }
+
+  // Same parent-license gate as the dashboard layout (off unless armed by env AND the DB kill switch; admins never blocked; fail-open).
+  if (process.env.PLATFORM_LICENSE_MODE === 'enforce') {
+    const gate = await licenseGate(user, await profileRole(user.id));
+    if (gate.block) redirect('/license-required');
   }
 
   return <ChallengeShell user={user}>{children}</ChallengeShell>;

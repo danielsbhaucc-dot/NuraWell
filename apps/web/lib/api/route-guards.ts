@@ -16,6 +16,15 @@ type SessionOk = { ok: true } & AuthenticatedApiResult;
  * מאפשר אפליקציית מובייל / סקריפטים בלי לשבור את הדפדפן.
  */
 export async function requireApiSession(request: Request): Promise<SessionOk | GuardFail> {
+  const session = await resolveApiSession(request);
+  if (!session.ok) return session;
+  const refused = await licenseRefusal(request, session.user);
+  if (refused) return { ok: false, response: refused };
+  return session;
+}
+
+/** Session only (no license check). Admin routes use this: admins are never license-blocked. */
+async function resolveApiSession(request: Request): Promise<SessionOk | GuardFail> {
   const { supabase, user, authError } = await createSupabaseForApiRoute(request);
   if (authError || !user) {
     return {
@@ -24,6 +33,44 @@ export async function requireApiSession(request: Request): Promise<SessionOk | G
     };
   }
   return { ok: true, supabase, user };
+}
+
+/**
+ * Routes an UNLICENSED signed-in user must still reach: privacy rights (export / delete / consents / security),
+ * buying a license, ending a demo, step-up approval, churn feedback, push unsubscribe.
+ * Everything else that uses requireApiSession is product functionality and needs an active parent license.
+ */
+const LICENSE_EXEMPT_PREFIXES = [
+  '/api/v1/account/',
+  '/api/v1/billing/',
+  '/api/v1/demo-access/',
+  '/api/v1/stepup/',
+  '/api/v1/churn-feedback',
+  '/api/v1/push/',
+] as const;
+
+export function licenseExemptPath(pathname: string): boolean {
+  return LICENSE_EXEMPT_PREFIXES.some((p) => pathname === p.replace(/\/$/, '') || pathname.startsWith(p));
+}
+
+/**
+ * Parent-license enforcement at the API layer (default deny for product routes), same gate as the dashboard
+ * layout: armed only by env PLATFORM_LICENSE_MODE=enforce AND the DB kill switch; admins never blocked; fail-open
+ * on parent outage. Without this, an unlicensed account blocked from the pages could still call product APIs directly.
+ */
+async function licenseRefusal(request: Request, user: User): Promise<NextResponse | null> {
+  if (process.env.PLATFORM_LICENSE_MODE !== 'enforce') return null;
+  let path = '';
+  try { path = new URL(request.url).pathname; } catch { return null; }
+  if (licenseExemptPath(path)) return null;
+  try {
+    const { licenseGate, profileRole } = await import('@/lib/central/license-gate');
+    const gate = await licenseGate(user, await profileRole(user.id));
+    if (!gate.block) return null;
+    return NextResponse.json({ error: 'license_required' }, { status: 403, headers: { 'Cache-Control': 'no-store' } });
+  } catch {
+    return null; // same fail-open policy as licenseGate itself
+  }
 }
 
 export async function requireApiAdmin(request: Request, opts: { skipDeviceGate?: boolean } = {}): Promise<SessionOk | GuardFail> {
@@ -65,7 +112,7 @@ async function noteAdminDenial(request: Request, status: number, actorId: string
 }
 
 async function requireApiAdminInner(request: Request, opts: { skipDeviceGate?: boolean }): Promise<SessionOk | GuardFail> {
-  const session = await requireApiSession(request);
+  const session = await resolveApiSession(request);
   if (!session.ok) return session;
 
   const { supabase, user } = session;

@@ -17,6 +17,7 @@
 | מנוי ושמירה אחרי סיום | subscriptions, profiles.post_sub_retention, user_consents (post_subscription_retention), billing_* (000188) | S2 | RLS; לפי בחירת המשתמש: מחיקה מיד או 24 חודשים מסיום המנוי (ברירת מחדל לחשבונות ותיקים: 24 חודשים); תיעוד הבחירה 7 שנים | — |
 | אדמין/אבטחה | admin_audit_log, ops_security_events, error_events | S1 | IP מוסר אחרי 30 יום; מחיקה אחרי 365 | — |
 | עמוד ציבורי | site_settings | S0 | מיגרציה 000176: עמודת demo_default_target_user_id חסומה ל-anon/authenticated | תוקן |
+| קישור לחברת האם (רישיון וכניסה) | auth.users.app_metadata: ‏pl_lic (מזהה רישיון), pl_sub (מזהה משתמש אצל האם, שונה לכל מוצר), pl_claim, pl_enforce_test; platform_link_settings | S2 | נכתב רק בצד השרת (משתמש לא יכול לערוך app_metadata); מזהים בלבד, בלי תוכן בריאותי, ולכן לא מוצפנים בנפרד; platform_link_settings: RLS בלי מדיניות, service role בלבד. לחברת האם נשלח (שרת לשרת, עם סוד לקוח) רק המייל המאומת של משתמש עם רישיון, והיא שומרת ממנו רק אינדקס מוצפן. אין שם, טלפון או מידע בריאותי | — |
 | ספקים חיצוניים | ספקי AI, Upstash, R2 (גיבויים מוצפנים age), Vercel, Supabase | — | כל קריאה לספק AI עוברת במסנן המזהים המרכזי (שם/טלפון/מייל/ת"ז → פסאודונים), בכל המודלים; נאכף בבדיקת CI | — |
 
 ## פערי טקסט גלוי (יעד להצפנת מעטפה — מחכה לאישור דניאל)
