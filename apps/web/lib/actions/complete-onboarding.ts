@@ -425,6 +425,7 @@ async function runOnboarding(
     .eq('id', userId);
 
   if (profileError) {
+    if (claimedNonce) await abortSignupClaim(admin, claimedNonce);
     return { ok: false, error: 'החשבון נוצר אך שמירת הפרופיל נכשלה. פנו לתמיכה.' };
   }
 
