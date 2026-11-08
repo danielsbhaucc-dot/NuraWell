@@ -292,6 +292,8 @@ export const ENCRYPTED_TABLES = {
   notify_style_rules: { system: 'ops', userCol: '', rowCol: 'id', columns: { avoid: 'text', prefer: 'text' } },
   ops_admin_notifications: { system: 'ops', userCol: '', rowCol: 'id', guardCols: [], columns: { body: 'text', metadata: 'json', title: 'text' } },
   ops_login_requests: { system: 'ops', userCol: '', rowCol: 'id', guardCols: [], columns: { label: 'text', location: 'text' } },
+  // device enrollment browser facts (not query keys; lookup is id/token_hash). Same system ops key as login_requests.
+  ops_device_enrollments: { system: 'ops', userCol: '', rowCol: 'id', guardCols: [], columns: { label: 'text', location: 'text' } },
   ops_trusted_devices: { system: 'ops', userCol: '', rowCol: 'id', guardCols: [], columns: { browser: 'text', countries_seen: 'text[]', label: 'text', last_country: 'text', last_ip_masked: 'text' } },
   ip_blocks: { system: 'ops', userCol: '', rowCol: 'ip_hash', guardCols: [], columns: { note: 'text', reason: 'text' } },
   security_incidents: { system: 'ops', userCol: '', rowCol: 'id', guardCols: [], columns: { actions: 'json' } },
@@ -354,6 +356,7 @@ export const FIELD_V2_TABLES: readonly string[] = [
   'pii_access_grants',
   'access_audit_findings',
   'access_audit_runs',
+  'ops_device_enrollments',
 ];
 
 /**
@@ -370,20 +373,19 @@ export const SWEEP_TABLES: Readonly<Record<string, { maxPlainMinutes: number; ts
  * this constant for sealing or triggers. After those PRs merge, apply supabase/gated/000211_iam_admin_enc_prep.sql,
  * move these into ENCRYPTED_TABLES + FIELD_V2_TABLES, and regenerate the enc-reject triggers.
  * iam_audit_log.detail/target and iam_grants.reason are live since 000222 (ENCRYPTED_TABLES).
- * pii_access_grants.reason, access_audit_findings.summary and access_audit_runs.error are live in ENCRYPTED_TABLES.
+ * pii_access_grants.reason, access_audit_findings.summary, access_audit_runs.error and ops_device_enrollments.label/location are live in ENCRYPTED_TABLES.
  * country, ticket_ref and signals stay here.
  * Not listed (stays pending): ops_probe_daily.country (SQL probe counter upsert, 000198);
  * ops_enroll_blocks.reason is verified fixed-code only (single writer lib/ops/enrollment.ts upserts 'wrong_number').
  */
 export const GATED_AFTER_IAM_MERGE: Readonly<Record<string, EncryptedTable>> = {
   access_audit_findings: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { signals: 'json' } },
-  ops_device_enrollments: { system: 'ops', userCol: '', rowCol: 'id', guardCols: [], columns: { label: 'text', location: 'text' } },
   pii_access_grants: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { country: 'text', ticket_ref: 'text' } },
   pii_access_log: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { country: 'text', resource: 'text' } },
 };
 
 /** Registered for read/write sealing, but the hosted backfill cron must not rewrite rows. A local dummy script does. */
-export const FIELD_V2_LOCAL_BACKFILL_ONLY: readonly string[] = ['pii_access_grants', 'access_audit_findings', 'access_audit_runs'];
+export const FIELD_V2_LOCAL_BACKFILL_ONLY: readonly string[] = ['pii_access_grants', 'access_audit_findings', 'access_audit_runs', 'ops_device_enrollments'];
 
 /**
  * Append-only evidence tables (a trigger rejects UPDATE/DELETE): historical rows stay as written and only rows

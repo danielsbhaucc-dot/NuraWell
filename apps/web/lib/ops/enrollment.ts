@@ -12,6 +12,7 @@ import {
 import { consumeChallenge, storeChallenge, RP_NAME } from '@/lib/module-api/auth-signup/lib-auth-passkeys';
 import { counterOk } from '@/lib/security-core/webauthn-policy';
 import { audit, createTrustedDevice, deviceLabel } from './device-trust';
+import { sealEnrollFact } from './enroll-facts';
 
 /**
  * Hidden-admin device enrollment. Order is enforced server-side, each step checks the previous one:
@@ -57,7 +58,10 @@ export async function openEnrollment(db: SupabaseClient, token: unknown, facts: 
   const { data } = await db.rpc('ops_claim_enrollment', { p_token_hash: sha(token), p_session_hash: sha(secret), p_ip_hash: facts.ipHash });
   const row = (data as { id: string; user_id: string }[] | null)?.[0];
   if (!row) return { ok: false };
-  await db.from('ops_device_enrollments').update({ label: facts.label.slice(0, 80), location: facts.location.slice(0, 80) }).eq('id', row.id);
+  await db.from('ops_device_enrollments').update({
+    label: await sealEnrollFact('label', facts.label),
+    location: await sealEnrollFact('location', facts.location),
+  }).eq('id', row.id);
   await audit(db, row.user_id, 'ops_enroll_link_opened', { id: row.id });
   return { ok: true, cookie: `${row.id}.${secret}` };
 }

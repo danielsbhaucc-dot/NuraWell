@@ -790,8 +790,8 @@ export const COLUMN_CLASSIFICATION: Readonly<Record<string, Readonly<Record<stri
     factor_via: ["non_sensitive", "enum/status/routing code, no personal content"],
     ip_hash: ["non_sensitive", "hash/digest/signature, not reversible to content"],
     issued_via: ["non_sensitive", "enum/status/routing code, no personal content"],
-    label: ["sensitive", "pending (not encrypted yet): table created/written outside this branch (prod schema drift: IAM/admin-access migrations 000191-000201); register after those land"],
-    location: ["sensitive", "pending (not encrypted yet): table created/written outside this branch (prod schema drift: IAM/admin-access migrations 000191-000201); register after those land"],
+    label: ["sensitive", "registered (system key: ops)"],
+    location: ["sensitive", "registered (system key: ops)"],
     match_result: ["non_sensitive", "enum/status/routing code, no personal content"],
     session_hash: ["non_sensitive", "hash/digest/signature, not reversible to content"],
     token_hash: ["non_sensitive", "hash/digest/signature, not reversible to content"],
@@ -1158,6 +1158,12 @@ export const COLUMN_CLASSIFICATION: Readonly<Record<string, Readonly<Record<stri
     public_key: ["non_sensitive", "identifier/key or public credential material, no personal content"],
     rp_id: ["non_sensitive", "identifier/key or public credential material, no personal content"],
     transports: ["non_sensitive", "identifier/key or public credential material, no personal content"],
+  },
+  parent_signup_claims: {
+    nonce: ["non_sensitive", "opaque single-use claim lock and primary key; SQL equality in parent_signup_*; not profile text"],
+    parent_sub: ["non_sensitive", "opaque parent account key for this claim, same role as parent_session_grants.parent_sub; SQL equality, not profile text"],
+    email: ["sensitive", "pending (not encrypted yet): personal email; SQL equality compare in parent_signup_begin (mismatch); service_role-only table; needs app-side compare or blind index before seal — do not encrypt the PK/lock"],
+    state: ["non_sensitive", "enum open/done/failed (CHECK), no personal content"],
   },
   parent_session_grants: {
     parent_sub: ["non_sensitive", "opaque parent account key for this session grant, not profile or message text"],

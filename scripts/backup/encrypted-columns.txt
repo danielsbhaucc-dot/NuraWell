@@ -187,6 +187,8 @@ enforce ops_admin_notifications metadata json
 enforce ops_admin_notifications title text
 enforce ops_login_requests label text
 enforce ops_login_requests location text
+pending ops_device_enrollments label text
+pending ops_device_enrollments location text
 enforce ops_trusted_devices browser text
 enforce ops_trusted_devices countries_seen text[]
 enforce ops_trusted_devices label text
@@ -231,13 +233,12 @@ gap gideon_stranger_sim attempts any
 gap gideon_stranger_sim chat_id any
 gap gideon_telegram_identities from_id any
 gap ip_block_ranges reason any
-gap ops_device_enrollments label any
-gap ops_device_enrollments location any
 gap ops_probe_daily country any
 gap pii_access_grants country any
 gap pii_access_grants ticket_ref any
 gap pii_access_log country any
 gap pii_access_log resource any
+gap parent_signup_claims email any
 class field_enc_enforcement table_name -
 class access_audit_findings event_kind -
 class access_audit_findings product_id -
@@ -1072,6 +1073,10 @@ class webauthn_credentials label -
 class webauthn_credentials public_key -
 class webauthn_credentials rp_id -
 class webauthn_credentials transports -
+class parent_signup_claims nonce -
+class parent_signup_claims parent_sub -
+class parent_signup_claims email -
+class parent_signup_claims state -
 class parent_session_grants parent_sub -
 class platform_link_settings mode -
 class platform_link_settings scope -

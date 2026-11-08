@@ -9,6 +9,7 @@ import { audit, revokeDevice } from './device-trust';
 import { revokeDeviceSessions } from './admin-session';
 import { ownerAdminIds } from './device-notify';
 import { decideMatch, issueEnrollmentLink } from './enrollment';
+import { readableEnrollFact } from './enroll-facts';
 
 export const ENROLL_CB = /^ceo:em:([0-9a-f-]{36}):(\d{2})$/;
 export const DEVICE_REVOKE_CB = /^ceo:dr:([0-9a-f-]{36})$/;
@@ -48,7 +49,7 @@ export async function handleEnrollUpdate(db: SupabaseClient, channel: CeoChannel
     if (result === 'approved') { await ack('✅ אושר. אפשר לסיים את הרישום במכשיר.'); return { enroll: 'approved' }; }
     if (result === 'wrong' && row) {
       await ack('⛔ מספר שגוי — הבקשה נדחתה והקישור בוטל.');
-      await sendOwnerTelegram(channel, `🚨 ניסיון רישום מכשיר נדחה (מספר שגוי).\n${row.label || 'מכשיר'} · ${row.location || 'מיקום לא ידוע'}\nהקישור בוטל וכתובת ה-IP נחסמה זמנית. אם זה לא אתם — כדאי להחליף סיסמה.`);
+      await sendOwnerTelegram(channel, `🚨 ניסיון רישום מכשיר נדחה (מספר שגוי).\n${readableEnrollFact(row.label) || 'מכשיר'} · ${readableEnrollFact(row.location) || 'מיקום לא ידוע'}\nהקישור בוטל וכתובת ה-IP נחסמה זמנית. אם זה לא אתם — כדאי להחליף סיסמה.`);
       return { enroll: 'wrong' };
     }
     await ack(result === 'expired' ? '⌛ פג תוקף האישור. בקשו קישור חדש.' : 'הבקשה כבר טופלה או לא קיימת.');

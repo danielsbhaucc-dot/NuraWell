@@ -122,19 +122,19 @@ export const PENDING_COLUMN_INVENTORY: readonly PendingFinding[] = [
     table: 'ops_device_enrollments',
     column: 'label',
     sensitivity: 'תווית מכשיר',
-    verdict: 'פער_תוכן',
-    write: 'enrollment.ts מעדכן label עד 80 תווים אחרי פתיחת הקישור',
-    read: 'loadByCookie קורא select *',
-    next: 'הניסוח "מחוץ לענף" ישן: 000198 והכותב בקוד. חותמים במפתח מערכת ops אחרי reason, ומפענחים בקורא. token_hash נשאר גיבוב.',
+    verdict: 'סיווג_ישן',
+    write: 'enrollment.ts חותם דרך sealEnrollFact לפני update; 000244 מאפשר enc:v2',
+    read: 'loadByCookie/select דרך field-fetch מפענח; telegram משתמש ב-readableEnrollFact',
+    next: 'רשום וחתום במפתח ops עם location. token_hash נשאר גיבוב. backfill מקומי בלבד.',
   },
   {
     table: 'ops_device_enrollments',
     column: 'location',
     sensitivity: 'מיקום גס של מכשיר',
-    verdict: 'פער_תוכן',
-    write: 'enrollment.ts מעדכן location עד 80 תווים באותה כתיבה',
-    read: 'loadByCookie קורא את השורה המלאה',
-    next: 'יחד עם label, לא כמפתח חיפוש. החיפוש הוא לפי id וגיבוב.',
+    verdict: 'סיווג_ישן',
+    write: 'אותו sealEnrollFact באותה כתיבה עם label',
+    read: 'כמו label; אין eq SQL על העמודה',
+    next: 'רשום וחתום במפתח ops עם label. לא פותחים מחדש.',
   },
   {
     table: 'ops_probe_daily',
@@ -181,7 +181,16 @@ export const PENDING_COLUMN_INVENTORY: readonly PendingFinding[] = [
     read: 'נשמר ביומן; אין סינון SQL על העמודה בקוד שנבדק',
     next: 'יחד עם country של היומן. לא מפתח שורה.',
   },
+  {
+    table: 'parent_signup_claims',
+    column: 'email',
+    sensitivity: 'כתובת אימייל של ההורה בטענת הרשמה',
+    verdict: 'מפתח_שאילתה',
+    write: 'parent_signup_begin (SQL security definer) מכניס email; רק service_role',
+    read: 'השוואת שוויון SQL ב-begin מול p_email; אין בחירה באפליקציה לתצוגה',
+    next: 'לא מצפינים לפני העברת ההשוואה לאפליקציה או אינדקס עיוור. nonce נשאר מפתח ראשי. state/parent_sub/nonce אינם פערי תוכן.',
+  },
 ];
 
 export const NEXT_ENCRYPTION_STEP =
-  'access_audit_runs.error רשום. השלב הבא הבטוח: ops_device_enrollments.label+location כזוג (מפתח ops), או UI-release checklist אם אין זמן לזוג.';
+  'ops_device_enrollments.label+location רשומים. הבא: pii_access_grants.ticket_ref (אחרי reason) או UI-release checklist. parent_signup_claims.email נשאר מפתח_שאילתה עד העברת השוואת SQL.';
