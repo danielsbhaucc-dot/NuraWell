@@ -18,6 +18,9 @@ describe('parent_signup_claims classification (239/241)', () => {
     expect(row.email[1]).toMatch(/pending|SQL|blind|equality/i);
     // Must not pretend email is non-personal just to green the schema test.
     expect(row.email[0]).not.toBe('non_sensitive');
+    // Taxonomy non_sensitive ≠ public: reasons must keep the operational-identifier caveat.
+    expect(row.nonce[1]).toMatch(/linkable|operational|RLS|redaction|retention/i);
+    expect(row.parent_sub[1]).toMatch(/linkable|pseudonymous|RLS|redaction|retention/i);
   });
 
   it('keeps email out of live encryption until SQL equality is moved', () => {

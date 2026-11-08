@@ -898,11 +898,11 @@ export const COLUMN_CLASSIFICATION: Readonly<Record<string, Readonly<Record<stri
     type: ["non_sensitive", "enum/status/routing code, no personal content"],
   },
   pii_access_grants: {
-    country: ["sensitive", "pending (not encrypted yet): table created/written outside this branch (prod schema drift: IAM/admin-access migrations 000191-000201); register after those land"],
+    country: ["sensitive", "registered (system key: audit)"],
     ip_hash: ["non_sensitive", "hash/digest/signature, not reversible to content"],
     product_id: ["non_sensitive", "identifier/key or public credential material, no personal content"],
     reason: ["sensitive", "registered"],
-    ticket_ref: ["sensitive", "pending (not encrypted yet): table created/written outside this branch (prod schema drift: IAM/admin-access migrations 000191-000201); register after those land"],
+    ticket_ref: ["sensitive", "registered (system key: audit)"],
   },
   pii_access_log: {
     country: ["sensitive", "pending (not encrypted yet): table created/written outside this branch (prod schema drift: IAM/admin-access migrations 000191-000201); register after those land"],
@@ -1160,13 +1160,13 @@ export const COLUMN_CLASSIFICATION: Readonly<Record<string, Readonly<Record<stri
     transports: ["non_sensitive", "identifier/key or public credential material, no personal content"],
   },
   parent_signup_claims: {
-    nonce: ["non_sensitive", "opaque single-use claim lock and primary key; SQL equality in parent_signup_*; not profile text"],
-    parent_sub: ["non_sensitive", "opaque parent account key for this claim, same role as parent_session_grants.parent_sub; SQL equality, not profile text"],
+    nonce: ["non_sensitive", "opaque single-use claim lock / PK (SQL equality). Encryption-taxonomy only: still a linkable operational identifier — do not weaken RLS, log redaction, or retention; not public/non-personal for privacy"],
+    parent_sub: ["non_sensitive", "opaque parent account key (SQL equality), same role as parent_session_grants.parent_sub. Encryption-taxonomy only: pseudonymous/linkable operational id — RLS/redaction/retention unchanged; not public"],
     email: ["sensitive", "pending (not encrypted yet): personal email; SQL equality compare in parent_signup_begin (mismatch); service_role-only table; needs app-side compare or blind index before seal — do not encrypt the PK/lock"],
     state: ["non_sensitive", "enum open/done/failed (CHECK), no personal content"],
   },
   parent_session_grants: {
-    parent_sub: ["non_sensitive", "opaque parent account key for this session grant, not profile or message text"],
+    parent_sub: ["non_sensitive", "opaque parent account key for this session grant. Encryption-taxonomy only: pseudonymous/linkable operational id — not public; do not weaken RLS, log redaction, or retention"],
   },
   platform_link_settings: {
     mode: ["non_sensitive", "enum (license enforcement kill switch), no personal content"],

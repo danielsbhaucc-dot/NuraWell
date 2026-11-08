@@ -312,9 +312,9 @@ export const ENCRYPTED_TABLES = {
   // (ids, role/module codes, counts, flags) — see public.iam_audit_row_ok and CHAINED_TABLES below.
   iam_grants: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { reason: 'text' } },
   iam_audit_log: { system: 'audit', userCol: '', rowCol: 'seq', guardCols: [], columns: { detail: 'json', target: 'text' } },
-  // pii_access_grants.reason only. country and ticket_ref stay out: they are not this slice.
-  // Entitlement is product+actor+subject+expiry, not the reason text. System AAD is SYSTEM_ROW, same as the other audit tables.
-  pii_access_grants: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { reason: 'text' } },
+  // pii_access_grants.reason + ticket_ref + country (no SQL filters; audit compares country in memory after decrypt).
+  // Entitlement is product+actor+subject+expiry, not the reason/ticket text. System AAD is SYSTEM_ROW.
+  pii_access_grants: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { reason: 'text', ticket_ref: 'text', country: 'text' } },
   // summary only. signals stays a display array and is not sealed in this slice.
   // Ordered and filtered by created_at, never by the text. Same system audit key as the grant reason.
   access_audit_findings: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { summary: 'text' } },
@@ -373,14 +373,13 @@ export const SWEEP_TABLES: Readonly<Record<string, { maxPlainMinutes: number; ts
  * this constant for sealing or triggers. After those PRs merge, apply supabase/gated/000211_iam_admin_enc_prep.sql,
  * move these into ENCRYPTED_TABLES + FIELD_V2_TABLES, and regenerate the enc-reject triggers.
  * iam_audit_log.detail/target and iam_grants.reason are live since 000222 (ENCRYPTED_TABLES).
- * pii_access_grants.reason, access_audit_findings.summary, access_audit_runs.error and ops_device_enrollments.label/location are live in ENCRYPTED_TABLES.
- * country, ticket_ref and signals stay here.
+ * pii_access_grants.reason/ticket_ref/country, access_audit_findings.summary, access_audit_runs.error and ops_device_enrollments.label/location are live in ENCRYPTED_TABLES.
+ * signals stay here; log country/resource stay gated.
  * Not listed (stays pending): ops_probe_daily.country (SQL probe counter upsert, 000198);
  * ops_enroll_blocks.reason is verified fixed-code only (single writer lib/ops/enrollment.ts upserts 'wrong_number').
  */
 export const GATED_AFTER_IAM_MERGE: Readonly<Record<string, EncryptedTable>> = {
   access_audit_findings: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { signals: 'json' } },
-  pii_access_grants: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { country: 'text', ticket_ref: 'text' } },
   pii_access_log: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { country: 'text', resource: 'text' } },
 };
 

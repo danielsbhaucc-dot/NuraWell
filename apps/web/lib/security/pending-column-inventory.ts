@@ -149,19 +149,19 @@ export const PENDING_COLUMN_INVENTORY: readonly PendingFinding[] = [
     table: 'pii_access_grants',
     column: 'country',
     sensitivity: 'קוד מדינה',
-    verdict: 'פער_תוכן',
-    write: 'pii-access.ts כותב country מתוך בקשת הגישה',
-    read: 'audit-job.ts טוען country לזיכרון ומשווה מדינות מוכרות',
-    next: 'לא השלב הראשון. חתימה אפשרית רק אחרי שההשוואה מפענחת. אין where על country.',
+    verdict: 'סיווג_ישן',
+    write: 'createPiiGrant חותם sealGrantCountry; 000246 מאפשר enc:v2',
+    read: 'audit-job משתמש ב-readableCountry לפני השוואת new_country (לא where SQL)',
+    next: 'רשום וחתום במפתח audit עם ticket_ref. backfill מקומי בלבד. log.country נשאר פער.',
   },
   {
     table: 'pii_access_grants',
     column: 'ticket_ref',
     sensitivity: 'מזהה פנייה קצר',
-    verdict: 'פער_תוכן',
-    write: 'createPiiGrant כותב ticket_ref עם הנימוק',
-    read: 'נבחר עם השורה ומועבר ל-grant; אין eq על העמודה',
-    next: 'חותמים יחד עם reason, לא כמפתח חיפוש נפרד.',
+    verdict: 'סיווג_ישן',
+    write: 'createPiiGrant חותם sealTicketRef לפני insert; 000246 מאפשר enc:v2',
+    read: 'liveGrant/audit משתמשים ב-readableTicketRef; אין eq SQL',
+    next: 'רשום וחתום במפתח audit עם country. לא פותחים מחדש.',
   },
   {
     table: 'pii_access_log',
@@ -193,4 +193,4 @@ export const PENDING_COLUMN_INVENTORY: readonly PendingFinding[] = [
 ];
 
 export const NEXT_ENCRYPTION_STEP =
-  'ops_device_enrollments.label+location רשומים. הבא: pii_access_grants.ticket_ref (אחרי reason) או UI-release checklist. parent_signup_claims.email נשאר מפתח_שאילתה עד העברת השוואת SQL.';
+  'grants.ticket_ref+country רשומים. הבא: pii_access_log.country+resource (append-only יומן) או UI-release. parent_signup_claims.email נשאר מפתח_שאילתה; signals נשאר מערך תצוגה.';
