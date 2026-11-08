@@ -22,7 +22,7 @@ export const COLUMN_CLASSIFICATION: Readonly<Record<string, Readonly<Record<stri
     summary: ["sensitive", "registered"],
   },
   access_audit_runs: {
-    error: ["sensitive", "pending (not encrypted yet): table created/written outside this branch (prod schema drift: IAM/admin-access migrations 000191-000201); register after those land"],
+    error: ["sensitive", "registered"],
     product_id: ["non_sensitive", "identifier/key or public credential material, no personal content"],
   },
   achievements: {

@@ -41,10 +41,10 @@ export const PENDING_COLUMN_INVENTORY: readonly PendingFinding[] = [
     table: 'access_audit_runs',
     column: 'error',
     sensitivity: 'הודעת כשל תפעולית קצרה',
-    verdict: 'פער_תוכן',
-    write: 'audit-job.ts מעדכן error אחרי כשל מודל, חתוך ל-120 תווים',
-    read: 'העמודה לא נבחרת במסך הממצאים; נשמרת על שורת הריצה',
-    next: 'אותו מפתח מערכת audit כמו summary. אין פרדיקט SQL על העמודה.',
+    verdict: 'סיווג_ישן',
+    write: 'audit-job.ts חותם דרך sealRunError לפני update; 000242 מאפשר enc:v2',
+    read: 'העמודה לא נבחרת במסך הממצאים; ciphertext לא מוצג כטקסט',
+    next: 'רשום וחתום במפתח audit. לא פותחים מחדש. backfill מקומי בלבד.',
   },
   {
     table: 'admin_passkeys',
@@ -184,4 +184,4 @@ export const PENDING_COLUMN_INVENTORY: readonly PendingFinding[] = [
 ];
 
 export const NEXT_ENCRYPTION_STEP =
-  'השלב נעצר ב-access_audit_findings.summary. אין המשך אוטומטי לעמודות שוויון בלי אינדקס עיוור.';
+  'access_audit_runs.error רשום. השלב הבא הבטוח: ops_device_enrollments.label+location כזוג (מפתח ops), או UI-release checklist אם אין זמן לזוג.';

@@ -2,6 +2,7 @@ import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { prefilter, toModelPayload, type AccessEvent, type Flagged } from '@platform/access';
 import { readableGrantReason } from './grant-reason';
+import { sealRunError } from './run-error';
 
 export type AuditModel = (payload: string) => Promise<{ ref: string; severity: 'low' | 'medium' | 'high'; summary: string }[]>;
 export type AuditDeps = { model?: AuditModel; alert?: (text: string) => Promise<void>; now?: number; productId?: string };
@@ -58,7 +59,7 @@ export async function runAccessAudit(db: SupabaseClient, deps: AuditDeps = {}) {
   const { data: run } = await db.from('access_audit_runs').insert({ product_id: productId, window_from: from, window_to: to, events: ev.length }).select('id').single();
   const runId = (run as { id: string } | null)?.id;
   if (!ev.length) {
-    if (runId && reasonUnreadable) await db.from('access_audit_runs').update({ error: 'reason_unreadable' }).eq('id', runId);
+    if (runId && reasonUnreadable) await db.from('access_audit_runs').update({ error: await sealRunError('reason_unreadable') }).eq('id', runId);
     return { runId, events: 0, flagged: 0, modelCalled: false, findings: 0 };
   }
 
@@ -83,7 +84,7 @@ export async function runAccessAudit(db: SupabaseClient, deps: AuditDeps = {}) {
   });
   if (summaryTooLong) error = error && !error.includes('summary_too_long') ? `${error.slice(0, 80)},summary_too_long` : (error ?? 'summary_too_long');
   if (rows.length && runId) await db.from('access_audit_findings').insert(rows);
-  if (runId) await db.from('access_audit_runs').update({ flagged: flagged.length, model_called: modelCalled, findings: rows.length, error }).eq('id', runId);
+  if (runId) await db.from('access_audit_runs').update({ flagged: flagged.length, model_called: modelCalled, findings: rows.length, error: await sealRunError(error) }).eq('id', runId);
   const serious = rows.filter((r) => r.severity !== 'low');
   const alertRows = serious.filter((r) => !String(r.summary).startsWith('enc:')).slice(0, 5);
   if (serious.length && deps.alert) await deps.alert(`🛡️ ביקורת גישה לילית: ${serious.length} ממצאים (${rows.filter((r) => r.severity === 'high').length} חמורים).\n${alertRows.map((r) => `• [${r.severity}] ${r.summary}`).join('\n')}\nפירוט: Ops ← אבטחה.`);

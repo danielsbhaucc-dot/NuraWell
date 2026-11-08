@@ -101,8 +101,12 @@ describe('pii access grant reason', () => {
     await runAccessAudit(auditDb as never, { model, now: night + 3600_000 });
     expect(model).not.toHaveBeenCalled();
     const update = auditDb.calls.find((c) => c.table === 'access_audit_runs' && c.op === 'update');
-    expect(update?.args[0]).toMatchObject({ error: 'reason_unreadable' });
+    const sealedErr = (update?.args[0] as { error: string }).error;
+    expect(sealedErr).toMatch(/^enc:v2:/);
+    expect(sealedErr).not.toContain('reason_unreadable');
     expect(JSON.stringify(update)).not.toContain(REASON);
+    expect(await decryptValue('access_audit_runs', 'error', 'system:audit', SYSTEM_ROW, sealedErr)).toBe('reason_unreadable');
+    await expect(decryptValue('access_audit_runs', 'error', 'system:ops', SYSTEM_ROW, sealedErr)).rejects.toThrow();
   });
 
   it('converts leftover plaintext in a closed batch and leaves ciphertext alone', async () => {
@@ -164,7 +168,10 @@ describe('access audit summary length', () => {
     expect(JSON.stringify(db.calls)).not.toContain(over);
     expect(JSON.stringify(db.calls)).not.toContain('ב'.repeat(400));
     const update = db.calls.find((c) => c.table === 'access_audit_runs' && c.op === 'update')?.args[0] as { error: string; findings: number };
-    expect(update).toMatchObject({ findings: 1, error: 'summary_too_long' });
+    expect(update.findings).toBe(1);
+    expect(update.error).toMatch(/^enc:v2:/);
+    expect(update.error).not.toContain('summary_too_long');
+    expect(await decryptValue('access_audit_runs', 'error', 'system:audit', SYSTEM_ROW, update.error)).toBe('summary_too_long');
 
     const store: Row[] = [];
     const fn = withFieldDecryption(fakeRest(store));
