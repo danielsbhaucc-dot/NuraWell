@@ -1,4 +1,5 @@
 import { randomBytes } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/lib/privacy/health-consent', async (orig) => ({
@@ -71,9 +72,33 @@ describe('sealProfilePatch writes enc:v2', () => {
     expect((await read({ height_cm: 170 })).height_cm).toBe(170);
   });
 
+  it('seals a birth date and still reads an older plain ISO value', async () => {
+    const out = await sealProfilePatch({ date_of_birth: '1990-05-04', birth_date: '1981-02-03' }, U);
+    expect(String(out.date_of_birth)).toMatch(/^enc:v2:/);
+    expect(String(out.birth_date)).toMatch(/^enc:v2:/);
+    expect(String(out.date_of_birth)).not.toContain('1990-05-04');
+    const back = await read(out);
+    expect(back.date_of_birth).toBe('1990-05-04');
+    expect(back.birth_date).toBe('1981-02-03');
+    expect((await read({ date_of_birth: '1990-05-04' })).date_of_birth).toBe('1990-05-04');
+    expect((await read({ date_of_birth: out.date_of_birth }, U2)).date_of_birth).toBeNull();
+  });
+
   it('a value bound to one user does not open for another', async () => {
     const out = await sealProfilePatch({ main_obstacle_detail: 'secret' }, U);
     const back = await read({ main_obstacle_detail: out.main_obstacle_detail }, U2);
     expect(back.main_obstacle_detail).toBeNull();
+  });
+});
+
+describe('birth date migration keeps existing values', () => {
+  it('converts DATE to text without deleting rows', () => {
+    const sql = readFileSync(new URL('../../../supabase/migrations/000233_profile_birth_dates_text.sql', import.meta.url), 'utf8');
+    expect(sql).toMatch(/alter column date_of_birth type text using to_char\(date_of_birth, 'YYYY-MM-DD'\)/);
+    expect(sql).toMatch(/alter column birth_date type text using to_char\(birth_date, 'YYYY-MM-DD'\)/);
+    const statements = sql.split('\n').filter((line) => !line.trim().startsWith('--')).join('\n').toLowerCase();
+    expect(statements).not.toMatch(/\bdelete\b|\bdrop column\b|\btruncate\b/);
+    const action = readFileSync(new URL('../lib/actions/complete-onboarding.ts', import.meta.url), 'utf8');
+    expect(action).not.toMatch(/console\.(log|info|warn|error)\([^)]*date_of_birth/);
   });
 });
