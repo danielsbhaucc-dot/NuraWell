@@ -145,7 +145,7 @@ describe('parent identity protocol (local fixture, not a helper mock)', () => {
     const claims = await verifyAccessToken((await created.res.json() as { access_token: string }).access_token, fx.jwks);
     expect(provisionRefusal({ sub: claims!.sub, lic: claims!.lic, email: claims!.email, email_verified: true })).toBeNull();
     expect(entitlementAllowsProvision('active')).toBe(true);
-    expect(allowProductProvision('all', { product: 'nurawell', sub: claims!.sub, lic: claims!.lic, email: 'a@x.co', exp: now + 600 }, 'a@x.co')).toBe('ok');
+    expect(allowProductProvision('all', { product: 'nurawell', sub: claims!.sub, lic: claims!.lic, email: 'a@x.co', exp: now + 600, nonce: 'n'.repeat(32), verified: true }, 'a@x.co')).toBe('ok');
     expect(matchUser([], { sub: claims!.sub, lic: claims!.lic, email: claims!.email, email_verified: true }, 'all')).toEqual({ refuse: 'no_account' });
 
     const unverified = await exchange('unverified');

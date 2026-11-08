@@ -1,3 +1,4 @@
+import { createHmac } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
@@ -10,7 +11,7 @@ import {
 } from '@/lib/central/parent-provision';
 
 const secret = 's'.repeat(32);
-const proof = { product: 'nurawell' as const, sub: 'sub_A', lic: 'lic_comp_nw_1111', email: 'a@x.co', exp: 2_000_000_000 };
+const proof = { product: 'nurawell' as const, sub: 'sub_A', lic: 'lic_comp_nw_1111', email: 'a@x.co', exp: 2_000_000_000, nonce: 'n'.repeat(32), verified: true as const };
 
 describe('product provisioning gate', () => {
   it('refuses unverified email and a missing license before any account exists', () => {
@@ -39,6 +40,11 @@ describe('product provisioning gate', () => {
     expect(unpackProvision(`${packed!.slice(0, -2)}aa`, secret, proof.exp - 10)).toBeNull();
     expect(unpackProvision(packed!, 'x'.repeat(32), proof.exp - 10)).toBeNull();
     expect(packProvision({ ...proof, product: 'elsewhere' as 'nurawell' }, secret)).toBeNull();
+    expect(packProvision({ ...proof, verified: false as true }, secret)).toBeNull();
+    expect(packProvision({ ...proof, nonce: 'short' }, secret)).toBeNull();
+    const emailOnly = Buffer.from(JSON.stringify({ product: 'nurawell', sub: proof.sub, lic: proof.lic, email: proof.email, exp: proof.exp, nonce: proof.nonce })).toString('base64url');
+    const mac = createHmac('sha256', secret).update(emailOnly).digest('base64url');
+    expect(unpackProvision(`${emailOnly}.${mac}`, secret, proof.exp - 10)).toBeNull();
     const foreign = Buffer.from(JSON.stringify({ sub: proof.sub, lic: proof.lic, email: proof.email, exp: proof.exp })).toString('base64url');
     expect(unpackProvision(foreign, secret, proof.exp - 10)).toBeNull();
   });
@@ -63,6 +69,14 @@ describe('product provisioning gate', () => {
     expect(form).toMatch(/unpackProvision/);
     expect(form).toMatch(/intent=signup/);
     expect(action.indexOf('allowProductProvision')).toBeLessThan(action.indexOf('createUser'));
+    expect(action.indexOf("PROVISION_COOKIE, ''")).toBeLessThan(action.indexOf('createUser'));
+    expect(action.indexOf('email_exists')).toBeLessThan(action.indexOf('updateUserById'));
+    expect(action).toMatch(/recorded !== 'recorded'/);
+    expect(action).toMatch(/signOut\(\{ scope: 'local' \}\)/);
+    const callback = readFileSync('app/api/v1/central/callback/route.ts', 'utf8');
+    expect(callback.indexOf('entitlementAllowsProvision')).toBeLessThan(callback.indexOf('packProvision'));
+    expect(callback).toMatch(/provisionOutcome\(claims, redirect\.tx\.nonce\)/);
+    expect(callback).toMatch(/verified: true/);
     expect(action).toMatch(/email_confirm: parentVerified/);
     expect(action.indexOf('if (!parentVerified)')).toBeLessThan(action.indexOf('auth.resend'));
     expect(action).toMatch(/updateUserById\(created\.user\.id, \{ email_confirm: true \}\)/);

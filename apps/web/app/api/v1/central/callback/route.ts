@@ -105,7 +105,7 @@ const listUsers = async (): Promise<NwUser[]> => {
 };
 
 type SigninTx = Tx & { nonce: string; intent?: 'login' | 'signup' };
-type ProvisionBody = { product: 'nurawell'; sub: string; lic: string; email: string };
+type ProvisionBody = { product: 'nurawell'; sub: string; lic: string; email: string; nonce: string; verified: true };
 type SigninOutcome = string | { kind: 'provision'; provision: ProvisionBody } | { kind: 'session'; sessionId: string; userId: string; parentSub: string };
 
 /** Validate the sign-in redirect (cookie, state, error, code). */
@@ -128,12 +128,12 @@ const signinClaims = async (tx: SigninTx, code: string): Promise<Claims | string
 };
 
 /** New product account: verified parent email plus an active license. No parent user is created. */
-const provisionOutcome = async (claims: { sub: string; lic: string; email?: string; email_verified?: boolean }): Promise<SigninOutcome> => {
+const provisionOutcome = async (claims: { sub: string; lic: string; email?: string; email_verified?: boolean }, nonce: string): Promise<SigninOutcome> => {
   const refusal = provisionRefusal(claims);
   if (refusal) return refusal;
   const reason = await licenseReasonFor(claims.lic);
   if (!entitlementAllowsProvision(reason)) return 'no_license';
-  return { kind: 'provision', provision: { product: 'nurawell', sub: claims.sub, lic: claims.lic, email: String(claims.email) } };
+  return { kind: 'provision', provision: { product: 'nurawell', sub: claims.sub, lic: claims.lic, email: String(claims.email), nonce, verified: true } };
 };
 
 /** R20 sign-in branch: verify (incl. nonce + verified email), find the NuraWell account, mint a NuraWell session. */
@@ -146,7 +146,7 @@ const signIn = async (request: NextRequest): Promise<SigninOutcome> => {
   const claims = await signinClaims(redirect.tx, redirect.code);
   if (typeof claims === 'string') return claims;
   const match = matchUser(await listUsers(), claims, mode);
-  if ('refuse' in match) return match.refuse === 'no_account' && redirect.tx.intent === 'signup' ? provisionOutcome(claims) : match.refuse;
+  if ('refuse' in match) return match.refuse === 'no_account' && redirect.tx.intent === 'signup' ? provisionOutcome(claims, redirect.tx.nonce) : match.refuse;
   if (!(await saveLicense(match.user.id, claims))) return 'save';
   const session = await issueSessionForUser(createAdminClient(), match.user.id);
   console.info('[platform-signin]', { why: session.ok ? 'signed_in' : session.error, by: match.by });

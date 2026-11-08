@@ -239,6 +239,9 @@ export async function completeOnboarding(
   if (provision === 'email') return { ok: false, error: 'האימייל צריך להיות האימייל המאומת מהחשבון המרכזי' };
   // Only the signed parent proof for this exact email confirms the new account. Off mode still sends the product letter.
   const parentVerified = provision === 'ok' && proof !== null;
+  if (parentVerified) {
+    (await cookies()).set(PROVISION_COOKIE, '', { httpOnly: true, secure: true, sameSite: 'lax', path: '/', maxAge: 0 });
+  }
   const { data: created, error: createError } = await admin.auth.admin.createUser({
     email: data.email,
     password: data.password,
