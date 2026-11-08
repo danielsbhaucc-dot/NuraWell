@@ -47,9 +47,8 @@ function supabaseErrorPayload(
     ? 'הטבלה journey_task_executions לא קיימת ב-DB. הריצו את המיגרציה 000023_journey_task_executions.sql ב-Supabase Studio.'
     : (error.hint ?? undefined);
   return {
-    error: error.message ?? 'Failed to save execution',
+    error: error.message?.split(/Failing row contains/i)[0].trim() || 'Failed to save execution',
     code: error.code ?? null,
-    details: error.details ?? null,
     hint: baseHint,
   };
 }
@@ -133,13 +132,7 @@ export async function POST(request: Request) {
       .then(decTableResult('journey_task_executions', user.id));
 
     if (error) {
-      console.error('task-executions POST error:', {
-        code: (error as { code?: string }).code,
-        message: error.message,
-        details: (error as { details?: string }).details,
-        hint: (error as { hint?: string }).hint,
-        row,
-      });
+      console.error('task-executions POST error:', (error as { code?: string }).code ?? '');
       return NextResponse.json(supabaseErrorPayload(error), { status: 500 });
     }
 

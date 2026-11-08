@@ -64,6 +64,8 @@ export const ENCRYPTED_TABLES = {
     birth_date: 'text',
     activity_level: 'text',
     weakest_time_of_day: 'text',
+    date_of_birth: 'text',
+    birth_date: 'text',
   } },
   ai_interactions: { userCol: 'user_id', rowCol: 'id', guardCols: [], columns: {
     content: 'text',
