@@ -220,6 +220,7 @@ enforce media_receipts subject text
 enforce iam_grants reason text
 pending iam_audit_log detail json refs:iam_audit_row_ok
 pending iam_audit_log target text refs:iam_audit_row_ok
+pending pii_access_grants reason text
 gap access_audit_findings signals any
 gap access_audit_findings summary any
 gap access_audit_runs error any
@@ -234,7 +235,6 @@ gap ops_device_enrollments label any
 gap ops_device_enrollments location any
 gap ops_probe_daily country any
 gap pii_access_grants country any
-gap pii_access_grants reason any
 gap pii_access_grants ticket_ref any
 gap pii_access_log country any
 gap pii_access_log resource any

@@ -18,11 +18,14 @@ import { decryptValue, encryptValue, isV2 } from '@/lib/security/field-crypto';
 import { BLIND_INDEX_COLUMNS, BLIND_INDEX_SOURCES, blindIndexPatch } from '@/lib/security/blind-index';
 import { FUZZY_THRESHOLD, matchesAnyWord, receiptSearchText } from '@/lib/module-api/legal/lib-legal-media-receipts-core';
 import { fuzzyReceipts, searchReceiptIds } from '@/lib/module-api/legal/lib-legal-media-receipts';
-import { SYSTEM_ROW, APPEND_ONLY_TABLES, encryptedTable, FIELD_V2_TABLES, isBlocked, keyColumns, ownerOf, rowKeyOf } from '@/lib/security/field-registry';
+import { SYSTEM_ROW, APPEND_ONLY_TABLES, encryptedTable, FIELD_V2_LOCAL_BACKFILL_ONLY, FIELD_V2_TABLES, isBlocked, keyColumns, ownerOf, rowKeyOf } from '@/lib/security/field-registry';
 
 /** staged rollout list (defined in field-registry so the write path can read it without a cycle) */
 // append-only evidence tables reject UPDATE by design: only rows written after go-live are encrypted (see APPEND_ONLY_TABLES)
-export const FIELD_V2_BACKFILL_TABLES: readonly string[] = FIELD_V2_TABLES.filter((t) => !(t in APPEND_ONLY_TABLES));
+// FIELD_V2_LOCAL_BACKFILL_ONLY stays off this list so the hosted cron does not rewrite those rows.
+export const FIELD_V2_BACKFILL_TABLES: readonly string[] = FIELD_V2_TABLES.filter(
+  (t) => !(t in APPEND_ONLY_TABLES) && !FIELD_V2_LOCAL_BACKFILL_ONLY.includes(t),
+);
 
 const CAS_MAX = 2000;
 
