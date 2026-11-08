@@ -35,16 +35,7 @@ export const PENDING_COLUMN_INVENTORY: readonly PendingFinding[] = [
     verdict: 'פער_תוכן',
     write: 'audit-job.ts מכניס את מערך האותות ב-insert גלוי',
     read: 'AccessAuditFindings.tsx בוחר signals לתצוגה',
-    next: 'הניסוח "מחוץ לענף" ישן: 000200 כבר בקוד. לא מצפינים לבד; אחרי summary, במפתח מערכת audit, בלי אינדקס.',
-  },
-  {
-    table: 'access_audit_findings',
-    column: 'summary',
-    sensitivity: 'טקסט חופשי של ממצא ביקורת',
-    verdict: 'פער_תוכן',
-    write: 'audit-job.ts כותב summary מהמודל או מאותות, עד 400 תווים',
-    read: 'AccessAuditFindings.tsx בוחר summary',
-    next: 'pii_access_grants.reason כבר רשום. הסיכום הוא התוכן הבא, באותו מפתח מערכת, אחרי שהקורא מפענח.',
+    next: 'summary כבר רשום. האותות נשארים מערך תצוגה. לא מצפינים אותם באותו שינוי.',
   },
   {
     table: 'access_audit_runs',
@@ -193,4 +184,4 @@ export const PENDING_COLUMN_INVENTORY: readonly PendingFinding[] = [
 ];
 
 export const NEXT_ENCRYPTION_STEP =
-  'השלב הבא הוא access_audit_findings.summary: אותו מפתח מערכת audit, פענוח לפני התצוגה, על נתוני דמה. לא מצפינים מזהי שוויון ולא את ops_probe_daily.country.';
+  'השלב נעצר ב-access_audit_findings.summary. אין המשך אוטומטי לעמודות שוויון בלי אינדקס עיוור.';
