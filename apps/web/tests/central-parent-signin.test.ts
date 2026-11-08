@@ -45,8 +45,10 @@ describe('R20 parent sign-in', () => {
     expect(cb).toMatch(/timingSafeEqualStr\(claims\.nonce, tx\.nonce\)/);
     expect(cb).toMatch(/stateMatches\(tx, String\(params\.get\('state'\)\)\)/);
     expect(cb).toMatch(/issueSessionForUser/);
-    expect(cb).toMatch(/signinFailurePath\(why, intent\)/);
-    expect(cb).not.toMatch(/createUser/); // no account ⇒ normal NuraWell registration (onboarding + consent unchanged)
+    expect(cb).toMatch(/signinFailurePath\(/);
+    expect(cb).toMatch(/packProvision/);
+    expect(cb).toMatch(/licenseReasonFor/);
+    expect(cb).not.toMatch(/createUser/); // product accounts are created only in onboarding, after a validated proof
   });
   it('every error code has neutral Hebrew text', () => {
     for (const why of ['state', 'nonce', 'no_account', 'linked_elsewhere', 'no_license', 'off', 'token']) expect(SIGNIN_ERRORS[errorFor(why)]).toMatch(/[א-ת]/);
@@ -54,10 +56,16 @@ describe('R20 parent sign-in', () => {
     expect(SIGNIN_ERRORS.parent_no_license).toBe(NO_LICENSE_COPY);
     expect(NO_LICENSE_COPY).toBe('עדיין אין לך מנוי ל-NuraWell');
   });
-  it('signup with no product account continues into onboarding; other failures stay on login', () => {
-    expect(signinFailurePath('no_account', 'signup')).toBe('/register/form');
-    expect(signinFailurePath('no_license', 'signup')).toBe('/login?e=parent_no_license');
+  it('signup reaches onboarding only with a validated proof; failures stay on login', () => {
+    expect(signinFailurePath('no_account', 'signup')).toBe('/login?e=parent_no_account');
+    expect(signinFailurePath('no_account', 'signup', true)).toBe('/register/form');
+    expect(signinFailurePath('no_license', 'signup', true)).toBe('/login?e=parent_no_license');
     expect(signinFailurePath('no_account', 'login')).toBe('/login?e=parent_no_account');
+  });
+  it('does not map an existing account from an unverified email', () => {
+    const users = [mkUser('1', 'a@x.co', {}, true)];
+    expect(matchUser(users, { ...claims, email_verified: undefined }, 'all')).toEqual({ refuse: 'unverified' });
+    expect(matchUser([mkUser('1', 'a@x.co', {}, false)], claims, 'all')).toEqual({ refuse: 'no_account' });
   });
   it('the product login has no second central button; the existing actions start parent auth when armed', () => {
     const login = readFileSync('app/(auth)/login/page.tsx', 'utf8');

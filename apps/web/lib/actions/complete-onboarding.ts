@@ -3,7 +3,7 @@ import { sealProfilePatch } from '@/lib/crypto/pii-seal';
 import { buildSafetyScreening } from '@/lib/module-api/auth-signup/lib-onboarding-safety-screening';
 
 import { z } from 'zod';
-import { headers } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { consumeRateLimit } from '@/lib/api/rate-limit';
 import {
   checkPasswordPolicy,
@@ -35,6 +35,8 @@ import {
 import { clearChallengeGateCookie } from '@/lib/module-api/journey/lib-challenge-gate-cookie';
 import { recordRetentionChoice } from '@/lib/module-api/privacy-retention/lib-privacy-subscription-retention';
 import { recordConsentEvidence, validateSubmission } from '@/lib/module-api/legal/lib-legal-record-evidence';
+import { allowProductProvision, PROVISION_COOKIE, unpackProvision } from '@/lib/central/parent-provision';
+import { centralAuthOn, signinMode } from '@/lib/central/parent-signin';
 
 const timeRegex = /^([01]\d|2[0-3]):[0-5]\d$/;
 
@@ -225,6 +227,13 @@ export async function completeOnboarding(
   // signups are disabled in Supabase Auth). The confirmation email/OTP is then
   // sent by Supabase via `resend` (works with disable_signup=true).
   const admin = createAdminClient();
+  const mode = await signinMode();
+  const proof = centralAuthOn(mode)
+    ? unpackProvision((await cookies()).get(PROVISION_COOKIE)?.value, process.env.PLATFORM_ID_CLIENT_SECRET ?? '')
+    : null;
+  const provision = allowProductProvision(mode, proof, data.email);
+  if (provision === 'missing') return { ok: false, error: 'צריך להזדהות בחשבון המרכזי עם מנוי פעיל לפני ההרשמה' };
+  if (provision === 'email') return { ok: false, error: 'האימייל צריך להיות האימייל המאומת מהחשבון המרכזי' };
   const { data: created, error: createError } = await admin.auth.admin.createUser({
     email: data.email,
     password: data.password,
@@ -233,6 +242,7 @@ export async function completeOnboarding(
     user_metadata: {
       username: data.email.split('@')[0],
     },
+    app_metadata: proof ? { pl_sub: proof.sub, pl_lic: proof.lic } : undefined,
   });
 
   if (createError || !created?.user) {
@@ -261,6 +271,9 @@ export async function completeOnboarding(
   const userId = signUpData.user?.id;
   if (!userId) {
     return { ok: false, error: 'לא הצלחנו ליצור משתמש. נסו שוב.' };
+  }
+  if (proof) {
+    (await cookies()).set(PROVISION_COOKIE, '', { httpOnly: true, secure: true, sameSite: 'lax', path: '/', maxAge: 0 });
   }
 
   const mealCountRaw = formData.get('meal_count');

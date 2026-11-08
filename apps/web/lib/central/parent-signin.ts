@@ -71,6 +71,10 @@ const ERROR_KEYS: Record<string, string> = { no_account: 'parent_no_account', li
 /** Failure reason → /login?e= key (anything unknown ⇒ "unavailable"). */
 export const errorFor = (why: string): string => ERROR_KEYS[why] ?? 'parent_unavailable';
 
-/** Where a failed parent sign-in returns. A new signup with no product account continues into onboarding. */
-export const signinFailurePath = (why: string, intent: 'login' | 'signup' = 'login') =>
-  why === 'no_account' && intent === 'signup' ? '/register/form' : `/login?e=${errorFor(why)}`;
+/**
+ * Where a failed parent sign-in returns.
+ * Onboarding opens only when this browser already holds a validated parent proof (proofReady).
+ * Otherwise a direct visit cannot create a product account.
+ */
+export const signinFailurePath = (why: string, intent: 'login' | 'signup' = 'login', proofReady = false) =>
+  why === 'no_account' && intent === 'signup' && proofReady ? '/register/form' : `/login?e=${errorFor(why)}`;

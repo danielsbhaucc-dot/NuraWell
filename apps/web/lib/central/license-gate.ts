@@ -63,6 +63,17 @@ function getLink(env: Record<string, string | undefined>): Promise<ProductLink |
   return link;
 }
 
+/** Reason on the signed license status for this id. `no_status` when the status cannot be checked. Never throws. */
+export async function licenseReasonFor(lic: string, env: Record<string, string | undefined> = process.env): Promise<string> {
+  try {
+    const link = await getLink(env);
+    if (!link) return 'no_status';
+    return (await link.check('*', { lic })).reason;
+  } catch {
+    return 'no_status';
+  }
+}
+
 /** Runtime gate. Never throws; any failure ⇒ allow. */
 // skipcq: JS-0067 -- ES module export, not a global
 export async function licenseGate(user: GateUser, role: string | null | undefined, env: Record<string, string | undefined> = process.env): Promise<GateDecision> {

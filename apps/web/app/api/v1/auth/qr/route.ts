@@ -6,6 +6,8 @@ import { issueSessionForUser } from '@/lib/auth/issue-session';
 import { clientIp, readCookie } from '@/lib/auth/http';
 import { cookieOpts, pollRequest, STEPUP_REQ_COOKIE } from '@/lib/auth/stepup';
 import { startCrossDevice } from '@/lib/auth/stepup-http';
+import { localMethodAllowed } from '@/lib/central/parent-provision';
+import { signinMode } from '@/lib/central/parent-signin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -19,6 +21,9 @@ const body = z.discriminatedUnion('op', [z.object({ op: z.literal('start') }), z
  * Ops device approval still applies after sign-in (proxy).
  */
 export async function POST(request: Request) {
+  if (!localMethodAllowed(await signinMode())) {
+    return NextResponse.json({ error: 'parent_method_unsupported' }, { status: 403, headers: NO_STORE });
+  }
   const parsed = body.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: 'bad_request' }, { status: 400 });
   const b = parsed.data;

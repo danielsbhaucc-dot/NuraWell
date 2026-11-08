@@ -35,6 +35,11 @@ export function StepUpDialog({ open, purpose, reason, onClose, onVerified, varia
   const startQr = useCallback(async () => {
     setErr(null); setQr(null);
     const r = await post(variant === 'login' ? { op: 'start' } : { op: 'start', purpose });
+    if (r.status === 403) {
+      const denied = await r.json().catch(() => ({})) as { error?: string };
+      setErr(denied.error === 'parent_method_unsupported' ? 'השיטה הזו עדיין לא מחוברת לחשבון המרכזי.' : 'לא הצלחנו ליצור קוד. נסו שוב.');
+      return;
+    }
     if (r.status === 409) { setErr('כדי לאשר מהטלפון צריך קודם להוסיף בו מפתח גישה (Face ID) בהגדרות האבטחה.'); return; }
     if (!r.ok) { setErr('לא הצלחנו ליצור קוד. נסו שוב.'); return; }
     const d = (await r.json()) as { id: string; url: string; expires_at: string; match_code: string };

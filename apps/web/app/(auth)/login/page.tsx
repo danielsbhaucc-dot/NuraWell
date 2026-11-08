@@ -211,14 +211,14 @@ const LoginFormContent = () => { // skipcq: JS-R1005
   };
 
   const handlePasskey = async () => {
-    if (centralArmed && !isOpsHost) {
-      startCentralLogin();
-      return;
-    }
     setPasskeyBusy(true);
     try {
       const o = await fetch('/api/v1/auth/passkey', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ step: 'options' }) });
       const od = (await o.json().catch(() => ({}))) as { options?: unknown; error?: string };
+      if (od.error === 'parent_method_unsupported') {
+        toast.error('השיטה הזו לא זמינה', 'השיטה הזו עדיין לא מחוברת לחשבון המרכזי.');
+        return;
+      }
       if (!o.ok || !od.options) {
         toast.error('הכניסה לא הצליחה', od.error ?? 'אפשר לנסות שוב');
         return;
@@ -527,13 +527,7 @@ const LoginFormContent = () => { // skipcq: JS-R1005
               ) : null}
               <button
                 type="button"
-                onClick={() => {
-                  if (centralArmed && !isOpsHost) {
-                    startCentralLogin();
-                    return;
-                  }
-                  setQrOpen(true);
-                }}
+                onClick={() => setQrOpen(true)}
                 data-testid="login-qr"
                 aria-label="כניסה בסריקת קוד מהטלפון"
                 className={[
