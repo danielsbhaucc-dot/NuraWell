@@ -79,4 +79,53 @@ describe('billing_invoices.doc_url seal (no billing writer feature)', () => {
       psql(`delete from public.billing_invoices where id='${id}'`);
     }
   }, 60_000);
+
+  it('enforcement ON rejects plaintext doc_url in rolled-back LOCAL txn; prod flag stays off', () => {
+    const pre = psql(`select active::text from public.field_enc_enforcement where table_name='billing_invoices'`);
+    expect(pre).toBe('false');
+    const uid = psql(`select id::text from public.profiles limit 1`);
+    if (!uid) return;
+    const out = psql(`
+      begin;
+      update public.field_enc_enforcement set active = true where table_name = 'billing_invoices';
+      do $$
+      declare
+        uid uuid := '${uid}'::uuid;
+        rejected boolean := false;
+        err text := '';
+        sealed_ok boolean := false;
+      begin
+        begin
+          insert into public.billing_invoices (user_id, provider, doc_type, doc_number, doc_url, total_agorot, vat_agorot)
+            values (uid, 'test', 'invoice_receipt', 'ENC-REJECT-VITEST-1',
+                    'https://provider.example/invoice/proof.pdf?access_token=sekrit-token-value-xyz', 100, 17);
+        exception when others then
+          rejected := true;
+          err := sqlerrm;
+        end;
+        if not rejected then raise exception 'plaintext insert was NOT rejected'; end if;
+        if position('enc_reject_plaintext' in err) = 0 or position('doc_url' in err) = 0 then
+          raise exception 'unexpected reject message: %', err;
+        end if;
+        if position('sekrit-token-value-xyz' in err) > 0 then
+          raise exception 'reject message leaked plaintext token';
+        end if;
+        begin
+          insert into public.billing_invoices (user_id, provider, doc_type, doc_number, doc_url, total_agorot, vat_agorot)
+            values (uid, 'test', 'invoice_receipt', 'ENC-REJECT-VITEST-2',
+                    'enc:v2:deadbeefdeadbeefdeadbeefdeadbeef:aabb', 100, 17);
+          sealed_ok := true;
+        exception when others then
+          raise exception 'sealed insert rejected unexpectedly: %', sqlerrm;
+        end;
+        if not sealed_ok then raise exception 'sealed path failed'; end if;
+      end $$;
+      select 'rolled';
+      rollback;
+    `);
+    expect(out).toContain('rolled');
+    expect(psql(`select active::text from public.field_enc_enforcement where table_name='billing_invoices'`)).toBe('false');
+    expect(psql(`select count(*)::text from public.field_enc_enforcement where active=true`)).toBe('0');
+    expect(psql(`select count(*)::text from public.billing_invoices where doc_number like 'ENC-REJECT-VITEST-%'`)).toBe('0');
+  }, 30_000);
 });
