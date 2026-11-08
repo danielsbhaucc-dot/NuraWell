@@ -69,6 +69,9 @@ describe('accessibility preference reversal', () => {
     expect(css).toMatch(/html\.a11y-readable-font body \*/);
     expect(css).toMatch(/html\.a11y-letter-spacing body \*/);
     expect(css).toMatch(/html\.a11y-high-contrast \.onboarding-photo-bg/);
+    expect(css).toMatch(/html\.a11y-high-contrast \.onboarding-shell-dark::before/);
+    expect(css).toMatch(/html\.a11y-high-contrast \.onboarding-hero-card-photo/);
+    expect(css).toMatch(/html\.a11y-high-contrast \.onboarding-shell-dark \.input-field/);
     expect(css).toMatch(/html\.a11y-high-contrast #main-content :where\(h1/);
   });
 });

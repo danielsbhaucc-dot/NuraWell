@@ -69,6 +69,11 @@ describe('parent session proof (unit, not a live session)', () => {
     expect(readFileSync('lib/api/route-guards.ts', 'utf8')).toMatch(/refuseParentSession/);
     expect(readFileSync('app/(dashboard)/layout.tsx', 'utf8')).toMatch(/enforceParentSessionPage/);
     expect(readFileSync('app/challenge/layout.tsx', 'utf8')).toMatch(/enforceParentSessionPage/);
+    const proxy = readFileSync('proxy.ts', 'utf8');
+    const slide = proxy.slice(proxy.indexOf('async function slideParentSession'));
+    expect(slide).toMatch(/if \(!user\) return;/);
+    expect(slide).not.toMatch(/PLATFORM_SIGNIN_MODE/);
+    expect(slide).toMatch(/rememberParentSession/);
   });
 
   it('guards direct signup and leaves Almog copy behind the existing license decision', () => {

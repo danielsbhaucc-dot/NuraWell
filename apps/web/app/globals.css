@@ -7830,6 +7830,40 @@ html.a11y-high-contrast .onboarding-photo-overlay {
   visibility: hidden !important;
 }
 
+/* The photo sits on a fixed dark gradient and a dark card. Hiding the photo left black text on that gradient. */
+html.a11y-high-contrast .onboarding-shell-dark::before,
+html.a11y-high-contrast .onboarding-shell-light::before,
+html.a11y-high-contrast .onboarding-hero-card-photo,
+html.a11y-high-contrast .onboarding-bubble-dark {
+  background-color: var(--background) !important;
+  background-image: none !important;
+  color: var(--text-primary) !important;
+  border-color: var(--text-primary) !important;
+  box-shadow: none !important;
+}
+
+html.a11y-high-contrast .onboarding-shell-dark .input-field,
+html.a11y-high-contrast .onboarding-shell-light .input-field {
+  background-color: var(--background) !important;
+  color: var(--text-primary) !important;
+  -webkit-text-fill-color: var(--text-primary) !important;
+  border-color: var(--text-primary) !important;
+  box-shadow: none !important;
+}
+
+html.a11y-high-contrast .onboarding-shell-dark .input-field::placeholder,
+html.a11y-high-contrast .onboarding-shell-light .input-field::placeholder {
+  color: var(--text-primary) !important;
+  -webkit-text-fill-color: var(--text-primary) !important;
+}
+
+html.a11y-high-contrast .onboarding-shell-dark button,
+html.a11y-high-contrast .onboarding-shell-light button {
+  background-color: var(--background) !important;
+  background-image: none !important;
+  border-color: var(--text-primary) !important;
+}
+
 html.a11y-high-contrast #main-content {
   background-color: #f2f2f6 !important;
   color: #0a0a0a !important;

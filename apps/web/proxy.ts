@@ -606,7 +606,7 @@ async function slideParentSession(
   supabase: { auth: { getSession: () => Promise<{ data: { session: { access_token?: string } | null } }> } },
   user: { id: string; user_metadata?: Record<string, unknown> | null; app_metadata?: Record<string, unknown> | null } | null,
 ): Promise<void> {
-  if (!user || process.env.PLATFORM_SIGNIN_MODE !== 'on') return;
+  if (!user) return;
   const { rememberParentSession } = await import('@/lib/central/parent-data-plane');
   await rememberParentSession(request, target, supabase, user);
 }
