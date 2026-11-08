@@ -17,8 +17,8 @@ type Methods = { totp: boolean; backup_left: number; passkeys: number };
 export type StepUpVariant = 'ops' | 'user' | 'login';
 const APIS: Record<StepUpVariant, string> = { ops: '/api/v1/ops/stepup', user: '/api/v1/account/stepup', login: '/api/v1/auth/qr' };
 
-export function StepUpDialog({ open, purpose, reason, onClose, onVerified, variant = 'ops', eyebrow }: { open: boolean; purpose: string; reason: string; onClose: () => void; onVerified: () => void; variant?: StepUpVariant; eyebrow?: string }) {
-  const API = APIS[variant];
+export function StepUpDialog({ open, purpose, reason, onClose, onVerified, variant = 'ops', eyebrow, central = false }: { open: boolean; purpose: string; reason: string; onClose: () => void; onVerified: () => void; variant?: StepUpVariant; eyebrow?: string; central?: boolean }) {
+  const API = central ? '/api/v1/central/qr' : APIS[variant];
   const post = useCallback((b: unknown) => fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(b) }), [API]);
   const [m, setM] = useState<Methods | null>(null);
   const [mode, setMode] = useState<'qr' | 'totp' | 'backup'>('qr');
@@ -37,15 +37,31 @@ export function StepUpDialog({ open, purpose, reason, onClose, onVerified, varia
     const r = await post(variant === 'login' ? { op: 'start' } : { op: 'start', purpose });
     if (r.status === 403) {
       const denied = await r.json().catch(() => ({})) as { error?: string };
-      setErr(denied.error === 'parent_method_unsupported' ? 'השיטה הזו עדיין לא מחוברת לחשבון המרכזי.' : 'לא הצלחנו ליצור קוד. נסו שוב.');
+      const parentStop = denied.error === 'parent_method_unsupported' || denied.error === 'parent_not_migrated' || denied.error === 'parent_unsupported';
+      setErr(parentStop ? 'השיטה הזו עדיין לא מחוברת לחשבון המרכזי.' : 'לא הצלחנו ליצור קוד. נסו שוב.');
       return;
     }
     if (r.status === 409) { setErr('כדי לאשר מהטלפון צריך קודם להוסיף בו מפתח גישה (Face ID) בהגדרות האבטחה.'); return; }
     if (!r.ok) { setErr('לא הצלחנו ליצור קוד. נסו שוב.'); return; }
-    const d = (await r.json()) as { id: string; url: string; expires_at: string; match_code: string };
+    const d = (await r.json()) as { id?: string; t?: string; url: string; expires_at: string; match_code?: string };
     const QR = await import('qrcode');
     const svg = await QR.toString(d.url, { type: 'svg', margin: 1, errorCorrectionLevel: 'M', color: { dark: '#0b2a25', light: '#00000000' } });
-    setQr({ id: d.id, svg, expires: Date.parse(d.expires_at), match: d.match_code });
+    if (central) {
+      setQr({ id: d.t ?? '', svg, expires: Date.parse(d.expires_at), match: '' });
+      if (poll.current) clearInterval(poll.current);
+      poll.current = setInterval(async () => {
+        const p = await post({ op: 'poll', t: d.t }).then((x) => x.json()).catch(() => null) as { status?: string; code?: string; state?: string } | null;
+        if (p?.status === 'approved' && p.code && p.state) {
+          if (poll.current) clearInterval(poll.current);
+          window.location.assign(`/api/v1/central/callback?code=${encodeURIComponent(p.code)}&state=${encodeURIComponent(p.state)}`);
+        } else if (p?.status === 'denied' || p?.status === 'expired') {
+          if (poll.current) clearInterval(poll.current);
+          setErr(p.status === 'expired' ? 'הקוד פג.' : 'הבקשה בוטלה.');
+        }
+      }, 1500);
+      return;
+    }
+    setQr({ id: d.id ?? '', svg, expires: Date.parse(d.expires_at), match: d.match_code ?? '' });
     if (poll.current) clearInterval(poll.current);
     poll.current = setInterval(async () => {
       const p = await post({ op: 'poll', id: d.id }).then((x) => x.json()).catch(() => null) as { status?: string } | null;
@@ -53,7 +69,7 @@ export function StepUpDialog({ open, purpose, reason, onClose, onVerified, varia
       else if (p?.status === 'denied') { if (poll.current) clearInterval(poll.current); setErr('הבקשה בוטלה בטלפון.'); }
       else if (p?.status === 'expired') { if (poll.current) clearInterval(poll.current); }
     }, 1500);
-  }, [purpose, finish, post, variant]);
+  }, [purpose, finish, post, variant, central]);
 
   useEffect(() => {
     if (!open) { if (poll.current) clearInterval(poll.current); setDone(false); setCode(''); setErr(null); return; }

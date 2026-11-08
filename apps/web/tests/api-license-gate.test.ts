@@ -71,4 +71,10 @@ describe('API-layer parent-license gate (requireApiSession)', () => {
     expect(readFileSync('app/challenge/layout.tsx', 'utf8')).toMatch(/redirect\('\/license-required'\)/);
     expect(readFileSync('app/(dashboard)/layout.tsx', 'utf8')).toMatch(/redirect\('\/license-required'\)/);
   });
+
+  it('records the paths PR 457 does not close: onboarding action and Almog nudges stay off this gate', () => {
+    expect(readFileSync('lib/actions/complete-onboarding.ts', 'utf8')).not.toMatch(/licenseGate\(/);
+    expect(readFileSync('lib/workflows/send-journey-companion-nudge.ts', 'utf8')).not.toMatch(/licenseGate\(/);
+    expect(readFileSync('lib/api/authorize-cron.ts', 'utf8')).not.toMatch(/licenseGate\(/);
+  });
 });

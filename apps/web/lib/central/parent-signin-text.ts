@@ -9,4 +9,7 @@ export const SIGNIN_ERRORS: Record<string, string> = {
   parent_no_account: 'לא נמצא חשבון NuraWell עם האימייל הזה. אפשר להירשם כאן, ובפעם הבאה הכניסה תעבוד גם בחשבון המרכזי.',
   parent_linked: 'החשבון כבר מחובר לחשבון מרכזי אחר. אפשר להתחבר כאן עם אימייל וסיסמה.',
   parent_no_license: NO_LICENSE_COPY,
+  parent_unverified: 'האימייל בחשבון המרכזי עדיין לא אומת.',
+  parent_unsupported: 'השיטה הזו לא נתמכת בחשבון המרכזי.',
+  parent_not_migrated: 'השיטה הזו עדיין לא הופעלה בחשבון המרכזי.',
 };

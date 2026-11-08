@@ -51,8 +51,9 @@ describe('R20 parent sign-in', () => {
     expect(cb).not.toMatch(/createUser/); // product accounts are created only in onboarding, after a validated proof
   });
   it('every error code has neutral Hebrew text', () => {
-    for (const why of ['state', 'nonce', 'no_account', 'linked_elsewhere', 'no_license', 'off', 'token']) expect(SIGNIN_ERRORS[errorFor(why)]).toMatch(/[א-ת]/);
+    for (const why of ['state', 'nonce', 'no_account', 'linked_elsewhere', 'no_license', 'off', 'token', 'email_unverified', 'unsupported_mode', 'not_migrated']) expect(SIGNIN_ERRORS[errorFor(why)]).toMatch(/[א-ת]/);
     for (const text of Object.values(SIGNIN_ERRORS)) expect(text).not.toMatch(/תוכלו|תוכל |לכם|שלכם/);
+    for (const key of ['parent_unverified', 'parent_no_license', 'parent_unsupported', 'parent_not_migrated']) expect(SIGNIN_ERRORS[key]).not.toMatch(/סיסמה/);
     expect(SIGNIN_ERRORS.parent_no_license).toBe(NO_LICENSE_COPY);
     expect(NO_LICENSE_COPY).toBe('עדיין אין לך מנוי ל-NuraWell');
   });

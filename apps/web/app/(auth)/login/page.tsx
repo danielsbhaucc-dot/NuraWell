@@ -211,6 +211,10 @@ const LoginFormContent = () => { // skipcq: JS-R1005
   };
 
   const handlePasskey = async () => {
+    if (centralArmed && !isOpsHost) {
+      window.location.assign('/api/v1/central/signin?mode=passkey');
+      return;
+    }
     setPasskeyBusy(true);
     try {
       const o = await fetch('/api/v1/auth/passkey', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ step: 'options' }) });
@@ -538,7 +542,7 @@ const LoginFormContent = () => { // skipcq: JS-R1005
                 <QrCode className="w-5 h-5 max-[300px]:w-4.5 max-[300px]:h-4.5" aria-hidden />
                 <span className="text-balance leading-tight">סריקת קוד מהטלפון</span>
               </button>
-              <StepUpDialog open={qrOpen} variant="login" purpose="auth.login" reason="סורקים ומאשרים בטלפון" onClose={() => setQrOpen(false)}
+              <StepUpDialog open={qrOpen} variant="login" central={centralArmed && !isOpsHost} purpose="auth.login" reason="סורקים ומאשרים בטלפון" onClose={() => setQrOpen(false)}
                 onVerified={() => { setQrOpen(false); toast.success('התחברת בהצלחה!'); afterSignIn(); }} />
               {isOpsHost ? (
               <button

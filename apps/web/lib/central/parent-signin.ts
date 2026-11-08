@@ -67,7 +67,10 @@ export const matchUser = (users: NwUser[], claims: ParentClaims, mode: SigninMod
 
 export { NO_LICENSE_COPY, NO_LICENSE_LINK, SIGNIN_ERRORS } from './parent-signin-text';
 
-const ERROR_KEYS: Record<string, string> = { no_account: 'parent_no_account', linked_elsewhere: 'parent_linked', no_license: 'parent_no_license', access_denied: 'parent_no_license' };
+const ERROR_KEYS: Record<string, string> = {
+  no_account: 'parent_no_account', linked_elsewhere: 'parent_linked', no_license: 'parent_no_license', access_denied: 'parent_no_license',
+  email_unverified: 'parent_unverified', unsupported_mode: 'parent_unsupported', not_migrated: 'parent_not_migrated',
+};
 /** Failure reason → /login?e= key (anything unknown ⇒ "unavailable"). */
 export const errorFor = (why: string): string => ERROR_KEYS[why] ?? 'parent_unavailable';
 

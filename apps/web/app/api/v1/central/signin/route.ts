@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { authorizeUrl, packSigninTx, pkceChallenge, randomToken, SIGNIN_COOKIE } from '@/lib/central/parent-connect';
+import { authorizeUrl, packSigninTx, pkceChallenge, randomToken, SIGNIN_COOKIE, type AuthorizeMode } from '@/lib/central/parent-connect';
 import { centralAuthOn, signinMode } from '@/lib/central/parent-signin';
 
 export const runtime = 'nodejs';
@@ -17,9 +17,15 @@ export async function GET(request: Request) {
   const on = centralAuthOn(mode);
   if (url.searchParams.get('probe') === '1') return NextResponse.json({ on }, { headers: { 'cache-control': 'no-store' } });
   if (!on) return NextResponse.redirect(new URL('/login?e=parent_unavailable', request.url));
+  const rawMode = url.searchParams.get('mode');
+  const modeParam: AuthorizeMode | undefined = rawMode === 'passkey' || rawMode === 'qr' ? rawMode : undefined;
+  if (rawMode && !modeParam) return NextResponse.redirect(new URL('/login?e=parent_unsupported', request.url));
   const intent = url.searchParams.get('intent') === 'signup' ? 'signup' : 'login';
   const state = randomToken(32), verifier = randomToken(48), nonce = randomToken(24);
-  const res = NextResponse.redirect(authorizeUrl(state, await pkceChallenge(verifier), nonce));
+  const res = NextResponse.redirect(authorizeUrl(state, await pkceChallenge(verifier), nonce, {
+    mode: modeParam,
+    screen: intent === 'signup' ? 'signup' : undefined,
+  }));
   res.cookies.set(SIGNIN_COOKIE, packSigninTx(state, verifier, nonce, intent), { httpOnly: true, secure: true, sameSite: 'lax', path: '/api/v1/central', maxAge: 600 });
   res.headers.set('cache-control', 'no-store');
   return res;

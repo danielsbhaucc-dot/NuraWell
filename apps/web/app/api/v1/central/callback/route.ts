@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { timingSafeEqualStr } from '@/lib/api/timing-safe-equal';
-import { CLIENT_ID, ISSUER, REDIRECT_URI, SIGNIN_COOKIE, TX_COOKIE, unpackSigninTx, unpackTx, verifyAccessToken, type Claims } from '@/lib/central/parent-connect';
+import { CLIENT_ID, ISSUER, PARENT, REDIRECT_URI, SIGNIN_COOKIE, TX_COOKIE, tokenRequest, unpackSigninTx, unpackTx, verifyAccessToken, type Claims } from '@/lib/central/parent-connect';
 import { licenseReasonFor } from '@/lib/central/license-gate';
 import { entitlementAllowsProvision, packProvision, PROVISION_COOKIE, provisionRefusal } from '@/lib/central/parent-provision';
 import { matchUser, signinFailurePath, signinMode, type NwUser } from '@/lib/central/parent-signin';
@@ -39,14 +39,15 @@ const readRedirect = (request: NextRequest): { tx: Tx; code: string } | { why: s
 /** Server config for the exchange, or null when incomplete. */
 const readConfig = (): { central: string; secret: string } | null => {
   const secret = process.env.PLATFORM_ID_CLIENT_SECRET ?? '';
-  const central = (process.env.CENTRAL_SUPABASE_URL ?? '').replace(/\/$/, '');
-  return secret.length >= 32 && central.startsWith('https://') ? { central, secret } : null;
+  // Contract host is the parent origin. The hub service-role key is not an identity credential.
+  return secret.length >= 32 ? { central: PARENT, secret } : null;
 };
 
 const fetchAccessToken = async (central: string, secret: string, tx: Tx, code: string): Promise<string | null> => {
-  const res = await fetch(`${central}/functions/v1/identity/token`, {
+  const token = tokenRequest(central, { code, verifier: tx.verifier, secret });
+  const res = await fetch(token.url, {
     method: 'POST', headers: { 'content-type': 'application/json' }, signal: AbortSignal.timeout(8000),
-    body: JSON.stringify({ grant_type: 'authorization_code', code, redirect_uri: REDIRECT_URI, code_verifier: tx.verifier, client_id: CLIENT_ID, client_secret: secret }),
+    body: JSON.stringify(token.body),
   });
   if (!res.ok) { console.warn('[platform-connect]', { why: 'token', status: res.status }); return null; }
   const tok = await res.json() as { access_token?: unknown };
@@ -54,7 +55,7 @@ const fetchAccessToken = async (central: string, secret: string, tx: Tx, code: s
 };
 
 const fetchJwks = async (central: string): Promise<{ keys: JsonWebKey[] } | null> => {
-  const res = await fetch(`${central}/functions/v1/identity/jwks`, { signal: AbortSignal.timeout(5000) });
+  const res = await fetch(`${central}/id/jwks`, { signal: AbortSignal.timeout(5000) });
   return res.ok ? await res.json() as { keys: JsonWebKey[] } : null;
 };
 
