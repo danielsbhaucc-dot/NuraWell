@@ -9,7 +9,7 @@ import { sealSessionTrailFor } from '@/lib/security/session-trail-seal';
  * immediately exchanged on this request, which writes the usual httpOnly session cookies.
  * The token never reaches the browser. Ops device approval still applies afterwards.
  */
-export async function issueSessionForUser(admin: SupabaseClient, userId: string): Promise<{ ok: true } | { ok: false; error: string }> {
+export async function issueSessionForUser(admin: SupabaseClient, userId: string): Promise<{ ok: true; sessionId: string | null } | { ok: false; error: string }> {
   const { data: u, error } = await admin.auth.admin.getUserById(userId);
   const user = u?.user;
   if (error || !user?.email) return { ok: false, error: 'no_user' };
@@ -26,5 +26,16 @@ export async function issueSessionForUser(admin: SupabaseClient, userId: string)
     return { ok: false, error: 'verify' };
   }
   await sealSessionTrailFor(userId);
-  return { ok: true };
+  return { ok: true, sessionId: sessionIdFromAccessToken(v.session?.access_token) };
+}
+
+function sessionIdFromAccessToken(accessToken: string | undefined): string | null {
+  const part = accessToken?.split('.')[1];
+  if (!part) return null;
+  try {
+    const payload = JSON.parse(Buffer.from(part, 'base64url').toString()) as { session_id?: unknown };
+    return typeof payload.session_id === 'string' && payload.session_id.length > 0 ? payload.session_id : null;
+  } catch {
+    return null;
+  }
 }

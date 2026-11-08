@@ -1,6 +1,6 @@
 /**
- * Full local protocol against a contract fixture. Not a mock of the product helpers.
- * The fixture speaks only the endpoints named in the parent contract. It is not the live parent.
+ * Local HTTP fixture for the parent contract. It does not call Supabase, mail, or the live parent.
+ * Database RPCs and mail are absent here; they are not stubbed as if they ran.
  */
 import { createServer } from 'node:http';
 import { describe, expect, it, beforeAll, afterAll } from 'vitest';
@@ -16,7 +16,8 @@ const b64u = (b: Uint8Array | string) => Buffer.from(b).toString('base64url');
 const now = Math.floor(Date.now() / 1000);
 
 type CodeRow = { state: string; nonce: string; challenge: string; used: boolean; kind: string };
-type QrRow = { state: string; exp: number; approved: boolean; code: string };
+type QrRow = { state: string; exp: number; approved: boolean; code: string; t: string };
+const paths: string[] = [];
 
 const listen = async () => {
   const codes = new Map<string, CodeRow>();
@@ -32,6 +33,7 @@ const listen = async () => {
   };
   const server = createServer(async (req, res) => {
     const url = new URL(req.url ?? '/', 'http://fixture.local');
+    paths.push(url.pathname);
     const raw = await new Promise<string>((resolve) => {
       const chunks: Buffer[] = [];
       req.on('data', (c) => chunks.push(c as Buffer));
@@ -50,14 +52,19 @@ const listen = async () => {
       const state = url.searchParams.get('state') ?? '';
       const nonce = url.searchParams.get('nonce') ?? '';
       if (state.length < 16 || nonce.length < 16) return send(400, { error: 'state' });
+      const signedIn = (req.headers.cookie ?? '').includes('id_sess=1');
+      if (!signedIn) {
+        const page = mode === 'passkey' ? '/account/passkey/' : mode === 'qr' ? '/account/qr/' : url.searchParams.get('screen') === 'signup' ? '/account/signup/' : '/account/signin/';
+        return send(302, {}, `${page}?r=pending`);
+      }
       const code = `c${codes.size}livecodevalue1`;
       codes.set(code, { state, nonce, challenge: url.searchParams.get('code_challenge') ?? '', used: false, kind });
-      return send(302, { code }, `${REDIRECT_URI}?code=${code}&state=${state}`);
+      return send(302, {}, `${REDIRECT_URI}?code=${code}&state=${state}`);
     }
     if (url.pathname === '/id/token' && req.method === 'POST') {
       if (body.client_secret !== SECRET || body.client_id !== CLIENT_ID || body.redirect_uri !== REDIRECT_URI) return send(401, { error: 'token' });
       const row = codes.get(String(body.code));
-      if (!row || row.used) return send(400, { error: 'replay' });
+      if (!row || row.used) return send(400, { error: 'invalid_grant' });
       if (row.state !== GOOD_STATE) return send(400, { error: 'state' });
       const digest = b64u(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(String(body.code_verifier)))));
       if (digest !== row.challenge) return send(400, { error: 'pkce' });
@@ -73,13 +80,17 @@ const listen = async () => {
     if (url.pathname === '/id/ceremony' && req.method === 'POST') {
       if (body.mode !== 'qr' || body.client_secret !== SECRET) return send(400, { error: body.mode === 'password' ? 'unsupported_mode' : 'ceremony' });
       const t = `opaque${qrs.size}tokenvalue1`;
-      qrs.set(t, { state: String(body.state), exp: Date.now() + 120_000, approved: kind === 'approved', code: 'approvedcodevalue1' });
-      return send(200, { url: `http://fixture.local/account/approve/?t=${t}`, expires_at: new Date(Date.now() + 120_000).toISOString() });
+      const pollToken = `polltok${qrs.size}${'p'.repeat(12)}`;
+      qrs.set(pollToken, { state: String(body.state), exp: Date.now() + 120_000, approved: kind === 'approved', code: 'approvedcodevalue1', t });
+      const approve = `http://fixture.local/account/approve/?t=${t}`;
+      if (kind === 'qr-nested') return send(200, { qr: { url: approve, expires_in: 120 }, poll_token: pollToken });
+      return send(200, { url: approve, expires_at: new Date(Date.now() + 120_000).toISOString(), poll_token: pollToken });
     }
     if (url.pathname === '/id/ceremony/poll' && req.method === 'POST') {
-      if (body.client_secret !== SECRET) return send(401, { error: 'token' });
-      const row = qrs.get(String(body.t));
-      if (!row || row.state !== body.state) return send(400, { error: 'state' });
+      if (body.t && !body.poll_token) return send(401, { error: 'token' });
+      if (body.client_secret !== SECRET || typeof body.poll_token !== 'string') return send(401, { error: 'token' });
+      const row = qrs.get(String(body.poll_token));
+      if (!row || row.state !== body.state) return send(401, { error: 'token' });
       if (Date.now() > row.exp) return send(200, { status: 'expired' });
       return send(200, row.approved ? { status: 'approved', code: row.code } : { status: 'pending' });
     }
@@ -88,7 +99,7 @@ const listen = async () => {
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
   const address = server.address();
   if (!address || typeof address === 'string') throw new Error('no port');
-  return { server, origin: `http://127.0.0.1:${address.port}`, jwks: { keys: [{ ...pub, kid: 'id1' }] }, setKind: (value: string) => { kind = value; }, qrs };
+  return { server, origin: `http://127.0.0.1:${address.port}`, jwks: { keys: [{ ...pub, kid: 'id1' }] }, setKind: (value: string) => { kind = value; }, qrs, paths };
 };
 
 describe('parent identity protocol (local fixture, not a helper mock)', () => {
@@ -102,7 +113,11 @@ describe('parent identity protocol (local fixture, not a helper mock)', () => {
     const nonce = 'n'.repeat(32);
     const url = authorizeUrl(state, await pkceChallenge(verifier), nonce, { origin: fx.origin, mode: kind === 'passkey' ? 'passkey' : undefined, screen: kind === 'new' ? 'signup' : undefined });
     expect(new URL(url).pathname).toBe('/id/authorize');
-    const started = await fetch(url, { redirect: 'manual' });
+    const cold = await fetch(url, { redirect: 'manual' });
+    expect(cold.status).toBe(302);
+    expect(cold.headers.get('location') ?? '').toMatch(/\/account\//);
+    expect(cold.headers.get('location') ?? '').not.toMatch(/code=/);
+    const started = await fetch(url, { redirect: 'manual', headers: { cookie: 'id_sess=1' } });
     const location = new URL(started.headers.get('location') ?? '', REDIRECT_URI);
     const code = location.searchParams.get('code') ?? '';
     const token = tokenRequest(fx.origin, { code, verifier, secret: SECRET });
@@ -120,7 +135,7 @@ describe('parent identity protocol (local fixture, not a helper mock)', () => {
     expect(matchUser(users, { sub: claims!.sub, lic: claims!.lic, email: claims!.email, email_verified: claims!.email_verified }, 'all')).toMatchObject({ user: { id: '1' }, by: 'sub' });
     const replay = await fetch(first.token.url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(first.token.body) });
     expect(replay.status).toBe(400);
-    expect((await replay.json() as { error: string }).error).toBe('replay');
+    expect((await replay.json() as { error: string }).error).toBe('invalid_grant');
     const badState = await exchange('existing', 'z'.repeat(32));
     expect(badState.res.status).toBe(400);
   });
@@ -151,13 +166,22 @@ describe('parent identity protocol (local fixture, not a helper mock)', () => {
     if (!started.ok) return;
     expect(started.value.url).toMatch(/\/account\/approve\/\?t=[A-Za-z0-9_-]+$/);
     expect(started.value.url).not.toMatch(/@|email/i);
-    const pending = await pollParentQr({ origin: fx.origin, secret: SECRET, state, t: started.value.t, fetchImpl: fetch });
+    const pending = await pollParentQr({ origin: fx.origin, secret: SECRET, state, pollToken: started.value.pollToken, fetchImpl: fetch });
+    if (!pending.ok) throw new Error(JSON.stringify(pending));
     expect(pending.ok && pending.value.status).toBe('pending');
-    const wrong = await pollParentQr({ origin: fx.origin, secret: SECRET, state: 'z'.repeat(43), t: started.value.t, fetchImpl: fetch });
+    const wrong = await pollParentQr({ origin: fx.origin, secret: SECRET, state: 'z'.repeat(43), pollToken: started.value.pollToken, fetchImpl: fetch });
     expect(wrong.ok).toBe(false);
-    fx.qrs.get(started.value.t)!.exp = Date.now() - 1000;
-    const expired = await pollParentQr({ origin: fx.origin, secret: SECRET, state, t: started.value.t, fetchImpl: fetch });
+    const visibleT = new URL(started.value.url).searchParams.get('t') ?? '';
+    const bare = await fetch(`${fx.origin}/id/ceremony/poll`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ t: visibleT }) });
+    expect(bare.status).toBe(401);
+    fx.qrs.get(started.value.pollToken)!.exp = Date.now() - 1000;
+    const expired = await pollParentQr({ origin: fx.origin, secret: SECRET, state, pollToken: started.value.pollToken, fetchImpl: fetch });
     expect(expired.ok && expired.value.status).toBe('expired');
+    fx.setKind('qr-nested');
+    const nested = await startParentQr({ origin: fx.origin, secret: SECRET, state, nonce: 'n'.repeat(32), challenge: await pkceChallenge('v'.repeat(64)), fetchImpl: fetch });
+    expect(nested.ok).toBe(true);
+    expect(readFileSync('app/api/v1/central/qr/route.ts', 'utf8')).not.toMatch(/poll_token/);
+    expect(fx.paths.some((path) => /mail|auth\/v1|rpc/.test(path))).toBe(false);
   });
 
   it('does not put the hub service key on the identity path', () => {

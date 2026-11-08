@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { PARENT, packSigninTx, pkceChallenge, randomToken, SIGNIN_COOKIE, unpackSigninTx } from '@/lib/central/parent-connect';
 import { pollParentQr, startParentQr } from '@/lib/central/parent-ceremony';
+import { QR_POLL_COOKIE } from '@/lib/central/parent-session';
 import { centralAuthOn, errorFor, signinMode } from '@/lib/central/parent-signin';
 
 export const runtime = 'nodejs';
@@ -20,14 +21,16 @@ export async function POST(request: NextRequest) {
     const nonce = randomToken(24);
     const started = await startParentQr({ origin: PARENT, secret: productSecret(), state, nonce, challenge: await pkceChallenge(verifier) });
     if (!started.ok) return NextResponse.json({ error: shown(started.error) }, { status: 403, headers: noStore });
-    const res = NextResponse.json({ url: started.value.url, t: started.value.t, expires_at: started.value.expiresAt }, { headers: noStore });
+    const res = NextResponse.json({ url: started.value.url, expires_at: started.value.expiresAt }, { headers: noStore });
     res.cookies.set(SIGNIN_COOKIE, packSigninTx(state, verifier, nonce), { httpOnly: true, secure: true, sameSite: 'lax', path: '/api/v1/central', maxAge: 600 });
+    res.cookies.set(QR_POLL_COOKIE, started.value.pollToken, { httpOnly: true, secure: true, sameSite: 'lax', path: '/api/v1/central', maxAge: 120 });
     return res;
   }
-  if (body?.op === 'poll' && typeof body.t === 'string') {
+  if (body?.op === 'poll') {
     const tx = unpackSigninTx(request.cookies.get(SIGNIN_COOKIE)?.value);
-    if (!tx) return NextResponse.json({ status: 'denied' }, { headers: noStore });
-    const polled = await pollParentQr({ origin: PARENT, secret: productSecret(), state: tx.state, t: body.t });
+    const pollToken = request.cookies.get(QR_POLL_COOKIE)?.value ?? '';
+    if (!tx || !pollToken) return NextResponse.json({ status: 'denied' }, { headers: noStore });
+    const polled = await pollParentQr({ origin: PARENT, secret: productSecret(), state: tx.state, pollToken });
     if (!polled.ok) return NextResponse.json({ error: shown(polled.error), status: 'denied' }, { status: 403, headers: noStore });
     if (polled.value.status !== 'approved' || !polled.value.code) return NextResponse.json({ status: polled.value.status }, { headers: noStore });
     return NextResponse.json({ status: 'approved', code: polled.value.code, state: tx.state }, { headers: noStore });

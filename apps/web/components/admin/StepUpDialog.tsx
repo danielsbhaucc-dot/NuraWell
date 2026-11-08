@@ -47,10 +47,10 @@ export function StepUpDialog({ open, purpose, reason, onClose, onVerified, varia
     const QR = await import('qrcode');
     const svg = await QR.toString(d.url, { type: 'svg', margin: 1, errorCorrectionLevel: 'M', color: { dark: '#0b2a25', light: '#00000000' } });
     if (central) {
-      setQr({ id: d.t ?? '', svg, expires: Date.parse(d.expires_at), match: '' });
+      setQr({ id: 'parent', svg, expires: Date.parse(d.expires_at), match: '' });
       if (poll.current) clearInterval(poll.current);
       poll.current = setInterval(async () => {
-        const p = await post({ op: 'poll', t: d.t }).then((x) => x.json()).catch(() => null) as { status?: string; code?: string; state?: string } | null;
+        const p = await post({ op: 'poll' }).then((x) => x.json()).catch(() => null) as { status?: string; code?: string; state?: string } | null;
         if (p?.status === 'approved' && p.code && p.state) {
           if (poll.current) clearInterval(poll.current);
           window.location.assign(`/api/v1/central/callback?code=${encodeURIComponent(p.code)}&state=${encodeURIComponent(p.state)}`);

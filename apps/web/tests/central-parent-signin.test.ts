@@ -42,7 +42,7 @@ describe('R20 parent sign-in', () => {
   });
   it('callback checks nonce and state, mints only a NuraWell session, errors go back to /login', () => {
     const cb = readFileSync('app/api/v1/central/callback/route.ts', 'utf8');
-    expect(cb).toMatch(/timingSafeEqualStr\(claims\.nonce, tx\.nonce\)/);
+    expect(cb).toMatch(/boundNonceOk\(claims\.nonce, tx\.nonce\)/);
     expect(cb).toMatch(/stateMatches\(tx, String\(params\.get\('state'\)\)\)/);
     expect(cb).toMatch(/issueSessionForUser/);
     expect(cb).toMatch(/signinFailurePath\(/);

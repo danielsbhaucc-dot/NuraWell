@@ -6,6 +6,8 @@ import { createAdminClient } from '@/lib/supabase/admin';
  * The parent proves identity + license only; the NuraWell session, onboarding and data stay NuraWell's own.
  * Fail-closed (unreadable settings ⇒ off). Off keeps the existing product password login.
  * Test or all: the product's own login and signup start this flow. There is no second button.
+ * Do not enable until a restorable platform-central backup exists, migration 000039 is applied,
+ * and the parent mail sender is a no-reply address. This file does not turn those on.
  */
 export type SigninMode = 'off' | 'test' | 'all';
 const TTL_MS = 30_000;
