@@ -15,15 +15,6 @@ type SessionOk = { ok: true } & AuthenticatedApiResult;
  * אימות אחיד ל-route handlers: עוגיות SSR או `Authorization: Bearer`.
  * מאפשר אפליקציית מובייל / סקריפטים בלי לשבור את הדפדפן.
  */
-// skipcq: JS-0067 -- ES module export (route guard used by every user API route), not a global
-export async function requireApiSession(request: Request): Promise<SessionOk | GuardFail> {
-  const session = await resolveApiSession(request);
-  if (!session.ok) return session;
-  const refused = await licenseRefusal(request, session.user);
-  if (refused) return { ok: false, response: refused };
-  return session;
-}
-
 /** Session only (no license check). Admin routes use this: admins are never license-blocked. */
 const resolveApiSession = async (request: Request): Promise<SessionOk | GuardFail> => {
   const { supabase, user, authError } = await createSupabaseForApiRoute(request);
@@ -64,6 +55,7 @@ const LICENSE_REQUIRED = () => NextResponse.json({ error: 'license_required' }, 
  * layout: armed only by env PLATFORM_LICENSE_MODE=enforce AND the DB kill switch; admins never blocked; fail-open
  * on parent outage. Without this, an unlicensed account blocked from the pages could still call product APIs directly.
  */
+// skipcq: JS-R1005 -- three guard clauses + try/catch fail-open; splitting further hurts readability
 const licenseRefusal = async (request: Request, user: User): Promise<NextResponse | null> => {
   const path = process.env.PLATFORM_LICENSE_MODE === 'enforce' ? pathOf(request) : null;
   if (path === null || licenseExemptPath(path)) return null;
@@ -75,6 +67,15 @@ const licenseRefusal = async (request: Request, user: User): Promise<NextRespons
     return null; // same fail-open policy as licenseGate itself
   }
 };
+
+// skipcq: JS-0067 -- ES module export (route guard used by every user API route), not a global
+export async function requireApiSession(request: Request): Promise<SessionOk | GuardFail> {
+  const session = await resolveApiSession(request);
+  if (!session.ok) return session;
+  const refused = await licenseRefusal(request, session.user);
+  if (refused) return { ok: false, response: refused };
+  return session;
+}
 
 export async function requireApiAdmin(request: Request, opts: { skipDeviceGate?: boolean } = {}): Promise<SessionOk | GuardFail> {
   // The recovery route stays reachable from a blocked IP (it still needs admin + step-up + a recovery code),
