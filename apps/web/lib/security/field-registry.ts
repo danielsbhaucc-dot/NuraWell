@@ -287,7 +287,8 @@ export const ENCRYPTED_TABLES = {
   ceo_owner_tasks: { system: 'ops', userCol: '', rowCol: 'id', guardCols: [], columns: { detail: 'text', title: 'text' } },
   demo_access_links: { system: 'ops', userCol: '', rowCol: 'id', columns: { guest_name: 'text', reason: 'text' } },
   gideon_outbox: { system: 'ops', userCol: '', rowCol: 'id', guardCols: [], columns: { buttons: 'json', chat_id: 'text', reason: 'text', text: 'text' } },
-  gideon_telegram_identities: { system: 'ops', userCol: '', rowCol: 'from_id', guardCols: [], columns: { reason: 'text' } },
+  gideon_telegram_identities: { system: 'ops', userCol: '', rowCol: 'id', guardCols: [], columns: { from_id: 'text', reason: 'text' } },
+  gideon_stranger_sim: { system: 'ops', userCol: '', rowCol: 'id', guardCols: [], columns: { chat_id: 'text' } },
   gideon_settings: { system: 'ops', userCol: '', rowCol: 'id', columns: { recipients: 'json' } },
   notify_style_rules: { system: 'ops', userCol: '', rowCol: 'id', columns: { avoid: 'text', prefer: 'text' } },
   ops_admin_notifications: { system: 'ops', userCol: '', rowCol: 'id', guardCols: [], columns: { body: 'text', metadata: 'json', title: 'text' } },
@@ -347,7 +348,7 @@ export const FIELD_V2_TABLES: readonly string[] = [
   'task_logs', 'user_journey_step_unlocks', 'safety_events', 'enrollments',
   'ceo_audit_log', 'challenge_admin_audit_log', 'chat_transcript_admin_audit_log', 'delivery_log', 'error_events',
   'ceo_conversations', 'ceo_dev_forwards', 'ceo_owner_tasks', 'demo_access_links', 'gideon_outbox',
-  'gideon_telegram_identities', 'gideon_settings', 'notify_style_rules', 'ops_admin_notifications', 'ops_login_requests',
+  'gideon_telegram_identities', 'gideon_stranger_sim', 'gideon_settings', 'notify_style_rules', 'ops_admin_notifications', 'ops_login_requests',
   'ops_trusted_devices', 'ip_blocks', 'security_incidents', 'stepup_requests', 'tg_action_nonces', 'security_signals',
   'legal_export_secrets', 'consent_evidence', 'consent_evidence_attestations', 'legal_access_log', 'media_receipts',
   // 2026-10-26 enc-close: blind indexes / SQL readers moved (000208) + app-only writers
@@ -383,7 +384,7 @@ export const SWEEP_TABLES: Readonly<Record<string, { maxPlainMinutes: number; ts
  * this constant for sealing or triggers. After those PRs merge, apply supabase/gated/000211_iam_admin_enc_prep.sql,
  * move these into ENCRYPTED_TABLES + FIELD_V2_TABLES, and regenerate the enc-reject triggers.
  * iam_audit_log.detail/target and iam_grants.reason are live since 000222 (ENCRYPTED_TABLES).
- * pii_access_grants.*, access_audit_findings.summary/signals, access_audit_runs.error, ops_device_enrollments.label/location, pii_access_log.country/resource, parent_signup_claims.email, admin_passkeys.telegram_user_id, gideon_device_requests.chat_id are live in ENCRYPTED_TABLES.
+ * pii_access_grants.*, access_audit_findings.summary/signals, access_audit_runs.error, ops_device_enrollments.label/location, pii_access_log.country/resource, parent_signup_claims.email, admin_passkeys.telegram_user_id, gideon_device_requests.chat_id, gideon_stranger_sim.chat_id, gideon_telegram_identities.from_id are live in ENCRYPTED_TABLES.
  * Not listed (stays pending): ops_probe_daily.country (SQL probe counter upsert, 000198);
  * ops_enroll_blocks.reason is verified fixed-code only (single writer lib/ops/enrollment.ts upserts 'wrong_number').
  */
@@ -392,7 +393,7 @@ export const GATED_AFTER_IAM_MERGE: Readonly<Record<string, EncryptedTable>> = {
 };
 
 /** Registered for read/write sealing, but the hosted backfill cron must not rewrite rows. A local dummy script does. */
-export const FIELD_V2_LOCAL_BACKFILL_ONLY: readonly string[] = ['pii_access_grants', 'access_audit_findings', 'access_audit_runs', 'ops_device_enrollments', 'parent_signup_claims', 'admin_passkeys', 'gideon_device_requests'];
+export const FIELD_V2_LOCAL_BACKFILL_ONLY: readonly string[] = ['pii_access_grants', 'access_audit_findings', 'access_audit_runs', 'ops_device_enrollments', 'parent_signup_claims', 'admin_passkeys', 'gideon_device_requests', 'gideon_stranger_sim', 'gideon_telegram_identities'];
 
 /**
  * Append-only evidence tables (a trigger rejects UPDATE/DELETE): historical rows stay as written and only rows

@@ -71,6 +71,8 @@ export const BLIND_INDEX_SOURCES: Readonly<Record<string, readonly string[]>> = 
   parent_signup_claims: ['email'],
   admin_passkeys: ['telegram_user_id'],
   gideon_device_requests: ['chat_id'],
+  gideon_stranger_sim: ['chat_id'],
+  gideon_telegram_identities: ['from_id'],
 };
 
 /** Index columns per table (the backfill reads them to fill shared, owner-less rows once). */
@@ -86,6 +88,8 @@ export const BLIND_INDEX_COLUMNS: Readonly<Record<string, readonly string[]>> = 
   parent_signup_claims: ['email_bidx'],
   admin_passkeys: ['telegram_user_bidx'],
   gideon_device_requests: ['chat_bidx'],
+  gideon_stranger_sim: ['chat_bidx'],
+  gideon_telegram_identities: ['from_bidx'],
 };
 
 /** auth_session_trail ip index (global key: the investigation looks one IP up across users). */
@@ -153,6 +157,14 @@ export async function blindIndexPatch(table: string, row: Row): Promise<Row> {
     const t = str(row.chat_id);
     out.chat_bidx = t ? await hmac(table, 'chat_id', t) : null;
   }
+  if (table === 'gideon_stranger_sim' && 'chat_id' in row && !isV2(row.chat_id)) {
+    const t = str(row.chat_id);
+    out.chat_bidx = t ? await hmac(table, 'chat_id', t) : null;
+  }
+  if (table === 'gideon_telegram_identities' && 'from_id' in row && !isV2(row.from_id)) {
+    const t = str(row.from_id);
+    out.from_bidx = t ? await hmac(table, 'from_id', t) : null;
+  }
   if (table === 'parent_signup_claims' && 'email' in row && !isV2(row.email)) {
     const t = str(row.email);
     out.email_bidx = t ? await hmac(table, 'email', t) : null;
@@ -169,6 +181,8 @@ const BLIND_FILTERS: Readonly<Record<string, Readonly<Record<string, string>>>> 
   challenge_success_events: { title: 'title_bidx' },
   admin_audit_log: { ip: 'ip_bidx' },
   gideon_device_requests: { chat_id: 'chat_bidx' },
+  gideon_stranger_sim: { chat_id: 'chat_bidx' },
+  gideon_telegram_identities: { from_id: 'from_bidx' },
 };
 
 /**

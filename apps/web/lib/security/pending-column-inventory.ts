@@ -1,6 +1,6 @@
 /**
- * מיפוי 27 שורות שמכילות את המילה pending בקובץ הסיווג.
- * 19 מהן הן הסטטוס "pending (not encrypted yet)". שמונה האחרות אינן עמודות גלויות.
+ * מיפוי שורות שמכילות את המילה pending בקובץ הסיווג.
+ * 4 נשארו בסיווג pending (not encrypted yet) אחרי PK telegram. שמונה האחרות אינן עמודות גלויות.
  * זה חשד שמוין מול כתיבה וקריאה בקוד, לא אבחנת דליפה ולא רשימת הצפנה.
  * אין כאן נתוני אמת. אין שינוי סכמה.
  */
@@ -47,33 +47,6 @@ export const PENDING_COLUMN_INVENTORY: readonly PendingFinding[] = [
     next: 'לא מצפינים לפני עמודת fingerprint/אינדקס עיוור. stack ו-tags כבר רשומים.',
   },
   {
-    table: 'gideon_stranger_sim',
-    column: 'attempts',
-    sensitivity: 'מונה מסוג ניסיון וזמן, לא טקסט ההודעה',
-    verdict: 'צמוד_למפתח',
-    write: 'stranger-sim.ts מעדכן attempts כמערך {at, kind}',
-    read: 'אותו קובץ קורא attempts לפי chat_id',
-    next: 'לא מצפינים לבד. אם מחליפים את מפתח chat_id לאינדקס עיוור, חותמים את המונה באותו שינוי.',
-  },
-  {
-    table: 'gideon_stranger_sim',
-    column: 'chat_id',
-    sensitivity: 'מזהה שיחה ומפתח ראשי',
-    verdict: 'מפתח_שאילתה',
-    write: 'stranger-sim.ts upsert לפי chat_id',
-    read: 'eq chat_id וגם מחיקה לפי אותו מפתח',
-    next: 'לא מצפינים לפני עמודת אינדקס עיוור. המפתח הראשי חייב להישאר ניתן לשוויון.',
-  },
-  {
-    table: 'gideon_telegram_identities',
-    column: 'from_id',
-    sensitivity: 'מזהה שולח ומפתח שורה',
-    verdict: 'מפתח_שאילתה',
-    write: 'השורה נוצרת סביב from_id; reason שלצידו כבר רשום',
-    read: 'GideonTelegramIdentities.tsx בוחר from_id ומפעיל allow/block לפיו',
-    next: 'לא מצפינים לפני עמודת אינדקס עיוור. reason כבר במסלול ההצפנה ואינו חלק מהפער הזה.',
-  },
-  {
     table: 'ip_block_ranges',
     column: 'reason',
     sensitivity: 'קוד קצר, עד 80 תווים',
@@ -94,4 +67,4 @@ export const PENDING_COLUMN_INVENTORY: readonly PendingFinding[] = [
 ];
 
 export const NEXT_ENCRYPTION_STEP =
-  'Device telegram-id group sealed (admin_passkeys.telegram_user_id + gideon_device_requests.chat_id, 000253). Remaining PK query-keys: gideon_stranger_sim.chat_id + gideon_telegram_identities.from_id (attempts coupled). 7 classification-pending. Production approval still required.';
+  'PK telegram query-keys sealed locally (gideon_stranger_sim.chat_id + gideon_telegram_identities.from_id, UUID surrogate + bidx, 000255–000257). Remaining classification-pending: billing_invoices.doc_url, error_events.message, ip_block_ranges.reason, ops_probe_daily.country (4). Legacy append-only + held pending review; production approval still required. Not a full-PII finish.';
