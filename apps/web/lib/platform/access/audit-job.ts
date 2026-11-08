@@ -72,11 +72,16 @@ export async function runAccessAudit(db: SupabaseClient, deps: AuditDeps = {}) {
     if (error) out = flagged.map((f) => ({ ref: f.ref, severity: ruleSeverity(f), summary: `אותות: ${f.signals.join(', ')}` }));
   }
   const byRef = new Map(flagged.map((f) => [f.ref, f]));
-  const rows = out.filter((o) => byRef.has(o.ref) && ['low', 'medium', 'high'].includes(o.severity)).slice(0, 50).map((o) => {
+  let summaryTooLong = 0;
+  const rows = out.filter((o) => byRef.has(o.ref) && ['low', 'medium', 'high'].includes(o.severity)).slice(0, 50).flatMap((o) => {
+    const summary = String(o.summary ?? '');
+    // Postgres char_length counts Unicode code points. Over 400 is rejected, not cut.
+    if ([...summary].length > 400) { summaryTooLong += 1; return []; }
     const f = byRef.get(o.ref)!; const e = ev[Number(o.ref.slice(1)) - 1];
-    return { run_id: runId, product_id: productId, severity: o.severity, signals: f.signals, summary: String(o.summary ?? '').slice(0, 400), event_kind: f.kind,
-      event_at: e ? new Date(e.at).toISOString() : null, actor_id: e && /^[0-9a-f-]{36}$/.test(e.actorId) ? e.actorId : null };
+    return [{ run_id: runId, product_id: productId, severity: o.severity, signals: f.signals, summary, event_kind: f.kind,
+      event_at: e ? new Date(e.at).toISOString() : null, actor_id: e && /^[0-9a-f-]{36}$/.test(e.actorId) ? e.actorId : null }];
   });
+  if (summaryTooLong) error = error && !error.includes('summary_too_long') ? `${error.slice(0, 80)},summary_too_long` : (error ?? 'summary_too_long');
   if (rows.length && runId) await db.from('access_audit_findings').insert(rows);
   if (runId) await db.from('access_audit_runs').update({ flagged: flagged.length, model_called: modelCalled, findings: rows.length, error }).eq('id', runId);
   const serious = rows.filter((r) => r.severity !== 'low');
