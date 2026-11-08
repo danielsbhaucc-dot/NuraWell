@@ -18,7 +18,7 @@ describe('pending column inventory', () => {
   it('maps each sensitive pending column once and leaves the other pending words out', () => {
     const mapped = PENDING_COLUMN_INVENTORY.map((row) => `${row.table}.${row.column}`).sort();
     expect(mapped).toEqual(classifiedPending());
-    expect(mapped).toHaveLength(9);
+    expect(mapped).toHaveLength(7);
     expect(PENDING_WORD_NOT_A_PLAINTEXT_COLUMN).toHaveLength(8);
     // sealed content gaps must not linger as classification-pending
     expect(mapped).not.toContain('pii_access_log.country');
@@ -28,9 +28,7 @@ describe('pending column inventory', () => {
   it('does not treat query keys or the SQL probe counter as ready to encrypt', () => {
     const held = PENDING_COLUMN_INVENTORY.filter((row) => row.verdict === 'מפתח_שאילתה' || row.verdict === 'כותב_SQL' || row.verdict === 'צמוד_למפתח');
     expect(held.map((row) => `${row.table}.${row.column}`).sort()).toEqual([
-      'admin_passkeys.telegram_user_id',
       'error_events.message',
-      'gideon_device_requests.chat_id',
       'gideon_stranger_sim.attempts',
       'gideon_stranger_sim.chat_id',
       'gideon_telegram_identities.from_id',
@@ -39,8 +37,9 @@ describe('pending column inventory', () => {
     for (const row of held) expect(row.next).toMatch(/לא מצפינים/);
     expect(held.map((row) => `${row.table}.${row.column}`)).not.toContain('parent_signup_claims.email');
     expect(PENDING_COLUMN_INVENTORY.map((row) => `${row.table}.${row.column}`)).not.toContain('parent_signup_claims.email');
-    expect(NEXT_ENCRYPTION_STEP).toMatch(/parent_signup_claims\.email|bidx|Legacy|telegram/i);
-    expect(NEXT_ENCRYPTION_STEP).not.toMatch(/chat_id|from_id|telegram_user_id/);
+    expect(NEXT_ENCRYPTION_STEP).toMatch(/Device telegram-id|stranger_sim|telegram_identities/i);
+    expect(NEXT_ENCRYPTION_STEP).toMatch(/stranger_sim|telegram_identities/);
+    expect(NEXT_ENCRYPTION_STEP).not.toMatch(/blindly marked fixed|all telegram fixed/i);
   });
 
   it('keeps the IAM sealing list unused and stores no sample personal data', () => {

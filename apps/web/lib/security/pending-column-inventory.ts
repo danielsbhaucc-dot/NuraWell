@@ -29,15 +29,6 @@ export const PENDING_WORD_NOT_A_PLAINTEXT_COLUMN = [
 
 export const PENDING_COLUMN_INVENTORY: readonly PendingFinding[] = [
   {
-    table: 'admin_passkeys',
-    column: 'telegram_user_id',
-    sensitivity: 'מזהה חשבון טלגרם',
-    verdict: 'מפתח_שאילתה',
-    write: 'ceo/security.ts כותב telegram_user_id ביצירת מפתח',
-    read: 'אותו קובץ משווה בשוויון: eq credential ואז telegram_user_id !== tgUser',
-    next: 'לא מצפינים לפני עמודת אינדקס עיוור. הצפנה עכשיו שוברת את שיוך המכשיר.',
-  },
-  {
     table: 'billing_invoices',
     column: 'doc_url',
     sensitivity: 'כתובת מסמך; עלולה לשאת אסימון אם ספק ממלא אותה',
@@ -54,15 +45,6 @@ export const PENDING_COLUMN_INVENTORY: readonly PendingFinding[] = [
     write: 'report-error.ts שולח דרך fetch שחותם לפי field-registry (stack/tags רשומים; message עדיין מפתח קיבוץ ישן)',
     read: 'logging/load.ts ו-ceo/tools.ts בוחרים message; 000109 מקבץ לפי הטקסט',
     next: 'לא מצפינים לפני עמודת fingerprint/אינדקס עיוור. stack ו-tags כבר רשומים.',
-  },
-  {
-    table: 'gideon_device_requests',
-    column: 'chat_id',
-    sensitivity: 'מזהה שיחת טלגרם',
-    verdict: 'מפתח_שאילתה',
-    write: 'ceo/security.ts מכניס chat_id',
-    read: 'שוויון eq chat_id לחיפוש בקשה פתוחה, ובחירה לפי status',
-    next: 'לא מצפינים לפני עמודת אינדקס עיוור. זה מזהה שורה, לא תוכן.',
   },
   {
     table: 'gideon_stranger_sim',
@@ -112,4 +94,4 @@ export const PENDING_COLUMN_INVENTORY: readonly PendingFinding[] = [
 ];
 
 export const NEXT_ENCRYPTION_STEP =
-  'parent_signup_claims.email sealed+bidx (000251); local legacy backfill closed (legacy=0). Remaining query-key gaps: 4 telegram tables (not fixed). 9 classification-pending (not all need crypto). Production encryption approval still required.';
+  'Device telegram-id group sealed (admin_passkeys.telegram_user_id + gideon_device_requests.chat_id, 000253). Remaining PK query-keys: gideon_stranger_sim.chat_id + gideon_telegram_identities.from_id (attempts coupled). 7 classification-pending. Production approval still required.';

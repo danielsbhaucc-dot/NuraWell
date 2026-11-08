@@ -1,4 +1,5 @@
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
+import { sealTelegramId, telegramIdMatches } from '@/lib/ceo/telegram-id-seal';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { publicAppBaseNoSlashSync } from '@/lib/public-app-url';
 import { deviceSecretDigest, verifyInitData } from './miniapp';
@@ -175,9 +176,16 @@ export async function registerDevice(db: SupabaseClient, token: string, initData
   const secret = b64u(randomBytes(32));
   const deviceId = b64u(randomBytes(16));
   const now = new Date().toISOString();
+  let sealedTg: string;
+  let tgBidx: string;
+  try {
+    ({ sealed: sealedTg, bidx: tgBidx } = await sealTelegramId('admin_passkeys', 'telegram_user_id', tgUser));
+  } catch {
+    return { ok: false as const, error: 'הרישום נכשל.' };
+  }
   const { error } = await db.from('admin_passkeys').insert({
     user_id: r.user_id, credential_id: deviceId, public_key: deviceSecretDigest(secret), alg: 0, kind: 'tg_bio',
-    telegram_user_id: tgUser, label: label.slice(0, 60), activated_at: '9999-12-31T00:00:00Z', replaces_before: r.payload?.replace ? now : null,
+    telegram_user_id: sealedTg, telegram_user_bidx: tgBidx, label: label.slice(0, 60), activated_at: '9999-12-31T00:00:00Z', replaces_before: r.payload?.replace ? now : null,
   });
   if (error) {
     console.error('[ceo-device] register', error.message);
@@ -191,9 +199,9 @@ export async function registerDevice(db: SupabaseClient, token: string, initData
 export async function confirmDevice(db: SupabaseClient, initData: string, botToken: string | null, allowed: Set<string>, deviceId: string, secret: string) {
   const tgUser = checkTelegram(initData, botToken, allowed);
   if (!tgUser) return false;
-  const { data } = await db.from('admin_passkeys').select('id, public_key, telegram_user_id, replaces_before, created_at').eq('credential_id', deviceId).maybeSingle();
-  const k = data as { id: string; public_key: string; telegram_user_id: string; replaces_before: string | null; created_at: string } | null;
-  if (!k || k.telegram_user_id !== tgUser) return false;
+  const { data } = await db.from('admin_passkeys').select('id, public_key, telegram_user_id, telegram_user_bidx, replaces_before, created_at').eq('credential_id', deviceId).maybeSingle();
+  const k = data as { id: string; public_key: string; telegram_user_id: string; telegram_user_bidx: string | null; replaces_before: string | null; created_at: string } | null;
+  if (!k || !telegramIdMatches({ value: k.telegram_user_id, bidx: k.telegram_user_bidx }, tgUser, 'admin_passkeys', 'telegram_user_id')) return false;
   const a = Buffer.from(deviceSecretDigest(secret));
   const b = Buffer.from(k.public_key);
   if (a.length !== b.length || !timingSafeEqual(a, b)) return false;
@@ -229,10 +237,10 @@ export async function verifyStepup(db: SupabaseClient, token: string, body: Step
   try {
     const tgUser = checkTelegram(body.initData, botToken, allowed);
     if (!tgUser) throw new Error('bad initData / chat');
-    const { data: key } = await db.from('admin_passkeys').select('id, public_key, telegram_user_id, activated_at').eq('credential_id', body.deviceId).maybeSingle();
-    const k = key as { id: string; public_key: string; telegram_user_id: string | null; activated_at: string } | null;
+    const { data: key } = await db.from('admin_passkeys').select('id, public_key, telegram_user_id, telegram_user_bidx, activated_at').eq('credential_id', body.deviceId).maybeSingle();
+    const k = key as { id: string; public_key: string; telegram_user_id: string | null; telegram_user_bidx: string | null; activated_at: string } | null;
     if (!k || Date.parse(k.activated_at) > Date.now()) throw new Error('unknown device');
-    if (k.telegram_user_id && k.telegram_user_id !== tgUser) throw new Error('device of another chat');
+    if (k.telegram_user_id && !telegramIdMatches({ value: k.telegram_user_id, bidx: k.telegram_user_bidx }, tgUser, 'admin_passkeys', 'telegram_user_id')) throw new Error('device of another chat');
     const a = Buffer.from(deviceSecretDigest(body.secret));
     const b = Buffer.from(k.public_key);
     if (a.length !== b.length || !timingSafeEqual(a, b)) throw new Error('bad device secret');
@@ -269,20 +277,30 @@ export async function invalidateTrust(db: SupabaseClient, why: string) {
 
 /** Telegram asks for a (new) device → pending request in Ops. No link is sent until Daniel approves there. */
 export async function requestDevice(db: SupabaseClient, chatId: string, replace: boolean) {
-  const { data: open } = await db.from('gideon_device_requests').select('id').eq('status', 'pending').eq('chat_id', chatId).limit(1);
+  let sealed: string;
+  let bidx: string;
+  try {
+    ({ sealed, bidx } = await sealTelegramId('gideon_device_requests', 'chat_id', chatId));
+  } catch {
+    throw new Error('telegram_id_key_missing');
+  }
+  const { data: open } = await db.from('gideon_device_requests').select('id').eq('status', 'pending').eq('chat_bidx', bidx).limit(1);
   if (open?.length) return { id: (open[0] as { id: string }).id, existing: true };
-  const { data, error } = await db.from('gideon_device_requests').insert({ chat_id: chatId, replace }).select('id').single();
+  const { data, error } = await db.from('gideon_device_requests').insert({ chat_id: sealed, chat_bidx: bidx, replace }).select('id').single();
   if (error) throw new Error(error.message);
-  await audit(db, `tg:${chatId}`, 'device_requested', { replace });
+  await audit(db, 'tg:device', 'device_requested', { replace });
   return { id: (data as { id: string }).id, existing: false };
 }
 
 /** Ops approves → returns the one-time Mini App registration URL (to be sent to that chat as a web_app button). */
 export async function approveDeviceRequest(db: SupabaseClient, id: string, adminId: string) {
-  const { data } = await db.from('gideon_device_requests').update({ status: 'approved', decided_at: new Date().toISOString(), decided_by: adminId }).eq('id', id).eq('status', 'pending').select('chat_id, replace').maybeSingle();
-  const r = data as { chat_id: string; replace: boolean } | null;
+  const { data } = await db.from('gideon_device_requests').update({ status: 'approved', decided_at: new Date().toISOString(), decided_by: adminId }).eq('id', id).eq('status', 'pending').select('chat_id, chat_bidx, replace').maybeSingle();
+  const r = data as { chat_id: string; chat_bidx: string | null; replace: boolean } | null;
   if (!r) return null;
-  const url = await createStepupLink(db, 'register', { userId: adminId, payload: { replace: r.replace, telegramUserId: r.chat_id } });
+  // Authorized routing boundary: field-fetch decrypts enc:v2; sealed ciphertext must not be routed.
+  const chatId = r.chat_id;
+  if (!chatId || chatId.startsWith('enc:')) return null;
+  const url = await createStepupLink(db, 'register', { userId: adminId, payload: { replace: r.replace, telegramUserId: chatId } });
   await audit(db, `ops:${adminId}`, 'device_request_approved', { replace: r.replace });
-  return { chatId: r.chat_id, url, replace: r.replace };
+  return { chatId, url, replace: r.replace };
 }

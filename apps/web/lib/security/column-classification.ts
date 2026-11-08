@@ -46,7 +46,8 @@ export const COLUMN_CLASSIFICATION: Readonly<Record<string, Readonly<Record<stri
     kind: ["non_sensitive", "enum/status/routing code, no personal content"],
     label: ["non_sensitive", "enum/status/routing code, no personal content"],
     public_key: ["non_sensitive", "identifier/key or public credential material, no personal content"],
-    telegram_user_id: ["sensitive", "pending (not encrypted yet): lookup filter; needs a blind-index column"],
+    telegram_user_id: ["sensitive", "enc:v2 at rest (system:ops); ownership via keyed telegram_user_bidx / decrypt; credential_id remains lookup"],
+    telegram_user_bidx: ["non_sensitive", "keyed HMAC blind index of telegram user id, not reversible"],
   },
   admin_totp: {
     secret_enc: ["non_sensitive", "already ciphertext under its own envelope"],
@@ -438,7 +439,8 @@ export const COLUMN_CLASSIFICATION: Readonly<Record<string, Readonly<Record<stri
     source: ["non_sensitive", "enum/status/routing code, no personal content"],
   },
   gideon_device_requests: {
-    chat_id: ["sensitive", "pending (not encrypted yet): filtered on in app + SQL; needs a blind-index column"],
+    chat_id: ["sensitive", "enc:v2 at rest (system:ops); SQL equality via keyed chat_bidx; decrypt only at approve/send boundary"],
+    chat_bidx: ["non_sensitive", "keyed HMAC blind index of chat id, not reversible"],
     status: ["non_sensitive", "enum/status/routing code, no personal content"],
   },
   gideon_outbox: {
