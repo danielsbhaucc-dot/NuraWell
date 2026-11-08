@@ -1,6 +1,6 @@
 /**
  * מיפוי שורות שמכילות את המילה pending בקובץ הסיווג.
- * 4 נשארו בסיווג pending (not encrypted yet) אחרי PK telegram. שמונה האחרות אינן עמודות גלויות.
+ * 1 נשארה בסיווג pending (not encrypted yet) אחרי PK nonempty proof + triage. שמונה האחרות אינן עמודות גלויות.
  * זה חשד שמוין מול כתיבה וקריאה בקוד, לא אבחנת דליפה ולא רשימת הצפנה.
  * אין כאן נתוני אמת. אין שינוי סכמה.
  */
@@ -35,36 +35,9 @@ export const PENDING_COLUMN_INVENTORY: readonly PendingFinding[] = [
     verdict: 'לא_אומת',
     write: 'אין כתיבה בקוד או במיגרציה מלבד הגדרת העמודה ב-000188',
     read: 'אין קריאה בקוד האפליקציה. יש RLS לבחירה של בעל החשבון',
-    next: 'לא מצפינים עמודה בלי כותב. כשסנכרון הספק יגיע, חותמים את הכתובת ומשאירים doc_number גלוי.',
-  },
-  {
-    table: 'error_events',
-    column: 'message',
-    sensitivity: 'טקסט שגיאה תפעולי',
-    verdict: 'מפתח_שאילתה',
-    write: 'report-error.ts שולח דרך fetch שחותם לפי field-registry (stack/tags רשומים; message עדיין מפתח קיבוץ ישן)',
-    read: 'logging/load.ts ו-ceo/tools.ts בוחרים message; 000109 מקבץ לפי הטקסט',
-    next: 'לא מצפינים לפני עמודת fingerprint/אינדקס עיוור. stack ו-tags כבר רשומים.',
-  },
-  {
-    table: 'ip_block_ranges',
-    column: 'reason',
-    sensitivity: 'קוד קצר, עד 80 תווים',
-    verdict: 'קוד_קבוע',
-    write: 'security-core/ir.ts כותב את הליטרל manual',
-    read: 'אותו קובץ בוחר reason לרשימת חסימות פעילות',
-    next: 'אין טקסט אישי בקוד הנוכחי. אם ייכנס טקסט חופשי, חותמים כמו note של ip_blocks. לא חוסמים את cidr.',
-  },
-  {
-    table: 'ops_probe_daily',
-    column: 'country',
-    sensitivity: 'קוד מדינה בן שתי אותיות',
-    verdict: 'כותב_SQL',
-    write: 'פונקציית 000198 עושה upsert; המפתח הוא day+ip_hash',
-    read: 'audit-job.ts בוחר country למונה, בלי סינון SQL על המדינה',
-    next: 'לא מצפינים כל עוד ה-SQL כותב בלי מפתח. להעביר את הכתיבה לאפליקציה לפני חתימה.',
+    next: 'לא מצפינים עמודה בלי כותב. כשסנכרון הספק יגיע: לבדוק אם ה-URL נושא אסימון גישה; אם כן — לחתום / להפריד טוקן, לא לסווג כלא-רגיש רק כי השם doc_url.',
   },
 ];
 
 export const NEXT_ENCRYPTION_STEP =
-  'PK telegram query-keys sealed locally (gideon_stranger_sim.chat_id + gideon_telegram_identities.from_id, UUID surrogate + bidx, 000255–000257). Remaining classification-pending: billing_invoices.doc_url, error_events.message, ip_block_ranges.reason, ops_probe_daily.country (4). Legacy append-only + held pending review; production approval still required. Not a full-PII finish.';
+  'PK nonempty legacy upgrade proved on isolated DB (255–257 + backfill). Triage: error_events.message already registered/sealed; ip_block_ranges.reason fixed-code; ops_probe_daily.country ISO-2 aggregate (no crypto). Remaining classification-pending: billing_invoices.doc_url only (1) — hold for billing writer (URL may carry tokens). Legacy append-only separate gate; production approval still required. Not a full-PII finish.';

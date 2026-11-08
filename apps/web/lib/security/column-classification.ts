@@ -165,7 +165,7 @@ export const COLUMN_CLASSIFICATION: Readonly<Record<string, Readonly<Record<stri
   billing_invoices: {
     doc_number: ["non_sensitive", "invoice serial number, no personal content"],
     doc_type: ["non_sensitive", "enum/status/routing code, no personal content"],
-    doc_url: ["sensitive", "pending (not encrypted yet): table written outside this repo (billing provider sync)"],
+    doc_url: ["sensitive", "pending (not encrypted yet): no in-repo writer; provider sync may place URL with access token — hold until billing writer lands; do not seal by column name alone"],
     product_id: ["non_sensitive", "identifier/key or public credential material, no personal content"],
     provider: ["non_sensitive", "enum/status/routing code, no personal content"],
   },
@@ -422,7 +422,7 @@ export const COLUMN_CLASSIFICATION: Readonly<Record<string, Readonly<Record<stri
   },
   error_events: {
     environment: ["non_sensitive", "enum/status/routing code, no personal content"],
-    message: ["sensitive", "pending (not encrypted yet): SQL function 000109 groups/filters on message; needs a fingerprint column first"],
+    message: ["sensitive", "registered (system key: audit); sealed via report-error sealedFetch; scrubTelemetry before store; app fingerprint in logging/errors.ts (SQL 000109 left(message) sees ciphertext prefixes only)"],
     product_id: ["non_sensitive", "identifier/key or public credential material, no personal content"],
     route: ["non_sensitive", "app route path"],
     severity: ["non_sensitive", "enum/status/routing code, no personal content"],
@@ -531,7 +531,7 @@ export const COLUMN_CLASSIFICATION: Readonly<Record<string, Readonly<Record<stri
     product_id: ["non_sensitive", "staff-authored catalog/config content, not user data"],
   },
   ip_block_ranges: {
-    reason: ["sensitive", "pending (not encrypted yet): CHECK constraint + range admin SQL; can follow the ip_blocks pattern later"],
+    reason: ["non_sensitive", "fixed code only: security-core/ir.ts upserts literal 'manual'; free text would need seal like ip_blocks.note"],
   },
   ip_blocks: {
     ip_hash: ["non_sensitive", "hash/digest/signature, not reversible to content"],
@@ -829,7 +829,7 @@ export const COLUMN_CLASSIFICATION: Readonly<Record<string, Readonly<Record<stri
     status: ["non_sensitive", "enum/status/routing code, no personal content"],
   },
   ops_probe_daily: {
-    country: ["sensitive", "pending (not encrypted yet): table created/written outside this branch (prod schema drift: IAM/admin-access migrations 000191-000201); register after those land"],
+    country: ["non_sensitive", "ISO-3166-1 alpha-2 aggregate (left 2 chars) keyed by day+ip_hash; SQL upsert 000198; not a personal location field — crypto not required"],
     ip_hash: ["non_sensitive", "hash/digest/signature, not reversible to content"],
     product_id: ["non_sensitive", "identifier/key or public credential material, no personal content"],
   },
