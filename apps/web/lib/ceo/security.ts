@@ -294,13 +294,31 @@ export async function requestDevice(db: SupabaseClient, chatId: string, replace:
 
 /** Ops approves → returns the one-time Mini App registration URL (to be sent to that chat as a web_app button). */
 export async function approveDeviceRequest(db: SupabaseClient, id: string, adminId: string) {
-  const { data } = await db.from('gideon_device_requests').update({ status: 'approved', decided_at: new Date().toISOString(), decided_by: adminId }).eq('id', id).eq('status', 'pending').select('chat_id, chat_bidx, replace').maybeSingle();
-  const r = data as { chat_id: string; chat_bidx: string | null; replace: boolean } | null;
-  if (!r) return null;
-  // Authorized routing boundary: field-fetch decrypts enc:v2; sealed ciphertext must not be routed.
-  const chatId = r.chat_id;
-  if (!chatId || chatId.startsWith('enc:')) return null;
+  const { data: row } = await db.from('gideon_device_requests').select('chat_id, chat_bidx, replace, status').eq('id', id).eq('status', 'pending').maybeSingle();
+  const r = row as { chat_id: string; chat_bidx: string | null; replace: boolean; status: string } | null;
+  if (!r?.chat_id) return null;
+
+  // Authorized decrypt at send/routing boundary — before any state change.
+  let chatId = r.chat_id;
+  if (chatId.startsWith('enc:v2:')) {
+    try {
+      const { decryptValue } = await import('@/lib/security/field-crypto');
+      const { SYSTEM_ROW } = await import('@/lib/security/field-registry');
+      const plain = await decryptValue('gideon_device_requests', 'chat_id', 'system:ops', SYSTEM_ROW, chatId);
+      if (typeof plain !== 'string' || !plain || plain.startsWith('enc:')) return null;
+      chatId = plain;
+    } catch {
+      return null; // missing/wrong key — deny before effects
+    }
+  } else if (chatId.startsWith('enc:')) {
+    return null;
+  }
+
   const url = await createStepupLink(db, 'register', { userId: adminId, payload: { replace: r.replace, telegramUserId: chatId } });
+  const { data: done } = await db.from('gideon_device_requests').update({
+    status: 'approved', decided_at: new Date().toISOString(), decided_by: adminId,
+  }).eq('id', id).eq('status', 'pending').select('id').maybeSingle();
+  if (!done) return null; // lost race / already handled
   await audit(db, `ops:${adminId}`, 'device_request_approved', { replace: r.replace });
   return { chatId, url, replace: r.replace };
 }

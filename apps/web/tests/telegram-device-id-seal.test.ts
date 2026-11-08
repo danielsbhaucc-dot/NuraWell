@@ -46,27 +46,32 @@ describe('telegram device-id seal+bidx', () => {
     await expect(requestDevice(db as never, '12345', false)).rejects.toThrow(/telegram_id_key_missing/);
   });
 
-  it('approveDeviceRequest refuses ciphertext at send/routing boundary (mock transport)', async () => {
+  it('approveDeviceRequest denies undecryptable ciphertext before effects (mock)', async () => {
+    let updated = false;
     const db = {
       from: (table: string) => {
         if (table === 'ceo_audit_log') return { insert: async () => ({}) };
+        if (table === 'webauthn_challenges') return { insert: async () => ({ error: null }) };
         return {
-          update: () => ({
+          select: () => ({
             eq: () => ({
               eq: () => ({
-                select: () => ({
-                  maybeSingle: async () => ({
-                    data: { chat_id: 'enc:v2:CIPHERTEXT_ONLY', chat_bidx: 'x'.repeat(22), replace: false },
-                    error: null,
-                  }),
+                maybeSingle: async () => ({
+                  data: { chat_id: 'enc:v2:NOT_REAL_CIPHER', chat_bidx: 'x'.repeat(22), replace: false, status: 'pending' },
+                  error: null,
                 }),
               }),
             }),
           }),
+          update: () => {
+            updated = true;
+            return { eq: () => ({ eq: () => ({ select: () => ({ maybeSingle: async () => ({ data: { id: 'req-1' }, error: null }) }) }) }) };
+          },
         };
       },
     };
     const approved = await approveDeviceRequest(db as never, 'req-1', '00000000-0000-0000-0000-0000000000aa');
-    expect(approved).toBeNull(); // no chatId routed / no Telegram send
+    expect(approved).toBeNull();
+    expect(updated).toBe(false); // deny before status change
   });
 });
