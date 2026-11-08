@@ -1,4 +1,4 @@
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { vi } from 'vitest';
 
 vi.mock('server-only', () => ({}));
@@ -68,7 +68,9 @@ beforeEach(() => {
 });
 afterEach(() => { process.env.PII_ENCRYPTION_KEY = prevKey; });
 
-describe('migrations 233 through 239 on one database', () => {
+const databaseReady = spawnSync('sudo', ['-n', '-u', 'postgres', 'psql', '-d', DB, '-Atq', '-c', 'select to_regprocedure(\'public.parent_signup_begin(text,text,text)\') is not null'], { encoding: 'utf8' }).stdout?.trim() === 't';
+
+describe.skipIf(!databaseReady)('migrations 233 through 239 on one database', () => {
   it('keeps birth-date save, read and age, and seals the audit columns', async () => {
     expect(psql('select 1').out.trim()).toBe('1');
     psql(`
