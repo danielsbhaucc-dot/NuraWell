@@ -210,9 +210,10 @@ export async function recordParentSessionGrant(admin: unknown, input: {
   expiresAt: number;
 }): Promise<GrantWrite> {
   try {
-    const rpc = (admin as { rpc?: (name: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: GrantError }> }).rpc;
-    if (rpc) {
-      const { data, error } = await rpc('parent_session_issue', {
+    const client = admin as { rpc?: (name: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: GrantError }> };
+    if (typeof client.rpc === 'function') {
+      // Call on the client. A detached rpc loses `this.rest` and throws before the grant exists.
+      const { data, error } = await client.rpc('parent_session_issue', {
         p_user: input.userId, p_session: input.sessionId, p_parent_sub: input.parentSub,
       });
       if (error || data == null) return 'failed';

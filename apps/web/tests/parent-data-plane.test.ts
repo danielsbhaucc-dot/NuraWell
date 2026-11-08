@@ -86,11 +86,41 @@ describe('parent grant decisions', () => {
 
   it('a missing authorization function or table fails the parent sign-in', async () => {
     const input = { userId: '11111111-1111-1111-1111-111111111111', sessionId: '33333333-3333-3333-3333-333333333333', parentSub: 'sub_A', issuedAt: now, expiresAt: now + 10 };
-    const rpc = async () => ({ data: null, error: { code: 'PGRST202', message: 'parent_session_issue' } });
-    expect(await recordParentSessionGrant({ rpc } as never, input)).toBe('failed');
+    const missing = {
+      rest: { ok: true },
+      rpc(this: { rest?: { ok: boolean } }) {
+        if (!this?.rest) throw new TypeError("Cannot read properties of undefined (reading 'rest')");
+        return Promise.resolve({ data: null, error: { code: 'PGRST202', message: 'parent_session_issue' } });
+      },
+    };
+    expect(await recordParentSessionGrant(missing, input)).toBe('failed');
     const upsert = async () => ({ error: { code: '42P01', message: 'parent_session_grants does not exist' } });
     expect(await recordParentSessionGrant({ from: () => ({ upsert }) } as never, input)).toBe('failed');
     expect(readFileSync('app/api/v1/central/callback/route.ts', 'utf8')).toMatch(/recorded !== 'recorded'/);
     expect(readFileSync('lib/api/route-guards.ts', 'utf8')).toMatch(/parentSessionRefusal\(request, session\.supabase, session\.user\)/);
+  });
+
+  it('keeps the Supabase client as the rpc receiver when recording a grant', async () => {
+    const input = { userId: '11111111-1111-1111-1111-111111111111', sessionId: '33333333-3333-3333-3333-333333333333', parentSub: 'sub_A', issuedAt: now, expiresAt: now + 10 };
+    const seen: Array<{ name: string; args: Record<string, unknown> }> = [];
+    const client = {
+      rest: { ok: true },
+      rpc(this: { rest?: { ok: boolean } }, name: string, args: Record<string, unknown>) {
+        if (!this?.rest) throw new TypeError("Cannot read properties of undefined (reading 'rest')");
+        seen.push({ name, args });
+        return Promise.resolve({ data: '2026-11-08T00:02:00.000Z', error: null });
+      },
+    };
+    expect(await recordParentSessionGrant(client, input)).toBe('recorded');
+    expect(seen).toEqual([{
+      name: 'parent_session_issue',
+      args: { p_user: input.userId, p_session: input.sessionId, p_parent_sub: input.parentSub },
+    }]);
+    expect(() => { client.rpc.call(undefined, 'parent_session_issue', {}); }).toThrow(/rest/);
+    const src = readFileSync('lib/central/parent-data-plane.ts', 'utf8');
+    expect(src).toMatch(/client\.rpc\('parent_session_issue'/);
+    expect(src).not.toMatch(/const rpc = /);
+    expect(src).toMatch(/createAdminClient\(\)\.rpc\('parent_session_renew'/);
+    expect(src).toMatch(/createAdminClient\(\)\.rpc\('parent_session_revoke'/);
   });
 });
