@@ -2484,6 +2484,7 @@ export async function POST(request: Request) {
   return withAiUsage({ feature: 'chat' }, () => handleChatPost(request));
 }
 
+// skipcq: JS-0067, JS-R1005 -- module-scope route handler (not a global); long linear pipeline, split tracked separately
 async function handleChatPost(request: Request) {
   const debugId = crypto.randomUUID();
   const startedAt = Date.now();

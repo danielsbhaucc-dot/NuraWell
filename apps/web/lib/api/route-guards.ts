@@ -15,6 +15,7 @@ type SessionOk = { ok: true } & AuthenticatedApiResult;
  * אימות אחיד ל-route handlers: עוגיות SSR או `Authorization: Bearer`.
  * מאפשר אפליקציית מובייל / סקריפטים בלי לשבור את הדפדפן.
  */
+// skipcq: JS-0067 -- ES module export (route guard used by every user API route), not a global
 export async function requireApiSession(request: Request): Promise<SessionOk | GuardFail> {
   const session = await resolveApiSession(request);
   if (!session.ok) return session;
@@ -24,7 +25,7 @@ export async function requireApiSession(request: Request): Promise<SessionOk | G
 }
 
 /** Session only (no license check). Admin routes use this: admins are never license-blocked. */
-async function resolveApiSession(request: Request): Promise<SessionOk | GuardFail> {
+const resolveApiSession = async (request: Request): Promise<SessionOk | GuardFail> => {
   const { supabase, user, authError } = await createSupabaseForApiRoute(request);
   if (authError || !user) {
     return {
@@ -33,7 +34,7 @@ async function resolveApiSession(request: Request): Promise<SessionOk | GuardFai
     };
   }
   return { ok: true, supabase, user };
-}
+};
 
 /**
  * Routes an UNLICENSED signed-in user must still reach: privacy rights (export / delete / consents / security),
@@ -49,29 +50,31 @@ const LICENSE_EXEMPT_PREFIXES = [
   '/api/v1/push/',
 ] as const;
 
-export function licenseExemptPath(pathname: string): boolean {
-  return LICENSE_EXEMPT_PREFIXES.some((p) => pathname === p.replace(/\/$/, '') || pathname.startsWith(p));
-}
+export const licenseExemptPath = (pathname: string): boolean =>
+  LICENSE_EXEMPT_PREFIXES.some((prefix) => pathname === prefix.replace(/\/$/, '') || pathname.startsWith(prefix));
+
+const pathOf = (request: Request): string | null => {
+  try { return new URL(request.url).pathname; } catch { return null; }
+};
+
+const LICENSE_REQUIRED = () => NextResponse.json({ error: 'license_required' }, { status: 403, headers: { 'Cache-Control': 'no-store' } });
 
 /**
  * Parent-license enforcement at the API layer (default deny for product routes), same gate as the dashboard
  * layout: armed only by env PLATFORM_LICENSE_MODE=enforce AND the DB kill switch; admins never blocked; fail-open
  * on parent outage. Without this, an unlicensed account blocked from the pages could still call product APIs directly.
  */
-async function licenseRefusal(request: Request, user: User): Promise<NextResponse | null> {
-  if (process.env.PLATFORM_LICENSE_MODE !== 'enforce') return null;
-  let path = '';
-  try { path = new URL(request.url).pathname; } catch { return null; }
-  if (licenseExemptPath(path)) return null;
+const licenseRefusal = async (request: Request, user: User): Promise<NextResponse | null> => {
+  const path = process.env.PLATFORM_LICENSE_MODE === 'enforce' ? pathOf(request) : null;
+  if (path === null || licenseExemptPath(path)) return null;
   try {
     const { licenseGate, profileRole } = await import('@/lib/central/license-gate');
     const gate = await licenseGate(user, await profileRole(user.id));
-    if (!gate.block) return null;
-    return NextResponse.json({ error: 'license_required' }, { status: 403, headers: { 'Cache-Control': 'no-store' } });
+    return gate.block ? LICENSE_REQUIRED() : null;
   } catch {
     return null; // same fail-open policy as licenseGate itself
   }
-}
+};
 
 export async function requireApiAdmin(request: Request, opts: { skipDeviceGate?: boolean } = {}): Promise<SessionOk | GuardFail> {
   // The recovery route stays reachable from a blocked IP (it still needs admin + step-up + a recovery code),

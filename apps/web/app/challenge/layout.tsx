@@ -10,6 +10,7 @@ export const viewport: Viewport = {
   themeColor: '#05010f',
 };
 
+// skipcq: JS-0067 -- Next.js layout default export, not a global
 export default async function ChallengeLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
   const {
