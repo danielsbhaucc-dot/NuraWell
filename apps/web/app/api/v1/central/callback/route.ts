@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { timingSafeEqualStr } from '@/lib/api/timing-safe-equal';
 import { CLIENT_ID, ISSUER, REDIRECT_URI, SIGNIN_COOKIE, TX_COOKIE, unpackSigninTx, unpackTx, verifyAccessToken, type Claims } from '@/lib/central/parent-connect';
-import { errorFor, matchUser, signinMode, type NwUser } from '@/lib/central/parent-signin';
+import { matchUser, signinFailurePath, signinMode, type NwUser } from '@/lib/central/parent-signin';
 import { issueSessionForUser } from '@/lib/module-api/auth-signup/lib-auth-issue-session';
 
 export const runtime = 'nodejs';
@@ -141,10 +141,11 @@ const signIn = async (request: NextRequest): Promise<string | null> => {
 const isSignin = (request: NextRequest) => Boolean(request.cookies.get(SIGNIN_COOKIE)?.value) && !request.cookies.get(TX_COOKIE)?.value;
 
 const finishSignin = async (request: NextRequest) => {
+  const intent = unpackSigninTx(request.cookies.get(SIGNIN_COOKIE)?.value)?.intent ?? 'login';
   const why = await signIn(request).catch(() => 'error');
   if (!why) return finish(request, '/home');
   console.warn('[platform-signin]', { why });
-  return finish(request, `/login?e=${errorFor(why)}`);
+  return finish(request, signinFailurePath(why, intent));
 };
 
 /** Parent identity redirect target: exchange the code, verify the token, store the license id, then go home. */

@@ -9,7 +9,9 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { usePathname } from 'next/navigation';
 import {
+  accessibilityClassesMatch,
   applyAccessibilityPreferencesToElement,
   applyMediaMutePreference,
 } from '@/lib/a11y/apply-preferences';
@@ -40,6 +42,7 @@ type AccessibilityContextValue = {
 const AccessibilityContext = createContext<AccessibilityContextValue | null>(null);
 
 export function AccessibilityProvider({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
   const [preferences, setPreferences] = useState<AccessibilityPreferences>(
     DEFAULT_ACCESSIBILITY_PREFERENCES,
   );
@@ -52,13 +55,21 @@ export function AccessibilityProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!hydrated) return;
+    const root = document.documentElement;
     const scrollX = window.scrollX;
     const scrollY = window.scrollY;
-    applyAccessibilityPreferencesToElement(document.documentElement, preferences);
+    const apply = () => applyAccessibilityPreferencesToElement(root, preferences);
+    apply();
     writeAccessibilityPreferences(preferences);
     // Font/filter reflow can shift the viewport — restore reading position.
     window.scrollTo(scrollX, scrollY);
-  }, [preferences, hydrated]);
+    // Client navigations rewrite <html class>. Re-apply if that drops or sticks a preference.
+    const observer = new MutationObserver(() => {
+      if (!accessibilityClassesMatch(root, preferences)) apply();
+    });
+    observer.observe(root, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, [preferences, hydrated, pathname]);
 
   useEffect(() => {
     if (!hydrated) return;

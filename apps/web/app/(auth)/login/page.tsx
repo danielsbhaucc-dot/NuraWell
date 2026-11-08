@@ -16,7 +16,7 @@ import { LegalLinksRow } from '@/lib/module-api/legal/components-legal-LegalLink
 import { useToast, ToastContainer } from '../../../components/shared/Toast';
 import { APP_HOME_PATH } from '../../../lib/navigation/app-home-path';
 import { isPasswordLeaked } from '../../../lib/auth/password-leak-client';
-import { SIGNIN_ERRORS } from '../../../lib/central/parent-signin-text';
+import { NO_LICENSE_COPY, NO_LICENSE_HREF, NO_LICENSE_LINK, SIGNIN_ERRORS } from '../../../lib/central/parent-signin-text';
 
 export const dynamic = 'force-dynamic';
 
@@ -66,17 +66,16 @@ const LoginFormContent = () => { // skipcq: JS-R1005
   /** Ops host serves its own admin login (same-origin cookies); hide public-app links there. */
   const isOpsHost = useSyncExternalStore(noopSubscribe, isOpsHostClient, () => false);
   const reason = searchParams?.get('reason');
-  /** R20: parent-account sign-in (server kill switch decides; 'test' needs ?pl=parent). */
-  const plHint = searchParams?.get('pl');
+  /** Parent identity, only when the server switch is on. The screen stays the product login either way. */
   const parentError = searchParams?.get('e');
-  const [parentOn, setParentOn] = useState(false);
+  const [centralArmed, setCentralArmed] = useState(false);
   useEffect(() => {
     if (isOpsHost) return undefined;
     const ctl = new AbortController();
-    fetch(`/api/v1/central/signin?probe=1${plHint === 'parent' ? '&pl=parent' : ''}`, { signal: ctl.signal, cache: 'no-store' })
-      .then((r) => (r.ok ? r.json() : { on: false })).then((d: { on?: boolean }) => setParentOn(d.on === true)).catch(() => setParentOn(false));
+    fetch('/api/v1/central/signin?probe=1', { signal: ctl.signal, cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : { on: false })).then((d: { on?: boolean }) => setCentralArmed(d.on === true)).catch(() => setCentralArmed(false));
     return () => ctl.abort();
-  }, [plHint, isOpsHost]);
+  }, [isOpsHost]);
 
   useEffect(() => {
     if (reason === 'ops_idle') toast.info('נותקת אחרי זמן ללא פעילות', 'התחבר שוב כדי להמשיך');
@@ -160,8 +159,16 @@ const LoginFormContent = () => { // skipcq: JS-R1005
     }, leaked ? 4000 : 800);
   };
 
+  const startCentralLogin = () => {
+    window.location.assign('/api/v1/central/signin');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (centralArmed && !isOpsHost) {
+      startCentralLogin();
+      return;
+    }
     if (!email.includes('@')) {
       toast.error('אימייל לא תקין', 'יש להזין כתובת אימייל עם @');
       return;
@@ -204,6 +211,10 @@ const LoginFormContent = () => { // skipcq: JS-R1005
   };
 
   const handlePasskey = async () => {
+    if (centralArmed && !isOpsHost) {
+      startCentralLogin();
+      return;
+    }
     setPasskeyBusy(true);
     try {
       const o = await fetch('/api/v1/auth/passkey', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ step: 'options' }) });
@@ -504,28 +515,25 @@ const LoginFormContent = () => { // skipcq: JS-R1005
                   <span className="text-balance leading-tight">Face ID או טביעת אצבע</span>
                 </button>
               ) : null}
-              {parentError && SIGNIN_ERRORS[parentError] ? (
+              {parentError === 'parent_no_license' ? (
+                <p role="alert" data-testid="login-parent-error" className={`text-sm font-medium leading-relaxed rounded-xl px-3 py-2 ${isDarkUi ? 'bg-on-dark/10 text-on-dark' : 'bg-glass/70 text-ink-700 ring-1 ring-accent-300/60'}`}>
+                  {NO_LICENSE_COPY}
+                  <a href={NO_LICENSE_HREF} className="mt-1 block font-bold underline underline-offset-2">{NO_LICENSE_LINK}</a>
+                </p>
+              ) : parentError && SIGNIN_ERRORS[parentError] ? (
                 <p role="alert" data-testid="login-parent-error" className={`text-sm font-medium leading-relaxed rounded-xl px-3 py-2 ${isDarkUi ? 'bg-on-dark/10 text-on-dark' : 'bg-glass/70 text-ink-700 ring-1 ring-accent-300/60'}`}>
                   {SIGNIN_ERRORS[parentError]}
                 </p>
               ) : null}
-              {parentOn ? (
-                <a
-                  href={`/api/v1/central/signin${plHint === 'parent' ? '?pl=parent' : ''}`}
-                  data-testid="login-parent"
-                  aria-label="כניסה עם החשבון המרכזי"
-                  className={[
-                    'w-full min-h-[48px] rounded-2xl font-bold flex items-center justify-center gap-2 max-[380px]:gap-1.5 transition-all active:scale-95',
-                    isDarkUi ? 'bg-on-dark/10 text-on-dark ring-1 ring-accent-200/50' : 'bg-glass/80 text-primary-800 ring-1 ring-accent-300/70',
-                  ].join(' ')}
-                >
-                  <KeyRound className="w-5 h-5 max-[300px]:w-4.5 max-[300px]:h-4.5" aria-hidden />
-                  <span className="text-balance leading-tight">כניסה בחשבון המרכזי</span>
-                </a>
-              ) : null}
               <button
                 type="button"
-                onClick={() => setQrOpen(true)}
+                onClick={() => {
+                  if (centralArmed && !isOpsHost) {
+                    startCentralLogin();
+                    return;
+                  }
+                  setQrOpen(true);
+                }}
                 data-testid="login-qr"
                 aria-label="כניסה בסריקת קוד מהטלפון"
                 className={[
