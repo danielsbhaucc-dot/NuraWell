@@ -59,14 +59,16 @@ function counts() {
 }
 
 async function acceptCookies(page) {
-  // Lab-only: cookie notice overlays the first Continue control. Product UI unchanged.
-  const btn = page.locator('.cn-root [data-testid="cookie-accept"], .cn-root button:has-text("אשר"), .cn-root button:has-text("הבנתי"), .cn-root button:has-text("אישור")').first();
+  // Lab-only: cookie banner mounts after hydration and sits above the first Continue.
+  // Dismiss through the real notice button — no DOM removal, no force-click.
+  const notice = page.locator('.cn-root.cn-banner');
   try {
-    if (await btn.count()) await btn.click({ timeout: 2000 });
-  } catch { /* already dismissed */ }
-  await page.evaluate(() => {
-    for (const el of document.querySelectorAll('.cn-root, [aria-label="הודעה על עוגיות"]')) el.remove();
-  }).catch(() => {});
+    await notice.waitFor({ state: 'visible', timeout: 8000 });
+  } catch {
+    return;
+  }
+  await page.getByRole('button', { name: 'הבנתי, תודה' }).click({ timeout: 5000 });
+  await notice.waitFor({ state: 'hidden', timeout: 8000 });
 }
 
 async function fill(page, origin, accountEmail) {
@@ -76,7 +78,8 @@ async function fill(page, origin, accountEmail) {
   }
   await acceptCookies(page);
   await page.locator('#onboarding-full-name').fill('בדיקת גדר');
-  await page.getByRole('button', { name: 'המשך' }).click({ force: true });
+  await page.getByRole('button', { name: 'המשך' }).click();
+  await page.getByRole('radio', { name: /גבר/ }).waitFor({ timeout: 10000 });
   await page.getByRole('radio', { name: /גבר/ }).click();
   await page.getByRole('radio', { name: /סיגול אורח חיים/ }).click();
   await page.locator('input[type="date"]').fill('1990-01-15');
