@@ -1,5 +1,4 @@
 import { decInteractionResult, decProfileResult } from '@/lib/crypto/pii-fields';
-import { licenseGate, profileRole } from '@/lib/central/license-gate';
 import { NURAWELL_CHAT_SYSTEM_PROMPT_V2, ALMOG_CHAT_FINAL_GUARDRAILS_V2, almogPromptV2Enabled } from '../../../../../lib/ai/prompts-v2';
 import { budgetHistoryV2, budgetContextSectionsV2, sectionSizes } from '../../../../../lib/ai/context-budget-v2';
 import { createRawUiStreamFilter, encodeResolvedChatUi, hasResolvedContent, parseRawChatUi, resolveChatUi, stripRawChatUi } from '@/lib/ai/chat-ui/blocks';
@@ -2485,6 +2484,7 @@ export async function POST(request: Request) {
   return withAiUsage({ feature: 'chat' }, () => handleChatPost(request));
 }
 
+// skipcq: JS-0067, JS-R1005 -- module-scope route handler (not a global); long linear pipeline, split tracked separately
 async function handleChatPost(request: Request) {
   const debugId = crypto.randomUUID();
   const startedAt = Date.now();
@@ -2498,13 +2498,7 @@ async function handleChatPost(request: Request) {
   const { supabase, user } = auth;
   setAiUsageUser(user.id);
   stage = 'auth_ok';
-  if (process.env.PLATFORM_LICENSE_MODE === 'enforce') {
-    const gate = await licenseGate(user, await profileRole(user.id));
-    if (gate.block) {
-      console.info('[ai/chat]', { debug_id: debugId, stage: 'license', error: 'license_required' });
-      return Response.json({ error: 'license_required' }, { status: 403, headers: { 'Cache-Control': 'no-store' } });
-    }
-  }
+  // Parent-license gate: enforced centrally in requireApiSession (403 license_required), like every product API.
 
   /**
    * Rate limit + body במקביל אחרי auth — בלתי תלויים; חוסך RTT קטן בכל בקשה.

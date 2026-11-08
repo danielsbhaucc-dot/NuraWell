@@ -44,12 +44,12 @@ describe('license gate decision', () => {
     expect(purchaseUrl({ PLATFORM_PURCHASE_URL: 'javascript:alert(1)' })).toBeNull();
     expect(purchaseUrl({ PLATFORM_PURCHASE_URL: 'https://shop.example.com/buy' })).toBe('https://shop.example.com/buy');
   });
-  it('block screen: Hebrew RTL, no native dialogs; gate wired into dashboard + Almog chat', () => {
+  it('block screen: Hebrew RTL, no native dialogs; gate wired into dashboard + every product API (incl. Almog chat)', () => {
     const ui = readFileSync('components/shared/LicenseRequired.tsx', 'utf8');
     expect(ui).toMatch(/dir="rtl"/);
     expect(ui).not.toMatch(/\b(alert|confirm|prompt)\(/);
     expect(readFileSync('app/(dashboard)/layout.tsx', 'utf8')).toMatch(/redirect\('\/license-required'\)/);
-    expect(readFileSync('app/api/v1/ai/chat/route.ts', 'utf8')).toMatch(/license_required/);
+    expect(readFileSync('lib/api/route-guards.ts', 'utf8')).toMatch(/license_required/); // all product APIs incl. Almog chat
     expect(readFileSync('app/license-required/page.tsx', 'utf8')).toMatch(/if \(!gate\.block\) redirect/);
   });
 });
