@@ -6,7 +6,9 @@ import { createAdminClient } from '@/lib/supabase/admin';
  * PLATFORM_SIGNIN_MODE is not a second switch: it cannot leave the database enforcing while the app
  * accepts a password session, and it cannot turn a positive test/all back into off.
  * Explicit 'off' is the break-glass for product users and ops together.
- * A missing row, an unexpected value, or a read error is 'unreadable' and closes protected access.
+ * A missing row or a read error is 'unreadable' and does not turn today's password mode off.
+ * Enforcement starts only when the column is positively 'test' or 'all'. Apply migration 000232
+ * while the column is still off; the database then keeps current policies until the column changes.
  * Do not enable until a restorable platform-central backup exists, migration 000039 is applied,
  * migration 000232 is applied, ops can complete parent sign-in, and the parent mail sender is no-reply.
  */
@@ -45,11 +47,11 @@ export const signinMode = async (
   return value;
 };
 
-/** Parent OIDC can start. Unreadable cannot start OIDC and is not local password. */
+/** Parent OIDC can start. Unreadable stays on the existing password screen. */
 export const centralAuthOn = (mode: SigninMode) => mode === 'test' || mode === 'all';
 
-/** Protected data and local password success are closed unless the column is explicitly off. */
-export const accessClosed = (mode: SigninMode) => mode !== 'off';
+/** Protected data is closed only when the column positively says test or all. */
+export const accessClosed = (mode: SigninMode) => mode === 'test' || mode === 'all';
 
 export type NwUser = { id: string; email?: string | null; email_confirmed_at?: string | null; app_metadata?: Record<string, unknown> | null };
 export type ParentClaims = { sub: string; lic: string; email?: string; email_verified?: boolean };

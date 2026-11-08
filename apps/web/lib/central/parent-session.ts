@@ -13,9 +13,10 @@ export const PARENT_SESSION_COOKIE = 'pl_parent_session';
  * may be renewed. An expired proof is not. Direct reads fail when this window ends.
  */
 export const PARENT_GRANT_LEASE_SECONDS = 120;
-export const PARENT_SESSION_TTL_SECONDS = PARENT_GRANT_LEASE_SECONDS;
-/** Browser lifetime matches the lease. Logout sets maxAge 0. */
-export const PARENT_SESSION_COOKIE_MAX_AGE = PARENT_GRANT_LEASE_SECONDS;
+/** Data-plane lease. The browser cookie lives longer so a resume can ask the server to renew. */
+export const PARENT_SESSION_TTL_SECONDS = 12 * 60 * 60;
+/** Logout sets maxAge 0. The cookie is not itself a lease extension. */
+export const PARENT_SESSION_COOKIE_MAX_AGE = PARENT_SESSION_TTL_SECONDS;
 export const QR_POLL_COOKIE = 'pl_qr_poll';
 
 export type ParentSessionProof = {

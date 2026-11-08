@@ -5,7 +5,7 @@ import {
   unpackParentSession,
   PARENT_SESSION_COOKIE,
   PARENT_SESSION_COOKIE_MAX_AGE,
-  PARENT_SESSION_TTL_SECONDS,
+  PARENT_GRANT_LEASE_SECONDS,
   type ParentSessionDecision,
   type ParentSessionProof,
 } from './parent-session';
@@ -21,6 +21,7 @@ export type Entitlement = 'active' | 'revoked' | 'unknown';
 export type GrantRow = {
   userId: string;
   sessionId: string;
+  parentSub: string;
   expiresAt: number;
   revokedAt: number | null;
   entitlementRevokedAt: number | null;
@@ -54,6 +55,8 @@ export function continueParentSession(input: {
     userMetadata: input.userMetadata,
     appMetadata: input.appMetadata,
   });
+  const same = Boolean(input.proof) && input.proof!.userId === input.userId && input.proof!.sessionId === input.sessionId;
+  if (base === 'expired' && same) return { decision: 'ok', next: null, entitlementRevoked: input.entitlement === 'revoked' };
   if (base !== 'ok') return { decision: base, next: null, entitlementRevoked: false };
   if (input.entitlement === 'revoked') return { decision: 'ok', next: null, entitlementRevoked: true };
   return { decision: 'ok', next: null, entitlementRevoked: false };
@@ -82,12 +85,30 @@ export function dataPlaneAllows(input: {
   return grant.expiresAt >= input.nowS;
 }
 
-/** Renewal is refused once the lease has ended, the row is revoked, or entitlement is not active. */
+/**
+ * Live parent status only. app_metadata is not an input: a cached license id is not a verdict.
+ * no_status and stale_status do not renew and do not mark the row revoked.
+ * A real non-active reason does. An expired row can still be renewed when this says revalidated and eligible.
+ */
+export function renewalDecision(input: {
+  sessionLive: boolean;
+  sessionMatchesGrant: boolean;
+  parentSubMatches: boolean;
+  liveReason: string;
+}): { eligible: boolean; revalidated: boolean } {
+  const outage = input.liveReason === 'no_status' || input.liveReason === 'stale_status' || input.liveReason === '';
+  return {
+    eligible: input.liveReason === 'active',
+    revalidated: input.sessionLive && input.sessionMatchesGrant && input.parentSubMatches && !outage,
+  };
+}
+
+/** Extends a live eligible grant. An expired row is not extended here; the database renews that after revalidation. */
 export function slideGrant(grant: GrantRow, nowS: number, entitlement: Entitlement, sessionId: string): GrantRow | null {
-  if (grant.sessionId !== sessionId || grant.revokedAt !== null || grant.expiresAt <= nowS) return null;
+  if (grant.sessionId !== sessionId || grant.revokedAt !== null || grant.entitlementRevokedAt !== null) return null;
   if (entitlement === 'revoked') return { ...grant, entitlementRevokedAt: grant.entitlementRevokedAt ?? nowS };
-  if (entitlement !== 'active') return null;
-  return { ...grant, expiresAt: nowS + PARENT_SESSION_TTL_SECONDS, entitlementRevokedAt: null };
+  if (entitlement !== 'active' || grant.expiresAt <= nowS) return null;
+  return { ...grant, expiresAt: nowS + PARENT_GRANT_LEASE_SECONDS };
 }
 
 export function revokeGrant(grant: GrantRow, nowS: number): GrantRow {
@@ -132,13 +153,14 @@ export function planParentAccess(input: {
   if (input.grant.kind !== 'row') return deny(false);
   const row = input.grant.row;
   if (!row || row.sessionId !== input.sessionId) return deny(false);
-  if (row.revokedAt !== null) return deny(true);
-  if (row.expiresAt <= input.nowS) return deny(false);
-  const mark = input.continued.entitlementRevoked || row.entitlementRevokedAt !== null;
+  if (row.revokedAt !== null || row.entitlementRevokedAt !== null) return deny(row.revokedAt !== null);
+  const renewing = input.entitlement === 'active';
+  const marking = input.entitlement === 'revoked';
+  if (row.expiresAt <= input.nowS && !renewing) return deny(false);
   return {
     access: 'allow',
-    slide: input.entitlement === 'active' && !mark,
-    markEntitlement: input.entitlement === 'revoked' && row.entitlementRevokedAt === null,
+    slide: renewing,
+    markEntitlement: marking,
     clearCookie: false,
   };
 }
@@ -210,11 +232,11 @@ export async function recordParentSessionGrant(admin: unknown, input: {
   }
 }
 
-async function rpcRenew(userId: string, sessionId: string, eligible: boolean): Promise<string | null> {
+async function rpcRenew(userId: string, sessionId: string, eligible: boolean, revalidated: boolean): Promise<string | null> {
   try {
     const { createAdminClient } = await import('@/lib/supabase/admin');
     const { data, error } = await createAdminClient().rpc('parent_session_renew', {
-      p_user: userId, p_session: sessionId, p_eligible: eligible,
+      p_user: userId, p_session: sessionId, p_eligible: eligible, p_revalidated: revalidated,
     });
     if (error || data == null || data === '') return null;
     return String(data);
@@ -231,21 +253,19 @@ function secret(): string {
   return process.env.PLATFORM_ID_CLIENT_SECRET ?? '';
 }
 
-async function readEntitlement(user: { id: string; app_metadata?: Record<string, unknown> | null }): Promise<Entitlement> {
-  if (process.env.PLATFORM_LICENSE_MODE !== 'enforce') return 'active';
+async function liveLicenseReason(user: { app_metadata?: Record<string, unknown> | null }): Promise<string> {
+  const lic = user.app_metadata?.pl_lic;
+  if (typeof lic !== 'string' || lic.length === 0) return 'no_status';
   try {
-    const { licenseGate, profileRole } = await import('@/lib/central/license-gate');
-    const gate = await licenseGate(user, await profileRole(user.id));
-    if (gate.block) return 'revoked';
-    if (gate.why === 'outage') return 'unknown';
-    return 'active';
+    const { licenseReasonFor } = await import('@/lib/central/license-gate');
+    return await licenseReasonFor(lic);
   } catch {
-    return 'unknown';
+    return 'no_status';
   }
 }
 
 function grantFrom(data: Record<string, unknown> | null): GrantRow | null {
-  if (!data || typeof data.user_id !== 'string' || typeof data.session_id !== 'string' || typeof data.expires_at !== 'string') return null;
+  if (!data || typeof data.user_id !== 'string' || typeof data.session_id !== 'string' || typeof data.parent_sub !== 'string' || typeof data.expires_at !== 'string') return null;
   const expiresAt = Date.parse(data.expires_at);
   if (!Number.isFinite(expiresAt)) return null;
   const at = (value: unknown) => (typeof value === 'string' ? Date.parse(value) / 1000 : null);
@@ -254,6 +274,7 @@ function grantFrom(data: Record<string, unknown> | null): GrantRow | null {
   return {
     userId: data.user_id,
     sessionId: data.session_id,
+    parentSub: data.parent_sub,
     expiresAt: Math.floor(expiresAt / 1000),
     revokedAt: revokedAt !== null && Number.isFinite(revokedAt) ? revokedAt : null,
     entitlementRevokedAt: entitlementRevokedAt !== null && Number.isFinite(entitlementRevokedAt) ? entitlementRevokedAt : null,
@@ -265,7 +286,7 @@ async function readGrant(userId: string, sessionId: string): Promise<GrantRead> 
     const { createAdminClient } = await import('@/lib/supabase/admin');
     const { data, error } = await createAdminClient()
       .from('parent_session_grants')
-      .select('user_id, session_id, expires_at, revoked_at, entitlement_revoked_at')
+      .select('user_id, session_id, parent_sub, expires_at, revoked_at, entitlement_revoked_at')
       .eq('user_id', userId)
       .eq('session_id', sessionId)
       .maybeSingle();
@@ -278,9 +299,9 @@ async function readGrant(userId: string, sessionId: string): Promise<GrantRead> 
   }
 }
 
-async function applyPlan(plan: AccessPlan, userId: string, sessionId: string): Promise<string | null> {
-  if (!plan.slide && !plan.markEntitlement) return null;
-  return rpcRenew(userId, sessionId, plan.slide);
+async function applyPlan(plan: AccessPlan, userId: string, sessionId: string, revalidated: boolean): Promise<string | null> {
+  if (!revalidated || (!plan.slide && !plan.markEntitlement)) return null;
+  return rpcRenew(userId, sessionId, plan.slide, true);
 }
 
 type SessionUser = { id: string; user_metadata?: Record<string, unknown> | null; app_metadata?: Record<string, unknown> | null };
@@ -299,7 +320,16 @@ async function evaluate(user: SessionUser, proofRaw: string | undefined, supabas
   const sessionId = sessionIdFromAccessToken(data.session?.access_token) ?? '';
   const nowS = Math.floor(Date.now() / 1000);
   const proof = unpackParentSession(proofRaw, secret());
-  const entitlement = await readEntitlement(user);
+  const grant = sessionId ? await readGrant(user.id, sessionId) : { kind: 'absent-table' as const };
+  const grantRow = grant.kind === 'row' ? grant.row : null;
+  const parentSub = typeof user.app_metadata?.pl_sub === 'string' ? user.app_metadata.pl_sub : '';
+  const checked = renewalDecision({
+    sessionLive: sessionId.length > 0,
+    sessionMatchesGrant: Boolean(grantRow) && grantRow!.sessionId === sessionId,
+    parentSubMatches: parentSub.length > 0 && grantRow?.parentSub === parentSub,
+    liveReason: await liveLicenseReason(user),
+  });
+  const entitlement: Entitlement = checked.eligible ? 'active' : checked.revalidated ? 'revoked' : 'unknown';
   const continued = continueParentSession({
     modeOn: true,
     proof,
@@ -310,11 +340,9 @@ async function evaluate(user: SessionUser, proofRaw: string | undefined, supabas
     userMetadata: user.user_metadata,
     appMetadata: user.app_metadata,
   });
-  const grant = continued.decision === 'ok' || continued.entitlementRevoked
-    ? await readGrant(user.id, sessionId)
-    : { kind: 'absent-table' as const };
-  const plan = planParentAccess({ continued, grant, nowS, sessionId, entitlement });
-  const renewed = await applyPlan(plan, user.id, sessionId);
+  let plan = planParentAccess({ continued, grant, nowS, sessionId, entitlement });
+  const renewed = await applyPlan(plan, user.id, sessionId, checked.revalidated && (checked.eligible || entitlement === 'revoked'));
+  if (plan.slide && !renewed) plan = { ...plan, access: 'deny', slide: false };
   return { plan, continued, sessionId, nowS, entitlement, renewed, proof };
 }
 
@@ -326,19 +354,16 @@ function packRenewed(proof: ParentSessionProof | null, renewed: string | null): 
   return packParentSession({ ...proof, iat, exp, revoked: false }, secret());
 }
 
-async function closedMode(): Promise<'off' | 'closed' | 'unreadable'> {
+async function closedMode(): Promise<'off' | 'closed'> {
   const { accessClosed, signinMode } = await import('@/lib/central/parent-signin');
-  const mode = await signinMode();
-  if (!accessClosed(mode)) return 'off';
-  return mode === 'unreadable' ? 'unreadable' : 'closed';
+  return accessClosed(await signinMode()) ? 'closed' : 'off';
 }
 
-/** Page layouts. Explicit off keeps today's password session. Unreadable denies. */
+/** Page layouts. Explicit off, and an unreadable switch, keep today's password session. */
 export async function enforceParentSessionPage(user: SessionUser): Promise<void> {
   const mode = await closedMode();
   if (mode === 'off') return;
   const { redirect } = await import('next/navigation');
-  if (mode === 'unreadable') redirect('/login?e=parent_session');
   const { cookies } = await import('next/headers');
   const { createClient } = await import('@/lib/supabase/server');
   const jar = await cookies();
@@ -361,7 +386,6 @@ export async function refuseParentSession(request: { headers: { get: (name: stri
   if (mode === 'off') return null;
   const { cookies } = await import('next/headers');
   const { NextResponse } = await import('next/server');
-  if (mode === 'unreadable') return NextResponse.json({ error: 'parent_session_required' }, { status: 401, headers: { 'Cache-Control': 'no-store' } });
   const proofRaw = readRequestCookie(request, PARENT_SESSION_COOKIE);
   const { plan, renewed, proof } = await evaluate(user, proofRaw, supabase);
   const packed = packRenewed(proof, renewed);
@@ -379,7 +403,6 @@ export async function refuseParentSession(request: { headers: { get: (name: stri
 export async function allowUserServerAction(): Promise<boolean> {
   const mode = await closedMode();
   if (mode === 'off') return true;
-  if (mode === 'unreadable') return false;
   const { cookies } = await import('next/headers');
   const { createClient } = await import('@/lib/supabase/server');
   const supabase = await createClient();

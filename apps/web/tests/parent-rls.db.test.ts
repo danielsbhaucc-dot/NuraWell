@@ -18,6 +18,15 @@ const PARENT_SESSION = '33333333-3333-4333-8333-333333333333';
 const COPIED_SESSION = '44444444-4444-4444-8444-444444444444';
 const ADMIN_SESSION = '55555555-5555-4555-8555-555555555555';
 
+function countAs(userId: string, sessionId: string): string {
+  const out = psql(DB, `
+    select set_config('request.jwt.claims', '{"sub":"${userId}","session_id":"${sessionId}","role":"authenticated"}', false);
+    set role authenticated;
+    select count(*)::text from public.profiles;
+  `);
+  return out.trim().split('\n').pop() ?? '';
+}
+
 function psql(database: string, sql: string): string {
   return execFileSync('sudo', ['-u', 'postgres', 'psql', '-d', database, '-v', 'ON_ERROR_STOP=1', '-t', '-A', '-c', sql], {
     encoding: 'utf8',
@@ -36,8 +45,14 @@ describe('parent session RLS on local Postgres', () => {
     psql('postgres', `DROP DATABASE IF EXISTS ${DB}`);
     psql('postgres', `CREATE DATABASE ${DB}`);
     psqlScript(DB, setupSql());
+    const before = countAs(USER, '99999999-9999-4999-8999-999999999999');
+    expect(before).toBe('1');
     psqlScript(DB, readFileSync(migration, 'utf8'));
+    const afterOff = countAs(USER, '99999999-9999-4999-8999-999999999999');
+    expect(afterOff).toBe('1');
     psqlScript(DB, checksSql());
+    const resumed = countAs(USER, PARENT_SESSION);
+    expect(resumed).toBe('1');
     const copied = psql(DB, `
       select set_config('request.jwt.claims', '{"sub":"${USER}","session_id":"${COPIED_SESSION}","role":"authenticated"}', false);
       set role authenticated;
@@ -76,7 +91,11 @@ create table public.platform_link_settings (
   id smallint primary key check (id = 1),
   signin text not null default 'off' check (signin in ('off', 'test', 'all'))
 );
-insert into public.platform_link_settings (id, signin) values (1, 'all');
+insert into public.platform_link_settings (id, signin) values (1, 'off');
+create table public.admin_passkeys (user_id uuid primary key);
+insert into public.admin_passkeys (user_id) values ('${ADMIN}');
+create table public.demo_access_sessions (user_id uuid, revoked_at timestamptz, expires_at timestamptz);
+insert into public.demo_access_sessions (user_id, revoked_at, expires_at) values ('${USER}', null, now() + interval '1 day');
 create or replace function public.demo_access_blocks_admin(uid uuid) returns boolean
 language sql stable as $$ select false $$;
 create or replace function public.iam_has_permission(uid uuid, product text, perm text) returns boolean
@@ -87,7 +106,8 @@ create table public.profiles (
   full_name text
 );
 create or replace function public.is_admin() returns boolean
-language sql stable as $$ select exists (select 1 from public.profiles where id = auth.uid() and role = 'admin') $$;
+language sql stable security definer set search_path = public
+as $$ select exists (select 1 from public.profiles where id = auth.uid() and role = 'admin') $$;
 insert into public.profiles (id, role, full_name) values
   ('${USER}', 'user', 'user-row'),
   ('${ADMIN}', 'admin', 'ops-row');
@@ -206,6 +226,14 @@ select public.parent_session_issue('${USER}'::uuid, '${PARENT_SESSION}'::uuid, '
 select public.parent_session_issue('${USER}'::uuid, '${COPIED_SESSION}'::uuid, 'parent-sub');
 select public.parent_session_issue('${ADMIN}'::uuid, '${ADMIN_SESSION}'::uuid, 'ops-sub');
 
+-- signin is still off here: the migration must not change today's owner read.
+select public.fail('migration changed off-mode read')
+where public.rows_as('{"sub":"${USER}","session_id":"99999999-9999-4999-8999-999999999999","role":"authenticated"}', 'public.profiles') <> 1;
+select public.fail('migration changed off-mode ops')
+where public.bool_as('{"sub":"${ADMIN}","session_id":"99999999-9999-4999-8999-999999999999","role":"authenticated"}', 'public.is_admin()') is not true;
+
+update public.platform_link_settings set signin = 'all' where id = 1;
+
 -- Password JWT: a session id that was never issued.
 select public.fail('password jwt read own profile')
 where public.rows_as('{"sub":"${USER}","session_id":"99999999-9999-4999-8999-999999999999","role":"authenticated"}', 'public.profiles') <> 0;
@@ -266,25 +294,50 @@ where public.bool_as('{"sub":"${USER}","session_id":"99999999-9999-4999-8999-999
 select public.fail('rpc with grant')
 where public.bool_as('{"sub":"${USER}","session_id":"${PARENT_SESSION}","role":"authenticated"}', 'public.iam_my_permission(''nurawell'', ''admin.access'')') is not true;
 
+-- test cohort: an unflagged password session keeps its own row. A flagged session does not, until a grant exists.
+update public.platform_link_settings set signin = 'test' where id = 1;
+select public.fail('test mode locked an unflagged user')
+where public.rows_as('{"sub":"${USER}","session_id":"99999999-9999-4999-8999-999999999999","role":"authenticated","app_metadata":{"pl_enforce_test":false}}', 'public.profiles') <> 1;
+select public.fail('test mode let a flagged user through without a grant')
+where public.rows_as('{"sub":"${USER}","session_id":"99999999-9999-4999-8999-999999999999","role":"authenticated","app_metadata":{"pl_enforce_test":true}}', 'public.profiles') <> 0;
+select public.fail('test mode locked unflagged ops')
+where public.bool_as('{"sub":"${ADMIN}","session_id":"99999999-9999-4999-8999-999999999999","role":"authenticated","app_metadata":{}}', 'public.is_admin()') is not true;
+update public.platform_link_settings set signin = 'all' where id = 1;
+
 -- Entitlement revocation is visible on the next read, before the lease ends.
 select public.fail('renew eligible=false returned a lease')
-where public.parent_session_renew('${USER}'::uuid, '${PARENT_SESSION}'::uuid, false) is not null;
+where public.parent_session_renew('${USER}'::uuid, '${PARENT_SESSION}'::uuid, false, true) is not null;
 select public.fail('revoked entitlement still readable')
 where public.rows_as('{"sub":"${USER}","session_id":"${PARENT_SESSION}","role":"authenticated"}', 'public.profiles') <> 0;
+select public.fail('stale revalidation cleared an entitlement revocation')
+where public.parent_session_renew('${USER}'::uuid, '${PARENT_SESSION}'::uuid, true, true) is not null;
 
--- A fresh login can issue again. An expired row cannot be renewed.
+-- A new parent login restores the row. An expired lease is readable again only after a revalidated renewal.
 select public.parent_session_issue('${USER}'::uuid, '${PARENT_SESSION}'::uuid, 'parent-sub');
 update public.parent_session_grants set expires_at = now() - interval '1 second'
 where user_id = '${USER}' and session_id = '${PARENT_SESSION}';
-select public.fail('expired lease still readable')
+select public.fail('expired lease still readable before renewal')
 where public.rows_as('{"sub":"${USER}","session_id":"${PARENT_SESSION}","role":"authenticated"}', 'public.profiles') <> 0;
-select public.fail('stale renew extended the lease')
-where public.parent_session_renew('${USER}'::uuid, '${PARENT_SESSION}'::uuid, true) is not null;
+select public.fail('cookie-only renew extended the lease')
+where public.parent_session_renew('${USER}'::uuid, '${PARENT_SESSION}'::uuid, true, false) is not null;
+select public.fail('revalidated renew did not resume an active session')
+where public.parent_session_renew('${USER}'::uuid, '${PARENT_SESSION}'::uuid, true, true) is null;
+select public.fail('resumed session could not read')
+where public.rows_as('{"sub":"${USER}","session_id":"${PARENT_SESSION}","role":"authenticated"}', 'public.profiles') <> 1;
+
+-- Three further lease windows, with the clock moved by expiring the row between them.
+update public.parent_session_grants set expires_at = now() - interval '1 second' where user_id = '${USER}' and session_id = '${PARENT_SESSION}';
+select public.fail('window 2 renew failed') where public.parent_session_renew('${USER}'::uuid, '${PARENT_SESSION}'::uuid, true, true) is null;
+update public.parent_session_grants set expires_at = now() - interval '1 second' where user_id = '${USER}' and session_id = '${PARENT_SESSION}';
+select public.fail('window 3 renew failed') where public.parent_session_renew('${USER}'::uuid, '${PARENT_SESSION}'::uuid, true, true) is null;
+update public.parent_session_grants set expires_at = now() - interval '1 second' where user_id = '${USER}' and session_id = '${PARENT_SESSION}';
+select public.fail('window 4 renew failed') where public.parent_session_renew('${USER}'::uuid, '${PARENT_SESSION}'::uuid, true, true) is null;
+select public.fail('session unusable after several windows')
+where public.rows_as('{"sub":"${USER}","session_id":"${PARENT_SESSION}","role":"authenticated"}', 'public.profiles') <> 1;
 
 -- Eligible renewal of a live lease works. Logout of the copied session does not.
-select public.parent_session_issue('${USER}'::uuid, '${PARENT_SESSION}'::uuid, 'parent-sub');
 select public.fail('live renew failed')
-where public.parent_session_renew('${USER}'::uuid, '${PARENT_SESSION}'::uuid, true) is null;
+where public.parent_session_renew('${USER}'::uuid, '${PARENT_SESSION}'::uuid, true, true) is null;
 select public.parent_session_revoke('${USER}'::uuid, '${COPIED_SESSION}'::uuid);
 select public.fail('revoked copied session still readable')
 where public.rows_as('{"sub":"${USER}","session_id":"${COPIED_SESSION}","role":"authenticated"}', 'public.profiles') <> 0;
@@ -296,7 +349,7 @@ do $$
 begin
   begin
     execute 'set local role authenticated';
-    perform public.parent_session_renew('${USER}'::uuid, '${PARENT_SESSION}'::uuid, true);
+    perform public.parent_session_renew('${USER}'::uuid, '${PARENT_SESSION}'::uuid, true, true);
     raise exception 'parent rls: authenticated renewed a grant';
   exception
     when insufficient_privilege then null;

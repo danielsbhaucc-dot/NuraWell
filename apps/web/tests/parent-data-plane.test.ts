@@ -5,6 +5,7 @@ import {
   dataPlaneAllows,
   planParentAccess,
   recordParentSessionGrant,
+  renewalDecision,
   revokeGrant,
   slideGrant,
   type GrantRow,
@@ -18,18 +19,30 @@ const secretProof = (patch: Partial<ParentSessionProof> = {}): ParentSessionProo
   iat: now - 60, exp: now + PARENT_SESSION_TTL_SECONDS, ...patch,
 });
 const grant = (patch: Partial<GrantRow> = {}): GrantRow => ({
-  userId: 'user-1', sessionId: 'sess-1', expiresAt: now + PARENT_SESSION_TTL_SECONDS,
+  userId: 'user-1', sessionId: 'sess-1', parentSub: 'sub_A', expiresAt: now + 120,
   revokedAt: null, entitlementRevokedAt: null, ...patch,
 });
 
 describe('parent grant decisions', () => {
-  it('does not renew an expired proof', () => {
+  it('does not treat an old cookie as the data-plane lease', () => {
     expect(continueParentSession({
       modeOn: true, proof: secretProof({ exp: now - 1 }), userId: 'user-1', sessionId: 'sess-1', nowS: now, entitlement: 'active',
-    }).decision).toBe('expired');
+    }).decision).toBe('ok');
     expect(slideGrant(grant({ expiresAt: now - 5 }), now, 'active', 'sess-1')).toBeNull();
     const live = slideGrant(grant(), now, 'active', 'sess-1');
-    expect(live?.expiresAt).toBe(now + PARENT_SESSION_TTL_SECONDS);
+    expect(live?.expiresAt).toBe(now + 120);
+    expect(renewalDecision({
+      sessionLive: true, sessionMatchesGrant: true, parentSubMatches: true, liveReason: 'active',
+    })).toEqual({ eligible: true, revalidated: true });
+    expect(renewalDecision({
+      sessionLive: true, sessionMatchesGrant: true, parentSubMatches: true, liveReason: 'no_status',
+    })).toEqual({ eligible: false, revalidated: false });
+    expect(renewalDecision({
+      sessionLive: true, sessionMatchesGrant: true, parentSubMatches: false, liveReason: 'active',
+    }).revalidated).toBe(false);
+    expect(renewalDecision({
+      sessionLive: true, sessionMatchesGrant: true, parentSubMatches: true, liveReason: 'expired',
+    })).toEqual({ eligible: false, revalidated: true });
     expect(slideGrant(grant(), now, 'revoked', 'sess-1')?.entitlementRevokedAt).toBe(now);
     expect(slideGrant(grant(), now, 'unknown', 'sess-1')).toBeNull();
   });
@@ -52,8 +65,11 @@ describe('parent grant decisions', () => {
       continued, grant: { kind: 'absent-table' }, nowS: now, sessionId: 'sess-1', entitlement: 'active',
     }).access).toBe('deny');
     expect(planParentAccess({
-      continued, grant: { kind: 'row', row: grant({ expiresAt: now - 1 }) }, nowS: now, sessionId: 'sess-1', entitlement: 'active',
+      continued, grant: { kind: 'row', row: grant({ expiresAt: now - 1 }) }, nowS: now, sessionId: 'sess-1', entitlement: 'unknown',
     }).access).toBe('deny');
+    expect(planParentAccess({
+      continued, grant: { kind: 'row', row: grant({ expiresAt: now - 1 }) }, nowS: now, sessionId: 'sess-1', entitlement: 'active',
+    }).slide).toBe(true);
     expect(planParentAccess({
       continued, grant: { kind: 'row', row: grant() }, nowS: now, sessionId: 'sess-1', entitlement: 'active',
     })).toMatchObject({ access: 'allow', slide: true });

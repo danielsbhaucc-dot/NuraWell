@@ -17,7 +17,7 @@ describe('R20 parent sign-in', () => {
     resetSigninModeCache();
     expect(await signinMode({ PLATFORM_SIGNIN_MODE: 'on' }, 20_000, async () => 'unreadable')).toBe('unreadable');
     expect(accessClosed('off')).toBe(false);
-    expect(accessClosed('unreadable')).toBe(true);
+    expect(accessClosed('unreadable')).toBe(false);
     expect(accessClosed('all')).toBe(true);
     expect(centralAuthOn('off')).toBe(false);
     expect(centralAuthOn('unreadable')).toBe(false);

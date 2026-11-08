@@ -1,6 +1,12 @@
 -- Parent session grants. The column platform_link_settings.signin is the only enforcement switch.
 -- The app reads that same column. PLATFORM_SIGNIN_MODE cannot turn database enforcement off.
 -- Explicit signin = 'off' keeps today's policies (break-glass for product users and ops together).
+-- 'test' requires a grant only when the JWT app_metadata.pl_enforce_test is true. Other users, including
+-- ops who are not flagged, keep today's policies. Do not flag an ops account until that account has a grant.
+-- 'all' requires a grant for every authenticated user. Complete parent sign-in for each ops account first.
+-- Deploy this migration while signin is still off, and confirm password login, before setting test or all.
+-- Setting test or all before this migration is applied leaves the database on auth.uid() while the app
+-- already refuses local sessions.
 -- 'test' or 'all' requires a server-written grant for auth.uid() + the JWT session_id.
 -- A missing row, an unknown value, or any error fails closed. There is no is_admin exemption.
 --
@@ -10,7 +16,10 @@
 --   Restoring signin = 'off' is the break-glass. Do not backfill grants from auth.sessions.
 --
 -- Lease: parent_grant_lease() is 120 seconds. Every protected read evaluates expires_at,
--- revoked_at and entitlement_revoked_at. Renewal of an already-expired or revoked row is rejected.
+-- revoked_at and entitlement_revoked_at. A still-eligible parent session may be renewed after the
+-- server has revalidated it, including when the previous lease already ended, so an active user is
+-- not sent to log in every two minutes. Renewal with p_revalidated false does nothing. A revoked
+-- row or a row marked entitlement_revoked_at is not renewed; a new parent_session_issue is required.
 -- A revocation the server has observed is written immediately. One it has not observed cannot
 -- outlive the lease, including for a direct PostgREST call that never hits the app.
 --
@@ -57,6 +66,10 @@ begin
   if v = 'off' then
     return true;
   end if;
+  -- test: only identities flagged in the server-written JWT. Everyone else keeps today's policies.
+  if v = 'test' and coalesce(auth.jwt() -> 'app_metadata' ->> 'pl_enforce_test', '') is distinct from 'true' then
+    return true;
+  end if;
   if auth.uid() is null or coalesce(auth.jwt() ->> 'session_id', '') = '' then
     return false;
   end if;
@@ -101,7 +114,9 @@ begin
 end;
 $$;
 
-create or replace function public.parent_session_renew(p_user uuid, p_session uuid, p_eligible boolean)
+create or replace function public.parent_session_renew(
+  p_user uuid, p_session uuid, p_eligible boolean, p_revalidated boolean
+)
 returns timestamptz
 language plpgsql
 security definer
@@ -110,20 +125,30 @@ as $$
 declare
   v timestamptz;
 begin
+  if p_user is null or p_session is null then
+    return null;
+  end if;
+  if exists (
+    select 1 from public.parent_session_grants g
+    where g.user_id = p_user and g.session_id = p_session and g.revoked_at is not null
+  ) then
+    return null;
+  end if;
+  if p_revalidated is distinct from true then
+    return null;
+  end if;
   if p_eligible is distinct from true then
     update public.parent_session_grants
       set entitlement_revoked_at = coalesce(entitlement_revoked_at, now())
-      where user_id = p_user and session_id = p_session and revoked_at is null and expires_at > now();
+      where user_id = p_user and session_id = p_session and revoked_at is null;
     return null;
   end if;
   update public.parent_session_grants
-    set expires_at = now() + public.parent_grant_lease(),
-        entitlement_revoked_at = null
+    set expires_at = now() + public.parent_grant_lease()
     where user_id = p_user
       and session_id = p_session
       and revoked_at is null
       and entitlement_revoked_at is null
-      and expires_at > now()
     returning expires_at into v;
   return v;
 end;
@@ -143,11 +168,41 @@ end;
 $$;
 
 revoke all on function public.parent_session_issue(uuid, uuid, text) from public, anon, authenticated;
-revoke all on function public.parent_session_renew(uuid, uuid, boolean) from public, anon, authenticated;
+revoke all on function public.parent_session_renew(uuid, uuid, boolean, boolean) from public, anon, authenticated;
 revoke all on function public.parent_session_revoke(uuid, uuid) from public, anon, authenticated;
 grant execute on function public.parent_session_issue(uuid, uuid, text) to service_role;
-grant execute on function public.parent_session_renew(uuid, uuid, boolean) to service_role;
+grant execute on function public.parent_session_renew(uuid, uuid, boolean, boolean) to service_role;
 grant execute on function public.parent_session_revoke(uuid, uuid) to service_role;
+
+-- Boolean helpers. signin=off makes parent_session_ok() true, so these stay identical until enforcement.
+-- admin_has_passkey reveals no key material. demo_access_blocks_admin returns a boolean for the uid it is
+-- given and no row; a session without a grant gets false while enforcement applies to that caller.
+-- challenge_public_stats is intentionally public (anon + authenticated), takes no arguments, and returns
+-- two counts. It is not wrapped. It has no rate limit of its own.
+create or replace function public.admin_has_passkey()
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select public.parent_session_ok()
+     and exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
+     and exists (select 1 from public.admin_passkeys k where k.user_id = auth.uid());
+$$;
+
+create or replace function public.demo_access_blocks_admin(uid uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public, pg_temp
+as $$
+  select public.parent_session_ok() and exists (
+    select 1 from public.demo_access_sessions s
+    where s.user_id = uid and s.revoked_at is null and s.expires_at > now()
+  );
+$$;
 
 -- Authenticated helpers keep their grants (policies call them) but a password session
 -- no longer counts as ops authority while enforcement is on. Explicit 'off' still short-circuits.
