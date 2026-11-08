@@ -38,7 +38,7 @@ import { recordConsentEvidence, validateSubmission } from '@/lib/module-api/lega
 import { allowProductProvision, PROVISION_COOKIE, unpackProvision } from '@/lib/central/parent-provision';
 import { accessClosed, signinMode } from '@/lib/central/parent-signin';
 import { issueSessionForUser } from '@/lib/auth/issue-session';
-import { beginSignupFlight } from '@/lib/actions/signup-flight';
+import { abortSignupClaim, beginSignupClaim, finishSignupClaim, noteSignupUser, signupClaimUser } from '@/lib/central/signup-claim';
 import { recordParentSessionGrant } from '@/lib/central/parent-data-plane';
 import { packParentSession, PARENT_SESSION_COOKIE, PARENT_SESSION_COOKIE_MAX_AGE, PARENT_SESSION_TTL_SECONDS } from '@/lib/central/parent-session';
 
@@ -177,7 +177,7 @@ export async function completeOnboarding(
   }
 
   const data = parsed.data;
-  return beginSignupFlight(data.email.trim().toLowerCase(), () => runOnboarding(data, formData));
+  return runOnboarding(data, formData);
 }
 
 async function runOnboarding(
@@ -246,10 +246,20 @@ async function runOnboarding(
   if (provision === 'email') return { ok: false, error: 'האימייל צריך להיות האימייל המאומת מהחשבון המרכזי' };
   // Only the signed parent proof for this exact email confirms the new account. Off mode still sends the product letter.
   const parentVerified = provision === 'ok' && proof !== null;
-  if (parentVerified) {
-    (await cookies()).set(PROVISION_COOKIE, '', { httpOnly: true, secure: true, sameSite: 'lax', path: '/', maxAge: 0 });
+  let claimedNonce: string | null = null;
+  if (parentVerified && proof) {
+    const claim = await beginSignupClaim(admin, proof);
+    if (claim !== 'claimed') {
+      return claim === 'busy' || claim === 'done'
+        ? { ok: false, error: 'ההרשמה הזו כבר נפתחה. אפשר להתחיל שוב מהחשבון המרכזי.' }
+        : { ok: true, redirectTo: '/login?e=parent_restart', needsEmailVerification: false };
+    }
+    claimedNonce = proof.nonce;
   }
-  const { data: created, error: createError } = await admin.auth.admin.createUser({
+  const knownUser = claimedNonce ? await signupClaimUser(admin, claimedNonce) : null;
+  const { data: created, error: createError } = knownUser
+    ? { data: { user: { id: knownUser, email_confirmed_at: new Date().toISOString() } }, error: null }
+    : await admin.auth.admin.createUser({
     email: data.email,
     password: data.password,
     email_confirm: parentVerified,
@@ -266,11 +276,13 @@ async function runOnboarding(
       code === 'email_exists' ||
       code === 'user_already_exists' ||
       /already (been )?registered/i.test(createError?.message ?? '');
+    if (claimedNonce) await abortSignupClaim(admin, claimedNonce);
     return {
       ok: false,
       error: exists ? 'כתובת האימייל כבר רשומה — נסו להתחבר' : 'לא הצלחנו ליצור משתמש. נסו שוב.',
     };
   }
+  if (claimedNonce) await noteSignupUser(admin, claimedNonce, created.user.id);
 
   if (parentVerified && created.user && !created.user.email_confirmed_at) {
     const { data: confirmed, error: confirmError } = await admin.auth.admin.updateUserById(created.user.id, { email_confirm: true });
@@ -291,10 +303,8 @@ async function runOnboarding(
 
   const userId = signUpData.user?.id;
   if (!userId) {
+    if (claimedNonce) await abortSignupClaim(admin, claimedNonce);
     return { ok: false, error: 'לא הצלחנו ליצור משתמש. נסו שוב.' };
-  }
-  if (proof) {
-    (await cookies()).set(PROVISION_COOKIE, '', { httpOnly: true, secure: true, sameSite: 'lax', path: '/', maxAge: 0 });
   }
 
   const mealCountRaw = formData.get('meal_count');
@@ -478,10 +488,16 @@ async function runOnboarding(
         issuedAt: nowS, expiresAt: nowS + PARENT_SESSION_TTL_SECONDS,
       })
       : 'failed';
-    if (!sessionId || !packed || recorded !== 'recorded') {
-      try { await supabase.auth.signOut({ scope: 'local' }); } catch { /* the parent login can mint a fresh session */ }
+    const finished = recorded === 'recorded' && sessionId ? await finishSignupClaim(admin, proof.nonce, userId, sessionId) : false;
+    if (!sessionId || !packed || recorded !== 'recorded' || !finished) {
+      if (sessionId) {
+        try { await admin.rpc('parent_session_revoke', { p_user: userId, p_session: sessionId }); } catch { /* no grant row is left usable */ }
+      }
+      try { await supabase.auth.signOut({ scope: 'global' }); } catch { /* still withhold the cookie */ }
+      await abortSignupClaim(admin, proof.nonce);
       return { ok: true, redirectTo: '/login?e=parent_restart', needsEmailVerification: false };
     }
+    (await cookies()).set(PROVISION_COOKIE, '', { httpOnly: true, secure: true, sameSite: 'lax', path: '/', maxAge: 0 });
     (await cookies()).set(PARENT_SESSION_COOKIE, packed, { httpOnly: true, secure: true, sameSite: 'lax', path: '/', maxAge: PARENT_SESSION_COOKIE_MAX_AGE });
   }
 

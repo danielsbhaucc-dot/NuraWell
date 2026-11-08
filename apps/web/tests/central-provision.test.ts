@@ -81,10 +81,11 @@ describe('product provisioning gate', () => {
     expect(form).toMatch(/unpackProvision/);
     expect(form).toMatch(/intent=signup/);
     expect(action.indexOf('allowProductProvision')).toBeLessThan(action.indexOf('createUser'));
-    expect(action.indexOf("PROVISION_COOKIE, ''")).toBeLessThan(action.indexOf('createUser'));
+    expect(action.indexOf('beginSignupClaim')).toBeLessThan(action.indexOf('createUser'));
+    expect(action.indexOf('finishSignupClaim')).toBeLessThan(action.indexOf("PROVISION_COOKIE, ''"));
     expect(action.indexOf('email_exists')).toBeLessThan(action.indexOf('updateUserById'));
     expect(action).toMatch(/recorded !== 'recorded'/);
-    expect(action).toMatch(/signOut\(\{ scope: 'local' \}\)/);
+    expect(action).toMatch(/signOut\(\{ scope: 'global' \}\)/);
     const callback = readFileSync('app/api/v1/central/callback/route.ts', 'utf8');
     expect(callback.indexOf('entitlementAllowsProvision')).toBeLessThan(callback.indexOf('packProvision'));
     expect(callback).toMatch(/provisionOutcome\(claims, redirect\.tx\.nonce\)/);
