@@ -105,7 +105,7 @@ const listUsers = async (): Promise<NwUser[]> => {
 };
 
 type SigninTx = Tx & { nonce: string; intent?: 'login' | 'signup' };
-type ProvisionBody = { sub: string; lic: string; email: string };
+type ProvisionBody = { product: 'nurawell'; sub: string; lic: string; email: string };
 type SigninOutcome = string | { kind: 'provision'; provision: ProvisionBody } | { kind: 'session'; sessionId: string; userId: string; parentSub: string };
 
 /** Validate the sign-in redirect (cookie, state, error, code). */
@@ -133,7 +133,7 @@ const provisionOutcome = async (claims: { sub: string; lic: string; email?: stri
   if (refusal) return refusal;
   const reason = await licenseReasonFor(claims.lic);
   if (!entitlementAllowsProvision(reason)) return 'no_license';
-  return { kind: 'provision', provision: { sub: claims.sub, lic: claims.lic, email: String(claims.email) } };
+  return { kind: 'provision', provision: { product: 'nurawell', sub: claims.sub, lic: claims.lic, email: String(claims.email) } };
 };
 
 /** R20 sign-in branch: verify (incl. nonce + verified email), find the NuraWell account, mint a NuraWell session. */

@@ -5,7 +5,7 @@ import { accessClosed } from './parent-signin';
 /** Short-lived proof that this browser finished parent OIDC with an active NuraWell license. */
 export const PROVISION_COOKIE = 'pl_provision';
 
-export type ProvisionProof = { sub: string; lic: string; email: string; exp: number };
+export type ProvisionProof = { product: 'nurawell'; sub: string; lic: string; email: string; exp: number };
 export type ParentIdentity = { sub: string; lic: string; email?: string; email_verified?: boolean };
 
 const LIC = /^lic_[A-Za-z0-9_-]{4,80}$/;
@@ -34,8 +34,8 @@ export function localMethodAllowed(mode: SigninMode): boolean {
 export function packProvision(proof: ProvisionProof, secret: string): string | null {
   if (secret.length < 32) return null;
   const email = norm(proof.email);
-  if (!email || !LIC.test(proof.lic) || proof.sub.length < 4 || !Number.isFinite(proof.exp)) return null;
-  const body = Buffer.from(JSON.stringify({ sub: proof.sub, lic: proof.lic, email, exp: proof.exp })).toString('base64url');
+  if (proof.product !== 'nurawell' || !email || !LIC.test(proof.lic) || proof.sub.length < 4 || !Number.isFinite(proof.exp)) return null;
+  const body = Buffer.from(JSON.stringify({ product: 'nurawell', sub: proof.sub, lic: proof.lic, email, exp: proof.exp })).toString('base64url');
   const mac = createHmac('sha256', secret).update(body).digest('base64url');
   return `${body}.${mac}`;
 }
@@ -53,9 +53,10 @@ export function unpackProvision(raw: string | undefined, secret: string, nowS = 
   try {
     const parsed = JSON.parse(Buffer.from(body, 'base64url').toString()) as Partial<ProvisionProof>;
     if (typeof parsed.exp !== 'number' || parsed.exp < nowS) return null;
+    if (parsed.product !== 'nurawell') return null;
     if (typeof parsed.sub !== 'string' || typeof parsed.lic !== 'string' || typeof parsed.email !== 'string') return null;
     if (provisionRefusal({ sub: parsed.sub, lic: parsed.lic, email: parsed.email, email_verified: true })) return null;
-    return { sub: parsed.sub, lic: parsed.lic, email: norm(parsed.email), exp: parsed.exp };
+    return { product: 'nurawell', sub: parsed.sub, lic: parsed.lic, email: norm(parsed.email), exp: parsed.exp };
   } catch {
     return null;
   }

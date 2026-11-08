@@ -37,6 +37,9 @@ import { recordRetentionChoice } from '@/lib/module-api/privacy-retention/lib-pr
 import { recordConsentEvidence, validateSubmission } from '@/lib/module-api/legal/lib-legal-record-evidence';
 import { allowProductProvision, PROVISION_COOKIE, unpackProvision } from '@/lib/central/parent-provision';
 import { accessClosed, signinMode } from '@/lib/central/parent-signin';
+import { issueSessionForUser } from '@/lib/auth/issue-session';
+import { recordParentSessionGrant } from '@/lib/central/parent-data-plane';
+import { packParentSession, PARENT_SESSION_COOKIE, PARENT_SESSION_COOKIE_MAX_AGE, PARENT_SESSION_TTL_SECONDS } from '@/lib/central/parent-session';
 
 const timeRegex = /^([01]\d|2[0-3]):[0-5]\d$/;
 
@@ -234,10 +237,12 @@ export async function completeOnboarding(
   const provision = allowProductProvision(mode, proof, data.email);
   if (provision === 'missing') return { ok: false, error: 'צריך להזדהות בחשבון המרכזי עם מנוי פעיל לפני ההרשמה' };
   if (provision === 'email') return { ok: false, error: 'האימייל צריך להיות האימייל המאומת מהחשבון המרכזי' };
+  // Only the signed parent proof for this exact email confirms the new account. Off mode still sends the product letter.
+  const parentVerified = provision === 'ok' && proof !== null;
   const { data: created, error: createError } = await admin.auth.admin.createUser({
     email: data.email,
     password: data.password,
-    email_confirm: false,
+    email_confirm: parentVerified,
     // the name lives only in the encrypted profile (profiles.full_name); never copy it into auth metadata
     user_metadata: {
       username: data.email.split('@')[0],
@@ -257,14 +262,20 @@ export async function completeOnboarding(
     };
   }
 
-  const { error: resendError } = await supabase.auth.resend({
-    type: 'signup',
-    email: data.email,
-    options: { emailRedirectTo },
-  });
-  if (resendError) {
-    // eslint-disable-next-line no-console
-    console.warn('[onboarding] confirmation email send failed', resendError.status ?? '');
+  if (parentVerified && created.user && !created.user.email_confirmed_at) {
+    const { data: confirmed, error: confirmError } = await admin.auth.admin.updateUserById(created.user.id, { email_confirm: true });
+    if (!confirmError && confirmed.user) created.user = confirmed.user;
+  }
+  if (!parentVerified) {
+    const { error: resendError } = await supabase.auth.resend({
+      type: 'signup',
+      email: data.email,
+      options: { emailRedirectTo },
+    });
+    if (resendError) {
+      // eslint-disable-next-line no-console
+      console.warn('[onboarding] confirmation email send failed', resendError.status ?? '');
+    }
   }
   const signUpData = { user: created.user };
 
@@ -439,7 +450,30 @@ export async function completeOnboarding(
     console.warn('[complete-onboarding] challenge enroll failed', err);
   });
 
-  const needsEmailVerification = !signUpData.user?.email_confirmed_at;
+  const needsEmailVerification = !parentVerified && !signUpData.user?.email_confirmed_at;
+  if (parentVerified && proof) {
+    const session = await issueSessionForUser(admin, userId);
+    const sessionId = session.ok ? session.sessionId : null;
+    const nowS = Math.floor(Date.now() / 1000);
+    const secret = process.env.PLATFORM_ID_CLIENT_SECRET ?? '';
+    const packed = sessionId
+      ? packParentSession({
+        product: 'nurawell', userId, sessionId, parentSub: proof.sub,
+        iat: nowS, exp: nowS + PARENT_SESSION_TTL_SECONDS,
+      }, secret)
+      : null;
+    const recorded = packed && sessionId
+      ? await recordParentSessionGrant(admin, {
+        userId, sessionId, parentSub: proof.sub,
+        issuedAt: nowS, expiresAt: nowS + PARENT_SESSION_TTL_SECONDS,
+      })
+      : 'failed';
+    if (!sessionId || !packed || recorded !== 'recorded') {
+      try { await supabase.auth.signOut({ scope: 'local' }); } catch { /* the parent login can mint a fresh session */ }
+      return { ok: true, redirectTo: '/login?e=parent_restart', needsEmailVerification: false };
+    }
+    (await cookies()).set(PARENT_SESSION_COOKIE, packed, { httpOnly: true, secure: true, sameSite: 'lax', path: '/', maxAge: PARENT_SESSION_COOKIE_MAX_AGE });
+  }
 
   return {
     ok: true,

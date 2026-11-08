@@ -10,7 +10,7 @@ import {
 } from '@/lib/central/parent-provision';
 
 const secret = 's'.repeat(32);
-const proof = { sub: 'sub_A', lic: 'lic_comp_nw_1111', email: 'a@x.co', exp: 2_000_000_000 };
+const proof = { product: 'nurawell' as const, sub: 'sub_A', lic: 'lic_comp_nw_1111', email: 'a@x.co', exp: 2_000_000_000 };
 
 describe('product provisioning gate', () => {
   it('refuses unverified email and a missing license before any account exists', () => {
@@ -38,6 +38,9 @@ describe('product provisioning gate', () => {
     expect(unpackProvision(packed!, secret, proof.exp + 5)).toBeNull();
     expect(unpackProvision(`${packed!.slice(0, -2)}aa`, secret, proof.exp - 10)).toBeNull();
     expect(unpackProvision(packed!, 'x'.repeat(32), proof.exp - 10)).toBeNull();
+    expect(packProvision({ ...proof, product: 'elsewhere' as 'nurawell' }, secret)).toBeNull();
+    const foreign = Buffer.from(JSON.stringify({ sub: proof.sub, lic: proof.lic, email: proof.email, exp: proof.exp })).toString('base64url');
+    expect(unpackProvision(foreign, secret, proof.exp - 10)).toBeNull();
   });
 
   it('keeps Face ID and QR from minting a local session while central-only mode is on', () => {
@@ -60,6 +63,10 @@ describe('product provisioning gate', () => {
     expect(form).toMatch(/unpackProvision/);
     expect(form).toMatch(/intent=signup/);
     expect(action.indexOf('allowProductProvision')).toBeLessThan(action.indexOf('createUser'));
+    expect(action).toMatch(/email_confirm: parentVerified/);
+    expect(action.indexOf('if (!parentVerified)')).toBeLessThan(action.indexOf('auth.resend'));
+    expect(action).toMatch(/updateUserById\(created\.user\.id, \{ email_confirm: true \}\)/);
+    expect(action).not.toMatch(/updateUserById\([^)]*email[^)]*email_confirm/);
     expect(action).toMatch(/pl_sub: proof\.sub/);
     expect(action).not.toMatch(/identity\/signup|copyPassword/);
     const passkey = login.slice(login.indexOf('const handlePasskey'), login.indexOf('const handleBackup'));
