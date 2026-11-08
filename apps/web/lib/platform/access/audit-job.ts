@@ -1,6 +1,7 @@
 import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { prefilter, toModelPayload, type AccessEvent, type Flagged } from '@platform/access';
+import { readableGrantReason } from './grant-reason';
 
 export type AuditModel = (payload: string) => Promise<{ ref: string; severity: 'low' | 'medium' | 'high'; summary: string }[]>;
 export type AuditDeps = { model?: AuditModel; alert?: (text: string) => Promise<void>; now?: number; productId?: string };
@@ -42,8 +43,12 @@ export async function runAccessAudit(db: SupabaseClient, deps: AuditDeps = {}) {
   const ev: AccessEvent[] = [];
   for (const r of (logs.data ?? []) as { at: string; actor_id: string; subject_id: string | null; event: string; country: string | null; device_id: string | null }[])
     if (r.event === 'view') ev.push({ at: Date.parse(r.at), actorId: r.actor_id, kind: 'pii_view', subjectId: r.subject_id, country: r.country, deviceId: r.device_id });
-  for (const r of (grants.data ?? []) as { created_at: string; actor_id: string; subject_id: string; reason: string; ticket_ref: string | null; country: string | null; device_id: string | null }[])
-    ev.push({ at: Date.parse(r.created_at), actorId: r.actor_id, kind: 'pii_grant', subjectId: r.subject_id, reason: r.reason, ticketRef: r.ticket_ref, country: r.country, deviceId: r.device_id });
+  let reasonUnreadable = false;
+  for (const r of (grants.data ?? []) as { created_at: string; actor_id: string; subject_id: string; reason: string; ticket_ref: string | null; country: string | null; device_id: string | null }[]) {
+    const reason = readableGrantReason(r.reason);
+    if (!reason) { reasonUnreadable = true; continue; }
+    ev.push({ at: Date.parse(r.created_at), actorId: r.actor_id, kind: 'pii_grant', subjectId: r.subject_id, reason, ticketRef: r.ticket_ref, country: r.country, deviceId: r.device_id });
+  }
   for (const r of (probes.data ?? []) as { day: string; hits: number; country: string | null }[])
     ev.push({ at: Date.parse(`${r.day}T12:00:00Z`), actorId: 'probe', kind: 'probe', count: r.hits });
   for (const r of (enrolls.data ?? []) as { created_at: string; user_id: string; completed_at: string | null; match_result: string | null; device_id: string | null }[])
@@ -52,11 +57,14 @@ export async function runAccessAudit(db: SupabaseClient, deps: AuditDeps = {}) {
   const productId = deps.productId ?? 'nurawell';
   const { data: run } = await db.from('access_audit_runs').insert({ product_id: productId, window_from: from, window_to: to, events: ev.length }).select('id').single();
   const runId = (run as { id: string } | null)?.id;
-  if (!ev.length) return { runId, events: 0, flagged: 0, modelCalled: false, findings: 0 }; // no events → no AI call
+  if (!ev.length) {
+    if (runId && reasonUnreadable) await db.from('access_audit_runs').update({ error: 'reason_unreadable' }).eq('id', runId);
+    return { runId, events: 0, flagged: 0, modelCalled: false, findings: 0 };
+  }
 
   const k = (hist.data ?? []) as { country: string | null; device_id: string | null }[];
   const flagged = prefilter(ev, { countries: new Set(k.map((x) => x.country).filter(Boolean) as string[]), devices: new Set(k.map((x) => x.device_id).filter(Boolean) as string[]) });
-  let modelCalled = false; let error: string | null = null;
+  let modelCalled = false; let error: string | null = reasonUnreadable ? 'reason_unreadable' : null;
   let out: { ref: string; severity: 'low' | 'medium' | 'high'; summary: string }[] = [];
   if (flagged.length) {
     try { modelCalled = true; out = await (deps.model ?? groqAuditModel)(toModelPayload(flagged)); }

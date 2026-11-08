@@ -82,7 +82,7 @@ describe('write sealing (server fetch wrapper)', () => {
       const live = Object.keys(spec.columns).some((c) => !isBlocked(t, c));
       expect(FIELD_V2_TABLES.includes(t), t).toBe(live);
     }
-    expect(FIELD_V2_BACKFILL_TABLES).toEqual(FIELD_V2_TABLES.filter((t) => !(t in APPEND_ONLY_TABLES)));
+    expect(FIELD_V2_BACKFILL_TABLES).toEqual(FIELD_V2_TABLES.filter((t) => !(t in APPEND_ONLY_TABLES) && t !== 'pii_access_grants'));
     expect(FIELD_V2_TABLES).toContain('pending_almog_commitment_jobs');
   });
 
