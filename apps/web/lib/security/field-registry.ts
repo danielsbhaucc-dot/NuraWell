@@ -278,6 +278,8 @@ export const ENCRYPTED_TABLES = {
   chat_transcript_admin_audit_log: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { payload: 'json', reason: 'text', summary: 'text' } },
   delivery_log: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { error: 'text', recipient_mask: 'text' } },
   billing_events: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { metadata: 'json' } },
+  // Invoice PDF/link may carry provider access tokens in the query string — seal at rest; decrypt only for authorized navigation.
+  billing_invoices: { userCol: 'user_id', rowCol: 'id', guardCols: [], columns: { doc_url: 'text' } },
   error_events: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { message: 'text', stack: 'text', tags: 'json' } },
   // ---- system-owned, key purpose 'ops'
   ceo_conversations: { system: 'ops', userCol: '', rowCol: 'chat_key', columns: { summary: 'text', turns: 'json' } },
@@ -352,7 +354,7 @@ export const FIELD_V2_TABLES: readonly string[] = [
   'ops_trusted_devices', 'ip_blocks', 'security_incidents', 'stepup_requests', 'tg_action_nonces', 'security_signals',
   'legal_export_secrets', 'consent_evidence', 'consent_evidence_attestations', 'legal_access_log', 'media_receipts',
   // 2026-10-26 enc-close: blind indexes / SQL readers moved (000208) + app-only writers
-  'user_consents', 'journey_task_executions', 'almog_kickoff_status', 'billing_events', 'ceo_pending_actions', 'notify_quality_events',
+  'user_consents', 'journey_task_executions', 'almog_kickoff_status', 'billing_events', 'billing_invoices', 'ceo_pending_actions', 'notify_quality_events',
   // 2026-10-26 enc-close-2: SQL dedupe/merge moved to the app + blind indexes (000212)
   'task_events', 'task_definitions', 'user_task_assignments', 'challenge_enrollments', 'admin_audit_log',
   // 000214: audit/security detail split (plain facts + sealed detail); session trail swept by cron
@@ -384,8 +386,8 @@ export const SWEEP_TABLES: Readonly<Record<string, { maxPlainMinutes: number; ts
  * this constant for sealing or triggers. After those PRs merge, apply supabase/gated/000211_iam_admin_enc_prep.sql,
  * move these into ENCRYPTED_TABLES + FIELD_V2_TABLES, and regenerate the enc-reject triggers.
  * iam_audit_log.detail/target and iam_grants.reason are live since 000222 (ENCRYPTED_TABLES).
- * pii_access_grants.*, access_audit_findings.summary/signals, access_audit_runs.error, ops_device_enrollments.label/location, pii_access_log.country/resource, parent_signup_claims.email, admin_passkeys.telegram_user_id, gideon_device_requests.chat_id, gideon_stranger_sim.chat_id, gideon_telegram_identities.from_id are live in ENCRYPTED_TABLES.
- * Not listed (stays pending): ops_probe_daily.country (SQL probe counter upsert, 000198);
+ * pii_access_grants.*, access_audit_findings.summary/signals, access_audit_runs.error, ops_device_enrollments.label/location, pii_access_log.country/resource, parent_signup_claims.email, admin_passkeys.telegram_user_id, gideon_device_requests.chat_id, gideon_stranger_sim.chat_id, gideon_telegram_identities.from_id, billing_invoices.doc_url are live in ENCRYPTED_TABLES.
+ * ops_probe_daily.country: non_sensitive crypto taxonomy (ISO-2+day+ip_hash still linkable ops data; RLS/retention unchanged).
  * ops_enroll_blocks.reason is verified fixed-code only (single writer lib/ops/enrollment.ts upserts 'wrong_number').
  */
 export const GATED_AFTER_IAM_MERGE: Readonly<Record<string, EncryptedTable>> = {
@@ -393,7 +395,7 @@ export const GATED_AFTER_IAM_MERGE: Readonly<Record<string, EncryptedTable>> = {
 };
 
 /** Registered for read/write sealing, but the hosted backfill cron must not rewrite rows. A local dummy script does. */
-export const FIELD_V2_LOCAL_BACKFILL_ONLY: readonly string[] = ['pii_access_grants', 'access_audit_findings', 'access_audit_runs', 'ops_device_enrollments', 'parent_signup_claims', 'admin_passkeys', 'gideon_device_requests', 'gideon_stranger_sim', 'gideon_telegram_identities'];
+export const FIELD_V2_LOCAL_BACKFILL_ONLY: readonly string[] = ['pii_access_grants', 'access_audit_findings', 'access_audit_runs', 'ops_device_enrollments', 'parent_signup_claims', 'admin_passkeys', 'gideon_device_requests', 'gideon_stranger_sim', 'gideon_telegram_identities', 'billing_invoices'];
 
 /**
  * Append-only evidence tables (a trigger rejects UPDATE/DELETE): historical rows stay as written and only rows

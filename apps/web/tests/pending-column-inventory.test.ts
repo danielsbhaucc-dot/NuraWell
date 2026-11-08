@@ -15,26 +15,24 @@ const classifiedPending = () => {
 };
 
 describe('pending column inventory', () => {
-  it('maps each sensitive pending column once and leaves the other pending words out', () => {
+  it('maps each sensitive pending column once (none left after doc_url register)', () => {
     const mapped = PENDING_COLUMN_INVENTORY.map((row) => `${row.table}.${row.column}`).sort();
     expect(mapped).toEqual(classifiedPending());
-    expect(mapped).toEqual(['billing_invoices.doc_url']);
+    expect(mapped).toEqual([]);
     expect(PENDING_WORD_NOT_A_PLAINTEXT_COLUMN).toHaveLength(8);
-    expect(mapped).not.toContain('error_events.message');
-    expect(mapped).not.toContain('ip_block_ranges.reason');
-    expect(mapped).not.toContain('ops_probe_daily.country');
-    expect(mapped).not.toContain('gideon_stranger_sim.chat_id');
   });
 
-  it('documents triage: sealed/fixed/aggregate out of pending; doc_url held for writer', () => {
+  it('documents registered doc_url + triage notes; not a full-PII finish', () => {
+    expect(COLUMN_CLASSIFICATION.billing_invoices.doc_url[1]).toMatch(/registered/);
+    expect(COLUMN_CLASSIFICATION.billing_invoices.doc_url[1]).not.toMatch(/pending \(not encrypted yet\)/);
     expect(COLUMN_CLASSIFICATION.error_events.message[1]).toMatch(/registered/);
     expect(COLUMN_CLASSIFICATION.ip_block_ranges.reason[0]).toBe('non_sensitive');
+    expect(COLUMN_CLASSIFICATION.ip_block_ranges.reason[1]).toMatch(/sole app writer|literal 'manual'/);
     expect(COLUMN_CLASSIFICATION.ops_probe_daily.country[0]).toBe('non_sensitive');
-    expect(COLUMN_CLASSIFICATION.billing_invoices.doc_url[1]).toMatch(/pending \(not encrypted yet\)/);
-    expect(NEXT_ENCRYPTION_STEP).toMatch(/nonempty legacy|PK nonempty/i);
-    expect(NEXT_ENCRYPTION_STEP).toMatch(/billing_invoices\.doc_url/);
+    expect(COLUMN_CLASSIFICATION.ops_probe_daily.country[1]).toMatch(/linkable pseudonymous|not a public/);
+    expect(NEXT_ENCRYPTION_STEP).toMatch(/billing_invoices\.doc_url registered/i);
+    expect(NEXT_ENCRYPTION_STEP).toMatch(/append-only/i);
     expect(NEXT_ENCRYPTION_STEP).toMatch(/Not a full-PII finish/i);
-    expect(NEXT_ENCRYPTION_STEP).not.toMatch(/\ball PII complete\b/i);
   });
 
   it('keeps the IAM sealing list unused and stores no sample personal data', () => {

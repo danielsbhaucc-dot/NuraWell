@@ -165,7 +165,7 @@ export const COLUMN_CLASSIFICATION: Readonly<Record<string, Readonly<Record<stri
   billing_invoices: {
     doc_number: ["non_sensitive", "invoice serial number, no personal content"],
     doc_type: ["non_sensitive", "enum/status/routing code, no personal content"],
-    doc_url: ["sensitive", "pending (not encrypted yet): no in-repo writer; provider sync may place URL with access token — hold until billing writer lands; do not seal by column name alone"],
+    doc_url: ["sensitive", "registered (per-user DEK); seal on write via field-fetch even before a billing sync writer exists; decrypt only on authorized server read for navigation — never put ciphertext in href; browser client has no field-fetch"],
     product_id: ["non_sensitive", "identifier/key or public credential material, no personal content"],
     provider: ["non_sensitive", "enum/status/routing code, no personal content"],
   },
@@ -531,7 +531,7 @@ export const COLUMN_CLASSIFICATION: Readonly<Record<string, Readonly<Record<stri
     product_id: ["non_sensitive", "staff-authored catalog/config content, not user data"],
   },
   ip_block_ranges: {
-    reason: ["non_sensitive", "fixed code only: security-core/ir.ts upserts literal 'manual'; free text would need seal like ip_blocks.note"],
+    reason: ["non_sensitive", "fixed code: sole app writer security-core/ir.ts upserts literal 'manual' (no user-editable input); SQL only deletes ranges; free text would need seal like ip_blocks.note"],
   },
   ip_blocks: {
     ip_hash: ["non_sensitive", "hash/digest/signature, not reversible to content"],
@@ -829,7 +829,7 @@ export const COLUMN_CLASSIFICATION: Readonly<Record<string, Readonly<Record<stri
     status: ["non_sensitive", "enum/status/routing code, no personal content"],
   },
   ops_probe_daily: {
-    country: ["non_sensitive", "ISO-3166-1 alpha-2 aggregate (left 2 chars) keyed by day+ip_hash; SQL upsert 000198; not a personal location field — crypto not required"],
+    country: ["non_sensitive", "crypto taxonomy only (not a public/non-personal claim): ISO-3166-1 alpha-2 aggregate with day+ip_hash is still linkable pseudonymous operational data; RLS/redaction/retention unchanged; SQL upsert 000198 — app crypto not required for this counter"],
     ip_hash: ["non_sensitive", "hash/digest/signature, not reversible to content"],
     product_id: ["non_sensitive", "identifier/key or public credential material, no personal content"],
   },
