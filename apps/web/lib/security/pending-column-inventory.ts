@@ -109,16 +109,7 @@ export const PENDING_COLUMN_INVENTORY: readonly PendingFinding[] = [
     read: 'audit-job.ts בוחר country למונה, בלי סינון SQL על המדינה',
     next: 'לא מצפינים כל עוד ה-SQL כותב בלי מפתח. להעביר את הכתיבה לאפליקציה לפני חתימה.',
   },
-  {
-    table: 'parent_signup_claims',
-    column: 'email',
-    sensitivity: 'כתובת אימייל של ההורה בטענת הרשמה',
-    verdict: 'מפתח_שאילתה',
-    write: 'parent_signup_begin (SQL security definer) מכניס email; רק service_role',
-    read: 'השוואת שוויון SQL ב-begin מול p_email; אין בחירה באפליקציה לתצוגה',
-    next: 'לא מצפינים לפני העברת ההשוואה לאפליקציה או אינדקס עיוור. nonce נשאר מפתח ראשי.',
-  },
 ];
 
 export const NEXT_ENCRYPTION_STEP =
-  'פערי התוכן הסגורים (grants/log/findings/enroll/runs). נשארו מפתחות שאילתה בלי אינדקס עיוור + doc_url בלי כותב. השער הבא: UI-release automated checks + exact GUI URLs.';
+  'parent_signup_claims.email sealed+bidx (000251); local legacy backfill closed (legacy=0). Remaining query-key gaps: 4 telegram tables (not fixed). 9 classification-pending (not all need crypto). Production encryption approval still required.';

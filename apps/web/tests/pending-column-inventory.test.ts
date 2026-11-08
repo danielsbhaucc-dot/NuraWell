@@ -18,7 +18,7 @@ describe('pending column inventory', () => {
   it('maps each sensitive pending column once and leaves the other pending words out', () => {
     const mapped = PENDING_COLUMN_INVENTORY.map((row) => `${row.table}.${row.column}`).sort();
     expect(mapped).toEqual(classifiedPending());
-    expect(mapped).toHaveLength(10);
+    expect(mapped).toHaveLength(9);
     expect(PENDING_WORD_NOT_A_PLAINTEXT_COLUMN).toHaveLength(8);
     // sealed content gaps must not linger as classification-pending
     expect(mapped).not.toContain('pii_access_log.country');
@@ -35,10 +35,11 @@ describe('pending column inventory', () => {
       'gideon_stranger_sim.chat_id',
       'gideon_telegram_identities.from_id',
       'ops_probe_daily.country',
-      'parent_signup_claims.email',
     ]);
     for (const row of held) expect(row.next).toMatch(/לא מצפינים/);
-    expect(NEXT_ENCRYPTION_STEP).toMatch(/UI-release|מפתחות שאילתה/);
+    expect(held.map((row) => `${row.table}.${row.column}`)).not.toContain('parent_signup_claims.email');
+    expect(PENDING_COLUMN_INVENTORY.map((row) => `${row.table}.${row.column}`)).not.toContain('parent_signup_claims.email');
+    expect(NEXT_ENCRYPTION_STEP).toMatch(/parent_signup_claims\.email|bidx|Legacy|telegram/i);
     expect(NEXT_ENCRYPTION_STEP).not.toMatch(/chat_id|from_id|telegram_user_id/);
   });
 

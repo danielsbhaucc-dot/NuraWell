@@ -321,6 +321,8 @@ export const ENCRYPTED_TABLES = {
   access_audit_findings: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { summary: 'text', signals: 'text[]' } },
   // operational run error only (not shown on findings screen). Same system audit key. No SQL predicate on the text.
   access_audit_runs: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { error: 'text' } },
+  // parent signup claim email: sealed in beginSignupClaim; SQL equality via email_bidx (nonce remains PK lock).
+  parent_signup_claims: { system: 'audit', userCol: '', rowCol: 'nonce', guardCols: [], columns: { email: 'text' } },
 } as const satisfies Record<string, EncryptedTable>;
 
 /**
@@ -359,6 +361,7 @@ export const FIELD_V2_TABLES: readonly string[] = [
   'access_audit_runs',
   'ops_device_enrollments',
   'pii_access_log',
+  'parent_signup_claims',
 ];
 
 /**
@@ -375,7 +378,7 @@ export const SWEEP_TABLES: Readonly<Record<string, { maxPlainMinutes: number; ts
  * this constant for sealing or triggers. After those PRs merge, apply supabase/gated/000211_iam_admin_enc_prep.sql,
  * move these into ENCRYPTED_TABLES + FIELD_V2_TABLES, and regenerate the enc-reject triggers.
  * iam_audit_log.detail/target and iam_grants.reason are live since 000222 (ENCRYPTED_TABLES).
- * pii_access_grants.*, access_audit_findings.summary/signals, access_audit_runs.error, ops_device_enrollments.label/location, pii_access_log.country/resource are live in ENCRYPTED_TABLES.
+ * pii_access_grants.*, access_audit_findings.summary/signals, access_audit_runs.error, ops_device_enrollments.label/location, pii_access_log.country/resource, parent_signup_claims.email are live in ENCRYPTED_TABLES.
  * Not listed (stays pending): ops_probe_daily.country (SQL probe counter upsert, 000198);
  * ops_enroll_blocks.reason is verified fixed-code only (single writer lib/ops/enrollment.ts upserts 'wrong_number').
  */
@@ -384,7 +387,7 @@ export const GATED_AFTER_IAM_MERGE: Readonly<Record<string, EncryptedTable>> = {
 };
 
 /** Registered for read/write sealing, but the hosted backfill cron must not rewrite rows. A local dummy script does. */
-export const FIELD_V2_LOCAL_BACKFILL_ONLY: readonly string[] = ['pii_access_grants', 'access_audit_findings', 'access_audit_runs', 'ops_device_enrollments'];
+export const FIELD_V2_LOCAL_BACKFILL_ONLY: readonly string[] = ['pii_access_grants', 'access_audit_findings', 'access_audit_runs', 'ops_device_enrollments', 'parent_signup_claims'];
 
 /**
  * Append-only evidence tables (a trigger rejects UPDATE/DELETE): historical rows stay as written and only rows

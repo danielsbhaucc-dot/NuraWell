@@ -15,6 +15,19 @@ vi.mock('@/lib/ops/device-notify', () => ({ ownerAdminIds: async () => ['0000000
 vi.mock('@/lib/ceo/channel', () => ({ allowedChatIds: () => ['42'] }));
 vi.mock('@/lib/ops-host', () => ({ opsCanonicalHostname: () => 'ops.example.test' }));
 
+/** Enrollment gates only — seal is covered by ops-enroll-facts-enc; stub so openEnrollment does not need a live DEK. */
+vi.mock('@/lib/ops/enroll-facts', () => ({
+  sealEnrollFact: async (_col: 'label' | 'location', value: string) => {
+    const plain = value.slice(0, 80);
+    return plain ? `enc:v2:test:${plain}` : '';
+  },
+  readableEnrollFact: (value: unknown) => {
+    if (typeof value !== 'string' || value.length === 0 || value.startsWith('enc:')) return '';
+    return value;
+  },
+  ENROLL_FACT_MAX_PLAIN: 80,
+}));
+
 import { completeFactor, decideMatch, finishEnrollment, issueEnrollmentLink, openEnrollment, registrationOptions } from '@/lib/ops/enrollment';
 import { handleEnrollUpdate } from '@/lib/ops/enroll-telegram';
 

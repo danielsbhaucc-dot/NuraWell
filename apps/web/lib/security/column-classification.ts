@@ -1162,7 +1162,8 @@ export const COLUMN_CLASSIFICATION: Readonly<Record<string, Readonly<Record<stri
   parent_signup_claims: {
     nonce: ["non_sensitive", "opaque single-use claim lock / PK (SQL equality). Encryption-taxonomy only: still a linkable operational identifier — do not weaken RLS, log redaction, or retention; not public/non-personal for privacy"],
     parent_sub: ["non_sensitive", "opaque parent account key (SQL equality), same role as parent_session_grants.parent_sub. Encryption-taxonomy only: pseudonymous/linkable operational id — RLS/redaction/retention unchanged; not public"],
-    email: ["sensitive", "pending (not encrypted yet): personal email; SQL equality compare in parent_signup_begin (mismatch); service_role-only table; needs app-side compare or blind index before seal — do not encrypt the PK/lock"],
+    email: ["sensitive", "enc:v2 at rest (system:audit); SQL equality via keyed email_bidx in parent_signup_begin; nonce remains PK lock; legacy plaintext retained until retention/migration — not auto-closed"],
+    email_bidx: ["non_sensitive", "keyed HMAC blind index of normalized email (filter/equality), not reversible"],
     state: ["non_sensitive", "enum open/done/failed (CHECK), no personal content"],
   },
   parent_session_grants: {

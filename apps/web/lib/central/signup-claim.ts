@@ -30,12 +30,22 @@ function missing(error: { code?: string; message?: string } | null): boolean {
     || /parent_signup_begin|parent_signup_claims/i.test(error?.message ?? '');
 }
 
-/** Claim this verified parent nonce. The attempt id is the owner. Email is not the lock. */
+/** Claim this verified parent nonce. The attempt id is the owner. Email is not the lock.
+ * Email is sealed + keyed-bidx in-app before the RPC; missing key fails closed before state/user creation. */
 export async function beginSignupClaim(admin: unknown, proof: Pick<ProvisionProof, 'nonce' | 'sub' | 'email'>): Promise<SignupClaimResult> {
   try {
+    const { sealSignupEmailBinding } = await import('@/lib/central/signup-claim-email');
+    let sealed: string;
+    let bidx: string;
+    try {
+      ({ sealed, bidx } = await sealSignupEmailBinding(proof.email));
+    } catch {
+      // Missing/invalid PII key or seal failure — do not create claim state or user.
+      return { status: 'rejected' };
+    }
     const client = admin as Rpc;
     const { data, error } = await client.rpc('parent_signup_begin', {
-      p_nonce: proof.nonce, p_sub: proof.sub, p_email: proof.email,
+      p_nonce: proof.nonce, p_sub: proof.sub, p_email_sealed: sealed, p_email_bidx: bidx,
     });
     if (missing(error)) return { status: 'unapplied' };
     if (error) return { status: 'rejected' };
