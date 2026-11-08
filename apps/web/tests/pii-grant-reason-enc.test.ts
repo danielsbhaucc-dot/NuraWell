@@ -137,3 +137,43 @@ describe('pii access grant reason', () => {
     expect(readFileSync(new URL('../lib/security/field-backfill.ts', import.meta.url), 'utf8')).toMatch(/FIELD_V2_LOCAL_BACKFILL_ONLY/);
   });
 });
+
+describe('access audit summary length', () => {
+  it('keeps 400 Hebrew characters and refuses 401 before sealing', async () => {
+    const within = 'א'.repeat(400);
+    const over = 'ב'.repeat(401);
+    const night = Date.parse('2026-10-25T00:30:00Z');
+    const grant = (subject: string) => ({ created_at: new Date(night).toISOString(), actor_id: A, subject_id: subject, reason: 'חיוב', ticket_ref: null, country: 'IL', device_id: null });
+    const db = fakeDb({ results: {
+      pii_access_log: [[], []],
+      pii_access_grants: [[grant(S), grant(A)]],
+      ops_probe_daily: [[]], ops_device_enrollments: [[]],
+      access_audit_runs: [{ id: 'run' }],
+      access_audit_findings: [null],
+    } });
+    const result = await runAccessAudit(db as never, {
+      now: night + 3600_000,
+      model: async () => [
+        { ref: 'e1', severity: 'high', summary: within },
+        { ref: 'e2', severity: 'medium', summary: over },
+      ],
+    });
+    expect(result.findings).toBe(1);
+    const inserted = db.calls.find((c) => c.table === 'access_audit_findings' && c.op === 'insert')?.args[0] as { summary: string }[];
+    expect(inserted.map((row) => row.summary)).toEqual([within]);
+    expect(JSON.stringify(db.calls)).not.toContain(over);
+    expect(JSON.stringify(db.calls)).not.toContain('ב'.repeat(400));
+    const update = db.calls.find((c) => c.table === 'access_audit_runs' && c.op === 'update')?.args[0] as { error: string; findings: number };
+    expect(update).toMatchObject({ findings: 1, error: 'summary_too_long' });
+
+    const store: Row[] = [];
+    const fn = withFieldDecryption(fakeRest(store));
+    await fn(`${BASE}/access_audit_findings`, { method: 'POST', body: JSON.stringify({ run_id: 'run', summary: within, signals: ['odd_hours'] }) });
+    const sealed = String(store[0]?.summary);
+    expect(sealed.startsWith('enc:v2:')).toBe(true);
+    expect(sealed.includes(within)).toBe(false);
+    expect([...sealed].length).toBeLessThanOrEqual(4000);
+    expect([...sealed].length).toBeGreaterThan(400);
+    expect(await decryptValue('access_audit_findings', 'summary', 'system:audit', SYSTEM_ROW, sealed)).toBe(within);
+  });
+});
