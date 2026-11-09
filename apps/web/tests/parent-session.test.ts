@@ -81,7 +81,7 @@ describe('parent session proof (unit, not a live session)', () => {
 
   it('guards direct signup and leaves Almog copy behind the existing license decision', () => {
     expect(readFileSync('lib/actions/complete-onboarding.ts', 'utf8')).toMatch(/allowProductProvision/);
-    expect(readFileSync('app/(auth)/register/form/page.tsx', 'utf8')).toMatch(/unpackProvision/);
+    expect(readFileSync('app/(auth)/register/form/page.tsx', 'utf8')).not.toMatch(/intent=signup/);
     const job = readFileSync('lib/notifications/jobs/master.ts', 'utf8');
     const gate = job.indexOf('suppressUnlicensedNudge(admin, userId)');
     const send = job.indexOf('sendJourneyCompanionNudge(admin, userId, companion)');

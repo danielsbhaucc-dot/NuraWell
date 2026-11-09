@@ -158,16 +158,26 @@ const LoginFormContent = () => { // skipcq: JS-R1005
     }, leaked ? 4000 : 800);
   };
 
-  const startCentralLogin = () => {
-    window.location.assign('/api/v1/central/signin');
+  /** 'done' = signed in (navigating), 'stop' = message shown, 'native' = keep today's password login. */
+  const centralPasswordLogin = async (mail: string, pass: string): Promise<'done' | 'stop' | 'native'> => {
+    const r = await fetch('/api/v1/central/password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: mail, password: pass }) }).catch(() => null);
+    const d = (await r?.json().catch(() => ({}))) as { ok?: boolean; next?: string; fallback?: string; error?: string } | undefined;
+    if (r?.ok && d?.fallback === 'native') return 'native';
+    if (r?.ok && d?.ok) {
+      try { sessionStorage.setItem(AFTER_LOGIN_KEY, String(Date.now())); } catch { /* non-critical */ }
+      toast.success('התחברת בהצלחה!', 'מעבירים אותך לקורסים...');
+      window.location.assign(isOpsHost && redirect === APP_HOME_PATH ? '/' : redirect);
+      return 'done';
+    }
+    if (d?.error === 'credentials') toast.error('התחברות נכשלה', 'אימייל או סיסמה שגויים');
+    else if (d?.error === 'rate_limited' || d?.error === 'locked') toast.error('יותר מדי ניסיונות', 'אפשר לנסות שוב בעוד כמה דקות');
+    else if (d?.error && SIGNIN_ERRORS[d.error]) window.location.assign(`/login?e=${encodeURIComponent(d.error)}`);
+    else toast.error('שגיאה', 'משהו השתבש, נסו שוב');
+    return 'stop';
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (centralArmed) {
-      startCentralLogin();
-      return;
-    }
     if (!email.includes('@')) {
       toast.error('אימייל לא תקין', 'יש להזין כתובת אימייל עם @');
       return;
@@ -175,6 +185,13 @@ const LoginFormContent = () => { // skipcq: JS-R1005
     setIsLoading(true);
 
     try {
+      if (centralArmed) {
+        // Same screen, central account: the server checks the credentials with the parent identity (existing
+        // NuraWell accounts are linked on first sign-in) and returns either a session or a reason.
+        const central = await centralPasswordLogin(email, password);
+        if (central === 'done') return;
+        if (central === 'stop') return;
+      }
       const supabase = createClient();
       const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
 

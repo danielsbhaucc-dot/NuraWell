@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { AuthBackdrop } from './AuthBackdrop';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -13,16 +13,6 @@ import { MentorBubble } from './MentorBubble';
 export function RegisterLandingClient() {
   const [startOpen, setStartOpen] = useState(false);
   const [howOpen, setHowOpen] = useState(false);
-  const [centralArmed, setCentralArmed] = useState(false);
-
-  useEffect(() => {
-    const ctl = new AbortController();
-    fetch('/api/v1/central/signin?probe=1', { signal: ctl.signal, cache: 'no-store' })
-      .then((r) => (r.ok ? r.json() : { on: false }))
-      .then((d: { on?: boolean }) => setCentralArmed(d.on === true))
-      .catch(() => setCentralArmed(false));
-    return () => ctl.abort();
-  }, []);
 
   return (
     <>
@@ -91,13 +81,7 @@ export function RegisterLandingClient() {
           <div className="space-y-3 pb-4">
             <button
               type="button"
-              onClick={() => {
-                if (centralArmed) {
-                  window.location.assign('/api/v1/central/signin?intent=signup');
-                  return;
-                }
-                setStartOpen(true);
-              }}
+              onClick={() => setStartOpen(true)}
               className="w-full min-h-[52px] rounded-2xl font-black text-lg text-on-dark bg-linear-135 from-primary-700 to-primary-500 shadow-[0_8px_24px_rgba(16,185,129,0.4)] flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 transition-all focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500"
             >
               <Sparkles className="w-5 h-5" aria-hidden />
