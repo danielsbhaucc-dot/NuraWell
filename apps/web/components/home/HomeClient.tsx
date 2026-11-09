@@ -490,7 +490,7 @@ export function HomeClient({
                 className="text-xl font-black mb-2"
                 style={{ color: '#1A1730', fontFamily: "'Rubik','Heebo',sans-serif" }}
               >
-                בוא נתחיל את המסע
+                בואו נתחיל את המסע
               </h3>
               <p className="text-sm max-w-[240px] mx-auto leading-relaxed mb-4" style={{ color: '#9896B8' }}>
                 קופצים למסע, ואני אפתח לך את המדריכים ברגע שהם מוכנים בשבילך
