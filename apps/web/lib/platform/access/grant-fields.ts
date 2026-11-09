@@ -34,7 +34,7 @@ export async function sealTicketRef(value: string | null): Promise<string | null
   if (value.startsWith('enc:v2:')) return value;
   const plain = value.slice(0, TICKET_REF_MAX);
   const cipher = await encryptValue('pii_access_grants', 'ticket_ref', OWNER, SYSTEM_ROW, plain);
-  if (typeof cipher !== 'string' || !cipher.startsWith('enc:v2:') || cipher.includes(plain)) {
+  if (typeof cipher !== 'string' || !cipher.startsWith('enc:v2:') || (plain.length >= 8 && cipher.includes(plain))) {
     throw new Error('ticket_ref_seal_failed');
   }
   return cipher;
@@ -45,7 +45,7 @@ export async function sealGrantCountry(value: string | null): Promise<string | n
   if (value.startsWith('enc:v2:')) return value;
   const plain = value.slice(0, COUNTRY_MAX_PLAIN);
   const cipher = await encryptValue('pii_access_grants', 'country', OWNER, SYSTEM_ROW, plain);
-  if (typeof cipher !== 'string' || !cipher.startsWith('enc:v2:') || cipher.includes(plain)) {
+  if (typeof cipher !== 'string' || !cipher.startsWith('enc:v2:') || (plain.length >= 8 && cipher.includes(plain))) {
     throw new Error('grant_country_seal_failed');
   }
   return cipher;

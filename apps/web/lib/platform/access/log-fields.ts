@@ -15,7 +15,7 @@ export async function sealLogCountry(value: unknown): Promise<string | null> {
   if (value.startsWith('enc:v2:')) return value;
   const plain = value.slice(0, LOG_COUNTRY_MAX);
   const cipher = await encryptValue('pii_access_log', 'country', OWNER, SYSTEM_ROW, plain);
-  if (typeof cipher !== 'string' || !cipher.startsWith('enc:v2:') || cipher.includes(plain)) throw new Error('log_country_seal_failed');
+  if (typeof cipher !== 'string' || !cipher.startsWith('enc:v2:') || (plain.length >= 8 && cipher.includes(plain))) throw new Error('log_country_seal_failed');
   return cipher;
 }
 
@@ -26,7 +26,7 @@ export async function sealLogResource(value: unknown): Promise<string> {
   const plain = value.slice(0, LOG_RESOURCE_MAX);
   if (!plain) return '';
   const cipher = await encryptValue('pii_access_log', 'resource', OWNER, SYSTEM_ROW, plain);
-  if (typeof cipher !== 'string' || !cipher.startsWith('enc:v2:') || cipher.includes(plain)) throw new Error('log_resource_seal_failed');
+  if (typeof cipher !== 'string' || !cipher.startsWith('enc:v2:') || (plain.length >= 8 && cipher.includes(plain))) throw new Error('log_resource_seal_failed');
   return cipher;
 }
 

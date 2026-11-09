@@ -13,7 +13,7 @@ export async function sealEnrollFact(column: 'label' | 'location', value: string
   if (!plain) return '';
   if (plain.startsWith('enc:v2:')) return plain;
   const cipher = await encryptValue('ops_device_enrollments', column, OWNER, SYSTEM_ROW, plain);
-  if (typeof cipher !== 'string' || !cipher.startsWith('enc:v2:') || cipher.includes(plain)) {
+  if (typeof cipher !== 'string' || !cipher.startsWith('enc:v2:') || (plain.length >= 8 && cipher.includes(plain))) {
     throw new Error('enroll_fact_seal_failed');
   }
   return cipher;
