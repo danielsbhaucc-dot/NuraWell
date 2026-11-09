@@ -42,7 +42,7 @@ describe('product provisioning gate', () => {
 
   it('rejects a missing, mismatched, tampered or expired proof and does not create from the form email alone', () => {
     expect(allowProductProvision('off', null, 'other@x.co')).toBe('skip');
-    expect(allowProductProvision('all', null, 'a@x.co')).toBe('missing');
+    expect(allowProductProvision('all', null, 'a@x.co')).toBe('skip');
     expect(allowProductProvision('all', proof, 'other@x.co')).toBe('email');
     expect(allowProductProvision('test', proof, 'A@X.co')).toBe('ok');
     const packed = packProvision(proof, secret);
@@ -78,8 +78,9 @@ describe('product provisioning gate', () => {
     const form = readFileSync('app/(auth)/register/form/page.tsx', 'utf8');
     const action = readFileSync('lib/actions/complete-onboarding.ts', 'utf8');
     const login = readFileSync('app/(auth)/login/page.tsx', 'utf8');
-    expect(form).toMatch(/unpackProvision/);
-    expect(form).toMatch(/intent=signup/);
+    // registration stays native (NuraWell verification mail); the parent identity links at first sign-in
+    expect(form).not.toMatch(/intent=signup/);
+    expect(form).toMatch(/OnboardingFormClient/);
     expect(action.indexOf('allowProductProvision')).toBeLessThan(action.indexOf('createUser'));
     expect(action.indexOf('beginSignupClaim')).toBeLessThan(action.indexOf('createUser'));
     expect(action.indexOf('finishSignupClaim')).toBeLessThan(action.indexOf("PROVISION_COOKIE, ''"));

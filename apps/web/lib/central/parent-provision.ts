@@ -96,8 +96,9 @@ export function unpackProvision(raw: string | undefined, secret: string, nowS = 
 
 /** Central-only: the form email must be the verified parent email. Off: the existing onboarding path is unchanged. */
 export function allowProductProvision(mode: SigninMode, proof: ProvisionProof | null, formEmail: string): 'skip' | 'ok' | 'missing' | 'email' {
-  if (!accessClosed(mode)) return 'skip';
-  if (!proof) return 'missing';
+  // No parent proof: normal NuraWell registration with NuraWell's own verification mail. The parent identity is
+  // created just-in-time at the first sign-in, and the license gate still applies there.
+  if (!accessClosed(mode) || !proof) return 'skip';
   if (proof.email !== norm(formEmail)) return 'email';
   return 'ok';
 }

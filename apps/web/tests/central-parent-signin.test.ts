@@ -103,7 +103,7 @@ describe('R20 parent sign-in', () => {
     expect(login).not.toMatch(/centralArmed && !isOpsHost/);
     expect(login).toMatch(/if \(centralArmed\)/);
     expect(login).toMatch(/NO_LICENSE_LINK/);
-    expect(register).toMatch(/intent=signup/);
+    expect(register).not.toMatch(/intent=signup/); // registration stays native; the parent identity is linked at first sign-in
     expect(register).toMatch(/בואו נתחיל/);
     expect(route).toMatch(/centralAuthOn/);
     expect(route).not.toMatch(/buttonOn/);
