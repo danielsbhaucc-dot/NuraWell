@@ -391,3 +391,49 @@ export async function mediaReceiptsProbe(raw: SupabaseClient) {
   const { data, error } = await raw.rpc('media_receipts_write_probe', { p_row: ins, p_update: bodies.PATCH });
   return { result: error ? 'rpc_failed' : data, allSealed };
 }
+
+// ---- 000259: one-time reseal of the last legacy plaintext cells (counts only) ----
+/**
+ * legacyReseal: closes the tables the hosted cron never rewrites (FIELD_V2_LOCAL_BACKFILL_ONLY) for the rows that
+ * still hold plaintext, plus the append-only pii_access_log.
+ *  1. pii_access_grants + gideon_telegram_identities: the normal verified CAS backfill (round-trip in memory, CAS on
+ *     the exact stored value, re-read + sha256 compare; from_bidx is filled from the same plaintext).
+ *  2. pii_access_log: like legalReseal: encrypt + round-trip each plaintext cell, pii_reseal_apply records the
+ *     original sha256 in legal_reseal_checkpoint first, then swaps the cell; legal_reseal_check re-hashes after.
+ * Idempotent: sealed values are skipped, a second run returns zeros. Never returns values.
+ */
+export const LEGACY_RESEAL_TABLES = ['pii_access_grants', 'gideon_telegram_identities'] as const;
+
+export async function legacyResealVerify(db: SupabaseClient, raw: SupabaseClient) {
+  const { data: left, error } = await raw.rpc('pii_unsealed');
+  const { data: cps } = await raw.from('legal_reseal_checkpoint').select('row_id, col').eq('table_name', 'pii_access_log');
+  const items = [];
+  for (const c of (cps ?? []) as Array<{ row_id: string; col: string }>) {
+    const { data } = await db.from('pii_access_log').select(c.col).eq('id', c.row_id).maybeSingle();
+    items.push({ t: 'pii_access_log', id: c.row_id, col: c.col, value: data ? (data as unknown as Record<string, unknown>)[c.col] : null });
+  }
+  const { data: check } = items.length ? await raw.rpc('legal_reseal_check', { p: items }) : { data: { checked: 0, mismatch: 0, missing: 0 } };
+  return { piiUnsealed: error ? -1 : ((left ?? []) as unknown[]).length, piiCheckpoint: check };
+}
+
+export async function legacyReseal(db: SupabaseClient, raw: SupabaseClient) {
+  const tables = await backfillFieldV2(20_000, LEGACY_RESEAL_TABLES);
+  const { data: cells, error: e1 } = await raw.rpc('pii_unsealed');
+  if (e1) return { tables, pii: { error: 'list_failed' } };
+  const list = (cells ?? []) as Cell[];
+  const p = [];
+  for (const c of list) {
+    const { data, error } = await raw.from('pii_access_log').select(`id, ${c.col}`).eq('id', c.id).single();
+    if (error || !data) return { tables, pii: { error: 'read_failed', candidates: list.length } };
+    const plain = (data as unknown as Record<string, unknown>)[c.col];
+    if (typeof plain !== 'string' || !plain || plain.startsWith('enc:')) continue;
+    const cipher = await encryptValue('pii_access_log', c.col, 'system:audit', SYSTEM_ROW, plain);
+    if (!isV2(cipher) || (await decryptValue('pii_access_log', c.col, 'system:audit', SYSTEM_ROW, cipher)) !== plain) {
+      return { tables, pii: { error: 'roundtrip_failed', candidates: list.length } };
+    }
+    p.push({ t: 'pii_access_log', id: c.id, col: c.col, cipher });
+  }
+  const { data: n, error: e2 } = p.length ? await raw.rpc('pii_reseal_apply', { p }) : { data: 0, error: null };
+  if (e2) return { tables, pii: { error: 'apply_failed', candidates: list.length } };
+  return { tables, pii: { candidates: list.length, resealed: Number(n) }, after: await legacyResealVerify(db, raw) };
+}

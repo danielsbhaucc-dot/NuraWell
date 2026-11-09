@@ -70,3 +70,10 @@
 - record_hash / prev_hash / signature לא משתנים (הם מכסים את ה-plaintext) ומאומתים מחדש אחרי פענוח (verifyChain).
 - אימות: `?action=legal_verify` — digest זהה של כל השורות המפוענחות לפני/אחרי, 0 mismatch מול ה-checkpoint, 0 תאים גלויים.
 - media_receipts: `?action=media_receipts_probe` — כתיבה אמיתית דרך נתיב האפליקציה, בתוך טרנזקציה שמתגלגלת לאחור, עם אכיפה פעילה; האכיפה הופעלה רק אחרי 'accepted'.
+
+## 000259–000260 — הצפנה חד-פעמית של השורות הגלויות האחרונות (2026-11-09, באישור דניאל)
+- מצב לפני: 3 טבלאות בלבד החזיקו ערכים גלויים: pii_access_log (6 שורות, country+resource), pii_access_grants (שורה 1, reason+country), gideon_telegram_identities (שורה 1, from_id בלי from_bidx). כל שאר העמודות המסווגות: 0.
+- `?action=legacy_reseal`: backfill רגיל ומאומת (CAS + קריאה חוזרת + sha256) ל-pii_access_grants ו-gideon_telegram_identities (from_bidx מחושב מאותו ערך), ו-reseal מתועד ל-pii_access_log: sha256 של הערך המקורי נרשם ב-legal_reseal_checkpoint לפני ההחלפה; DELETE/TRUNCATE חסומים תמיד.
+- `?action=legacy_reseal_verify`: 0 תאים גלויים + legal_reseal_check על הערכים המפוענחים.
+- 000260 (אחרי ההרצה): מחזירה את חסימת ה-append-only הקשיחה ומוחקת את pii_reseal_apply. pii_unsealed נשארת לניטור.
+- אכיפה (field_enc_enforcement) לא הופעלה כאן: ההפעלה חד-כיוונית ולפי הסדר למעלה — טבלה אחת בכל פעם עם מעקב 24 שעות.
