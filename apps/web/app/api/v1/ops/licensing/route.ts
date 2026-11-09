@@ -5,10 +5,11 @@ import { writeFile } from 'node:fs/promises';
 import { NextResponse } from 'next/server';
 import { decide } from '@platform/iam';
 import { fileRevocationPublisher } from '@platform/licensing';
-import { REGISTRY, centralConfigured, centralLicenseStore, supabaseLicenseStore, type Deps, licenseAction } from '@platform/module-library-ui/server';
+import { REGISTRY, centralLicenseStore, supabaseLicenseStore, type Deps, licenseAction } from '@platform/module-library-ui/server';
 import { requireApiAdmin } from '@/lib/api/route-guards';
 import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
-import { createAdminClient, createCentralAdminClient } from '@/lib/supabase/admin';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { centralLinkConfigured, createCentralLinkClient } from '@/lib/central/central-link';
 import { hasSensitiveStepUp } from '@/lib/ops/sensitive-stepup';
 import { audit, loadActor, productsFor } from '@/lib/platform/authorize';
 import { CATALOG, DEFAULT_PRODUCT } from '@/lib/platform/catalog';
@@ -39,7 +40,7 @@ async function opsLicensingDeps(request: Request, bucket: string): Promise<{ dep
       verifierUrl: process.env.LICENSE_VERIFIER_URL || undefined,
       verifierPublicKeyPem: process.env.LICENSE_VERIFIER_PUBLIC_KEY?.replace(/\\n/g, '\n') || undefined,
       statusPusher: process.env.LICENSE_VERIFIER_URL ? httpStatusPusher(`${process.env.LICENSE_VERIFIER_URL.replace(/\/$/, '')}/status`) : null,
-      store: centralConfigured() ? centralLicenseStore(createCentralAdminClient()) : await supabaseLicenseStore(db),
+      store: centralLinkConfigured() ? centralLicenseStore(createCentralLinkClient()) : await supabaseLicenseStore(db),
       publisher: revFile ? fileRevocationPublisher(revFile, (p, s) => writeFile(p, s, 'utf8')) : null,
       encrypt: async (rowId, v) => String(await encryptValue('platform_licenses', 'licensee_name_enc', uid, rowId, v)),
     },

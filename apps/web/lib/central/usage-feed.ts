@@ -1,5 +1,6 @@
 import { signUsage as kitSignUsage } from '@core/security-privacy/feed';
-import { createAdminClient, createCentralAdminClient } from '@/lib/supabase/admin';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { centralLinkConfigured, createCentralLinkClient } from '@/lib/central/central-link';
 
 /**
  * Daily, aggregates-only usage report to the parent-company console (platform-core connector spec):
@@ -30,11 +31,11 @@ export async function collectUsageTotals(): Promise<UsageTotals> {
 // skipcq: JS-0067, JS-R1005 -- ES module export
 export async function sendUsageFeed(): Promise<'sent' | 'skipped' | 'failed'> {
   const secret = process.env.CENTRAL_METRICS_FEED_SECRET;
-  if (!secret || !process.env.CENTRAL_SUPABASE_URL || !process.env.CENTRAL_SUPABASE_SECRET_KEY) return 'skipped';
+  if (!secret || !centralLinkConfigured()) return 'skipped';
   try {
     const body = JSON.stringify(await collectUsageTotals());
     const { ts, sig } = signUsage(secret, body);
-    const { error } = await createCentralAdminClient().rpc('central_ingest_metrics', { p_product: 'nurawell', p_body: body, p_ts: ts, p_sig: sig });
+    const { error } = await createCentralLinkClient().rpc('central_ingest_metrics', { p_product: 'nurawell', p_body: body, p_ts: ts, p_sig: sig });
     if (error) { console.warn('[usage-feed] rejected'); return 'failed'; }
     return 'sent';
   } catch {

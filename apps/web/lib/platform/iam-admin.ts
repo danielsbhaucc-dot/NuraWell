@@ -5,7 +5,7 @@ import { CATALOG, MODULES } from './catalog';
 import { checkToggle, dependentsOf } from '@platform/iam';
 import { audit, centralModuleSource, ensureCentralSync, loadModuleStates } from './authorize';
 import { setCentralModuleState } from '@platform/module-library-ui/server';
-import { createCentralAdminClient } from '@/lib/supabase/admin';
+import { createCentralLinkClient } from '@/lib/central/central-link';
 
 export type GrantInput = { action: 'grant'; targetUserId: string; roleId: string; productId: string; expiresAt: string | null; reason: string }
   | { action: 'revoke'; grantId: string; reason: string };
@@ -85,7 +85,7 @@ export async function toggleModule(db: SupabaseClient, actor: Actor, productId: 
   if (src) {
     // Central is the single source of truth: write there only (audited centrally). If central is down, nothing is written.
     await ensureCentralSync(db, productId, actor.userId);
-    const r = await setCentralModuleState(createCentralAdminClient(), { actorId: actor.userId, productId, moduleId, enabled });
+    const r = await setCentralModuleState(createCentralLinkClient(), { actorId: actor.userId, productId, moduleId, enabled });
     if (!r.ok) {
       await audit(db, 'module_central_refused', actor.userId, productId, moduleId, { reason: r.reason, enabled });
       return r.reason === 'dependency_disabled'
