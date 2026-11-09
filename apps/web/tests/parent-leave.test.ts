@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('server-only', () => ({}));
 vi.mock('@/lib/central/parent-connect', () => ({ CLIENT_ID: 'nurawell', PARENT: 'https://parent.example' }));
-vi.mock('@/lib/privacy/delete-user-account', () => ({ deleteUserAccountCompletely: vi.fn() }));
+vi.mock('@/lib/module-api/privacy-retention/lib-privacy-delete-user-account', () => ({ deleteUserAccountCompletely: vi.fn() }));
 const { buildLegalSection, leaveParent } = await import('@/lib/central/parent-leave');
 
 const SECRET = 's'.repeat(40);

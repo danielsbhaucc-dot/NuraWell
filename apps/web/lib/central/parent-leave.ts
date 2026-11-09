@@ -1,8 +1,8 @@
 import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { CLIENT_ID, PARENT } from '@/lib/central/parent-connect';
-import { LEGAL_POLICY_VERSION } from '@/lib/privacy/constants';
-import { deleteUserAccountCompletely } from '@/lib/privacy/delete-user-account';
+import { LEGAL_POLICY_VERSION } from '@/lib/module-api/privacy-retention/lib-privacy-constants';
+import { deleteUserAccountCompletely } from '@/lib/module-api/privacy-retention/lib-privacy-delete-user-account';
 
 /**
  * Deletion lifecycle (owner decision t1252s5335). Before NuraWell deletes a profile it tells the parent, server to server
