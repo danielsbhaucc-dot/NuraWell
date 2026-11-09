@@ -4,6 +4,8 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { authenticationOptions, CHALLENGE_COOKIE, challengeCookieOpts, consumeChallenge, resolveRp, verifyAuthentication } from '@/lib/auth/passkeys';
 import { issueSessionForUser } from '@/lib/auth/issue-session';
 import { clientIp, json, readBody, readCookie } from '@/lib/auth/http';
+import { localMethodAllowed } from '@/lib/central/parent-provision';
+import { signinMode } from '@/lib/central/parent-signin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -13,6 +15,7 @@ const FAIL = 'לא הצלחנו לאמת את מפתח הגישה. אפשר לנ
 
 /** Passkey sign-in. step "options" → server challenge (httpOnly cookie); step "verify" → session. */
 export async function POST(req: Request): Promise<Response> {
+  if (!localMethodAllowed(await signinMode())) return json({ error: 'parent_method_unsupported' }, 403);
   const rp = resolveRp(req);
   if (!rp) return json({ error: 'forbidden' }, 403);
   const rl = await consumeRateLimit({ key: clientIp(req), namespace: 'auth-passkey', limit: 30, windowSeconds: 600 });

@@ -72,10 +72,21 @@ const licenseRefusal = async (request: Request, user: User): Promise<NextRespons
 export async function requireApiSession(request: Request): Promise<SessionOk | GuardFail> {
   const session = await resolveApiSession(request);
   if (!session.ok) return session;
+  const parent = await parentSessionRefusal(request, session.supabase, session.user);
+  if (parent) return { ok: false, response: parent };
   const refused = await licenseRefusal(request, session.user);
   if (refused) return { ok: false, response: refused };
   return session;
 }
+
+async function parentSessionRefusal(request: Request, supabase: AuthenticatedApiResult['supabase'], user: User): Promise<NextResponse | null> {
+  const { accessClosed, signinMode } = await import('@/lib/central/parent-signin');
+  if (!accessClosed(await signinMode())) return null;
+  const { refuseParentSession } = await import('@/lib/central/parent-data-plane');
+  const refused = await refuseParentSession(request, supabase, user);
+  return refused ? (refused as NextResponse) : null;
+}
+
 
 export async function requireApiAdmin(request: Request, opts: { skipDeviceGate?: boolean } = {}): Promise<SessionOk | GuardFail> {
   // The recovery route stays reachable from a blocked IP (it still needs admin + step-up + a recovery code),
@@ -118,6 +129,8 @@ async function noteAdminDenial(request: Request, status: number, actorId: string
 async function requireApiAdminInner(request: Request, opts: { skipDeviceGate?: boolean }): Promise<SessionOk | GuardFail> {
   const session = await resolveApiSession(request);
   if (!session.ok) return session;
+  const parent = await parentSessionRefusal(request, session.supabase, session.user);
+  if (parent) return { ok: false, response: parent };
 
   const { supabase, user } = session;
 

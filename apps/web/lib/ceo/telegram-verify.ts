@@ -4,13 +4,13 @@ import { timingSafeEqualStr } from '@/lib/api/timing-safe-equal';
 import { consumeRateLimit } from '@/lib/api/rate-limit';
 import type { CeoChannel } from './channel';
 import { allowedChatIds } from './channel';
+import { decryptTelegramId, sealTelegramId, telegramIdBidx } from '@/lib/ceo/telegram-id-seal';
 
 /**
  * Verify-before-block for unknown Telegram senders (server-side only, never the model).
- * An unknown numeric from.id in a private 1:1 chat gets ONE neutral prompt; a 6-digit one-time code
- * goes to the owner's verified email (and Ops can approve with step-up). TTL 10 min, max 3 attempts.
- * While pending: no data, no AI, no tools. Success → from.id allowlisted. Failure/timeout → blocked,
- * total silence to that id; only Ops can unblock.
+ * from_id sealed at rest; lookups via keyed from_bidx; Surrogate UUID PK.
+ * Allowlist load decrypts at authorized boundary. hashCode still binds plaintext fromId in memory.
+ * Never use bidx as a Telegram send recipient.
  */
 export const VERIFY_TTL_MS = 10 * 60_000;
 export const VERIFY_MAX_ATTEMPTS = 3;
@@ -28,22 +28,42 @@ export type VerifyDeps = {
 };
 
 const T = 'gideon_telegram_identities';
+const COL = 'from_id' as const;
 const tail = (id: string) => id.slice(-4);
 export const hashCode = (salt: string, fromId: string, code: string) => createHash('sha256').update(`gideon-tg-verify:${salt}:${fromId}:${code}`).digest('hex');
 
-/** Verified extra senders (status allowed). Errors → empty set (fail closed). */
+function fromBidxOrNull(fromId: string): string | null {
+  try {
+    return telegramIdBidx(T, COL, fromId);
+  } catch {
+    return null;
+  }
+}
+
+/** Verified extra senders (status allowed). Decrypt at load; errors → empty set (fail closed). */
 export async function verifiedFromIds(db: SupabaseClient): Promise<Set<string>> {
   try {
     const { data } = await db.from(T).select('from_id').eq('status', 'allowed');
-    return new Set(((data ?? []) as { from_id: string }[]).map((r) => r.from_id).filter((s) => /^\d{1,20}$/.test(s)));
+    const out = new Set<string>();
+    for (const r of (data ?? []) as { from_id: string }[]) {
+      const plain = await decryptTelegramId(T, COL, r.from_id);
+      if (plain) out.add(plain);
+    }
+    return out;
   } catch {
     return new Set();
   }
 }
 
 async function load(db: SupabaseClient, fromId: string): Promise<IdentityRow | null> {
-  const { data } = await db.from(T).select('from_id, status, code_hash, code_salt, expires_at, attempts, created_at').eq('from_id', fromId).maybeSingle();
-  return (data as IdentityRow | null) ?? null;
+  const bidx = fromBidxOrNull(fromId);
+  if (!bidx) return null;
+  const { data } = await db.from(T).select('from_id, status, code_hash, code_salt, expires_at, attempts, created_at').eq('from_bidx', bidx).maybeSingle();
+  const row = data as IdentityRow | null;
+  if (!row) return null;
+  const plain = await decryptTelegramId(T, COL, row.from_id);
+  if (!plain) return null;
+  return { ...row, from_id: plain };
 }
 
 async function auditEv(db: SupabaseClient, event: string, detail: Record<string, unknown>) {
@@ -59,7 +79,9 @@ async function notifyOwner(channel: CeoChannel, text: string, exclude: string) {
 }
 
 async function block(db: SupabaseClient, channel: CeoChannel, fromId: string, reason: 'failed' | 'timeout', now: Date) {
-  await db.from(T).update({ status: 'blocked', code_hash: null, code_salt: null, expires_at: null, decided_at: now.toISOString(), decided_by: 'system', reason }).eq('from_id', fromId);
+  const bidx = fromBidxOrNull(fromId);
+  if (!bidx) return;
+  await db.from(T).update({ status: 'blocked', code_hash: null, code_salt: null, expires_at: null, decided_at: now.toISOString(), decided_by: 'system', reason }).eq('from_bidx', bidx);
   await auditEv(db, 'telegram_identity_blocked', { from_tail: tail(fromId), reason });
   await notifyOwner(channel, `🚫 חשבון טלגרם לא מוכר (מסתיים ב-${tail(fromId)}) ${reason === 'timeout' ? 'לא השלים אימות בזמן' : 'נכשל 3 פעמים באימות'} ונחסם. גדעון לא יענה לו יותר. שחרור רק מ-Ops ← גדעון ← אבטחה.`, fromId);
 }
@@ -98,7 +120,22 @@ export async function handleUnknownSender(db: SupabaseClient, channel: CeoChanne
     if (!per.ok || !glob.ok) return 'silent';
     const code = deps.genCode?.() ?? String(randomInt(0, 1_000_000)).padStart(6, '0');
     const salt = randomBytes(16).toString('hex');
-    const ins = await db.from(T).insert({ from_id: fromId, status: 'pending', code_hash: hashCode(salt, fromId, code), code_salt: salt, expires_at: new Date(now.getTime() + VERIFY_TTL_MS).toISOString(), attempts: 0 });
+    let sealed: string;
+    let bidx: string;
+    try {
+      ({ sealed, bidx } = await sealTelegramId(T, COL, fromId));
+    } catch {
+      return 'silent';
+    }
+    const ins = await db.from(T).insert({
+      from_id: sealed,
+      from_bidx: bidx,
+      status: 'pending',
+      code_hash: hashCode(salt, fromId, code),
+      code_salt: salt,
+      expires_at: new Date(now.getTime() + VERIFY_TTL_MS).toISOString(),
+      attempts: 0,
+    });
     if ((ins as { error?: unknown }).error) return 'silent'; // race: another update created it
     const { invalidateTrust } = await import('./security');
     await invalidateTrust(db, 'unknown telegram sender').catch(() => {});
@@ -111,6 +148,8 @@ export async function handleUnknownSender(db: SupabaseClient, channel: CeoChanne
 
   // pending
   const text = u.message?.text?.trim() ?? '';
+  const bidx = fromBidxOrNull(fromId);
+  if (!bidx) return 'silent';
   if (!/^\d{6}$/.test(text)) {
     if (u.callback_query) return 'silent';
     const r = await consumeRateLimit({ key: fromId, namespace: 'ceo-verify-prompt', limit: 1, windowSeconds: 60 });
@@ -120,7 +159,7 @@ export async function handleUnknownSender(db: SupabaseClient, channel: CeoChanne
   const good = !!row.code_hash && !!row.code_salt && timingSafeEqualStr(hashCode(row.code_salt, fromId, text), row.code_hash);
   if (good) {
     // conditional on still-pending + same attempt count (no double use)
-    const { data } = await db.from(T).update({ status: 'allowed', code_hash: null, code_salt: null, expires_at: null, decided_at: now.toISOString(), decided_by: 'code' }).eq('from_id', fromId).eq('status', 'pending').eq('attempts', row.attempts).select('from_id');
+    const { data } = await db.from(T).update({ status: 'allowed', code_hash: null, code_salt: null, expires_at: null, decided_at: now.toISOString(), decided_by: 'code' }).eq('from_bidx', bidx).eq('status', 'pending').eq('attempts', row.attempts).select('from_bidx');
     if (!data || !(data as unknown[]).length) return 'silent';
     await auditEv(db, 'telegram_identity_verified', { from_tail: tail(fromId), method: 'email_code' });
     await notifyOwner(channel, `✅ חשבון טלגרם חדש (מסתיים ב-${tail(fromId)}) אומת עם הקוד מהמייל ונוסף לגדעון. לא אתה? Ops ← גדעון ← אבטחה ← חסום.`, fromId);
@@ -128,7 +167,7 @@ export async function handleUnknownSender(db: SupabaseClient, channel: CeoChanne
     return 'verified';
   }
   const attempts = row.attempts + 1;
-  const { data: upd } = await db.from(T).update({ attempts }).eq('from_id', fromId).eq('status', 'pending').eq('attempts', row.attempts).select('from_id');
+  const { data: upd } = await db.from(T).update({ attempts }).eq('from_bidx', bidx).eq('status', 'pending').eq('attempts', row.attempts).select('from_bidx');
   if (!upd || !(upd as unknown[]).length) return 'silent';
   await auditEv(db, 'telegram_identity_wrong_code', { from_tail: tail(fromId), attempts });
   if (attempts >= VERIFY_MAX_ATTEMPTS) {
@@ -171,18 +210,29 @@ export async function sendOwnerCodeEmail(db: SupabaseClient, code: string, fromT
   return r.ok;
 }
 
-/** Ops actions (route enforces admin + step-up for allow/unblock). */
+/** Ops actions (route enforces admin + step-up for allow/unblock). Plain fromId from staff UI after authorized decrypt. */
 export async function opsSetIdentity(db: SupabaseClient, fromId: string, action: 'allow' | 'block' | 'unblock', actor: string) {
   if (!/^\d{1,20}$/.test(fromId)) return false;
+  const bidx = fromBidxOrNull(fromId);
+  if (!bidx) return false;
   const now = new Date().toISOString();
   if (action === 'unblock') {
-    const { data } = await db.from(T).delete().eq('from_id', fromId).eq('status', 'blocked').select('from_id');
+    const { data } = await db.from(T).delete().eq('from_bidx', bidx).eq('status', 'blocked').select('from_bidx');
     if (!data?.length) return false;
   } else if (action === 'allow') {
-    const { data } = await db.from(T).update({ status: 'allowed', code_hash: null, code_salt: null, expires_at: null, decided_at: now, decided_by: actor }).eq('from_id', fromId).eq('status', 'pending').select('from_id');
+    const { data } = await db.from(T).update({ status: 'allowed', code_hash: null, code_salt: null, expires_at: null, decided_at: now, decided_by: actor }).eq('from_bidx', bidx).eq('status', 'pending').select('from_bidx');
     if (!data?.length) return false;
   } else {
-    const { error } = await db.from(T).upsert({ from_id: fromId, status: 'blocked', code_hash: null, code_salt: null, expires_at: null, decided_at: now, decided_by: actor, reason: 'ops' }, { onConflict: 'from_id' });
+    let sealed: string;
+    try {
+      ({ sealed } = await sealTelegramId(T, COL, fromId));
+    } catch {
+      return false;
+    }
+    const { error } = await db.from(T).upsert(
+      { from_id: sealed, from_bidx: bidx, status: 'blocked', code_hash: null, code_salt: null, expires_at: null, decided_at: now, decided_by: actor, reason: 'ops', attempts: 0 },
+      { onConflict: 'from_bidx' },
+    );
     if (error) return false;
   }
   await db.from('ceo_audit_log').insert({ actor, event: `telegram_identity_ops_${action}`, detail: { from_tail: tail(fromId) } }).then(() => null, () => null);

@@ -7,6 +7,7 @@ const SESSION_KEYS = ['nurawell_almog_chat_session'] as const;
  */
 export async function signOutClient(redirectTo = '/'): Promise<{ ok: boolean; error?: string }> {
   try {
+    await fetch('/api/v1/auth/sign-out', { method: 'POST', credentials: 'same-origin', keepalive: true }).catch(() => undefined);
     const supabase = createClient();
     const { error } = await supabase.auth.signOut({ scope: 'global' });
     if (error) {

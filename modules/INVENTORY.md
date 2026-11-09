@@ -2,12 +2,12 @@
 # Module inventory
 
 Catalog modules: 21 (core: 8). Packaged modules (module.json): 10.
-App code already modular: 100% (1831/1831 files; the rest is on modules/legacy-app-files.txt and may only shrink).
+App code already modular: 100% (1861/1861 files; the rest is on modules/legacy-app-files.txt and may only shrink).
 
 | id | name | core (cannot disable) | tier | always-on | area manifest | owned app files | packaged |
 |---|---|---|---|---|---|---|---|
-| `security-core` | אבטחה | yes | internal | trusted-device, nightly-scan, step-up-2fa | yes | 75 | not yet |
-| `iam` | הרשאות | yes | shareable | roles, owner-super-access | yes | 214 | yes |
+| `security-core` | אבטחה | yes | internal | trusted-device, nightly-scan, step-up-2fa | yes | 84 | not yet |
+| `iam` | הרשאות | yes | shareable | roles, owner-super-access | yes | 221 | yes |
 | `audit-log` | יומן ביקורת | yes | internal | append-only-audit | yes | 1 | not yet |
 | `incident-response` | תגובה לאירועים | yes | internal | incident-playbook | yes | 6 | not yet |
 | `alerts` | התראות אבטחה | yes | internal | security-alerts | yes | 1 | not yet |
@@ -15,8 +15,8 @@ App code already modular: 100% (1831/1831 files; the rest is on modules/legacy-a
 | `logs` | יומנים | yes | shareable | error-logs | yes | 16 | not yet |
 | `app-shell` | מעטפת האפליקציה | yes | internal | layout, error-pages | yes | 139 | not yet |
 | `auth-signup` | הרשמה וקליטה | no | shareable | - | yes | 102 | not yet |
-| `privacy-retention` | פרטיות ושמירה | no | shareable | consents, data-export, deletion-with-approval | yes | 38 | not yet |
-| `billing` | תשלומים | no | shareable | - | yes | 47 | not yet |
+| `privacy-retention` | פרטיות ושמירה | no | shareable | consents, data-export, deletion-with-approval | yes | 49 | not yet |
+| `billing` | תשלומים | no | shareable | - | yes | 48 | not yet |
 | `notifications` | התראות למשתמשים | no | shareable | - | yes | 71 | not yet |
 | `costs` | עלויות | no | internal | - | yes | 3 | not yet |
 | `legal` | משפטי | no | shareable | terms-acceptance, legal-evidence | yes | 126 | not yet |
@@ -25,7 +25,7 @@ App code already modular: 100% (1831/1831 files; the rest is on modules/legacy-a
 | `agent` | מנוע סוכן | no | internal | - | yes | 395 | not yet |
 | `reminders` | תזכורות | no | internal | - | yes | 95 | not yet |
 | `journey` | מסע, מדריכים ואתגר | no | internal | - | yes | 225 | not yet |
-| `gideon` | גדעון (בוט מנכ"ל) | no | internal | - | yes | 42 | not yet |
+| `gideon` | גדעון (בוט מנכ"ל) | no | internal | - | yes | 43 | not yet |
 | `site-content` | תוכן האתר ומדיה | no | internal | - | yes | 78 | not yet |
 
 ## Starter kit for every new product

@@ -426,19 +426,14 @@
 }
 
 @layer components {
-  .login-auth-lock {
-  /* Login/register auth: lock viewport — prevents overscroll white flash */
-  &html {
+  /* Login/register auth: lock viewport — prevents overscroll white flash.
+     The class is applied to both html and body. Nested `&html` is invalid CSS. */
+  html.login-auth-lock,
+  body.login-auth-lock {
     height: 100%;
     overflow: hidden;
     overscroll-behavior: none;
   }
-  & body {
-    height: 100%;
-    overflow: hidden;
-    overscroll-behavior: none;
-  }
-}
 }
 
 @layer components {
@@ -7714,12 +7709,8 @@ html.a11y-font-xl {
   font-size: 125%;
 }
 
-html.a11y-readable-font,
 html.a11y-readable-font body,
-html.a11y-readable-font input,
-html.a11y-readable-font textarea,
-html.a11y-readable-font select,
-html.a11y-readable-font button {
+html.a11y-readable-font body * {
   font-family: Arial, "Segoe UI", Tahoma, sans-serif !important;
 }
 
@@ -7729,16 +7720,19 @@ html.a11y-reduce-motion .a11y-widget-panel {
   transition: none !important;
 }
 
-html.a11y-line-lg body {
+html.a11y-line-lg body,
+html.a11y-line-lg body * {
   line-height: 1.75 !important;
 }
 
-html.a11y-line-xl body {
+html.a11y-line-xl body,
+html.a11y-line-xl body * {
   line-height: 2 !important;
 }
 
-html.a11y-letter-spacing body {
-  letter-spacing: 0.04em;
+html.a11y-letter-spacing body,
+html.a11y-letter-spacing body * {
+  letter-spacing: 0.04em !important;
 }
 
 /* Filters on #main-content only — filter on body breaks position:fixed overlays (chat, a11y FAB, nav). */
@@ -7828,6 +7822,57 @@ html.a11y-high-contrast .glass-card-strong {
 html.a11y-high-contrast a {
   color: #0f172a;
   font-weight: 700;
+}
+
+/* Photo and gradient text sit above the body colour, so the switch looked checked while the page stayed the same. */
+html.a11y-high-contrast .onboarding-photo-bg,
+html.a11y-high-contrast .onboarding-photo-overlay {
+  visibility: hidden !important;
+}
+
+/* The photo sits on a fixed dark gradient and a dark card. Hiding the photo left black text on that gradient. */
+html.a11y-high-contrast .onboarding-shell-dark::before,
+html.a11y-high-contrast .onboarding-shell-light::before,
+html.a11y-high-contrast .onboarding-hero-card-photo,
+html.a11y-high-contrast .onboarding-bubble-dark {
+  background-color: var(--background) !important;
+  background-image: none !important;
+  color: var(--text-primary) !important;
+  border-color: var(--text-primary) !important;
+  box-shadow: none !important;
+}
+
+html.a11y-high-contrast .onboarding-shell-dark .input-field,
+html.a11y-high-contrast .onboarding-shell-light .input-field {
+  background-color: var(--background) !important;
+  color: var(--text-primary) !important;
+  -webkit-text-fill-color: var(--text-primary) !important;
+  border-color: var(--text-primary) !important;
+  box-shadow: none !important;
+}
+
+html.a11y-high-contrast .onboarding-shell-dark .input-field::placeholder,
+html.a11y-high-contrast .onboarding-shell-light .input-field::placeholder {
+  color: var(--text-primary) !important;
+  -webkit-text-fill-color: var(--text-primary) !important;
+}
+
+html.a11y-high-contrast .onboarding-shell-dark button,
+html.a11y-high-contrast .onboarding-shell-light button {
+  background-color: var(--background) !important;
+  background-image: none !important;
+  border-color: var(--text-primary) !important;
+}
+
+html.a11y-high-contrast #main-content {
+  background-color: #f2f2f6 !important;
+  color: #0a0a0a !important;
+}
+
+html.a11y-high-contrast #main-content :where(h1, h2, h3, h4, h5, h6, p, a, button, label, li, span) {
+  color: #0a0a0a !important;
+  -webkit-text-fill-color: #0a0a0a !important;
+  background-image: none !important;
 }
 
 html.a11y-enhanced-focus :focus-visible {

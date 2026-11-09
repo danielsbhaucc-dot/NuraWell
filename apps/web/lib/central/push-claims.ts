@@ -1,6 +1,6 @@
 import type { User } from '@supabase/supabase-js';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { CLIENT_ID } from '@/lib/central/parent-connect';
+import { CLIENT_ID, PARENT } from '@/lib/central/parent-connect';
 
 /**
  * R20: tell the parent which license each NuraWell account holds, keyed by the account's CONFIRMED email.
@@ -11,14 +11,14 @@ type Config = { central: string; secret: string };
 const STATES = new Set(['pending', 'applied', 'refused']);
 
 const configOf = (env: Record<string, string | undefined>): Config | null => {
-  const secret = env.PLATFORM_ID_CLIENT_SECRET ?? '', central = (env.CENTRAL_SUPABASE_URL ?? '').replace(/\/$/, '');
-  return secret.length >= 32 && central.startsWith('https://') ? { central, secret } : null;
+  const secret = env.PLATFORM_ID_CLIENT_SECRET ?? '';
+  return secret.length >= 32 ? { central: PARENT, secret } : null;
 };
 
 const needsClaim = (user: User) => Boolean(user.email && user.email_confirmed_at) && typeof user.app_metadata?.pl_lic === 'string' && user.app_metadata?.pl_claim !== 'applied';
 
 const claimOne = async (config: Config, user: User): Promise<string | null> => {
-  const res = await fetch(`${config.central}/functions/v1/identity/claim`, {
+  const res = await fetch(`${config.central}/id/claim`, {
     method: 'POST', headers: { 'content-type': 'application/json' }, signal: AbortSignal.timeout(5000),
     body: JSON.stringify({ client_id: CLIENT_ID, client_secret: config.secret, email: user.email, email_verified: true, license: user.app_metadata.pl_lic }),
   }).catch(() => null);

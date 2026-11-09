@@ -1,6 +1,9 @@
 import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { prefilter, toModelPayload, type AccessEvent, type Flagged } from '@platform/access';
+import { readableGrantReason, readableTicketRef, readableCountry } from './grant-fields';
+import { sealFindingSignals } from './finding-signals';
+import { sealRunError } from './run-error';
 
 export type AuditModel = (payload: string) => Promise<{ ref: string; severity: 'low' | 'medium' | 'high'; summary: string }[]>;
 export type AuditDeps = { model?: AuditModel; alert?: (text: string) => Promise<void>; now?: number; productId?: string };
@@ -41,9 +44,13 @@ export async function runAccessAudit(db: SupabaseClient, deps: AuditDeps = {}) {
   ]);
   const ev: AccessEvent[] = [];
   for (const r of (logs.data ?? []) as { at: string; actor_id: string; subject_id: string | null; event: string; country: string | null; device_id: string | null }[])
-    if (r.event === 'view') ev.push({ at: Date.parse(r.at), actorId: r.actor_id, kind: 'pii_view', subjectId: r.subject_id, country: r.country, deviceId: r.device_id });
-  for (const r of (grants.data ?? []) as { created_at: string; actor_id: string; subject_id: string; reason: string; ticket_ref: string | null; country: string | null; device_id: string | null }[])
-    ev.push({ at: Date.parse(r.created_at), actorId: r.actor_id, kind: 'pii_grant', subjectId: r.subject_id, reason: r.reason, ticketRef: r.ticket_ref, country: r.country, deviceId: r.device_id });
+    if (r.event === 'view') ev.push({ at: Date.parse(r.at), actorId: r.actor_id, kind: 'pii_view', subjectId: r.subject_id, country: readableCountry(r.country), deviceId: r.device_id });
+  let reasonUnreadable = false;
+  for (const r of (grants.data ?? []) as { created_at: string; actor_id: string; subject_id: string; reason: string; ticket_ref: string | null; country: string | null; device_id: string | null }[]) {
+    const reason = readableGrantReason(r.reason);
+    if (!reason) { reasonUnreadable = true; continue; }
+    ev.push({ at: Date.parse(r.created_at), actorId: r.actor_id, kind: 'pii_grant', subjectId: r.subject_id, reason, ticketRef: readableTicketRef(r.ticket_ref), country: readableCountry(r.country), deviceId: r.device_id });
+  }
   for (const r of (probes.data ?? []) as { day: string; hits: number; country: string | null }[])
     ev.push({ at: Date.parse(`${r.day}T12:00:00Z`), actorId: 'probe', kind: 'probe', count: r.hits });
   for (const r of (enrolls.data ?? []) as { created_at: string; user_id: string; completed_at: string | null; match_result: string | null; device_id: string | null }[])
@@ -52,11 +59,14 @@ export async function runAccessAudit(db: SupabaseClient, deps: AuditDeps = {}) {
   const productId = deps.productId ?? 'nurawell';
   const { data: run } = await db.from('access_audit_runs').insert({ product_id: productId, window_from: from, window_to: to, events: ev.length }).select('id').single();
   const runId = (run as { id: string } | null)?.id;
-  if (!ev.length) return { runId, events: 0, flagged: 0, modelCalled: false, findings: 0 }; // no events → no AI call
+  if (!ev.length) {
+    if (runId && reasonUnreadable) await db.from('access_audit_runs').update({ error: await sealRunError('reason_unreadable') }).eq('id', runId);
+    return { runId, events: 0, flagged: 0, modelCalled: false, findings: 0 };
+  }
 
   const k = (hist.data ?? []) as { country: string | null; device_id: string | null }[];
-  const flagged = prefilter(ev, { countries: new Set(k.map((x) => x.country).filter(Boolean) as string[]), devices: new Set(k.map((x) => x.device_id).filter(Boolean) as string[]) });
-  let modelCalled = false; let error: string | null = null;
+  const flagged = prefilter(ev, { countries: new Set(k.map((x) => readableCountry(x.country)).filter(Boolean) as string[]), devices: new Set(k.map((x) => x.device_id).filter(Boolean) as string[]) });
+  let modelCalled = false; let error: string | null = reasonUnreadable ? 'reason_unreadable' : null;
   let out: { ref: string; severity: 'low' | 'medium' | 'high'; summary: string }[] = [];
   if (flagged.length) {
     try { modelCalled = true; out = await (deps.model ?? groqAuditModel)(toModelPayload(flagged)); }
@@ -64,14 +74,24 @@ export async function runAccessAudit(db: SupabaseClient, deps: AuditDeps = {}) {
     if (error) out = flagged.map((f) => ({ ref: f.ref, severity: ruleSeverity(f), summary: `אותות: ${f.signals.join(', ')}` }));
   }
   const byRef = new Map(flagged.map((f) => [f.ref, f]));
-  const rows = out.filter((o) => byRef.has(o.ref) && ['low', 'medium', 'high'].includes(o.severity)).slice(0, 50).map((o) => {
+  let summaryTooLong = 0;
+  const rows = out.filter((o) => byRef.has(o.ref) && ['low', 'medium', 'high'].includes(o.severity)).slice(0, 50).flatMap((o) => {
+    const summary = String(o.summary ?? '');
+    // Postgres char_length counts Unicode code points. Over 400 is rejected, not cut.
+    if ([...summary].length > 400) { summaryTooLong += 1; return []; }
     const f = byRef.get(o.ref)!; const e = ev[Number(o.ref.slice(1)) - 1];
-    return { run_id: runId, product_id: productId, severity: o.severity, signals: f.signals, summary: String(o.summary ?? '').slice(0, 400), event_kind: f.kind,
-      event_at: e ? new Date(e.at).toISOString() : null, actor_id: e && /^[0-9a-f-]{36}$/.test(e.actorId) ? e.actorId : null };
+    return [{ run_id: runId, product_id: productId, severity: o.severity, signals: f.signals, summary, event_kind: f.kind,
+      event_at: e ? new Date(e.at).toISOString() : null, actor_id: e && /^[0-9a-f-]{36}$/.test(e.actorId) ? e.actorId : null }];
   });
-  if (rows.length && runId) await db.from('access_audit_findings').insert(rows);
-  if (runId) await db.from('access_audit_runs').update({ flagged: flagged.length, model_called: modelCalled, findings: rows.length, error }).eq('id', runId);
+  if (summaryTooLong) error = error && !error.includes('summary_too_long') ? `${error.slice(0, 80)},summary_too_long` : (error ?? 'summary_too_long');
+  if (rows.length && runId) {
+    const sealedRows = [];
+    for (const row of rows) sealedRows.push({ ...row, signals: await sealFindingSignals(row.signals as string[]) });
+    await db.from('access_audit_findings').insert(sealedRows);
+  }
+  if (runId) await db.from('access_audit_runs').update({ flagged: flagged.length, model_called: modelCalled, findings: rows.length, error: await sealRunError(error) }).eq('id', runId);
   const serious = rows.filter((r) => r.severity !== 'low');
-  if (serious.length && deps.alert) await deps.alert(`🛡️ ביקורת גישה לילית: ${serious.length} ממצאים (${rows.filter((r) => r.severity === 'high').length} חמורים).\n${serious.slice(0, 5).map((r) => `• [${r.severity}] ${r.summary}`).join('\n')}\nפירוט: Ops ← אבטחה.`);
+  const alertRows = serious.filter((r) => !String(r.summary).startsWith('enc:')).slice(0, 5);
+  if (serious.length && deps.alert) await deps.alert(`🛡️ ביקורת גישה לילית: ${serious.length} ממצאים (${rows.filter((r) => r.severity === 'high').length} חמורים).\n${alertRows.map((r) => `• [${r.severity}] ${r.summary}`).join('\n')}\nפירוט: Ops ← אבטחה.`);
   return { runId, events: ev.length, flagged: flagged.length, modelCalled, findings: rows.length };
 }

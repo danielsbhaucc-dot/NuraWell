@@ -1,0 +1,105 @@
+import { createHmac } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import { describe, expect, it } from 'vitest';
+import {
+  allowProductProvision,
+  entitlementAllowsProvision,
+  localMethodAllowed,
+  packProvision,
+  provisionProofFromClaims,
+  provisionRefusal,
+  unpackProvision,
+} from '@/lib/central/parent-provision';
+
+const secret = 's'.repeat(32);
+const proof = { product: 'nurawell' as const, sub: 'sub_A', lic: 'lic_comp_nw_1111', email: 'a@x.co', exp: 2_000_000_000, nonce: 'n'.repeat(32), verified: true as const };
+
+describe('product provisioning gate', () => {
+  it('refuses unverified email and a missing license before any account exists', () => {
+    expect(provisionRefusal({ sub: 'sub_A', lic: 'lic_comp_nw_1111', email: 'a@x.co', email_verified: false })).toBe('unverified');
+    expect(provisionRefusal({ sub: 'sub_A', lic: 'lic_comp_nw_1111', email: 'a@x.co' })).toBe('unverified');
+    expect(provisionRefusal({ sub: 'sub_A', lic: 'nope', email: 'a@x.co', email_verified: true })).toBe('no_license');
+    expect(provisionRefusal({ sub: 'sub_A', lic: 'lic_comp_nw_1111', email: 'a@x.co', email_verified: true })).toBeNull();
+  });
+
+  it('copies verified only from a signed true claim bound to this transaction nonce', () => {
+    const nonce = 'n'.repeat(32);
+    const base = { sub: 'sub_A', lic: 'lic_comp_nw_1111', email: 'a@x.co', nonce };
+    expect(provisionProofFromClaims({ ...base, email_verified: undefined }, nonce)).toBe('unverified');
+    expect(provisionProofFromClaims({ ...base, email_verified: false }, nonce)).toBe('unverified');
+    expect(provisionProofFromClaims({ sub: 'sub_A', lic: 'lic_comp_nw_1111', email: 'a@x.co', email_verified: true }, nonce)).toBe('nonce');
+    expect(provisionProofFromClaims({ ...base, email_verified: true }, 'm'.repeat(32))).toBe('nonce');
+    expect(provisionProofFromClaims({ ...base, lic: 'nope', email_verified: true }, nonce)).toBe('no_license');
+    expect(provisionProofFromClaims({ ...base, email_verified: true }, nonce)).toMatchObject({ verified: true, nonce, email: 'a@x.co' });
+  });
+
+  it('opens onboarding only for an active entitlement', () => {
+    expect(entitlementAllowsProvision('active')).toBe(true);
+    for (const reason of ['no_status', 'stale_status', 'unknown_license', 'revoked', 'suspended', 'expired', 'no_license']) {
+      expect(entitlementAllowsProvision(reason)).toBe(false);
+    }
+  });
+
+  it('rejects a missing, mismatched, tampered or expired proof and does not create from the form email alone', () => {
+    expect(allowProductProvision('off', null, 'other@x.co')).toBe('skip');
+    expect(allowProductProvision('all', null, 'a@x.co')).toBe('missing');
+    expect(allowProductProvision('all', proof, 'other@x.co')).toBe('email');
+    expect(allowProductProvision('test', proof, 'A@X.co')).toBe('ok');
+    const packed = packProvision(proof, secret);
+    expect(packed).toBeTruthy();
+    expect(unpackProvision(packed!, secret, proof.exp - 10)).toMatchObject({ email: 'a@x.co', lic: proof.lic, sub: proof.sub });
+    expect(unpackProvision(packed!, secret, proof.exp + 5)).toBeNull();
+    expect(unpackProvision(`${packed!.slice(0, -2)}aa`, secret, proof.exp - 10)).toBeNull();
+    expect(unpackProvision(packed!, 'x'.repeat(32), proof.exp - 10)).toBeNull();
+    expect(packProvision({ ...proof, product: 'elsewhere' as 'nurawell' }, secret)).toBeNull();
+    expect(packProvision({ ...proof, verified: false as true }, secret)).toBeNull();
+    expect(packProvision({ ...proof, nonce: 'short' }, secret)).toBeNull();
+    const emailOnly = Buffer.from(JSON.stringify({ product: 'nurawell', sub: proof.sub, lic: proof.lic, email: proof.email, exp: proof.exp, nonce: proof.nonce })).toString('base64url');
+    const mac = createHmac('sha256', secret).update(emailOnly).digest('base64url');
+    expect(unpackProvision(`${emailOnly}.${mac}`, secret, proof.exp - 10)).toBeNull();
+    const foreign = Buffer.from(JSON.stringify({ sub: proof.sub, lic: proof.lic, email: proof.email, exp: proof.exp })).toString('base64url');
+    expect(unpackProvision(foreign, secret, proof.exp - 10)).toBeNull();
+  });
+
+  it('keeps Face ID and QR from minting a local session while central-only mode is on', () => {
+    expect(localMethodAllowed('off')).toBe(true);
+    expect(localMethodAllowed('test')).toBe(false);
+    expect(localMethodAllowed('all')).toBe(false);
+    expect(localMethodAllowed('unreadable')).toBe(true);
+    const passkey = readFileSync('app/api/v1/auth/passkey/route.ts', 'utf8');
+    const qr = readFileSync('app/api/v1/auth/qr/route.ts', 'utf8');
+    expect(passkey.indexOf('localMethodAllowed(')).toBeLessThan(passkey.indexOf('issueSessionForUser('));
+    expect(qr.indexOf('localMethodAllowed(')).toBeLessThan(qr.indexOf('issueSessionForUser('));
+    expect(passkey).toMatch(/parent_method_unsupported/);
+    expect(qr).toMatch(/parent_method_unsupported/);
+  });
+
+  it('direct onboarding and the signup action cannot create a product identity ahead of the proof', () => {
+    const form = readFileSync('app/(auth)/register/form/page.tsx', 'utf8');
+    const action = readFileSync('lib/actions/complete-onboarding.ts', 'utf8');
+    const login = readFileSync('app/(auth)/login/page.tsx', 'utf8');
+    expect(form).toMatch(/unpackProvision/);
+    expect(form).toMatch(/intent=signup/);
+    expect(action.indexOf('allowProductProvision')).toBeLessThan(action.indexOf('createUser'));
+    expect(action.indexOf('beginSignupClaim')).toBeLessThan(action.indexOf('createUser'));
+    expect(action.indexOf('finishSignupClaim')).toBeLessThan(action.indexOf("PROVISION_COOKIE, ''"));
+    expect(action.indexOf('email_exists')).toBeLessThan(action.indexOf('updateUserById'));
+    expect(action).toMatch(/recorded !== 'recorded'/);
+    expect(action).toMatch(/failSignupClaim/);
+    expect(action).not.toMatch(/signOut\(\{ scope: 'global' \}\)/);
+    const callback = readFileSync('app/api/v1/central/callback/route.ts', 'utf8');
+    expect(callback.indexOf('entitlementAllowsProvision')).toBeLessThan(callback.indexOf('packProvision'));
+    expect(callback).toMatch(/provisionOutcome\(claims, redirect\.tx\.nonce\)/);
+    expect(callback).toMatch(/provisionProofFromClaims\(claims, txNonce\)/);
+    expect(callback).not.toMatch(/provision:\s*\{[^}]*verified:\s*true/);
+    expect(action).toMatch(/email_confirm: parentVerified/);
+    expect(action.indexOf('if (!parentVerified)')).toBeLessThan(action.indexOf('auth.resend'));
+    expect(action).toMatch(/updateUserById\(created\.user\.id, \{ email_confirm: true \}\)/);
+    expect(action).not.toMatch(/updateUserById\([^)]*email[^)]*email_confirm/);
+    expect(action).toMatch(/pl_sub: proof\.sub/);
+    expect(action).not.toMatch(/identity\/signup|copyPassword/);
+    const passkey = login.slice(login.indexOf('const handlePasskey'), login.indexOf('const handleBackup'));
+    expect(passkey).not.toMatch(/startCentralLogin/);
+    expect(passkey).toMatch(/parent_method_unsupported/);
+  });
+});

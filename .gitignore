@@ -59,3 +59,7 @@ logs/
 # Local audit artifacts
 apps/web/.lighthouse-landing.json
 .env*
+
+# lab isolated Next dist (NURA_NEXT_DIST_DIR) — never overwrite active .next
+.next-isolated-lab/
+apps/web/.next-isolated-lab/

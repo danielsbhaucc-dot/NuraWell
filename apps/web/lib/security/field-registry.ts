@@ -60,6 +60,8 @@ export const ENCRYPTED_TABLES = {
     goal_weight_kg: 'text',
     height_cm: 'text',
     gender: 'text',
+    date_of_birth: 'text',
+    birth_date: 'text',
     activity_level: 'text',
     weakest_time_of_day: 'text',
   } },
@@ -274,6 +276,8 @@ export const ENCRYPTED_TABLES = {
   chat_transcript_admin_audit_log: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { payload: 'json', reason: 'text', summary: 'text' } },
   delivery_log: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { error: 'text', recipient_mask: 'text' } },
   billing_events: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { metadata: 'json' } },
+  // Invoice PDF/link may carry provider access tokens in the query string — seal at rest; decrypt only for authorized navigation.
+  billing_invoices: { userCol: 'user_id', rowCol: 'id', guardCols: [], columns: { doc_url: 'text' } },
   error_events: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { message: 'text', stack: 'text', tags: 'json' } },
   // ---- system-owned, key purpose 'ops'
   ceo_conversations: { system: 'ops', userCol: '', rowCol: 'chat_key', columns: { summary: 'text', turns: 'json' } },
@@ -283,11 +287,14 @@ export const ENCRYPTED_TABLES = {
   ceo_owner_tasks: { system: 'ops', userCol: '', rowCol: 'id', guardCols: [], columns: { detail: 'text', title: 'text' } },
   demo_access_links: { system: 'ops', userCol: '', rowCol: 'id', columns: { guest_name: 'text', reason: 'text' } },
   gideon_outbox: { system: 'ops', userCol: '', rowCol: 'id', guardCols: [], columns: { buttons: 'json', chat_id: 'text', reason: 'text', text: 'text' } },
-  gideon_telegram_identities: { system: 'ops', userCol: '', rowCol: 'from_id', guardCols: [], columns: { reason: 'text' } },
+  gideon_telegram_identities: { system: 'ops', userCol: '', rowCol: 'id', guardCols: [], columns: { from_id: 'text', reason: 'text' } },
+  gideon_stranger_sim: { system: 'ops', userCol: '', rowCol: 'id', guardCols: [], columns: { chat_id: 'text' } },
   gideon_settings: { system: 'ops', userCol: '', rowCol: 'id', columns: { recipients: 'json' } },
   notify_style_rules: { system: 'ops', userCol: '', rowCol: 'id', columns: { avoid: 'text', prefer: 'text' } },
   ops_admin_notifications: { system: 'ops', userCol: '', rowCol: 'id', guardCols: [], columns: { body: 'text', metadata: 'json', title: 'text' } },
   ops_login_requests: { system: 'ops', userCol: '', rowCol: 'id', guardCols: [], columns: { label: 'text', location: 'text' } },
+  // device enrollment browser facts (not query keys; lookup is id/token_hash). Same system ops key as login_requests.
+  ops_device_enrollments: { system: 'ops', userCol: '', rowCol: 'id', guardCols: [], columns: { label: 'text', location: 'text' } },
   ops_trusted_devices: { system: 'ops', userCol: '', rowCol: 'id', guardCols: [], columns: { browser: 'text', countries_seen: 'text[]', label: 'text', last_country: 'text', last_ip_masked: 'text' } },
   ip_blocks: { system: 'ops', userCol: '', rowCol: 'ip_hash', guardCols: [], columns: { note: 'text', reason: 'text' } },
   security_incidents: { system: 'ops', userCol: '', rowCol: 'id', guardCols: [], columns: { actions: 'json' } },
@@ -306,6 +313,20 @@ export const ENCRYPTED_TABLES = {
   // (ids, role/module codes, counts, flags) — see public.iam_audit_row_ok and CHAINED_TABLES below.
   iam_grants: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { reason: 'text' } },
   iam_audit_log: { system: 'audit', userCol: '', rowCol: 'seq', guardCols: [], columns: { detail: 'json', target: 'text' } },
+  // pii_access_grants.reason + ticket_ref + country (no SQL filters; audit compares country in memory after decrypt).
+  // Entitlement is product+actor+subject+expiry, not the reason/ticket text. System AAD is SYSTEM_ROW.
+  pii_access_grants: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { reason: 'text', ticket_ref: 'text', country: 'text' } },
+  // append-only access log (trg_pii_access_log_immutable). New inserts seal; no UPDATE backfill.
+  pii_access_log: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { country: 'text', resource: 'text' } },
+  // summary + signals (short enum codes as text[]; UI decrypts via field-fetch; ordered by created_at only).
+  access_audit_findings: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { summary: 'text', signals: 'text[]' } },
+  // operational run error only (not shown on findings screen). Same system audit key. No SQL predicate on the text.
+  access_audit_runs: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { error: 'text' } },
+  // parent signup claim email: sealed in beginSignupClaim; SQL equality via email_bidx (nonce remains PK lock).
+  parent_signup_claims: { system: 'audit', userCol: '', rowCol: 'nonce', guardCols: [], columns: { email: 'text' } },
+  // Telegram device binding (ceo/security): seal + bidx; lookup stays credential_id / request id.
+  admin_passkeys: { system: 'ops', userCol: '', rowCol: 'id', guardCols: [], columns: { telegram_user_id: 'text' } },
+  gideon_device_requests: { system: 'ops', userCol: '', rowCol: 'id', guardCols: [], columns: { chat_id: 'text' } },
 } as const satisfies Record<string, EncryptedTable>;
 
 /**
@@ -327,17 +348,26 @@ export const FIELD_V2_TABLES: readonly string[] = [
   'task_logs', 'user_journey_step_unlocks', 'safety_events', 'enrollments',
   'ceo_audit_log', 'challenge_admin_audit_log', 'chat_transcript_admin_audit_log', 'delivery_log', 'error_events',
   'ceo_conversations', 'ceo_dev_forwards', 'ceo_owner_tasks', 'demo_access_links', 'gideon_outbox',
-  'gideon_telegram_identities', 'gideon_settings', 'notify_style_rules', 'ops_admin_notifications', 'ops_login_requests',
+  'gideon_telegram_identities', 'gideon_stranger_sim', 'gideon_settings', 'notify_style_rules', 'ops_admin_notifications', 'ops_login_requests',
   'ops_trusted_devices', 'ip_blocks', 'security_incidents', 'stepup_requests', 'tg_action_nonces', 'security_signals',
   'legal_export_secrets', 'consent_evidence', 'consent_evidence_attestations', 'legal_access_log', 'media_receipts',
   // 2026-10-26 enc-close: blind indexes / SQL readers moved (000208) + app-only writers
-  'user_consents', 'journey_task_executions', 'almog_kickoff_status', 'billing_events', 'ceo_pending_actions', 'notify_quality_events',
+  'user_consents', 'journey_task_executions', 'almog_kickoff_status', 'billing_events', 'billing_invoices', 'ceo_pending_actions', 'notify_quality_events',
   // 2026-10-26 enc-close-2: SQL dedupe/merge moved to the app + blind indexes (000212)
   'task_events', 'task_definitions', 'user_task_assignments', 'challenge_enrollments', 'admin_audit_log',
   // 000214: audit/security detail split (plain facts + sealed detail); session trail swept by cron
   'ops_security_events', 'auth_session_trail',
   // 000222: IAM grant reason + IAM audit log
   'iam_grants', 'iam_audit_log',
+  // hosted cron does not rewrite existing rows (FIELD_V2_LOCAL_BACKFILL_ONLY)
+  'pii_access_grants',
+  'access_audit_findings',
+  'access_audit_runs',
+  'ops_device_enrollments',
+  'pii_access_log',
+  'parent_signup_claims',
+  'admin_passkeys',
+  'gideon_device_requests',
 ];
 
 /**
@@ -353,16 +383,17 @@ export const SWEEP_TABLES: Readonly<Record<string, { maxPlainMinutes: number; ts
  * GATED — admin/IAM tables created by the unmerged migrations 000191-000201 (#357-#362). NOT live: nothing reads
  * this constant for sealing or triggers. After those PRs merge, apply supabase/gated/000211_iam_admin_enc_prep.sql,
  * move these into ENCRYPTED_TABLES + FIELD_V2_TABLES, and regenerate the enc-reject triggers.
- * iam_audit_log.detail/target and iam_grants.reason are live since 000222 (ENCRYPTED_TABLES). Not listed (stays
- * pending): ops_probe_daily.country (SQL probe counter upsert, 000198); ops_enroll_blocks.reason is verified fixed-code only (single writer lib/ops/enrollment.ts upserts 'wrong_number').
+ * iam_audit_log.detail/target and iam_grants.reason are live since 000222 (ENCRYPTED_TABLES).
+ * pii_access_grants.*, access_audit_findings.summary/signals, access_audit_runs.error, ops_device_enrollments.label/location, pii_access_log.country/resource, parent_signup_claims.email, admin_passkeys.telegram_user_id, gideon_device_requests.chat_id, gideon_stranger_sim.chat_id, gideon_telegram_identities.from_id, billing_invoices.doc_url are live in ENCRYPTED_TABLES.
+ * ops_probe_daily.country: non_sensitive crypto taxonomy (ISO-2+day+ip_hash still linkable ops data; RLS/retention unchanged).
+ * ops_enroll_blocks.reason is verified fixed-code only (single writer lib/ops/enrollment.ts upserts 'wrong_number').
  */
 export const GATED_AFTER_IAM_MERGE: Readonly<Record<string, EncryptedTable>> = {
-  access_audit_findings: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { signals: 'json', summary: 'text' } },
-  access_audit_runs: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { error: 'text' } },
-  ops_device_enrollments: { system: 'ops', userCol: '', rowCol: 'id', guardCols: [], columns: { label: 'text', location: 'text' } },
-  pii_access_grants: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { country: 'text', reason: 'text', ticket_ref: 'text' } },
-  pii_access_log: { system: 'audit', userCol: '', rowCol: 'id', guardCols: [], columns: { country: 'text', resource: 'text' } },
+  // empty — log country/resource and findings.signals promoted to ENCRYPTED_TABLES.
 };
+
+/** Registered for read/write sealing, but the hosted backfill cron must not rewrite rows. A local dummy script does. */
+export const FIELD_V2_LOCAL_BACKFILL_ONLY: readonly string[] = ['pii_access_grants', 'access_audit_findings', 'access_audit_runs', 'ops_device_enrollments', 'parent_signup_claims', 'admin_passkeys', 'gideon_device_requests', 'gideon_stranger_sim', 'gideon_telegram_identities', 'billing_invoices'];
 
 /**
  * Append-only evidence tables (a trigger rejects UPDATE/DELETE): historical rows stay as written and only rows
@@ -375,6 +406,7 @@ export const APPEND_ONLY_TABLES: Readonly<Record<string, string>> = {
   consent_evidence: 'append-only legal evidence (trg_consent_evidence_append_only)',
   consent_evidence_attestations: 'append-only legal evidence (trg_consent_evidence_append_only)',
   legal_access_log: 'append-only legal access log (trg_consent_evidence_append_only)',
+  pii_access_log: 'append-only PII access journal (trg_pii_access_log_immutable); seal on insert only',
 };
 
 /**
@@ -394,7 +426,9 @@ export const CHAINED_TABLES: Readonly<Record<string, { rowOk: string }>> = {
  * table here once `backfillFieldV2` reports it done and the nightly count shows 0.
  */
 // 2026-10-26: every backfillable FIELD_V2 table verified on prod at 0 non-enc:v2 values (registry-precise count)
-export const FIELD_V2_BACKFILL_COMPLETE: readonly string[] = FIELD_V2_TABLES.filter((t) => !(t in APPEND_ONLY_TABLES));
+export const FIELD_V2_BACKFILL_COMPLETE: readonly string[] = FIELD_V2_TABLES.filter(
+  (t) => !(t in APPEND_ONLY_TABLES) && !FIELD_V2_LOCAL_BACKFILL_ONLY.includes(t),
+);
 
 /** Registered but not yet safe to encrypt: a DB object reads/constrains the plaintext. Writes/backfill skip these. */
 export const BLOCKED: Readonly<Record<string, string>> = {};

@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { allowUserServerAction } from '@/lib/central/parent-data-plane';
 
 type WelcomeColumn = 'almog_welcome_seen_at' | 'dolev_welcome_seen_at';
 
@@ -17,6 +18,7 @@ export async function markWelcomeSeen(
   column: WelcomeColumn
 ): Promise<{ ok: true; userId: string } | { ok: false }> {
   if (!ALLOWED_COLUMNS.has(column)) return { ok: false };
+  if (!(await allowUserServerAction())) return { ok: false };
 
   const supabase = await createClient();
   const {

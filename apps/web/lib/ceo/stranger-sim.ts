@@ -1,10 +1,12 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { decryptTelegramId, sealTelegramId, telegramIdBidx } from '@/lib/ceo/telegram-id-seal';
 
 /**
  * Stranger simulation: Daniel (authorized sender only) can make Gideon treat him as a stranger for
  * 30 minutes. State is server-side (public.gideon_stranger_sim, per chat). While active every update
  * goes through the stranger path; the only extra is a short notice. It can never raise privileges:
  * start/exit are checked only after authorizedSender() passed, and exit just deletes the row.
+ * chat_id sealed at rest; lookups via keyed chat_bidx; Surrogate UUID PK.
  */
 export const SIM_MINUTES = 30;
 const START = new Set(['/סימולציה', '/simulate']);
@@ -14,7 +16,7 @@ const SIM_VERB = /(תעשה|תעשי|עשה|הפעל|תפעיל|תפעילי|ת�
 const AS_STRANGER = /(תבדוק|בדוק|תבחן|תתייחס)\s+(אליי|אלי|אותי)\s+(כזר|כמו\s+(ל)?זר)|תעמיד\s+פנים\s+שאני\s+זר|test\s+me\s+as\s+a\s+stranger/i;
 const NEG = /(אל\s+ת|לא\s+צריך|בלי\s+סימולציה|don'?t|do\s+not)/i;
 const QUESTION = /^(מה|איך|למה|מתי|האם|כמה|what|how|why|when)\b|\?/i;
-/** Natural phrasing: "גדעון תעשה לי סימולציה", "הפעל סימולציה", "תבדוק אותי כזר", "simulate me". Not questions/negations. */
+
 export function isSimStartNatural(text: string): boolean {
   const t = text.trim().replace(/^גדעון[\s,:]*/, '').replace(/[.!]+$/, '').trim();
   if (!t || t.length > 80 || t.includes('/') || NEG.test(t) || QUESTION.test(t)) return false;
@@ -27,6 +29,7 @@ export const isSimExit = (t: string) => EXIT.has(t.trim());
 
 export type SimAttempt = { at: string; kind: SimKind };
 export type SimKind = 'text' | 'command' | 'button' | 'media';
+/** chat_id here is always plaintext in memory after authorized decrypt. */
 export type Sim = { chat_id: string; started_at: string; expires_at: string; attempts: SimAttempt[] };
 
 export const SIM_REASON: Record<SimKind, string> = {
@@ -44,24 +47,56 @@ export function simKind(u: { message?: { text?: string }; callback_query?: unkno
 }
 
 export async function getSim(db: SupabaseClient, chatId: string): Promise<Sim | null> {
-  const { data } = await db.from('gideon_stranger_sim').select('chat_id, started_at, expires_at, attempts').eq('chat_id', chatId).maybeSingle();
-  return (data as Sim | null) ?? null;
+  let bidx: string;
+  try {
+    bidx = telegramIdBidx('gideon_stranger_sim', 'chat_id', chatId);
+  } catch {
+    return null;
+  }
+  const { data } = await db.from('gideon_stranger_sim').select('chat_id, chat_bidx, started_at, expires_at, attempts').eq('chat_bidx', bidx).maybeSingle();
+  const row = data as { chat_id: string; started_at: string; expires_at: string; attempts: SimAttempt[] } | null;
+  if (!row) return null;
+  const plain = await decryptTelegramId('gideon_stranger_sim', 'chat_id', row.chat_id);
+  if (!plain) return null;
+  return { chat_id: plain, started_at: row.started_at, expires_at: row.expires_at, attempts: row.attempts ?? [] };
 }
 
 export async function startSim(db: SupabaseClient, chatId: string, now = new Date()) {
   const expires_at = new Date(now.getTime() + SIM_MINUTES * 60_000).toISOString();
-  const { error } = await db.from('gideon_stranger_sim').upsert({ chat_id: chatId, started_at: now.toISOString(), expires_at, attempts: [] }, { onConflict: 'chat_id' });
+  let sealed: string;
+  let bidx: string;
+  try {
+    ({ sealed, bidx } = await sealTelegramId('gideon_stranger_sim', 'chat_id', chatId));
+  } catch {
+    throw new Error('sim start failed');
+  }
+  const { error } = await db.from('gideon_stranger_sim').upsert(
+    { chat_id: sealed, chat_bidx: bidx, started_at: now.toISOString(), expires_at, attempts: [] },
+    { onConflict: 'chat_bidx' },
+  );
   if (error) throw new Error('sim start failed');
 }
 
 export async function recordSimAttempt(db: SupabaseClient, sim: Sim, kind: SimKind, now = new Date()) {
   const attempts = [...(sim.attempts ?? []), { at: now.toISOString(), kind }].slice(-200);
   sim.attempts = attempts;
-  await db.from('gideon_stranger_sim').update({ attempts }).eq('chat_id', sim.chat_id).then(() => null, () => null);
+  let bidx: string;
+  try {
+    bidx = telegramIdBidx('gideon_stranger_sim', 'chat_id', sim.chat_id);
+  } catch {
+    return;
+  }
+  await db.from('gideon_stranger_sim').update({ attempts }).eq('chat_bidx', bidx).then(() => null, () => null);
 }
 
 export async function endSim(db: SupabaseClient, chatId: string) {
-  await db.from('gideon_stranger_sim').delete().eq('chat_id', chatId);
+  let bidx: string;
+  try {
+    bidx = telegramIdBidx('gideon_stranger_sim', 'chat_id', chatId);
+  } catch {
+    return;
+  }
+  await db.from('gideon_stranger_sim').delete().eq('chat_bidx', bidx);
 }
 
 export const simExpired = (s: Sim, now = new Date()) => new Date(s.expires_at).getTime() <= now.getTime();

@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 
 vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => { throw new Error('no db in tests'); } }));
-import { decideGate, licenseGate, purchaseUrl, type Settings } from '@/lib/central/license-gate';
+import { decideGate, licenseGate, purchaseUrl, statusPublicJwk, type Settings } from '@/lib/central/license-gate';
 
 const on: Settings = { mode: 'enforce', scope: 'all' };
 const v = (reason: string) => ({ allow: reason === 'active', wouldBlock: reason !== 'active', reason, mode: 'enforce' }) as never;
@@ -51,5 +51,11 @@ describe('license gate decision', () => {
     expect(readFileSync('app/(dashboard)/layout.tsx', 'utf8')).toMatch(/redirect\('\/license-required'\)/);
     expect(readFileSync('lib/api/route-guards.ts', 'utf8')).toMatch(/license_required/); // all product APIs incl. Almog chat
     expect(readFileSync('app/license-required/page.tsx', 'utf8')).toMatch(/if \(!gate\.block\) redirect/);
+  });
+  it('uses the published parent key unless a local test injects a public JWK', () => {
+    expect(statusPublicJwk({}).x).toBe('BBkaKRyCVQGtBwmLHmXFF0FnX-5LQZayAbZIjW3stvw');
+    expect(statusPublicJwk({ PRODUCT_LINK_STATUS_JWK: JSON.stringify({ kty: 'EC', crv: 'P-256', x: 'local-x', y: 'local-y' }) }).x).toBe('local-x');
+    expect(statusPublicJwk({ PRODUCT_LINK_STATUS_JWK: JSON.stringify({ kty: 'EC', crv: 'P-256', x: 'local-x', y: 'local-y', d: 'secret' }) }).x).toBe('BBkaKRyCVQGtBwmLHmXFF0FnX-5LQZayAbZIjW3stvw');
+    expect(statusPublicJwk({ PRODUCT_LINK_STATUS_JWK: 'not-json' }).x).toBe('BBkaKRyCVQGtBwmLHmXFF0FnX-5LQZayAbZIjW3stvw');
   });
 });

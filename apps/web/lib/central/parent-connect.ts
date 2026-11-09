@@ -22,14 +22,34 @@ export const randomToken = (size = 32) => b64u(crypto.getRandomValues(new Uint8A
 export const pkceChallenge = async (verifier: string): Promise<string> =>
   b64u(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier))));
 
-/** Parent authorize URL for this client. */
-export const authorizeUrl = (state: string, challenge: string, nonce?: string): string => {
-  const url = new URL(`${PARENT}/id/authorize`);
+export type AuthorizeMode = 'passkey' | 'qr';
+
+/**
+ * Parent authorize URL. Password login sends no mode. Face ID sends mode=passkey and QR sends mode=qr.
+ * Signup sends screen=signup. Unknown modes are not turned into a password authorize URL.
+ */
+export const authorizeUrl = (state: string, challenge: string, nonce?: string, extra?: { mode?: AuthorizeMode; screen?: 'signup'; origin?: string }): string => {
+  const url = new URL(`${extra?.origin ?? PARENT}/id/authorize`);
   const params = { response_type: 'code', client_id: CLIENT_ID, redirect_uri: REDIRECT_URI, state, code_challenge: challenge, code_challenge_method: 'S256' };
   for (const [name, value] of Object.entries(params)) url.searchParams.set(name, value);
   if (nonce) url.searchParams.set('nonce', nonce);
+  if (extra?.mode) url.searchParams.set('mode', extra.mode);
+  if (extra?.screen) url.searchParams.set('screen', extra.screen);
   return url.toString();
 };
+
+/** Token request the callback already sends. The secret stays server-side. */
+export const tokenRequest = (origin: string, input: { code: string; verifier: string; secret: string }) => ({
+  url: `${origin.replace(/\/$/, '')}/id/token`,
+  body: {
+    grant_type: 'authorization_code',
+    code: input.code,
+    redirect_uri: REDIRECT_URI,
+    code_verifier: input.verifier,
+    client_id: CLIENT_ID,
+    client_secret: input.secret,
+  },
+});
 
 /** Transaction cookie value: state.verifier (both random, base64url). */
 export const packTx = (state: string, verifier: string) => `${state}.${verifier}`;
@@ -41,13 +61,16 @@ export const unpackTx = (raw: string | undefined): { state: string; verifier: st
   return state && verifier ? { state, verifier } : null;
 };
 
-/** Sign-in transaction cookie: state.verifier.nonce. */
-export const packSigninTx = (state: string, verifier: string, nonce: string) => `${state}.${verifier}.${nonce}`;
-const SIGNIN_TX_RE = /^([A-Za-z0-9_-]{32,64})\.([A-Za-z0-9_-]{43,128})\.([A-Za-z0-9_-]{16,128})$/;
+export type SigninIntent = 'login' | 'signup';
+
+/** Sign-in transaction cookie: state.verifier.nonce or state.verifier.nonce.signup. */
+export const packSigninTx = (state: string, verifier: string, nonce: string, intent: SigninIntent = 'login') =>
+  intent === 'signup' ? `${state}.${verifier}.${nonce}.signup` : `${state}.${verifier}.${nonce}`;
+const SIGNIN_TX_RE = /^([A-Za-z0-9_-]{32,64})\.([A-Za-z0-9_-]{43,128})\.([A-Za-z0-9_-]{16,128})(?:\.(signup))?$/;
 // skipcq: JS-R1005 -- one regex, typed fallbacks
-export const unpackSigninTx = (raw: string | undefined): { state: string; verifier: string; nonce: string } | null => {
+export const unpackSigninTx = (raw: string | undefined): { state: string; verifier: string; nonce: string; intent: SigninIntent } | null => {
   const match = SIGNIN_TX_RE.exec(raw ?? '');
-  return match ? { state: match[1] as string, verifier: match[2] as string, nonce: match[3] as string } : null;
+  return match ? { state: match[1] as string, verifier: match[2] as string, nonce: match[3] as string, intent: match[4] === 'signup' ? 'signup' : 'login' } : null;
 };
 
 export type Claims = { iss: string; aud: string; sub: string; lic: string; exp: number; iat: number; email?: string; email_verified?: boolean; nonce?: string };

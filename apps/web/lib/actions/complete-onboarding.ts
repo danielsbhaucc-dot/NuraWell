@@ -3,7 +3,7 @@ import { sealProfilePatch } from '@/lib/crypto/pii-seal';
 import { buildSafetyScreening } from '@/lib/module-api/auth-signup/lib-onboarding-safety-screening';
 
 import { z } from 'zod';
-import { headers } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { consumeRateLimit } from '@/lib/api/rate-limit';
 import {
   checkPasswordPolicy,
@@ -35,6 +35,12 @@ import {
 import { clearChallengeGateCookie } from '@/lib/module-api/journey/lib-challenge-gate-cookie';
 import { recordRetentionChoice } from '@/lib/module-api/privacy-retention/lib-privacy-subscription-retention';
 import { recordConsentEvidence, validateSubmission } from '@/lib/module-api/legal/lib-legal-record-evidence';
+import { allowProductProvision, PROVISION_COOKIE, unpackProvision } from '@/lib/central/parent-provision';
+import { accessClosed, signinMode } from '@/lib/central/parent-signin';
+import { issueSessionForUser } from '@/lib/auth/issue-session';
+import { beginSignupClaim, failSignupClaim, finishSignupClaim, noteSignupUser, signupClaimUser } from '@/lib/central/signup-claim';
+import { recordParentSessionGrant } from '@/lib/central/parent-data-plane';
+import { packParentSession, PARENT_SESSION_COOKIE, PARENT_SESSION_COOKIE_MAX_AGE, PARENT_SESSION_TTL_SECONDS } from '@/lib/central/parent-session';
 
 const timeRegex = /^([01]\d|2[0-3]):[0-5]\d$/;
 
@@ -171,7 +177,13 @@ export async function completeOnboarding(
   }
 
   const data = parsed.data;
+  return runOnboarding(data, formData);
+}
 
+async function runOnboarding(
+  data: z.infer<typeof onboardingSchema>,
+  formData: FormData,
+): Promise<OnboardingActionState> {
   const ageCheck = validateBirthDate(data.date_of_birth);
   if (!ageCheck.ok) {
     const msg =
@@ -225,14 +237,43 @@ export async function completeOnboarding(
   // signups are disabled in Supabase Auth). The confirmation email/OTP is then
   // sent by Supabase via `resend` (works with disable_signup=true).
   const admin = createAdminClient();
-  const { data: created, error: createError } = await admin.auth.admin.createUser({
+  const mode = await signinMode();
+  const proof = accessClosed(mode)
+    ? unpackProvision((await cookies()).get(PROVISION_COOKIE)?.value, process.env.PLATFORM_ID_CLIENT_SECRET ?? '')
+    : null;
+  const provision = allowProductProvision(mode, proof, data.email);
+  if (provision === 'missing') return { ok: false, error: 'צריך להזדהות בחשבון המרכזי עם מנוי פעיל לפני ההרשמה' };
+  if (provision === 'email') return { ok: false, error: 'האימייל צריך להיות האימייל המאומת מהחשבון המרכזי' };
+  // Only the signed parent proof for this exact email confirms the new account. Off mode still sends the product letter.
+  const parentVerified = provision === 'ok' && proof !== null;
+  let claimedNonce: string | null = null;
+  let claimAttempt: string | null = null;
+  if (parentVerified && proof) {
+    const claim = await beginSignupClaim(admin, proof);
+    if (claim.status === 'done') {
+      return { ok: false, error: 'החשבון כבר נפתח. אפשר להיכנס עם הכניסה הקיימת.' };
+    }
+    if (claim.status === 'busy') {
+      return { ok: false, error: 'ההרשמה הזו כבר נפתחה. אם לא נכנסת, אפשר להתחיל שוב מהחשבון המרכזי.' };
+    }
+    if (claim.status !== 'claimed') {
+      return { ok: true, redirectTo: '/login?e=parent_restart', needsEmailVerification: false };
+    }
+    claimedNonce = proof.nonce;
+    claimAttempt = claim.attempt;
+  }
+  const knownUser = claimedNonce && claimAttempt ? await signupClaimUser(admin, claimedNonce, claimAttempt) : null;
+  const { data: created, error: createError } = knownUser
+    ? { data: { user: { id: knownUser, email_confirmed_at: new Date().toISOString() } }, error: null }
+    : await admin.auth.admin.createUser({
     email: data.email,
     password: data.password,
-    email_confirm: false,
+    email_confirm: parentVerified,
     // the name lives only in the encrypted profile (profiles.full_name); never copy it into auth metadata
     user_metadata: {
       username: data.email.split('@')[0],
     },
+    app_metadata: proof ? { pl_sub: proof.sub, pl_lic: proof.lic } : undefined,
   });
 
   if (createError || !created?.user) {
@@ -241,25 +282,34 @@ export async function completeOnboarding(
       code === 'email_exists' ||
       code === 'user_already_exists' ||
       /already (been )?registered/i.test(createError?.message ?? '');
+    if (claimedNonce && claimAttempt) await failSignupClaim(admin, claimedNonce, claimAttempt, null);
     return {
       ok: false,
       error: exists ? 'כתובת האימייל כבר רשומה — נסו להתחבר' : 'לא הצלחנו ליצור משתמש. נסו שוב.',
     };
   }
+  if (claimedNonce && claimAttempt) await noteSignupUser(admin, claimedNonce, claimAttempt, created.user.id);
 
-  const { error: resendError } = await supabase.auth.resend({
-    type: 'signup',
-    email: data.email,
-    options: { emailRedirectTo },
-  });
-  if (resendError) {
-    // eslint-disable-next-line no-console
-    console.warn('[onboarding] confirmation email send failed', resendError.status ?? '');
+  if (parentVerified && created.user && !created.user.email_confirmed_at) {
+    const { data: confirmed, error: confirmError } = await admin.auth.admin.updateUserById(created.user.id, { email_confirm: true });
+    if (!confirmError && confirmed.user) created.user = confirmed.user;
+  }
+  if (!parentVerified) {
+    const { error: resendError } = await supabase.auth.resend({
+      type: 'signup',
+      email: data.email,
+      options: { emailRedirectTo },
+    });
+    if (resendError) {
+      // eslint-disable-next-line no-console
+      console.warn('[onboarding] confirmation email send failed', resendError.status ?? '');
+    }
   }
   const signUpData = { user: created.user };
 
   const userId = signUpData.user?.id;
   if (!userId) {
+    if (claimedNonce && claimAttempt) await failSignupClaim(admin, claimedNonce, claimAttempt, null);
     return { ok: false, error: 'לא הצלחנו ליצור משתמש. נסו שוב.' };
   }
 
@@ -345,9 +395,11 @@ export async function completeOnboarding(
     console.warn('[complete-onboarding] retention choice record failed', retentionResult.error);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error: profileError } = await (admin.from('profiles') as any)
-    .update(await sealProfilePatch({
+  // Seal first: a missing PII root key (or DEK failure) must fail closed without writing plaintext,
+  // and must release an open signup claim — previously the throw skipped failSignupClaim.
+  let sealedProfile: Record<string, unknown>;
+  try {
+    sealedProfile = await sealProfilePatch({
       full_name: data.full_name,
       gender: data.gender,
       date_of_birth: data.date_of_birth,
@@ -377,10 +429,19 @@ export async function completeOnboarding(
         ...(screening.no_weight ? { safety_no_weight: true } : {}),
         ...(screening.fluid_restriction ? { safety_fluid_restriction: true } : {}),
       },
-    }, userId))
+    }, userId);
+  } catch {
+    if (claimedNonce && claimAttempt) await failSignupClaim(admin, claimedNonce, claimAttempt, null);
+    return { ok: false, error: 'החשבון נוצר אך שמירת הפרופיל נכשלה. פנו לתמיכה.' };
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error: profileError } = await (admin.from('profiles') as any)
+    .update(sealedProfile)
     .eq('id', userId);
 
   if (profileError) {
+    if (claimedNonce && claimAttempt) await failSignupClaim(admin, claimedNonce, claimAttempt, null);
     return { ok: false, error: 'החשבון נוצר אך שמירת הפרופיל נכשלה. פנו לתמיכה.' };
   }
 
@@ -426,7 +487,34 @@ export async function completeOnboarding(
     console.warn('[complete-onboarding] challenge enroll failed', err);
   });
 
-  const needsEmailVerification = !signUpData.user?.email_confirmed_at;
+  const needsEmailVerification = !parentVerified && !signUpData.user?.email_confirmed_at;
+  if (parentVerified && proof) {
+    const session = await issueSessionForUser(admin, userId);
+    const sessionId = session.ok ? session.sessionId : null;
+    const nowS = Math.floor(Date.now() / 1000);
+    const secret = process.env.PLATFORM_ID_CLIENT_SECRET ?? '';
+    const packed = sessionId
+      ? packParentSession({
+        product: 'nurawell', userId, sessionId, parentSub: proof.sub,
+        iat: nowS, exp: nowS + PARENT_SESSION_TTL_SECONDS,
+      }, secret)
+      : null;
+    const recorded = packed && sessionId
+      ? await recordParentSessionGrant(admin, {
+        userId, sessionId, parentSub: proof.sub,
+        issuedAt: nowS, expiresAt: nowS + PARENT_SESSION_TTL_SECONDS,
+      })
+      : 'failed';
+    const finished = recorded === 'recorded' && sessionId && claimAttempt
+      ? await finishSignupClaim(admin, proof.nonce, claimAttempt, userId, sessionId)
+      : false;
+    if (!sessionId || !packed || recorded !== 'recorded' || !finished) {
+      if (claimAttempt) await failSignupClaim(admin, proof.nonce, claimAttempt, sessionId);
+      return { ok: true, redirectTo: '/login?e=parent_restart', needsEmailVerification: false };
+    }
+    (await cookies()).set(PROVISION_COOKIE, '', { httpOnly: true, secure: true, sameSite: 'lax', path: '/', maxAge: 0 });
+    (await cookies()).set(PARENT_SESSION_COOKIE, packed, { httpOnly: true, secure: true, sameSite: 'lax', path: '/', maxAge: PARENT_SESSION_COOKIE_MAX_AGE });
+  }
 
   return {
     ok: true,

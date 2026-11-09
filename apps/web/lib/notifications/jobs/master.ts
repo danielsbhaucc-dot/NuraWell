@@ -707,6 +707,7 @@ async function runMasterCron() {
     );
     const { sendLifeContextTouch } = await import('@/lib/module-api/agent/lib-ai-life-context');
     const { isAvoidPushActive: avoidPush } = await import('@/lib/module-api/agent/lib-ai-avoid-push');
+    const { suppressUnlicensedNudge } = await import('@/lib/central/nudge-license');
 
     for (const profile of (journeyCandidateRows ?? []) as {
       id: string;
@@ -718,6 +719,7 @@ async function runMasterCron() {
       if (journeyCompanionSent >= maxJourneyCompanion) break;
       const userId = profile.id;
       try {
+        if (await suppressUnlicensedNudge(admin, userId)) continue;
         if (avoidPush(profile.ai_context ?? {})) continue;
 
         const companion = await fetchJourneyCompanionContext(admin, userId);

@@ -2,6 +2,8 @@ import 'server-only';
 import { NextResponse } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { grantCovers, grantExpiry, validateJustification, type PiiGrant } from '@platform/access';
+import { readableGrantReason, readableTicketRef, sealTicketRef, sealGrantCountry } from './grant-fields';
+import { sealLogCountry, sealLogResource } from './log-fields';
 import { requestFacts } from './request-facts';
 
 /**
@@ -13,8 +15,8 @@ export const PII_REQUIRED_CODE = 'pii_justification_required';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 type Row = { id: string; product_id: string; actor_id: string; subject_id: string; reason: string; ticket_ref: string | null; created_at: string; expires_at: string; revoked_at: string | null };
-const toGrant = (r: Row): PiiGrant => ({
-  id: r.id, productId: r.product_id, actorId: r.actor_id, subjectId: r.subject_id, reason: r.reason, ticketRef: r.ticket_ref,
+const toGrant = (r: Row, reason: string): PiiGrant => ({
+  id: r.id, productId: r.product_id, actorId: r.actor_id, subjectId: r.subject_id, reason, ticketRef: readableTicketRef(r.ticket_ref),
   createdAt: Date.parse(r.created_at), expiresAt: Date.parse(r.expires_at), revokedAt: r.revoked_at ? Date.parse(r.revoked_at) : null,
 });
 
@@ -23,15 +25,26 @@ export function piiEnforced(): boolean {
 }
 
 async function log(db: SupabaseClient, row: Record<string, unknown>): Promise<boolean> {
-  const { error } = await db.from('pii_access_log').insert(row);
+  const sealed = {
+    ...row,
+    country: await sealLogCountry(row.country ?? null),
+    resource: await sealLogResource(row.resource ?? ''),
+  };
+  const { error } = await db.from('pii_access_log').insert(sealed);
   return !error;
 }
 
 export async function liveGrant(db: SupabaseClient, q: { productId: string; actorId: string; subjectId: string }, now = Date.now()): Promise<PiiGrant | null> {
-  const { data } = await db.from('pii_access_grants').select('*').eq('product_id', q.productId).eq('actor_id', q.actorId).eq('subject_id', q.subjectId)
-    .is('revoked_at', null).gt('expires_at', new Date(now).toISOString()).order('expires_at', { ascending: false }).limit(1);
+  let data: unknown;
+  try {
+    ({ data } = await db.from('pii_access_grants').select('*').eq('product_id', q.productId).eq('actor_id', q.actorId).eq('subject_id', q.subjectId)
+      .is('revoked_at', null).gt('expires_at', new Date(now).toISOString()).order('expires_at', { ascending: false }).limit(1));
+  } catch {
+    return null;
+  }
   const g = (data as Row[] | null)?.[0];
-  const grant = g ? toGrant(g) : null;
+  const reason = g ? readableGrantReason(g.reason) : null;
+  const grant = g && reason ? toGrant(g, reason) : null;
   return grantCovers(grant, q, now) ? grant : null;
 }
 
@@ -42,8 +55,10 @@ export async function createPiiGrant(db: SupabaseClient, req: Request, q: { prod
   const f = requestFacts(req.headers);
   const now = Date.now();
   const { data, error } = await db.from('pii_access_grants').insert({
-    product_id: q.productId, actor_id: q.actorId, subject_id: q.subjectId, reason: v.reason, ticket_ref: v.ticketRef,
-    created_at: new Date(now).toISOString(), expires_at: new Date(grantExpiry(now)).toISOString(), ip_hash: f.ipHash, country: f.country,
+    product_id: q.productId, actor_id: q.actorId, subject_id: q.subjectId, reason: v.reason,
+    ticket_ref: await sealTicketRef(v.ticketRef),
+    created_at: new Date(now).toISOString(), expires_at: new Date(grantExpiry(now)).toISOString(), ip_hash: f.ipHash,
+    country: await sealGrantCountry(f.country),
   }).select('id, expires_at').single();
   if (error || !data) return { ok: false as const, error: 'store_failed' };
   const g = data as { id: string; expires_at: string };

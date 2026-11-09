@@ -14,6 +14,20 @@ import { createAdminClient } from '@/lib/supabase/admin';
 const PRODUCT_ID = 'nurawell';
 const SETTINGS_TTL_MS = 30_000;
 const STATUS_PUBLIC_JWK = { kty: 'EC', crv: 'P-256', x: 'BBkaKRyCVQGtBwmLHmXFF0FnX-5LQZayAbZIjW3stvw', y: 'X_ed_4mON3I-7bSob8rreWnP48DldEZNTPNc1fBI1KM' } as const;
+
+/** Published parent key, unless a local test run injects its own public JWK. A private key is never accepted. */
+export function statusPublicJwk(env: Record<string, string | undefined>): JsonWebKey {
+  const raw = env.PRODUCT_LINK_STATUS_JWK?.trim();
+  if (!raw) return STATUS_PUBLIC_JWK;
+  try {
+    const parsed = JSON.parse(raw) as JsonWebKey;
+    if (parsed.kty !== 'EC' || parsed.crv !== 'P-256' || typeof parsed.x !== 'string' || typeof parsed.y !== 'string') return STATUS_PUBLIC_JWK;
+    if (typeof (parsed as { d?: unknown }).d === 'string') return STATUS_PUBLIC_JWK;
+    return { kty: 'EC', crv: 'P-256', x: parsed.x, y: parsed.y };
+  } catch {
+    return STATUS_PUBLIC_JWK;
+  }
+}
 const OUTAGE = new Set(['no_status', 'stale_status']);
 
 export type Settings = { mode: 'shadow' | 'enforce'; scope: 'test' | 'all' };
@@ -53,7 +67,7 @@ function getLink(env: Record<string, string | undefined>): Promise<ProductLink |
   link ??= (async () => {
     const base = (env.CENTRAL_SUPABASE_URL ?? '').replace(/\/$/, '');
     if (!base.startsWith('https://') || !env.PRODUCT_LINK_KEY_ID || !env.PRODUCT_LINK_SECRET) return null;
-    const publicKey = await crypto.subtle.importKey('jwk', STATUS_PUBLIC_JWK, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['verify']);
+    const publicKey = await crypto.subtle.importKey('jwk', statusPublicJwk(env), { name: 'ECDSA', namedCurve: 'P-256' }, false, ['verify']);
     return new ProductLink({
       productId: PRODUCT_ID, keyId: env.PRODUCT_LINK_KEY_ID, secret: env.PRODUCT_LINK_SECRET, version: '0.0.0', instance: 'web',
       mode: 'enforce', enforceApproved: true, timeoutMs: 3000,
@@ -61,6 +75,17 @@ function getLink(env: Record<string, string | undefined>): Promise<ProductLink |
     });
   })().catch(() => null);
   return link;
+}
+
+/** Reason on the signed license status for this id. `no_status` when the status cannot be checked. Never throws. */
+export async function licenseReasonFor(lic: string, env: Record<string, string | undefined> = process.env): Promise<string> {
+  try {
+    const link = await getLink(env);
+    if (!link) return 'no_status';
+    return (await link.check('*', { lic })).reason;
+  } catch {
+    return 'no_status';
+  }
 }
 
 /** Runtime gate. Never throws; any failure ⇒ allow. */

@@ -18,11 +18,11 @@ export const COLUMN_CLASSIFICATION: Readonly<Record<string, Readonly<Record<stri
     event_kind: ["non_sensitive", "enum/status/routing code, no personal content"],
     product_id: ["non_sensitive", "identifier/key or public credential material, no personal content"],
     severity: ["non_sensitive", "enum/status/routing code, no personal content"],
-    signals: ["sensitive", "pending (not encrypted yet): table created/written outside this branch (prod schema drift: IAM/admin-access migrations 000191-000201); register after those land"],
-    summary: ["sensitive", "pending (not encrypted yet): table created/written outside this branch (prod schema drift: IAM/admin-access migrations 000191-000201); register after those land"],
+    signals: ["sensitive", "registered (system key: audit)"],
+    summary: ["sensitive", "registered"],
   },
   access_audit_runs: {
-    error: ["sensitive", "pending (not encrypted yet): table created/written outside this branch (prod schema drift: IAM/admin-access migrations 000191-000201); register after those land"],
+    error: ["sensitive", "registered"],
     product_id: ["non_sensitive", "identifier/key or public credential material, no personal content"],
   },
   achievements: {
@@ -46,7 +46,8 @@ export const COLUMN_CLASSIFICATION: Readonly<Record<string, Readonly<Record<stri
     kind: ["non_sensitive", "enum/status/routing code, no personal content"],
     label: ["non_sensitive", "enum/status/routing code, no personal content"],
     public_key: ["non_sensitive", "identifier/key or public credential material, no personal content"],
-    telegram_user_id: ["sensitive", "pending (not encrypted yet): lookup filter; needs a blind-index column"],
+    telegram_user_id: ["sensitive", "enc:v2 at rest (system:ops); ownership via keyed telegram_user_bidx / decrypt; credential_id remains lookup"],
+    telegram_user_bidx: ["non_sensitive", "keyed HMAC blind index of telegram user id, not reversible"],
   },
   admin_totp: {
     secret_enc: ["non_sensitive", "already ciphertext under its own envelope"],
@@ -164,7 +165,7 @@ export const COLUMN_CLASSIFICATION: Readonly<Record<string, Readonly<Record<stri
   billing_invoices: {
     doc_number: ["non_sensitive", "invoice serial number, no personal content"],
     doc_type: ["non_sensitive", "enum/status/routing code, no personal content"],
-    doc_url: ["sensitive", "pending (not encrypted yet): table written outside this repo (billing provider sync)"],
+    doc_url: ["sensitive", "registered (per-user DEK); seal on write via field-fetch even before a billing sync writer exists; decrypt only on authorized server read for navigation — never put ciphertext in href; browser client has no field-fetch"],
     product_id: ["non_sensitive", "identifier/key or public credential material, no personal content"],
     provider: ["non_sensitive", "enum/status/routing code, no personal content"],
   },
@@ -421,7 +422,7 @@ export const COLUMN_CLASSIFICATION: Readonly<Record<string, Readonly<Record<stri
   },
   error_events: {
     environment: ["non_sensitive", "enum/status/routing code, no personal content"],
-    message: ["sensitive", "pending (not encrypted yet): SQL function 000109 groups/filters on message; needs a fingerprint column first"],
+    message: ["sensitive", "registered (system key: audit); sealed via report-error sealedFetch; scrubTelemetry before store; app fingerprint in logging/errors.ts (SQL 000109 left(message) sees ciphertext prefixes only)"],
     product_id: ["non_sensitive", "identifier/key or public credential material, no personal content"],
     route: ["non_sensitive", "app route path"],
     severity: ["non_sensitive", "enum/status/routing code, no personal content"],
@@ -438,7 +439,8 @@ export const COLUMN_CLASSIFICATION: Readonly<Record<string, Readonly<Record<stri
     source: ["non_sensitive", "enum/status/routing code, no personal content"],
   },
   gideon_device_requests: {
-    chat_id: ["sensitive", "pending (not encrypted yet): filtered on in app + SQL; needs a blind-index column"],
+    chat_id: ["sensitive", "enc:v2 at rest (system:ops); SQL equality via keyed chat_bidx; decrypt only at approve/send boundary"],
+    chat_bidx: ["non_sensitive", "keyed HMAC blind index of chat id, not reversible"],
     status: ["non_sensitive", "enum/status/routing code, no personal content"],
   },
   gideon_outbox: {
@@ -464,14 +466,18 @@ export const COLUMN_CLASSIFICATION: Readonly<Record<string, Readonly<Record<stri
     telegram_webhook_secret_enc: ["non_sensitive", "already ciphertext under its own envelope"],
   },
   gideon_stranger_sim: {
-    attempts: ["sensitive", "pending (not encrypted yet): table keyed by plaintext chat_id; encrypt together with the key change"],
-    chat_id: ["sensitive", "pending (not encrypted yet): primary key; needs a blind-index key"],
+    attempts: ["non_sensitive", "attempt kind+timestamp counters (enum codes); keyed via chat_bidx after surrogate UUID PK"],
+    chat_id: ["sensitive", "enc:v2 at rest (system:ops); SQL equality via keyed chat_bidx; decrypt only at authorized sim/routing boundary"],
+    chat_bidx: ["non_sensitive", "keyed HMAC blind index of chat id, not reversible"],
+    id: ["non_sensitive", "surrogate UUID primary key"],
   },
   gideon_telegram_identities: {
     code_hash: ["non_sensitive", "hash/digest/signature, not reversible to content"],
     code_salt: ["non_sensitive", "hash/digest/signature, not reversible to content"],
     decided_by: ["non_sensitive", "enum/status/routing code, no personal content"],
-    from_id: ["sensitive", "pending (not encrypted yet): row key (rowCol) and lookup filter; needs a blind-index key"],
+    from_id: ["sensitive", "enc:v2 at rest (system:ops); SQL equality via keyed from_bidx; decrypt only at allowlist/ops/routing boundary"],
+    from_bidx: ["non_sensitive", "keyed HMAC blind index of from id, not reversible"],
+    id: ["non_sensitive", "surrogate UUID primary key"],
     reason: ["sensitive", "registered (system key: ops)"],
     status: ["non_sensitive", "enum/status/routing code, no personal content"],
   },
@@ -525,7 +531,7 @@ export const COLUMN_CLASSIFICATION: Readonly<Record<string, Readonly<Record<stri
     product_id: ["non_sensitive", "staff-authored catalog/config content, not user data"],
   },
   ip_block_ranges: {
-    reason: ["sensitive", "pending (not encrypted yet): CHECK constraint + range admin SQL; can follow the ip_blocks pattern later"],
+    reason: ["non_sensitive", "fixed code: sole app writer security-core/ir.ts upserts literal 'manual' (no user-editable input); SQL only deletes ranges; free text would need seal like ip_blocks.note"],
   },
   ip_blocks: {
     ip_hash: ["non_sensitive", "hash/digest/signature, not reversible to content"],
@@ -790,8 +796,8 @@ export const COLUMN_CLASSIFICATION: Readonly<Record<string, Readonly<Record<stri
     factor_via: ["non_sensitive", "enum/status/routing code, no personal content"],
     ip_hash: ["non_sensitive", "hash/digest/signature, not reversible to content"],
     issued_via: ["non_sensitive", "enum/status/routing code, no personal content"],
-    label: ["sensitive", "pending (not encrypted yet): table created/written outside this branch (prod schema drift: IAM/admin-access migrations 000191-000201); register after those land"],
-    location: ["sensitive", "pending (not encrypted yet): table created/written outside this branch (prod schema drift: IAM/admin-access migrations 000191-000201); register after those land"],
+    label: ["sensitive", "registered (system key: ops)"],
+    location: ["sensitive", "registered (system key: ops)"],
     match_result: ["non_sensitive", "enum/status/routing code, no personal content"],
     session_hash: ["non_sensitive", "hash/digest/signature, not reversible to content"],
     token_hash: ["non_sensitive", "hash/digest/signature, not reversible to content"],
@@ -823,7 +829,7 @@ export const COLUMN_CLASSIFICATION: Readonly<Record<string, Readonly<Record<stri
     status: ["non_sensitive", "enum/status/routing code, no personal content"],
   },
   ops_probe_daily: {
-    country: ["sensitive", "pending (not encrypted yet): table created/written outside this branch (prod schema drift: IAM/admin-access migrations 000191-000201); register after those land"],
+    country: ["non_sensitive", "crypto taxonomy only (not a public/non-personal claim): ISO-3166-1 alpha-2 aggregate with day+ip_hash is still linkable pseudonymous operational data; RLS/redaction/retention unchanged; SQL upsert 000198 — app crypto not required for this counter"],
     ip_hash: ["non_sensitive", "hash/digest/signature, not reversible to content"],
     product_id: ["non_sensitive", "identifier/key or public credential material, no personal content"],
   },
@@ -898,18 +904,18 @@ export const COLUMN_CLASSIFICATION: Readonly<Record<string, Readonly<Record<stri
     type: ["non_sensitive", "enum/status/routing code, no personal content"],
   },
   pii_access_grants: {
-    country: ["sensitive", "pending (not encrypted yet): table created/written outside this branch (prod schema drift: IAM/admin-access migrations 000191-000201); register after those land"],
+    country: ["sensitive", "registered (system key: audit)"],
     ip_hash: ["non_sensitive", "hash/digest/signature, not reversible to content"],
     product_id: ["non_sensitive", "identifier/key or public credential material, no personal content"],
-    reason: ["sensitive", "pending (not encrypted yet): table created/written outside this branch (prod schema drift: IAM/admin-access migrations 000191-000201); register after those land"],
-    ticket_ref: ["sensitive", "pending (not encrypted yet): table created/written outside this branch (prod schema drift: IAM/admin-access migrations 000191-000201); register after those land"],
+    reason: ["sensitive", "registered"],
+    ticket_ref: ["sensitive", "registered (system key: audit)"],
   },
   pii_access_log: {
-    country: ["sensitive", "pending (not encrypted yet): table created/written outside this branch (prod schema drift: IAM/admin-access migrations 000191-000201); register after those land"],
+    country: ["sensitive", "registered (system key: audit)"],
     event: ["non_sensitive", "enum/status/routing code, no personal content"],
     ip_hash: ["non_sensitive", "hash/digest/signature, not reversible to content"],
     product_id: ["non_sensitive", "identifier/key or public credential material, no personal content"],
-    resource: ["sensitive", "pending (not encrypted yet): table created/written outside this branch (prod schema drift: IAM/admin-access migrations 000191-000201); register after those land"],
+    resource: ["sensitive", "registered (system key: audit)"],
   },
   plan_waitlist: {
     billing_interval: ["non_sensitive", "enum/status/routing code, no personal content"],
@@ -923,6 +929,8 @@ export const COLUMN_CLASSIFICATION: Readonly<Record<string, Readonly<Record<stri
     almog_register: ["non_sensitive", "speech-register enum"],
     avatar_url: ["sensitive", "registered"],
     current_weight_kg: ["sensitive", "registered"],
+    date_of_birth: ["sensitive", "registered"],
+    birth_date: ["sensitive", "registered"],
     daily_task: ["sensitive", "registered"],
     dietary_preferences: ["sensitive", "registered"],
     engagement_status: ["non_sensitive", "enum/status/routing code, no personal content"],
@@ -1156,6 +1164,16 @@ export const COLUMN_CLASSIFICATION: Readonly<Record<string, Readonly<Record<stri
     public_key: ["non_sensitive", "identifier/key or public credential material, no personal content"],
     rp_id: ["non_sensitive", "identifier/key or public credential material, no personal content"],
     transports: ["non_sensitive", "identifier/key or public credential material, no personal content"],
+  },
+  parent_signup_claims: {
+    nonce: ["non_sensitive", "opaque single-use claim lock / PK (SQL equality). Encryption-taxonomy only: still a linkable operational identifier — do not weaken RLS, log redaction, or retention; not public/non-personal for privacy"],
+    parent_sub: ["non_sensitive", "opaque parent account key (SQL equality), same role as parent_session_grants.parent_sub. Encryption-taxonomy only: pseudonymous/linkable operational id — RLS/redaction/retention unchanged; not public"],
+    email: ["sensitive", "enc:v2 at rest (system:audit); SQL equality via keyed email_bidx in parent_signup_begin; nonce remains PK lock; legacy plaintext retained until retention/migration — not auto-closed"],
+    email_bidx: ["non_sensitive", "keyed HMAC blind index of normalized email (filter/equality), not reversible"],
+    state: ["non_sensitive", "enum open/done/failed (CHECK), no personal content"],
+  },
+  parent_session_grants: {
+    parent_sub: ["non_sensitive", "opaque parent account key for this session grant. Encryption-taxonomy only: pseudonymous/linkable operational id — not public; do not weaken RLS, log redaction, or retention"],
   },
   platform_link_settings: {
     mode: ["non_sensitive", "enum (license enforcement kill switch), no personal content"],

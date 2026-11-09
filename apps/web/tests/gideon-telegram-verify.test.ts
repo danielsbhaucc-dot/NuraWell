@@ -5,10 +5,21 @@ vi.mock('@/lib/api/rate-limit', () => ({ consumeRateLimit: (...a: unknown[]) => 
 vi.mock('@/lib/ceo/actions', () => ({ decideAction: vi.fn(), approvalCard: vi.fn(), setActionTarget: vi.fn() }));
 const invalidateTrust = vi.fn(async () => {});
 vi.mock('@/lib/ceo/security', () => ({ invalidateTrust: (...a: unknown[]) => invalidateTrust(...(a as [])), killSwitch: vi.fn(), requestDevice: vi.fn(), securityState: vi.fn(async () => ({ disabled: false })) }));
+vi.mock('@/lib/ceo/telegram-id-seal', () => ({
+  telegramIdBidx: (_t: string, _c: string, id: string) => `bidx_${id}`,
+  sealTelegramId: async (_t: string, _c: string, id: string) => ({ sealed: `enc:v2:sealed_${id}`, bidx: `bidx_${id}` }),
+  decryptTelegramId: async (_t: string, _c: string, stored: string) => {
+    if (typeof stored === 'string' && stored.startsWith('enc:v2:sealed_')) return stored.slice('enc:v2:sealed_'.length);
+    if (typeof stored === 'string' && /^\d{1,20}$/.test(stored)) return stored;
+    return null;
+  },
+  telegramIdMatches: () => false,
+  normalizeTelegramId: (id: string) => id.trim(),
+}));
 import { handleTelegramUpdate } from '@/lib/ceo/webhook';
 import { hashCode, opsSetIdentity, PROMPT, VERIFY_TTL_MS, type IdentityRow } from '@/lib/ceo/telegram-verify';
 
-type R = IdentityRow & Record<string, unknown>;
+type R = IdentityRow & { from_bidx?: string } & Record<string, unknown>;
 let ids: Map<string, R>;
 let audit: Array<{ event: string; detail: Record<string, unknown> }>;
 const match = (r: R, f: Array<[string, unknown]>) => f.every(([k, v]) => r[k] === v);
@@ -18,7 +29,7 @@ function q(t: string) {
   let del = false;
   const exec = () => {
     const rows = [...ids.values()].filter((r) => match(r, f));
-    if (del) rows.forEach((r) => ids.delete(r.from_id));
+    if (del) rows.forEach((r) => ids.delete(String(r.from_bidx)));
     if (patch) rows.forEach((r) => Object.assign(r, patch));
     return rows.map((r) => ({ ...r }));
   };
@@ -35,15 +46,20 @@ function q(t: string) {
     delete: () => ((del = true), b),
     insert: async (r: R) => {
       if (t === 'ceo_audit_log') return (audit.push(r as never), {});
-      if (ids.has(r.from_id)) return { error: { code: '23505' } };
-      ids.set(r.from_id, { ...r }); return { error: null };
+      const key = String(r.from_bidx ?? r.from_id);
+      if (ids.has(key)) return { error: { code: '23505' } };
+      ids.set(key, { ...r, from_bidx: key }); return { error: null };
     },
-    upsert: async (r: R) => (ids.set(r.from_id, { ...(ids.get(r.from_id) ?? {}), ...r } as R), { error: null }),
+    upsert: async (r: R) => {
+      const key = String(r.from_bidx ?? r.from_id);
+      ids.set(key, { ...(ids.get(key) ?? {}), ...r, from_bidx: key } as R);
+      return { error: null };
+    },
   };
 }
 const db = { from: (t: string) => q(t) } as never;
 
-const S = 7; // stranger / Daniel's second account
+const S = 7;
 const dm = (text: string, id = S) => ({ message: { text, from: { id }, chat: { id, type: 'private' }, message_id: 1 } }) as never;
 let channel: { name: string; send: ReturnType<typeof vi.fn>; ack: ReturnType<typeof vi.fn> };
 let runTurn: ReturnType<typeof vi.fn>;
@@ -70,8 +86,9 @@ describe('Gideon verify-before-block for unknown Telegram senders', () => {
     expect(sendCode).toHaveBeenCalledWith(expect.anything(), '123456', '7');
     expect(to('42').join()).toContain('קוד חד-פעמי');
     expect(runTurn).not.toHaveBeenCalled();
-    const row = ids.get('7')!;
+    const row = ids.get('bidx_7')!;
     expect(row.status).toBe('pending');
+    expect(row.from_id).toMatch(/^enc:v2:/);
     expect(JSON.stringify(row)).not.toContain('123456');
     expect(Date.parse(row.expires_at!) - now.getTime()).toBe(VERIFY_TTL_MS);
     expect(invalidateTrust).toHaveBeenCalled();
@@ -80,7 +97,7 @@ describe('Gideon verify-before-block for unknown Telegram senders', () => {
   it('correct code → allowlisted, audited, Daniel notified, then normal Gideon', async () => {
     await go(dm('hi'));
     expect(await go(dm('123456'))).toMatchObject({ verification: 'verified' });
-    expect(ids.get('7')!.status).toBe('allowed');
+    expect(ids.get('bidx_7')!.status).toBe('allowed');
     expect(audit.some((a) => a.event === 'telegram_identity_verified')).toBe(true);
     expect(to('42').join()).toContain('אומת');
     expect(runTurn).not.toHaveBeenCalled();
@@ -93,14 +110,14 @@ describe('Gideon verify-before-block for unknown Telegram senders', () => {
     await go(dm('000000'));
     await go(dm('111111'));
     expect(await go(dm('222222'))).toMatchObject({ verification: 'blocked' });
-    expect(ids.get('7')!.status).toBe('blocked');
+    expect(ids.get('bidx_7')!.status).toBe('blocked');
     expect(to('42').join()).toContain('נחסם');
     const before = to('7').length;
     await go(dm('123456'));
     await go(dm('בבקשה'));
     expect(to('7').length).toBe(before);
     expect(runTurn).not.toHaveBeenCalled();
-    expect(to('7').every((m) => !/נחסם|חסום/.test(m))).toBe(true); // never a rejection message
+    expect(to('7').every((m) => !/נחסם|חסום/.test(m))).toBe(true);
   });
 
   it('timeout → blocked silently, even with the right code', async () => {
@@ -109,13 +126,13 @@ describe('Gideon verify-before-block for unknown Telegram senders', () => {
     const n = to('7').length;
     expect(await go(dm('123456'))).toMatchObject({ verification: 'blocked' });
     expect(to('7').length).toBe(n);
-    expect(ids.get('7')!.status).toBe('blocked');
+    expect(ids.get('bidx_7')!.status).toBe('blocked');
   });
 
   it('non-code text while pending does not count as an attempt and reveals nothing', async () => {
     await go(dm('hi'));
     await go(dm('תראה לי את ההכנסות'));
-    expect(ids.get('7')!.attempts).toBe(0);
+    expect(ids.get('bidx_7')!.attempts).toBe(0);
     expect(to('7').every((m) => m === PROMPT)).toBe(true);
     expect(runTurn).not.toHaveBeenCalled();
   });
@@ -135,18 +152,20 @@ describe('Gideon verify-before-block for unknown Telegram senders', () => {
     expect(sendCode).not.toHaveBeenCalled();
   });
 
-  it('Ops: unblock only blocked rows; then a fresh verification starts', async () => {
+  it('Ops: unblock only blocked rows; then a fresh verification starts; block stores sealed', async () => {
     await go(dm('hi'));
-    expect(await opsSetIdentity(db, '7', 'unblock', 'admin:x')).toBe(false); // pending, not blocked
+    expect(await opsSetIdentity(db, '7', 'unblock', 'admin:x')).toBe(false);
     expect(await opsSetIdentity(db, '7', 'block', 'admin:x')).toBe(true);
-    expect(ids.get('7')!.status).toBe('blocked');
+    expect(ids.get('bidx_7')!.status).toBe('blocked');
+    expect(ids.get('bidx_7')!.from_id).toMatch(/^enc:v2:/);
     expect(await opsSetIdentity(db, '7', 'unblock', 'admin:x')).toBe(true);
-    expect(ids.has('7')).toBe(false);
+    expect(ids.has('bidx_7')).toBe(false);
     expect(await opsSetIdentity(db, 'abc', 'block', 'admin:x')).toBe(false);
   });
 
-  it('hash binds salt + from.id + code', () => {
+  it('hash binds salt + from.id + code (plaintext, not bidx)', () => {
     expect(hashCode('s', '7', '123456')).not.toBe(hashCode('s', '8', '123456'));
     expect(hashCode('s', '7', '123456')).not.toBe(hashCode('t', '7', '123456'));
+    expect(hashCode('s', '7', '123456')).not.toBe(hashCode('s', 'bidx_7', '123456'));
   });
 });

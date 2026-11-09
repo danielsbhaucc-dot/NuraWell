@@ -17,6 +17,7 @@ import {
 import { DemoAccessBanner } from '../../components/demo-access/DemoAccessBanner';
 import { ConsentSheetHost } from '@/lib/module-api/legal/components-legal-ConsentSheetHost';
 import { licenseGate, profileRole } from '@/lib/central/license-gate';
+import { enforceParentSessionPage } from '@/lib/central/parent-data-plane';
 import { PasskeyNudgeHost } from '@/lib/module-api/auth-signup/components-settings-PasskeyNudge';
 
 export const viewport: Viewport = {
@@ -39,6 +40,8 @@ export default async function DashboardLayout({
   }
 
   const profile = await getCachedDashboardProfile(user.id);
+
+  await enforceParentSessionPage(user);
 
   // Phase 2b parent-license gate (off unless armed by env AND the DB kill switch; admins never blocked; fail-open).
   if (process.env.PLATFORM_LICENSE_MODE === 'enforce') {

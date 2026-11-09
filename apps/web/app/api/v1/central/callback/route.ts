@@ -2,8 +2,12 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { timingSafeEqualStr } from '@/lib/api/timing-safe-equal';
-import { CLIENT_ID, ISSUER, REDIRECT_URI, SIGNIN_COOKIE, TX_COOKIE, unpackSigninTx, unpackTx, verifyAccessToken, type Claims } from '@/lib/central/parent-connect';
-import { errorFor, matchUser, signinMode, type NwUser } from '@/lib/central/parent-signin';
+import { CLIENT_ID, ISSUER, PARENT, REDIRECT_URI, SIGNIN_COOKIE, TX_COOKIE, tokenRequest, unpackSigninTx, unpackTx, verifyAccessToken, type Claims } from '@/lib/central/parent-connect';
+import { boundNonceOk, packParentSession, PARENT_SESSION_COOKIE, PARENT_SESSION_COOKIE_MAX_AGE, PARENT_SESSION_TTL_SECONDS } from '@/lib/central/parent-session';
+import { missingRelation, recordParentSessionGrant } from '@/lib/central/parent-data-plane';
+import { licenseReasonFor } from '@/lib/central/license-gate';
+import { entitlementAllowsProvision, packProvision, PROVISION_COOKIE, provisionProofFromClaims } from '@/lib/central/parent-provision';
+import { matchUser, signinFailurePath, signinMode, type NwUser } from '@/lib/central/parent-signin';
 import { issueSessionForUser } from '@/lib/module-api/auth-signup/lib-auth-issue-session';
 
 export const runtime = 'nodejs';
@@ -37,14 +41,15 @@ const readRedirect = (request: NextRequest): { tx: Tx; code: string } | { why: s
 /** Server config for the exchange, or null when incomplete. */
 const readConfig = (): { central: string; secret: string } | null => {
   const secret = process.env.PLATFORM_ID_CLIENT_SECRET ?? '';
-  const central = (process.env.CENTRAL_SUPABASE_URL ?? '').replace(/\/$/, '');
-  return secret.length >= 32 && central.startsWith('https://') ? { central, secret } : null;
+  // Contract host is the parent origin. The hub service-role key is not an identity credential.
+  return secret.length >= 32 ? { central: PARENT, secret } : null;
 };
 
 const fetchAccessToken = async (central: string, secret: string, tx: Tx, code: string): Promise<string | null> => {
-  const res = await fetch(`${central}/functions/v1/identity/token`, {
+  const token = tokenRequest(central, { code, verifier: tx.verifier, secret });
+  const res = await fetch(token.url, {
     method: 'POST', headers: { 'content-type': 'application/json' }, signal: AbortSignal.timeout(8000),
-    body: JSON.stringify({ grant_type: 'authorization_code', code, redirect_uri: REDIRECT_URI, code_verifier: tx.verifier, client_id: CLIENT_ID, client_secret: secret }),
+    body: JSON.stringify(token.body),
   });
   if (!res.ok) { console.warn('[platform-connect]', { why: 'token', status: res.status }); return null; }
   const tok = await res.json() as { access_token?: unknown };
@@ -52,7 +57,7 @@ const fetchAccessToken = async (central: string, secret: string, tx: Tx, code: s
 };
 
 const fetchJwks = async (central: string): Promise<{ keys: JsonWebKey[] } | null> => {
-  const res = await fetch(`${central}/functions/v1/identity/jwks`, { signal: AbortSignal.timeout(5000) });
+  const res = await fetch(`${central}/id/jwks`, { signal: AbortSignal.timeout(5000) });
   return res.ok ? await res.json() as { keys: JsonWebKey[] } : null;
 };
 
@@ -99,7 +104,9 @@ const listUsers = async (): Promise<NwUser[]> => {
   return out;
 };
 
-type SigninTx = Tx & { nonce: string };
+type SigninTx = Tx & { nonce: string; intent?: 'login' | 'signup' };
+type ProvisionBody = { product: 'nurawell'; sub: string; lic: string; email: string; nonce: string; verified: true };
+type SigninOutcome = string | { kind: 'provision'; provision: ProvisionBody } | { kind: 'session'; sessionId: string; userId: string; parentSub: string };
 
 /** Validate the sign-in redirect (cookie, state, error, code). */
 const readSigninRedirect = (request: NextRequest): { tx: SigninTx; code: string } | { why: string } => {
@@ -117,12 +124,21 @@ const signinClaims = async (tx: SigninTx, code: string): Promise<Claims | string
   if (!config) return 'config';
   const claims = await exchange(config.central, config.secret, tx, code);
   if (typeof claims === 'string') return claims;
-  return claims.nonce && timingSafeEqualStr(claims.nonce, tx.nonce) ? claims : 'nonce';
+  return boundNonceOk(claims.nonce, tx.nonce) ? claims : 'nonce';
+};
+
+/** New product account: verified parent email plus an active license. No parent user is created. */
+const provisionOutcome = async (claims: { sub: string; lic: string; email?: string; email_verified?: boolean; nonce?: string }, txNonce: string): Promise<SigninOutcome> => {
+  const proof = provisionProofFromClaims(claims, txNonce);
+  if (typeof proof === 'string') return proof;
+  const reason = await licenseReasonFor(claims.lic);
+  if (!entitlementAllowsProvision(reason)) return 'no_license';
+  return { kind: 'provision', provision: proof };
 };
 
 /** R20 sign-in branch: verify (incl. nonce + verified email), find the NuraWell account, mint a NuraWell session. */
 // skipcq: JS-R1005 -- flat sequence of fail-closed guards
-const signIn = async (request: NextRequest): Promise<string | null> => {
+const signIn = async (request: NextRequest): Promise<SigninOutcome> => {
   const redirect = readSigninRedirect(request);
   if ('why' in redirect) return redirect.why;
   const mode = await signinMode();
@@ -130,21 +146,48 @@ const signIn = async (request: NextRequest): Promise<string | null> => {
   const claims = await signinClaims(redirect.tx, redirect.code);
   if (typeof claims === 'string') return claims;
   const match = matchUser(await listUsers(), claims, mode);
-  if ('refuse' in match) return match.refuse;
+  if ('refuse' in match) return match.refuse === 'no_account' && redirect.tx.intent === 'signup' ? provisionOutcome(claims, redirect.tx.nonce) : match.refuse;
   if (!(await saveLicense(match.user.id, claims))) return 'save';
   const session = await issueSessionForUser(createAdminClient(), match.user.id);
   console.info('[platform-signin]', { why: session.ok ? 'signed_in' : session.error, by: match.by });
-  return session.ok ? null : 'session';
+  if (!session.ok || !session.sessionId) return 'session';
+  return { kind: 'session', sessionId: session.sessionId, userId: match.user.id, parentSub: claims.sub };
 };
 
 /** Sign-in transaction present (and no connect transaction) ⇒ this redirect is a sign-in. */
 const isSignin = (request: NextRequest) => Boolean(request.cookies.get(SIGNIN_COOKIE)?.value) && !request.cookies.get(TX_COOKIE)?.value;
 
 const finishSignin = async (request: NextRequest) => {
-  const why = await signIn(request).catch(() => 'error');
-  if (!why) return finish(request, '/home');
-  console.warn('[platform-signin]', { why });
-  return finish(request, `/login?e=${errorFor(why)}`);
+  const intent = unpackSigninTx(request.cookies.get(SIGNIN_COOKIE)?.value)?.intent ?? 'login';
+  const outcome = await signIn(request).catch(() => 'error' as const);
+  if (typeof outcome === 'object' && outcome.kind === 'session') {
+    const nowS = Math.floor(Date.now() / 1000);
+    const packed = packParentSession({
+      product: 'nurawell', userId: outcome.userId, sessionId: outcome.sessionId, parentSub: outcome.parentSub,
+      iat: nowS, exp: nowS + PARENT_SESSION_TTL_SECONDS,
+    }, process.env.PLATFORM_ID_CLIENT_SECRET ?? '');
+    if (!packed) return finish(request, signinFailurePath('config', intent));
+    const recorded = await recordParentSessionGrant(createAdminClient(), {
+      userId: outcome.userId, sessionId: outcome.sessionId, parentSub: outcome.parentSub,
+      issuedAt: nowS, expiresAt: nowS + PARENT_SESSION_TTL_SECONDS,
+    }).catch((error: unknown) => (missingRelation(error) ? 'unapplied' as const : 'failed' as const));
+    if (recorded !== 'recorded') {
+      try { await (await createClient()).auth.signOut({ scope: 'local' }); } catch { /* withhold the parent cookie either way */ }
+      return finish(request, signinFailurePath('session', intent));
+    }
+    const res = finish(request, '/home');
+    res.cookies.set(PARENT_SESSION_COOKIE, packed, { httpOnly: true, secure: true, sameSite: 'lax', path: '/', maxAge: PARENT_SESSION_COOKIE_MAX_AGE });
+    return res;
+  }
+  if (typeof outcome === 'object' && outcome.kind === 'provision') {
+    const packed = packProvision({ ...outcome.provision, exp: Math.floor(Date.now() / 1000) + 600 }, process.env.PLATFORM_ID_CLIENT_SECRET ?? '');
+    if (!packed) return finish(request, signinFailurePath('config', intent));
+    const res = finish(request, signinFailurePath('no_account', 'signup', true));
+    res.cookies.set(PROVISION_COOKIE, packed, { httpOnly: true, secure: true, sameSite: 'lax', path: '/', maxAge: 600 });
+    return res;
+  }
+  console.warn('[platform-signin]', { why: outcome });
+  return finish(request, signinFailurePath(outcome, intent));
 };
 
 /** Parent identity redirect target: exchange the code, verify the token, store the license id, then go home. */

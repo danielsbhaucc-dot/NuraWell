@@ -1,0 +1,46 @@
+{
+  "provedAgainst": "2ba0779badb7cf655feff65aae0fa999a89a4530",
+  "migration": "000241",
+  "database": "nurawell_stack_chain",
+  "form": "not-run",
+  "order": {
+    "000239": {
+      "bytes": 4858,
+      "role": "creates parent_signup_claims; already present, not re-applied as this proof"
+    },
+    "000240": {
+      "bytes": null,
+      "role": "not in this branch and not required by 000241"
+    },
+    "000241": {
+      "bytes": 5883,
+      "role": "adds attempt_id and replaces the claim functions; applied on the dummy database"
+    }
+  },
+  "signatures": [
+    "parent_signup_begin(p_nonce text, p_sub text, p_email text)",
+    "parent_signup_fail(p_nonce text, p_attempt uuid, p_session uuid)",
+    "parent_signup_finish(p_nonce text, p_attempt uuid, p_user uuid, p_session uuid)",
+    "parent_signup_note_user(p_nonce text, p_attempt uuid, p_user uuid)",
+    "parent_signup_user(p_nonce text, p_attempt uuid)"
+  ],
+  "staleSignaturesAbsent": true,
+  "definerWithSearchPath": "5",
+  "acl": {
+    "anonFail": "f",
+    "authenticatedBegin": "f",
+    "serviceFinish": "t",
+    "rls": "true",
+    "authenticatedRead": "denied"
+  },
+  "race": {
+    "ownedSessionDeleted": true,
+    "otherSessionKept": true,
+    "otherGrantKept": true,
+    "staleFinish": false,
+    "staleFail": false,
+    "winnerSessionKept": true,
+    "winnerGrantKept": true,
+    "doneWithoutSessionLeak": true
+  }
+}
