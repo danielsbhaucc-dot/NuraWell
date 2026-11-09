@@ -17,6 +17,6 @@ describe('parent is the password source of truth', () => {
     expect(mail).toMatch(/central-mail-rcpt/);
     expect(mail).toMatch(/email_confirmed_at/);
     expect(mail.indexOf('synthetic === true')).toBeLessThan(mail.indexOf('sendResendEmail({'));
-    expect(mail).toMatch(/LINK_RE\.test\(link\)/);
+    expect(mail).toMatch(/linkOk\(link\)/);
   });
 });
