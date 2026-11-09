@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { ParentAccountNotice } from '@/lib/module-api/legal/components-legal-ParentAccountNotice';
 import { motion } from 'framer-motion';
 import {
   User, Award, BookOpen, Flame, LogOut, ChevronLeft, Shield, Settings, Save, X, Bell,
@@ -515,6 +516,8 @@ export function ProfilePageClient({
             <p className="mt-2 text-center text-sm font-semibold text-coral-600">{signOutError}</p>
           ) : null}
         </motion.div>
+
+        <ParentAccountNotice />
 
         <LegalLinksRow tone="light" className="pt-2 pb-1" />
       </div>
