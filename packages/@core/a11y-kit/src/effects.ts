@@ -69,6 +69,7 @@ export const panelZoomFor = (t: Readonly<A11yTheme>, s: A11ySettings) => Math.mi
 
 /** צבעי מצב בניגודיות גבוהה — המשמעות (שגיאה/הצלחה) נשמרת. ≥7:1 על הרקע של המצב. */
 export const HIGH_CONTRAST_STATUS = {
+  // design-lint-allow: danger/HC text color on a dark surface (contrast-checked by validateTheme), not a light surface
   blackYellow: { danger: '#FF9E9E', success: '#7DF0FF' },
   light: { danger: '#A3001B', success: '#005A70' },
 } as const;

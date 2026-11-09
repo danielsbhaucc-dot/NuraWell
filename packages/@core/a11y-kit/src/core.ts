@@ -49,6 +49,7 @@ export type A11yThemeInput = DeepPartial<A11yTheme> & { id: string };
 export const DEFAULT_THEME: Omit<A11yTheme, 'id'> = {
   colors: {
     bg: '#0B1020', surface: '#161C30', fg: '#F4F6FB', fgMuted: '#B8C0D6',
+    // design-lint-allow: danger/HC text color on a dark surface (contrast-checked by validateTheme), not a light surface
     primary: '#6D5DF6', onPrimary: '#FFFFFF', focus: '#FFD166', link: '#9CC3FF', danger: '#FF8A80',
   },
   highContrast: {
