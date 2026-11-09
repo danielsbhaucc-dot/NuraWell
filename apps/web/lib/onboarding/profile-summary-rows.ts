@@ -66,10 +66,17 @@ export function buildProfileSummaryRows(profile: ProfileSummarySource): { label:
     },
     { label: 'ארוחות', value: meals },
     {
-      label: 'שינה',
-      value: `${profile.wake_up_time ?? '—'} · ${profile.sleep_time ?? '—'}`,
+      label: 'קימה ושינה',
+      value: `קימה ${hhmm(profile.wake_up_time)} · שינה ${hhmm(profile.sleep_time)}`,
     },
   ];
+}
+
+/** '07:00:00' → '07:00'; anything else is shown as-is, missing → '—'. */
+function hhmm(t: string | null | undefined): string {
+  if (!t) return '—';
+  const m = /^(\d{1,2}):(\d{2})(?::\d{2})?$/.exec(t.trim());
+  return m ? `${m[1].padStart(2, '0')}:${m[2]}` : t;
 }
 
 export function firstNameFromFull(fullName: string | null): string {

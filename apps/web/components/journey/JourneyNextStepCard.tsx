@@ -142,7 +142,7 @@ export function JourneyNextStepCard({ initial = null }: { initial?: AdaptiveNext
               boxShadow: '0 6px 16px rgba(16,185,129,0.25)',
             }}
           >
-            {rec.pace === 'return' ? 'בוא נחזור בעדינות' : rec.pace === 'start' ? 'בוא נתחיל' : 'קדימה לצעד'}
+            {rec.pace === 'return' ? 'בואו נחזור בעדינות' : rec.pace === 'start' ? 'בואו נתחיל' : 'קדימה לצעד'}
             <ArrowLeft className="w-4 h-4" aria-hidden />
           </Link>
         ) : null}

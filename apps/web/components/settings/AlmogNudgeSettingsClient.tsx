@@ -390,7 +390,7 @@ export function AlmogNudgeSettingsClient({
             >
               <MessageCircle className="h-5 w-5" aria-hidden />
             </motion.div>
-            <div>
+            <div className="min-w-0">
               <h2 className="font-bold text-ink">איך אלמוג מדבר איתכם</h2>
               <p className="mt-1 text-sm text-ink-soft leading-relaxed">
                 בוחרים טון — חבר, עדין, או ישיר. משפיע על התראות ועל הצ׳אט.
