@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 // Static contract of the first-party password route (the live flow is verified against production with a synthetic account).
 describe('central password route', () => {
-  const route = readFileSync('app/api/v1/central/password/route.ts', 'utf8');
+  const route = readFileSync('lib/central/parent-password.ts', 'utf8');
   const login = readFileSync('app/(auth)/login/page.tsx', 'utf8');
   it('is same-origin, rate-limited, switch-gated and checks the bound nonce and issuer', () => {
     expect(route).toMatch(/sameOrigin\(request\)/);
