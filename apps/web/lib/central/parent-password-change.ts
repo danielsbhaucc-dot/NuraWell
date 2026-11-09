@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { consumeRateLimit } from '@/lib/api/rate-limit';
 import { clientIp } from '@/lib/ops/handoff';
-import { checkPasswordPolicy } from '@/lib/auth/password-policy';
+import { checkPasswordPolicy } from '@/lib/module-api/auth-signup/lib-auth-password-policy';
 import { CLIENT_ID, PARENT } from '@/lib/central/parent-connect';
 
 /**

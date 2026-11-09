@@ -2,7 +2,7 @@ import 'server-only';
 import { NextResponse, type NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { consumeRateLimit } from '@/lib/api/rate-limit';
-import { sendResendEmail } from '@/lib/email/resend';
+import { sendResendEmail } from '@/lib/module-api/notifications/lib-email-resend';
 import { logDelivery } from '@/lib/logging/delivery';
 import { PARENT, verifyPurposeToken } from '@/lib/central/parent-connect';
 
