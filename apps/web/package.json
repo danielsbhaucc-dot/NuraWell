@@ -27,6 +27,7 @@
     "@ai-sdk/openai": "^4.0.91",
     "@ai-sdk/react": "^4.0.140",
     "@aws-sdk/client-s3": "^3.1045.0",
+    "@core/a11y-kit": "*",
     "@core/product-link": "*",
     "@core/security-privacy": "*",
     "@hebcal/core": "^6.5.1",

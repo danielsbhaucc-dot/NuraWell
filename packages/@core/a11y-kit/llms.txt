@@ -1,0 +1,3 @@
+a11y-kit 0.2.0 (accessibility widget + theme API, framework-agnostic, no network). Install: core-sync <sha> a11y-kit; dependency "@core/a11y-kit": "*" (Next.js: add to transpilePackages).
+Exports: defineA11yTheme, themeToCss, themeToCssVars, applyConsoleOverrides, validateTheme, effectiveFeatures, LEGAL_FLOOR (always on), NURAWELL_THEME, NEHORA_THEME, mountA11yWidget (round FAB, safe area, swipe-down sheet), swipeToDismiss.
+Never edit installed files; fix in platform-core and re-sync. See README.he.md and docs/KIT_STANDARD.md.

@@ -1,0 +1,66 @@
+{
+  "$schema": "../../docs/module.schema.json",
+  "id": "a11y-kit",
+  "package": "@core/a11y-kit",
+  "version": "0.2.0",
+  "distribution": "shareable",
+  "category": "ui",
+  "toggleable": false,
+  "description": "Framework-agnostic accessibility widget + theme API: round FAB with reserved safe area and auto-lift, swipe-down bottom sheet, real high-contrast palettes, self-hosted Alef dyslexia font, NuraWell/Nehora themes, contrast checks, console overrides and an always-on legal floor.",
+  "provides": {
+    "routes": [],
+    "apis": [],
+    "jobs": [],
+    "ui": [
+      "src/index.ts"
+    ],
+    "tables": []
+  },
+  "requires": {
+    "modules": {}
+  },
+  "env": [],
+  "migrations": [],
+  "conformance": [
+    "tokens-only",
+    "no-network",
+    "contrast-checked",
+    "legal-floor-always-on",
+    "fail-open-gating",
+    "self-hosted-fonts",
+    "fab-safe-area",
+    "axe-0"
+  ],
+  "tests": [
+    "packages/a11y-kit/tests/a11y-kit.test.ts",
+    "packages/a11y-kit/tests/widget.test.ts",
+    "packages/a11y-kit/demo/e2e.mjs"
+  ],
+  "store": {
+    "name": "a11y-kit",
+    "summary": "ערכת נושא לתפריט הנגישות: צבעים, גופנים, פינות, ריווח, כיוון וגודל טקסט — לכל פרויקט ולכל לקוח, עם בדיקת ניגודיות.",
+    "audience": "מפתחים ומנהלי קונסולה שמתאימים את תפריט הנגישות למוצר או ללקוח",
+    "useCases": [
+      "מיתוג תפריט הנגישות לכל לקוח פרטי",
+      "שינוי צבעים מהקונסולה בלי לשבור ניגודיות",
+      "הבטחת רצפת חובה של כלי נגישות"
+    ],
+    "features": [
+      "defineA11yTheme עם בדיקת ניגודיות WCAG",
+      "applyConsoleOverrides שדוחה שינוי לא בטוח",
+      "משתני CSS ‎--a11y-*",
+      "רצפת חובה שלא ניתנת לכיבוי",
+      "mountA11yWidget: כפתור צף וגיליון תחתון",
+      "אזור שמור והרמה אוטומטית לכפתור הצף",
+      "ערכות NuraWell ונהורה"
+    ],
+    "dataTouched": "העדפות נגישות ב־localStorage של הדפדפן בלבד",
+    "permissions": "אין",
+    "security": "אין קריאות רשת; גופנים רק מאותו מקור; ערכים מסוננים (hex, רשימות סגורות, טווחים); חסימת __proto__",
+    "whereDataLives": "קוד/תצורה בלבד; ערכי קונסולה נשמרים אצל המוצר המארח",
+    "installConfig": "defineA11yTheme({ id, colors, fonts, radius, spacing, dir, lang, fontScale, panel, features })",
+    "compatibility": "TypeScript/JS, דפדפן ו־Node; React Native דרך האובייקט עצמו",
+    "limitations": "מצבי ניגודיות גבוהה חייבים ≥7:1; fontScale.min קבוע 1",
+    "support": "צוות אופק"
+  }
+}
