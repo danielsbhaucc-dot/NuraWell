@@ -134,7 +134,7 @@ describe('pii access grant reason', () => {
     expect(older).toMatch(/revoke all on public\.%I from anon, authenticated/);
     expect(sql).toMatch(/reason not like 'enc:v2:%' and char_length\(reason\) between 15 and 500/);
     const lib = readFileSync(new URL('../lib/privacy/pii-grant-reason-backfill.ts', import.meta.url), 'utf8');
-    const script = readFileSync(new URL('../scripts/backfill-pii-grant-reason.ts', import.meta.url), 'utf8');
+    const script = readFileSync(new URL('../../../lab/scripts/backfill-pii-grant-reason.ts', import.meta.url), 'utf8');
     expect(lib).not.toMatch(/console\.(log|info|warn|error)/);
     expect(script).toMatch(/hosted databases are not a target/);
     expect(readFileSync(new URL('../app/api/v1/ops/pii-access/route.ts', import.meta.url), 'utf8')).not.toMatch(/g\.reason/);

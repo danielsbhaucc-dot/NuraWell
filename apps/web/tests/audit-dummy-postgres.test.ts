@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { spawnSync } from 'node:child_process';
-import { runLocalDummyProof } from '../scripts/prove-audit-dummy-local';
+import { runLocalDummyProof } from '../../../lab/scripts/prove-audit-dummy-local';
 
 const local = spawnSync('sudo', ['-n', '-u', 'postgres', 'psql', '-d', 'postgres', '-At', '-c', 'select 1'], { encoding: 'utf8' });
 

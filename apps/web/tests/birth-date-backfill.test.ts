@@ -87,7 +87,7 @@ describe('birth date backfill', () => {
   });
 
   it('keeps the procedure off hosted databases and away from plaintext logs', () => {
-    const script = readFileSync(new URL('../scripts/backfill-birth-dates.ts', import.meta.url), 'utf8');
+    const script = readFileSync(new URL('../../../lab/scripts/backfill-birth-dates.ts', import.meta.url), 'utf8');
     const lib = readFileSync(new URL('../lib/privacy/birth-date-backfill.ts', import.meta.url), 'utf8');
     expect(script).toMatch(/hosted databases are not a target/);
     expect(script).toContain('127\\.0\\.0\\.1|localhost');
