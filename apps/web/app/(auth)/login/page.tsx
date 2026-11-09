@@ -296,12 +296,9 @@ const LoginFormContent = () => { // skipcq: JS-R1005
       <main
         id="main-content"
         className={[
-          'relative flex flex-col overflow-hidden h-dvh max-h-dvh max-sm:pb-[calc(12rem+env(safe-area-inset-bottom,0px))]!',
+          'relative flex flex-col overflow-hidden h-dvh max-h-dvh',
           useDarkShell ? 'onboarding-shell-dark' : 'onboarding-shell-light',
         ].join(' ')}
-        // Below sm the floating accessibility button (bottom 6.75rem + its height) sits over the full-width column.
-        // Same clearance as LicenseRequired (PR 443): the scroll area ends above it, so it never covers a control.
-        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         {hasPhotoBg ? (
           <>
@@ -317,8 +314,10 @@ const LoginFormContent = () => { // skipcq: JS-R1005
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: bgReady ? 1 : 0, y: bgReady ? 0 : 12 }}
           transition={{ duration: 0.3, ease: 'easeOut' as const }}
-          className="relative z-10 flex min-h-0 flex-1 flex-col justify-center-safe overflow-y-auto overscroll-contain px-4 pb-6 pt-[max(1.25rem,env(safe-area-inset-top))] max-w-md mx-auto w-full max-[380px]:px-2 max-[300px]:px-1.5"
+          className="relative z-10 flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-4 pt-[max(1.25rem,env(safe-area-inset-top))] max-w-md mx-auto w-full max-[380px]:px-2 max-[300px]:px-1.5 max-sm:pb-[calc(7.5rem+env(safe-area-inset-bottom,0px))] pb-[max(1.5rem,env(safe-area-inset-bottom))]"
         >
+          {/* my-auto centers when short; when tall the scroll parent starts at the top so nothing is clipped. A11y FAB clearance lives in scroll padding (not main), so the dark band is reachable. */}
+          <div className="my-auto w-full">
           <div className="text-center mb-6">
             <div className="flex justify-center mb-3">
               <NuraWellLogo size="lg" tone={isDarkUi ? 'dark' : 'light'} />
@@ -575,6 +574,7 @@ const LoginFormContent = () => { // skipcq: JS-R1005
           </div>
 
           {!isOpsHost && <LegalLinksRow tone={isDarkUi ? 'dark' : 'light'} className="mt-6" />}
+          </div>
         </motion.div>
       </main>
     </>
