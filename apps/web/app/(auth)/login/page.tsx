@@ -72,7 +72,7 @@ const LoginFormContent = () => { // skipcq: JS-R1005
   useEffect(() => {
     const ctl = new AbortController();
     fetch('/api/v1/central/signin?probe=1', { signal: ctl.signal, cache: 'no-store' })
-      .then((r) => (r.ok ? r.json() : { on: true })).then((d: { on?: boolean }) => setCentralArmed(d.on === true)).catch(() => setCentralArmed(true));
+      .then((r) => (r.ok ? r.json() : { on: false })).then((d: { on?: boolean }) => setCentralArmed(d.on === true)).catch(() => setCentralArmed(false));
     return () => ctl.abort();
   }, []);
 
