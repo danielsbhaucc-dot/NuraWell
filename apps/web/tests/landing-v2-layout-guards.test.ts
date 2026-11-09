@@ -9,8 +9,8 @@ const lines = JSON.parse(readFileSync(join(__dirname, '../public/landing-v2/real
 const pool = Object.values(lines.buckets).flat();
 
 describe('landing-v2 layout guards', () => {
-  it('gallery dots have a 24px tap target; the visible dot stays 8px', () => {
-    expect(src).toMatch(/\.pgd button\{width:24px;height:24px;/);
+  it('gallery dots have a tap target of at least 24px after the device-mock scale (26px CSS); the visible dot stays 8px', () => {
+    expect(src).toMatch(/\.pgd button\{width:26px;height:26px;/);
     expect(src).toMatch(/\.pgd button::before\{content:\\?"\\?";width:8px;height:8px;/);
     expect(src).toMatch(/\.pgd\{[^}]*gap:0;/);
   });
