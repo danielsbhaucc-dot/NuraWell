@@ -40,7 +40,7 @@ export const MODULES: ModuleManifest[] = [
     api: ['/api/v1/notifications', '/api/v1/push'], pages: ['/ops/notify-quality'] },
   { id: 'costs', name: 'עלויות', core: false, dependsOn: [], permissions: ['costs.read'], routes: ['/api/v1/admin/costs'], migrations: ['000178'], pages: ['/ops/costs', '/ops/business'] },
   { id: 'legal', name: 'משפטי', core: false, essential: true, dependsOn: ['audit-log'], permissions: ['legal.read', 'legal.write'], routes: ['/api/v1/ops/legal'], migrations: ['000180'],
-    api: ['/api/v1/legal/receipts'], crons: ['/api/v1/legal/anchor', '/api/v1/legal/ots-upgrade'], pages: ['/ops/legal'] },
+    api: ['/api/v1/legal/receipts', '/api/v1/legal/policy-accept'], crons: ['/api/v1/legal/anchor', '/api/v1/legal/ots-upgrade'], pages: ['/ops/legal'] },
   { id: 'a11y', name: 'נגישות', core: false, essential: true, dependsOn: [], permissions: ['content.write'], routes: ['/api/v1/admin/accessibility'], migrations: [], pages: ['/accessibility', '/ops/accessibility'] },
   { id: 'qc', name: 'בקרת איכות', core: false, dependsOn: ['logs'], permissions: ['qc.read', 'qc.manage'], routes: ['/api/v1/ops/qc'], migrations: ['000192'], pages: ['/ops/qc'] },
   { id: 'agent', name: 'מנוע סוכן', core: false, dependsOn: ['field-encryption'], permissions: ['ai.manage'], routes: ['/api/v1/admin/almog-knowledge', '/api/v1/admin/almog-avatar', '/api/v1/admin/journey-agent', '/api/admin/ingest'], migrations: [],

@@ -23,7 +23,7 @@ export const getCachedDashboardProfile = cache(async (userId: string) => {
       `full_name, gender, main_goal, current_weight_kg, goal_weight_kg,
       weakest_time_of_day, main_obstacle, main_obstacle_detail,
       wake_up_time, sleep_time, meal_count, meal_schedule, dolev_welcome_seen_at, almog_welcome_seen_at,
-      onboarding_completed`
+      onboarding_completed, accepted_policy_version`
     )
     .eq('id', userId)
     .maybeSingle().then(decProfileResult(userId));

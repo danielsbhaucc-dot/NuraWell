@@ -19,6 +19,9 @@ import { ConsentSheetHost } from '@/lib/module-api/legal/components-legal-Consen
 import { licenseGate, profileRole } from '@/lib/central/license-gate';
 import { enforceParentSessionPage } from '@/lib/central/parent-data-plane';
 import { PasskeyNudgeHost } from '@/lib/module-api/auth-signup/components-settings-PasskeyNudge';
+import { PolicyReacceptGate } from '@/lib/module-api/legal/components-legal-PolicyReacceptGate';
+import { needsPolicyReaccept } from '@/lib/module-api/legal/lib-legal-policy-reaccept';
+import { LEGAL_POLICY_VERSION } from '@/lib/module-api/privacy-retention/lib-privacy-constants';
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -74,6 +77,8 @@ export default async function DashboardLayout({
     meal_schedule: profile?.meal_schedule ?? null,
   };
 
+  const showPolicyReaccept = needsPolicyReaccept(profile as { onboarding_completed?: boolean | null; accepted_policy_version?: string | null } | null);
+
   const fullName = (profile?.full_name ?? '') as string;
   const firstName = fullName.trim().split(/\s+/)[0] || '';
 
@@ -94,7 +99,8 @@ export default async function DashboardLayout({
             <MobileHeader user={user} profileFullName={profile?.full_name ?? null} />
             <DemoAccessBanner />
             <ConsentSheetHost />
-            <PasskeyNudgeHost allowed={profile?.onboarding_completed === true && !showDolevWelcome && !showAlmogWelcome} />
+            {showPolicyReaccept ? <PolicyReacceptGate show version={LEGAL_POLICY_VERSION} /> : null}
+            <PasskeyNudgeHost allowed={profile?.onboarding_completed === true && !showDolevWelcome && !showAlmogWelcome && !showPolicyReaccept} />
             <main id="main-content" className="pb-44 pt-16 min-h-screen page-enter" tabIndex={-1}>
               {children}
             </main>
