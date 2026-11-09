@@ -1,0 +1,26 @@
+{
+  "ok": true,
+  "base": "http://127.0.0.1:3012",
+  "probeOn": true,
+  "finalUrl": "http://localhost:3012/login?e=parent_restart",
+  "e": "parent_restart",
+  "alertText": "הקישור לכניסה פג. אפשר להתחיל שוב מכאן.",
+  "originalUi": {
+    "email": true,
+    "password": true,
+    "heading": true,
+    "register": true
+  },
+  "notPasswordFallback": true,
+  "controlUnavailableDistinct": true,
+  "callbackStatus": 200,
+  "headerProbe": {
+    "status": 307,
+    "location": "set",
+    "locOk": true
+  },
+  "headerProof": true,
+  "canRestart": true,
+  "startStatus": 307,
+  "signupIntentExpiredRestarts": true
+}

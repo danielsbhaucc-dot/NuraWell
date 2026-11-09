@@ -69,6 +69,8 @@ describe('R20 parent sign-in', () => {
     expect(errorFor('nonce')).toBe('parent_restart');
     expect(errorFor('token')).toBe('parent_restart');
     expect(errorFor('code')).toBe('parent_restart');
+    expect(errorFor('expired')).toBe('parent_restart');
+    expect(signinFailurePath('expired', 'login')).toBe('/login?e=parent_restart');
     expect(SIGNIN_ERRORS.parent_restart).not.toMatch(/סיסמה/);
     expect(errorFor('off')).toBe('parent_unavailable');
     const start = readFileSync('app/api/v1/central/signin/route.ts', 'utf8');

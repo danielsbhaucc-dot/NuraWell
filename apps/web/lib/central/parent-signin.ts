@@ -106,7 +106,7 @@ const ERROR_KEYS: Record<string, string> = {
   email_unverified: 'parent_unverified', unsupported_mode: 'parent_unsupported', not_migrated: 'parent_not_migrated',
 };
 /** A stale or missing one-time transaction. The same login button starts a new one. It is not a password fallback. */
-const RESTART_REASONS = new Set(['state', 'nonce', 'code', 'token', 'token_invalid']);
+const RESTART_REASONS = new Set(['state', 'nonce', 'code', 'token', 'token_invalid', 'expired']);
 /** Failure reason → /login?e= key. An expired parent request restarts. Anything else unknown is "unavailable". */
 export const errorFor = (why: string): string => (RESTART_REASONS.has(why) ? 'parent_restart' : ERROR_KEYS[why] ?? 'parent_unavailable');
 
