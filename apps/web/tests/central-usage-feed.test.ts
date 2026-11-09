@@ -32,9 +32,9 @@ describe('central usage feed', () => {
   });
   it('security feed: aggregate keys only, wired into the admin guard, alerts and dispatcher', () => {
     const read = (f: string) => readFileSync(join(__dirname, '..', f), 'utf8');
-    expect(read('lib/logs/signals.ts')).toMatch(/sendSecurityEvent\('admin_denied', 'low'\)/);
-    expect(read('lib/logs/signals.ts')).toMatch(/sendSecurityEvent\(kind, 'high', 0\)/);
-    expect(read('lib/ops/security-events.ts')).toMatch(/sendSecurityEvent\(e\.kind/);
+    expect(read('lib/logs/signals.ts')).toMatch(/sendCentralSecurityEvent\('admin_denied', 'low'\)/);
+    expect(read('lib/logs/signals.ts')).toMatch(/sendCentralSecurityEvent\(kind, 'high', 0\)/);
+    expect(read('lib/ops/security-events.ts')).toMatch(/sendCentralSecurityEvent\(e\.kind/);
     expect(read('app/api/v1/ai/cron/session-trail-seal/route.ts')).toMatch(/await sendSecurityStatusFeed\(encOk\)/);
     expect(read('../../packages/@core/security-privacy/src/feed.ts')).not.toMatch(/email|user_id|actor/i);
   });

@@ -30,12 +30,4 @@ export function createRawAdminClient() {
   });
 }
 
-/**
- * Server-only client for the central control-plane DB (platform-central): products, module states, licenses.
- * Separate project + separate secret. Only service_role RPCs are reachable there (schema `central` is private).
- */
-export function createCentralAdminClient() {
-  return createClient(process.env.CENTRAL_SUPABASE_URL!, process.env.CENTRAL_SUPABASE_SECRET_KEY!, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
-}
+// The central control plane is reached only through lib/central/central-link.ts (signed product-link, no service key).

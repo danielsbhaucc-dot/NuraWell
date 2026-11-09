@@ -2,9 +2,9 @@ import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { ALL_PRODUCTS, createModuleGate, decide, isModuleEnabled, moduleForPath, permittedProducts, isFounder, type Actor, type Decision, type Grant, type ModuleState } from '@platform/iam';
 import { CATALOG, DEFAULT_PRODUCT, OWNED_BY_US, MODULES, PRODUCT_COOKIE } from './catalog';
-import { centralConfigured, createCentralModuleSource, syncModulesToCentral } from '@platform/module-library-ui/server';
+import { createCentralModuleSource, syncModulesToCentral } from '@platform/module-library-ui/server';
 import { productLicenseFromEnv } from '@platform/licensing/product';
-import { createCentralAdminClient } from '@/lib/supabase/admin';
+import { centralLinkConfigured as centralConfigured, createCentralLinkClient } from '@/lib/central/central-link';
 import pkg from '../../package.json';
 
 type Row = { id: string; user_id: string; role_id: string; product_id: string; expires_at: string | null; revoked_at: string | null };
@@ -26,7 +26,7 @@ async function loadLocalModuleStates(db: SupabaseClient, product: string): Promi
   return ((data ?? []) as { product_id: string; module_id: string; enabled: boolean }[]).map((r) => ({ productId: r.product_id, moduleId: r.module_id, enabled: r.enabled }));
 }
 
-// Central = single source of truth when CENTRAL_SUPABASE_URL + CENTRAL_SUPABASE_SECRET_KEY are set.
+// Central = single source of truth when the signed product-link bridge is configured (CENTRAL_SUPABASE_URL + PRODUCT_LINK_KEY_ID/SECRET).
 // NuraWell's license is enforced only when NURAWELL_LICENSE_TOKEN (+ _PUBLIC_KEY, _STATUS_URL, NURAWELL_HOST) are set.
 // Either way core modules stay on and end users are never locked out (module gates only cover admin/ops paths).
 const CORE_IDS = MODULES.filter((m) => m.core).map((m) => m.id);
@@ -43,7 +43,7 @@ export function centralModuleSource(product: string) {
   if (!centralConfigured()) return null;
   let s = sources.get(product);
   if (!s) {
-    s = createCentralModuleSource({ db: createCentralAdminClient(), productId: product, coreIds: CORE_IDS, license: product === DEFAULT_PRODUCT ? nurawellLicense() : null, ownedByUs: OWNED_BY_US[product] ?? false });
+    s = createCentralModuleSource({ db: createCentralLinkClient(), productId: product, coreIds: CORE_IDS, license: product === DEFAULT_PRODUCT ? nurawellLicense() : null, ownedByUs: OWNED_BY_US[product] ?? false });
     sources.set(product, s);
   }
   return s;
@@ -56,7 +56,7 @@ export async function ensureCentralSync(db: SupabaseClient, product: string, act
   try {
     const rows = (await loadLocalModuleStates(db, product)).map((r) => ({ moduleId: r.moduleId, enabled: r.enabled }));
     if (rows.length === 0) return;
-    await syncModulesToCentral(createCentralAdminClient(), { actorId, productId: product, rows });
+    await syncModulesToCentral(createCentralLinkClient(), { actorId, productId: product, rows });
     synced.add(product);
   } catch { /* retried on the next call; reads keep working */ }
 }

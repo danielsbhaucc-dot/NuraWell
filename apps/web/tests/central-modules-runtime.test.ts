@@ -2,9 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('server-only', () => ({}));
 const centralCalls: { fn: string; args?: Record<string, unknown> }[] = [];
 let centralReply: (fn: string, args?: Record<string, unknown>) => { data: unknown; error: { message: string } | null } = () => ({ data: null, error: null });
-vi.mock('@/lib/supabase/admin', () => ({
-  createCentralAdminClient: () => ({ rpc: async (fn: string, args?: Record<string, unknown>) => { centralCalls.push({ fn, args }); return centralReply(fn, args); } }),
-  createAdminClient: () => ({}),
+vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({}) }));
+vi.mock('@/lib/central/central-link', () => ({
+  centralLinkConfigured: () => Boolean(process.env.CENTRAL_SUPABASE_URL && process.env.PRODUCT_LINK_KEY_ID),
+  createCentralLinkClient: () => ({ rpc: async (fn: string, args?: Record<string, unknown>) => { centralCalls.push({ fn, args }); return centralReply(fn, args); } }),
 }));
 import { FOUNDER_ROLE, ALL_PRODUCTS, type Actor } from '@platform/iam';
 import { toggleModule } from '@/lib/platform/iam-admin';
@@ -139,8 +140,8 @@ describe('NuraWell hub writes go to central (single source of truth)', () => {
     return { client: client as never, writes };
   };
   const alert = async () => undefined;
-  beforeEach(() => { centralCalls.length = 0; process.env.CENTRAL_SUPABASE_URL = 'https://central.example'; process.env.CENTRAL_SUPABASE_SECRET_KEY = 'test-only'; });
-  afterEach(() => { delete process.env.CENTRAL_SUPABASE_URL; delete process.env.CENTRAL_SUPABASE_SECRET_KEY; });
+  beforeEach(() => { centralCalls.length = 0; process.env.CENTRAL_SUPABASE_URL = 'https://central.example'; process.env.PRODUCT_LINK_KEY_ID = 'pk_testonlytestonly'; });
+  afterEach(() => { delete process.env.CENTRAL_SUPABASE_URL; delete process.env.PRODUCT_LINK_KEY_ID; });
 
   it('one-time sync first, then the write goes to central only (never to iam_product_modules)', async () => {
     centralReply = (fn) => ({ data: fn === 'central_sync_module_states' ? { skipped: false, rows: 1 } : null, error: null });

@@ -1,5 +1,6 @@
 import { signUsage as kitSignUsage } from '@core/security-privacy/feed';
-import { createAdminClient, createCentralAdminClient } from '@/lib/supabase/admin';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { centralLinkConfigured, createCentralLinkClient, sendCentralSecurityStatus } from '@/lib/central/central-link';
 
 /**
  * Daily, aggregates-only usage report to the parent-company console (platform-core connector spec):
@@ -30,11 +31,11 @@ export async function collectUsageTotals(): Promise<UsageTotals> {
 // skipcq: JS-0067, JS-R1005 -- ES module export
 export async function sendUsageFeed(): Promise<'sent' | 'skipped' | 'failed'> {
   const secret = process.env.CENTRAL_METRICS_FEED_SECRET;
-  if (!secret || !process.env.CENTRAL_SUPABASE_URL || !process.env.CENTRAL_SUPABASE_SECRET_KEY) return 'skipped';
+  if (!secret || !centralLinkConfigured()) return 'skipped';
   try {
     const body = JSON.stringify(await collectUsageTotals());
     const { ts, sig } = signUsage(secret, body);
-    const { error } = await createCentralAdminClient().rpc('central_ingest_metrics', { p_product: 'nurawell', p_body: body, p_ts: ts, p_sig: sig });
+    const { error } = await createCentralLinkClient().rpc('central_ingest_metrics', { p_product: 'nurawell', p_body: body, p_ts: ts, p_sig: sig });
     if (error) { console.warn('[usage-feed] rejected'); return 'failed'; }
     return 'sent';
   } catch {
@@ -59,9 +60,8 @@ export async function sendSecurityStatusFeed(encOk: boolean): Promise<string> {
       db.from('access_audit_runs').select('started_at, flagged').gte('started_at', since(7)).order('started_at', { ascending: false }).limit(50),
     ]);
     const runs = (audit.data ?? []) as { started_at: string; flagged: number }[];
-    const { sendSecurityStatus } = await import('@core/security-privacy/feed');
     const { KIT } = await import('@core/security-privacy');
-    return await sendSecurityStatus({ kits: { [KIT.name]: KIT.version }, encOk, denied24h, loginFail24h, ipBlocksActive, openIncidents, events24h,
+    return await sendCentralSecurityStatus({ kits: { [KIT.name]: KIT.version }, encOk, denied24h, loginFail24h, ipBlocksActive, openIncidents, events24h,
       lockdown: lock.error ? null : Boolean((lock.data as { active?: boolean } | null)?.active),
       lastAccessAudit: runs[0] ? new Date(runs[0].started_at).toISOString() : null,
       accessAuditFlagged7d: audit.error ? null : runs.reduce((a, r) => a + (r.flagged || 0), 0) });
