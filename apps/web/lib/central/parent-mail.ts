@@ -12,7 +12,8 @@ import { PARENT, verifyPurposeToken } from '@/lib/central/parent-connect';
  * 2 minutes, one use). Mail goes only to a CONFIRMED NuraWell account with exactly that address, and only with a
  * link to the parent reset page. Synthetic test accounts are never mailed (logged as suppressed).
  */
-const LINK_RE = new RegExp(`^${PARENT.replace(/[.]/g, '\\.')}/account/reset/#t=[A-Za-z0-9_-]{43}$`);
+const LINK_PREFIX = `${PARENT}/account/reset/#t=`;
+const linkOk = (link: string) => link.startsWith(LINK_PREFIX) && /^[A-Za-z0-9_-]{43}$/.test(link.slice(LINK_PREFIX.length));
 const reply = (status: number, body: Record<string, unknown>) => NextResponse.json(body, { status, headers: { 'cache-control': 'no-store' } });
 
 const findConfirmed = async (email: string) => {
@@ -38,7 +39,7 @@ export async function deliverParentMail(request: NextRequest): Promise<NextRespo
   const c = jwks ? await verifyPurposeToken(token, jwks as never, 'id-mail+jwt') : null;
   const email = typeof c?.email === 'string' ? c.email.trim().toLowerCase() : '';
   const link = typeof c?.link === 'string' ? c.link : '';
-  if (!c || c.purpose !== 'reset' || !email.includes('@') || !LINK_RE.test(link)) return reply(401, { error: 'invalid_token' });
+  if (!c || c.purpose !== 'reset' || !email.includes('@') || !linkOk(link)) return reply(401, { error: 'invalid_token' });
   const once = await consumeRateLimit({ key: String(c.jti), namespace: 'central-mail-jti', limit: 1, windowSeconds: 900 }).catch(() => ({ ok: false as const }));
   if (!once.ok) return reply(409, { error: 'replay' });
   const perRcpt = await consumeRateLimit({ key: email, namespace: 'central-mail-rcpt', limit: 3, windowSeconds: 3600 }).catch(() => ({ ok: false as const }));
