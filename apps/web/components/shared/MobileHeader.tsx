@@ -2,12 +2,13 @@
 
 import Link from 'next/link';
 import { User } from '@supabase/supabase-js';
-import { BookOpen, TrendingUp, UserCircle, X, Menu, Home, LogOut, ListChecks } from 'lucide-react';
+import { BookOpen, TrendingUp, UserCircle, X, Menu, Home, LogOut, ListChecks, ShoppingBag, ExternalLink } from 'lucide-react';
 import { useState } from 'react';
 import { signOutClient } from '@/lib/module-api/auth-signup/lib-auth-sign-out-client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { NotificationsBellButton } from '@/lib/module-api/notifications/components-notifications-NotificationsBellButton';
 import { APP_HOME_PATH } from '../../lib/navigation/app-home-path';
+import { PARENT_PURCHASES_HREF, PARENT_PURCHASES_LABEL } from '../../lib/central/parent-links';
 
 interface MobileHeaderProps {
   user: User;
@@ -112,6 +113,17 @@ export function MobileHeader({ user, profileFullName }: MobileHeaderProps) {
                     <item.icon className="w-3.5 h-3.5 text-ink-400" />
                   </Link>
                 ))}
+                <a
+                  href={PARENT_PURCHASES_HREF}
+                  onClick={() => setIsMenuOpen(false)}
+                  className="flex items-center gap-3.5 border-t border-ink-100 px-5 py-4 transition-all hover:bg-ink-50 active:bg-ink-100 no-tap-highlight"
+                >
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-primary-50 border border-primary-100">
+                    <ShoppingBag className="text-primary-700" />
+                  </div>
+                  <span className="font-bold text-ink-800 flex-1">{PARENT_PURCHASES_LABEL}</span>
+                  <ExternalLink aria-hidden="true" className="w-3.5 h-3.5 text-ink-400" />
+                </a>
                 <button
                   type="button"
                   disabled={isSigningOut}

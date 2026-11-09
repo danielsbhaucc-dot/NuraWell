@@ -5,8 +5,9 @@ import { ParentAccountNotice } from '@/lib/module-api/legal/components-legal-Par
 import { motion } from 'framer-motion';
 import {
   User, Award, BookOpen, Flame, LogOut, ChevronLeft, Shield, Settings, Save, X, Bell,
-  MessageCircle, Pencil, Camera,
+  MessageCircle, Pencil, Camera, ShoppingBag, ExternalLink,
 } from 'lucide-react';
+import { PARENT_PURCHASES_HREF, PARENT_PURCHASES_LABEL, PARENT_PURCHASES_HINT } from '../../lib/central/parent-links';
 import { ProfileRhythmCard, type ProfileRhythmInitial } from './ProfileRhythmCard';
 import { signOutClient } from '../../lib/auth/sign-out-client';
 import { useRouter } from 'next/navigation';
@@ -483,6 +484,19 @@ export function ProfilePageClient({
               <ChevronLeft className="w-4 h-4 text-ink-400" />
             </Link>
           ))}
+          <a
+            href={PARENT_PURCHASES_HREF}
+            className="flex items-center gap-3 px-5 py-3.5 transition-colors hover:bg-primary-50/60 border-t border-primary-50"
+          >
+            <div className="crystal-pill w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0">
+              <ShoppingBag className="w-4 h-4 text-primary-700" />
+            </div>
+            <span className="flex-1 min-w-0 text-start">
+              <span className="block text-sm font-semibold text-ink-700">{PARENT_PURCHASES_LABEL}</span>
+              <span className="block text-xs text-ink-500">{PARENT_PURCHASES_HINT}</span>
+            </span>
+            <ExternalLink aria-hidden="true" className="w-4 h-4 text-ink-400" />
+          </a>
           <Link
             href="/settings/almog"
             className="flex items-center gap-3 px-5 py-3.5 transition-colors hover:bg-primary-50/60 border-t border-primary-50"
