@@ -392,6 +392,54 @@ export async function mediaReceiptsProbe(raw: SupabaseClient) {
   return { result: error ? 'rpc_failed' : data, allSealed };
 }
 
+// ---- 000261: rolled-back enforcement probe for pii_access_grants + pii_access_log ----
+/**
+ * Captures the bodies createPiiGrant really sends (grant insert + its access-log insert) through the sealing client,
+ * then replays each inside enc_enforce_write_probe: once as sealed (must be 'accepted' with enforcement on) and once
+ * with one registered column in plaintext (must be 'rejected'). Everything is rolled back. Synthetic values only;
+ * actor/subject ids are taken from an existing grant so FKs hold. Returns outcomes and booleans, never values.
+ */
+export async function piiEnforceProbe(raw: SupabaseClient) {
+  const { withFieldDecryption } = await import('@/lib/security/field-fetch');
+  const { createClient } = await import('@supabase/supabase-js');
+  const { createPiiGrant } = await import('@/lib/platform/access/pii-access');
+  const bodies: Record<string, Record<string, unknown>> = {};
+  const capture: typeof fetch = async (input, init) => {
+    const url = String(input instanceof Request ? input.url : input);
+    const m = url.match(/\/rest\/v1\/(pii_access_grants|pii_access_log)(\?|$)/);
+    if (m && init?.method && init.method !== 'GET') {
+      const b = JSON.parse(String(init.body));
+      bodies[m[1]] = (Array.isArray(b) ? b[0] : b) as Record<string, unknown>;
+      const out = m[1] === 'pii_access_grants' ? { id: '00000000-0000-4000-8000-000000000000', expires_at: new Date(Date.now() + 60_000).toISOString() } : [];
+      return new Response(JSON.stringify(out), { status: 201, headers: { 'content-type': 'application/json' } });
+    }
+    return fetch(input, init);
+  };
+  const sealed = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+    auth: { persistSession: false },
+    global: { fetch: withFieldDecryption(capture) },
+  });
+  const { data: g } = await raw.from('pii_access_grants').select('actor_id, subject_id').limit(1).maybeSingle();
+  const ids = g as { actor_id: string; subject_id: string } | null;
+  if (!ids) return { result: 'no_reference_grant' };
+  const req = new Request('https://probe.invalid/', { headers: { 'x-vercel-ip-country': 'IL', 'x-forwarded-for': '203.0.113.7' } });
+  const r = await createPiiGrant(sealed as never, req, { productId: 'nurawell', actorId: ids.actor_id, subjectId: ids.subject_id, reason: 'בדיקת תלונה על חיוב כפול בחשבון', ticketRef: 'TCK-42' });
+  const grant = bodies.pii_access_grants;
+  const log = bodies.pii_access_log;
+  if (!r.ok || !grant || !log) return { result: 'not_captured', ok: r.ok, captured: Object.keys(bodies) };
+  const out: Record<string, unknown> = {
+    grantSealed: ['reason', 'ticket_ref', 'country'].every((k) => isV2(grant[k])),
+    logSealed: ['country', 'resource'].every((k) => isV2(log[k])),
+  };
+  const grantPlain = { ...grant, reason: 'synthetic plaintext reason for probe only' };
+  const logPlain = { ...log, resource: 'probe-plain' };
+  const a = await raw.rpc('enc_enforce_write_probe', { p_table: 'pii_access_grants', p_row: grant, p_plain: grantPlain });
+  out.pii_access_grants = a.error ? 'rpc_failed' : a.data;
+  const b = await raw.rpc('enc_enforce_write_probe', { p_table: 'pii_access_log', p_row: log, p_plain: logPlain });
+  out.pii_access_log = b.error ? 'rpc_failed' : b.data;
+  return out;
+}
+
 // ---- 000259: one-time reseal of the last legacy plaintext cells (counts only) ----
 /**
  * legacyReseal: closes the tables the hosted cron never rewrites (FIELD_V2_LOCAL_BACKFILL_ONLY) for the rows that
