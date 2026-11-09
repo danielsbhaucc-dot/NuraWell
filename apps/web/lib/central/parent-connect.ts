@@ -117,3 +117,20 @@ export const verifyAccessToken = async (token: string, jwks: { keys: Jwk[] }, no
     return claimsOk(claims, nowS) ? claims : null;
   } catch { return null; }
 };
+
+/**
+ * Verify a parent-signed purpose token (not an access token): ES256, header typ must equal `typ`, issuer and
+ * audience are this product, and it is short-lived. Returns the payload or null (never throws).
+ */
+export const verifyPurposeToken = async (token: string, jwks: { keys: Jwk[] }, typ: string, nowS = Math.floor(Date.now() / 1000)): Promise<Record<string, unknown> | null> => {
+  try {
+    const parts = splitToken(token);
+    if (!parts) return null;
+    const head = decodeJson<Head & { typ?: string }>(parts.header);
+    if (head.typ !== typ || !(await partsVerified(parts, jwks))) return null;
+    const c = decodeJson<Record<string, unknown>>(parts.payload);
+    const exp = typeof c.exp === 'number' ? c.exp : 0, iat = typeof c.iat === 'number' ? c.iat : 0;
+    if (c.iss !== ISSUER || c.aud !== CLIENT_ID || exp < nowS || exp - iat > 300 || typeof c.jti !== 'string') return null;
+    return c;
+  } catch { return null; }
+};
