@@ -26,6 +26,7 @@ export default defineConfig({
     },
   },
   test: {
+  exclude: process.env.CI ? ['**/*.live.test.ts', '**/*.db.test.ts'] : [],
     environment: 'node',
     include: ['tests/**/*.test.ts'],
     globals: false,
