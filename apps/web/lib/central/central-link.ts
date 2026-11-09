@@ -46,3 +46,36 @@ export function createCentralLinkClient(env: Env = process.env, fetchImpl: typeo
     },
   };
 }
+
+type SecurityResult = 'sent' | 'skipped' | 'failed';
+type SecurityStatus = import('@core/security-privacy/feed').SecurityStatus;
+
+/**
+ * Security events and the daily security status for the parent console, over the same signed bridge
+ * (central_ingest_security). Replaces the kit's direct sender, which needed the central service key.
+ * Same opt-in as the kit (KIT_CENTRAL_REPORTING=on) and the same HMAC body signature; never throws.
+ */
+async function sendSecurity(body: object, env: Env = process.env, fetchImpl: typeof fetch = fetch): Promise<SecurityResult> {
+  const secret = env.CENTRAL_METRICS_FEED_SECRET;
+  if (env.KIT_CENTRAL_REPORTING !== 'on' || !secret || !centralLinkConfigured(env)) return 'skipped';
+  try {
+    const { signSecurityBody } = await import('@core/security-privacy/feed');
+    const payload = JSON.stringify(body), { ts, nonce, sig } = signSecurityBody(secret, payload);
+    const r = await createCentralLinkClient(env, fetchImpl).rpc('central_ingest_security', { p_body: payload, p_ts: ts, p_nonce: nonce, p_sig: sig });
+    return r.error ? 'failed' : 'sent';
+  } catch { return 'failed'; }
+}
+
+const lastEvent = new Map<string, { at: number; n: number }>();
+/** One security event (short code, no user data). Throttled per kind like the kit: at most one send per `everyMs`; skipped hits are counted into the next send. */
+export function sendCentralSecurityEvent(kind: string, severity: 'low' | 'medium' | 'high' | 'critical', everyMs = 600_000, env?: Env, fetchImpl?: typeof fetch): Promise<SecurityResult | 'throttled'> {
+  if (!/^[a-z0-9_]{1,40}$/.test(kind)) return Promise.resolve('skipped');
+  const now = Date.now(), prev = lastEvent.get(kind);
+  if (prev && now - prev.at < everyMs) { prev.n += 1; return Promise.resolve('throttled'); }
+  const n = (prev?.n ?? 0) + 1; lastEvent.set(kind, { at: now, n: 0 });
+  return sendSecurity({ type: 'event', kind, severity, n }, env, fetchImpl);
+}
+
+export function sendCentralSecurityStatus(status: SecurityStatus, env?: Env, fetchImpl?: typeof fetch): Promise<SecurityResult> {
+  return sendSecurity({ type: 'status', status }, env, fetchImpl);
+}

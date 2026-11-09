@@ -24,6 +24,8 @@ describe('platform-core shared packages (installed, not copied)', () => {
     const read = (f: string) => readFileSync(join(__dirname, '..', f), 'utf8');
     expect(read('lib/api/rate-limit.ts')).toMatch(/from '@core\/security-privacy\/rate-limit'/);
     expect(read('lib/central/usage-feed.ts')).toMatch(/from '@core\/security-privacy\/feed'/);
-    expect(read('lib/logs/signals.ts')).toMatch(/@core\/security-privacy\/feed/);
+    // security events go through the signed bridge, which signs with the shared kit (no central service key)
+    expect(read('lib/logs/signals.ts')).toMatch(/@\/lib\/central\/central-link/);
+    expect(read('lib/central/central-link.ts')).toMatch(/@core\/security-privacy\/feed/);
   });
 });

@@ -1,6 +1,6 @@
 import { signUsage as kitSignUsage } from '@core/security-privacy/feed';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { centralLinkConfigured, createCentralLinkClient } from '@/lib/central/central-link';
+import { centralLinkConfigured, createCentralLinkClient, sendCentralSecurityStatus } from '@/lib/central/central-link';
 
 /**
  * Daily, aggregates-only usage report to the parent-company console (platform-core connector spec):
@@ -60,9 +60,8 @@ export async function sendSecurityStatusFeed(encOk: boolean): Promise<string> {
       db.from('access_audit_runs').select('started_at, flagged').gte('started_at', since(7)).order('started_at', { ascending: false }).limit(50),
     ]);
     const runs = (audit.data ?? []) as { started_at: string; flagged: number }[];
-    const { sendSecurityStatus } = await import('@core/security-privacy/feed');
     const { KIT } = await import('@core/security-privacy');
-    return await sendSecurityStatus({ kits: { [KIT.name]: KIT.version }, encOk, denied24h, loginFail24h, ipBlocksActive, openIncidents, events24h,
+    return await sendCentralSecurityStatus({ kits: { [KIT.name]: KIT.version }, encOk, denied24h, loginFail24h, ipBlocksActive, openIncidents, events24h,
       lockdown: lock.error ? null : Boolean((lock.data as { active?: boolean } | null)?.active),
       lastAccessAudit: runs[0] ? new Date(runs[0].started_at).toISOString() : null,
       accessAuditFlagged7d: audit.error ? null : runs.reduce((a, r) => a + (r.flagged || 0), 0) });

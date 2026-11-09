@@ -11,7 +11,7 @@ export async function dispatchSecurityEvents(db: SupabaseClient): Promise<number
     const e = { ...e0, detail: logDetail(e0) ?? {} };
     const { data: claimed } = await db.from('ops_security_events').update({ alerted_at: new Date().toISOString() }).eq('id', e.id).is('alerted_at', null).select('id');
     if (!claimed?.length) continue;
-    await import('@core/security-privacy/feed').then((f) => f.sendSecurityEvent(e.kind, e.kind === 'break_glass' ? 'critical' : 'high', 0)).catch(() => undefined);
+    await import('@/lib/central/central-link').then((f) => f.sendCentralSecurityEvent(e.kind, e.kind === 'break_glass' ? 'critical' : 'high', 0)).catch(() => undefined);
     const user = typeof e.detail.user === 'string' ? e.detail.user : null;
     if (e.kind === 'break_glass') {
       await alertOwnerSecurity(db, user, `🚨 איפוס חירום של אבטחת Ops בוצע.\nכל המכשירים המאושרים (${Number(e.detail.devices ?? 0)}) וקודי השחזור בוטלו.\nסיבה: ${String(e.detail.reason ?? '')}\nבכניסה הבאה תתבקש לאשר את המכשיר מחדש. אם לא ביקשת את זה, החלף סיסמה מיד.`, 'איפוס חירום של אבטחת Ops');
