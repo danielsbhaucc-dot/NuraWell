@@ -1,7 +1,7 @@
 /**
  * Single source of truth for the public cookie notice, panel and /cookies page.
  * Names and durations mirror the code that sets them (proxy.ts, lib/challenge/gate-cookie.ts,
- * lib/demo-access/cookie.ts, lib/ops/device-trust.ts, lib/a11y/constants.ts, ...).
+ * lib/demo-access/cookie.ts, lib/central/parent-session.ts, app/api/v1/central/qr/route.ts, lib/ops/device-trust.ts, lib/a11y/constants.ts, ...).
  * Public copy: no vendor names, gender-neutral Hebrew.
  */
 export type CookieItem = { name: string; label: string; what: string; duration: string; why: string };
@@ -27,6 +27,8 @@ export const COOKIE_GROUPS: CookieGroup[] = [
       { name: 'sb-…-auth-token', label: 'עוגיית חיבור לחשבון', what: 'שומרת על החיבור לחשבון בצורה מאובטחת.', duration: 'עד התנתקות (מתחדשת)', why: 'בלעדיה צריך להתחבר מחדש בכל עמוד.' },
       { name: 'nw_la_at', label: 'עוגיית פעילות אחרונה', what: 'זוכרת מתי הייתה פעילות אחרונה, כדי לנתק אוטומטית אחרי חוסר פעילות.', duration: '30 יום', why: 'מגינה על החשבון אם שכחת להתנתק.' },
       { name: 'nw_cg', label: 'עוגיית אימות זהות', what: 'אישור קצר אחרי קוד או זיהוי ביומטרי, לפני פעולה רגישה.', duration: '3 דקות', why: 'מוודאת שזה באמת בעל החשבון.' },
+      { name: 'pl_parent_session', label: 'עוגיית כניסה דרך החשבון המרכזי', what: 'שומרת על חיבור שנפתח דרך החשבון המרכזי של החברה (כניסה אחת לכל המוצרים).', duration: '12 שעות, או עד התנתקות', why: 'בלעדיה צריך להתחבר שוב מהחשבון המרכזי.' },
+      { name: 'pl_qr_poll', label: 'עוגיית כניסה בקוד QR', what: 'מחכה לאישור כניסה שנסרק בטלפון.', duration: '2 דקות', why: 'משלימה כניסה בקוד QR בבטחה.' },
       { name: 'nw_demo', label: 'עוגיית קישור הדגמה', what: 'גישה לקישור הדגמה שהתקבל.', duration: 'לפי תוקף הקישור, ועוד 7 ימים לסגירה בטוחה', why: 'בלעדיה קישור ההדגמה לא ייפתח.' },
     ],
   },

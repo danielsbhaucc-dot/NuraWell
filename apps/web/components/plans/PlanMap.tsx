@@ -70,8 +70,9 @@ export function PlanMap({ stations, startIndex = 0 }: { stations: MapStation[]; 
                 <Icon className="size-6" strokeWidth={1.75} aria-hidden />
                 <span className="sr-only">{`תחנה ${startIndex + i + 1}: ${s.title}${s.state === 'done' ? ' (הושלמה)' : s.state === 'locked' ? ' (נעולה)' : ' (התחנה הנוכחית)'}`}</span>
               </Link>
+              {/* Label box is sized in px, like the map geometry, so 200% text wraps inside it instead of pushing past the screen edge. */}
               <div
-                className={`absolute top-1/2 w-32 -translate-y-1/2 ${labelSide === 'end' ? 'right-full mr-3 text-left' : 'left-full ml-3 text-right'} ${s.state === 'locked' ? 'opacity-60' : ''}`}
+                className={`absolute top-1/2 w-[128px] -translate-y-1/2 break-words ${labelSide === 'end' ? 'right-full mr-[12px] text-left' : 'left-full ml-[12px] text-right'} ${s.state === 'locked' ? 'opacity-60' : ''}`}
               >
                 <span className="line-clamp-2 text-sm font-semibold text-primary-900">{s.title}</span>
                 {s.total && s.state !== 'locked' ? (

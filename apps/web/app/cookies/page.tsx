@@ -105,7 +105,7 @@ export default function CookiesPage() {
       lead="כל מה שנשמר במכשיר בזמן השימוש ב־NuraWell: מה, למה ולכמה זמן. בלי מעקב, בלי פרסום."
       leadExtra={<CookieWink className="ld-wink" />}
       stat={{ big: '0', label: 'עוגיות פרסום או מעקב', text: 'רק מה שחיוני כדי שהאתר יעבוד ויהיה מאובטח.' }}
-      updatedAt="20 באוקטובר 2026"
+      updatedAt="9 בנובמבר 2026"
       version="1.0"
       summary={[
         { icon: <Lock className="w-5 h-5" />, title: 'רק חיוניות', text: 'חיבור לחשבון ואבטחה. בלעדיהן האתר לא עובד.' },
