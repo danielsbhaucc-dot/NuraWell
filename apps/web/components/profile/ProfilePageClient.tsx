@@ -344,7 +344,7 @@ export function ProfilePageClient({
                   <button
                     type="button"
                     onClick={() => openEdit('gender')}
-                    className="p-0.5 rounded text-ink-400 hover:text-primary-600"
+                    className="p-0.5 rounded text-ink-400 hover:text-primary-600 relative after:absolute after:-inset-1.5 after:content-['']"
                     aria-label="ערוך מגדר"
                   >
                     <Pencil className="h-3 w-3" />
@@ -399,7 +399,7 @@ export function ProfilePageClient({
               <button
                 type="button"
                 onClick={() => setIsChatOpen(true)}
-                className="text-xs font-bold text-primary-700 flex items-center gap-1 hover:underline"
+                className="text-xs font-bold text-primary-700 flex items-center gap-1 hover:underline relative after:absolute after:-inset-1.5 after:content-['']"
               >
                 <MessageCircle className="h-3.5 w-3.5" />
                 עדכן
@@ -615,7 +615,7 @@ function EditableInfoRow({
         <button
           type="button"
           onClick={onEdit}
-          className="p-1 rounded-md text-ink-300 opacity-60 group-hover:opacity-100 group-hover:text-primary-600 transition"
+          className="p-1 rounded-md text-ink-300 opacity-60 group-hover:opacity-100 group-hover:text-primary-600 transition relative after:absolute after:-inset-1.5 after:content-['']"
           aria-label={`ערוך ${label}`}
         >
           <Pencil className="h-3 w-3" />

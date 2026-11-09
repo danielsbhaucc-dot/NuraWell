@@ -230,6 +230,7 @@ export function HomeClient({
       data-ssot-unified-active={snapshotCounts?.unified.active ?? ''}
       data-ssot-unified-rejected={snapshotCounts?.unified.rejected ?? ''}
     >
+      <h1 className="sr-only">בית</h1>
       <div
         className="-mt-16 relative overflow-hidden pt-16"
         style={{

@@ -506,7 +506,7 @@ export function ProgressPageClient({
         <ProgressSectionDivider tone="emerald" title="מסע אישי" subtitle="צעדים, משימות והרגלים" />
 
         <section>
-          <div className="mb-3 flex items-start justify-between gap-3">
+          <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
             <ProgressSectionHeader
               title="המסע שלי"
               subtitle={`${journeyStepsCompleted}/${journeyStepsTotal || '—'} צעדים · ${journeyTasksReportedDone}/${journeyTasksAccepted || '0'} משימות שדווחו`}
@@ -561,7 +561,7 @@ export function ProgressPageClient({
 
         {showDailySection ? (
           <section>
-            <div className="mb-3 flex items-start justify-between gap-3">
+            <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
               <ProgressSectionHeader
                 title="מעקב יומי"
                 subtitle={`${activeDaysCount} ימים מלאים · 30 הימים האחרונים`}
@@ -665,7 +665,7 @@ export function ProgressPageClient({
               variants={item}
               initial="hidden"
               animate="show"
-              className="crystal-surface mt-3 flex items-center justify-between gap-3 rounded-2xl p-5"
+              className="crystal-surface mt-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl p-5"
             >
               <Link
                 href="/progress/history"
