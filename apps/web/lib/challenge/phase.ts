@@ -87,7 +87,14 @@ export function challengeRouteForPhase(phase: ChallengePhase): string {
   }
 }
 
+/**
+ * Public legal and help pages stay reachable during a challenge: accessibility statement, privacy, terms,
+ * cookies, safety, contact and about must open for a signed-in participant too (they are linked from every screen).
+ */
+export const CHALLENGE_PUBLIC_INFO_PATHS = ['/accessibility', '/privacy', '/terms', '/cookies', '/safety', '/contact', '/about'] as const;
+
 export function isChallengeLockedPath(pathname: string): boolean {
+  if (CHALLENGE_PUBLIC_INFO_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) return false;
   if (pathname.startsWith('/challenge')) return false;
   if (pathname.startsWith('/api/v1/challenge')) return false;
   if (pathname.startsWith('/login')) return false;
