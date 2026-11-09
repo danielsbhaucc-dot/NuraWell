@@ -9,6 +9,11 @@ const lines = JSON.parse(readFileSync(join(__dirname, '../public/landing-v2/real
 const pool = Object.values(lines.buckets).flat();
 
 describe('landing-v2 layout guards', () => {
+  it('gallery dots have a 24px tap target; the visible dot stays 8px', () => {
+    expect(src).toMatch(/\.pgd button\{width:24px;height:24px;/);
+    expect(src).toMatch(/\.pgd button::before\{content:\\?"\\?";width:8px;height:8px;/);
+    expect(src).toMatch(/\.pgd\{[^}]*gap:0;/);
+  });
   it('big-idea card icon is normal-flow (static) on desktop, after any absolute rule', () => {
     expect(src).toMatch(/@media \(min-width:821px\)\{\.cc svg\{position:static!important;display:block/);
   });

@@ -93,8 +93,16 @@ export function challengeRouteForPhase(phase: ChallengePhase): string {
  */
 export const CHALLENGE_PUBLIC_INFO_PATHS = ['/accessibility', '/privacy', '/terms', '/cookies', '/safety', '/contact', '/about'] as const;
 
+/**
+ * The participant's own account stays reachable during a challenge: privacy settings (data export and delete),
+ * security, subscription and profile. App content (journey, lessons, progress, guides…) stays locked.
+ */
+export const CHALLENGE_ACCOUNT_PATHS = ['/settings/privacy', '/settings/security', '/settings/subscription', '/profile'] as const;
+
+const underAny = (pathname: string, list: readonly string[]) => list.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+
 export function isChallengeLockedPath(pathname: string): boolean {
-  if (CHALLENGE_PUBLIC_INFO_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) return false;
+  if (underAny(pathname, CHALLENGE_PUBLIC_INFO_PATHS) || underAny(pathname, CHALLENGE_ACCOUNT_PATHS)) return false;
   if (pathname.startsWith('/challenge')) return false;
   if (pathname.startsWith('/api/v1/challenge')) return false;
   if (pathname.startsWith('/login')) return false;
