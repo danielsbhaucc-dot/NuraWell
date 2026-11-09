@@ -208,8 +208,8 @@ export function TodayTasksPopup({
   const headerTitle =
     pendingCount > 0
       ? name
-        ? `${name}, בוא נסגור את מה שפתוח`
-        : 'בוא נסגור את מה שפתוח'
+        ? `${name}, בואו נסגור את מה שפתוח`
+        : 'בואו נסגור את מה שפתוח'
       : name
         ? `${name}, יפה מאוד היום`
         : 'יפה מאוד היום';
@@ -377,8 +377,8 @@ export function TodayTasksPopup({
                   </div>
                   <p className="text-xs text-primary-800/85 leading-relaxed mb-3">
                     {name
-                      ? `${name}, עוד לא לקחנו משימות. בוא נתחיל ביחד כשמתאים לך.`
-                      : 'עוד לא לקחנו משימות. בוא נתחיל ביחד כשמתאים לך.'}
+                      ? `${name}, עוד לא לקחנו משימות. בואו נתחיל ביחד כשמתאים לך.`
+                      : 'עוד לא לקחנו משימות. בואו נתחיל ביחד כשמתאים לך.'}
                   </p>
                   <button
                     type="button"

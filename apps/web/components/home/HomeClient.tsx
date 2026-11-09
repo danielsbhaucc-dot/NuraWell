@@ -230,6 +230,7 @@ export function HomeClient({
       data-ssot-unified-active={snapshotCounts?.unified.active ?? ''}
       data-ssot-unified-rejected={snapshotCounts?.unified.rejected ?? ''}
     >
+      <h1 className="sr-only">בית</h1>
       <div
         className="-mt-16 relative overflow-hidden pt-16"
         style={{
@@ -351,7 +352,7 @@ export function HomeClient({
                       : taskLoadError
                         ? 'לא הצלחנו לטעון משימות — נסו שוב בעוד רגע'
                         : !(snapshotCounts && hasAnyTakenTasks(snapshotCounts))
-                          ? 'עוד לא לקחנו משימות — בוא נתחיל ביחד'
+                          ? 'עוד לא לקחנו משימות — בואו נתחיל ביחד'
                           : taskCounts.dueToday === 0
                             ? 'אין משימה פתוחה להיום — מחר נמשיך 🌱'
                             : taskCounts.pending === 1
@@ -492,7 +493,7 @@ export function HomeClient({
                 בוא נתחיל את המסע
               </h3>
               <p className="text-sm max-w-[240px] mx-auto leading-relaxed mb-4" style={{ color: '#9896B8' }}>
-                תקפוץ למסע שלך, ואני אפתח לך את המדריכים ברגע שהם מוכנים בשבילך
+                קופצים למסע, ואני אפתח לך את המדריכים ברגע שהם מוכנים בשבילך
               </p>
               <Link
                 href="/journey"
