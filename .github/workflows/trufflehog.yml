@@ -1,20 +1,18 @@
-# TruffleHog secret scanning — complements Gitleaks.
-# TruffleHog verifies found secrets against live services (lower false positives)
-# and catches credential patterns Gitleaks may miss.
-#
-# https://github.com/trufflesecurity/trufflehog
-
+# TruffleHog — weekly schedule + PRs with non-doc paths. No push-to-main duplicate.
 name: TruffleHog secret scan
 
 on:
-  push:
-    branches: [main, master]
   pull_request:
   schedule:
-    - cron: '0 5 * * 1'  # Weekly, Monday 05:00 UTC
+    - cron: '0 5 * * 1'
+  workflow_dispatch: {}
 
 permissions:
   contents: read
+
+concurrency:
+  group: trufflehog-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   trufflehog:
@@ -25,15 +23,30 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          # Full history so diff scans can compare commits.
           fetch-depth: 0
-
+      - name: path gate
+        id: gate
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          BASE="${{ github.event.pull_request.base.sha }}"
+          HEAD="${{ github.event.pull_request.head.sha }}"
+          CHANGED=$(git diff --name-only "$BASE...$HEAD" || true)
+          if echo "$CHANGED" | grep -qvE '(\.md$|^docs/|^LICENSE$)'; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: skip (docs-only)
+        if: steps.gate.outputs.run != 'true'
+        run: echo "Skip TruffleHog — docs-only."
       - name: Run TruffleHog
-        uses: trufflesecurity/trufflehog@31ce31ee1abbcc7dc8eee5764c17121c3044c8b2 # v3.99.3 (pinned: a mutable @main ref runs whatever lands upstream with repo access)
+        if: steps.gate.outputs.run == 'true'
+        uses: trufflesecurity/trufflehog@31ce31ee1abbcc7dc8eee5764c17121c3044c8b2 # v3.99.3
         with:
           path: ./
-          # On PRs scan only the diff; on push/schedule scan the whole repo.
           base: ${{ github.event.pull_request.base.sha || '' }}
           head: ${{ github.event.pull_request.head.sha || github.sha }}
-          # Fail the build only on verified (live) secrets to avoid noise.
           extra_args: --only-verified
