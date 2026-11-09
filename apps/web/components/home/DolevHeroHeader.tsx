@@ -412,7 +412,7 @@ function TaskBadgeRow({
             flex: 1,
           }}
         >
-          המסע שלך מחכה, בלחיצה אתה שם
+          המסע שלך מחכה, במרחק לחיצה
         </span>
         {onClick ? (
           <span style={{ fontSize: '10px', color: 'rgba(242,242,246,0.7)', fontWeight: 700 }}>

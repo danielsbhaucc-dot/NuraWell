@@ -608,14 +608,14 @@ function buildIntroText(
   if (overall.done === 0) {
     return {
       preamble,
-      message: 'בוא נתחיל ביחד',
+      message: 'בואו נתחיל ביחד',
       sparkle: '✿',
       subline:
         tod?.bucket === 'morning'
           ? 'יש לי תחנה שמחכה לך. ניכנס אליה בקצב שלך — אני איתך.'
           : tod?.bucket === 'night'
-            ? 'גם עכשיו זה זמן טוב. תבחר תחנה ואני אהיה פה איתך.'
-            : 'תבחר תחנה ונצא לדרך — צעד אחד, בלי למהר.',
+            ? 'גם עכשיו זה זמן טוב. בוחרים תחנה, ואני אהיה פה איתך.'
+            : 'בוחרים תחנה ויוצאים לדרך — צעד אחד, בלי למהר.',
     };
   }
   if (overall.pct >= 100) {
@@ -639,7 +639,7 @@ function buildIntroText(
   if (overall.pct >= 30) {
     return {
       preamble,
-      message: 'אתה בדרך הנכונה',
+      message: 'ממשיכים בדרך הנכונה',
       sparkle: '✿',
       subline: 'אני רואה שזה מתחיל להתיישב. נמשיך בקצב שלך — אני פה.',
     };
@@ -650,8 +650,8 @@ function buildIntroText(
     sparkle: '✿',
     subline:
       tod?.bucket === 'morning'
-        ? 'בוקר טוב. תבחר תחנה ונמשיך — אני איתך.'
-        : 'תבחר תחנה ונמשיך יחד. אני פה אם משהו יעלה.',
+        ? 'בוקר טוב. בוחרים תחנה וממשיכים — אני איתך.'
+        : 'בוחרים תחנה וממשיכים יחד. אני פה אם משהו יעלה.',
   };
 }
 
@@ -1095,8 +1095,8 @@ function SectionHeader({
         <p className="mt-0.5 text-xs text-primary-800/70">
           {variant === 'active'
             ? count === 1
-              ? 'יש תחנה אחת — בוא ניכנס אליה'
-              : `יש לך ${count} תחנות פתוחות — תבחר ונמשיך`
+              ? 'יש תחנה אחת — בואו ניכנס אליה'
+              : `יש לך ${count} תחנות פתוחות — בוחרים אחת וממשיכים`
             : `${count} תחנות · ${completed} הושלמו`}
         </p>
       </div>
@@ -1262,7 +1262,7 @@ function buildAlmogMessage(
   overall: { done: number; all: number; pct: number; stations: number; stationsDone: number }
 ): string {
   if (overall.all === 0) {
-    return `${firstName}, אין פה מירוץ. תגיד לי מתי אתה מוכן ונצא יחד.`;
+    return `${firstName}, אין פה מירוץ. כשיתאים לך, נצא יחד.`;
   }
   if (overall.done === 0) {
     return `${firstName}, הצעד הראשון תמיד הכי קשה — אני פה איתך, באמת.`;

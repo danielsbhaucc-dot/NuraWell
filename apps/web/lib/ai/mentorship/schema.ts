@@ -44,7 +44,7 @@ export const DEFAULT_MENTORSHIP_STRATEGY: MentorshipStrategy = {
   active_blockers: [],
   current_focus: [],
   medical_red_flags: [],
-  next_best_action: 'קח נשימה עמוקה אחת, ושתף איך אתה מרגיש ברגע הזה.',
+  next_best_action: 'נשימה עמוקה אחת, ואז לשתף איך מרגישים ברגע הזה.',
 };
 
 /** @deprecated השתמש ב-MentorshipStrategySchema */
