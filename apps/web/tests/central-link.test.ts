@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 vi.mock('server-only', () => ({}));
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, readdirSync, type Dirent } from 'node:fs';
 import { join } from 'node:path';
 import { centralLinkConfigured, createCentralLinkClient, sendCentralSecurityEvent, sendCentralSecurityStatus } from '@/lib/central/central-link';
 
@@ -47,10 +47,20 @@ describe('central control plane via signed product-link (no service key)', () =>
   });
   it('no runtime code reads CENTRAL_SUPABASE_SECRET_KEY any more', () => {
     const hits: string[] = [];
-    const walk = (d: string) => { for (const n of readdirSync(d)) { const p = join(d, n); if (statSync(p).isDirectory()) walk(p); else if (/\.(ts|tsx|js|mjs)$/.test(n) && !/\.generated\./.test(n) && readFileSync(p, 'utf8').includes('CENTRAL_SUPABASE_SECRET_KEY')) hits.push(p); } };
-    const feedUsers = ['lib/central/usage-feed.ts', 'lib/ops/security-events.ts', 'lib/logs/signals.ts'].filter((p) => /sendSecurity(Event|Status)\b/.test(readFileSync(p, 'utf8').replace(/sendCentralSecurity/g, '')));
+    const readOr = (p: string) => { try { return readFileSync(p, 'utf8'); } catch { return ''; } };
+    const walk = (d: string) => {
+      let entries: Dirent[] = [];
+      try { entries = readdirSync(d, { withFileTypes: true }); } catch { return; }
+      for (const e of entries) {
+        const p = join(d, e.name);
+        if (e.isDirectory()) walk(p);
+        else if (/\.(ts|tsx|js|mjs)$/.test(e.name) && !/\.generated\./.test(e.name) && readOr(p).includes('CENTRAL_SUPABASE_SECRET_KEY')) hits.push(p);
+      }
+    };
+    const feedUsers = ['lib/central/usage-feed.ts', 'lib/ops/security-events.ts', 'lib/logs/signals.ts'].filter((p) => /sendSecurity(Event|Status)\b/.test(readOr(p).replace(/sendCentralSecurity/g, '')));
     expect(feedUsers).toEqual([]); // the kit's direct sender (which reads the key) is no longer called
-    for (const d of ['app', 'lib', 'components', 'middleware.ts', 'proxy.ts']) { try { statSync(d).isDirectory() ? walk(d) : (readFileSync(d, 'utf8').includes('CENTRAL_SUPABASE_SECRET_KEY') && hits.push(d)); } catch { /* absent */ } }
+    for (const d of ['app', 'lib', 'components']) walk(d);
+    for (const f of ['middleware.ts', 'proxy.ts']) if (readOr(f).includes('CENTRAL_SUPABASE_SECRET_KEY')) hits.push(f);
     expect(hits).toEqual([]);
   });
 });
