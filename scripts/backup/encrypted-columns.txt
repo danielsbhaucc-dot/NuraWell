@@ -155,6 +155,7 @@ enforce chat_transcript_admin_audit_log summary text
 enforce delivery_log error text
 enforce delivery_log recipient_mask text
 enforce billing_events metadata json
+pending billing_invoices doc_url text
 enforce error_events message text
 enforce error_events stack text
 enforce error_events tags json
@@ -178,7 +179,9 @@ enforce gideon_outbox buttons json
 enforce gideon_outbox chat_id text
 enforce gideon_outbox reason text
 enforce gideon_outbox text text
-enforce gideon_telegram_identities reason text
+pending gideon_telegram_identities from_id text
+pending gideon_telegram_identities reason text
+pending gideon_stranger_sim chat_id text
 enforce gideon_settings recipients json
 enforce notify_style_rules avoid text
 enforce notify_style_rules prefer text
@@ -230,15 +233,9 @@ append pii_access_log resource text
 pending access_audit_findings summary text
 pending access_audit_findings signals text[]
 pending access_audit_runs error text
-gap admin_passkeys telegram_user_id any
-gap billing_invoices doc_url any
-gap gideon_device_requests chat_id any
-gap gideon_stranger_sim attempts any
-gap gideon_stranger_sim chat_id any
-gap gideon_telegram_identities from_id any
-gap ip_block_ranges reason any
-gap ops_probe_daily country any
-gap parent_signup_claims email any
+pending parent_signup_claims email text
+pending admin_passkeys telegram_user_id text
+pending gideon_device_requests chat_id text
 class field_enc_enforcement table_name -
 class access_audit_findings event_kind -
 class access_audit_findings product_id -
@@ -264,6 +261,7 @@ class admin_passkeys kind -
 class admin_passkeys label -
 class admin_passkeys public_key -
 class admin_passkeys telegram_user_id -
+class admin_passkeys telegram_user_bidx -
 class admin_totp secret_enc -
 class ai_interaction_edits edited_content -
 class ai_interaction_edits model -
@@ -544,6 +542,7 @@ class error_issue_state status -
 class field_backfill_runs result -
 class field_backfill_runs source -
 class gideon_device_requests chat_id -
+class gideon_device_requests chat_bidx -
 class gideon_device_requests status -
 class gideon_outbox buttons -
 class gideon_outbox chat_id -
@@ -563,10 +562,14 @@ class gideon_settings telegram_bot_token_enc -
 class gideon_settings telegram_webhook_secret_enc -
 class gideon_stranger_sim attempts -
 class gideon_stranger_sim chat_id -
+class gideon_stranger_sim chat_bidx -
+class gideon_stranger_sim id -
 class gideon_telegram_identities code_hash -
 class gideon_telegram_identities code_salt -
 class gideon_telegram_identities decided_by -
 class gideon_telegram_identities from_id -
+class gideon_telegram_identities from_bidx -
+class gideon_telegram_identities id -
 class gideon_telegram_identities reason -
 class gideon_telegram_identities status -
 class guardian_sos_events metadata -
@@ -1076,6 +1079,7 @@ class webauthn_credentials transports -
 class parent_signup_claims nonce -
 class parent_signup_claims parent_sub -
 class parent_signup_claims email -
+class parent_signup_claims email_bidx -
 class parent_signup_claims state -
 class parent_session_grants parent_sub -
 class platform_link_settings mode -
