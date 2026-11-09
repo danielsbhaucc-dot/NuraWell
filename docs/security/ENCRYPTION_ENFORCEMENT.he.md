@@ -77,3 +77,8 @@
 - `?action=legacy_reseal_verify`: 0 תאים גלויים + legal_reseal_check על הערכים המפוענחים.
 - 000260 (אחרי ההרצה): מחזירה את חסימת ה-append-only הקשיחה ומוחקת את pii_reseal_apply. pii_unsealed נשארת לניטור.
 - אכיפה (field_enc_enforcement) לא הופעלה כאן: ההפעלה חד-כיוונית ולפי הסדר למעלה — טבלה אחת בכל פעם עם מעקב 24 שעות.
+
+## 000261 — בדיקת כתיבה מתגלגלת לפני הפעלת אכיפה (2026-11-09, באישור דניאל: טבלה אחת ביום עם מעקב)
+- `enc_enforce_write_probe(table, row, plain)` (service_role בלבד): מפעילה אכיפה בתוך תת-טרנזקציה, מכניסה את השורה ומגלגלת הכול לאחור — גם את השורה וגם את הדגל. ניסיון שני עם עמודה רשומה אחת גלויה חייב להידחות.
+- `?action=pii_enforce_probe`: הגופים נבנים בנתיב הכתיבה האמיתי (createPiiGrant דרך הלקוח המצפין) עם ערכים סינתטיים, ונשלחים לפונקציה עבור pii_access_grants ו-pii_access_log. מחזיר תוצאות בלבד.
+- סדר הפעלה: pii_access_grants (כותב יחיד באפליקציה, אין כותבי SQL) ← gideon_telegram_identities ← pii_access_log ← שאר הטבלאות. הלוח: `enc-enforcement-schedule.json` בתיקיית הראיות.
