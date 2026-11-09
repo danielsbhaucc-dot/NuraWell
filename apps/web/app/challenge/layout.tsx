@@ -4,6 +4,9 @@ import { createClient } from '@/lib/supabase/server';
 import { ChallengeShell } from '@/components/challenge/ChallengeShell';
 import { licenseGate, profileRole } from '@/lib/central/license-gate';
 import { enforceParentSessionPage } from '@/lib/central/parent-data-plane';
+import { PolicyReacceptGate } from '@/lib/module-api/legal/components-legal-PolicyReacceptGate';
+import { needsPolicyReaccept } from '@/lib/module-api/legal/lib-legal-policy-reaccept';
+import { LEGAL_POLICY_VERSION } from '@/lib/module-api/privacy-retention/lib-privacy-constants';
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -30,5 +33,17 @@ export default async function ChallengeLayout({ children }: { children: React.Re
     if (gate.block) redirect('/license-required');
   }
 
-  return <ChallengeShell user={user}>{children}</ChallengeShell>;
+  const { data: policy } = await supabase
+    .from('profiles')
+    .select('onboarding_completed, accepted_policy_version')
+    .eq('id', user.id)
+    .maybeSingle();
+  const showPolicyReaccept = needsPolicyReaccept(policy);
+
+  return (
+    <ChallengeShell user={user}>
+      {showPolicyReaccept ? <PolicyReacceptGate show version={LEGAL_POLICY_VERSION} /> : null}
+      {children}
+    </ChallengeShell>
+  );
 }

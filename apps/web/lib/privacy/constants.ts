@@ -1,5 +1,5 @@
 /** גרסת מסמכים משפטיים — לעדכן בכל שינוי מהותי במדיניות/תנאים. */
-export const LEGAL_POLICY_VERSION = '2026-10-20';
+export const LEGAL_POLICY_VERSION = '2026-11-09';
 
 /** גיל מינימלי לשימוש בשירות: 18 ומעלה בלבד (מדיניות פרטיות, תנאי שימוש). */
 export const MIN_USER_AGE = 18;
