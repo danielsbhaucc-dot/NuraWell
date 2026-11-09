@@ -524,8 +524,14 @@ export function PrivacySettingsClient({ email }: PrivacySettingsClientProps) {
               מחיקת חשבון לצמיתות
             </h3>
             <p className="mt-2 text-sm text-ink-soft leading-relaxed">
-              לא ניתן לשחזר את החשבון. לאישור, יש להזין את כתובת האימייל שלך:
+              כל הנתונים ב־<bdi className="font-semibold">NuraWell</bdi> יימחקו: פרופיל, מדדים, שיחות, יומנים והתקדמות. אי אפשר לשחזר אותם.
             </p>
+            <ul className="mt-2 list-disc ps-5 text-sm text-ink-soft leading-relaxed space-y-1">
+              <li>אם יש לך גישה למוצרים אחרים של חברת האם, החשבון המרכזי נשאר בשבילם.</li>
+              <li>אם לא, החשבון המרכזי יימחק אחרי 30 יום. עד אז אפשר לבטל את זה באזור האישי באתר חברת האם.</li>
+              <li>נשמרת רשומה משפטית מינימלית ומוצפנת (פרטי זיהוי בסיסיים, קבלות, אישורי תנאים והסכמות ומועדי המחיקה), ל־7 שנים ולא לשיווק.</li>
+            </ul>
+            <p className="mt-2 text-sm text-ink-soft leading-relaxed">לאישור, יש להזין את כתובת האימייל שלך:</p>
             <label className="block mt-4">
               <span className="text-xs font-bold text-ink-soft flex items-center gap-1 mb-1">
                 <Mail className="w-3 h-3" />

@@ -4,8 +4,8 @@ import { requireApiSession } from '@/lib/api/route-guards';
 import { consumeMultiRateLimits, rateLimitResponse } from '@/lib/api/rate-limit';
 import { readJsonBody } from '@/lib/api/json-request';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { deleteUserAccountCompletely } from '@/lib/privacy/delete-user-account';
 import { assertNotDemoAccessSession } from '@/lib/demo-access/server';
+import { deleteWithParent } from '@/lib/central/parent-leave';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -59,12 +59,10 @@ export async function POST(request: Request) {
     );
   }
 
-  const result = await deleteUserAccountCompletely(admin, auth.user.id);
-  if (!result.ok) {
-    return NextResponse.json({ error: result.error }, { status: 500 });
-  }
-
-  return NextResponse.json({ ok: true, vectorsRemoved: result.vectorsRemoved });
+  // Parent first (fail closed), then NuraWell's own data. See lib/central/parent-leave.ts.
+  const r = await deleteWithParent(admin, auth.user.id, email);
+  if (!r.ok) return NextResponse.json({ error: r.error }, { status: r.status });
+  return NextResponse.json({ ok: true, vectorsRemoved: r.vectorsRemoved, parent: r.parent, parentDeletionAt: r.scheduledFor });
 }
 
 // Cap function time so a hung upstream call cannot burn active CPU for the 300s default.
