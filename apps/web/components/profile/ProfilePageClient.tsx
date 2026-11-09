@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { ParentAccountNotice } from '@/components/legal/ParentAccountNotice';
+import { ParentAccountNotice } from '@/lib/module-api/legal/components-legal-ParentAccountNotice';
 import { motion } from 'framer-motion';
 import {
   User, Award, BookOpen, Flame, LogOut, ChevronLeft, Shield, Settings, Save, X, Bell,

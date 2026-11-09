@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { ParentAccountNotice } from '@/components/legal/ParentAccountNotice';
+import { ParentAccountNotice } from '@/lib/module-api/legal/components-legal-ParentAccountNotice';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Download, Trash2, Shield, Loader2, Mail, Lock, CheckCircle2, XCircle } from 'lucide-react';
