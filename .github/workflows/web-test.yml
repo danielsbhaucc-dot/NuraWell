@@ -1,39 +1,79 @@
 name: Web tests
 
 on:
-  push:
-    branches: [main, master]
   pull_request:
+  workflow_dispatch: {}
 
 permissions:
   contents: read
 
+concurrency:
+  group: web-test-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 12
     defaults:
       run:
         working-directory: apps/web
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with: { fetch-depth: 0 }
+      - name: path gate
+        id: gate
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          BASE="${{ github.event.pull_request.base.sha }}"
+          HEAD="${{ github.event.pull_request.head.sha }}"
+          CHANGED=$(git diff --name-only "$BASE...$HEAD" || true)
+          echo "$CHANGED"
+          # Skip pure docs/markdown; still run when apps/web, modules, scripts, lockfile, or this workflow change
+          if echo "$CHANGED" | grep -qE '^(apps/web/|modules/|scripts/modules/|package-lock\.json$|package\.json$|\.github/workflows/web-test\.yml$)|\.(ts|tsx|js|mjs|css)$'; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          elif echo "$CHANGED" | grep -qvE '(\.md$|^docs/|^LICENSE$)'; then
+            # other non-doc files (e.g. supabase) — still unit-test when lock/ts present else skip
+            if echo "$CHANGED" | grep -qE '^(apps/|package|supabase/)'; then
+              echo "run=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "run=false" >> "$GITHUB_OUTPUT"
+            fi
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+        working-directory: ${{ github.workspace }}
+      - name: skip (docs-only)
+        if: steps.gate.outputs.run != 'true'
+        run: echo "Skip Web tests — docs-only; required check 'test' reports success."
+        working-directory: ${{ github.workspace }}
+      - if: steps.gate.outputs.run == 'true'
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '24'
           cache: npm
           cache-dependency-path: package-lock.json
-      - name: Install dependencies
+      - if: steps.gate.outputs.run == 'true'
+        name: Install dependencies
         run: npm install
         working-directory: ${{ github.workspace }}
-      - name: npm audit (catch vulnerable dependencies)
+      - if: steps.gate.outputs.run == 'true'
+        name: npm audit (catch vulnerable dependencies)
         run: npm audit --audit-level=high
         working-directory: ${{ github.workspace }}
         continue-on-error: true
-      - name: Design guard (no white / raw colors / raw buttons)
+      - if: steps.gate.outputs.run == 'true'
+        name: Design guard (no white / raw colors / raw buttons)
         run: npm run lint:design
         working-directory: ${{ github.workspace }}/apps/web
-      - name: Module system check (metadata, docs index, coupling rules)
+      - if: steps.gate.outputs.run == 'true'
+        name: Module system check (metadata, docs index, coupling rules)
         run: node scripts/modules/check.mjs && node scripts/modules/index.mjs --check && node scripts/modules/areas.mjs && git fetch --depth=1 origin main && node scripts/modules/boundaries.mjs && node scripts/modules/imports.mjs && node scripts/modules/inventory.mjs && node scripts/modules/convention.mjs && node scripts/modules/identity.mjs
         working-directory: ${{ github.workspace }}
-      - name: Run unit tests
+      - if: steps.gate.outputs.run == 'true'
+        name: Run unit tests
         run: npm run test
         working-directory: ${{ github.workspace }}/apps/web

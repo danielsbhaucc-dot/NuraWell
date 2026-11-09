@@ -1,18 +1,17 @@
-# CodeQL Security Analysis
-# Automatically detects security vulnerabilities in the codebase.
-# Scans JavaScript/TypeScript and GitHub Actions.
-#
-# https://docs.github.com/en/code-security/codeql
-
+# CodeQL — daily schedule + path-filtered PRs. No push-to-main duplicate.
+# Required check name must stay: Analyze (javascript-typescript)
 name: "CodeQL"
 
 on:
-  push:
-    branches: [main, master]
   pull_request:
     branches: [main, master]
   schedule:
-    - cron: '0 6 * * 1'  # Every Monday at 06:00 UTC
+    - cron: '0 6 * * *' # daily (was weekly Monday)
+  workflow_dispatch: {}
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   analyze:
@@ -25,7 +24,6 @@ jobs:
       security-events: write
       actions: read
       contents: read
-
     strategy:
       fail-fast: false
       matrix:
@@ -34,21 +32,52 @@ jobs:
             build-mode: none
           - language: actions
             build-mode: none
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with: { fetch-depth: 0 }
+
+      - name: path gate
+        id: gate
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          BASE="${{ github.event.pull_request.base.sha }}"
+          HEAD="${{ github.event.pull_request.head.sha }}"
+          CHANGED=$(git diff --name-only "$BASE...$HEAD" || true)
+          echo "$CHANGED"
+          lang="${{ matrix.language }}"
+          if [ "$lang" = "actions" ]; then
+            if echo "$CHANGED" | grep -qE '^\.github/workflows/'; then
+              echo "run=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "run=false" >> "$GITHUB_OUTPUT"
+            fi
+            exit 0
+          fi
+          # javascript-typescript (required check): run on JS/TS/lock/workflow/codeql config
+          if echo "$CHANGED" | grep -qE '\.(js|jsx|ts|tsx|mjs|cjs)$|^package\.json$|^package-lock\.json$|^\.github/(workflows|codeql)/|^apps/web/'; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: skip (no relevant paths)
+        if: steps.gate.outputs.run != 'true'
+        run: echo "Skip CodeQL ${{ matrix.language }} — no matching paths; check reports success."
 
       - name: Initialize CodeQL
+        if: steps.gate.outputs.run == 'true'
         uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4
         with:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
-          # Security queries covering XSS, SQL injection,
-          # path traversal, command injection, and more
           queries: security-extended,security-and-quality
 
       - name: Perform CodeQL Analysis
+        if: steps.gate.outputs.run == 'true'
         uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4
         with:
           category: "/language:${{matrix.language}}"

@@ -2,24 +2,53 @@ name: Build
 
 on:
   pull_request:
-  push:
-    branches: [main]
+  schedule:
+    - cron: '40 3 * * *'
+  workflow_dispatch: {}
 
 permissions:
   contents: read
 
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with: { fetch-depth: 0 }
+      - name: path gate
+        id: gate
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          BASE="${{ github.event.pull_request.base.sha }}"
+          HEAD="${{ github.event.pull_request.head.sha }}"
+          CHANGED=$(git diff --name-only "$BASE...$HEAD" || true)
+          echo "$CHANGED"
+          if echo "$CHANGED" | grep -qE '^(apps/web/|package-lock\.json$|package\.json$|vercel\.json$|apps/web/vercel\.json$|\.github/workflows/build\.yml$)'; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: skip (no build paths)
+        if: steps.gate.outputs.run != 'true'
+        run: echo "Skip next build — no apps/web paths; required check 'build' reports success."
+      - if: steps.gate.outputs.run == 'true'
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '24'
           cache: npm
           cache-dependency-path: package-lock.json
-      - run: npm install
-      - name: next build (apps/web)
+      - if: steps.gate.outputs.run == 'true'
+        run: npm install
+      - if: steps.gate.outputs.run == 'true'
+        name: next build (apps/web)
         working-directory: apps/web
         env:
           NEXT_TELEMETRY_DISABLED: '1'

@@ -10,6 +10,10 @@ permissions:
   contents: read
   pull-requests: read
 
+concurrency:
+  group: design-parity-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   parity:
     runs-on: ubuntu-latest
