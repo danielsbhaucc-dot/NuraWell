@@ -6,6 +6,9 @@ import pkg from '../../package.json';
  * Phase 2a — NuraWell ↔ parent platform link in SHADOW mode (platform-core product-link).
  * Triggered by central every 15 min (POST /api/v1/central/link-tick, per-product bearer). Never runs on a user request,
  * never touches Almog, sign-in or onboarding code paths, and can never block or change anyone's access.
+ * Heartbeat is sent every tick. Daily usage + shadow decisions are idempotent at the parent, so the heavy
+ * collect/listUsers/license-status work runs only in the first 15 minutes of each UTC hour (one heavy tick
+ * per hour at a 15-min cadence, with an hourly retry if that tick failed). Override with LINK_TICK_HEAVY=1/0.
  * Sends ONLY: version + health, yesterday's daily counts (no ids, names, emails or text), and one shadow license
  * decision per existing user (by license id only) so central can show what enforcement WOULD do.
  * Missing env ⇒ 'skipped'. Never throws.
@@ -20,7 +23,7 @@ type Env = Record<string, string | undefined>;
 type AiRow = { feature: string | null; prompt_tokens: number | null; completion_tokens: number | null; cost_usd: number | string | null };
 type CountResult = PromiseLike<{ count: number | null; error: unknown }>;
 export interface DailyCounts { day: string; metrics: Record<string, number> }
-export interface TickResult { status: 'sent' | 'skipped'; heartbeat: number; usage: number; decisions: number[]; health: Health; version: string }
+export interface TickResult { status: 'sent' | 'skipped'; heartbeat: number; usage: number; decisions: number[]; health: Health; version: string; heavy: boolean }
 
 /** Almog = the chat features (reply, router, titles, summaries, QC). Read-only accounting from ai_usage_events. */
 // skipcq: JS-0067 -- ES module export, not a global
@@ -35,6 +38,16 @@ export function linkVersion(env: Env = process.env): string {
   const version = /^[0-9a-f]{7}$/.test(shortSha) ? `${pkg.version}+${shortSha}` : pkg.version;
   return VERSION.test(version) ? version : '0.0.0';
 }
+
+/** Daily usage + shadow work is idempotent at the parent; repeating it every 15 min burns Fluid Active CPU. */
+// skipcq: JS-0067 -- ES module export, not a global
+export function shouldRunHeavyLinkTick(nowMs: number, env: Env = process.env): boolean {
+  const flag = (env.LINK_TICK_HEAVY ?? '').trim().toLowerCase();
+  if (flag === '1' || flag === 'always' || flag === 'true') return true;
+  if (flag === '0' || flag === 'never' || flag === 'false') return false;
+  return new Date(nowMs).getUTCMinutes() < 15;
+}
+
 
 /** Stable event id per (day, metric): a re-send of the same day is ignored by central (idempotent). */
 // skipcq: JS-0067 -- ES module export, not a global
@@ -182,7 +195,7 @@ const sendUsage = async (
   return checkUsage({ events }, nowMs).ok ? post('/v1/usage', { events }) : 422;
 };
 
-const SKIPPED_BASE = { status: 'skipped', heartbeat: 0, usage: 0, decisions: [], health: 'ok' } as const;
+const SKIPPED_BASE = { status: 'skipped', heartbeat: 0, usage: 0, decisions: [], health: 'ok', heavy: false } as const;
 
 const tickHealth = (daily: unknown, users: unknown): Health => ([daily, users].includes(null) ? 'degraded' : 'ok');
 
@@ -195,6 +208,11 @@ export async function runLinkTick(env: Env, fetchImpl: typeof fetch, nowMs: numb
   const conf = readLinkConf(env);
   if (!conf) return { ...SKIPPED_BASE, decisions: [], version };
   const post = makePoster(conf, fetchImpl, nowMs);
+  const heavy = shouldRunHeavyLinkTick(nowMs, env);
+  if (!heavy) {
+    const heartbeat = await sendHeartbeat({ instance: 'web', version, health: 'ok' }, post);
+    return { status: 'sent', heartbeat, usage: 0, decisions: [], health: 'ok', version, heavy: false };
+  }
   const daily = await collectDaily(nowMs);
   const lics = await activeUserLics();
   const health = tickHealth(daily, lics);
@@ -202,5 +220,5 @@ export async function runLinkTick(env: Env, fetchImpl: typeof fetch, nowMs: numb
   const shadow = await shadowDecision({ ...conf, version }, fetchImpl, nowMs, lics);
   const usage = await sendUsage(daily, shadow.wouldBlock, post, nowMs);
   const decisions = shadow.decisions;
-  return { status: 'sent', heartbeat, usage, decisions, health, version };
+  return { status: 'sent', heartbeat, usage, decisions, health, version, heavy: true };
 }
