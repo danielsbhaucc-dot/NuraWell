@@ -24,7 +24,7 @@ vi.mock('@/lib/supabase/admin', () => ({
   }),
 }));
 
-import { runLinkTick, eventId, linkVersion, isAlmogFeature, collectDaily } from '@/lib/central/product-link-tick';
+import { runLinkTick, eventId, linkVersion, isAlmogFeature, collectDaily, shouldRunHeavyLinkTick } from '@/lib/central/product-link-tick';
 
 const testEnv = {
   CENTRAL_SUPABASE_URL: 'https://central.example.supabase.co',
@@ -87,7 +87,7 @@ describe('NuraWell ↔ platform link tick (shadow)', () => {
   it('sends signed heartbeat, usage and a shadow decision that never blocks', async () => {
     const { fetchImpl, calls } = fakeFetch();
     const result = await runLinkTick(testEnv, fetchImpl, NOW);
-    expect(result).toMatchObject({ status: 'sent', heartbeat: 202, usage: 202, decisions: [202], health: 'ok', version: '1.0.0+67d17d2' });
+    expect(result).toMatchObject({ status: 'sent', heartbeat: 202, usage: 202, decisions: [202], health: 'ok', version: '1.0.0+67d17d2', heavy: true });
     for (const call of calls) {
       const headers = new Headers(call.headers);
       expect(headers.get('x-pl-key')).toBe(testEnv.PRODUCT_LINK_KEY_ID);
@@ -120,6 +120,21 @@ describe('NuraWell ↔ platform link tick (shadow)', () => {
   it('network down never throws', async () => {
     const failing = (() => Promise.reject(new Error('down'))) as unknown as typeof fetch;
     expect(await runLinkTick(testEnv, failing, NOW)).toMatchObject({ status: 'sent', heartbeat: 0 });
+  });
+
+  it('light tick (:20 UTC) sends only a signed heartbeat — no usage, decisions, or DB-backed daily work', async () => {
+    const { fetchImpl, calls } = fakeFetch();
+    const lightAt = Date.parse('2026-11-03T08:20:00Z');
+    expect(shouldRunHeavyLinkTick(lightAt, testEnv)).toBe(false);
+    expect(shouldRunHeavyLinkTick(NOW, testEnv)).toBe(true);
+    expect(shouldRunHeavyLinkTick(lightAt, { ...testEnv, LINK_TICK_HEAVY: '1' })).toBe(true);
+    expect(shouldRunHeavyLinkTick(NOW, { ...testEnv, LINK_TICK_HEAVY: '0' })).toBe(false);
+    const result = await runLinkTick(testEnv, fetchImpl, lightAt);
+    expect(result).toMatchObject({ status: 'sent', heartbeat: 202, usage: 0, decisions: [], health: 'ok', heavy: false });
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.path).toBe('/v1/heartbeat');
+    expect(checkHeartbeat(calls[0]?.body).ok).toBe(true);
+    expect(findPii(calls[0]?.body)).toBeNull();
   });
 
   it('route: POST only, timing-safe bearer, tiny body, no Almog/auth imports', () => {

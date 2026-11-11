@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { timingSafeEqualStr } from '@/lib/api/timing-safe-equal';
-import { runLinkTick } from '@/lib/central/product-link-tick';
+import { runLinkTick, shouldRunHeavyLinkTick } from '@/lib/central/product-link-tick';
 import { pushClaims } from '@/lib/central/push-claims';
 
 export const runtime = 'nodejs';
@@ -31,7 +31,11 @@ const bodyIsEmpty = async (request: Request): Promise<boolean> => {
 export async function POST(request: Request) {
   if (!authorized(request)) return NextResponse.json({ ok: false }, { status: 401 });
   if (!(await bodyIsEmpty(request))) return NextResponse.json({ ok: false }, { status: 400 });
-  const result = await runLinkTick(process.env, fetch, Date.now());
-  const claims = await pushClaims();
+  const nowMs = Date.now();
+  const result = await runLinkTick(process.env, fetch, nowMs);
+  const claims = result.heavy || shouldRunHeavyLinkTick(nowMs, process.env)
+    ? await pushClaims()
+    : { sent: 0, applied: 0 };
+  console.log('[link-tick]', JSON.stringify({ heavy: result.heavy, heartbeat: result.heartbeat, usage: result.usage, decisions: result.decisions, claims })); // skipcq: JS-0002 -- server-only counts, no values
   return NextResponse.json({ ok: result.status === 'sent', ...result, claims }, { headers: { 'cache-control': 'no-store' } });
 }
