@@ -71,10 +71,12 @@ export function parseInvoiceRef(vendor: string, subject: string, text: string): 
   return null;
 }
 
-/** VAT line if the receipt states one (מע"מ / VAT / Tax). */
+/** VAT line if the receipt states one (מע"מ / VAT / Tax), including an explicit 0.
+ *  `\b` after Hebrew מע"מ is a no-op in JS (word boundaries are ASCII-only) and
+ *  would miss Google Play's "(כולל מע"מ בסך 0.00 ₪)". Keep `\b` after VAT/Tax. */
 export function parseVat(input: string): number | null {
   const t = normalizeReceiptText(input);
-  const m = /(?:מע"מ|VAT|Tax)\b[^\n\d]{0,30}?(?:₪|\$|€|£|USD|ILS|EUR)?\s?(\d{1,5}(?:[.,]\d{2})?)/i.exec(t);
+  const m = /(?:מע["״']?מ|VAT\b|Tax\b)[^\n\d]{0,40}?(?:₪|\$|€|£|USD|ILS|EUR|ש"ח)?\s?(\d{1,5}(?:[.,]\d{2})?)/i.exec(t);
   if (!m) return null;
   const n = Number(m[1]!.replace(',', '.'));
   return Number.isFinite(n) ? n : null;
@@ -126,8 +128,9 @@ export function receiptTextFromFile(name: string, bytes: Uint8Array): string | n
 
 export function parsePlan(vendor: VendorId, text: string): string | null {
   const t = text.slice(0, 20000);
-  const pats: RegExp[] = [/super\s*grok(?:\s*heavy)?/i, /x\s*premium\+?/i, /premium\+/i, /(?:suno\s*)?(?:pro|premier)\s*plan/i, /\b(?:pro|premier)\b(?= (?:plan|subscription|monthly|annual))/i,
-    /google\s*ai\s*(?:pro|ultra|premium)/i, /google\s*one\s*ai\s*premium/i, /chatgpt\s*(?:plus|pro|team)/i, /\b(?:creator|starter|independent publisher)\b(?= plan)/i];
+  const pats: RegExp[] = [/super\s*grok(?:\s*heavy)?/i, /x\s*premium\+?/i, /premium\+/i, /(?:suno\s*)?(?:pro|premier)\s*plan/i,
+    /google\s*ai\s*(?:pro|ultra|premium|plus)(?:\s*\(\s*\d+\s*TB\s*\))?/i, /google\s*one\s*ai\s*(?:premium|plus)/i, /chatgpt\s*(?:plus|pro|team)/i,
+    /\b(?:pro|premier)\b(?= (?:plan|subscription|monthly|annual))/i, /\b(?:creator|starter|independent publisher)\b(?= plan)/i];
   for (const re of pats) { const m = re.exec(t); if (m) return m[0].replace(/\s+/g, ' ').trim(); }
   return vendor === 'unknown' ? null : null;
 }
