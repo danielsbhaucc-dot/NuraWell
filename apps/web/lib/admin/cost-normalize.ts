@@ -55,6 +55,7 @@ export async function normalizeReceiptCost(admin: SupabaseClient, r: NormInput) 
   const rate = r.amount == null ? null : await fxRate(admin, cur, day);
   const amountIls = r.amount != null && rate != null ? Math.round(r.amount * rate * 100) / 100 : null;
   let vatIls: number | null = null;
+  // Stated VAT wins, including an explicit 0; only estimate 18/118 when the receipt is silent.
   if (r.vat != null && rate != null) vatIls = Math.round(r.vat * rate * 100) / 100;
   else if (cur === 'ILS' && amountIls) vatIls = vatIncluded(amountIls); // Israeli consumer charges include VAT
   const patch: Record<string, unknown> = {
