@@ -4,7 +4,8 @@
  *   pending  registered column of a FIELD_V2 table still backfilling    -> warning; FAILS once the table is activated
  *            in field_enc_enforcement (the monitor promotes it to enforce at run time)
  *   append   registered column of an append-only evidence table (old rows stay as written) -> counts only rows
- *            created after the table's activation; FAILS on any once active, warning before
+ *            created after the table's activation (5th field ts:<col>, the table's row-time column); FAILS on any
+ *            once active, warning before
  *   sweep    registered column of a SWEEP_TABLES table (SQL trigger writes plaintext, cron seals it) -> FAILS on any
  *            plaintext row older than maxPlainMinutes (5th field)
  *   owner:<col>  optional 5th field on enforce/pending lines of ownerOptional tables: only rows WITH an owner count
@@ -15,7 +16,7 @@
  * Plus every classified column (`class` lines) so the monitor can fail on prod columns nobody classified.
  */
 import { COLUMN_CLASSIFICATION } from './column-classification';
-import { APPEND_ONLY_TABLES, CHAINED_TABLES, ENCRYPTED_TABLES, FIELD_V2_BACKFILL_COMPLETE, SWEEP_TABLES, isBlocked } from './field-registry';
+import { APPEND_ONLY_TABLES, APPEND_TS_COL, CHAINED_TABLES, ENCRYPTED_TABLES, FIELD_V2_BACKFILL_COMPLETE, SWEEP_TABLES, isBlocked } from './field-registry';
 
 export function plaintextGuardLines(): string[] {
   const out: string[] = [];
@@ -24,9 +25,10 @@ export function plaintextGuardLines(): string[] {
       if (isBlocked(t, c)) continue;
       else if (t in CHAINED_TABLES) out.push(`pending ${t} ${c} ${k} refs:${CHAINED_TABLES[t].rowOk}`);
       else if (t in SWEEP_TABLES) out.push(`sweep ${t} ${c} ${k} ${SWEEP_TABLES[t].maxPlainMinutes} ${SWEEP_TABLES[t].tsCol}`);
+      else if (t in APPEND_ONLY_TABLES) out.push(`append ${t} ${c} ${k} ts:${APPEND_TS_COL[t] ?? 'created_at'}`);
       else
-        out.push(`${t in APPEND_ONLY_TABLES ? 'append' : FIELD_V2_BACKFILL_COMPLETE.includes(t) ? 'enforce' : 'pending'} ${t} ${c} ${k}${
-          (v as { ownerOptional?: boolean }).ownerOptional && !(t in APPEND_ONLY_TABLES) ? ` owner:${v.userCol}` : ''}`);
+        out.push(`${FIELD_V2_BACKFILL_COMPLETE.includes(t) ? 'enforce' : 'pending'} ${t} ${c} ${k}${
+          (v as { ownerOptional?: boolean }).ownerOptional ? ` owner:${v.userCol}` : ''}`);
   const reg = ENCRYPTED_TABLES as Record<string, { columns: Record<string, string> }>;
   for (const [t, cs] of Object.entries(COLUMN_CLASSIFICATION))
     for (const [c, [cls]] of Object.entries(cs)) if (cls === 'sensitive' && !reg[t]?.columns[c]) out.push(`gap ${t} ${c} any`);
