@@ -410,6 +410,15 @@ export const APPEND_ONLY_TABLES: Readonly<Record<string, string>> = {
 };
 
 /**
+ * Row-time column of APPEND_ONLY_TABLES whose insert timestamp is not `created_at`. The nightly plaintext monitor
+ * counts only rows written after the table's activation, so it must filter on the column that table really has
+ * (2026-11-13..15 the backup job failed on pii_access_log, which records `at`).
+ */
+export const APPEND_TS_COL: Readonly<Record<string, string>> = {
+  pii_access_log: 'at',
+};
+
+/**
  * Hash-chained append-only tables with a hand-written plaintext rule (migration 000222). Rows written by SQL
  * triggers hold references only and stay as written; app rows are sealed. `rowOk` is the SQL predicate (one row)
  * used by the table's own zz_enc_reject_plaintext trigger and by the nightly monitor. Historical plaintext rows were

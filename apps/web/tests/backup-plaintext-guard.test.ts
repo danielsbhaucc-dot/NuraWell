@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { plaintextGuardLines } from '@/lib/security/plaintext-guard-list';
@@ -19,6 +19,18 @@ describe('backup plaintext guard column list', () => {
       const spec = (ENCRYPTED_TABLES as Record<string, { userCol: string; ownerOptional?: boolean }>)[t];
       if (extra?.startsWith('refs:')) continue; // CHAINED_TABLES (checked in enc-reject-triggers.test.ts)
       expect(extra).toBe(spec.ownerOptional ? `owner:${spec.userCol}` : undefined);
+    }
+  });
+  it('append lines filter on a row-time column the table really has (backup job failed 2026-11-13..15 on pii_access_log.at)', () => {
+    const dir = join(__dirname, '../../../supabase/migrations');
+    const sql = readdirSync(dir).filter((f) => f.endsWith('.sql')).map((f) => readFileSync(join(dir, f), 'utf8')).join('\n');
+    for (const l of plaintextGuardLines().filter((x) => x.startsWith('append '))) {
+      const [, t, , , ts] = l.split(' ');
+      expect(ts, l).toMatch(/^ts:[a-z0-9_]+$/);
+      const col = ts.slice(3);
+      const create = new RegExp(`create table (if not exists )?public\\.${t}\\s*\\(([\\s\\S]*?)\\n\\);`, 'i').exec(sql)?.[2] ?? '';
+      const added = new RegExp(`alter table (if exists )?public\\.${t}[^;]*add column (if not exists )?${col}\\b`, 'i').test(sql);
+      expect(new RegExp(`(^|\\n)\\s*${col}\\s+timestamptz`, 'i').test(create) || added, `${t}.${col}`).toBe(true);
     }
   });
 });

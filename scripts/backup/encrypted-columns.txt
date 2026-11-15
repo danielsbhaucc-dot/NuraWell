@@ -210,13 +210,13 @@ enforce legal_export_secrets case_ref text
 enforce legal_export_secrets file_name text
 enforce legal_export_secrets label text
 enforce legal_export_secrets subject text
-append consent_evidence payload_json text
-append consent_evidence rendered_html text
-append consent_evidence screenshot_segments json
-append consent_evidence typed_word text
-append consent_evidence user_agent text
-append consent_evidence_attestations payload json
-append legal_access_log detail json
+append consent_evidence payload_json text ts:created_at
+append consent_evidence rendered_html text ts:created_at
+append consent_evidence screenshot_segments json ts:created_at
+append consent_evidence typed_word text ts:created_at
+append consent_evidence user_agent text ts:created_at
+append consent_evidence_attestations payload json ts:created_at
+append legal_access_log detail json ts:created_at
 enforce media_receipts attachments json
 enforce media_receipts confirmation_code text
 enforce media_receipts confirmation_link text
@@ -228,8 +228,8 @@ pending iam_audit_log target text refs:iam_audit_row_ok
 pending pii_access_grants reason text
 pending pii_access_grants ticket_ref text
 pending pii_access_grants country text
-append pii_access_log country text
-append pii_access_log resource text
+append pii_access_log country text ts:at
+append pii_access_log resource text ts:at
 pending access_audit_findings summary text
 pending access_audit_findings signals text[]
 pending access_audit_runs error text

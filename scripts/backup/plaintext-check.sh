@@ -5,6 +5,7 @@
 #   enforce  backfill completed  -> any non-enc value FAILS (exit 1 -> Gideon/Telegram owner alert)
 #   pending  backfill running    -> reported (warning); promoted to enforce when field_enc_enforcement.active
 #   append   append-only evidence table: only rows created after activation count; enforce once active
+#            (5th field ts:<col> = the table's row-time column, default created_at)
 #   sweep    SQL-trigger-written table sealed by cron: plaintext rows older than N minutes FAIL (fields 5-6: minutes, ts col)
 #   owner:<col> (5th field, enforce/pending) only rows with a non-NULL owner count (shared catalog rows stay plain)
 #   refs:<fn> (5th field, pending/enforce) only rows where public.<fn>(row) is false count (hash-chained tables whose
@@ -22,7 +23,7 @@ while read -r at ae; do [ -n "${at:-}" ] && act[$at]="$ae"; done <<<"$active"
 q=""
 while read -r mode t c k mins tscol; do
   case "$mode" in enforce|pending|gap|append|sweep) ;; *) continue ;; esac
-  extra=""
+  extra=""; tc=""
   if [ "$mode" = sweep ]; then
     case "$mins" in ""|*[!0-9]*) echo "plaintext-guard: bad sweep line for $t.$c"; exit 2 ;; esac
     mode=enforce; extra=" and \"${tscol:-created_at}\" < now() - interval '$mins minutes'"
@@ -31,12 +32,14 @@ while read -r mode t c k mins tscol; do
     owner:*) oc="${mins#owner:}"
       case "$oc" in ""|*[!a-z0-9_]*) echo "plaintext-guard: bad owner field for $t.$c"; exit 2 ;; esac
       extra=" and \"$oc\" is not null" ;;
+    ts:*) tc="${mins#ts:}"
+      case "$tc" in ""|*[!a-z0-9_]*) echo "plaintext-guard: bad ts field for $t.$c"; exit 2 ;; esac ;;
     refs:*) rf="${mins#refs:}"
       case "$rf" in ""|*[!a-z0-9_]*) echo "plaintext-guard: bad refs field for $t.$c"; exit 2 ;; esac
       extra=" and not public.\"$rf\"(\"$t\")" ;;
   esac
   if [ "$mode" = append ]; then
-    if [ -n "${act[$t]:-}" ]; then mode=enforce; extra=" and created_at >= to_timestamp(${act[$t]})"; else mode=pending; fi
+    if [ -n "${act[$t]:-}" ]; then mode=enforce; extra=" and \"${tc:-created_at}\" >= to_timestamp(${act[$t]})"; else mode=pending; fi
   elif [ "$mode" = pending ] && [ -n "${act[$t]:-}" ]; then mode=enforce; fi
   case "$k" in
     text) cond="\"$c\"::text not like 'enc:%' and \"$c\"::text <> ''" ;;
