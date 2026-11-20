@@ -51,7 +51,7 @@ export function VerificationCodeInput({ value, onChange, disabled }: Verificatio
 
   return (
     <div
-      className="flex flex-row justify-center gap-1.5 sm:gap-2"
+      className="flex flex-row justify-center gap-[clamp(2px,1.2vw,0.5rem)] w-full max-w-full min-w-0 box-border px-1"
       dir="ltr"
       role="group"
       aria-label={`קוד אימות בן ${VERIFICATION_CODE_LENGTH} ספרות`}
@@ -82,7 +82,7 @@ export function VerificationCodeInput({ value, onChange, disabled }: Verificatio
           onChange={(e) => handleChange(i, e.target.value)}
           onKeyDown={(e) => handleKeyDown(i, e)}
           className={[
-            'w-9 h-12 sm:w-10 sm:h-[2.85rem] rounded-xl text-center text-lg font-black',
+            'h-12 min-w-0 w-[clamp(1.6rem,9.5vw,2.25rem)] grow shrink rounded-xl text-center text-base sm:text-lg font-black',
             'onboarding-input-dark border-2 border-primary-500/35',
             'focus:border-primary-400 focus:ring-2 focus:ring-primary-400/30 outline-hidden transition-all',
             disabled ? 'opacity-50' : '',

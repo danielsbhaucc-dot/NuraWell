@@ -9,7 +9,7 @@ import {
   DEFAULT_SETTINGS, LEVELS, ROOT_ID, SETTING_FEATURE, activeCount, applyMediaMute, applyOpaque, buildEffectsCss,
   isAltShortcut, panelZoomFor, sanitizeSettings, type A11ySettings,
 } from './effects.ts';
-import { DEFAULT_AVOID, collectObstacles, fabReserve, liftToClear } from './safe-area.ts';
+import { DEFAULT_AVOID, collectObstacles, collectFlowOverlaps, fabReserve, liftToClear } from './safe-area.ts';
 import { swipeToDismiss } from './swipe.ts';
 
 export interface MountOptions {
@@ -58,6 +58,7 @@ function panelCss(t: Readonly<A11yTheme>): string {
 ${R}{all:initial;position:static;direction:${t.dir};font-family:var(--a11y-font-body);color:var(--a11y-fg);}
 ${R} *, ${R} *::before, ${R} *::after{box-sizing:border-box;font-family:inherit;letter-spacing:normal;word-spacing:normal;line-height:1.45;text-align:start;}
 ${R} .ca11y-sr{position:absolute !important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;}
+html[data-a11y-fab-hide] ${R}{visibility:hidden !important;pointer-events:none !important;}
 ${R} .ca11y-fab{position:fixed;z-index:2147483600;${side}:calc(var(--a11y-fab-gap) + env(safe-area-inset-${t.panel.side === 'start' ? (t.dir === 'rtl' ? 'right' : 'left') : (t.dir === 'rtl' ? 'left' : 'right')}, 0px));
   bottom:calc(var(--a11y-fab-gap) + env(safe-area-inset-bottom, 0px) + var(--ca11y-lift, 0px) + var(--a11y-fab-offset-bottom, 0px));
   width:var(--a11y-fab-size);height:var(--a11y-fab-size);border-radius:50%;border:2px solid color-mix(in srgb, var(--a11y-on-primary) 35%, transparent);
@@ -268,7 +269,10 @@ export function mountA11yWidget(o: MountOptions): A11yWidgetHandle {
     const r = fab.getBoundingClientRect();
     if (r.width < 1) return;
     const base = { left: r.left, right: r.right, top: r.top + lift, bottom: r.bottom + lift };
-    const next = liftToClear(base, collectObstacles(doc, o.avoid ?? DEFAULT_AVOID, ROOT_ID), t.fab.gap, Math.round(win.innerHeight * 0.5));
+    const next = liftToClear(base, [
+      ...collectObstacles(doc, o.avoid ?? DEFAULT_AVOID, ROOT_ID),
+      ...collectFlowOverlaps(doc, base, t.fab.gap, ROOT_ID),
+    ], t.fab.gap, Math.round(win.innerHeight * 0.5));
     if (next !== lift) { lift = next; root.style.setProperty('--ca11y-lift', `${lift}px`); html.style.setProperty('--a11y-fab-lift', `${lift}px`); }
   };
   const schedule = () => { win.clearTimeout(relayoutT); relayoutT = win.setTimeout(relayout, 120); };

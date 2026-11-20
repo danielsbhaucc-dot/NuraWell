@@ -4,7 +4,7 @@ import axe from 'axe-core';
 import { readFileSync, readdirSync } from 'node:fs';
 import {
   mountA11yWidget, NURAWELL_THEME, NEHORA_THEME, CONTRAST_RULES, HC_MIN, contrastRatio, validateTheme, buildEffectsCss,
-  DEFAULT_SETTINGS, sanitizeSettings, isAltShortcut, boxesOverlap, liftToClear, fabReserveCss, findFabOverlaps, collectObstacles, isViewportBottomBar,
+  DEFAULT_SETTINGS, sanitizeSettings, isAltShortcut, boxesOverlap, liftToClear, fabReserveCss, findFabOverlaps, collectObstacles, collectFlowOverlaps, isViewportBottomBar,
   dyslexiaFontFace, HIGH_CONTRAST_STATUS, panelZoomFor, defineA11yTheme, type A11yWidgetHandle,
 } from '@core/a11y-kit';
 
@@ -213,6 +213,42 @@ describe('safe area + overlap helper', () => {
       Element.prototype.getBoundingClientRect = origBR;
       if (origH) Object.defineProperty(window, 'innerHeight', origH);
       nav.remove();
+    }
+  });
+  it('collectFlowOverlaps includes a mid-size in-flow button under the FAB box, but skips a full-width banner', () => {
+    const chip = document.createElement('button');
+    chip.id = 'synth-shabbat-chip';
+    chip.type = 'button';
+    chip.setAttribute('style', 'opacity:1;visibility:visible;display:block');
+    chip.textContent = 'שבת';
+    document.body.appendChild(chip);
+    const banner = document.createElement('p');
+    banner.id = 'synth-full-banner';
+    banner.setAttribute('style', 'opacity:1;visibility:visible;display:block');
+    banner.textContent = 'קו';
+    document.body.appendChild(banner);
+    const origBR = Element.prototype.getBoundingClientRect;
+    Element.prototype.getBoundingClientRect = function getBoundingClientRect() {
+      const id = (this as Element).id;
+      if (id === 'synth-shabbat-chip') return { x: 250, y: 700, width: 80, height: 56, top: 700, bottom: 756, left: 250, right: 330, toJSON() { return this; } } as DOMRect;
+      if (id === 'synth-full-banner') return { x: 0, y: 680, width: 390, height: 40, top: 680, bottom: 720, left: 0, right: 390, toJSON() { return this; } } as DOMRect;
+      return origBR.call(this);
+    };
+    const origW = Object.getOwnPropertyDescriptor(window, 'innerWidth');
+    const origH = Object.getOwnPropertyDescriptor(window, 'innerHeight');
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 });
+    Object.defineProperty(window, 'innerHeight', { configurable: true, value: 800 });
+    try {
+      const fab = { left: 300, right: 356, top: 700, bottom: 756 };
+      const boxes = collectFlowOverlaps(document, fab, 16);
+      expect(boxes.some((b) => b.top === 700 && b.left === 250)).toBe(true);
+      expect(boxes.some((b) => b.left === 0 && b.right === 390)).toBe(false);
+    } finally {
+      Element.prototype.getBoundingClientRect = origBR;
+      if (origW) Object.defineProperty(window, 'innerWidth', origW);
+      if (origH) Object.defineProperty(window, 'innerHeight', origH);
+      chip.remove();
+      banner.remove();
     }
   });
 });
