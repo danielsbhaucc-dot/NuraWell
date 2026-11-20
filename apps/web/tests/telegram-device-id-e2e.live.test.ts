@@ -6,6 +6,7 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { randomBytes } from 'node:crypto';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { labMissing, labTitle, MAIN_LAB } from '@/tests/support/local-lab';
 import { createAdminClient, createRawAdminClient } from '@/lib/supabase/admin';
 import { __resetFieldCrypto, setDekStoreForTests } from '@/lib/security/field-crypto';
 import {
@@ -54,7 +55,9 @@ function cleanup() {
   psql(`delete from public.profiles where id = '${ADMIN}'; delete from auth.users where id = '${ADMIN}'`);
 }
 
-describe('telegram device-id e2e handler+DB+mock transport', () => {
+const LAB = labMissing(MAIN_LAB);
+
+describe.skipIf(!!LAB)(labTitle('telegram device-id e2e handler+DB+mock transport', LAB), () => {
   beforeEach(() => {
     loadEnv();
     __resetFieldCrypto();

@@ -2,6 +2,7 @@ import { execFileSync, spawn } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { labMissing, labTitle } from '@/tests/support/local-lab';
 
 /**
  * Two OS processes share only Postgres. The nonce row, not an email map, decides who may mint.
@@ -50,7 +51,9 @@ function begin(nonce: string, sub: string, sealed = SEALED, bidx = BIDX) {
   return psql(DB, `select public.parent_signup_begin('${nonce}', '${sub}', '${sealed}', '${bidx}')`);
 }
 
-describe('parent signup claim across processes', () => {
+const LAB = labMissing([{ kind: 'pg-superuser' }]);
+
+describe.skipIf(!!LAB)(labTitle('parent signup claim across processes', LAB), () => {
   it('lets one nonce mint once, refuses the other caller, and allows a failed retry', async () => {
     psql('postgres', `DROP DATABASE IF EXISTS ${DB}`);
     psql('postgres', `CREATE DATABASE ${DB}`);

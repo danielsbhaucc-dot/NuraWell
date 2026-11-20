@@ -36,6 +36,16 @@ beforeEach(() => {
 afterEach(() => { process.env.PII_ENCRYPTION_KEY = prev; });
 
 describe('pii_access_grants ticket_ref + country', () => {
+  it('a 2-letter country is never failed at random by the ciphertext-contains-plaintext guard (200 seals)', async () => {
+    for (let i = 0; i < 200; i += 1) {
+      const plan = await planGrantField('country', COUNTRY);
+      expect(plan.action).toBe('write');
+      if (plan.action === 'write') {
+        expect(plan.ciphertext.startsWith('enc:v2:')).toBe(true);
+        expect(await decryptValue('pii_access_grants', 'country', 'system:audit', SYSTEM_ROW, plan.ciphertext)).toBe(COUNTRY);
+      }
+    }
+  });
   it('seals both via field-fetch; wrong key rejects; legacy readable', async () => {
     const store: Row[] = [{ id: 'old', ticket_ref: TICKET, country: COUNTRY, reason: REASON }];
     const fn = withFieldDecryption((async (input: string, init?: RequestInit) => {

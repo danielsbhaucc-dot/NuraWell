@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { labMissing, labTitle, LAB_ENV_FILE, MAIN_LAB } from '@/tests/support/local-lab';
 import { __resetFieldCrypto, setDekStoreForTests } from '@/lib/security/field-crypto';
 import { useMemDekStore } from '@/tests/helpers/mem-dek';
 import { decryptInvoiceDocUrl, sealInvoiceDocUrl } from '@/lib/billing/invoice-doc-url';
@@ -21,7 +22,10 @@ function psql(sql: string): string {
   }).trim();
 }
 
-describe('billing_invoices.doc_url seal (no billing writer feature)', () => {
+const ENV_MISSING = labMissing([{ kind: 'file', path: LAB_ENV_FILE }]);
+const LAB = ENV_MISSING ?? labMissing(MAIN_LAB);
+
+describe.skipIf(!!ENV_MISSING)(labTitle('billing_invoices.doc_url seal (no billing writer feature)', ENV_MISSING), () => {
   beforeEach(() => {
     loadEnv();
     useMemDekStore();
@@ -51,7 +55,7 @@ describe('billing_invoices.doc_url seal (no billing writer feature)', () => {
     expect(await decryptInvoiceDocUrl(user, inv, 'enc:v1:nope')).toBeNull();
   });
 
-  it('backfill dry-run empty + synthetic legacy apply/idempotent (local PG)', async () => {
+  it.skipIf(!!LAB)(labTitle('backfill dry-run empty + synthetic legacy apply/idempotent (local PG)', LAB), async () => {
     __resetFieldCrypto();
     setDekStoreForTests(null); // real user_data_keys for admin fixture
     const uid = psql(`select id::text from public.profiles where role='admin' limit 1`);
@@ -80,7 +84,7 @@ describe('billing_invoices.doc_url seal (no billing writer feature)', () => {
     }
   }, 60_000);
 
-  it('enforcement ON rejects plaintext doc_url in rolled-back LOCAL txn; prod flag stays off', () => {
+  it.skipIf(!!LAB)(labTitle('enforcement ON rejects plaintext doc_url in rolled-back LOCAL txn; prod flag stays off', LAB), () => {
     const pre = psql(`select active::text from public.field_enc_enforcement where table_name='billing_invoices'`);
     expect(pre).toBe('false');
     const uid = psql(`select id::text from public.profiles limit 1`);

@@ -1,6 +1,9 @@
+import { randomBytes } from 'node:crypto';
 import { describe, expect, it, vi } from 'vitest';
 import { fakeDb } from './helpers/access-fake-db';
 vi.mock('server-only', () => ({}));
+// IP hashing needs a field key; a throwaway per-run test key (never a real one) unless the env already provides one.
+if (!process.env.PII_ENCRYPTION_KEY) process.env.PII_ENCRYPTION_KEY = randomBytes(32).toString('base64');
 import { createPiiGrant, requirePiiGrant } from '@/lib/platform/access/pii-access';
 import { runAccessAudit } from '@/lib/platform/access/audit-job';
 

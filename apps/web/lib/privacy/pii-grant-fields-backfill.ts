@@ -26,7 +26,10 @@ export async function planGrantField(column: Col, value: unknown): Promise<Grant
     if (!readableCountry(value) || [...value].length > COUNTRY_MAX_PLAIN) return { action: 'fail' };
   }
   const cipher = await encryptValue('pii_access_grants', column, OWNER, SYSTEM_ROW, value);
-  if (typeof cipher !== 'string' || !cipher.startsWith('enc:v2:') || cipher.includes(value)) return { action: 'fail' };
+  // Same rule as the online seal for these columns (lib/platform/access/grant-fields.ts): the "ciphertext contains the
+  // plaintext" guard only means something from 8 chars. A 2-letter country like 'IL' shows up inside random base64 in
+  // about 1 run of 40, which failed real rows at random. The round-trip decrypt below still proves the seal.
+  if (typeof cipher !== 'string' || !cipher.startsWith('enc:v2:') || (value.length >= 8 && cipher.includes(value))) return { action: 'fail' };
   let back: unknown;
   try {
     back = await decryptValue('pii_access_grants', column, OWNER, SYSTEM_ROW, cipher);

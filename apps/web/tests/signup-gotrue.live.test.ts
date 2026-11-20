@@ -1,6 +1,7 @@
 import { execFileSync, spawn, spawnSync } from 'node:child_process';
 import { createHmac, randomBytes } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
+import { labMissing, labTitle, GOTRUE_BIN } from '@/tests/support/local-lab';
 
 /**
  * GoTrue v2 from the local binary, on its own database. Counts sessions only.
@@ -25,7 +26,9 @@ function jwt(secret: Buffer, role: string): string {
   return `${head}.${body}.${sig}`;
 }
 
-describe('one GoTrue verify opens one session', () => {
+const LAB = labMissing([{ kind: 'pg-superuser' }, { kind: 'file', path: GOTRUE_BIN }]);
+
+describe.skipIf(!!LAB)(labTitle('one GoTrue verify opens one session', LAB), () => {
   it('does not open a session on create or generate_link', async () => {
     psql('postgres', `DROP DATABASE IF EXISTS ${DB}`);
     psql('postgres', `CREATE DATABASE ${DB}`);

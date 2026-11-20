@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { labMissing, labTitle, MAIN_LAB } from '@/tests/support/local-lab';
 import { createClient } from '@supabase/supabase-js';
 import { __resetFieldCrypto, decryptValue, setDekStoreForTests } from '@/lib/security/field-crypto';
 import { SYSTEM_ROW } from '@/lib/security/field-registry';
@@ -31,7 +32,9 @@ function counts() {
   return { passkeys: { total: at, sealed: as_, legacy: al, bidx: ab }, devices: { total: dt, sealed: ds, legacy: dl, bidx: dbx } };
 }
 
-describe('telegram device-id live SQL+handler', () => {
+const LAB = labMissing(MAIN_LAB);
+
+describe.skipIf(!!LAB)(labTitle('telegram device-id live SQL+handler', LAB), () => {
   beforeEach(() => {
     loadEnv();
     __resetFieldCrypto();
