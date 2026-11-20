@@ -66,6 +66,15 @@ export function isPlanId(v: unknown): v is PlanId {
   return typeof v === 'string' && PLANS.some((p) => p.id === v);
 }
 
+/** DB plan codes (billing_plans.code) that differ from the display id here. */
+const PLAN_CODE_ALIAS: Record<string, PlanId> = { phone: 'premium' };
+/** Display plan for a DB plan code, or null when the code names no plan. */
+export function planIdFromCode(code: string | null | undefined): PlanId | null {
+  if (!code) return null;
+  const id = PLAN_CODE_ALIAS[code] ?? code;
+  return isPlanId(id) ? id : null;
+}
+
 export type PlanPrice = {
   full: number;
   launch: number | null;

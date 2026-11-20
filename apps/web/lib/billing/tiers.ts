@@ -1,7 +1,11 @@
 /**
- * SaaS tiers — single source of truth for plans, prices and features.
- * Prices are PLACEHOLDERS (ILS, VAT incl.) until the product owner confirms them.
+ * Legacy entitlement tiers (the `subscriptions.tier` column): features only.
+ * Prices are NOT defined here. The single price source is `./plans.ts` (PLANS); a legacy tier is priced
+ * through TIER_PLAN, so the two files can never disagree. Used only for internal metrics and the dark
+ * local billing platform; members never see these names.
  */
+import { getPlan, type PlanId } from './plans';
+
 export type Tier = 'free' | 'premium' | 'pro';
 export type BillingInterval = 'monthly' | 'annual';
 export type Feature =
@@ -21,7 +25,6 @@ export type TierConfig = {
   id: Tier;
   name: string;
   tagline: string;
-  priceIls: Record<BillingInterval, number>;
   features: Feature[];
   highlights: string[];
 };
@@ -31,7 +34,6 @@ export const TIERS: Record<Tier, TierConfig> = {
     id: 'free',
     name: 'חינם',
     tagline: 'להתחיל את הדרך',
-    priceIls: { monthly: 0, annual: 0 },
     features: ['sos'],
     highlights: ['תחנת הבסיס במסע', `${FREE_DAILY_CHAT_MESSAGES} הודעות לאלמוג ביום`, 'כפתור "קשה לי עכשיו" תמיד פתוח'],
   },
@@ -39,7 +41,6 @@ export const TIERS: Record<Tier, TierConfig> = {
     id: 'premium',
     name: 'פרימיום',
     tagline: 'המסע המלא עם אלמוג',
-    priceIls: { monthly: 49, annual: 470 },
     features: ['sos', 'journey_all_stations', 'guides', 'almog_unlimited_chat', 'followup_tracks'],
     highlights: ['כל תחנות המסע', 'ספריית המדריכים', 'שיחה חופשית עם אלמוג', 'מסלולי המשך שאלמוג בונה בשבילך'],
   },
@@ -47,14 +48,24 @@ export const TIERS: Record<Tier, TierConfig> = {
     id: 'pro',
     name: 'פרו',
     tagline: 'ליווי מקסימלי',
-    priceIls: { monthly: 89, annual: 850 },
     features: ['sos', 'journey_all_stations', 'guides', 'almog_unlimited_chat', 'followup_tracks', 'priority_models'],
     highlights: ['כל מה שבפרימיום', 'מודלים מתקדמים בעדיפות', 'מסלולים עונתיים ראשונים'],
   },
 };
 
+/** Which plan in plans.ts a legacy tier is priced as (metrics only). `free` has no plan. */
+export const TIER_PLAN: Record<Tier, PlanId | null> = { free: null, premium: 'basic', pro: 'whatsapp' };
+
+/** Full list price in ILS for a legacy tier, read from plans.ts. */
+export function tierPriceIls(tier: Tier, interval: BillingInterval): number {
+  const id = TIER_PLAN[tier];
+  if (!id) return 0;
+  const plan = getPlan(id);
+  return interval === 'annual' ? plan.annualIls : plan.monthlyIls;
+}
+
 export function monthlyEquivalentIls(tier: Tier, interval: BillingInterval): number {
-  const p = TIERS[tier].priceIls[interval];
+  const p = tierPriceIls(tier, interval);
   return interval === 'annual' ? Math.round((p / 12) * 100) / 100 : p;
 }
 

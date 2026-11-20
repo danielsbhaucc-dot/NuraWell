@@ -33,7 +33,7 @@ export async function buildBusinessMetrics(admin: SupabaseClient, windowDays = 3
   const users = profiles ?? [];
   const ids = new Set(users.map((p) => p.id as string));
 
-  const { data: subsRaw } = await admin.from('subscriptions').select('user_id, tier, billing_interval, status, trial_ends_at, canceled_at, current_period_end, created_at').limit(50_000);
+  const { data: subsRaw } = await admin.from('subscriptions').select('user_id, tier, plan_code, billing_interval, status, trial_ends_at, canceled_at, current_period_end, created_at').limit(50_000);
   const subs = (subsRaw ?? []).filter((s) => ids.has(s.user_id as string));
   const paying = subs.filter((s) => s.status === 'active' || s.status === 'past_due');
   const byTier: Record<Tier, number> = { free: 0, premium: 0, pro: 0 };
