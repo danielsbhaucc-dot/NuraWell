@@ -24,6 +24,7 @@ const ALLOW = [
   /^app\/globals\.css$/, // token layer
   /^components\/ui\//, // primitives use tokens only, but may reference rgba glows
   /^lib\/legal\/media\//, // rendered evidence images (print)
+  /^lib\/legal\/security-docs\.generated\.ts$/, // generated from docs/security markdown (PR/issue numbers are not UI colors)
   /^lib\/email\//, /email-templates?/i, // email HTML must inline colors
   /^app\/landing-v2\/landing-html\.ts$/, // frozen canonical landing
   /opengraph-image|icon\.tsx|apple-icon|manifest/, // OG/icon renderers need literals

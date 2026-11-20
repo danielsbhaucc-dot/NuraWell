@@ -753,9 +753,6 @@
  "lib/legal/record-evidence.ts": {
   "rawHex": 9
  },
- "lib/legal/security-docs.generated.ts": {
-  "rawHex": 6
- },
  "lib/notifications/inactivity-fade.ts": {
   "rawHex": 1
  },
