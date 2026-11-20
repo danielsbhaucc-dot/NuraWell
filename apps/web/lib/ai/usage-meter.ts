@@ -1,4 +1,5 @@
 import { guardOutboundBody, restoreAiResponse } from '@/lib/ai/privacy/outbound-pii-guard';
+import { blockedProviderResponse, estimateCallUsd, parentAiAdmit, parentAiFinish } from '@/lib/central/ai-controls';
 /**
  * Measured AI spend. Wraps fetch for OpenRouter chat/embeddings calls:
  *  - asks OpenRouter to include billed cost (`usage: { include: true }`),
@@ -168,11 +169,27 @@ export function meteredFetch(baseFetch?: typeof fetch, fixedMeta?: { userId?: st
     const feature = ctx.feature ?? (url.endsWith('embeddings') ? 'embeddings' : untaggedFeature(url));
     const reqModel = typeof body.model === 'string' ? body.model : null;
     if (!url.endsWith('embeddings')) body.usage = { include: true };
+    const estimate = estimateCallUsd(body);
+    const started = Date.now();
+    const admitted = await parentAiAdmit({ feature, model: estimate.model, estUsd: estimate.estUsd, maxTokens: estimate.maxTokens });
+    if (admitted.status === 'blocked' || admitted.status === 'approval_required') {
+      return blockedProviderResponse(admitted.reason);
+    }
+    const runId = admitted.status === 'run' ? admitted.runId : null;
     const res = restoreAiResponse(await base(input, { ...init, body: JSON.stringify(body) }), shield);
-    if (!res.ok || !res.body) return res;
+    if (!res.ok || !res.body) {
+      if (runId) void parentAiFinish(runId, { ok: false, costUsd: 0, tokensIn: 0, tokensOut: 0, ms: Date.now() - started, error: `provider_${res.status}` });
+      return res;
+    }
 
-    const save = (u: Usage | null, model: string | null) =>
-      u && record({
+    const save = (u: Usage | null, model: string | null) => {
+      if (runId) {
+        void parentAiFinish(runId, {
+          ok: true, costUsd: typeof u?.cost === 'number' ? u.cost : 0,
+          tokensIn: u?.prompt_tokens ?? 0, tokensOut: u?.completion_tokens ?? 0, ms: Date.now() - started,
+        });
+      }
+      return u && record({
         user_id: userId && UUID.test(userId) ? userId : null,
         feature: feature.slice(0, 60),
         model: model ?? reqModel,
@@ -181,6 +198,7 @@ export function meteredFetch(baseFetch?: typeof fetch, fixedMeta?: { userId?: st
         cached_tokens: u.prompt_tokens_details?.cached_tokens ?? null,
         cost_usd: typeof u.cost === 'number' ? u.cost : 0,
       });
+    };
 
     const isStream = (res.headers.get('content-type') ?? '').includes('event-stream');
     if (!isStream) {
