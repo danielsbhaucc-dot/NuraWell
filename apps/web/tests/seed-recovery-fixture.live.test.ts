@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
+import { labMissing, labTitle, MAIN_LAB } from '@/tests/support/local-lab';
 vi.mock('server-only', () => ({}));
 vi.mock('@/lib/privacy/health-consent', async (orig) => ({
   ...(await orig<typeof import('@/lib/privacy/health-consent')>()),
@@ -23,7 +24,9 @@ function loadEnv() {
   }
 }
 
-describe('seed recovery fixture', () => {
+const LAB = labMissing(MAIN_LAB);
+
+describe.skipIf(!!LAB)(labTitle('seed recovery fixture', LAB), () => {
   it('writes sealed DOB for recovery drill', async () => {
     loadEnv();
     __resetFieldCrypto();

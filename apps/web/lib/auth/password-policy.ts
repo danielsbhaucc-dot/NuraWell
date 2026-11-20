@@ -25,7 +25,7 @@ export const PASSWORD_ERRORS = {
   equalsEmail: PASSWORD_MESSAGES_HE.equals_email,
   weak: 'הסיסמה צריכה לכלול גם אותיות וגם לפחות ספרה אחת',
   pwned:
-    'הסיסמה הזאת הופיעה בדליפות מידע ברשת, ולכן קל לנחש אותה. בחרו בבקשה סיסמה אחרת.',
+    'הסיסמה הזאת הופיעה בדליפות מידע ברשת, ולכן קל לנחש אותה. כדאי לבחור סיסמה אחרת.',
 } as const;
 
 export type PasswordCheckResult =

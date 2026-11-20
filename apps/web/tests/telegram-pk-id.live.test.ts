@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { labMissing, labTitle, MAIN_LAB } from '@/tests/support/local-lab';
 vi.mock('@/lib/api/rate-limit', () => ({
   consumeRateLimit: vi.fn(async () => ({ ok: true, limit: 99, remaining: 98, resetAt: 0 })),
   rateLimitResponse: vi.fn(),
@@ -54,7 +55,9 @@ function cleanup() {
   }
 }
 
-describe('telegram PK id live SQL+handlers (mock transport only)', () => {
+const LAB = labMissing(MAIN_LAB);
+
+describe.skipIf(!!LAB)(labTitle('telegram PK id live SQL+handlers (mock transport only)', LAB), () => {
   beforeEach(() => {
     loadEnv();
     process.env.CEO_TELEGRAM_ALLOWED_CHAT_IDS = '42';

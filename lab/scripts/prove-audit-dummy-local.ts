@@ -46,7 +46,7 @@ const q = (value: string) => value.replace(/'/g, "''");
 
 export async function runLocalDummyProof() {
   if (process.env.PII_LOCAL_PROOF !== 'dummy') refuse('not a local dummy proof');
-  const root = new URL('../../../', import.meta.url);
+  const root = new URL('../../', import.meta.url); // repo root (lab/scripts → ../../)
   const mig = (name: string) => new URL(`supabase/migrations/${name}`, root).pathname;
   spawnSync('sudo', ['-n', '-u', 'postgres', 'psql', '-d', 'postgres', '-c', `drop database if exists ${DB}`], { encoding: 'utf8' });
   const created = spawnSync('sudo', ['-n', '-u', 'postgres', 'psql', '-d', 'postgres', '-c', `create database ${DB}`], { encoding: 'utf8' });

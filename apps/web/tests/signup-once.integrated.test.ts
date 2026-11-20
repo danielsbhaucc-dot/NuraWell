@@ -3,6 +3,7 @@ import { randomBytes } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { labMissing, labTitle, GOTRUE_BIN } from '@/tests/support/local-lab';
 import { packProvision, unpackProvision } from '../lib/central/parent-provision';
 
 /**
@@ -51,7 +52,9 @@ function worker(secret: string, mode: string, nonce: string, sub: string, email:
   });
 }
 
-describe('one verified signup mints one session', () => {
+const LAB = labMissing([{ kind: 'pg-superuser' }, { kind: 'file', path: GOTRUE_BIN }]);
+
+describe.skipIf(!!LAB)(labTitle('one verified signup mints one session', LAB), () => {
   it('keeps the session on that nonce across two processes and a lost later call', async () => {
     const cookieSecret = 'c'.repeat(32);
     const nonce = randomBytes(16).toString('hex');

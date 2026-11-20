@@ -5,6 +5,7 @@
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { labMissing, labTitle, LAB_ENV_FILE } from '@/tests/support/local-lab';
 vi.mock('@/lib/api/rate-limit', () => ({
   consumeRateLimit: vi.fn(async () => ({ ok: true, limit: 99, remaining: 98, resetAt: 0 })),
   rateLimitResponse: vi.fn(),
@@ -62,7 +63,9 @@ function writeViaSql(w: PkIdWrite): boolean {
   return out === w.id;
 }
 
-describe('PK nonempty legacy upgrade proof (isolated DB :3003)', () => {
+const LAB = labMissing([{ kind: 'file', path: LAB_ENV_FILE }, { kind: 'pg-tcp', db: 'nurawell_pk_legacy_proof' }, { kind: 'http', url: 'http://127.0.0.1:5999/rest/v1/' }]);
+
+describe.skipIf(!!LAB)(labTitle('PK nonempty legacy upgrade proof (isolated DB :3003)', LAB), () => {
   beforeAll(() => {
     loadEnv();
     __resetFieldCrypto();

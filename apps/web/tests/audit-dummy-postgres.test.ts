@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { spawnSync } from 'node:child_process';
+import { labMissing, labTitle } from '@/tests/support/local-lab';
 import { runLocalDummyProof } from '../../../lab/scripts/prove-audit-dummy-local';
 
-const local = spawnSync('sudo', ['-n', '-u', 'postgres', 'psql', '-d', 'postgres', '-At', '-c', 'select 1'], { encoding: 'utf8' });
+// Was a silent `return` (counted as a pass) without Postgres; now an explicit, named skip.
+const LAB = labMissing([{ kind: 'pg-superuser' }]);
 
-describe('local dummy postgres', () => {
+describe.skipIf(!!LAB)(labTitle('local dummy postgres', LAB), () => {
   it('seals reason and summary under real roles and RLS', async () => {
-    if (local.status !== 0) return;
     process.env.PII_LOCAL_PROOF = 'dummy';
     const report = await runLocalDummyProof();
     expect(report).toMatchObject({

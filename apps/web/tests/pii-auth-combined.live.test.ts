@@ -6,6 +6,7 @@ import { execFileSync } from 'node:child_process';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { labMissing, labTitle, MAIN_LAB } from '@/tests/support/local-lab';
 
 vi.mock('server-only', () => ({}));
 vi.mock('@/lib/privacy/health-consent', async (orig) => ({
@@ -40,7 +41,9 @@ function loadEnv() {
   }
 }
 
-describe('combined PII+auth on live local stack', () => {
+const LAB = labMissing(MAIN_LAB);
+
+describe.skipIf(!!LAB)(labTitle('combined PII+auth on live local stack', LAB), () => {
   beforeAll(() => {
     loadEnv();
     expect(Buffer.from(process.env.PII_ENCRYPTION_KEY!, 'base64').length).toBe(32);

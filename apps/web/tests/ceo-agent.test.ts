@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest';
 
 vi.mock('@/lib/ai/client', () => ({
@@ -54,6 +55,13 @@ function fakeDb() {
   return { t, db: { from: q, rpc: async () => ({ data: { users_total: 2, errors: 3 }, error: null }) } as never };
 }
 
+// Realistic Telegram ids (9-10 digits). The seal refuses ciphertext that contains the plaintext id, so a
+// one-digit id like 7 made these tests fail at random whenever the base64 ciphertext happened to contain "7".
+const STRANGER_A = 7_000_000_017;
+const STRANGER_B = 9_000_000_099;
+// Sealing needs a field key; a throwaway per-run test key (never a real one) unless the env already provides one.
+if (!process.env.PII_ENCRYPTION_KEY) process.env.PII_ENCRYPTION_KEY = randomBytes(32).toString('base64');
+
 const tgFetch = () => vi.fn(async () => new Response('{"ok":true}'));
 
 beforeEach(() => {
@@ -78,7 +86,7 @@ describe('security', () => {
     const { db } = fakeDb();
     const f = tgFetch();
     const runTurn = vi.fn();
-    const r = await handleTelegramUpdate(db, createTelegramChannel(f as never), { message: { from: { id: 7 }, chat: { id: 7, type: 'private' }, text: 'hi' } }, { runTurn });
+    const r = await handleTelegramUpdate(db, createTelegramChannel(f as never), { message: { from: { id: STRANGER_A }, chat: { id: STRANGER_A, type: 'private' }, text: 'hi' } }, { runTurn });
     expect(r).toMatchObject({ ignored: true });
     expect(runTurn).not.toHaveBeenCalled();
     // verify-before-block: the unknown sender gets only the neutral code prompt; the owner (42) is alerted
@@ -370,12 +378,12 @@ describe('stolen-phone protection', () => {
     const { db, t } = fakeDb();
     const f = tgFetch();
     // gate stubbed open: quiet-time behavior is covered in gideon-quiet.test.ts (keeps this test day-independent)
-    await handleTelegramUpdate(db, createTelegramChannel(f as never, undefined, async () => 'send'), { message: { from: { id: 999 }, chat: { id: 999, type: 'private' }, text: 'היי' } });
+    await handleTelegramUpdate(db, createTelegramChannel(f as never, undefined, async () => 'send'), { message: { from: { id: STRANGER_B }, chat: { id: STRANGER_B, type: 'private' }, text: 'היי' } });
     const sent = f.mock.calls.map((c) => JSON.parse(String(((c as unknown[])[1] as { body: string }).body)));
     const owner = sent.filter((m) => m.chat_id === '42');
     expect(owner).toHaveLength(1);
     expect(owner[0].text).toContain('חשבון טלגרם חדש');
-    expect(sent.filter((m) => m.chat_id === '999').map((m) => m.text)).toEqual(['כדי להמשיך, הקלד את קוד האימות.']);
+    expect(sent.filter((m) => m.chat_id === String(STRANGER_B)).map((m) => m.text)).toEqual(['כדי להמשיך, הקלד את קוד האימות.']);
     await handleTelegramUpdate(db, createTelegramChannel(tgFetch() as never), { message: { from: { id: 42 }, chat: { id: 42, type: 'private' }, text: '/lock' } });
     expect(t.gideon_settings[0].disabled).toBe(true);
   });

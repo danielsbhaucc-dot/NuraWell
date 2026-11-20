@@ -1,13 +1,16 @@
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { labMissing, labTitle, LAB_ENV_FILE } from '@/tests/support/local-lab';
 import { __resetFieldCrypto, setDekStoreForTests, decryptValue } from '@/lib/security/field-crypto';
 
 const DST = 'nurawell_restore_pii_20261108T195812Z';
 const UID = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee1';
 const DOB = '1992-07-21';
 
-describe('recovery content decrypt', () => {
+const LAB = labMissing([{ kind: 'file', path: LAB_ENV_FILE }, { kind: 'pg-tcp', db: 'nurawell_restore_pii_20261108T195812Z' }]);
+
+describe.skipIf(!!LAB)(labTitle('recovery content decrypt', LAB), () => {
   it('decrypts restored sealed DOB with kept local key + restored DEK wrap', async () => {
     for (const line of readFileSync('/workspace/local-lab-paired/secrets/next-a.env', 'utf8').split('\n')) {
       const m = /^([A-Z0-9_]+)=(.*)$/.exec(line.trim());

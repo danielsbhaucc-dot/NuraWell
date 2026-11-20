@@ -2,6 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { labMissing, labTitle } from '@/tests/support/local-lab';
 
 /**
  * Real PostgreSQL on this machine. Not production, not a remote project.
@@ -40,7 +41,9 @@ function psqlScript(database: string, sql: string): string {
   });
 }
 
-describe('parent session RLS on local Postgres', () => {
+const LAB = labMissing([{ kind: 'pg-superuser' }]);
+
+describe.skipIf(!!LAB)(labTitle('parent session RLS on local Postgres', LAB), () => {
   it('enforces combined permissive and restrictive policies, grants, RPC and realtime', () => {
     psql('postgres', `DROP DATABASE IF EXISTS ${DB}`);
     psql('postgres', `CREATE DATABASE ${DB}`);
