@@ -14,6 +14,12 @@ type SettingsItem = {
 
 const SETTINGS_ITEMS: SettingsItem[] = [
   {
+    label: 'המנוי שלי',
+    href: '/settings/subscription',
+    emoji: '💳',
+    description: 'מצב המנוי, חיובים וביטול',
+  },
+  {
     label: 'פרטיות ונתונים',
     href: '/settings/privacy',
     emoji: '🔒',
@@ -36,6 +42,12 @@ const SETTINGS_ITEMS: SettingsItem[] = [
     href: '/settings/sos-moments',
     emoji: '💙',
     description: 'מה עזר לך ברגעים קשים',
+  },
+  {
+    label: 'תמיכה ויצירת קשר',
+    href: '/contact',
+    emoji: '💬',
+    description: 'שאלות על חיוב, גישה או פרטיות',
   },
 ];
 
