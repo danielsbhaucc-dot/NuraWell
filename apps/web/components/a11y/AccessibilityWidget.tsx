@@ -168,7 +168,7 @@ export function AccessibilityWidget() {
   return (
     <div
       className="a11y-widget-root fixed inset-e-3 z-80 sm:inset-e-4"
-      style={{ bottom: 'calc(6.75rem + env(safe-area-inset-bottom, 0px))' }}
+      style={{ bottom: 'calc(var(--a11y-fab-gap, 16px) + var(--a11y-fab-lift, 0px) + var(--a11y-fab-offset-bottom, 0px) + env(safe-area-inset-bottom, 0px))' }}
     >
       {open ? (
         <div

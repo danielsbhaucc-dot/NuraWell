@@ -15,7 +15,7 @@ export default async function PricingPage() {
     plan = (data as { plan?: string } | null)?.plan ?? 'basic';
   }
   return (
-    <main dir="rtl" className="public-dark public-dark-bg min-h-dvh px-4 pb-28 pt-[max(2rem,env(safe-area-inset-top))]">
+    <main dir="rtl" className="public-dark public-dark-bg min-h-dvh px-4 pb-28 pt-[max(2rem,env(safe-area-inset-top))] pe-[max(1rem,calc(var(--a11y-fab-reserve-inline,5.5rem)+env(safe-area-inset-left,0px)))]">
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-8">
         <header className="flex flex-col items-center gap-3 pt-4 text-center">
           <span className="rounded-full border border-accent-300/40 bg-accent-300/10 px-4 py-1 text-xs font-bold tracking-wide text-accent-200">

@@ -22,12 +22,12 @@
 .ld h1, .ld h2, .ld h3 { font-family: var(--f-display); }
 
 /* Top bar */
-.ld-top { position: sticky; top: 12px; z-index: 30; margin-top: 12px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 8px 10px 8px 20px; border-radius: 999px; }
+.ld-top { position: sticky; top: 12px; z-index: 30; margin-top: 12px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 10px 8px 20px; border-radius: 999px; flex-wrap: wrap; overflow: visible; min-width: 0; }
 .ld-brand { display: flex; align-items: center; gap: 9px; text-decoration: none; font-family: var(--f-display); font-weight: 800; font-size: 20px; }
 .ld-brand-mark { width: 26px; height: 26px; border-radius: 9px; background: linear-gradient(135deg, #34d399, #0d9488); box-shadow: inset 0 0 0 2px var(--gold-l); }
 .ld-brand-txt { background: linear-gradient(90deg, #047857, #8a6a24); -webkit-background-clip: text; background-clip: text; color: transparent; }
-.ld-docs { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; }
-.ld-docs a { white-space: nowrap; text-decoration: none; color: var(--mut); font-size: 14.5px; font-weight: 600; padding: 7px 13px; border-radius: 999px; }
+.ld-docs { display: flex; flex-wrap: wrap; gap: 4px; overflow: visible; align-items: center; min-width: 0; }
+.ld-docs a { display: inline-flex; align-items: center; min-height: 44px; box-sizing: border-box; white-space: nowrap; text-decoration: none; color: var(--mut); font-size: 14.5px; font-weight: 600; padding: 10px 12px; border-radius: 999px; }
 .ld-docs a:hover { background: var(--chip); }
 .ld-docs a[aria-current='page'] { background: var(--fg); color: var(--gold-l); }
 
@@ -145,6 +145,7 @@
   .ld { padding: 0 14px; font-size: 16.5px; --gap: 52px; }
   .ld-top { padding: 8px 10px 8px 14px; flex-wrap: wrap; border-radius: 26px; }
   .ld-docs { width: 100%; }
+  .ld-docs a { white-space: normal; line-height: 1.2; }
   .ld-heroGrid, .ld-heroGrid--solo { grid-template-columns: 1fr; margin-top: 18px; gap: 14px; }
   .ld-hero, .ld-heroGrid--solo .ld-hero { grid-template-columns: 1fr; padding: 34px 24px 6px; min-height: 0; border-radius: 30px; }
   .ld-title { font-size: 40px; letter-spacing: -1px; } .ld-lead { font-size: 16.5px; }
@@ -218,4 +219,10 @@
   .ld-callout--danger .ld-ib { color: var(--color-coral-soft); } .ld-callout--warn .ld-ib { color: var(--color-amber-soft); }
   .ld .legal-emergency-item { background: linear-gradient(165deg, rgba(243, 164, 59, 0.2), rgba(16, 38, 30, 0.6)); border-color: rgba(232, 198, 106, 0.4); }
   .ld .legal-emergency-item .num { color: var(--color-amber-soft); } .ld .legal-emergency-item .label { color: var(--color-night-ink); }
+}
+
+/* Reserved space so the a11y FAB does not cover body copy, chips, or nav. */
+.ld { padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px)); }
+@media (max-width: 420px) {
+  .ld { padding-inline-end: calc(4.75rem + env(safe-area-inset-left, 0px)); }
 }

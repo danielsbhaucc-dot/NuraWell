@@ -257,7 +257,7 @@ export function LandingPageClient() {
             transition={{ duration: 0.4, delay: 0.18, ease }}
           >
             <Sparkles className="w-4 h-4" aria-hidden />
-            NuraWell · אורח חיים מלווה ב-AI
+            NuraWell · אורח חיים מלווה ב־AI
           </motion.span>
 
           <div className="landing-hero-title-wrap">
