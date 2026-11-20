@@ -77,6 +77,28 @@ export function collectObstacles(doc: Document, avoid = DEFAULT_AVOID, rootId = 
   return out;
 }
 
+const FLOW_SEL = 'a[href],button,input,select,textarea,[role="button"],[role="link"],[role="tab"],[role="menuitem"],p,h1,h2,h3,h4,h5,h6,span,label,li,img,[data-a11y-avoid]';
+
+/**
+ * In-flow interactive elements and text that currently sit under the FAB box.
+ * Used so auto-lift also clears scrollable content (chips, captions), not only pinned bars.
+ * Large page-section boxes are skipped so a full-width card does not shove the FAB off-screen.
+ */
+export function collectFlowOverlaps(doc: Document, fab: Box, gap = 16, rootId = 'ca11y-root'): Box[] {
+  const out: Box[] = [];
+  const vw = doc.defaultView?.innerWidth ?? 400;
+  const vh = doc.defaultView?.innerHeight ?? 800;
+  const pad: Box = { left: fab.left - gap, right: fab.right + gap, top: fab.top - gap, bottom: fab.bottom + gap };
+  for (const el of Array.from(doc.querySelectorAll(FLOW_SEL))) {
+    if (el.closest(`#${rootId}`) || !visible(el)) continue;
+    const r = el.getBoundingClientRect();
+    if (r.width < 1 || r.height < 1) continue;
+    if (r.height >= vh * 0.4 || r.width >= vw * 0.9) continue;
+    if (boxesOverlap(pad, r, 0)) out.push(r);
+  }
+  return out;
+}
+
 export interface Overlap { selector: string; text: string; fab: Box; other: Box }
 
 const pinned = (el: Element): boolean => {

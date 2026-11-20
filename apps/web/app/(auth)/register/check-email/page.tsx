@@ -46,7 +46,7 @@ export default async function RegisterCheckEmailPage({
   return (
     <main
       id="main-content"
-      className="onboarding-shell-dark relative min-h-dvh flex flex-col items-center justify-center-safe px-4 pb-[max(3rem,env(safe-area-inset-bottom))] pt-[max(1.25rem,env(safe-area-inset-top))]"
+      className="onboarding-shell-dark relative min-h-dvh flex flex-col items-center justify-center-safe overflow-x-clip px-4 pb-[max(3rem,env(safe-area-inset-bottom))] pt-[max(1.25rem,env(safe-area-inset-top))]"
     >
       <AuthBackdrop />
       <CheckEmailClient email={email} hasAuthError={hasError} firstName={firstName} gender={gender} />

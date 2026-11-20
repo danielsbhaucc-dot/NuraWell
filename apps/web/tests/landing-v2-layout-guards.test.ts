@@ -19,6 +19,14 @@ expect(src).toMatch(/k\*\(s\.querySelector\([^)]+\)\|\|s\)\.clientWidth/);
     expect(src).toMatch(/header\.top \.wrap\{gap:10px;height:64px;padding-inline:10px/);
     expect(src).toMatch(/\.top \.btn\{margin-inline-start:auto;padding:10px 14px;font-size:14px/);
   });
+  it('at ~260px the header logo is height-capped and the CTA shrinks so it cannot start at a negative x', () => {
+    expect(src).toMatch(/header\.top \.logo img\{display:block;height:28px;width:auto/);
+    expect(src).toMatch(/@media\(max-width:280px\)\{header\.top \.wrap\{height:56px/);
+    expect(src).toContain('flex-shrink:1;min-width:0;max-width:54%');
+  });
+  it('the four-word sticky stage sits below the header (not under a clipped wordmark)', () => {
+    expect(src).toMatch(/\.hz \.st\{position:sticky;top:var\(--hdr,64px\);height:calc\(100svh - var\(--hdr,64px\)\)/);
+  });
   it('gallery dots have a tap target of at least 24px after the device-mock scale (26px CSS); the visible dot stays 8px', () => {
     expect(src).toMatch(/\.pgd button\{width:26px;height:26px;/);
     expect(src).toMatch(/\.pgd button::before\{content:\\?"\\?";width:8px;height:8px;/);

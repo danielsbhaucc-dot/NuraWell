@@ -1,5 +1,9 @@
 # @core/a11y-kit
 
+## 0.2.2
+- Auto-lift also clears in-flow interactive elements and text that currently sit under the FAB (not only pinned bottom bars).
+- Host attribute `html[data-a11y-fab-hide]` hides the widget (full-screen drawers/sheets) so the FAB cannot cover them.
+
 ## 0.2.1
 - FAB auto-lift also treats `position:absolute` bars that sit on the viewport floor (React Native Web bottom navs), not only `fixed`/`sticky`.
 - Optional host token `--a11y-fab-offset-bottom` is added to the FAB `bottom` calc.
