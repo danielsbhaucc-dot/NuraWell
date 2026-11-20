@@ -1,4 +1,4 @@
-export { Button } from './Button';
+export { Button, buttonClass } from './Button';
 export { Card, CardTitle, Surface } from './Card';
 export { Input, Banner, Badge, ListRow, LoadingState } from './Primitives';
 export { EmptyState } from './EmptyState';

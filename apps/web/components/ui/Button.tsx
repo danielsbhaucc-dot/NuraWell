@@ -24,6 +24,17 @@ const sizes: Record<Size, string> = {
   lg: 'min-h-12 px-6 text-lg',
 };
 
+/** Button look for a link (<a>/<Link>) that must read as a button. */
+export function buttonClass(variant: Variant = 'primary', size: Size = 'md', className?: string): string {
+  return cn(
+    'inline-flex items-center justify-center gap-2 rounded-2xl font-bold transition-[transform,filter,background-color,box-shadow] duration-200 ease-(--ease-spring) active:scale-[0.98] motion-reduce:transition-none motion-reduce:active:scale-100',
+    'focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-offset-2',
+    variants[variant],
+    sizes[size],
+    className
+  );
+}
+
 export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant; size?: Size; loading?: boolean };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(

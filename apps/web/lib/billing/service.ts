@@ -4,15 +4,16 @@ import { getPlan, planIdFromCode } from './plans';
 import type { NormalizedBillingEvent } from './provider';
 
 /** Start the one-time free trial. Idempotent: the DB allows one trial row per user ever. */
-export async function startTrial(admin: SupabaseClient, userId: string, now = new Date()) {
-  const trialEnds = new Date(now.getTime() + TRIAL_DAYS * 86_400_000).toISOString();
+export async function startTrial(admin: SupabaseClient, userId: string, now = new Date(), trialDays = TRIAL_DAYS) {
+  if (!(Number.isInteger(trialDays) && trialDays > 0)) return { ok: false as const, reason: 'trial_disabled' as const };
+  const trialEnds = new Date(now.getTime() + trialDays * 86_400_000).toISOString();
   const { data, error } = await admin
     .from('subscriptions')
     .insert({ user_id: userId, tier: TRIAL_TIER, status: 'trialing', provider: 'none', trial_ends_at: trialEnds })
     .select('id, trial_ends_at')
     .single();
   if (error) return { ok: false as const, reason: error.code === '23505' ? ('trial_used' as const) : ('failed' as const) };
-  await admin.from('billing_events').insert({ user_id: userId, subscription_id: data.id, kind: 'trial_started', metadata: { days: TRIAL_DAYS } });
+  await admin.from('billing_events').insert({ user_id: userId, subscription_id: data.id, kind: 'trial_started', metadata: { days: trialDays } });
   return { ok: true as const, trialEndsAt: data.trial_ends_at as string };
 }
 

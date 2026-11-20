@@ -4,7 +4,7 @@
  * through TIER_PLAN, so the two files can never disagree. Used only for internal metrics and the dark
  * local billing platform; members never see these names.
  */
-import { getPlan, type PlanId } from './plans';
+import { getPlan, TRIAL, type PlanId } from './plans';
 
 export type Tier = 'free' | 'premium' | 'pro';
 export type BillingInterval = 'monthly' | 'annual';
@@ -18,7 +18,8 @@ export type Feature =
 
 export const FREE_STATIONS = 1;
 export const FREE_DAILY_CHAT_MESSAGES = 20;
-export const TRIAL_DAYS = 14;
+/** Trial length comes from the single switch in plans.ts (TRIAL.days, 0 = off). */
+export const TRIAL_DAYS = TRIAL.days;
 export const TRIAL_TIER: Tier = 'premium';
 
 export type TierConfig = {

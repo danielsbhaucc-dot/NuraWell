@@ -9,6 +9,32 @@ export const PLAN_DEFAULT: PlanId = 'basic';
 /** Launch price: percent off for the first N months. Set percentOff to 0 to turn off. */
 export const LAUNCH_DISCOUNT = { percentOff: 40, months: 3 };
 export const EXTRA_MINUTES = { minutes: 30, priceIls: 129, comingSoon: true };
+/**
+ * Free trial — OFF (days: 0). The single switch: set days > 0 to turn it on. Then /pricing shows the trial
+ * line, the purchase link carries `trial=<days>`, and the local trial route (dark billing platform) uses the
+ * same number. While 0, nothing about a trial is shown and the trial route refuses.
+ */
+export const TRIAL = { days: 0 };
+export function trialEnabled(t: { days: number } = TRIAL): boolean {
+  return Number.isInteger(t.days) && t.days > 0;
+}
+
+/** Plan value the parent purchase page accepts (`?plan=basic|whatsapp|phone`, agreed with the parent team). */
+export const PURCHASE_PLAN_CODE: Record<PlanId, 'basic' | 'whatsapp' | 'phone'> = { basic: 'basic', whatsapp: 'whatsapp', premium: 'phone' };
+
+/**
+ * Link from a /pricing card to the parent purchase page, carrying `plan` (and `trial` when the trial is on).
+ * The parent ignores unknown values, so the link works before its plan picker ships. Null when no safe https
+ * purchase URL is configured.
+ */
+export function purchaseHref(base: string | null | undefined, plan: PlanId, trial: { days: number } = TRIAL): string | null {
+  if (!base || !/^https:\/\//i.test(base)) return null;
+  let u: URL;
+  try { u = new URL(base); } catch { return null; }
+  u.searchParams.set('plan', PURCHASE_PLAN_CODE[plan]);
+  if (trialEnabled(trial)) u.searchParams.set('trial', String(trial.days));
+  return u.toString();
+}
 
 export type PlanConfig = {
   id: PlanId;
@@ -50,9 +76,8 @@ export const PLANS: PlanConfig[] = [
     tagline: 'ליווי מקסימלי, גם בשיחת טלפון',
     monthlyIls: 449,
     annualIls: 3790,
-    comingSoon: true,
     includedMinutes: 30,
-    features: ['כל מה שב-WhatsApp', '30 דקות שיחות טלפון עם אלמוג בחודש', `אפשר להוסיף ${EXTRA_MINUTES.minutes} דקות ב-₪${EXTRA_MINUTES.priceIls}`],
+    features: ['כל מה שב-WhatsApp', '30 דקות שיחות טלפון עם אלמוג בחודש (בקרוב)', `אפשר להוסיף ${EXTRA_MINUTES.minutes} דקות ב-₪${EXTRA_MINUTES.priceIls}`],
   },
 ];
 
