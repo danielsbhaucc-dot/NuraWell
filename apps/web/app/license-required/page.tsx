@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import LicenseRequired from '@/components/shared/LicenseRequired';
 import { licenseGate, profileRole, purchaseUrl } from '@/lib/central/license-gate';
+import { manageUrlFrom } from '@/lib/central/my-subscription';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'נדרש רישיון פעיל', robots: { index: false, follow: false } };
@@ -21,5 +22,6 @@ export default async function LicenseRequiredPage() {
   if (!user) redirect('/login');
   const gate = await licenseGate(user, await profileRole(user.id));
   if (!gate.block) redirect('/home');
-  return <LicenseRequired purchaseHref={purchaseUrl()} signOut={signOut} />;
+  const buy = purchaseUrl();
+  return <LicenseRequired purchaseHref={buy} manageHref={manageUrlFrom(buy)} signOut={signOut} />;
 }

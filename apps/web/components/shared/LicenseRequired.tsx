@@ -1,11 +1,11 @@
-import { KeyRound, Mail, LogOut } from 'lucide-react';
+import { CreditCard, KeyRound, Mail, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
 /** Hebrew, RTL, no native dialogs. Server component (no client JS). Shown only to identities the gate actually blocks. */
 const CTA = 'flex items-center justify-center gap-2 w-full min-h-12 py-4 rounded-2xl font-bold text-lg text-forest-950 bg-linear-to-br from-accent-300 to-accent-500 shadow-btn ring-1 ring-accent-200/50 hover:brightness-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2';
 const QUIET = 'flex items-center justify-center gap-2 w-full min-h-12 py-3 rounded-2xl font-bold text-base text-on-dark bg-panel-dark ring-1 ring-accent-200/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2';
 const MISTAKE = 'אם נראה שזו טעות, אפשר לפנות אלינו ונבדוק.';
-type Props = { purchaseHref: string | null; signOut: () => Promise<void> };
+type Props = { purchaseHref: string | null; signOut: () => Promise<void>; manageHref?: string | null };
 
 const Notice = ({ hint }: { hint: string }) => (
   <div
@@ -32,12 +32,18 @@ const SignOutButton = ({ signOut }: Pick<Props, 'signOut'>) => (
   </form>
 );
 
-const Actions = ({ purchaseHref, signOut }: Props) => (
+const Actions = ({ purchaseHref, signOut, manageHref }: Props) => (
   <div className="flex flex-col gap-3">
     {purchaseHref ? (
       <a href={purchaseHref} rel="noopener" className={CTA}>
         <KeyRound className="w-5 h-5" aria-hidden="true" />
         <span>לעמוד הרכישה</span>
+      </a>
+    ) : null}
+    {manageHref ? (
+      <a href={manageHref} rel="noopener" className={QUIET} data-testid="license-manage">
+        <CreditCard className="w-5 h-5" aria-hidden="true" />
+        <span>ניהול המנוי והחיובים</span>
       </a>
     ) : null}
     <a href="/contact" className={purchaseHref ? QUIET : CTA}>
@@ -52,11 +58,11 @@ const Actions = ({ purchaseHref, signOut }: Props) => (
  * purchaseHref is null until the parent site has a public NuraWell purchase page; then the button stays hidden
  * (no dead controls). Bottom padding (12rem) stays clear of the floating accessibility button (bottom 6.75rem + its height), at any text size.
  */
-const LicenseRequired = ({ purchaseHref, signOut }: Props) => (
+const LicenseRequired = ({ purchaseHref, signOut, manageHref = null }: Props) => (
   <main id="main-content" dir="rtl" lang="he" className="min-h-screen flex flex-col items-center justify-center px-4 pt-10 pb-[calc(12rem+env(safe-area-inset-bottom,0px))] public-dark public-dark-bg lr-page">
     <div className="max-w-md w-full text-center">
       <Notice hint={purchaseHref ? `אפשר להסדיר רישיון בעמוד הרכישה. ${MISTAKE}` : MISTAKE} />
-      <Actions purchaseHref={purchaseHref} signOut={signOut} />
+      <Actions purchaseHref={purchaseHref} signOut={signOut} manageHref={manageHref} />
     </div>
   </main>
 );

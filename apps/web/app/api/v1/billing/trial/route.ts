@@ -10,5 +10,5 @@ export async function POST(request: Request) {
   const auth = await requireApiSession(request);
   if (!auth.ok) return auth.response;
   const r = await startTrial(createAdminClient(), auth.user.id);
-  return NextResponse.json(r, { status: r.ok ? 200 : r.reason === 'trial_used' ? 409 : 500 });
+  return NextResponse.json(r, { status: r.ok ? 200 : r.reason === 'trial_used' ? 409 : r.reason === 'trial_disabled' ? 404 : 500 });
 }
