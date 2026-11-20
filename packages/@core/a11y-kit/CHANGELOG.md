@@ -1,5 +1,10 @@
 # @core/a11y-kit
 
+## 0.2.1
+- FAB auto-lift also treats `position:absolute` bars that sit on the viewport floor (React Native Web bottom navs), not only `fixed`/`sticky`.
+- Optional host token `--a11y-fab-offset-bottom` is added to the FAB `bottom` calc.
+- `isViewportBottomBar` uses `bottom - top` (the `Box` type has no `height`).
+
 ## 0.2.0
 - `mountA11yWidget`: framework-agnostic widget (round FAB + swipe-down bottom sheet, Hebrew copy, no native dialogs, no outside fonts).
 - All 12 Maaser Yashar PR #6 fixes ported (see README mapping table), plus HC status colors and Space double-fire fix.

@@ -4,7 +4,7 @@ import axe from 'axe-core';
 import { readFileSync, readdirSync } from 'node:fs';
 import {
   mountA11yWidget, NURAWELL_THEME, NEHORA_THEME, CONTRAST_RULES, HC_MIN, contrastRatio, validateTheme, buildEffectsCss,
-  DEFAULT_SETTINGS, sanitizeSettings, isAltShortcut, boxesOverlap, liftToClear, fabReserveCss, findFabOverlaps,
+  DEFAULT_SETTINGS, sanitizeSettings, isAltShortcut, boxesOverlap, liftToClear, fabReserveCss, findFabOverlaps, collectObstacles, isViewportBottomBar,
   dyslexiaFontFace, HIGH_CONTRAST_STATUS, panelZoomFor, defineA11yTheme, type A11yWidgetHandle,
 } from '@core/a11y-kit';
 
@@ -176,4 +176,43 @@ describe('safe area + overlap helper', () => {
     expect(liftToClear(fab, [{ left: 0, right: 400, top: 0, bottom: 800 }], 16, 120)).toBe(120);
   });
   it('findFabOverlaps returns [] when nothing is laid out (jsdom)', () => { expect(findFabOverlaps(document)).toEqual([]); });
+  it('isViewportBottomBar treats an absolute bar on the viewport floor as a bottom nav', () => {
+    const vh = 800;
+    expect(isViewportBottomBar('absolute', { left: 0, right: 390, top: 704, bottom: 800 }, vh)).toBe(true);
+    expect(isViewportBottomBar('absolute', { left: 0, right: 390, top: 200, bottom: 400 }, vh)).toBe(false);
+    expect(isViewportBottomBar('relative', { left: 0, right: 390, top: 704, bottom: 800 }, vh)).toBe(false);
+    expect(isViewportBottomBar('fixed', { left: 300, right: 390, top: 720, bottom: 800 }, vh)).toBe(true);
+  });
+  it('collectObstacles includes an absolutely positioned bottom nav and its tabs', () => {
+    const nav = document.createElement('nav');
+    nav.id = 'synth-bottom-nav';
+    nav.setAttribute('style', 'position:absolute;opacity:1;visibility:visible;display:block');
+    const tab = document.createElement('button');
+    tab.id = 'synth-home-tab';
+    tab.type = 'button';
+    tab.setAttribute('style', 'opacity:1;visibility:visible;display:block');
+    tab.textContent = 'בית';
+    nav.appendChild(tab);
+    document.body.appendChild(nav);
+    expect(getComputedStyle(nav).position).toBe('absolute');
+    const rect = { x: 0, y: 704, width: 390, height: 96, top: 704, bottom: 800, left: 0, right: 390, toJSON() { return this; } };
+    const tabRect = { x: 8, y: 716, width: 80, height: 56, top: 716, bottom: 772, left: 8, right: 88, toJSON() { return this; } };
+    const origBR = Element.prototype.getBoundingClientRect;
+    Element.prototype.getBoundingClientRect = function getBoundingClientRect() {
+      const id = (this as Element).id;
+      if (id === 'synth-bottom-nav') return rect as DOMRect;
+      if (id === 'synth-home-tab') return tabRect as DOMRect;
+      return origBR.call(this);
+    };
+    const origH = Object.getOwnPropertyDescriptor(window, 'innerHeight');
+    Object.defineProperty(window, 'innerHeight', { configurable: true, value: 800 });
+    try {
+      const boxes = collectObstacles(document);
+      expect(boxes.some((b) => (b.top === 716 && b.bottom === 772) || (b.top === 704 && b.bottom === 800))).toBe(true);
+    } finally {
+      Element.prototype.getBoundingClientRect = origBR;
+      if (origH) Object.defineProperty(window, 'innerHeight', origH);
+      nav.remove();
+    }
+  });
 });

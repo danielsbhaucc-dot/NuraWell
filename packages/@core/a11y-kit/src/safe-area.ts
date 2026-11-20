@@ -49,7 +49,15 @@ const visible = (el: Element): boolean => {
   return cs.visibility !== 'hidden' && cs.display !== 'none' && Number(cs.opacity) > 0.01;
 };
 
-/** מכשולים: [data-a11y-avoid]/submit/ראשי + כל אלמנט fixed/sticky שנוגע בחצי התחתון של המסך. */
+/** סרגל תחתון: fixed/sticky, או absolute שיושב על תחתית חלון התצוגה (למשל תפריט תחתון ב־React Native Web). */
+export function isViewportBottomBar(pos: string, r: Box, vh: number): boolean {
+  if (r.bottom - r.top >= vh * 0.6 || r.top <= vh * 0.45) return false;
+  if (pos === 'fixed' || pos === 'sticky') return r.bottom > vh / 2;
+  if (pos === 'absolute') return r.bottom >= vh - 16;
+  return false;
+}
+
+/** מכשולים: [data-a11y-avoid]/submit/ראשי + סרגלים בתחתית החלון (כולל position:absolute). */
 export function collectObstacles(doc: Document, avoid = DEFAULT_AVOID, rootId = 'ca11y-root'): Box[] {
   const out: Box[] = [];
   const vh = doc.defaultView?.innerHeight ?? 800;
@@ -58,9 +66,8 @@ export function collectObstacles(doc: Document, avoid = DEFAULT_AVOID, rootId = 
   for (const el of Array.from(doc.querySelectorAll('body *'))) {
     if (skip(el)) continue;
     const pos = getComputedStyle(el).position;
-    if (pos !== 'fixed' && pos !== 'sticky') continue;
     const r = el.getBoundingClientRect();
-    if (r.bottom > vh / 2 && r.height < vh * 0.6 && visible(el)) {
+    if (isViewportBottomBar(pos, r, vh) && visible(el)) {
       // מכשול = הילדים האינטראקטיביים שלו (סרגל רחב לא אמור לדחוף אם יש בו רווח ריק מול הכפתור)
       const kids = Array.from(el.querySelectorAll('a[href],button,input,select,textarea,[role="button"],[tabindex]')).filter(visible);
       if (kids.length) for (const k of kids) out.push(k.getBoundingClientRect());
@@ -73,8 +80,11 @@ export function collectObstacles(doc: Document, avoid = DEFAULT_AVOID, rootId = 
 export interface Overlap { selector: string; text: string; fab: Box; other: Box }
 
 const pinned = (el: Element): boolean => {
+  const vh = el.ownerDocument.defaultView?.innerHeight ?? 0;
   for (let n: Element | null = el; n && n !== n.ownerDocument.body; n = n.parentElement) {
-    const p = getComputedStyle(n).position; if (p === 'fixed' || p === 'sticky') return true;
+    const p = getComputedStyle(n).position;
+    if (p === 'fixed' || p === 'sticky') return true;
+    if (p === 'absolute' && isViewportBottomBar(p, n.getBoundingClientRect(), vh)) return true;
   }
   return el.matches('[data-a11y-avoid]');
 };

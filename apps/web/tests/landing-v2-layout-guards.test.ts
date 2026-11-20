@@ -9,6 +9,16 @@ const lines = JSON.parse(readFileSync(join(__dirname, '../public/landing-v2/real
 const pool = Object.values(lines.buckets).flat();
 
 describe('landing-v2 layout guards', () => {
+  it('the four-word horizontal stage is sized in % of its container (not 100vw), so 320–390 does not grow a page scrollbar', () => {
+    expect(src).toMatch(/\.track\{display:flex;height:100%;width:400%/);
+    expect(src).toMatch(/\.pn\{flex:0 0 25%;width:25%/);
+expect(src).toMatch(/k\*\(s\.querySelector\([^)]+\)\|\|s\)\.clientWidth/);
+    expect(src).not.toMatch(/k\*innerWidth/);
+  });
+  it('the header CTA stays inside the 320px bar (smaller padding and no shrink-clip)', () => {
+    expect(src).toMatch(/header\.top \.wrap\{gap:10px;height:64px;padding-inline:10px/);
+    expect(src).toMatch(/\.top \.btn\{margin-inline-start:auto;padding:10px 14px;font-size:14px/);
+  });
   it('gallery dots have a tap target of at least 24px after the device-mock scale (26px CSS); the visible dot stays 8px', () => {
     expect(src).toMatch(/\.pgd button\{width:26px;height:26px;/);
     expect(src).toMatch(/\.pgd button::before\{content:\\?"\\?";width:8px;height:8px;/);
