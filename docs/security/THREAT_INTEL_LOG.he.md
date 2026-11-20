@@ -2,6 +2,66 @@
 
 כל רשומה: מה נבדק, מה רלוונטי לנו, מה תוקן ומה נשאר. הכי חדש למעלה. בלי סודות ובלי נתוני משתמשים.
 
+## 2026-11-20 (סריקה לילית, 02:55 שעון ישראל)
+- main ‏4b6a53a0 ללא שינוי. gitleaks על כל ההיסטוריה: נקי. npm audit: ‏9 בינוניות (minimatch דרך eslint, כלי פיתוח בלבד), 0 גבוהות. OSV: רק GHSA-g3hv-75wg-m249 הידוע.
+- ייעוצי npm חדשים (19): חמישה של Next.js שפורסמו 19.11 ‏(GHSA-f3mh-rxg3-f5g2, ‏GHSA-7qx7-33qx-rqx2, ‏GHSA-pc58-hwjq-p385, ‏GHSA-rhh4-g77r-r9qj, ‏GHSA-vvgp-ww4w-46vf) – כולם מתוקנים ב-16.4.5 שכבר רץ אצלנו, לא חל. השאר (effect, ‏etherpad, ‏חבילות MCP ועוד) – לא ב-lockfile. ‏188 חבילות זדוניות – אף אחת לא אצלנו.
+- CISA KEV: אין רשומות חדשות מאז 18.11.
+- Vercel, ‏Supabase, ‏Node, ‏OpenRouter/AI SDK, ‏Telegram, ‏WebAuthn – אין ייעוץ חדש.
+- Dependabot: אין PR אבטחה חדש; התראה פתוחה אחת (minimatch, בינונית).
+- Supabase: אין ERROR בשני הפרויקטים; הערות ידועות בלבד. האתר מחזיר 200.
+## 2026-11-19 (סריקה לילית, 02:50 שעון ישראל)
+- main ‏4b6a53a0 ללא שינוי. gitleaks: נקי. npm audit: ‏9 בינוניות (minimatch דרך eslint, כלי פיתוח בלבד); ההתראה הגבוהה של picomatch מאתמול כבר לא מופיעה במאגר. OSV: רק GHSA-g3hv-75wg-m249 הידוע.
+- ייעוצי npm חדשים (4) ו-71 חבילות זדוניות: אף אחת לא קיימת ב-lockfile.
+- CISA KEV: ‏Synology DSM, ‏LiteLLM, ‏REDCap, ‏Apache Axis — לא בשימוש אצלנו.
+- Dependabot: אין PR אבטחה חדש; התראה פתוחה אחת (minimatch, בינונית, כלי פיתוח).
+- Supabase: ‏169/169 טבלאות עם RLS, אין ממצא ברמת ERROR בשני הפרויקטים. האתר מחזיר 200.
+## 2026-11-18 (סריקה לילית, 02:50 שעון ישראל)
+- `main` ללא שינוי: `4b6a53a0`. ‏gitleaks נקי (Semgrep/TruffleHog לא הורצו מחדש – אין שינוי קוד מאז אתמול).
+- `npm audit`: ‏8 בינוני + 11 גבוה. החדש: `GHSA-fc5q-39xc-vjpf` (picomatch ReDoS, פורסם 19.10, נוסף למאגר npm audit ב‑17.11). כל מופעי picomatch הם תלויות פיתוח בלבד (eslint, vite/vitest, dependency-cruiser) – לא נטענים בייצור, הקלט הוא תבניות glob של המפתחים. אין גרסה מתוקנת (4.0.7 היא האחרונה ופגיעה). מעקב: לעדכן כשיצא תיקון.
+- OSV: ‏`GHSA-g3hv-75wg-m249` (ידוע) + `GHSA-fc5q-39xc-vjpf` (כנ"ל).
+- ייעוצי npm חדשים: `GHSA-vc7v-qv4w-wrv8` (Next.js, ‏use cache מקונן) – מתוקן ב‑16.4.5 שכבר רץ אצלנו. ‏@libp2p – לא בשימוש. ‏154 חבילות זדוניות – אף אחת לא אצלנו.
+- CISA KEV: ‏CVE-2026-115731 (Puppet Enterprise) – לא רלוונטי.
+- Supabase: ‏NuraWell ‏169/169 RLS, ‏platform-central ללא ERROR (2 אזהרות search_path ידועות). האתר מחזיר 200.
+## 2026-11-17 (סריקה לילית, ‎02:55 שעון ישראל)
+
+**סריקות על main ‏(4b6a53a0):** אין שינוי קוד מאז הסריקה הקודמת. gitleaks על כל ההיסטוריה – נקי. TruffleHog ו-Semgrep לא הורצו מחדש – אין קוד חדש (תוצאות 16.11 בתוקף). npm audit – 9 בינוניות (minimatch דרך eslint, ידוע; 0 גבוהות, 0 קריטיות). OSV-Scanner – רק minimatch ‏(GHSA-g3hv-75wg-m249, ידוע). Dependabot – התראה פתוחה אחת (minimatch, ידוע); אין PR אבטחה חדש, רק עדכוני גרסה ראשית שממתינים לבדיקת בנייה.
+
+**מודיעין איומים (48 שעות אחרונות):**
+- CISA KEV – אין רשומות חדשות מאז 13.11.
+- ייעוצי npm חדשים (12, מ-16.11) – SvelteKit, ‏Nuxt, ‏directus, ‏code-review-mcp-server, ו-Next.js ‏GHSA-mfr8-8qww-v76h ‏(CVE-2026-119790, דליפת מטמון 'use cache' דרך unstable_cache) – תוקן ב-16.4.5, ואצלנו 16.4.5, לא חל.
+- נוזקות npm – 133 חדשות, כולל פריצת שרשרת האספקה של WPPConnect ‏(@wppconnect-team/wppconnect, ‏@wppconnect/server); כל השמות הוצלבו מול קובץ הנעילה – אף אחת לא קיימת אצלנו.
+- OpenJS: ייעוצי @fastify/busboy, ‏@fastify/multipart, ‏@fastify/proxy-addr – לא בקובץ הנעילה.
+- Vercel, ‏Supabase, ‏Node, ‏OpenRouter/AI SDK, ‏Telegram Bot API, ‏WebAuthn – לא נמצא ייעוץ חדש.
+
+**Supabase (פרודקשן ומרכז):** אין רמת ERROR. הערות INFO על טבלאות עם RLS בלי מדיניות (חסימה מלאה, תקין); ההערות הקבועות ללא שינוי (search_path ב-identity.host_ok, הגנת סיסמאות דלופות).
+
+**תוקן הלילה:** אין ממצא חדש. האתר מחזיר 200.
+## 2026-11-16 (סריקה לילית, ‎02:55 שעון ישראל)
+
+**סריקות על main ‏(4b6a53a0):** השינוי היחיד מאז הסריקה הקודמת – הביקורת השבועית (שומר הטקסט הגלוי בגיבוי, ‎#493). gitleaks על כל ההיסטוריה – נקי. TruffleHog על הקומיטים החדשים – אפס סודות מאומתים. Semgrep על הקבצים שהשתנו – אפס ממצאים. npm audit – 9 בינוניות (minimatch דרך eslint, ידוע; 0 גבוהות, 0 קריטיות). OSV-Scanner – רק minimatch ‏(GHSA-g3hv-75wg-m249, ידוע). Dependabot – התראה פתוחה אחת (minimatch, ידוע). PR חדשים של Dependabot ‏(‎#490 web-push 4, ‏‎#491 jsdom 31, ‏‎#492 isomorphic-dompurify 4) – עדכוני גרסה ראשית, לא עדכוני אבטחה; נשארים לבדיקת בנייה ידנית.
+
+**מודיעין איומים (48 שעות אחרונות):**
+- CISA KEV – אין רשומות חדשות מאז 13.11 (UnrealIRCd ו-Check Point, כבר נבדקו).
+- ייעוצי npm – אין ייעוץ חדש שנבדק מאז 13.11. נוזקות npm – 7 חדשות (כולל node-zserial מ-15.11). כל השמות הוצלבו מול קובץ הנעילה – אף אחת לא קיימת אצלנו.
+- Next.js, ‏Vercel, ‏Supabase, ‏Node, ‏OpenRouter/AI SDK, ‏Telegram Bot API, ‏WebAuthn – לא נמצא ייעוץ חדש (עדכוני Next.js ‏16.4.5 ו-Node מ-11.11 כבר טופלו).
+
+**Supabase (פרודקשן ומרכז):** אין רמת ERROR ביועץ האבטחה. הערות INFO על טבלאות עם RLS בלי מדיניות (public.access_audit_findings, ‏central.agent_challenges) – פירושן חסימה מלאה, תקין. ההערות הקבועות ללא שינוי.
+
+**תוקן הלילה:** אין ממצא חדש. האתר מחזיר 200.
+## 2026-11-15 (סריקה לילית, ‎02:50 שעון ישראל)
+
+**סריקות על main ‏(6ed508a1):** אין שינוי קוד מאז הסריקה הקודמת (רק רשומת היומן). gitleaks על כל ההיסטוריה – נקי. TruffleHog ו-Semgrep לא הורצו מחדש – אין קוד חדש (תוצאות 14.11 בתוקף: אפס סודות מאומתים, 28 ממצאי Semgrep זהים לבסיס). npm audit – 9 בינוניות (minimatch דרך eslint, ידוע; 0 גבוהות, 0 קריטיות). OSV-Scanner – רק minimatch ‏(GHSA-g3hv-75wg-m249, ידוע). Dependabot – אין PR אבטחה חדש, רק עדכוני גרסה ראשית ישנים.
+
+**מודיעין איומים (48 שעות אחרונות):**
+- CISA KEV – רק UnrealIRCd ו-Check Point ‏(13.11), שכבר נבדקו. לא חל עלינו.
+- ייעוצי npm חדשים (10, כולם מ-13.11) – ag-psd, ‏SvelteKit, ‏Nuxt, ‏Astro, ‏@opentelemetry/instrumentation-http. אף אחת לא בקובץ הנעילה.
+- נוזקות npm – 725 ייעוצי נוזקה מאז 13.11; כל השמות הוצלבו מול קובץ הנעילה – אף אחת לא קיימת אצלנו.
+- Next.js, ‏Vercel, ‏Supabase, ‏Node, ‏OpenRouter/AI SDK, ‏Telegram Bot API, ‏WebAuthn – לא נמצא ייעוץ חדש.
+
+**Supabase (פרודקשן ומרכז):** RLS פעיל בכל הטבלאות; אין רמת ERROR ביועץ האבטחה; ההערות הקבועות ללא שינוי (search_path ב-identity.host_ok ו-central.is_sealed_v1, הגנת סיסמאות דלופות).
+
+**תוקן הלילה:** אין ממצא חדש. רשומה זו מוזגה יחד עם רשומת 16.11 כדי לחסוך ריצות CI ופריסה.
+
 ## 2026-11-14 (סריקה לילית, ‎03:20 שעון ישראל)
 
 **סריקות על main ‏(d35c9a73):** השינוי היחיד מאז הסריקה הקודמת – תיקון קבלות (מע"מ 0). gitleaks על כל ההיסטוריה ‏(1,313 קומיטים) – נקי. TruffleHog – אפס סודות מאומתים (שני הממצאים הלא-מאומתים הידועים – נתוני בדיקה מזויפים). Semgrep – 28 ממצאים, זהה לבסיס (אין ממצא חדש בקוד החדש). npm audit – 9 בינוניות (minimatch דרך eslint, ידוע; 0 גבוהות, 0 קריטיות). OSV-Scanner – רק minimatch ‏(GHSA-g3hv-75wg-m249, ידוע). Dependabot – התראה פתוחה אחת (minimatch, ידוע); אין PR אבטחה חדש.
