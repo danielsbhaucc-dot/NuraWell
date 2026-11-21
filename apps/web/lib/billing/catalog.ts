@@ -5,7 +5,7 @@ import { parseCatalog } from './catalog-parse';
 
 /** Seconds a catalog read is reused (server-side). The parent also sends Cache-Control max-age=60. */
 /**
- * Hard cap on how stale /pricing can be after Daniel changes a price or switches the promo off. The page is
+ * Hard cap on how stale /pricing can be after the owner changes a price or switches the promo off. The page is
  * force-dynamic (no ISR), the fetch is no-store (no Next data cache), and this per-instance memory cache is the
  * only layer: an entry older than CATALOG_TTL_MS is never served; the request waits for a fresh read instead
  * (stale-while-revalidate would let an idle instance serve an old price once). Worst case = TTL + fetch timeout.

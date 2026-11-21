@@ -167,7 +167,7 @@ describe('catalog cache: total staleness capped (QA: price switched off must sho
     t = CATALOG_TTL_MS - 1;
     await getCatalogPricing(() => t, load);
     expect(load).toHaveBeenCalledTimes(1);
-    // Daniel switches the promo off; the first request after the TTL waits for the fresh read and shows it.
+    // The owner switches the promo off; the first request after the TTL waits for the fresh read and shows it.
     load.mockImplementation(async () => cat(17900));
     t = CATALOG_TTL_MS;
     expect((await getCatalogPricing(() => t, load)).plans.basic!.promo).toBeNull();
