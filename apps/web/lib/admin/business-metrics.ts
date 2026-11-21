@@ -2,9 +2,11 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { buildAggregateCostReport } from './build-cost-report';
 import { computeMrrIls } from '@/lib/module-api/billing/lib-billing-service';
 import type { Tier } from '@/lib/module-api/billing/lib-billing-tiers';
+import { loadInternalUserIds } from './internal-accounts';
 
 /**
- * Business dashboard metrics. REAL users only: profiles.role = 'user' (admin + 'test' e2e accounts excluded everywhere).
+ * Business dashboard metrics. REAL users only: profiles.role = 'user' (admin + 'test' e2e accounts excluded everywhere),
+ * minus synthetic / reserved-test-domain accounts (see internal-accounts.ts).
  */
 export type BusinessMetrics = {
   windowDays: number;
@@ -29,8 +31,11 @@ export type BusinessMetrics = {
 export async function buildBusinessMetrics(admin: SupabaseClient, windowDays = 30, now = new Date()): Promise<BusinessMetrics> {
   const since = new Date(now.getTime() - windowDays * 86_400_000).toISOString();
   const since7 = new Date(now.getTime() - 7 * 86_400_000).toISOString();
-  const { data: profiles } = await admin.from('profiles').select('id, created_at, last_active_at, onboarding_completed, engagement_status').eq('role', 'user').limit(50_000);
-  const users = profiles ?? [];
+  const [{ data: profiles }, internal] = await Promise.all([
+    admin.from('profiles').select('id, created_at, last_active_at, onboarding_completed, engagement_status').eq('role', 'user').limit(50_000),
+    loadInternalUserIds(admin),
+  ]);
+  const users = (profiles ?? []).filter((p) => !internal.has(p.id as string));
   const ids = new Set(users.map((p) => p.id as string));
 
   const { data: subsRaw } = await admin.from('subscriptions').select('user_id, tier, plan_code, billing_interval, status, trial_ends_at, canceled_at, current_period_end, created_at').limit(50_000);

@@ -61,3 +61,17 @@ export async function runLogRetentionJob(db: SupabaseClient, opts: { dryRun?: bo
   const deleted = Object.values(result.tables ?? {}).reduce((a, t) => a + (t.deleted || 0), 0);
   return { result, deleted, db_bytes: storage.db_bytes, alert: !!alert, vacuum: vacuumCandidates(storage) };
 }
+
+/**
+ * Backstop for the daily purge: runs the same idempotent job only when the last real (non-dry) run is older than
+ * `maxAgeHours`. Called from the master job (QStash, proven daily), because the dedicated Vercel cron left no real
+ * run in log_retention_runs since the table was created (only two dry runs, 26.10). Counts only, never row content.
+ */
+export async function runLogRetentionIfStale(db: SupabaseClient, now = new Date(), maxAgeHours = 20) {
+  const { data, error } = await db.from('log_retention_runs').select('created_at').eq('dry_run', false).order('created_at', { ascending: false }).limit(1);
+  if (error) throw new Error(error.message);
+  const last = (data?.[0] as { created_at?: string } | undefined)?.created_at ?? null;
+  if (last && now.getTime() - Date.parse(last) < maxAgeHours * 3_600_000) return { ran: false as const, last };
+  const out = await runLogRetentionJob(db);
+  return { ran: true as const, last, deleted: out.deleted, alert: out.alert };
+}

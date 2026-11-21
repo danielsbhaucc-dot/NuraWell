@@ -1,6 +1,7 @@
 import 'server-only';
 /** Loads receipts + metered usage for the smart cost ledger and runs the pure engine. */
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { loadInternalUserIds } from './internal-accounts';
 import { buildLedger, monthsBack, receiptIls, type LedgerReceipt, type MonthUsage } from './cost-ledger-core';
 import { monthUsdIls, normalizePending } from './cost-normalize';
 import { costVendor, COST_VENDORS } from './cost-vendors';
@@ -41,8 +42,10 @@ export async function loadCostLedger(admin: SupabaseClient, now = new Date(), nM
     admin.from('profiles').select('id').eq('role', 'user').limit(50_000),
     admin.from('subscriptions').select('user_id, status, created_at, canceled_at').limit(50_000),
   ]);
+  const internal = await loadInternalUserIds(admin);
 
-  const real = new Set(((profilesRes.data ?? []) as Array<{ id: string }>).map((p) => p.id));
+  // Synthetic / reserved-test-domain accounts are operating cost too, not customers.
+  const real = new Set(((profilesRes.data ?? []) as Array<{ id: string }>).map((p) => p.id).filter((id) => !internal.has(id)));
   const subs = (subsRes.data ?? []) as Array<{ user_id: string; status: string; created_at: string; canceled_at: string | null }>;
 
   const usage: MonthUsage[] = [];
