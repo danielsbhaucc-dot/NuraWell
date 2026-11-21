@@ -5,10 +5,9 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('server-only', () => ({}));
-vi.mock('next/cache', () => ({ unstable_cache: (fn: () => unknown) => fn }));
 
 import { parseCatalog } from '@/lib/billing/catalog-parse';
-import { catalogUrl, fetchCatalogPricing } from '@/lib/billing/catalog';
+import { CATALOG_TTL_MS, __resetCatalogCache, catalogUrl, fetchCatalogPricing, getCatalogPricing } from '@/lib/billing/catalog';
 import { fallbackPricing, withoutExpiredPromos, RECOMMENDED_PLAN, type CatalogPricing } from '@/lib/billing/plans';
 import { PlansGrid, promoBanner, shekels } from '@/components/billing/PlansGrid';
 
@@ -54,7 +53,7 @@ describe('central catalog adapter', () => {
     const html = render(c);
     expect(html).not.toContain('<s ');
     expect(html).not.toContain('promo-banner');
-    expect(text(html)).toContain('₪179');
+    expect(text(html)).toContain('179 ₪');
   });
 
   it('promo expired (enabled but endsAt passed): shown at full price, also when cached data turns stale later', () => {
@@ -71,7 +70,7 @@ describe('central catalog adapter', () => {
     const c = parseCatalog(payload([plan('basic', 17900, 9900, fixed), plan('whatsapp', 19900, 9900, fixed)]), NOW)!;
     expect(c.plans.basic).toMatchObject({ finalMinor: 9900, promo: { type: 'fixed', months: 2 } });
     const t = text(render(c));
-    expect(t).toContain('₪99');
+    expect(t).toContain('99 ₪');
     expect(t).toContain('מחיר השקה למנוי חדש ל־2 החודשים הראשונים');
     expect(t).toContain('ל־2 החודשים הראשונים, ואחר כך 179 ₪');
     expect(t).not.toContain('בתוקף עד'); // no endsAt → no end date
@@ -80,6 +79,7 @@ describe('central catalog adapter', () => {
   it('rounding: agorot shown only when sent; whole shekels otherwise; mixed promos get a neutral banner', () => {
     expect(shekels(10740)).toBe('107.40');
     expect(shekels(10700)).toBe('107');
+    expect(shekels(149000)).toBe('1,490'); // same as the parent purchase page (he-IL)
     expect(promoBanner([{ fullMinor: 1, finalMinor: 1, promo: { type: 'percent', value: 40, months: 3 } }, { fullMinor: 1, finalMinor: 1, promo: { type: 'percent', value: 20, months: 3 } }])).toBe('מחיר השקה למנוי חדש, לתקופה מוגבלת');
     expect(promoBanner([{ fullMinor: 1, finalMinor: 1, promo: null }])).toBeNull();
   });
@@ -92,7 +92,7 @@ describe('central catalog adapter', () => {
     const html = render(c);
     expect(html).not.toContain('promo-banner');
     expect(html).not.toContain('<s ');
-    expect(text(html)).toContain('₪189');
+    expect(text(html)).toContain('189 ₪');
   });
 
   it('a discount shows only for promo.enabled=true together with finalMinor', () => {
@@ -107,7 +107,8 @@ describe('central catalog adapter', () => {
     expect(c.recommended).toBe('basic');
     const html = render(c);
     expect(html.match(/data-testid="plan-recommended"/g)).toHaveLength(1);
-    expect(html).toMatch(/aria-label="מומלץ: הכי משתלם"/);
+    expect(html).toMatch(/aria-label="מסלול מומלץ"[^>]*>מומלץ</);
+    expect(html).not.toContain('הכי משתלם');
     expect(parseCatalog(payload([plan('basic', 17900, 10740, promoOn, { recommended: false })]), NOW)!.recommended).toBeNull();
   });
 
@@ -136,6 +137,61 @@ describe('approved promo copy (Natan, Uri)', () => {
     const f = fallbackPricing();
     expect(f.recommended).toBe('whatsapp');
     for (const m of Object.values(f.plans)) expect(m).toEqual({ fullMinor: m!.fullMinor, finalMinor: m!.fullMinor, promo: null });
+  });
+});
+
+describe('requirements 000078 §8/§10: the server finalMinor is shown to the agora, never re-rounded', () => {
+  it('default state 10740 / 11940 / 26940 → 107.40 / 119.40 / 269.40 ₪, never 107 / 119 / 269', () => {
+    const t = render(parseCatalog(live, NOW)!).replace(/<[^>]+>/g, ''); // inline spans joined as the eye reads them
+    for (const s of ['107.40 ₪', '119.40 ₪', '269.40 ₪', '179 ₪', '199 ₪', '449 ₪']) expect(t).toContain(s);
+    expect(t).not.toMatch(/\b(107|119|269) ₪/);
+  });
+});
+
+describe('catalog available: buy links work, no unavailable notice', () => {
+  it('three buy links with ?plan=, no notice, no retry', () => {
+    const html = render(parseCatalog(live, NOW)!);
+    expect(html.match(/data-testid="plan-buy"/g)).toHaveLength(3);
+    expect(html).not.toContain('pricing-unavailable');
+    expect(html).not.toContain('pricing-retry');
+  });
+});
+
+describe('catalog cache: total staleness capped (QA: price switched off must show within 60s)', () => {
+  const cat = (fin: number) => parseCatalog(payload([plan('basic', 17900, fin, fin < 17900 ? promoOn : promoOff)]), NOW)!;
+  it('serves the cached read under the TTL, and never an entry older than it (no stale-while-revalidate)', async () => {
+    __resetCatalogCache();
+    let t = 0;
+    const load = vi.fn(async () => cat(10740));
+    expect((await getCatalogPricing(() => t, load)).plans.basic!.finalMinor).toBe(10740);
+    t = CATALOG_TTL_MS - 1;
+    await getCatalogPricing(() => t, load);
+    expect(load).toHaveBeenCalledTimes(1);
+    // Daniel switches the promo off; the first request after the TTL waits for the fresh read and shows it.
+    load.mockImplementation(async () => cat(17900));
+    t = CATALOG_TTL_MS;
+    expect((await getCatalogPricing(() => t, load)).plans.basic!.promo).toBeNull();
+    expect(load).toHaveBeenCalledTimes(2);
+    expect(CATALOG_TTL_MS).toBeLessThanOrEqual(60_000);
+  });
+  it('a fallback is not cached (retry hits the catalog at once); concurrent requests share one read', async () => {
+    __resetCatalogCache();
+    const load = vi.fn(async () => fallbackPricing());
+    await getCatalogPricing(() => 0, load);
+    await getCatalogPricing(() => 1, load);
+    expect(load).toHaveBeenCalledTimes(2);
+    __resetCatalogCache();
+    const slow = vi.fn(() => new Promise<CatalogPricing>((r) => setTimeout(() => r(cat(10740)), 5)));
+    await Promise.all([getCatalogPricing(() => 0, slow), getCatalogPricing(() => 0, slow), getCatalogPricing(() => 0, slow)]);
+    expect(slow).toHaveBeenCalledTimes(1);
+  });
+  it('no other cache layer: /pricing is force-dynamic, the fetch is no-store, no unstable_cache/revalidate', () => {
+    const page = readFileSync('app/pricing/page.tsx', 'utf8');
+    const lib = readFileSync('lib/billing/catalog.ts', 'utf8');
+    expect(page).toMatch(/export const dynamic = 'force-dynamic'/);
+    expect(page).not.toMatch(/export const revalidate/);
+    expect(lib).toContain("cache: 'no-store'");
+    expect(lib).not.toMatch(/unstable_cache|revalidate:|'use cache'/);
   });
 });
 
@@ -175,11 +231,17 @@ describe('server fetcher falls back to plans.ts', () => {
     expect(fb.source).toBe('fallback');
     const html = render(fb);
     const t = text(html);
-    for (const s of ['₪179', '₪199', '₪449', 'הכי משתלם']) expect(t).toContain(s);
+    for (const s of ['179 ₪', '199 ₪', '449 ₪', 'מומלץ']) expect(t).toContain(s);
+    // no dead end: a clear Hebrew notice with a retry, and no buy link to a parent page that cannot price the order
+    expect(html).toContain('data-testid="pricing-unavailable"');
+    expect(t).toContain('המחירים המעודכנים לא זמינים כרגע, ולכן אי אפשר לרכוש עכשיו.');
+    expect(html).toMatch(/<a href="\/pricing" data-testid="pricing-retry"[^>]*>לנסות שוב<\/a>/);
+    expect(html).not.toContain('data-testid="plan-buy"');
+    expect(html).not.toContain('?plan=');
+    expect(html.match(/data-testid="plan-unavailable-now"/g)).toHaveLength(3);
     for (const s of ['107', '119', '269', 'מחיר השקה', 'החודשים הראשונים', 'הנחה']) expect(t).not.toContain(s);
     expect(html).not.toContain('<s ');
     expect(html.match(/data-testid="plan-recommended"/g)).toHaveLength(1);
-    expect(html).toMatch(/data-testid="plan-buy"[^>]*>|href="[^"]*\?plan=whatsapp"/);
   });
 });
 

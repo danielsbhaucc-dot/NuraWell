@@ -36,12 +36,12 @@ export function purchaseHref(base: string | null | undefined, plan: PlanId, tria
 }
 
 /**
- * The recommended plan on /pricing (badge, highlight, first on mobile). Change it here only.
- * The visible badge text stays as it is; screen readers hear RECOMMENDED_LABEL with it.
+ * The FALLBACK recommended plan on /pricing (badge, highlight, first on mobile), used only when the catalog is
+ * unavailable or sends no `recommended` field. Live, the catalog's plans[].recommended decides.
  */
 export const RECOMMENDED_PLAN: PlanId = 'whatsapp';
-export const RECOMMENDED_LABEL = 'מומלץ';
-export const RECOMMENDED_BADGE = 'הכי משתלם';
+export const RECOMMENDED_BADGE = 'מומלץ';
+export const RECOMMENDED_ARIA = 'מסלול מומלץ';
 
 export type PlanConfig = {
   id: PlanId;

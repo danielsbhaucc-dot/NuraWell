@@ -7,7 +7,7 @@ import {
   EXTRA_MINUTES,
   PLANS,
   RECOMMENDED_BADGE,
-  RECOMMENDED_LABEL,
+  RECOMMENDED_ARIA,
   TRIAL,
   maxAnnualSavePercent,
   planPrice,
@@ -18,9 +18,27 @@ import {
   type PlanInterval,
 } from '@/lib/billing/plans';
 
-/** Whole shekels as today (179); agorot only when the catalog sends them (179.90). */
+/**
+ * Amount only, formatted exactly like the parent purchase page (products/nurawell/buy.js `money()`):
+ * he-IL digits, whole shekels without decimals (179, 1,490), otherwise two decimals (107.40). The sign goes after: "X ₪".
+ */
 export function shekels(minor: number): string {
-  return minor % 100 === 0 ? String(minor / 100) : (minor / 100).toFixed(2);
+  const n = minor / 100;
+  return Number.isInteger(n) ? n.toLocaleString('he-IL') : n.toLocaleString('he-IL', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+/**
+ * The big monthly price, exactly as the catalog sends it (agorot are kept, never re-rounded), set smaller, and the
+ * number never breaks across lines, so it fits a 360px screen at 200% font.
+ */
+function BigPrice({ minor }: { minor: number }) {
+  const [ils, ag] = shekels(minor).split('.');
+  return (
+    <span className="whitespace-nowrap text-2xl font-black text-on-dark min-[400px]:text-3xl md:text-4xl" data-testid="plan-price">
+      {ils}
+      {ag ? <span className="text-[0.6em]">.{ag}</span> : null} ₪
+    </span>
+  );
 }
 
 type Promo = NonNullable<MonthlyPrice['promo']>;
@@ -59,9 +77,21 @@ export function PlansGrid({ purchaseBase, pricing, hasActiveSubscription = false
   // Only plans the catalog sells (all of them in the fallback). Copy and annual prices stay in plans.ts.
   const onSale = PLANS.filter((p) => pricing.plans[p.id]);
   const banner = promoBanner(onSale.map((p) => pricing.plans[p.id]!));
+  // Catalog unreachable/invalid: the parent purchase page cannot price the order either (it answers 503), so no
+  // buy link that dead-ends; a clear notice with a retry instead. Base prices from plans.ts stay visible.
+  const unavailable = pricing.source === 'fallback';
 
   return (
     <div className="flex flex-col gap-5">
+      {unavailable ? (
+        <div role="status" data-testid="pricing-unavailable" className="flex flex-col items-center gap-2 self-center rounded-3xl border border-amber-300/40 bg-amber-300/10 px-4 py-3 text-center text-sm text-on-dark">
+          <p className="font-bold">המחירים המעודכנים לא זמינים כרגע, ולכן אי אפשר לרכוש עכשיו.</p>
+          <p className="text-on-dark-soft">המחירים שמוצגים הם מחירי הבסיס בלבד. כדאי לנסות שוב בעוד דקה.</p>
+          <a href="/pricing" data-testid="pricing-retry" className={buttonClass('primary', 'sm')}>
+            לנסות שוב
+          </a>
+        </div>
+      ) : null}
       {banner ? (
         <p data-testid="promo-banner" className="self-center rounded-full border border-primary-400/30 bg-primary-400/10 px-4 py-1.5 text-center text-sm font-bold text-primary-200">
           {banner}
@@ -109,26 +139,26 @@ export function PlansGrid({ purchaseBase, pricing, hasActiveSubscription = false
               }`}
             >
               {featured ? (
-                <span data-testid="plan-recommended" aria-label={`${RECOMMENDED_LABEL}: ${RECOMMENDED_BADGE}`} className="absolute -top-3 right-5 rounded-full bg-linear-to-br from-accent-300 to-accent-500 px-3 py-1 text-xs font-black text-forest-950 shadow-btn">{RECOMMENDED_BADGE}</span>
+                <span data-testid="plan-recommended" aria-label={RECOMMENDED_ARIA} className="absolute -top-3 right-5 rounded-full bg-linear-to-br from-accent-300 to-accent-500 px-3 py-1 text-xs font-black text-forest-950 shadow-btn">{RECOMMENDED_BADGE}</span>
               ) : null}
-              <h2 className="text-xl font-black text-on-dark">{p.name}</h2>
+              <h2 className="text-lg font-black text-on-dark min-[400px]:text-xl">{p.name}</h2>
               <p className="text-sm text-on-dark-soft">{p.tagline}</p>
               <div className="flex flex-wrap items-baseline gap-2">
                 {interval === 'annual' && annual.monthlyYearTotal != null ? (
                   <>
-                    <span className="text-4xl font-black text-on-dark">₪{annual.full}</span>
+                    <span className="text-3xl font-black text-on-dark min-[400px]:text-4xl">₪{annual.full}</span>
                     <s className="text-base text-on-dark-soft/80">₪{annual.monthlyYearTotal}</s>
                     <span className="text-sm text-on-dark-soft">לשנה (≈₪{annual.monthlyEquivalent} לחודש)</span>
                   </>
                 ) : m.promo ? (
                   <>
-                    <span className="text-4xl font-black text-on-dark">₪{shekels(m.finalMinor)}</span>
-                    <s className="text-base text-on-dark-soft/80">₪{shekels(m.fullMinor)}</s>
+                    <BigPrice minor={m.finalMinor} />
+                    <s className="text-base text-on-dark-soft/80">{shekels(m.fullMinor)} ₪</s>
                     <span className="text-sm text-on-dark-soft">לחודש</span>
                   </>
                 ) : (
                   <>
-                    <span className="text-4xl font-black text-on-dark">₪{shekels(m.fullMinor)}</span>
+                    <BigPrice minor={m.fullMinor} />
                     <span className="text-sm text-on-dark-soft">לחודש</span>
                   </>
                 )}
@@ -155,6 +185,10 @@ export function PlansGrid({ purchaseBase, pricing, hasActiveSubscription = false
                 <Link href="/settings/subscription" className={cta} data-testid="plan-manage">
                   יש לך מנוי פעיל · ניהול המנוי
                 </Link>
+              ) : unavailable ? (
+                <span aria-disabled="true" className={`${cta} cursor-not-allowed opacity-60`} data-testid="plan-unavailable-now">
+                  הרכישה לא זמינה כרגע
+                </span>
               ) : href ? (
                 <a href={href} className={cta} data-testid="plan-buy">
                   {`בחירה ב${p.name}`}
