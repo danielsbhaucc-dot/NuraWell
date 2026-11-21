@@ -8,6 +8,8 @@ import { decryptInvoiceDocUrl, sealInvoiceDocUrl } from '@/lib/billing/invoice-d
 import { runBillingInvoiceDocUrlBackfill } from '@/lib/privacy/billing-invoice-doc-url-backfill';
 
 const DB = 'nurawell_stack_chain';
+/** Own fixture user: never borrow a profile another live test may create or delete concurrently. */
+const FIXTURE_UID = 'b111c0de-d0c0-4ad1-8b11-1d0c0e1a2b3c';
 const TOKEN_URL = 'https://provider.example/invoice/abc.pdf?access_token=sekrit-token-value-xyz&exp=999';
 
 function loadEnv() {
@@ -20,6 +22,21 @@ function psql(sql: string): string {
   return execFileSync('psql', ['-h', '127.0.0.1', '-U', 'postgres', '-d', DB, '-v', 'ON_ERROR_STOP=1', '-Atq'], {
     encoding: 'utf8', input: sql,
   }).trim();
+}
+
+function dropFixture() {
+  psql(`delete from public.billing_invoices where user_id = '${FIXTURE_UID}';
+    delete from public.user_data_keys where user_id = '${FIXTURE_UID}';
+    delete from public.profiles where id = '${FIXTURE_UID}';
+    delete from auth.users where id = '${FIXTURE_UID}'`);
+}
+function createFixture(): string {
+  dropFixture();
+  psql(`insert into auth.users (id, is_sso_user, is_anonymous) values ('${FIXTURE_UID}', false, false) on conflict (id) do nothing;
+    insert into public.profiles (id, role) values ('${FIXTURE_UID}', 'test') on conflict (id) do update set role = 'test'`);
+  const got = psql(`select id::text from public.profiles where id = '${FIXTURE_UID}'`);
+  if (got !== FIXTURE_UID) throw new Error('billing doc_url fixture user was not created');
+  return FIXTURE_UID;
 }
 
 const ENV_MISSING = labMissing([{ kind: 'file', path: LAB_ENV_FILE }]);
@@ -57,9 +74,8 @@ describe.skipIf(!!ENV_MISSING)(labTitle('billing_invoices.doc_url seal (no billi
 
   it.skipIf(!!LAB)(labTitle('backfill dry-run empty + synthetic legacy apply/idempotent (local PG)', LAB), async () => {
     __resetFieldCrypto();
-    setDekStoreForTests(null); // real user_data_keys for admin fixture
-    const uid = psql(`select id::text from public.profiles where role='admin' limit 1`);
-    if (!uid) return;
+    setDekStoreForTests(null); // real user_data_keys for the own fixture user
+    const uid = createFixture();
     const id = psql(`insert into public.billing_invoices (user_id, provider, doc_type, doc_number, doc_url, total_agorot, vat_agorot)
       values ('${uid}', 'test', 'invoice_receipt', 'DOC-URL-TEST-1', '${TOKEN_URL.replace(/'/g, "''")}', 100, 17) returning id::text`);
     try {
@@ -80,56 +96,59 @@ describe.skipIf(!!ENV_MISSING)(labTitle('billing_invoices.doc_url seal (no billi
       const again = await runBillingInvoiceDocUrlBackfill([{ id, user_id: uid, doc_url: stored }], write, true);
       expect(again).toMatchObject({ skipped: 1, written: 0, aborted: false });
     } finally {
-      psql(`delete from public.billing_invoices where id='${id}'`);
+      dropFixture();
     }
   }, 60_000);
 
   it.skipIf(!!LAB)(labTitle('enforcement ON rejects plaintext doc_url in rolled-back LOCAL txn; prod flag stays off', LAB), () => {
     const pre = psql(`select active::text from public.field_enc_enforcement where table_name='billing_invoices'`);
     expect(pre).toBe('false');
-    const uid = psql(`select id::text from public.profiles limit 1`);
-    if (!uid) return;
-    const out = psql(`
-      begin;
-      update public.field_enc_enforcement set active = true where table_name = 'billing_invoices';
-      do $$
-      declare
-        uid uuid := '${uid}'::uuid;
-        rejected boolean := false;
-        err text := '';
-        sealed_ok boolean := false;
-      begin
+    const uid = createFixture();
+    try {
+      const out = psql(`
+        begin;
+        update public.field_enc_enforcement set active = true where table_name = 'billing_invoices';
+        do $$
+        declare
+          uid uuid := '${uid}'::uuid;
+          rejected boolean := false;
+          err text := '';
+          sealed_ok boolean := false;
         begin
-          insert into public.billing_invoices (user_id, provider, doc_type, doc_number, doc_url, total_agorot, vat_agorot)
-            values (uid, 'test', 'invoice_receipt', 'ENC-REJECT-VITEST-1',
-                    'https://provider.example/invoice/proof.pdf?access_token=sekrit-token-value-xyz', 100, 17);
-        exception when others then
-          rejected := true;
-          err := sqlerrm;
-        end;
-        if not rejected then raise exception 'plaintext insert was NOT rejected'; end if;
-        if position('enc_reject_plaintext' in err) = 0 or position('doc_url' in err) = 0 then
-          raise exception 'unexpected reject message: %', err;
-        end if;
-        if position('sekrit-token-value-xyz' in err) > 0 then
-          raise exception 'reject message leaked plaintext token';
-        end if;
-        begin
-          insert into public.billing_invoices (user_id, provider, doc_type, doc_number, doc_url, total_agorot, vat_agorot)
-            values (uid, 'test', 'invoice_receipt', 'ENC-REJECT-VITEST-2',
-                    'enc:v2:deadbeefdeadbeefdeadbeefdeadbeef:aabb', 100, 17);
-          sealed_ok := true;
-        exception when others then
-          raise exception 'sealed insert rejected unexpectedly: %', sqlerrm;
-        end;
-        if not sealed_ok then raise exception 'sealed path failed'; end if;
-      end $$;
-      select 'rolled';
-      rollback;
-    `);
-    expect(out).toContain('rolled');
-    expect(psql(`select active::text from public.field_enc_enforcement where table_name='billing_invoices'`)).toBe('false');
-    expect(psql(`select count(*)::text from public.field_enc_enforcement where active=true`)).toBe('0');
-    expect(psql(`select count(*)::text from public.billing_invoices where doc_number like 'ENC-REJECT-VITEST-%'`)).toBe('0');
+          begin
+            insert into public.billing_invoices (user_id, provider, doc_type, doc_number, doc_url, total_agorot, vat_agorot)
+              values (uid, 'test', 'invoice_receipt', 'ENC-REJECT-VITEST-1',
+                      'https://provider.example/invoice/proof.pdf?access_token=sekrit-token-value-xyz', 100, 17);
+          exception when others then
+            rejected := true;
+            err := sqlerrm;
+          end;
+          if not rejected then raise exception 'plaintext insert was NOT rejected'; end if;
+          if position('enc_reject_plaintext' in err) = 0 or position('doc_url' in err) = 0 then
+            raise exception 'unexpected reject message: %', err;
+          end if;
+          if position('sekrit-token-value-xyz' in err) > 0 then
+            raise exception 'reject message leaked plaintext token';
+          end if;
+          begin
+            insert into public.billing_invoices (user_id, provider, doc_type, doc_number, doc_url, total_agorot, vat_agorot)
+              values (uid, 'test', 'invoice_receipt', 'ENC-REJECT-VITEST-2',
+                      'enc:v2:deadbeefdeadbeefdeadbeefdeadbeef:aabb', 100, 17);
+            sealed_ok := true;
+          exception when others then
+            raise exception 'sealed insert rejected unexpectedly: %', sqlerrm;
+          end;
+          if not sealed_ok then raise exception 'sealed path failed'; end if;
+        end $$;
+        select 'rolled';
+        rollback;
+      `);
+      expect(out).toContain('rolled');
+      expect(psql(`select active::text from public.field_enc_enforcement where table_name='billing_invoices'`)).toBe('false');
+      expect(psql(`select count(*)::text from public.field_enc_enforcement where active=true`)).toBe('0');
+      expect(psql(`select count(*)::text from public.billing_invoices where doc_number like 'ENC-REJECT-VITEST-%'`)).toBe('0');
+    } finally {
+      dropFixture();
+    }
   }, 30_000);
 });
