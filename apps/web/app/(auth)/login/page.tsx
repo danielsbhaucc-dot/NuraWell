@@ -495,6 +495,8 @@ const LoginFormContent = () => { // skipcq: JS-R1005
                 <button
                   type="submit"
                   disabled={isLoading}
+                  aria-busy={isLoading}
+                  data-testid="login-submit"
                   className="w-full py-4 rounded-2xl font-bold text-lg text-on-dark transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2"
                   style={{
                     background: 'linear-gradient(135deg, #047857, #10b981)',
@@ -502,10 +504,13 @@ const LoginFormContent = () => { // skipcq: JS-R1005
                   }}
                 >
                   {isLoading ? (
-                    <div className="w-5 h-5 border-2 border-on-dark/30 border-t-on-dark rounded-full animate-spin" />
+                    <>
+                      <div className="w-5 h-5 border-2 border-on-dark/30 border-t-on-dark rounded-full animate-spin" aria-hidden />
+                      <span className="sr-only">מתבצעת כניסה לחשבון</span>
+                    </>
                   ) : (
                     <>
-                      <LogIn className="w-5 h-5" />
+                      <LogIn className="w-5 h-5" aria-hidden />
                       כניסה לחשבון
                     </>
                   )}
@@ -523,7 +528,7 @@ const LoginFormContent = () => { // skipcq: JS-R1005
                 <button
                   type="button"
                   onClick={() => void handlePasskey()}
-                  aria-label="כניסה עם Face ID או טביעת אצבע"
+                  aria-label="Face ID או טביעת אצבע לכניסה"
                   disabled={passkeyBusy}
                   className={[
                     'w-full min-h-[52px] rounded-2xl font-bold flex items-center justify-center gap-2 max-[380px]:gap-1.5 transition-all active:scale-95 disabled:opacity-60',
@@ -548,7 +553,7 @@ const LoginFormContent = () => { // skipcq: JS-R1005
                 type="button"
                 onClick={() => setQrOpen(true)}
                 data-testid="login-qr"
-                aria-label="כניסה בסריקת קוד מהטלפון"
+                aria-label="סריקת קוד מהטלפון לכניסה"
                 className={[
                   'w-full min-h-[48px] rounded-2xl font-bold flex items-center justify-center gap-2 max-[380px]:gap-1.5 transition-all active:scale-95',
                   isDarkUi ? 'bg-on-dark/5 text-primary-50 ring-1 ring-on-dark/20' : 'bg-glass/50 text-primary-800 ring-1 ring-primary-300/60',

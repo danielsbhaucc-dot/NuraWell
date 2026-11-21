@@ -821,6 +821,17 @@ async function runMasterCron() {
     errors.push(`field_v2_backfill: ${e instanceof Error ? e.message : String(e)}`);
   }
 
+  // --- Log retention backstop (24-month access logs, 30–90-day operational logs). The dedicated Vercel cron
+  // left no real run since 26.10, so master runs the same idempotent purge when the last real run is >20h old.
+  if (process.env.LOG_RETENTION_IN_MASTER?.trim() !== '0') {
+    try {
+      const { runLogRetentionIfStale } = await import('@/lib/logs/retention-job');
+      console.log('[cron/master] log_retention', JSON.stringify(await runLogRetentionIfStale(admin)));
+    } catch (e) {
+      errors.push(`log_retention: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+
   // --- Nightly memory chain (session close → rollups → behaviour patterns) in its own invocation
   let memoryPipelineKick: { ok: boolean; reason?: string } | null = null;
   if (process.env.MEMORY_PIPELINE_KICK_FROM_MASTER?.trim() !== '0') {

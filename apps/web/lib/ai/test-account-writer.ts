@@ -1,8 +1,9 @@
 import type { V3Route } from './routing-v3';
+import { isReservedTestEmail } from '@/lib/admin/internal-accounts';
 /**
  * Cost guard (server-side, explicit): internal accounts never use the premium writers
  * (Terra / Claude / Grok). That covers profiles.role 'test' or 'admin', and any login
- * email on the reserved @test.com domain. They get the everyday lane (Luna,
+ * email on a reserved test domain (@test.com, example.com, *.test, *.invalid …). They get the everyday lane (Luna,
  * $0.20/M input vs Terra $2/M, cheaper than gpt-5.4-mini at $0.75/M), which runs
  * the same prompt, tools and voice rules, so e2e still exercises the full pipeline.
  * Real users (role 'user', real email) are untouched and keep the normal router.
@@ -15,8 +16,9 @@ export function isInternalTestRole(role: string | null | undefined): boolean {
   return typeof role === 'string' && INTERNAL_ROLES.has(role);
 }
 
+/** @test.com plus the RFC 2606 / 6761 reserved test domains (example.com, *.test, *.invalid …): never a real customer. */
 export function isInternalTestEmail(email: string | null | undefined): boolean {
-  return typeof email === 'string' && /@test\.com$/i.test(email.trim());
+  return isReservedTestEmail(email);
 }
 
 export function testAccountWriterOverride(

@@ -1,5 +1,6 @@
 import { signUsage as kitSignUsage } from '@core/security-privacy/feed';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { loadInternalUserIds } from '@/lib/admin/internal-accounts';
 import { centralLinkConfigured, createCentralLinkClient, sendCentralSecurityStatus } from '@/lib/central/central-link';
 
 /**
@@ -18,14 +19,17 @@ const since = (days: number) => new Date(Date.now() - days * 86_400_000).toISOSt
 // skipcq: JS-0067, JS-R1005 -- ES module export
 export async function collectUsageTotals(): Promise<UsageTotals> {
   const db = createAdminClient();
-  const [users, active, errors, cost] = await Promise.all([
-    db.from('profiles').select('id', { count: 'exact', head: true }),
-    db.from('profiles').select('id', { count: 'exact', head: true }).gte('last_active_at', since(7)),
+  // Real customers only: role 'user' minus synthetic / reserved-test-domain accounts (ids stay here; only counts leave).
+  const [users, active, errors, cost, internal] = await Promise.all([
+    db.from('profiles').select('id').eq('role', 'user').limit(50_000),
+    db.from('profiles').select('id').eq('role', 'user').gte('last_active_at', since(7)).limit(50_000),
     db.from('error_events').select('id', { count: 'exact', head: true }).gte('created_at', since(7)).in('severity', ['error', 'fatal']),
     db.from('ai_usage_events').select('cost_usd').gte('created_at', since(30)).limit(50_000),
+    loadInternalUserIds(db),
   ]);
+  const realCount = (r: { data: unknown; error: unknown }) => (r.error ? null : ((r.data ?? []) as Array<{ id: string }>).filter((p) => !internal.has(p.id)).length);
   const sum = cost.error ? null : Math.round((cost.data ?? []).reduce((a, r) => a + Number((r as { cost_usd: number | string }).cost_usd || 0), 0) * 10_000) / 10_000;
-  return { users: users.error ? null : users.count ?? null, active7d: active.error ? null : active.count ?? null, aiCost30dUsd: sum, errors7d: errors.error ? null : errors.count ?? null };
+  return { users: realCount(users), active7d: realCount(active), aiCost30dUsd: sum, errors7d: errors.error ? null : errors.count ?? null };
 }
 
 // skipcq: JS-0067, JS-R1005 -- ES module export
