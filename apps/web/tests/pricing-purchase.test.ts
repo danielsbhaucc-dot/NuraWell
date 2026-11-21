@@ -7,6 +7,7 @@ vi.mock('server-only', () => ({}));
 import { PLANS, TRIAL, purchaseHref, trialEnabled, PURCHASE_PLAN_CODE, planIdFromCode } from '../lib/billing/plans';
 import { startTrial } from '../lib/billing/service';
 import { PlansGrid } from '../components/billing/PlansGrid';
+import { fallbackPricing } from '../lib/billing/plans';
 
 const BASE = 'https://platform-core-preview.vercel.app/products/nurawell/';
 
@@ -26,7 +27,7 @@ describe('/pricing sells all three plans through the parent purchase page', () =
   });
 
   it('renders a buy link per plan, no waitlist, no white, RTL-safe copy', () => {
-    const html = renderToStaticMarkup(createElement(PlansGrid, { purchaseBase: BASE }));
+    const html = renderToStaticMarkup(createElement(PlansGrid, { purchaseBase: BASE, pricing: fallbackPricing() }));
     expect(html.match(/data-testid="plan-buy"/g)?.length).toBe(3);
     for (const c of ['basic', 'whatsapp', 'phone']) expect(html).toContain(`href="${BASE}?plan=${c}"`);
     expect(html).not.toMatch(/רשימת המתנה|רשימת ההמתנה/);
@@ -35,10 +36,10 @@ describe('/pricing sells all three plans through the parent purchase page', () =
   });
 
   it('active subscription → manage instead of a second purchase; no purchase URL → disabled, never a broken link', () => {
-    const active = renderToStaticMarkup(createElement(PlansGrid, { purchaseBase: BASE, hasActiveSubscription: true }));
+    const active = renderToStaticMarkup(createElement(PlansGrid, { purchaseBase: BASE, pricing: fallbackPricing(), hasActiveSubscription: true }));
     expect(active.match(/data-testid="plan-manage"/g)?.length).toBe(3);
     expect(active).not.toContain('plan-buy');
-    const none = renderToStaticMarkup(createElement(PlansGrid, { purchaseBase: null }));
+    const none = renderToStaticMarkup(createElement(PlansGrid, { purchaseBase: null, pricing: fallbackPricing() }));
     expect(none.match(/data-testid="plan-unavailable"/g)?.length).toBe(3);
     expect(none).not.toContain('href="null"');
   });
