@@ -6,8 +6,7 @@ export type PlanId = 'basic' | 'whatsapp' | 'premium';
 export type PlanInterval = 'monthly' | 'annual';
 
 export const PLAN_DEFAULT: PlanId = 'basic';
-/** Launch price: percent off for the first N months. Set percentOff to 0 to turn off. */
-export const LAUNCH_DISCOUNT = { percentOff: 40, months: 3 };
+// No local discount: promos come only from the central catalog (promo.enabled=true + finalMinor). See lib/billing/catalog.ts.
 export const EXTRA_MINUTES = { minutes: 30, priceIls: 129, comingSoon: true };
 /**
  * Free trial — OFF (days: 0). The single switch: set days > 0 to turn it on. Then /pricing shows the trial
@@ -35,6 +34,14 @@ export function purchaseHref(base: string | null | undefined, plan: PlanId, tria
   if (trialEnabled(trial)) u.searchParams.set('trial', String(trial.days));
   return u.toString();
 }
+
+/**
+ * The FALLBACK recommended plan on /pricing (badge, highlight, first on mobile), used only when the catalog is
+ * unavailable or sends no `recommended` field. Live, the catalog's plans[].recommended decides.
+ */
+export const RECOMMENDED_PLAN: PlanId = 'whatsapp';
+export const RECOMMENDED_BADGE = 'מומלץ';
+export const RECOMMENDED_ARIA = 'מסלול מומלץ';
 
 export type PlanConfig = {
   id: PlanId;
@@ -66,8 +73,6 @@ export const PLANS: PlanConfig[] = [
     tagline: 'אלמוג איתך גם ב-WhatsApp',
     monthlyIls: 199,
     annualIls: 1690,
-    badge: 'הכי משתלם',
-    highlighted: true,
     features: ['כל מה שבבסיסי', 'אלמוג ב-WhatsApp (בקרוב)', 'תזכורות ומעקב יזום ב-WhatsApp (בקרוב)', 'עדכון התוכנית ישירות מהשיחה (בקרוב)'],
   },
   {
@@ -81,8 +86,33 @@ export const PLANS: PlanConfig[] = [
   },
 ];
 
-/** Plan shown first / pre-selected on mobile. */
-export const MOBILE_FEATURED: PlanId = 'whatsapp';
+/** Plan shown first / pre-selected on mobile: the recommended plan. */
+export const MOBILE_FEATURED: PlanId = RECOMMENDED_PLAN;
+
+/** Monthly price of one plan as shown on /pricing, in agorot. `promo` is null when no promo is active. */
+export type MonthlyPrice = { fullMinor: number; finalMinor: number; promo: { type: 'percent' | 'fixed'; value: number; months: number; endsAt?: string | null } | null };
+/** `recommended`: the plan with the badge (null = none). The catalog decides when it sends `recommended`; else RECOMMENDED_PLAN. */
+export type CatalogPricing = { source: 'catalog' | 'fallback'; plans: Partial<Record<PlanId, MonthlyPrice>>; recommended: PlanId | null };
+
+/**
+ * What /pricing shows when the central catalog is unavailable (503, timeout, invalid data): base prices from the
+ * plans above, NO discount (Uri), and the recommended badge. A discount is shown only when the catalog sends one.
+ */
+export function fallbackPricing(): CatalogPricing {
+  const plans: Partial<Record<PlanId, MonthlyPrice>> = {};
+  for (const p of PLANS) plans[p.id] = { fullMinor: p.monthlyIls * 100, finalMinor: p.monthlyIls * 100, promo: null };
+  return { source: 'fallback', plans, recommended: RECOMMENDED_PLAN };
+}
+
+/** Render-time guard: a promo whose end date has passed is shown at full price (cached data can be minutes old). */
+export function withoutExpiredPromos(c: CatalogPricing, now: Date = new Date()): CatalogPricing {
+  const plans: Partial<Record<PlanId, MonthlyPrice>> = {};
+  for (const [id, p] of Object.entries(c.plans) as [PlanId, MonthlyPrice][]) {
+    const ends = p.promo?.endsAt ? Date.parse(p.promo.endsAt) : null;
+    plans[id] = p.promo && ends !== null && ends <= now.getTime() ? { fullMinor: p.fullMinor, finalMinor: p.fullMinor, promo: null } : p;
+  }
+  return { ...c, plans };
+}
 
 export function getPlan(id: string | null | undefined): PlanConfig {
   return PLANS.find((p) => p.id === id) ?? PLANS.find((p) => p.id === PLAN_DEFAULT)!;
@@ -124,7 +154,6 @@ export function maxAnnualSavePercent(): number {
 }
 
 export function planPrice(p: PlanConfig, interval: PlanInterval): PlanPrice {
-  const off = LAUNCH_DISCOUNT.percentOff;
   if (interval === 'annual') {
     const monthlyYearTotal = p.monthlyIls * 12;
     return {
@@ -136,12 +165,11 @@ export function planPrice(p: PlanConfig, interval: PlanInterval): PlanPrice {
       monthlyYearTotal,
     };
   }
-  const launch = off > 0 ? Math.round(p.monthlyIls * (1 - off / 100)) : null;
   return {
     full: p.monthlyIls,
-    launch,
+    launch: null, // monthly promos come only from the central catalog
     per: 'month',
-    monthlyEquivalent: launch ?? p.monthlyIls,
+    monthlyEquivalent: p.monthlyIls,
     savePercent: null,
     monthlyYearTotal: null,
   };
