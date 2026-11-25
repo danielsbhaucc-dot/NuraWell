@@ -3,6 +3,7 @@ import { NURAWELL_CHAT_SYSTEM_PROMPT_V2, ALMOG_CHAT_FINAL_GUARDRAILS_V2, almogPr
 import { budgetHistoryV2, budgetContextSectionsV2, sectionSizes } from '../../../../../lib/ai/context-budget-v2';
 import { createRawUiStreamFilter, encodeResolvedChatUi, hasResolvedContent, parseRawChatUi, resolveChatUi, stripRawChatUi } from '@/lib/ai/chat-ui/blocks';
 import { meteredFetch, setAiUsageUser, withAiUsage } from '@/lib/ai/usage-meter';
+import { randomSamplingSeed } from '@/lib/ai/random-sampling-seed';
 import { detectCrisisSignals } from '@/lib/safety/crisis-detector';
 import { recordCrisisSignal } from '@/lib/safety/record-crisis';
 import { createAiProvider } from '@/lib/ai/provider-factory';
@@ -312,16 +313,6 @@ function chatRateLimitWindows() {
 const BASE_SYSTEM_PROMPT = NURAWELL_CHAT_SYSTEM_PROMPT;
 
 const MIN_STREAM_PREFIX_CHARS = 4;
-
-/**
- * seed אקראי לכל בקשה. למה: חלק מספקי ה-Llama ב-OpenRouter דוגמים עם seed קבוע
- * (ברירת מחדל) — מה שגורם לאותו קלט ("היי מה קורה") להחזיר *בדיוק* אותה תשובה
- * בכל שיחה, גם בטמפרטורה גבוהה. seed אקראי שובר את הדטרמיניזם ומחזיר דינמיות.
- * (seed משפיע רק על הדגימה, לא על מפתח ה-prompt-cache — אז אין פגיעה בקאש.)
- */
-function randomSamplingSeed(): number {
-  return Math.floor(Math.random() * 2_000_000_000);
-}
 
 function isStubModelReply(text: string): boolean {
   const t = normalizeLine(text);
