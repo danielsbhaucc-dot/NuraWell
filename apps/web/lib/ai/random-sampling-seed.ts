@@ -9,10 +9,10 @@
  */
 const SAMPLING_SEED_MAX = 2_000_000_000;
 
-export function randomSamplingSeed(): number {
+export const randomSamplingSeed = (): number => {
   const bytes = new Uint32Array(1);
   crypto.getRandomValues(bytes);
   return bytes[0] % SAMPLING_SEED_MAX;
-}
+};
 
 export const RANDOM_SAMPLING_SEED_MAX = SAMPLING_SEED_MAX;
