@@ -179,6 +179,11 @@ export const recordBatchUsage = async (params: {
   });
 };
 
+const ignoreFloatingPromise = (job: Promise<unknown>): undefined => {
+  job.catch(() => undefined);
+  return undefined;
+};
+
 const schedule = (p: Promise<unknown>) => {
   const safe = p.catch(() => undefined);
   try {
@@ -187,14 +192,14 @@ const schedule = (p: Promise<unknown>) => {
   } catch {
     /* outside a request scope */
   }
-  void safe;
+  ignoreFloatingPromise(safe);
 };
 
 /** Runtime fallback: no feature tag reached the meter. Name the caller so it can be fixed. */
 export const _callerFromStack = (stack: string | undefined): string => {
   for (const line of (stack ?? '').split('\n').slice(1)) {
     if (/usage-meter|node_modules|node:internal|openai|@ai-sdk|\(native\)/.test(line)) continue;
-    const match = line.match(/(?:app|lib)\/[\w\-./\[\]]+?\.(?:ts|tsx|js)/) ?? line.match(/([\w\-.]+\.(?:ts|tsx|js))/);
+    const match = line.match(/(?:app|lib)\/[\w./[\]-]+?\.(?:ts|tsx|js)/) ?? line.match(/([\w.-]+\.(?:ts|tsx|js))/);
     if (match) return match[0].replace(/^.*?((?:app|lib)\/)/, '$1').slice(-50);
   }
   return 'unknown';
@@ -220,10 +225,10 @@ const persistUsageRow = (
   const { runId, started, userId, feature, reqModel } = params;
   return (usage, model, provider) => {
     if (runId) {
-      void parentAiFinish(runId, {
+      ignoreFloatingPromise(parentAiFinish(runId, {
         ok: true, costUsd: typeof usage?.cost === 'number' ? usage.cost : 0,
         tokensIn: usage?.prompt_tokens ?? 0, tokensOut: usage?.completion_tokens ?? 0, ms: Date.now() - started,
-      });
+      }));
     }
     return usage && record({
       user_id: userId && UUID.test(userId) ? userId : null,
@@ -260,41 +265,60 @@ const attachSseUsageLogger = (res: Response, save: UsageSave): Response => {
   return new Response(primary, { status: res.status, statusText: res.statusText, headers: res.headers });
 };
 
-const runMeteredFetch = async (
-  base: typeof fetch,
-  fixedMeta: { userId?: string | null; feature: string } | undefined,
-  input: Parameters<typeof fetch>[0],
-  init?: Parameters<typeof fetch>[1]
-): Promise<Response> => {
-  const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
-  const nextInit =
-    /openrouter\.ai/.test(url) && typeof init?.body === 'string'
-      ? (applyOpenRouterProviderIgnoreToInit(url, init) ?? init)
-      : init;
-  const isAi = /(openrouter\.ai\/api\/v1|api\.groq\.com\/openai\/v1|api\.deepseek\.com\/v1)\/(chat\/completions|embeddings)$/.test(url);
-  if (!isAi || typeof nextInit?.body !== 'string') return base(input, nextInit);
-  const rawBody = nextInit.body;
-  let body: Record<string, unknown>;
+const requestUrlOf = (input: Parameters<typeof fetch>[0]): string =>
+  typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+
+const withIgnoreIfOpenRouter = (url: string, init?: RequestInit): RequestInit | undefined =>
+  /openrouter\.ai/.test(url) && typeof init?.body === 'string'
+    ? (applyOpenRouterProviderIgnoreToInit(url, init) ?? init)
+    : init;
+
+const isMeteredAiUrl = (url: string): boolean =>
+  /(openrouter\.ai\/api\/v1|api\.groq\.com\/openai\/v1|api\.deepseek\.com\/v1)\/(chat\/completions|embeddings)$/.test(url);
+
+const parseJsonBody = (raw: string): Record<string, unknown> | null => {
   try {
-    body = JSON.parse(rawBody);
+    return JSON.parse(raw) as Record<string, unknown>;
   } catch {
-    return base(input, nextInit);
+    return null;
   }
+};
+
+const usageContextOf = (
+  fixedMeta: { userId?: string | null; feature: string } | undefined,
+  body: Record<string, unknown>
+): { ctx: AiUsageStore; userId: string | null } => {
   const store = als?.getStore() ?? {};
   const ctx: AiUsageStore = { userId: fixedMeta?.userId ?? store.userId, feature: fixedMeta?.feature ?? store.feature };
-  const userId = ctx.userId ?? (typeof body.user === 'string' && UUID.test(body.user) ? body.user : null);
-  // Central PII guard: nothing identifying leaves; replies are restored below.
-  const shield = await guardOutboundBody(body, userId && UUID.test(userId) ? userId : null);
+  const fromBody = typeof body.user === 'string' && UUID.test(body.user) ? body.user : null;
+  return { ctx, userId: ctx.userId ?? fromBody };
+};
+
+const assertShieldedBody = (shield: { assertNoRawPii: (raw: string) => void }, body: Record<string, unknown>, feature: string | undefined, url: string) => {
   try {
     shield.assertNoRawPii(JSON.stringify(body));
   } catch {
     // never prints the value; visible in Vercel logs for auditing
-    console.error('[pii-guard] residual identifier in outbound AI payload', { feature: ctx.feature ?? null, url });
+    console.error('[pii-guard] residual identifier in outbound AI payload', { feature: feature ?? null, url });
   }
-  if (!/openrouter\.ai/.test(url)) {
-    return restoreAiResponse(await base(input, { ...nextInit, body: JSON.stringify(body) }), shield);
-  }
-  const feature = ctx.feature ?? (url.endsWith('embeddings') ? 'embeddings' : untaggedFeature(url));
+};
+
+const featureForCall = (ctx: AiUsageStore, url: string): string =>
+  ctx.feature ?? (url.endsWith('embeddings') ? 'embeddings' : untaggedFeature(url));
+
+const meterOpenRouterCall = async (params: {
+  base: typeof fetch;
+  input: Parameters<typeof fetch>[0];
+  nextInit: RequestInit;
+  body: Record<string, unknown>;
+  shield: Awaited<ReturnType<typeof guardOutboundBody>>;
+  url: string;
+  ctx: AiUsageStore;
+  userId: string | null;
+}): Promise<Response> => {
+  const { base, input, nextInit, shield, url, ctx, userId } = params;
+  let { body } = params;
+  const feature = featureForCall(ctx, url);
   const reqModel = typeof body.model === 'string' ? body.model : null;
   if (!url.endsWith('embeddings')) body.usage = { include: true };
   body = applyOpenRouterProviderIgnoreToPayload(body);
@@ -307,16 +331,37 @@ const runMeteredFetch = async (
   const runId = admitted.status === 'run' ? admitted.runId : null;
   const res = restoreAiResponse(await base(input, { ...nextInit, body: JSON.stringify(body) }), shield);
   if (!res.ok || !res.body) {
-    if (runId) void parentAiFinish(runId, { ok: false, costUsd: 0, tokensIn: 0, tokensOut: 0, ms: Date.now() - started, error: `provider_${res.status}` });
+    if (runId) {
+      ignoreFloatingPromise(parentAiFinish(runId, { ok: false, costUsd: 0, tokensIn: 0, tokensOut: 0, ms: Date.now() - started, error: `provider_${res.status}` }));
+    }
     return res;
   }
   const save = persistUsageRow({ runId, started, userId, feature, reqModel });
-  const isStream = (res.headers.get('content-type') ?? '').includes('event-stream');
-  if (!isStream) {
-    await recordJsonResponseUsage(res, save);
-    return res;
+  if ((res.headers.get('content-type') ?? '').includes('event-stream')) {
+    return attachSseUsageLogger(res, save);
   }
-  return attachSseUsageLogger(res, save);
+  await recordJsonResponseUsage(res, save);
+  return res;
+};
+
+const runMeteredFetch = async (
+  base: typeof fetch,
+  fixedMeta: { userId?: string | null; feature: string } | undefined,
+  input: Parameters<typeof fetch>[0],
+  init?: Parameters<typeof fetch>[1]
+): Promise<Response> => {
+  const url = requestUrlOf(input);
+  const nextInit = withIgnoreIfOpenRouter(url, init);
+  if (!isMeteredAiUrl(url) || typeof nextInit?.body !== 'string') return base(input, nextInit);
+  const body = parseJsonBody(nextInit.body);
+  if (!body) return base(input, nextInit);
+  const { ctx, userId } = usageContextOf(fixedMeta, body);
+  const shield = await guardOutboundBody(body, userId && UUID.test(userId) ? userId : null);
+  assertShieldedBody(shield, body, ctx.feature, url);
+  if (!/openrouter\.ai/.test(url)) {
+    return restoreAiResponse(await base(input, { ...nextInit, body: JSON.stringify(body) }), shield);
+  }
+  return meterOpenRouterCall({ base, input, nextInit, body, shield, url, ctx, userId });
 };
 
 export const meteredFetch = (baseFetch?: typeof fetch, fixedMeta?: { userId?: string | null; feature: string }): typeof fetch => {
