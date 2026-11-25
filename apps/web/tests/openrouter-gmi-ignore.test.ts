@@ -363,9 +363,11 @@ describe('ai_usage_events insert tolerates a missing provider column', () => {
 const SOURCE_EXTS = new Set(['.ts', '.tsx', '.js', '.mjs']);
 const SKIP_DIR = new Set(['node_modules', '.git', '.next', 'dist', 'coverage', 'build', 'out']);
 
+const shouldSkipWalkEntry = (name: string): boolean => SKIP_DIR.has(name) || name.startsWith('.');
+
 const walkSourceFiles = (dir: string, acc: string[] = []): string[] => {
   for (const name of readdirSync(dir)) {
-    if (SKIP_DIR.has(name) || name.startsWith('.')) continue;
+    if (shouldSkipWalkEntry(name)) continue;
     const full = join(dir, name);
     const st = statSync(full);
     if (st.isDirectory()) walkSourceFiles(full, acc);

@@ -25,14 +25,18 @@ const pollBatchResponse = (opts: { resultsBody?: string; pollError?: boolean }):
   return jsonResponse({ status: 'completed', results_url: 'https://openrouter.ai/api/v1/batches/b1/results' });
 };
 
-const responseForBatchUrl = (url: string, opts: { resultsBody?: string; pollError?: boolean }): Response => {
-  if (url.endsWith('/batches')) return jsonResponse({ id: 'b1' });
-  if (url.includes('/batches/b1/results')) return new Response(opts.resultsBody ?? '{not json\n');
-  if (url.includes('/batches/b1')) return pollBatchResponse(opts);
+const completionsOrDefaultResponse = (url: string): Response => {
   if (url.includes('/chat/completions')) {
     return jsonResponse({ model: 'm', choices: [{ message: { content: SYNC_TEXT } }], usage: { cost: 0.001 } });
   }
   return new Response('', { status: 201 });
+};
+
+const responseForBatchUrl = (url: string, opts: { resultsBody?: string; pollError?: boolean }): Response => {
+  if (url.endsWith('/batches')) return jsonResponse({ id: 'b1' });
+  if (url.includes('/batches/b1/results')) return new Response(opts.resultsBody ?? '{not json\n');
+  if (url.includes('/batches/b1')) return pollBatchResponse(opts);
+  return completionsOrDefaultResponse(url);
 };
 
 const mockBatchFetch = (opts: { resultsBody?: string; pollError?: boolean }) =>
