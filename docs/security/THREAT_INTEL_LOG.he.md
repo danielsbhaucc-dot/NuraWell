@@ -2,6 +2,25 @@
 
 כל רשומה: מה נבדק, מה רלוונטי לנו, מה תוקן ומה נשאר. הכי חדש למעלה. בלי סודות ובלי נתוני משתמשים.
 
+## 2026-11-25 (סריקה לילית, 03:00 שעון ישראל)
+- main ‏f3273c20 ללא שינוי מאז 21.11 (אין סריקות לילה ב-22–24.11; המודיעין כאן מכסה את כל התקופה מ-21.11). gitleaks על כל ההיסטוריה (1,406 קומיטים): נקי. TruffleHog: אפס סודות מאומתים. Semgrep: ‏28 ממצאים, זהה לבסיס. npm audit: ‏9 בינוניות (minimatch דרך eslint, כלי פיתוח בלבד), 0 גבוהות. OSV: רק GHSA-g3hv-75wg-m249 הידוע.
+- ייעוצי npm חדשים מאז 21.11 (4): ‏ruflo, ‏xo-server, ‏isomorphic-git, ‏i18next – אף אחת לא ב-lockfile. ‏262 חבילות זדוניות חדשות – אף אחת לא אצלנו. אין ייעוץ חדש ל-Next.js, ‏React, ‏Supabase, ‏SimpleWebAuthn ‏(14.0.3, כבר מעל התיקון של GHSA-j3h4-m3m2-7p7j), ‏undici או ‏dompurify ‏(3.4.17, מתוקן).
+- CISA KEV ‏(23–24.11): ‏Optimizely Web Experimentation, ‏Idunno AntiCsrf, ‏Drupal Core, ‏MONAI Label, ‏N-able MailAssure – לא בשימוש אצלנו.
+- AI SDK ‏7.0.178 (20.11) תיקן עקיפת אישור כלים כש-`experimental_toolApprovalSecret` מוגדר. אצלנו `ai` ‏7.0.137, אבל אין שימוש באישור כלים או בסוד הזה בקוד – לא חל.
+- OpenRouter: ‏GMI Cloud פרסמה ב-24.11 פריצה למערכת לוגים שלה – תוכן בקשות שעבר דרך ספקי GMI Cloud ב-OpenRouter בין 18.10 ל-18.11 עלול היה להיחשף. אנחנו לא שומרים איזה ספק ענה לכל בקשה, ולכן אי אפשר לשלול מהקוד. היום GMI Cloud לא מופיעה כספק לאף אחד מהמודלים הפתוחים שבקוד (gpt-oss-120b/20b, ‏llama-4-maverick/scout). לא שולחים סודות בפרומפטים. בדיקה סופית דרך יומן הפעילות בחשבון OpenRouter – הועבר לדניאל.
+- Node (11.11), תולעים ב-npm, Telegram (וידג'טים של Bot API ‏10.4 – לא בשימוש), חדשות OAuth/MCP/הזרקת פרומפטים – אין דבר חדש שחל עלינו.
+- Dependabot: אין PR אבטחה. נפתחו PR-ים רגילים: ‏#505 ‏(isomorphic-dompurify ‏4.8.0, גרסה ראשית) ו-#504 ‏(jsdom ‏31, כלי פיתוח) – לא מוזגו, אינם תיקון אבטחה. התראה פתוחה אחת (minimatch, בינונית, כלי פיתוח).
+- Supabase: ‏NuraWell ‏169/169 טבלאות עם RLS, ‏storage ‏8/8, אין מיגרציה חדשה מאז 20.11, אין ERROR. האזהרות על פונקציות SECURITY DEFINER ‏(is_admin, ‏nura_is_admin, ‏parent_session_ok, ‏iam_my_permission, ‏admin_has_passkey, ‏demo_access_blocks_admin, ו-challenge_public_stats גם לאנונימיים) – הרשאות מכוונות ומתועדות במיגרציות 000143 ו-000232. במרכז: אין ERROR; ‏central.console_sync עדיין בלי RLS (ידוע, אצל אברהם); search_path ב-identity.host_ok ו-central.is_sealed_v1 – ידוע.
+- פריסת הייצור היא f3273c20 (=main), האתר מחזיר 200. לא נדרש תיקון בקוד.
+
+## 2026-11-21 (סריקה לילית, 02:50 שעון ישראל)
+- main ‏f3273c20 (שישה קומיטים חדשים מאז 4b6a53a0: מתג ה-AI של חברת האם, דף "המנוי שלי", תיקוני תצוגה ובדיקות). gitleaks על כל ההיסטוריה: נקי. TruffleHog: אפס סודות מאומתים. Semgrep: ‏28 ממצאים, זהה לבסיס (אין ממצא חדש בקוד החדש). npm audit: ‏9 בינוניות (minimatch דרך eslint, כלי פיתוח בלבד), 0 גבוהות. OSV: רק GHSA-g3hv-75wg-m249 הידוע.
+- ייעוצי npm חדשים מאז 19.11: ‏Budibase, ‏aedes, ‏js-toml, ‏storyblok-backup, ‏@appium/storage-plugin ועוד – אף אחת לא ב-lockfile. ייעוצי Next.js מ-19.11 – מתוקנים ב-16.4.5 שכבר רץ אצלנו. ‏257 חבילות זדוניות – אף אחת לא אצלנו.
+- CISA KEV ‏(20.11): ‏Apache Roller, ‏VMware vCenter, ‏SAP NetWeaver, ‏Cisco Expressway – לא בשימוש אצלנו.
+- Vercel, ‏Supabase, ‏Node, ‏OpenRouter/AI SDK, ‏Telegram, ‏WebAuthn – אין ייעוץ חדש. גל תולעת Miasma ב-npm ממשיך – אין אצלנו אף חבילה מהרשימות.
+- Dependabot: אין PR אבטחה חדש; התראה פתוחה אחת (minimatch, בינונית, כלי פיתוח).
+- Supabase: ‏NuraWell ‏169/169 טבלאות עם RLS, אין ERROR. היועץ מציין ארבע פונקציות SECURITY DEFINER שמשתמש מחובר יכול להריץ (is_admin, ‏nura_is_admin, ‏parent_session_ok, ‏iam_my_permission) – אלה פונקציות העזר של מדיניות ה-RLS, ההרשאה מכוונת. במרכז: אין ERROR; טבלה אחת בלי RLS – ‏central.console_sync (שורה אחת של מונה גרסה, מ-platform-core ‏000069). אין לה הרשאה לאנונימיים או למשתמשים, והסכמה central לא חשופה להם, כך שאין דליפה; הועבר לאברהם כחיזוק (הפעלת RLS במיגרציה הבאה).
+- פריסת הייצור של f3273c20 תקינה, האתר מחזיר 200. לא נדרש תיקון בקוד של NuraWell.
 ## 2026-11-20 (סריקה לילית, 02:55 שעון ישראל)
 - main ‏4b6a53a0 ללא שינוי. gitleaks על כל ההיסטוריה: נקי. npm audit: ‏9 בינוניות (minimatch דרך eslint, כלי פיתוח בלבד), 0 גבוהות. OSV: רק GHSA-g3hv-75wg-m249 הידוע.
 - ייעוצי npm חדשים (19): חמישה של Next.js שפורסמו 19.11 ‏(GHSA-f3mh-rxg3-f5g2, ‏GHSA-7qx7-33qx-rqx2, ‏GHSA-pc58-hwjq-p385, ‏GHSA-rhh4-g77r-r9qj, ‏GHSA-vvgp-ww4w-46vf) – כולם מתוקנים ב-16.4.5 שכבר רץ אצלנו, לא חל. השאר (effect, ‏etherpad, ‏חבילות MCP ועוד) – לא ב-lockfile. ‏188 חבילות זדוניות – אף אחת לא אצלנו.
