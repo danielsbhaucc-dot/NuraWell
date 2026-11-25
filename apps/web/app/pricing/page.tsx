@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server';
 import { PlansGrid } from '@/components/billing/PlansGrid';
 import { purchaseUrl } from '@/lib/central/license-gate';
 import { loadMySubscription } from '@/lib/central/my-subscription-server';
+import { getCatalogPricing } from '@/lib/billing/catalog';
+import { withoutExpiredPromos } from '@/lib/billing/plans';
 
 export const metadata: Metadata = { title: 'מסלולים ומחירים', description: 'מסלולי המנוי של NuraWell' };
 export const dynamic = 'force-dynamic';
@@ -12,8 +14,10 @@ export default async function PricingPage() {
   const { data: { user } } = await supabase.auth.getUser();
   // A member with a verified live subscription gets "manage" instead of a second purchase.
   const hasActiveSubscription = user ? (await loadMySubscription(user)).state === 'active' : false;
+  // Prices and promos from the central catalog (cached 30 seconds); plans.ts values when it is unreachable or invalid.
+  const pricing = withoutExpiredPromos(await getCatalogPricing());
   return (
-    <main dir="rtl" className="public-dark public-dark-bg min-h-dvh px-4 pb-28 pt-[max(2rem,env(safe-area-inset-top))] pe-12 sm:pe-[max(1rem,calc(var(--a11y-fab-reserve-inline,5.5rem)+env(safe-area-inset-left,0px)))]">
+    <main dir="rtl" className="public-dark public-dark-bg min-h-dvh px-4 pb-28 pt-[max(2rem,env(safe-area-inset-top))] pe-[48px] sm:pe-[max(1rem,calc(var(--a11y-fab-reserve-inline,5.5rem)+env(safe-area-inset-left,0px)))]">
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-8">
         <header className="flex flex-col items-center gap-3 pt-4 text-center">
           <span className="rounded-full border border-accent-300/40 bg-accent-300/10 px-4 py-1 text-xs font-bold tracking-wide text-accent-200">
@@ -24,7 +28,7 @@ export default async function PricingPage() {
           </h1>
           <p className="max-w-xl text-on-dark-soft">אלמוג, מנטור אישי לשינוי הרגלים: תוכנית אישית שמתעדכנת, שיעורי וידאו ומעקב יזום.</p>
         </header>
-        <PlansGrid purchaseBase={purchaseUrl()} hasActiveSubscription={hasActiveSubscription} />
+        <PlansGrid purchaseBase={purchaseUrl()} pricing={pricing} hasActiveSubscription={hasActiveSubscription} />
       </div>
     </main>
   );

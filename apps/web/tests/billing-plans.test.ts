@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   PLANS,
+  RECOMMENDED_PLAN,
   planPrice,
   getPlan,
   isPlanId,
@@ -11,7 +12,7 @@ import {
 describe('plans config', () => {
   it('highlighted whatsapp plan is in the middle', () => {
     expect(PLANS.map((p) => p.id)).toEqual(['basic', 'whatsapp', 'premium']);
-    expect(PLANS[1].highlighted).toBe(true);
+    expect(PLANS[1].id).toBe(RECOMMENDED_PLAN);
   });
 
   it('has no valueIls anchor on any plan', () => {
@@ -20,10 +21,10 @@ describe('plans config', () => {
     }
   });
 
-  it('monthly prices with launch discount', () => {
-    expect(planPrice(getPlan('basic'), 'monthly')).toMatchObject({ full: 179, launch: 107, savePercent: null });
-    expect(planPrice(getPlan('whatsapp'), 'monthly')).toMatchObject({ full: 199, launch: 119, savePercent: null });
-    expect(planPrice(getPlan('premium'), 'monthly')).toMatchObject({ full: 449, launch: 269, savePercent: null });
+  it('monthly prices carry no local discount (promos come only from the central catalog)', () => {
+    expect(planPrice(getPlan('basic'), 'monthly')).toMatchObject({ full: 179, launch: null, savePercent: null });
+    expect(planPrice(getPlan('whatsapp'), 'monthly')).toMatchObject({ full: 199, launch: null, savePercent: null });
+    expect(planPrice(getPlan('premium'), 'monthly')).toMatchObject({ full: 449, launch: null, savePercent: null });
   });
 
   it('annual is fixed prepaid (not 10× monthly)', () => {
