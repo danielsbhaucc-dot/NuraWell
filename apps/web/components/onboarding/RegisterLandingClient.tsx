@@ -19,7 +19,6 @@ export function RegisterLandingClient() {
       <main
         id="main-content"
         className="onboarding-shell-dark relative flex flex-col overflow-hidden h-dvh max-h-dvh"
-        style={{ paddingBottom: 'calc(5.5rem + env(safe-area-inset-bottom, 0px))', paddingInlineEnd: 'calc(var(--a11y-fab-reserve-inline, 5.5rem) + env(safe-area-inset-left, 0px))' }}
       >
         <AuthBackdrop />
 

@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Accessibility,
   ChevronDown,
@@ -142,6 +143,9 @@ export function AccessibilityWidget() {
     navigation: false,
   });
   const panelRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
   const toggleRef = useRef<HTMLButtonElement>(null);
 
   const activeCount = countActiveAccessibilityPreferences(preferences);
@@ -163,12 +167,56 @@ export function AccessibilityWidget() {
     setSections((current) => ({ ...current, [key]: !current[key] }));
   };
 
+
+  // Publish reserved gutter and keep the FAB inside the viewport (including when the cookie banner lifts it).
+  useLayoutEffect(() => {
+    if (preferences.widgetHidden) return;
+    const root = document.documentElement;
+    const sync = () => {
+      const wrap = rootRef.current;
+      const fab = wrap?.querySelector<HTMLElement>('.a11y-widget-fab');
+      if (!wrap || !fab) return;
+      const gap = 16;
+      const fr = fab.getBoundingClientRect();
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const rtl = getComputedStyle(root).direction === 'rtl';
+      const inline = rtl ? Math.max(0, Math.ceil(fr.right + gap)) : Math.max(0, Math.ceil(vw - fr.left + gap));
+      const block = Math.max(0, Math.ceil(vh - fr.top + gap));
+      root.style.setProperty('--a11y-fab-reserve-inline', `${inline}px`);
+      root.style.setProperty('--a11y-fab-reserve-block', `${Math.min(block, Math.ceil(fr.height + gap * 2))}px`);
+      root.style.setProperty('--a11y-fab-size', `${Math.round(fr.height)}px`);
+      // Clamp so a tall cookie banner cannot push the button off the top or the inline edge.
+      const size = fr.height || 52;
+      const maxBottom = Math.max(8, vh - size - 8);
+      // Read computed bottom after CSS (including the cookie-banner override).
+      const computedBottom = Number.parseFloat(getComputedStyle(wrap).bottom) || 0;
+      if (computedBottom > maxBottom) {
+        wrap.style.setProperty('bottom', `${maxBottom}px`, 'important');
+      } else if (wrap.style.getPropertyPriority('bottom') === 'important') {
+        wrap.style.removeProperty('bottom');
+      }
+    };
+    sync();
+    const ro = new ResizeObserver(sync);
+    if (rootRef.current) ro.observe(rootRef.current);
+    window.addEventListener('resize', sync);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', sync);
+      root.style.removeProperty('--a11y-fab-reserve-inline');
+      root.style.removeProperty('--a11y-fab-reserve-block');
+      root.style.removeProperty('--a11y-fab-size');
+    };
+  }, [preferences.widgetHidden, open]);
+
   if (preferences.widgetHidden) return null;
 
-  return (
+  const widget = (
     <div
-      className="a11y-widget-root fixed inset-e-3 z-80 sm:inset-e-4"
-      style={{ bottom: 'calc(var(--a11y-fab-gap, 16px) + var(--a11y-fab-lift, 0px) + var(--a11y-fab-offset-bottom, 0px) + env(safe-area-inset-bottom, 0px))' }}
+      ref={rootRef}
+      className="a11y-widget-root fixed z-80"
+      style={{ bottom: 'calc(var(--a11y-fab-gap, 16px) + var(--a11y-fab-lift, 0px) + var(--a11y-fab-offset-bottom, 0px) + env(safe-area-inset-bottom, 0px))', insetInlineEnd: '12px' }}
     >
       {open ? (
         <div
@@ -403,7 +451,7 @@ export function AccessibilityWidget() {
         aria-haspopup="dialog"
         onClick={() => setOpen((value) => !value)}
         className={cn(
-          'a11y-widget-fab relative inline-flex h-13 w-13 items-center justify-center rounded-full border border-on-dark/75 text-on-dark shadow-[0_14px_34px_rgba(6,78,59,0.35)] transition-all duration-200 hover:scale-[1.04] focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-300',
+          'a11y-widget-fab relative inline-flex h-[52px] w-[52px] min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-on-dark/75 text-on-dark shadow-[0_14px_34px_rgba(6,78,59,0.35)] transition-all duration-200 hover:scale-[1.04] focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-300',
           open
             ? 'bg-linear-to-br from-ink-700 to-ink-900'
             : 'bg-linear-to-br from-primary-700 via-secondary-600 to-primary-500',
@@ -422,4 +470,6 @@ export function AccessibilityWidget() {
       </button>
     </div>
   );
+  if (!mounted) return null;
+  return createPortal(widget, document.body);
 }

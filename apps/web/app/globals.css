@@ -7896,6 +7896,19 @@ html.a11y-reduce-motion *::after {
     linear-gradient(165deg, rgba(242,242,246,0.92) 0%, rgba(242,242,246,0.88) 100%);
 }
 
+
+/* Site-wide reserved bottom space for the floating accessibility button — not per-page.
+   Only block padding: a full side gutter at 200% font squeezes rows and causes overflow. */
+html:has(.a11y-widget-root) {
+  scroll-padding-block-end: calc(var(--a11y-fab-reserve-block, 84px) + env(safe-area-inset-bottom, 0px));
+}
+html:has(.a11y-widget-root) body {
+  padding-block-end: calc(var(--a11y-fab-reserve-block, 84px) + env(safe-area-inset-bottom, 0px));
+  /* Capped in px so a 200% root font does not eat the row or overflow. */
+  padding-inline-end: min(68px, var(--a11y-fab-reserve-inline, 68px));
+  box-sizing: border-box;
+}
+
 .a11y-widget-fab {
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);

@@ -61,8 +61,9 @@
 .cn-btn.p:hover{transform:translateY(-1px)}
 .cn-btn.g{background:transparent;color:var(--cn-fg2);box-shadow:inset 0 0 0 1.5px var(--cn-olive)}
 .cn-btns .cn-btn{flex:1}
-html[data-cookie-banner=on] .a11y-widget-root{bottom:calc(var(--cn-banner-h,0px) + 24px + env(safe-area-inset-bottom,0px))!important;transition:bottom .3s}
-@media(min-width:760px){html[data-cookie-banner=on] .a11y-widget-root{bottom:calc(var(--cn-banner-h,0px) + 36px + env(safe-area-inset-bottom,0px))!important}}
+/* The FAB stays in the bottom corner (z-80) so it is not lifted through mid-page text. */
+.cn-banner.cn-compact .cn-art{display:none!important;height:0!important;min-height:0!important;flex-basis:0!important}
+
 html[data-cookie-panel=on] .a11y-widget-root{visibility:hidden!important;pointer-events:none!important}
 /* ===== Dark forest theme (opt3) — banner + panel ===== */
 .cn-root,.cn-wink{--cn-fg:#e8e8ed;--cn-mut:#e8e8ed;--cn-em:#E8B54A;--cn-hair:rgba(232,181,74,.25);--cn-gold:#E8B54A;--cn-fg2:#e8e8ed;--cn-olive:#E8B54A}
@@ -123,3 +124,21 @@ html[data-cookie-banner=on] body:after{content:'';position:fixed;inset:0;z-index
 @media(min-width:1024px){.cn-banner .cn-art{flex-basis:300px}}
 @media(min-width:1440px){.cn-banner .cn-art{flex-basis:330px}}
 @media(min-width:760px) and (max-width:1023px){.cn-banner{align-items:center}.cn-banner .cn-art{flex-basis:224px;aspect-ratio:4/3;height:auto;align-self:center}.cn-banner .cn-bwrap{align-self:stretch}}
+
+@media (max-height: 520px) {
+  .cn-banner.cn-compact .cn-wink,
+  .cn-banner.cn-compact .cn-chips,
+  .cn-banner.cn-compact .cn-p { display: none !important; }
+  .cn-banner.cn-compact .cn-h { font-size: 16px; margin: 0; }
+  .cn-banner.cn-compact .cn-h .cn-gold:after { display: none; }
+  .cn-banner.cn-compact .cn-bwrap { padding: 10px 14px !important; }
+  .cn-banner.cn-compact .cn-btns { margin-top: 8px; padding-top: 8px; }
+}
+
+.cn-banner.cn-compact-sm .cn-wink,
+.cn-banner.cn-compact-sm .cn-chips,
+.cn-banner.cn-compact-sm .cn-p { display: none !important; }
+.cn-banner.cn-compact-sm .cn-h { font-size: 16px; margin: 0; }
+.cn-banner.cn-compact-sm .cn-h .cn-gold:after { display: none; }
+.cn-banner.cn-compact-sm .cn-bwrap { padding: 10px 14px !important; }
+.cn-banner.cn-compact-sm .cn-btns { margin-top: 8px; padding-top: 8px; }

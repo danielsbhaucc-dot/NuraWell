@@ -126,7 +126,17 @@ export function CookieNotice() {
       delete root.dataset.cookieBanner;
       return;
     }
-    const sync = () => root.style.setProperty('--cn-banner-h', `${Math.ceil(el.getBoundingClientRect().height)}px`);
+    const sync = () => {
+      const header = document.querySelector('.ld-top');
+      const headerBottom = header instanceof HTMLElement ? header.getBoundingClientRect().bottom : 80;
+      const gap = window.innerHeight - headerBottom;
+      const compact = gap - 120 < 500;
+      const compactSm = gap < 360;
+      el.classList.toggle('cn-compact', compact || compactSm);
+      el.classList.toggle('cn-compact-sm', compactSm);
+      const box = el.getBoundingClientRect();
+      root.style.setProperty('--cn-banner-h', `${Math.ceil(box.height)}px`);
+    };
     sync();
     root.dataset.cookieBanner = 'on';
     const ro = new ResizeObserver(sync);
@@ -155,7 +165,17 @@ export function CookieNotice() {
       delete root.dataset.cookieBanner;
       return;
     }
-    const sync = () => root.style.setProperty('--cn-banner-h', `${Math.ceil(el.getBoundingClientRect().height)}px`);
+    const sync = () => {
+      const header = document.querySelector('.ld-top');
+      const headerBottom = header instanceof HTMLElement ? header.getBoundingClientRect().bottom : 80;
+      const gap = window.innerHeight - headerBottom;
+      const compact = gap - 120 < 500;
+      const compactSm = gap < 360;
+      el.classList.toggle('cn-compact', compact || compactSm);
+      el.classList.toggle('cn-compact-sm', compactSm);
+      const box = el.getBoundingClientRect();
+      root.style.setProperty('--cn-banner-h', `${Math.ceil(box.height)}px`);
+    };
     sync();
     root.dataset.cookieBanner = 'on';
     const ro = new ResizeObserver(sync);

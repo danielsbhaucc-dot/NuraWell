@@ -9,6 +9,7 @@ import {
   MOBILE_FEATURED,
   PLANS,
   TRIAL,
+  formatIls,
   maxAnnualSavePercent,
   planPrice,
   purchaseHref,
@@ -87,9 +88,9 @@ export function PlansGrid({ purchaseBase, hasActiveSubscription = false }: { pur
                   </>
                 ) : pr.per === 'year' && pr.monthlyYearTotal != null ? (
                   <>
-                    <span className="text-4xl font-black text-on-dark">₪{pr.full}</span>
-                    <s className="text-base text-on-dark-soft/80">₪{pr.monthlyYearTotal}</s>
-                    <span className="text-sm text-on-dark-soft">לשנה (≈₪{pr.monthlyEquivalent} לחודש)</span>
+                    <span className="text-4xl font-black text-on-dark">{formatIls(pr.full)}</span>
+                    <s className="text-base text-on-dark-soft/80">{formatIls(pr.monthlyYearTotal)}</s>
+                    <span className="text-sm text-on-dark-soft">לשנה (≈{formatIls(pr.monthlyEquivalent)} לחודש)</span>
                   </>
                 ) : (
                   <>
