@@ -168,28 +168,37 @@ export function AccessibilityWidget() {
   };
 
 
-  // Publish reserved gutter and keep the FAB inside the viewport (including when the cookie banner lifts it).
+  // Publish reserved bottom space and lift the FAB above fixed bottom nav (not the cookie banner).
   useLayoutEffect(() => {
     if (preferences.widgetHidden) return;
     const root = document.documentElement;
+    const bottomClearance = (): number => {
+      let clear = 0;
+      const vh = window.innerHeight;
+      for (const el of document.querySelectorAll<HTMLElement>('[data-a11y-clear="bottom"]')) {
+        const cs = getComputedStyle(el);
+        if (cs.display === 'none' || cs.visibility === 'hidden' || Number(cs.opacity) === 0) continue;
+        const r = el.getBoundingClientRect();
+        if (r.height < 1) continue;
+        if (r.bottom < vh - 8 || r.top >= vh) continue;
+        clear = Math.max(clear, Math.ceil(vh - r.top));
+      }
+      return clear;
+    };
     const sync = () => {
       const wrap = rootRef.current;
       const fab = wrap?.querySelector<HTMLElement>('.a11y-widget-fab');
       if (!wrap || !fab) return;
       const gap = 16;
-      const fr = fab.getBoundingClientRect();
-      const vw = window.innerWidth;
       const vh = window.innerHeight;
-      const rtl = getComputedStyle(root).direction === 'rtl';
-      const inline = rtl ? Math.max(0, Math.ceil(fr.right + gap)) : Math.max(0, Math.ceil(vw - fr.left + gap));
-      const block = Math.max(0, Math.ceil(vh - fr.top + gap));
-      root.style.setProperty('--a11y-fab-reserve-inline', `${inline}px`);
-      root.style.setProperty('--a11y-fab-reserve-block', `${Math.min(block, Math.ceil(fr.height + gap * 2))}px`);
-      root.style.setProperty('--a11y-fab-size', `${Math.round(fr.height)}px`);
-      // Clamp so a tall cookie banner cannot push the button off the top or the inline edge.
+      const offset = bottomClearance();
+      root.style.setProperty('--a11y-fab-offset-bottom', `${offset}px`);
+      const fr = fab.getBoundingClientRect();
+      const block = Math.max(0, Math.ceil((fr.height || 52) + gap * 2));
+      root.style.setProperty('--a11y-fab-reserve-block', `${block}px`);
+      root.style.setProperty('--a11y-fab-size', `${Math.round(fr.height || 52)}px`);
       const size = fr.height || 52;
       const maxBottom = Math.max(8, vh - size - 8);
-      // Read computed bottom after CSS (including the cookie-banner override).
       const computedBottom = Number.parseFloat(getComputedStyle(wrap).bottom) || 0;
       if (computedBottom > maxBottom) {
         wrap.style.setProperty('bottom', `${maxBottom}px`, 'important');
@@ -200,11 +209,18 @@ export function AccessibilityWidget() {
     sync();
     const ro = new ResizeObserver(sync);
     if (rootRef.current) ro.observe(rootRef.current);
+    for (const el of document.querySelectorAll('[data-a11y-clear="bottom"]')) ro.observe(el);
     window.addEventListener('resize', sync);
+    const mo = new MutationObserver(() => {
+      for (const el of document.querySelectorAll('[data-a11y-clear="bottom"]')) ro.observe(el);
+      sync();
+    });
+    mo.observe(document.body, { childList: true, subtree: true });
     return () => {
       ro.disconnect();
+      mo.disconnect();
       window.removeEventListener('resize', sync);
-      root.style.removeProperty('--a11y-fab-reserve-inline');
+      root.style.removeProperty('--a11y-fab-offset-bottom');
       root.style.removeProperty('--a11y-fab-reserve-block');
       root.style.removeProperty('--a11y-fab-size');
     };
@@ -471,5 +487,20 @@ export function AccessibilityWidget() {
     </div>
   );
   if (!mounted) return null;
-  return createPortal(widget, document.body);
+  const tree = (
+    <>
+      {widget}
+      <div
+        className="a11y-fab-end-space"
+        aria-hidden
+        style={{
+          height: 'calc(var(--a11y-fab-reserve-block, 84px) + env(safe-area-inset-bottom, 0px))',
+          width: 1,
+          pointerEvents: 'none',
+          overflow: 'hidden',
+        }}
+      />
+    </>
+  );
+  return createPortal(tree, document.body);
 }

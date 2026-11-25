@@ -397,7 +397,7 @@ export function ProgressPageClient({
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35 }}
-        className="-mt-16 relative overflow-hidden pt-16"
+        data-a11y-full-bleed className="-mt-16 relative overflow-hidden pt-16"
         style={{
           background:
             'linear-gradient(155deg, #034d3a 0%, #059669 35%, #0d9488 65%, #10b981 85%, #34d399 100%)',

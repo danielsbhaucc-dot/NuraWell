@@ -43,7 +43,7 @@ export function BottomNav() {
   }, [router]);
 
   return (
-    <nav className="fixed bottom-0 inset-e-0 inset-s-0 z-50 safe-area-bottom" aria-label="ניווט ראשי">
+    <nav data-a11y-clear="bottom" className="fixed bottom-0 inset-e-0 inset-s-0 z-50 safe-area-bottom" aria-label="ניווט ראשי">
       {/* שכבת זכוכית */}
       <div
         className="absolute inset-0"

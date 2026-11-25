@@ -127,11 +127,15 @@ export function CookieNotice() {
       return;
     }
     const sync = () => {
+      // Compact only when the root font is scaled (150%/200% harness). At 100% font
+      // the banner must match main, including landscape.
+      const rootFont = Number.parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+      const scaled = rootFont > 18;
       const header = document.querySelector('.ld-top');
       const headerBottom = header instanceof HTMLElement ? header.getBoundingClientRect().bottom : 80;
       const gap = window.innerHeight - headerBottom;
-      const compact = gap - 120 < 500;
-      const compactSm = gap < 360;
+      const compact = scaled && gap - 120 < 500;
+      const compactSm = scaled && gap < 360;
       el.classList.toggle('cn-compact', compact || compactSm);
       el.classList.toggle('cn-compact-sm', compactSm);
       const box = el.getBoundingClientRect();
@@ -166,11 +170,15 @@ export function CookieNotice() {
       return;
     }
     const sync = () => {
+      // Compact only when the root font is scaled (150%/200% harness). At 100% font
+      // the banner must match main, including landscape.
+      const rootFont = Number.parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+      const scaled = rootFont > 18;
       const header = document.querySelector('.ld-top');
       const headerBottom = header instanceof HTMLElement ? header.getBoundingClientRect().bottom : 80;
       const gap = window.innerHeight - headerBottom;
-      const compact = gap - 120 < 500;
-      const compactSm = gap < 360;
+      const compact = scaled && gap - 120 < 500;
+      const compactSm = scaled && gap < 360;
       el.classList.toggle('cn-compact', compact || compactSm);
       el.classList.toggle('cn-compact-sm', compactSm);
       const box = el.getBoundingClientRect();

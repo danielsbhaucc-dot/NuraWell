@@ -7897,16 +7897,26 @@ html.a11y-reduce-motion *::after {
 }
 
 
-/* Site-wide reserved bottom space for the floating accessibility button — not per-page.
-   Only block padding: a full side gutter at 200% font squeezes rows and causes overflow. */
+/* Site-wide: keep scroll clearance for the FAB, but do not add a side gutter.
+   A body padding-inline-end squeezes the legal TOC and the pricing launch banner
+   already at 100% font. Vertical space is reserved by a document-end spacer in
+   the widget, and --a11y-fab-offset-bottom lifts the button above fixed bottom nav. */
 html:has(.a11y-widget-root) {
-  scroll-padding-block-end: calc(var(--a11y-fab-reserve-block, 84px) + env(safe-area-inset-bottom, 0px));
+  scroll-padding-block-end: calc(var(--a11y-fab-reserve-block, 84px) + var(--a11y-fab-offset-bottom, 0px) + env(safe-area-inset-bottom, 0px));
 }
-html:has(.a11y-widget-root) body {
-  padding-block-end: calc(var(--a11y-fab-reserve-block, 84px) + env(safe-area-inset-bottom, 0px));
-  /* Capped in px so a 200% root font does not eat the row or overflow. */
-  padding-inline-end: min(68px, var(--a11y-fab-reserve-inline, 68px));
-  box-sizing: border-box;
+
+/* Signed-in shell only: inset max-width content stacks so full-width cards clear the
+   FAB column. Surrounding sheets and heroes stay full-bleed. Public pages unchanged. */
+html:has(.a11y-widget-root) #main-content [class~="max-w-md"],
+html:has(.a11y-widget-root) #main-content [class~="max-w-lg"],
+html:has(.a11y-widget-root) #main-content [class~="max-w-xl"],
+html:has(.a11y-widget-root) #main-content [class~="max-w-2xl"],
+html:has(.a11y-widget-root) #main-content [class~="max-w-3xl"],
+html:has(.a11y-widget-root) #main-content [class~="max-w-4xl"],
+html:has(.a11y-widget-root) #main-content [class~="max-w-5xl"],
+html:has(.a11y-widget-root) #main-content [class~="max-w-6xl"],
+html:has(.a11y-widget-root) #main-content [class~="max-w-7xl"] {
+  padding-inline-end: calc(var(--a11y-fab-size, 52px) + 8px);
 }
 
 .a11y-widget-fab {
