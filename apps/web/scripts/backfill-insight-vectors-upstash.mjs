@@ -16,10 +16,38 @@
  *   BACKFILL_EMBED_DELAY_MS=250, CONFIRM_PROD_BACKFILL=1
  */
 
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 const EMBEDDING_MODEL = 'openai/text-embedding-3-small';
 const EMBEDDING_DIM = 1536;
 const INSIGHT_PREFIX = 'insight:';
 const SERVER_UA = 'NuraWell-Server/backfill-insight-vectors-upstash/1';
+
+/** Central ignore list (same file the request builder is kept in sync with). */
+const OPENROUTER_IGNORED_PROVIDERS = JSON.parse(
+  readFileSync(
+    join(
+      dirname(fileURLToPath(import.meta.url)),
+      '../../../packages/@platform/ai-engine/src/openrouter-ignored-providers.json'
+    ),
+    'utf8'
+  )
+);
+
+function applyOpenRouterProviderIgnore(body) {
+  const prev =
+    body.provider && typeof body.provider === 'object' && !Array.isArray(body.provider)
+      ? { ...body.provider }
+      : {};
+  const ignore = Array.isArray(prev.ignore) ? prev.ignore.filter((x) => typeof x === 'string') : [];
+  for (const slug of OPENROUTER_IGNORED_PROVIDERS) {
+    if (!ignore.includes(slug)) ignore.push(slug);
+  }
+  return { ...body, provider: { ...prev, ignore } };
+}
+
 
 function envInt(name, fallback) {
   const raw = process.env[name]?.trim();
@@ -96,7 +124,7 @@ async function embedTexts(texts, apiKey) {
       'Content-Type': 'application/json',
       'User-Agent': SERVER_UA,
     },
-    body: JSON.stringify({ model: EMBEDDING_MODEL, input: texts }),
+    body: JSON.stringify(applyOpenRouterProviderIgnore({ model: EMBEDDING_MODEL, input: texts })),
   });
   const body = await res.text();
   if (!res.ok) throw new Error(`OpenRouter embeddings ${res.status}: ${body.slice(0, 400)}`);

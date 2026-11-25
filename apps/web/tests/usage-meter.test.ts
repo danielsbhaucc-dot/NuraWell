@@ -2,13 +2,14 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 (globalThis as unknown as { AsyncLocalStorage: unknown }).AsyncLocalStorage ??= AsyncLocalStorage;
 import { describe, expect, it, vi } from 'vitest';
 const { _parseSseUsage, meteredFetch, withAiUsage } = await import('@/lib/ai/usage-meter');
+const { OPENROUTER_IGNORED_PROVIDERS } = await import('@/lib/ai/openrouter-request');
 const { _setPiiSeedLoader } = await import('@/lib/ai/privacy/outbound-pii-guard');
 _setPiiSeedLoader(async () => null); // no DB lookups from the PII guard in this test
 
 describe('usage meter', () => {
   it('parses billed cost from the final SSE chunk', () => {
     const t = 'data: {"choices":[{"delta":{"content":"hi"}}]}\n\ndata: {"model":"openai/gpt-5.4-mini","usage":{"prompt_tokens":10,"completion_tokens":2,"cost":0.00123}}\n\ndata: [DONE]\n';
-    expect(_parseSseUsage(t)).toEqual({ usage: { prompt_tokens: 10, completion_tokens: 2, cost: 0.00123 }, model: 'openai/gpt-5.4-mini' });
+    expect(_parseSseUsage(t)).toEqual({ usage: { prompt_tokens: 10, completion_tokens: 2, cost: 0.00123 }, model: 'openai/gpt-5.4-mini', provider: null });
   });
   it('injects usage.include, records billed cost with feature+user, returns response untouched', async () => {
     process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://db.test';
@@ -16,7 +17,7 @@ describe('usage meter', () => {
     const calls: { url: string; body: string }[] = [];
     const base = vi.fn(async (u: string, init: RequestInit) => {
       calls.push({ url: u, body: String(init.body) });
-      if (u.includes('openrouter')) return new Response(JSON.stringify({ model: 'm', usage: { cost: 0.5, prompt_tokens: 1, completion_tokens: 1 } }), { headers: { 'content-type': 'application/json' } });
+      if (u.includes('openrouter')) return new Response(JSON.stringify({ model: 'm', provider: 'Anthropic', usage: { cost: 0.5, prompt_tokens: 1, completion_tokens: 1 } }), { headers: { 'content-type': 'application/json' } });
       return new Response('', { status: 201 });
     });
     vi.stubGlobal('fetch', base);
@@ -25,10 +26,17 @@ describe('usage meter', () => {
       f('https://openrouter.ai/api/v1/chat/completions', { method: 'POST', body: JSON.stringify({ model: 'm', messages: [] }) }));
     expect((await res.json()).usage.cost).toBe(0.5);
     await new Promise((r) => setTimeout(r, 20));
-    expect(JSON.parse(calls.find((c) => c.url.includes('openrouter'))!.body).usage).toEqual({ include: true });
+    const sent = JSON.parse(calls.find((c) => c.url.includes('openrouter'))!.body);
+    expect(sent.usage).toEqual({ include: true });
+    for (const slug of OPENROUTER_IGNORED_PROVIDERS) {
+      expect(sent.provider.ignore).toContain(slug);
+    }
     const rec = calls.find((c) => c.url.includes('ai_usage_events'));
     expect(rec).toBeTruthy();
-    expect(JSON.parse(rec!.body)).toMatchObject({ feature: 'test_feat', cost_usd: 0.5 });
+    expect(JSON.parse(rec!.body)).toMatchObject({ feature: 'test_feat', cost_usd: 0.5, provider: 'Anthropic' });
+    expect(JSON.parse(rec!.body)).not.toHaveProperty('prompt');
+    expect(JSON.parse(rec!.body)).not.toHaveProperty('messages');
+    expect(JSON.parse(rec!.body)).not.toHaveProperty('content');
     vi.unstubAllGlobals();
   });
   it('passes non-OpenRouter requests through unchanged', async () => {

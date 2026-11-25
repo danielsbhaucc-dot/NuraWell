@@ -1,4 +1,9 @@
 import { guardOutboundBody, restoreAiResponse } from '@/lib/ai/privacy/outbound-pii-guard';
+import {
+  applyOpenRouterProviderIgnoreToInit,
+  applyOpenRouterProviderIgnoreToPayload,
+  readOpenRouterProvider,
+} from '@/lib/ai/openrouter-request';
 import { blockedProviderResponse, estimateCallUsd, parentAiAdmit, parentAiFinish } from '@/lib/central/ai-controls';
 /**
  * Measured AI spend. Wraps fetch for OpenRouter chat/embeddings calls:
@@ -62,22 +67,26 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 type Usage = { cost?: number; prompt_tokens?: number; completion_tokens?: number; prompt_tokens_details?: { cached_tokens?: number } };
 
-export function _parseSseUsage(text: string): { usage: Usage | null; model: string | null } {
+export function _parseSseUsage(text: string): { usage: Usage | null; model: string | null; provider: string | null } {
   let usage: Usage | null = null;
   let model: string | null = null;
+  let provider: string | null = null;
   for (const line of text.split('\n')) {
     if (!line.startsWith('data:')) continue;
     const raw = line.slice(5).trim();
-    if (!raw || raw === '[DONE]' || !raw.includes('"usage"')) continue;
+    if (!raw || raw === '[DONE]') continue;
+    if (!raw.includes('"usage"') && !raw.includes('"provider"') && !raw.includes('"model"')) continue;
     try {
-      const j = JSON.parse(raw) as { usage?: Usage; model?: string };
+      const j = JSON.parse(raw) as { usage?: Usage; model?: string; provider?: unknown };
       if (j.usage) usage = j.usage;
       if (j.model) model = j.model;
+      const p = readOpenRouterProvider(j);
+      if (p) provider = p;
     } catch {
       /* partial line */
     }
   }
-  return { usage, model };
+  return { usage, model, provider };
 }
 
 async function record(row: Record<string, unknown>) {
@@ -99,6 +108,8 @@ export async function recordBatchUsage(params: {
   feature: string;
   model: string | null;
   usage: { prompt_tokens?: number; completion_tokens?: number; cost?: number; prompt_tokens_details?: { cached_tokens?: number } } | null | undefined;
+  /** OpenRouter serving provider name only; never prompt, completion, or personal data. */
+  provider?: string | null;
 }): Promise<void> {
   const u = params.usage;
   if (!u) return;
@@ -107,6 +118,7 @@ export async function recordBatchUsage(params: {
     user_id: userId && UUID.test(userId) ? userId : null,
     feature: params.feature.slice(0, 60),
     model: params.model,
+    provider: params.provider ?? null,
     prompt_tokens: u.prompt_tokens ?? null,
     completion_tokens: u.completion_tokens ?? null,
     cached_tokens: u.prompt_tokens_details?.cached_tokens ?? null,
@@ -144,11 +156,18 @@ export function meteredFetch(baseFetch?: typeof fetch, fixedMeta?: { userId?: st
   const base: typeof fetch = (i, n) => (baseFetch ?? globalThis.fetch)(i, n);
   return async (input, init) => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+    const isOpenRouter = /openrouter\.ai/.test(url);
+    let nextInit = init;
+    if (isOpenRouter && typeof init?.body === 'string') {
+      nextInit = applyOpenRouterProviderIgnoreToInit(url, init) ?? init;
+    }
     const isAi = /(openrouter\.ai\/api\/v1|api\.groq\.com\/openai\/v1|api\.deepseek\.com\/v1)\/(chat\/completions|embeddings)$/.test(url);
-    if (!isAi || typeof init?.body !== 'string') return base(input, init);
+    if (!isAi || typeof nextInit?.body !== 'string') return base(input, nextInit);
+    const rawBody = nextInit.body;
+    init = nextInit;
     let body: Record<string, unknown>;
     try {
-      body = JSON.parse(init.body);
+      body = JSON.parse(rawBody);
     } catch {
       return base(input, init);
     }
@@ -169,6 +188,7 @@ export function meteredFetch(baseFetch?: typeof fetch, fixedMeta?: { userId?: st
     const feature = ctx.feature ?? (url.endsWith('embeddings') ? 'embeddings' : untaggedFeature(url));
     const reqModel = typeof body.model === 'string' ? body.model : null;
     if (!url.endsWith('embeddings')) body.usage = { include: true };
+    if (isOpenRouter) body = applyOpenRouterProviderIgnoreToPayload(body);
     const estimate = estimateCallUsd(body);
     const started = Date.now();
     const admitted = await parentAiAdmit({ feature, model: estimate.model, estUsd: estimate.estUsd, maxTokens: estimate.maxTokens });
@@ -182,7 +202,7 @@ export function meteredFetch(baseFetch?: typeof fetch, fixedMeta?: { userId?: st
       return res;
     }
 
-    const save = (u: Usage | null, model: string | null) => {
+    const save = (u: Usage | null, model: string | null, provider: string | null) => {
       if (runId) {
         void parentAiFinish(runId, {
           ok: true, costUsd: typeof u?.cost === 'number' ? u.cost : 0,
@@ -193,6 +213,7 @@ export function meteredFetch(baseFetch?: typeof fetch, fixedMeta?: { userId?: st
         user_id: userId && UUID.test(userId) ? userId : null,
         feature: feature.slice(0, 60),
         model: model ?? reqModel,
+        provider,
         prompt_tokens: u.prompt_tokens ?? null,
         completion_tokens: u.completion_tokens ?? null,
         cached_tokens: u.prompt_tokens_details?.cached_tokens ?? null,
@@ -203,14 +224,14 @@ export function meteredFetch(baseFetch?: typeof fetch, fixedMeta?: { userId?: st
     const isStream = (res.headers.get('content-type') ?? '').includes('event-stream');
     if (!isStream) {
       // awaited (bounded): serverless functions can freeze right after the caller returns, dropping a detached insert
-      const job = res.clone().json().then((j: { usage?: Usage; model?: string }) => save(j.usage ?? null, j.model ?? null)).catch(() => {});
+      const job = res.clone().json().then((j: { usage?: Usage; model?: string; provider?: unknown }) => save(j.usage ?? null, j.model ?? null, readOpenRouterProvider(j))).catch(() => {});
       await Promise.race([job, new Promise((r) => setTimeout(r, 1500))]);
       return res;
     }
     const [a, b] = res.body.tee();
     schedule(new Response(b).text().then((t) => {
-      const { usage, model } = _parseSseUsage(t);
-      return save(usage, model);
+      const { usage, model, provider } = _parseSseUsage(t);
+      return save(usage, model, provider);
     }));
     return new Response(a, { status: res.status, statusText: res.statusText, headers: res.headers });
   };

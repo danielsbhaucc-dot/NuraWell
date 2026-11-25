@@ -1,5 +1,6 @@
 import { withTimeoutFetch } from '../timeout';
 import type { AiProvider, CompletionRequest, CompletionResult } from '../types';
+import { applyOpenRouterProviderIgnore, isOpenRouterApiUrl } from '../openrouter-request';
 
 export type OpenAiCompatibleOptions = {
   /** Injected by the product (server env); the package never reads env itself. */
@@ -30,13 +31,18 @@ export function createOpenAiCompatibleProvider(o: OpenAiCompatibleOptions): AiPr
           ...(o.title ? { 'X-Title': o.title } : {}),
           ...(o.referer ? { 'HTTP-Referer': o.referer } : {}),
         },
-        body: JSON.stringify({
-          model: req.model,
-          messages: req.messages,
-          max_tokens: req.maxTokens,
-          temperature: req.temperature,
-          usage: { include: true },
-        }),
+        body: JSON.stringify((() => {
+          const payload: Record<string, unknown> = {
+            model: req.model,
+            messages: req.messages,
+            max_tokens: req.maxTokens,
+            temperature: req.temperature,
+            usage: { include: true },
+          };
+          return isOpenRouterApiUrl(base) || isOpenRouterApiUrl(`${base}/chat/completions`)
+            ? applyOpenRouterProviderIgnore(payload)
+            : payload;
+        })()),
       });
       if (!res.ok) throw new Error(`AI provider HTTP ${res.status}`);
       const j = (await res.json()) as { model?: string; choices?: { message?: { content?: string } }[]; usage?: Usage };

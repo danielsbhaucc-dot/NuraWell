@@ -69,6 +69,7 @@ export const COLUMN_CLASSIFICATION: Readonly<Record<string, Readonly<Record<stri
     feature: ["non_sensitive", "enum/status/routing code, no personal content"],
     model: ["non_sensitive", "enum/status/routing code, no personal content"],
     product_id: ["non_sensitive", "identifier/key or public credential material, no personal content"],
+    provider: ["non_sensitive", "OpenRouter serving provider name only, no personal content"],
   },
   ai_usage_monthly: {
     feature: ["non_sensitive", "enum/status/routing code, no personal content"],

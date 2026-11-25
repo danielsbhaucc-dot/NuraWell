@@ -7,6 +7,7 @@ import { currentAiUserId, recordBatchUsage } from '@/lib/ai/usage-meter';
 import { publicAppUrlForAiReferer } from '../../public-app-url';
 import type { ChatSummaryType } from './chat-period-keys';
 import { adaptGroqChatBody, groqCompatFetch } from '../groq-compat';
+import { applyOpenRouterProviderIgnore, readOpenRouterProvider } from '@/lib/ai/openrouter-request';
 
 export const CHAT_SUMMARY_MODEL =
   process.env.CHAT_SUMMARY_MODEL?.trim() ||
@@ -113,7 +114,8 @@ async function callOpenRouterBatch(params: {
             custom_id: params.customId,
             method: 'POST',
             url: '/v1/chat/completions',
-            body: adaptGroqChatBody(innerBody as Parameters<typeof adaptGroqChatBody>[0], { viaOpenRouter: true }
+            body: applyOpenRouterProviderIgnore(
+              adaptGroqChatBody(innerBody as Parameters<typeof adaptGroqChatBody>[0], { viaOpenRouter: true })
             ),
           },
         ],
@@ -144,12 +146,13 @@ async function callOpenRouterBatch(params: {
         const line = text.split('\n').find(Boolean);
         if (!line) return null;
         const parsed = JSON.parse(line) as {
-          response?: { body?: { model?: string; usage?: Parameters<typeof recordBatchUsage>[0]['usage']; choices?: Array<{ message?: { content?: string } }> } };
+          response?: { body?: { model?: string; provider?: unknown; usage?: Parameters<typeof recordBatchUsage>[0]['usage']; choices?: Array<{ message?: { content?: string } }> } };
         };
         await recordBatchUsage({
           feature: 'chat_periodic_summary',
           model: parsed.response?.body?.model ?? CHAT_SUMMARY_MODEL,
           usage: parsed.response?.body?.usage,
+          provider: readOpenRouterProvider(parsed.response?.body),
         }).catch(() => {});
         const out = parsed.response?.body?.choices?.[0]?.message?.content?.trim();
         return out ? shield.detokenizeText(out) : null;

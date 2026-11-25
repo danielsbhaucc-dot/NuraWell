@@ -1,4 +1,5 @@
 import { RELAY_HEADER } from '@/lib/ai/openrouter-relay';
+import { applyOpenRouterProviderIgnoreToBodyString } from '@/lib/ai/openrouter-request';
 
 /** Internal relay: see lib/ai/openrouter-relay.ts. Pinned to iad1, next to OpenRouter / OpenAI. */
 export const runtime = 'nodejs';
@@ -33,7 +34,7 @@ export async function POST(req: Request) {
       Authorization: `Bearer ${process.env.OPENROUTER_API_KEY?.trim() ?? ''}`,
       ...forward,
     },
-    body: await req.text(),
+    body: applyOpenRouterProviderIgnoreToBodyString(await req.text()),
     signal: req.signal,
   });
   const headers = new Headers({ 'x-nw-relayed': '1', 'Cache-Control': 'no-store' });

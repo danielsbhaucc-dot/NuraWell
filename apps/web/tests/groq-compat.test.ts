@@ -9,6 +9,7 @@ import {
   groqLaneUsesDirectGroq,
   isGroqLaneAvailable,
 } from '../lib/ai/groq-compat';
+import { OPENROUTER_IGNORED_PROVIDERS } from '../lib/ai/openrouter-request';
 
 describe('groq gpt-oss compat', () => {
   afterEach(() => {
@@ -74,7 +75,11 @@ describe('groq gpt-oss compat', () => {
       body: JSON.stringify({ model: 'openai/gpt-oss-20b', max_tokens: 80 }),
     });
     const sent = JSON.parse((spy.mock.calls[0] as unknown as [string, RequestInit])[1].body as string);
-    expect(sent.provider).toEqual({ order: ['groq'], allow_fallbacks: true });
+    expect(sent.provider.order).toEqual(['groq']);
+    expect(sent.provider.allow_fallbacks).toBe(true);
+    for (const slug of OPENROUTER_IGNORED_PROVIDERS) {
+      expect(sent.provider.ignore).toContain(slug);
+    }
     expect(sent.include_reasoning).toBeUndefined();
   });
 

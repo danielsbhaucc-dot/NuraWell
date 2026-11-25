@@ -275,6 +275,7 @@ class ai_interactions role -
 class ai_usage_events feature -
 class ai_usage_events model -
 class ai_usage_events product_id -
+class ai_usage_events provider -
 class ai_usage_monthly feature -
 class ai_usage_monthly model -
 class almog_assignments title_tok_bidx -
