@@ -92,16 +92,18 @@ describe('central catalog adapter', () => {
     expect(t).not.toContain('בתוקף עד'); // no endsAt → no end date
   });
 
-  it('display is always a whole shekel; mixed promos get a neutral banner', () => {
+  it('shekels() matches the parent money() amount: whole shekel, no decimal; otherwise two-digit agorot; never rounded up', () => {
     expect(shekels(10700)).toBe('107');
     expect(shekels(11900)).toBe('119');
     expect(shekels(26900)).toBe('269');
     expect(shekels(17900)).toBe('179');
     expect(shekels(149000)).toBe('1,490'); // he-IL grouping, same as the parent purchase page
-    // If a catalog still sends the older agora amounts, the page still shows whole shekels (no agorot).
-    expect(shekels(10740)).toBe('107');
-    expect(shekels(11940)).toBe('119');
-    expect(shekels(26940)).toBe('269');
+    expect(shekels(10700)).not.toContain('.');
+    expect(shekels(12345)).toBe('123.45');
+    expect(shekels(15550)).toBe('155.50');
+    expect(shekels(15550)).not.toBe('156');
+    expect(shekels(15549)).toBe('155.49');
+    expect(shekels(12300)).toBe('123');
     expect(promoBanner([{ fullMinor: 1, finalMinor: 1, promo: { type: 'percent', value: 40, months: 3 } }, { fullMinor: 1, finalMinor: 1, promo: { type: 'percent', value: 20, months: 3 } }])).toBe('מחיר השקה למנוי חדש, לתקופה מוגבלת');
     expect(promoBanner([{ fullMinor: 1, finalMinor: 1, promo: null }])).toBeNull();
   });
@@ -184,15 +186,28 @@ describe('launch discount display: whole shekels, no agorot', () => {
     const prices = [...html.matchAll(/data-testid="plan-price"[^>]*>([^<]*)₪/g)].map((m) => m[1].replace(/\s+/g, ' ').trim());
     expect(prices).toEqual(['107', '119', '269']);
   });
-  it('parseCatalog keeps a 10740 finalMinor as sent; only the display is a whole shekel', () => {
-    const c = parseCatalog(payload([plan('basic', 17900, 10740, promoOn), plan('whatsapp', 19900, 11940, promoOn), plan('phone', 44900, 26940, promoOn)]), NOW)!;
-    expect(c.plans.basic!.finalMinor).toBe(10740);
-    expect(c.plans.whatsapp!.finalMinor).toBe(11940);
-    expect(c.plans.premium!.finalMinor).toBe(26940);
+  it('parseCatalog keeps a 10700 finalMinor as sent; display is 107 / 119 / 269 ₪ with no decimal', () => {
+    const c = parseCatalog(payload([plan('basic', 17900, 10700, promoOn), plan('whatsapp', 19900, 11900, promoOn), plan('phone', 44900, 26900, promoOn)]), NOW)!;
+    expect(c.plans.basic!.finalMinor).toBe(10700);
+    expect(c.plans.whatsapp!.finalMinor).toBe(11900);
+    expect(c.plans.premium!.finalMinor).toBe(26900);
     const t = visibleText(render(c));
     for (const s of ['107 ₪', '119 ₪', '269 ₪']) expect(t).toContain(s);
     expect(t).not.toContain('.40');
     expect(t).not.toMatch(/107\.40|119\.40|269\.40/);
+  });
+  it('a non-whole finalMinor is kept as sent and shown with two-digit agorot, never rounded up', () => {
+    const c = parseCatalog(payload([plan('basic', 17900, 12345, promoOn), plan('whatsapp', 19900, 15550, promoOn), plan('phone', 44900, 10700, promoOn)]), NOW)!;
+    expect(c.plans.basic!.finalMinor).toBe(12345);
+    expect(c.plans.whatsapp!.finalMinor).toBe(15550);
+    expect(c.plans.premium!.finalMinor).toBe(10700);
+    const t = visibleText(render(c));
+    expect(t).toContain('123.45 ₪');
+    expect(t).toContain('155.50 ₪');
+    expect(t).toContain('107 ₪');
+    expect(t).not.toContain('123 ₪');
+    expect(t).not.toContain('156 ₪');
+    expect(t).not.toMatch(/107\./);
   });
 });
 

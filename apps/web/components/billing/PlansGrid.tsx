@@ -19,18 +19,21 @@ import {
 } from '@/lib/billing/plans';
 
 /**
- * Amount only, in whole shekels, he-IL digits, no agorot. The sign goes after: "X ₪".
- * The number comes from the catalog's finalMinor (or the base price when there is no promo).
- * Display is always a whole shekel; agorot are not shown.
+ * Amount only, same format as the parent purchase page money() for ILS (without « לחודש»).
+ * The number is the catalog's finalMinor (or the base price when there is no promo), unrounded.
+ * A whole shekel has no decimal point («107»); a non-whole amount has two-digit agorot («107.40»).
+ * he-IL grouping; the sign is added by the caller: "X ₪".
  */
 export function shekels(minor: number): string {
-  const n = Math.round(minor / 100);
+  const n = Number(minor) / 100;
   if (!Number.isFinite(n)) return '';
-  return n.toLocaleString('he-IL');
+  return Number.isInteger(n)
+    ? n.toLocaleString('he-IL')
+    : n.toLocaleString('he-IL', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 /**
- * The big monthly price as a whole shekel, set smaller, and the number never breaks across
+ * The big monthly price, set smaller, and the number never breaks across
  * lines, so it fits a 360px screen at 200% font.
  */
 function BigPrice({ minor }: { minor: number }) {
