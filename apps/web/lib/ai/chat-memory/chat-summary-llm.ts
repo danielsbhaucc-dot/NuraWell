@@ -217,7 +217,8 @@ const callOpenRouterBatch = async (params: {
     const shield = await guardOutboundBody(innerBody, currentAiUserId());
     const batchId = await createSummaryBatch(key, params.customId, innerBody);
     if (!batchId) return null;
-    return pollSummaryBatch(key, batchId, shield);
+    // await is required: without it a rejection bypasses this try/catch and skips the sync fallback.
+    return await pollSummaryBatch(key, batchId, shield);
   } catch {
     return null;
   }

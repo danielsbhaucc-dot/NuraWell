@@ -404,17 +404,21 @@ const BUILDER_PATH_SUFFIXES = ['lib/ai/groq-compat.ts', 'lib/ai/usage-meter.ts',
 const clientUsesGroqCompat = (rel: string, source: string): boolean =>
   rel.endsWith('lib/ai/client.ts') && /fetch:\s*groqCompatFetch/.test(source);
 
+const LOCAL_BUILDER_RE = /\b(?:function|const|let|var)\s+applyOpenRouterProviderIgnore\b/;
+
 const backfillUsesSharedBuilder = (rel: string, source: string): boolean =>
   rel.endsWith('backfill-insight-vectors-upstash.mjs') &&
   source.includes('packages/@platform/ai-engine/src/openrouter-request.ts') &&
+  source.includes('await import(') &&
   source.includes('applyOpenRouterProviderIgnore') &&
-  !source.includes('function applyOpenRouterProviderIgnore');
+  !LOCAL_BUILDER_RE.test(source);
 
 const siteUsesBuilder = (rel: string, source: string): boolean => {
+  if (rel.endsWith('backfill-insight-vectors-upstash.mjs')) return backfillUsesSharedBuilder(rel, source);
   if (WRAPPER_RE.test(source) || /\bopenrouter\.(chat|embeddings)\b/.test(source)) return true;
   if (BUILDER_PATH_SUFFIXES.some((suffix) => rel.endsWith(suffix))) return true;
   if (clientUsesGroqCompat(rel, source)) return true;
-  return backfillUsesSharedBuilder(rel, source);
+  return false;
 };
 
 const relativeSitesMissingBuilder = (sites: { file: string; src: string }[]): string[] =>
@@ -444,6 +448,18 @@ describe('every OpenRouter inference call site goes through the central builder'
 
   it('each call site uses the builder or a wrapper that already goes through it', () => {
     expect(relativeSitesMissingBuilder(sites)).toEqual([]);
+  });
+
+  it('the backfill script dynamically imports the shared builder and does not define a local copy', () => {
+    const file = sites.map(({ file }) => file).find((path) => path.endsWith('backfill-insight-vectors-upstash.mjs'));
+    expect(file, 'backfill script should be an OpenRouter inference call site').toBeTruthy();
+    if (!file) return;
+    const src = readFileSync(file, 'utf8');
+    const rel = relative(REPO_ROOT, file);
+    expect(backfillUsesSharedBuilder(rel, src)).toBe(true);
+    expect(src).toContain('packages/@platform/ai-engine/src/openrouter-request.ts');
+    expect(src).toContain('await import(');
+    expect(LOCAL_BUILDER_RE.test(src)).toBe(false);
   });
 
   it('the local migration exists and says it must not be applied to the live database in this change', () => {
