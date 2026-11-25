@@ -17,29 +17,26 @@ const SYNC_TEXT = 'סיכום סינכרוני לגיבוי';
 const urlOf = (input: RequestInfo | URL): string =>
   typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
 
+const jsonResponse = (body: unknown): Response =>
+  new Response(JSON.stringify(body), { headers: { 'content-type': 'application/json' } });
+
+const pollBatchResponse = (opts: { resultsBody?: string; pollError?: boolean }): Response => {
+  if (opts.pollError) throw new TypeError('fetch failed');
+  return jsonResponse({ status: 'completed', results_url: 'https://openrouter.ai/api/v1/batches/b1/results' });
+};
+
+const responseForBatchUrl = (url: string, opts: { resultsBody?: string; pollError?: boolean }): Response => {
+  if (url.endsWith('/batches')) return jsonResponse({ id: 'b1' });
+  if (url.includes('/batches/b1/results')) return new Response(opts.resultsBody ?? '{not json\n');
+  if (url.includes('/batches/b1')) return pollBatchResponse(opts);
+  if (url.includes('/chat/completions')) {
+    return jsonResponse({ model: 'm', choices: [{ message: { content: SYNC_TEXT } }], usage: { cost: 0.001 } });
+  }
+  return new Response('', { status: 201 });
+};
+
 const mockBatchFetch = (opts: { resultsBody?: string; pollError?: boolean }) =>
-  vi.fn(async (input: RequestInfo | URL) => {
-    const url = urlOf(input);
-    if (url.endsWith('/batches')) {
-      return new Response(JSON.stringify({ id: 'b1' }), { headers: { 'content-type': 'application/json' } });
-    }
-    if (url.includes('/batches/b1/results')) {
-      return new Response(opts.resultsBody ?? '{not json\n');
-    }
-    if (url.includes('/batches/b1')) {
-      if (opts.pollError) throw new TypeError('fetch failed');
-      return new Response(JSON.stringify({ status: 'completed', results_url: 'https://openrouter.ai/api/v1/batches/b1/results' }), {
-        headers: { 'content-type': 'application/json' },
-      });
-    }
-    if (url.includes('/chat/completions')) {
-      return new Response(
-        JSON.stringify({ model: 'm', choices: [{ message: { content: SYNC_TEXT } }], usage: { cost: 0.001 } }),
-        { headers: { 'content-type': 'application/json' } }
-      );
-    }
-    return new Response('', { status: 201 });
-  });
+  vi.fn((input: RequestInfo | URL) => Promise.resolve(responseForBatchUrl(urlOf(input), opts)));
 
 const runInsight = () =>
   generateChatSummaryInsight({ type: 'daily', periodKey: '2026-11-25', firstName: 'QA', sourceBlock: 'חומר' });

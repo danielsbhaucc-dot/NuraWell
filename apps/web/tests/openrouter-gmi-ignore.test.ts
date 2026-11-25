@@ -365,7 +365,7 @@ const SKIP_DIR = new Set(['node_modules', '.git', '.next', 'dist', 'coverage', '
 
 const walkSourceFiles = (dir: string, acc: string[] = []): string[] => {
   for (const name of readdirSync(dir)) {
-    if (SKIP_DIR.has(name)) continue;
+    if (SKIP_DIR.has(name) || name.startsWith('.')) continue;
     const full = join(dir, name);
     const st = statSync(full);
     if (st.isDirectory()) walkSourceFiles(full, acc);
@@ -413,13 +413,16 @@ const backfillUsesSharedBuilder = (rel: string, source: string): boolean =>
   source.includes('applyOpenRouterProviderIgnore') &&
   !LOCAL_BUILDER_RE.test(source);
 
-const siteUsesBuilder = (rel: string, source: string): boolean => {
-  if (rel.endsWith('backfill-insight-vectors-upstash.mjs')) return backfillUsesSharedBuilder(rel, source);
-  if (WRAPPER_RE.test(source) || /\bopenrouter\.(chat|embeddings)\b/.test(source)) return true;
-  if (BUILDER_PATH_SUFFIXES.some((suffix) => rel.endsWith(suffix))) return true;
-  if (clientUsesGroqCompat(rel, source)) return true;
-  return false;
-};
+const siteUsesStandardBuilder = (rel: string, source: string): boolean =>
+  WRAPPER_RE.test(source) ||
+  /\bopenrouter\.(chat|embeddings)\b/.test(source) ||
+  BUILDER_PATH_SUFFIXES.some((suffix) => rel.endsWith(suffix)) ||
+  clientUsesGroqCompat(rel, source);
+
+const siteUsesBuilder = (rel: string, source: string): boolean =>
+  rel.endsWith('backfill-insight-vectors-upstash.mjs')
+    ? backfillUsesSharedBuilder(rel, source)
+    : siteUsesStandardBuilder(rel, source);
 
 const relativeSitesMissingBuilder = (sites: { file: string; src: string }[]): string[] =>
   sites

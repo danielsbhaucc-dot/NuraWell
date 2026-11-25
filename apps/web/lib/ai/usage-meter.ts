@@ -309,7 +309,7 @@ const persistUsageRow = (params: {
   const { runId, started, userId, feature, reqModel } = params;
   return (usage, model, provider) => {
     if (runId) finishParentOk(runId, started, usage);
-    if (!usage) return Promise.resolve(undefined);
+    if (!usage) return Promise.resolve();
     return record(usageEventRow({ userId, feature, model: model ?? reqModel, provider, usage }));
   };
 };
