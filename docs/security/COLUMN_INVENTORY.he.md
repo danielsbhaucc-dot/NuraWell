@@ -161,7 +161,7 @@
 - **admin_totp**: secret_enc
 - **ai_interaction_edits**: model, source
 - **ai_interactions**: context_type, model_name, role
-- **ai_usage_events**: feature, model
+- **ai_usage_events**: feature, model, provider
 - **ai_usage_monthly**: feature, model
 - **almog_assignments**: created_by, dedupe_key, related_habit_id, relation, status
 - **almog_blockers**: category, dedupe_key, status

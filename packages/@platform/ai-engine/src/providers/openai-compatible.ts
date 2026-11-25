@@ -1,5 +1,6 @@
 import { withTimeoutFetch } from '../timeout';
 import type { AiProvider, CompletionRequest, CompletionResult } from '../types';
+import { applyOpenRouterProviderIgnore, isOpenRouterApiUrl } from '../openrouter-request';
 
 export type OpenAiCompatibleOptions = {
   /** Injected by the product (server env); the package never reads env itself. */
@@ -15,7 +16,7 @@ export type OpenAiCompatibleOptions = {
 type Usage = { prompt_tokens?: number; completion_tokens?: number; cost?: number; prompt_tokens_details?: { cached_tokens?: number } };
 
 /** Minimal Chat Completions client (OpenRouter by default) that returns billed usage. */
-export function createOpenAiCompatibleProvider(o: OpenAiCompatibleOptions): AiProvider {
+export const createOpenAiCompatibleProvider = (o: OpenAiCompatibleOptions): AiProvider => {
   const base = (o.baseURL ?? 'https://openrouter.ai/api/v1').replace(/\/$/, '');
   const f = withTimeoutFetch(o.fetch ?? fetch, o.timeoutMs === undefined ? 60_000 : o.timeoutMs);
   return {
@@ -30,13 +31,18 @@ export function createOpenAiCompatibleProvider(o: OpenAiCompatibleOptions): AiPr
           ...(o.title ? { 'X-Title': o.title } : {}),
           ...(o.referer ? { 'HTTP-Referer': o.referer } : {}),
         },
-        body: JSON.stringify({
-          model: req.model,
-          messages: req.messages,
-          max_tokens: req.maxTokens,
-          temperature: req.temperature,
-          usage: { include: true },
-        }),
+        body: JSON.stringify((() => {
+          const payload: Record<string, unknown> = {
+            model: req.model,
+            messages: req.messages,
+            max_tokens: req.maxTokens,
+            temperature: req.temperature,
+            usage: { include: true },
+          };
+          return isOpenRouterApiUrl(base) || isOpenRouterApiUrl(`${base}/chat/completions`)
+            ? applyOpenRouterProviderIgnore(payload)
+            : payload;
+        })()),
       });
       if (!res.ok) throw new Error(`AI provider HTTP ${res.status}`);
       const j = (await res.json()) as { model?: string; choices?: { message?: { content?: string } }[]; usage?: Usage };
@@ -53,4 +59,4 @@ export function createOpenAiCompatibleProvider(o: OpenAiCompatibleOptions): AiPr
       };
     },
   };
-}
+};

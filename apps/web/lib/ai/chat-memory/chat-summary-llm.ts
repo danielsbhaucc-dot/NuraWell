@@ -7,6 +7,7 @@ import { currentAiUserId, recordBatchUsage } from '@/lib/ai/usage-meter';
 import { publicAppUrlForAiReferer } from '../../public-app-url';
 import type { ChatSummaryType } from './chat-period-keys';
 import { adaptGroqChatBody, groqCompatFetch } from '../groq-compat';
+import { applyOpenRouterProviderIgnore, readOpenRouterProvider } from '@/lib/ai/openrouter-request';
 
 export const CHAT_SUMMARY_MODEL =
   process.env.CHAT_SUMMARY_MODEL?.trim() ||
@@ -81,86 +82,147 @@ async function callOpenRouterSync(params: {
  * OpenRouter Batch API — אצווה א-synchronous; כרגע fallback ל-sync אם לא הוגדר batch key.
  * https://openrouter.ai/docs/features/batch-api
  */
-async function callOpenRouterBatch(params: {
+type BatchResultBody = {
+  model?: string;
+  provider?: unknown;
+  usage?: Parameters<typeof recordBatchUsage>[0]['usage'];
+  choices?: Array<{ message?: { content?: string } }>;
+};
+
+type Detokenize = { detokenizeText: (text: string) => string };
+
+const openRouterAuthHeaders = (key: string) => ({ Authorization: `Bearer ${key}` });
+
+const summaryInnerBody = (userContent: string, maxTokens: number): Record<string, unknown> => ({
+  model: CHAT_SUMMARY_MODEL,
+  temperature: 0.2,
+  max_tokens: maxTokens,
+  messages: [
+    { role: 'system', content: SYSTEM_PROMPT },
+    { role: 'user', content: userContent },
+  ],
+});
+
+const createSummaryBatch = async (
+  key: string,
+  customId: string,
+  innerBody: Record<string, unknown>
+): Promise<string | null> => {
+  const createRes = await fetch('https://openrouter.ai/api/v1/batches', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...openRouterAuthHeaders(key),
+    },
+    body: JSON.stringify({
+      requests: [
+        {
+          custom_id: customId,
+          method: 'POST',
+          url: '/v1/chat/completions',
+          body: applyOpenRouterProviderIgnore(
+            adaptGroqChatBody(innerBody as Parameters<typeof adaptGroqChatBody>[0], { viaOpenRouter: true })
+          ),
+        },
+      ],
+    }),
+  });
+  if (!createRes.ok) return null;
+  const created = (await createRes.json()) as { id?: string };
+  return created.id ?? null;
+};
+
+const readCompletedBatchLine = async (resultsUrl: string, key: string): Promise<string | null> => {
+  const resultsRes = await fetch(resultsUrl, { headers: openRouterAuthHeaders(key) });
+  if (!resultsRes.ok) return null;
+  const text = await resultsRes.text();
+  const line = text.split('\n').find(Boolean);
+  return line ?? null;
+};
+
+const batchResultBody = (line: string): BatchResultBody | undefined => {
+  const parsed = JSON.parse(line) as { response?: { body?: BatchResultBody } };
+  return parsed.response ? parsed.response.body : undefined;
+};
+
+const firstMessageContent = (body: BatchResultBody | undefined): string | undefined => {
+  if (!body || !body.choices) return undefined;
+  const message = body.choices[0] ? body.choices[0].message : undefined;
+  return message ? message.content : undefined;
+};
+
+const batchChoiceText = (body: BatchResultBody | undefined): string | null => {
+  const raw = firstMessageContent(body);
+  if (typeof raw !== 'string') return null;
+  const trimmed = raw.trim();
+  return trimmed ? trimmed : null;
+};
+
+const recordAndDetokenizeBatchLine = async (line: string, shield: Detokenize): Promise<string | null> => {
+  const body = batchResultBody(line);
+  await recordBatchUsage({
+    feature: 'chat_periodic_summary',
+    model: body?.model ?? CHAT_SUMMARY_MODEL,
+    usage: body?.usage,
+    provider: readOpenRouterProvider(body),
+  }).catch(() => undefined);
+  const out = batchChoiceText(body);
+  if (!out) return null;
+  return shield.detokenizeText(out);
+};
+
+const handleCompletedBatch = async (resultsUrl: string, key: string, shield: Detokenize): Promise<string | null> => {
+  const line = await readCompletedBatchLine(resultsUrl, key);
+  if (!line) return null;
+  return recordAndDetokenizeBatchLine(line, shield);
+};
+
+const isFailedOrCancelledBatch = (status?: string): boolean =>
+  status === 'failed' || status === 'cancelled';
+
+type PollResult = string | null | 'continue';
+
+const pollSummaryBatchOnce = async (key: string, batchId: string, shield: Detokenize): Promise<PollResult> => {
+  const poll = await fetch(`https://openrouter.ai/api/v1/batches/${batchId}`, {
+    headers: openRouterAuthHeaders(key),
+  });
+  if (!poll.ok) return 'continue';
+  const status = (await poll.json()) as { status?: string; results_url?: string };
+  if (status.status === 'completed' && status.results_url) {
+    return handleCompletedBatch(status.results_url, key, shield);
+  }
+  if (isFailedOrCancelledBatch(status.status)) return null;
+  return 'continue';
+};
+
+const pollSummaryBatch = async (key: string, batchId: string, shield: Detokenize): Promise<string | null> => {
+  for (let i = 0; i < 30; i += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    const result = await pollSummaryBatchOnce(key, batchId, shield);
+    if (result !== 'continue') return result;
+  }
+  return null;
+};
+
+const callOpenRouterBatch = async (params: {
   customId: string;
   userContent: string;
   maxTokens: number;
-}): Promise<string | null> {
+}): Promise<string | null> => {
   const key = process.env.OPENROUTER_API_KEY?.trim();
   if (!key) return null;
-
   try {
     // Batch API bypasses meteredFetch, so run the central PII guard on the inner request explicitly.
-    const innerBody: Record<string, unknown> = {
-      model: CHAT_SUMMARY_MODEL,
-      temperature: 0.2,
-      max_tokens: params.maxTokens,
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        { role: 'user', content: params.userContent },
-      ],
-    };
+    const innerBody = summaryInnerBody(params.userContent, params.maxTokens);
     const shield = await guardOutboundBody(innerBody, currentAiUserId());
-    const createRes = await fetch('https://openrouter.ai/api/v1/batches', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${key}`,
-      },
-      body: JSON.stringify({
-        requests: [
-          {
-            custom_id: params.customId,
-            method: 'POST',
-            url: '/v1/chat/completions',
-            body: adaptGroqChatBody(innerBody as Parameters<typeof adaptGroqChatBody>[0], { viaOpenRouter: true }
-            ),
-          },
-        ],
-      }),
-    });
-
-    if (!createRes.ok) return null;
-    const created = (await createRes.json()) as { id?: string };
-    const batchId = created.id;
+    const batchId = await createSummaryBatch(key, params.customId, innerBody);
     if (!batchId) return null;
-
-    for (let i = 0; i < 30; i += 1) {
-      await new Promise((r) => setTimeout(r, 2000));
-      const poll = await fetch(`https://openrouter.ai/api/v1/batches/${batchId}`, {
-        headers: { Authorization: `Bearer ${key}` },
-      });
-      if (!poll.ok) continue;
-      const status = (await poll.json()) as {
-        status?: string;
-        results_url?: string;
-      };
-      if (status.status === 'completed' && status.results_url) {
-        const resultsRes = await fetch(status.results_url, {
-          headers: { Authorization: `Bearer ${key}` },
-        });
-        if (!resultsRes.ok) return null;
-        const text = await resultsRes.text();
-        const line = text.split('\n').find(Boolean);
-        if (!line) return null;
-        const parsed = JSON.parse(line) as {
-          response?: { body?: { model?: string; usage?: Parameters<typeof recordBatchUsage>[0]['usage']; choices?: Array<{ message?: { content?: string } }> } };
-        };
-        await recordBatchUsage({
-          feature: 'chat_periodic_summary',
-          model: parsed.response?.body?.model ?? CHAT_SUMMARY_MODEL,
-          usage: parsed.response?.body?.usage,
-        }).catch(() => {});
-        const out = parsed.response?.body?.choices?.[0]?.message?.content?.trim();
-        return out ? shield.detokenizeText(out) : null;
-      }
-      if (status.status === 'failed' || status.status === 'cancelled') return null;
-    }
-    return null;
+    // await is required: without it a rejection bypasses this try/catch and skips the sync fallback.
+    return await pollSummaryBatch(key, batchId, shield);
   } catch {
     return null;
   }
-}
+};
 
 export async function generateChatSummaryInsight(params: {
   type: ChatSummaryType;

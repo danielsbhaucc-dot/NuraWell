@@ -21,6 +21,7 @@ const EMBEDDING_DIM = 1536;
 const INSIGHT_PREFIX = 'insight:';
 const SERVER_UA = 'NuraWell-Server/backfill-insight-vectors-upstash/1';
 
+
 function envInt(name, fallback) {
   const raw = process.env[name]?.trim();
   if (!raw) return fallback;
@@ -88,7 +89,10 @@ async function fetchInsightPage(baseUrl, serviceKey, pageSize, offset) {
   return Array.isArray(rows) ? rows : [];
 }
 
-async function embedTexts(texts, apiKey) {
+const embedTexts = async (texts, apiKey) => {
+  const { applyOpenRouterProviderIgnore } = await import(
+    '../../../packages/@platform/ai-engine/src/openrouter-request.ts'
+  );
   const res = await fetch('https://openrouter.ai/api/v1/embeddings', {
     method: 'POST',
     headers: {
@@ -96,7 +100,7 @@ async function embedTexts(texts, apiKey) {
       'Content-Type': 'application/json',
       'User-Agent': SERVER_UA,
     },
-    body: JSON.stringify({ model: EMBEDDING_MODEL, input: texts }),
+    body: JSON.stringify(applyOpenRouterProviderIgnore({ model: EMBEDDING_MODEL, input: texts })),
   });
   const body = await res.text();
   if (!res.ok) throw new Error(`OpenRouter embeddings ${res.status}: ${body.slice(0, 400)}`);
@@ -112,7 +116,7 @@ async function embedTexts(texts, apiKey) {
     }
     return vec;
   });
-}
+};
 
 async function upsertUpstash(vectorUrl, vectorToken, row, vector) {
   const ns = encodeURIComponent('user-memory');
