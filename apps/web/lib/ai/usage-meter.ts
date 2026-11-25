@@ -89,15 +89,62 @@ export function _parseSseUsage(text: string): { usage: Usage | null; model: stri
   return { usage, model, provider };
 }
 
+function postgrestErrorCode(body: string): string | null {
+  try {
+    const parsed = JSON.parse(body) as { code?: unknown };
+    return typeof parsed.code === 'string' && parsed.code.trim() ? parsed.code.trim().slice(0, 40) : null;
+  } catch {
+    const m = body.match(/\bPGRST\d{3}\b/);
+    return m ? m[0] : null;
+  }
+}
+
+/** PostgREST PGRST204 when ai_usage_events.provider has not been added yet. */
+function isMissingProviderColumn(status: number, body: string): boolean {
+  if (status !== 400 && status !== 404) return false;
+  const code = postgrestErrorCode(body);
+  if (code === 'PGRST204' && /provider/i.test(body)) return true;
+  return /could not find the ['"]provider['"] column/i.test(body);
+}
+
 async function record(row: Record<string, unknown>) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
   if (!url || !key) return;
-  await fetch(`${url.replace(/\/$/, '')}/rest/v1/ai_usage_events`, {
-    method: 'POST',
-    headers: { apikey: key, Authorization: `Bearer ${key}`, 'content-type': 'application/json', Prefer: 'return=minimal', 'User-Agent': 'NuraWell-Server/usage-meter/1' },
-    body: JSON.stringify(row),
-  }).catch(() => {});
+  const endpoint = `${url.replace(/\/$/, '')}/rest/v1/ai_usage_events`;
+  const headers = {
+    apikey: key,
+    Authorization: `Bearer ${key}`,
+    'content-type': 'application/json',
+    Prefer: 'return=minimal',
+    'User-Agent': 'NuraWell-Server/usage-meter/1',
+  };
+  const post = (payload: Record<string, unknown>) =>
+    fetch(endpoint, { method: 'POST', headers, body: JSON.stringify(payload) });
+  try {
+    const res = await post(row);
+    if (res.ok) return;
+    const text = await res.text().catch(() => '');
+    if (isMissingProviderColumn(res.status, text) && Object.prototype.hasOwnProperty.call(row, 'provider')) {
+      const rest = { ...row };
+      delete rest.provider;
+      console.warn('[usage-meter] ai_usage_events.provider column is missing; retrying the cost insert without it');
+      const retry = await post(rest);
+      if (retry.ok) return;
+      const retryText = await retry.text().catch(() => '');
+      console.warn('[usage-meter] ai_usage_events insert retry failed', {
+        status: retry.status,
+        code: postgrestErrorCode(retryText),
+      });
+      return;
+    }
+    console.warn('[usage-meter] ai_usage_events insert failed', {
+      status: res.status,
+      code: postgrestErrorCode(text),
+    });
+  } catch {
+    console.warn('[usage-meter] ai_usage_events insert failed', { error: 'network' });
+  }
 }
 
 /**

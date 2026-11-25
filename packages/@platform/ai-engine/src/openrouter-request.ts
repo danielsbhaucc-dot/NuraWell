@@ -13,10 +13,10 @@
 export const OPENROUTER_GMI_CLOUD_SLUG = 'gmicloud';
 
 /**
- * Display-name and slug variants always sent in provider.ignore.
- * Official slug is "gmicloud"; "GMICloud" is the providers API display name;
- * "GMI Cloud" is the common spaced spelling. Keep this list in sync with
- * openrouter-ignored-providers.json (used by one-off .mjs scripts).
+ * Variants to add to provider.ignore. Official slug is "gmicloud";
+ * "GMICloud" is the providers API display name; "GMI Cloud" is the spaced spelling.
+ * Merge is case-insensitive, so "gmicloud" and "GMICloud" are the same entry.
+ * Keep this list in sync with openrouter-ignored-providers.json.
  */
 export const OPENROUTER_IGNORED_PROVIDERS: readonly string[] = Object.freeze([
   'gmicloud',
@@ -54,10 +54,21 @@ function asRecord(value: unknown): Record<string, unknown> | null {
     : null;
 }
 
+function alreadyIgnored(ignore: string[], slug: string): boolean {
+  const key = slug.toLowerCase();
+  return ignore.some((item) => item.toLowerCase() === key);
+}
+
 /**
  * Merge caller provider prefs with the required ignore list.
  * Existing fields (only, order, sort, allow_fallbacks, data_collection, …) are kept.
- * Existing ignore entries are kept and de-duplicated case-insensitively.
+ * Existing ignore entries are kept and de-duplicated case-insensitively
+ * (so "gmicloud" and "GMICloud" count as one entry).
+ *
+ * If provider.only already names GMI Cloud (any spelling), ignore still includes
+ * it. OpenRouter then has no eligible provider and returns an error, instead of
+ * routing the request to GMI Cloud. That error is the safe outcome; the ignore
+ * list is never dropped to make the request succeed.
  */
 export function mergeOpenRouterProviderPrefs(existing: unknown): Record<string, unknown> {
   const base = asRecord(existing) ?? {};
@@ -66,8 +77,7 @@ export function mergeOpenRouterProviderPrefs(existing: unknown): Record<string, 
     : [];
   const ignore = [...prev];
   for (const slug of OPENROUTER_IGNORED_PROVIDERS) {
-    // Exact-string de-dupe only: "gmicloud" (slug) and "GMICloud" (display name) must both be sent.
-    if (!ignore.includes(slug)) ignore.push(slug);
+    if (!alreadyIgnored(ignore, slug)) ignore.push(slug);
   }
   return { ...base, ignore };
 }

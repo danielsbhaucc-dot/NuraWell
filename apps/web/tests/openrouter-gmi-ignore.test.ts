@@ -25,10 +25,11 @@ function expectIgnored(provider: { ignore?: unknown } | null | undefined) {
   expect(provider).toBeTruthy();
   const ignore = provider!.ignore;
   expect(Array.isArray(ignore)).toBe(true);
+  const lower = (ignore as string[]).map((item) => item.toLowerCase());
   for (const slug of OPENROUTER_IGNORED_PROVIDERS) {
-    expect(ignore).toContain(slug);
+    expect(lower).toContain(slug.toLowerCase());
   }
-  expect(ignore).toContain(OPENROUTER_GMI_CLOUD_SLUG);
+  expect(lower).toContain(OPENROUTER_GMI_CLOUD_SLUG);
 }
 
 describe('OpenRouter central request builder (GMI Cloud ignore)', () => {
@@ -65,19 +66,38 @@ describe('OpenRouter central request builder (GMI Cloud ignore)', () => {
     expect(out.sort).toBe('latency');
     expect(out.allow_fallbacks).toBe(true);
     expect(out.data_collection).toBe('deny');
-    expect(out.ignore).toEqual(['together', ...OPENROUTER_IGNORED_PROVIDERS]);
+    const ignore = out.ignore as string[];
+    expect(ignore[0]).toBe('together');
+    const lower = ignore.map((item) => item.toLowerCase());
+    for (const slug of OPENROUTER_IGNORED_PROVIDERS) {
+      expect(lower).toContain(slug.toLowerCase());
+    }
+    expect(ignore.filter((item) => item.toLowerCase() === 'gmicloud').length).toBe(1);
   });
 
-  it('does not duplicate ignore entries already present, and still adds missing variants', () => {
-    const out = mergeOpenRouterProviderPrefs({ ignore: ['gmicloud', 'together'] });
+  it('de-duplicates ignore entries case-insensitively and still adds the spaced spelling', () => {
+    const out = mergeOpenRouterProviderPrefs({ ignore: ['GMICLOUD', 'together'] });
     const ignore = out.ignore as string[];
-    expect(ignore.filter((x) => x === 'gmicloud').length).toBe(1);
-    expect(ignore[0]).toBe('gmicloud');
+    expect(ignore.filter((x) => x.toLowerCase() === 'gmicloud').length).toBe(1);
+    expect(ignore[0]).toBe('GMICLOUD');
     expect(ignore).toContain('together');
-    expect(ignore).toContain('GMICloud');
     expect(ignore).toContain('GMI Cloud');
+    expect(ignore).not.toContain('gmicloud');
+    expect(ignore).not.toContain('GMICloud');
     const twice = mergeOpenRouterProviderPrefs(out);
     expect(twice.ignore).toEqual(ignore);
+  });
+
+  it('when only names GMI Cloud, ignore still blocks it so the call cannot silently reach that provider', () => {
+    for (const only of [['gmicloud'], ['GMICloud'], ['GMI Cloud']]) {
+      const out = mergeOpenRouterProviderPrefs({ only });
+      expect(out.only).toEqual(only);
+      const lower = (out.ignore as string[]).map((item) => item.toLowerCase());
+      expect(lower).toContain('gmicloud');
+      for (const name of only) {
+        expect(lower).toContain(name.toLowerCase());
+      }
+    }
   });
 
   it('applies ignore to each inner body of a Batch API payload', () => {
@@ -212,6 +232,90 @@ describe('usage meter records the answering provider (name only)', () => {
   });
 });
 
+
+const PGRST204_PROVIDER = {
+  code: 'PGRST204',
+  message: "Could not find the 'provider' column of 'ai_usage_events' in the schema cache",
+};
+
+describe('ai_usage_events insert tolerates a missing provider column', () => {
+  async function postUsage(handler: (url: string, init: RequestInit, call: number) => Response) {
+    process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://db.test';
+    process.env.SUPABASE_SERVICE_ROLE_KEY = 'k';
+    let call = 0;
+    const calls: { url: string; body: string }[] = [];
+    const base = vi.fn(async (u: string, init: RequestInit) => {
+      call += 1;
+      calls.push({ url: String(u), body: String(init.body ?? '') });
+      return handler(String(u), init, call);
+    });
+    vi.stubGlobal('fetch', base);
+    await recordBatchUsage({
+      feature: 'cost_retry',
+      model: 'm',
+      usage: { prompt_tokens: 2, completion_tokens: 1, cost: 0.01 },
+      provider: 'Groq',
+    });
+    await new Promise((r) => setTimeout(r, 20));
+    return { calls, base };
+  }
+
+  it('sends provider when the column exists', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { calls } = await postUsage(() => new Response('', { status: 201 }));
+    expect(calls).toHaveLength(1);
+    expect(JSON.parse(calls[0].body).provider).toBe('Groq');
+    expect(JSON.parse(calls[0].body).cost_usd).toBe(0.01);
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
+    vi.unstubAllGlobals();
+  });
+
+  it('retries the cost insert without provider when PostgREST reports a missing column', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { calls } = await postUsage((_u, _i, n) => {
+      if (n === 1) {
+        return new Response(JSON.stringify(PGRST204_PROVIDER), {
+          status: 400,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+      return new Response('', { status: 201 });
+    });
+    expect(calls).toHaveLength(2);
+    expect(JSON.parse(calls[0].body).provider).toBe('Groq');
+    expect(JSON.parse(calls[1].body)).not.toHaveProperty('provider');
+    expect(JSON.parse(calls[1].body).cost_usd).toBe(0.01);
+    expect(warn).toHaveBeenCalled();
+    const logged = warn.mock.calls.map((c) => JSON.stringify(c)).join('\n');
+    expect(logged).toMatch(/provider column is missing/);
+    expect(logged).not.toMatch(/cost_retry|secret-prompt|Groq/);
+    warn.mockRestore();
+    vi.unstubAllGlobals();
+  });
+
+  it('logs other insert errors and does not retry', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { calls } = await postUsage(
+      () =>
+        new Response(JSON.stringify({ code: '42501', message: 'permission denied for table ai_usage_events' }), {
+          status: 401,
+          headers: { 'content-type': 'application/json' },
+        })
+    );
+    expect(calls).toHaveLength(1);
+    expect(JSON.parse(calls[0].body).provider).toBe('Groq');
+    expect(warn).toHaveBeenCalled();
+    const logged = warn.mock.calls.map((c) => JSON.stringify(c)).join('\n');
+    expect(logged).toMatch(/insert failed/);
+    expect(logged).toMatch(/42501/);
+    expect(logged).not.toMatch(/permission denied/);
+    expect(logged).not.toMatch(/secret-prompt/);
+    warn.mockRestore();
+    vi.unstubAllGlobals();
+  });
+});
+
 const SOURCE_EXTS = new Set(['.ts', '.tsx', '.js', '.mjs']);
 const SKIP_DIR = new Set(['node_modules', '.git', '.next', 'dist', 'coverage', 'build', 'out']);
 
@@ -281,8 +385,9 @@ describe('every OpenRouter inference call site goes through the central builder'
       if (rel.endsWith('openrouter-request.ts')) continue;
       if (rel.endsWith('backfill-insight-vectors-upstash.mjs')) {
         if (
-          src.includes('openrouter-ignored-providers.json') &&
-          src.includes('applyOpenRouterProviderIgnore')
+          src.includes('packages/@platform/ai-engine/src/openrouter-request.ts') &&
+          src.includes('applyOpenRouterProviderIgnore') &&
+          !src.includes('function applyOpenRouterProviderIgnore')
         ) {
           continue;
         }
@@ -295,6 +400,7 @@ describe('every OpenRouter inference call site goes through the central builder'
   it('the local migration exists and says it must not be applied to the live database in this change', () => {
     const sql = readFileSync(join(REPO_ROOT, 'supabase/migrations/000263_ai_usage_events_provider.sql'), 'utf8');
     expect(sql).toMatch(/add column if not exists provider text/i);
+    expect(sql).toMatch(/set lock_timeout\s*=\s*'120s'/i);
     expect(sql.toLowerCase()).toMatch(/do not apply to the live database|not apply to production|local lab only/);
     expect(sql).toMatch(/Name only/);
     expect(sql).not.toMatch(/completion_text|message_content/);

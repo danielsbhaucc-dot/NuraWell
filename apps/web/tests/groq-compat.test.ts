@@ -77,8 +77,9 @@ describe('groq gpt-oss compat', () => {
     const sent = JSON.parse((spy.mock.calls[0] as unknown as [string, RequestInit])[1].body as string);
     expect(sent.provider.order).toEqual(['groq']);
     expect(sent.provider.allow_fallbacks).toBe(true);
+    const sentIgnore = (sent.provider.ignore as string[]).map((item: string) => item.toLowerCase());
     for (const slug of OPENROUTER_IGNORED_PROVIDERS) {
-      expect(sent.provider.ignore).toContain(slug);
+      expect(sentIgnore).toContain(slug.toLowerCase());
     }
     expect(sent.include_reasoning).toBeUndefined();
   });

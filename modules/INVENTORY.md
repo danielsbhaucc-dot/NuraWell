@@ -2,7 +2,7 @@
 # Module inventory
 
 Catalog modules: 21 (core: 8). Packaged modules (module.json): 10.
-App code already modular: 100% (1882/1882 files; the rest is on modules/legacy-app-files.txt and may only shrink).
+App code already modular: 100% (1883/1883 files; the rest is on modules/legacy-app-files.txt and may only shrink).
 
 | id | name | core (cannot disable) | tier | always-on | area manifest | owned app files | packaged |
 |---|---|---|---|---|---|---|---|
@@ -22,7 +22,7 @@ App code already modular: 100% (1882/1882 files; the rest is on modules/legacy-a
 | `legal` | משפטי | no | shareable | terms-acceptance, legal-evidence | yes | 133 | not yet |
 | `a11y` | נגישות | no | sellable | - | yes | 21 | not yet |
 | `qc` | בקרת איכות | no | shareable | - | yes | 2 | yes |
-| `agent` | מנוע סוכן | no | internal | - | yes | 395 | not yet |
+| `agent` | מנוע סוכן | no | internal | - | yes | 396 | not yet |
 | `reminders` | תזכורות | no | internal | - | yes | 95 | not yet |
 | `journey` | מסע, מדריכים ואתגר | no | internal | - | yes | 225 | not yet |
 | `gideon` | גדעון (בוט מנכ"ל) | no | internal | - | yes | 43 | not yet |

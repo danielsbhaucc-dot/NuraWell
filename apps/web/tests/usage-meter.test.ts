@@ -28,8 +28,9 @@ describe('usage meter', () => {
     await new Promise((r) => setTimeout(r, 20));
     const sent = JSON.parse(calls.find((c) => c.url.includes('openrouter'))!.body);
     expect(sent.usage).toEqual({ include: true });
+    const sentIgnore = (sent.provider.ignore as string[]).map((item) => item.toLowerCase());
     for (const slug of OPENROUTER_IGNORED_PROVIDERS) {
-      expect(sent.provider.ignore).toContain(slug);
+      expect(sentIgnore).toContain(slug.toLowerCase());
     }
     const rec = calls.find((c) => c.url.includes('ai_usage_events'));
     expect(rec).toBeTruthy();
