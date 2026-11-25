@@ -260,6 +260,17 @@ describe('catalog cache: total staleness capped (QA: price switched off must sho
   });
 });
 
+describe('billing interval toggle tap target', () => {
+  it('חודשי / שנתי buttons use min-h-11 (44px) and keep both radios', () => {
+    const html = render(fallbackPricing());
+    expect(html).toContain('aria-label="תדירות חיוב"');
+    expect(html.match(/<button[^>]*role="radio"[^>]*class="[^"]*min-h-11[^"]*"/g)).toHaveLength(2);
+    expect(html).toContain('>חודשי<');
+    expect(html).toMatch(/שנתי · עד \d+% חיסכון/);
+    expect(html).not.toMatch(/role="radio"[^>]*min-h-10/);
+  });
+});
+
 describe('legal links on /pricing', () => {
   it('links to the existing terms page and its cancellation/refunds section', () => {
     const html = render(fallbackPricing());

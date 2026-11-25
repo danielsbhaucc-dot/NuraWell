@@ -117,7 +117,7 @@ export function PlansGrid({ purchaseBase, pricing, hasActiveSubscription = false
             role="radio"
             aria-checked={interval === i}
             onClick={() => setInterval(i)}
-            className={`min-h-10 rounded-full px-4 text-sm font-semibold ${interval === i ? 'bg-linear-to-br from-accent-300 to-accent-500 text-forest-950 shadow-btn' : 'text-on-dark-soft hover:text-on-dark'}`}
+            className={`min-h-11 rounded-full px-4 text-sm font-semibold ${interval === i ? 'bg-linear-to-br from-accent-300 to-accent-500 text-forest-950 shadow-btn' : 'text-on-dark-soft hover:text-on-dark'}`}
           >
             {i === 'monthly' ? 'חודשי' : `שנתי · עד ${maxSave}% חיסכון`}
           </button>
