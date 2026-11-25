@@ -109,7 +109,7 @@ export function PlansGrid({ purchaseBase, pricing, hasActiveSubscription = false
           {TRIAL.days} ימי ניסיון בחינם, בלי חיוב עד סוף הניסיון
         </p>
       ) : null}
-      <div role="radiogroup" aria-label="תדירות חיוב" className="flex gap-1 self-center rounded-full border border-on-dark/10 bg-forest-950/50 p-1 backdrop-blur-xl">
+      <div role="radiogroup" aria-label="תדירות חיוב" className="flex flex-wrap items-center justify-center gap-1 self-center rounded-full border border-on-dark/10 bg-forest-950/50 p-1 backdrop-blur-xl">
         {(['monthly', 'annual'] as const).map((i) => (
           <button
             key={i}
@@ -117,7 +117,7 @@ export function PlansGrid({ purchaseBase, pricing, hasActiveSubscription = false
             role="radio"
             aria-checked={interval === i}
             onClick={() => setInterval(i)}
-            className={`min-h-11 rounded-full px-4 text-sm font-semibold ${interval === i ? 'bg-linear-to-br from-accent-300 to-accent-500 text-forest-950 shadow-btn' : 'text-on-dark-soft hover:text-on-dark'}`}
+            className={`min-h-11 whitespace-nowrap rounded-full px-4 text-sm font-semibold ${interval === i ? 'bg-linear-to-br from-accent-300 to-accent-500 text-forest-950 shadow-btn' : 'text-on-dark-soft hover:text-on-dark'}`}
           >
             {i === 'monthly' ? 'חודשי' : `שנתי · עד ${maxSave}% חיסכון`}
           </button>

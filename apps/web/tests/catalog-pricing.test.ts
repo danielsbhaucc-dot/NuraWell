@@ -265,6 +265,7 @@ describe('billing interval toggle tap target', () => {
     const html = render(fallbackPricing());
     expect(html).toContain('aria-label="תדירות חיוב"');
     expect(html.match(/<button[^>]*role="radio"[^>]*class="[^"]*min-h-11[^"]*"/g)).toHaveLength(2);
+    expect(html.match(/<button[^>]*role="radio"[^>]*class="[^"]*whitespace-nowrap[^"]*"/g)).toHaveLength(2);
     expect(html).toContain('>חודשי<');
     expect(html).toMatch(/שנתי · עד \d+% חיסכון/);
     expect(html).not.toMatch(/role="radio"[^>]*min-h-10/);
