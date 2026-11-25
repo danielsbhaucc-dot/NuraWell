@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { LegalToc } from './LegalToc';
+import { HashScroll } from './HashScroll';
 import { LdChrome, LdQuote, type LdStat } from './LdChrome';
 
 /**
@@ -83,6 +84,7 @@ export function LegalDoc({
         </ul>
       </section>
 
+      <HashScroll />
       <main id="ld-main" className="ld-main">
         {sections.map((s, i) => (
           <div key={s.id}>

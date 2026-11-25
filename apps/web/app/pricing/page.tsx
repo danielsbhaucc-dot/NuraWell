@@ -14,7 +14,7 @@ export default async function PricingPage() {
   const { data: { user } } = await supabase.auth.getUser();
   // A member with a verified live subscription gets "manage" instead of a second purchase.
   const hasActiveSubscription = user ? (await loadMySubscription(user)).state === 'active' : false;
-  // Prices and promos from the central catalog (cached 5 min); plans.ts values when it is unreachable or invalid.
+  // Prices and promos from the central catalog (cached 30 seconds); plans.ts values when it is unreachable or invalid.
   const pricing = withoutExpiredPromos(await getCatalogPricing());
   return (
     <main dir="rtl" className="public-dark public-dark-bg min-h-dvh px-4 pb-28 pt-[max(2rem,env(safe-area-inset-top))] pe-[48px] sm:pe-[max(1rem,calc(var(--a11y-fab-reserve-inline,5.5rem)+env(safe-area-inset-left,0px)))]">

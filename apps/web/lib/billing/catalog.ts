@@ -3,12 +3,14 @@ import { PARENT } from '@/lib/central/parent-connect';
 import { fallbackPricing, type CatalogPricing } from './plans';
 import { parseCatalog } from './catalog-parse';
 
-/** Seconds a catalog read is reused (server-side). The parent also sends Cache-Control max-age=60. */
+/** Seconds a catalog read is reused (server-side, 30 seconds). The parent also sends Cache-Control max-age=30, s-maxage=30. */
 /**
  * Hard cap on how stale /pricing can be after the owner changes a price or switches the promo off. The page is
  * force-dynamic (no ISR), the fetch is no-store (no Next data cache), and this per-instance memory cache is the
- * only layer: an entry older than CATALOG_TTL_MS is never served; the request waits for a fresh read instead
- * (stale-while-revalidate would let an idle instance serve an old price once). Worst case = TTL + fetch timeout.
+ * only layer: an entry older than CATALOG_TTL_MS (30 seconds) is never served; the request waits for a fresh read
+ * instead (stale-while-revalidate would let an idle instance serve an old price once). A fallback is never cached.
+ * Worst case on this side = 30 seconds + the 2.5s fetch timeout. The parent's /id/catalog Cache-Control is 30 seconds
+ * (max-age=30, s-maxage=30); together they stay at the 60-second staleness budget.
  */
 export const CATALOG_TTL_MS = 30_000;
 const TIMEOUT_MS = 2_500;

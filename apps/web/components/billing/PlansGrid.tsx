@@ -43,9 +43,16 @@ function BigPrice({ minor }: { minor: number }) {
 
 type Promo = NonNullable<MonthlyPrice['promo']>;
 
-/** "31.12.2026" in Israel time; only ever called with a catalog endsAt (no hardcoded end dates anywhere). */
+/** "31.12.2026" / "05.01.2027" in Asia/Jerusalem as DD.MM.YYYY; only ever called with a catalog endsAt. */
 export function promoEndDate(endsAt: string): string {
-  return new Intl.DateTimeFormat('he-IL', { timeZone: 'Asia/Jerusalem', day: 'numeric', month: 'numeric', year: 'numeric' }).format(new Date(endsAt)).replace(/\//g, '.');
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Jerusalem',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).formatToParts(new Date(endsAt));
+  const take = (type: Intl.DateTimeFormatPartTypes) => parts.find((p) => p.type === type)?.value ?? '';
+  return `${take('day')}.${take('month')}.${take('year')}`;
 }
 
 /** Per-card terms (approved copy): «ל־{N} החודשים הראשונים, ואחר כך {X} ₪», N = promo.months, X = priceMinor. */
@@ -87,7 +94,7 @@ export function PlansGrid({ purchaseBase, pricing, hasActiveSubscription = false
         <div role="status" data-testid="pricing-unavailable" className="flex flex-col items-center gap-2 self-center rounded-3xl border border-amber-300/40 bg-amber-300/10 px-4 py-3 text-center text-sm text-on-dark">
           <p className="font-bold">המחירים המעודכנים לא זמינים כרגע, ולכן אי אפשר לרכוש עכשיו.</p>
           <p className="text-on-dark-soft">המחירים שמוצגים הם מחירי הבסיס בלבד. כדאי לנסות שוב בעוד דקה.</p>
-          <a href="/pricing" data-testid="pricing-retry" className={buttonClass('primary', 'sm')}>
+          <a href="/pricing" data-testid="pricing-retry" className={buttonClass('primary', 'md')}>
             לנסות שוב
           </a>
         </div>
@@ -208,8 +215,8 @@ export function PlansGrid({ purchaseBase, pricing, hasActiveSubscription = false
         {EXTRA_MINUTES.comingSoon ? ' (בקרוב)' : ''} · המחירים כוללים מע״מ · בשלב זה הרכישה היא לבדיקה, בלי חיוב
       </p>
       <nav aria-label="מסמכים משפטיים" className="flex flex-wrap justify-center gap-x-4 gap-y-2 text-sm text-on-dark-soft" data-testid="pricing-legal">
-        <Link href="/terms" className="font-semibold underline underline-offset-2">תנאי השימוש</Link>
-        <Link href="/terms#payments" className="font-semibold underline underline-offset-2">מדיניות הביטול וההחזרים</Link>
+        <Link href="/terms" className="inline-flex min-h-11 items-center font-semibold underline underline-offset-2">תנאי השימוש</Link>
+        <Link href="/terms#payments" className="inline-flex min-h-11 items-center font-semibold underline underline-offset-2">מדיניות הביטול וההחזרים</Link>
       </nav>
     </div>
   );
