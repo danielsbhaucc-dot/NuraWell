@@ -19,7 +19,7 @@ const plan = (id: string, priceMinor: number, finalMinor: number | undefined, pr
   id, name: id, priceMinor, currency: 'ILS', ...(finalMinor === undefined ? {} : { finalMinor }), ...(promo === undefined ? {} : { promo }), ...extra,
 });
 const payload = (plans: unknown[]) => ({ product: 'nurawell', updatedAt: '2026-11-21T07:00:00Z', plans });
-const live = payload([plan('basic', 17900, 10740, promoOn), plan('whatsapp', 19900, 11940, promoOn), plan('phone', 44900, 26940, promoOn)]);
+const live = payload([plan('basic', 17900, 10700, promoOn), plan('whatsapp', 19900, 11900, promoOn), plan('phone', 44900, 26900, promoOn)]);
 const render = (pricing: CatalogPricing) => renderToStaticMarkup(createElement(PlansGrid, { purchaseBase: 'https://platform-core-preview.vercel.app/products/nurawell/', pricing }));
 const visibleText = (html: string) => new JSDOM(`<div>${html}</div>`).window.document.body.textContent ?? '';
 const text = (html: string) => visibleText(html).replace(/\s+/g, ' ');
@@ -29,8 +29,8 @@ describe('central catalog adapter', () => {
   it('parses the contract: base and final prices as sent, promo months, phone → premium', () => {
     const c = parseCatalog(live, NOW)!;
     expect(c.source).toBe('catalog');
-    expect(c.plans.basic).toMatchObject({ fullMinor: 17900, finalMinor: 10740, promo: { type: 'percent', value: 40, months: 3 } });
-    expect(c.plans.premium).toMatchObject({ fullMinor: 44900, finalMinor: 26940 });
+    expect(c.plans.basic).toMatchObject({ fullMinor: 17900, finalMinor: 10700, promo: { type: 'percent', value: 40, months: 3 } });
+    expect(c.plans.premium).toMatchObject({ fullMinor: 44900, finalMinor: 26900 });
     expect(c.recommended).toBe(RECOMMENDED_PLAN);
   });
 
@@ -39,9 +39,9 @@ describe('central catalog adapter', () => {
       null, 'x', {}, payload([]),
       { ...live, product: 'other' },
       { product: 'nurawell', updatedAt: null, plans: 'x' },
-      payload([plan('gold', 17900, 10740, promoOn)]), // only an unknown plan
-      payload([plan('basic', 17900, 10740, promoOn, { currency: 'USD' })]), // only a malformed plan
-      payload([plan('basic', 17900.5, 10740, promoOn)]),
+      payload([plan('gold', 17900, 10700, promoOn)]), // only an unknown plan
+      payload([plan('basic', 17900, 10700, promoOn, { currency: 'USD' })]), // only a malformed plan
+      payload([plan('basic', 17900.5, 10700, promoOn)]),
     ];
     for (const b of bad) expect(parseCatalog(b, NOW)).toBeNull();
   });
@@ -49,7 +49,7 @@ describe('central catalog adapter', () => {
   it('per plan: an inconsistent promo/finalMinor shows that plan at base price, never a guessed amount', () => {
     const c = parseCatalog(payload([
       plan('basic', 17900, 18000, promoOff), // final > base
-      plan('whatsapp', 19900, 11940, promoOff), // discounted while the promo says off
+      plan('whatsapp', 19900, 11900, promoOff), // discounted while the promo says off
       plan('phone', 44900, 44900, promoOn), // promo on but no discount
     ]), NOW)!;
     expect(c.source).toBe('catalog');
@@ -59,8 +59,8 @@ describe('central catalog adapter', () => {
   });
 
   it('duplicate plan id: the first one wins', () => {
-    const c = parseCatalog(payload([plan('basic', 17900, 10740, promoOn), plan('basic', 99900, 99900, promoOff)]), NOW)!;
-    expect(c.plans.basic!.finalMinor).toBe(10740);
+    const c = parseCatalog(payload([plan('basic', 17900, 10700, promoOn), plan('basic', 99900, 99900, promoOff)]), NOW)!;
+    expect(c.plans.basic!.finalMinor).toBe(10700);
   });
 
   it('promo disabled: full price only, no banner, nothing struck through', () => {
@@ -74,10 +74,10 @@ describe('central catalog adapter', () => {
 
   it('promo expired (enabled but endsAt passed): shown at full price, also when cached data turns stale later', () => {
     const past = { ...promoOn, endsAt: '2026-11-20T00:00:00Z' };
-    expect(parseCatalog(payload([plan('basic', 17900, 10740, past)]), NOW)!.plans.basic!.promo).toBeNull();
+    expect(parseCatalog(payload([plan('basic', 17900, 10700, past)]), NOW)!.plans.basic!.promo).toBeNull();
     const future = { ...promoOn, endsAt: '2026-11-22T00:00:00Z' };
-    const cached = parseCatalog(payload([plan('basic', 17900, 10740, future)]), NOW)!;
-    expect(cached.plans.basic!.finalMinor).toBe(10740);
+    const cached = parseCatalog(payload([plan('basic', 17900, 10700, future)]), NOW)!;
+    expect(cached.plans.basic!.finalMinor).toBe(10700);
     expect(withoutExpiredPromos(cached, new Date('2026-11-23T00:00:00Z')).plans.basic).toEqual({ fullMinor: 17900, finalMinor: 17900, promo: null });
   });
 
@@ -92,16 +92,22 @@ describe('central catalog adapter', () => {
     expect(t).not.toContain('בתוקף עד'); // no endsAt → no end date
   });
 
-  it('rounding: agorot shown only when sent; whole shekels otherwise; mixed promos get a neutral banner', () => {
-    expect(shekels(10740)).toBe('107.40');
+  it('display is always a whole shekel; mixed promos get a neutral banner', () => {
     expect(shekels(10700)).toBe('107');
-    expect(shekels(149000)).toBe('1,490'); // same as the parent purchase page (he-IL)
+    expect(shekels(11900)).toBe('119');
+    expect(shekels(26900)).toBe('269');
+    expect(shekels(17900)).toBe('179');
+    expect(shekels(149000)).toBe('1,490'); // he-IL grouping, same as the parent purchase page
+    // If a catalog still sends the older agora amounts, the page still shows whole shekels (no agorot).
+    expect(shekels(10740)).toBe('107');
+    expect(shekels(11940)).toBe('119');
+    expect(shekels(26940)).toBe('269');
     expect(promoBanner([{ fullMinor: 1, finalMinor: 1, promo: { type: 'percent', value: 40, months: 3 } }, { fullMinor: 1, finalMinor: 1, promo: { type: 'percent', value: 20, months: 3 } }])).toBe('מחיר השקה למנוי חדש, לתקופה מוגבלת');
     expect(promoBanner([{ fullMinor: 1, finalMinor: 1, promo: null }])).toBeNull();
   });
 
   it('catalog live WITHOUT promo fields (000078 not applied): catalog base price only, no discount anywhere', () => {
-    const c = parseCatalog(payload([plan('basic', 18900, undefined, undefined), plan('whatsapp', 19900, 11940, undefined), plan('phone', 44900, undefined, { enabled: true })]), NOW)!;
+    const c = parseCatalog(payload([plan('basic', 18900, undefined, undefined), plan('whatsapp', 19900, 11900, undefined), plan('phone', 44900, undefined, { enabled: true })]), NOW)!;
     expect(c.plans.basic).toEqual({ fullMinor: 18900, finalMinor: 18900, promo: null });
     expect(c.plans.whatsapp).toEqual({ fullMinor: 19900, finalMinor: 19900, promo: null }); // finalMinor without promo is ignored
     expect(c.plans.premium).toEqual({ fullMinor: 44900, finalMinor: 44900, promo: null }); // promo.enabled without finalMinor too
@@ -112,27 +118,27 @@ describe('central catalog adapter', () => {
   });
 
   it('a discount shows only for promo.enabled=true together with finalMinor', () => {
-    const c = parseCatalog(payload([plan('basic', 17900, 10740, promoOn), plan('whatsapp', 19900, undefined, promoOn)]), NOW)!;
+    const c = parseCatalog(payload([plan('basic', 17900, 10700, promoOn), plan('whatsapp', 19900, undefined, promoOn)]), NOW)!;
     expect(c.plans.basic!.promo).not.toBeNull();
     expect(c.plans.whatsapp!.promo).toBeNull();
   });
 
   it('recommended: catalog flag decides when present; plans.ts default (whatsapp) when absent', () => {
     expect(parseCatalog(live, NOW)!.recommended).toBe('whatsapp');
-    const c = parseCatalog(payload([plan('basic', 17900, 10740, promoOn, { recommended: true }), plan('whatsapp', 19900, 11940, promoOn, { recommended: false })]), NOW)!;
+    const c = parseCatalog(payload([plan('basic', 17900, 10700, promoOn, { recommended: true }), plan('whatsapp', 19900, 11900, promoOn, { recommended: false })]), NOW)!;
     expect(c.recommended).toBe('basic');
     const html = render(c);
     expect(html.match(/data-testid="plan-recommended"/g)).toHaveLength(1);
     expect(html).toMatch(/aria-label="מסלול מומלץ"[^>]*>מומלץ</);
     expect(html).not.toContain('הכי משתלם');
-    expect(parseCatalog(payload([plan('basic', 17900, 10740, promoOn, { recommended: false })]), NOW)!.recommended).toBeNull();
+    expect(parseCatalog(payload([plan('basic', 17900, 10700, promoOn, { recommended: false })]), NOW)!.recommended).toBeNull();
     // two flagged (off-contract): the plans.ts default when it is one of them, else no badge; never a crash
-    expect(parseCatalog(payload([plan('basic', 17900, 10740, promoOn, { recommended: true }), plan('whatsapp', 19900, 11940, promoOn, { recommended: true })]), NOW)!.recommended).toBe('whatsapp');
-    expect(parseCatalog(payload([plan('basic', 17900, 10740, promoOn, { recommended: true }), plan('phone', 44900, 26940, promoOn, { recommended: true })]), NOW)!.recommended).toBeNull();
+    expect(parseCatalog(payload([plan('basic', 17900, 10700, promoOn, { recommended: true }), plan('whatsapp', 19900, 11900, promoOn, { recommended: true })]), NOW)!.recommended).toBe('whatsapp');
+    expect(parseCatalog(payload([plan('basic', 17900, 10700, promoOn, { recommended: true }), plan('phone', 44900, 26900, promoOn, { recommended: true })]), NOW)!.recommended).toBeNull();
   });
 
   it('only plans the catalog sells are shown; ?plan= links unchanged', () => {
-    const html = render(parseCatalog(payload([plan('basic', 17900, 10740, promoOn), plan('phone', 44900, 26940, promoOn)]), NOW)!);
+    const html = render(parseCatalog(payload([plan('basic', 17900, 10700, promoOn), plan('phone', 44900, 26900, promoOn)]), NOW)!);
     expect(html).toContain('?plan=basic');
     expect(html).toContain('?plan=phone');
     expect(html).not.toContain('?plan=whatsapp');
@@ -153,11 +159,11 @@ describe('approved promo copy (Natan, Uri)', () => {
     expect(promoEndDate('2026-12-31T23:59:00+02:00')).toBe('31.12.2026');
     expect(promoEndDate('2026-12-31T23:30:00Z')).toBe('01.01.2027'); // 01:30 in Asia/Jerusalem
     const ends = { ...promoOn, endsAt: '2026-12-31T21:59:59Z' };
-    const t = text(render(parseCatalog(payload([plan('basic', 17900, 10740, ends), plan('whatsapp', 19900, 11940, ends)]), NOW)!));
+    const t = text(render(parseCatalog(payload([plan('basic', 17900, 10700, ends), plan('whatsapp', 19900, 11900, ends)]), NOW)!));
     expect(t).toContain('מחיר השקה למנוי חדש: 40% הנחה ל־3 החודשים הראשונים · המבצע בתוקף עד 31.12.2026');
     expect(t).toContain('ל־3 החודשים הראשונים, ואחר כך 179 ₪ · המבצע בתוקף עד 31.12.2026');
     const jan = { ...promoOn, endsAt: '2027-01-05T23:59:00+02:00' };
-    expect(text(render(parseCatalog(payload([plan('basic', 17900, 10740, jan)]), NOW)!))).toContain(' · המבצע בתוקף עד 05.01.2027');
+    expect(text(render(parseCatalog(payload([plan('basic', 17900, 10700, jan)]), NOW)!))).toContain(' · המבצע בתוקף עד 05.01.2027');
   });
   it('fallback: no promo on any plan, whatsapp recommended', () => {
     const f = fallbackPricing();
@@ -166,16 +172,32 @@ describe('approved promo copy (Natan, Uri)', () => {
   });
 });
 
-describe('requirements 000078 §8/§10: the server finalMinor is shown to the agora, never re-rounded', () => {
-  it('default state 10740 / 11940 / 26940 → 107.40 / 119.40 / 269.40 ₪, never 107 / 119 / 269', () => {
-    const t = visibleText(render(parseCatalog(live, NOW)!)); // inline spans joined as the eye reads them
-    for (const s of ['107.40 ₪', '119.40 ₪', '269.40 ₪', '179 ₪', '199 ₪', '449 ₪']) expect(t).toContain(s);
-    expect(t).not.toMatch(/\b(107|119|269) ₪/);
+describe('launch discount display: whole shekels, no agorot', () => {
+  it('catalog finalMinor 10700 / 11900 / 26900 is shown as 107 / 119 / 269 ₪, with no ".40" and no decimal in the discount prices', () => {
+    const html = render(parseCatalog(live, NOW)!);
+    const t = visibleText(html); // inline spans joined as the eye reads them
+    for (const s of ['107 ₪', '119 ₪', '269 ₪', '179 ₪', '199 ₪', '449 ₪']) expect(t).toContain(s);
+    expect(t).not.toContain('.40');
+    expect(t).not.toMatch(/107[.,]/);
+    expect(t).not.toMatch(/119[.,]/);
+    expect(t).not.toMatch(/269[.,]/);
+    const prices = [...html.matchAll(/data-testid="plan-price"[^>]*>([^<]*)₪/g)].map((m) => m[1].replace(/\s+/g, ' ').trim());
+    expect(prices).toEqual(['107', '119', '269']);
+  });
+  it('parseCatalog keeps a 10740 finalMinor as sent; only the display is a whole shekel', () => {
+    const c = parseCatalog(payload([plan('basic', 17900, 10740, promoOn), plan('whatsapp', 19900, 11940, promoOn), plan('phone', 44900, 26940, promoOn)]), NOW)!;
+    expect(c.plans.basic!.finalMinor).toBe(10740);
+    expect(c.plans.whatsapp!.finalMinor).toBe(11940);
+    expect(c.plans.premium!.finalMinor).toBe(26940);
+    const t = visibleText(render(c));
+    for (const s of ['107 ₪', '119 ₪', '269 ₪']) expect(t).toContain(s);
+    expect(t).not.toContain('.40');
+    expect(t).not.toMatch(/107\.40|119\.40|269\.40/);
   });
 });
 
 describe('item 4: a 4th unknown plan or updatedAt=null never knocks /pricing into "unavailable"', () => {
-  const three = [plan('basic', 17900, 10740, promoOn), plan('whatsapp', 19900, 11940, promoOn, { recommended: true }), plan('phone', 44900, 26940, promoOn)];
+  const three = [plan('basic', 17900, 10700, promoOn), plan('whatsapp', 19900, 11900, promoOn, { recommended: true }), plan('phone', 44900, 26900, promoOn)];
   it('a 4th unknown plan is skipped; the three known plans render with buy links and the discount', () => {
     const c = parseCatalog(payload([...three, plan('family', 59900, 35940, promoOn)]), NOW)!;
     expect(c.source).toBe('catalog');
@@ -184,12 +206,12 @@ describe('item 4: a 4th unknown plan or updatedAt=null never knocks /pricing int
     expect(html).not.toContain('pricing-unavailable');
     expect(html.match(/data-testid="plan-buy"/g)).toHaveLength(3);
     expect(html).not.toContain('family');
-    expect(visibleText(html)).toContain('119.40 ₪');
+    expect(visibleText(html)).toContain('119 ₪');
   });
   it('a malformed plan entry (junk, missing price, wrong currency) is skipped on its own', () => {
-    const c = parseCatalog(payload([...three, 'junk', null, { id: 'basic2' }, plan('basic', 17900, 10740, promoOn, { currency: 'USD' })]), NOW)!;
+    const c = parseCatalog(payload([...three, 'junk', null, { id: 'basic2' }, plan('basic', 17900, 10700, promoOn, { currency: 'USD' })]), NOW)!;
     expect(c.source).toBe('catalog');
-    expect(c.plans.basic!.finalMinor).toBe(10740); // the valid basic came first and is kept
+    expect(c.plans.basic!.finalMinor).toBe(10700); // the valid basic came first and is kept
     expect(Object.keys(c.plans)).toHaveLength(3);
   });
   it('updatedAt null, missing, or not a date string is accepted (informational only)', () => {
@@ -198,7 +220,7 @@ describe('item 4: a 4th unknown plan or updatedAt=null never knocks /pricing int
       if (updatedAt !== undefined) body.updatedAt = updatedAt;
       const c = parseCatalog(body, NOW)!;
       expect(c.source).toBe('catalog');
-      expect(c.plans.premium!.finalMinor).toBe(26940);
+      expect(c.plans.premium!.finalMinor).toBe(26900);
     }
   });
   it('end to end through the fetcher: 4th plan + updatedAt null → catalog, not fallback', async () => {
@@ -224,8 +246,8 @@ describe('catalog cache: total staleness capped (QA: price switched off must sho
   it('serves the cached read under the TTL, and never an entry older than it (no stale-while-revalidate)', async () => {
     __resetCatalogCache();
     let t = 0;
-    const load = vi.fn(async () => cat(10740));
-    expect((await getCatalogPricing(() => t, load)).plans.basic!.finalMinor).toBe(10740);
+    const load = vi.fn(async () => cat(10700));
+    expect((await getCatalogPricing(() => t, load)).plans.basic!.finalMinor).toBe(10700);
     t = CATALOG_TTL_MS - 1;
     await getCatalogPricing(() => t, load);
     expect(load).toHaveBeenCalledTimes(1);
@@ -243,7 +265,7 @@ describe('catalog cache: total staleness capped (QA: price switched off must sho
     await getCatalogPricing(() => 1, load);
     expect(load).toHaveBeenCalledTimes(2);
     __resetCatalogCache();
-    const slow = vi.fn(() => new Promise<CatalogPricing>((r) => setTimeout(() => r(cat(10740)), 5)));
+    const slow = vi.fn(() => new Promise<CatalogPricing>((r) => setTimeout(() => r(cat(10700)), 5)));
     await Promise.all([getCatalogPricing(() => 0, slow), getCatalogPricing(() => 0, slow), getCatalogPricing(() => 0, slow)]);
     expect(slow).toHaveBeenCalledTimes(1);
   });
@@ -330,7 +352,7 @@ describe('guard: no plan price literal outside plans.ts', () => {
   it('app/ and components/ and lib/ hold no 179/199/449/107/119/269/1490/1690/3790 shekel price', () => {
     const roots = ['app', 'components', 'lib'];
     const allowed = new Set(['lib/billing/plans.ts']);
-    const price = /(₪\s?(107|119|269|179|199|449|1490|1690|3790)\b)|\b(107|119|269|179|199|449|1490|1690|3790)\s?(₪|ש["״]ח|ILS)|\b(17900|19900|44900|10740|11940|26940)\b|(Ils|Minor|price\w*|percentOff)\s*[:=]\s*(107|119|269|179|199|449|1490|1690|3790|40)\b/i;
+    const price = /(₪\s?(107|119|269|179|199|449|1490|1690|3790)\b)|\b(107|119|269|179|199|449|1490|1690|3790)\s?(₪|ש["״]ח|ILS)|\b(17900|19900|44900|10740|11940|26940|10700|11900|26900)\b|(Ils|Minor|price\w*|percentOff)\s*[:=]\s*(107|119|269|179|199|449|1490|1690|3790|40)\b/i;
     const hits: string[] = [];
     const walk = (dir: string) => {
       for (const ent of readdirSync(dir, { withFileTypes: true })) {

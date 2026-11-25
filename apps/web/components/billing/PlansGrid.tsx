@@ -19,24 +19,24 @@ import {
 } from '@/lib/billing/plans';
 
 /**
- * Amount only, formatted exactly like the parent purchase page (products/nurawell/buy.js `money()`):
- * he-IL digits, whole shekels without decimals (179, 1,490), otherwise two decimals (107.40). The sign goes after: "X ₪".
+ * Amount only, in whole shekels, he-IL digits, no agorot. The sign goes after: "X ₪".
+ * The number comes from the catalog's finalMinor (or the base price when there is no promo).
+ * Display is always a whole shekel; agorot are not shown.
  */
 export function shekels(minor: number): string {
-  const n = minor / 100;
-  return Number.isInteger(n) ? n.toLocaleString('he-IL') : n.toLocaleString('he-IL', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const n = Math.round(minor / 100);
+  if (!Number.isFinite(n)) return '';
+  return n.toLocaleString('he-IL');
 }
 
 /**
- * The big monthly price, exactly as the catalog sends it (agorot are kept, never re-rounded), set smaller, and the
- * number never breaks across lines, so it fits a 360px screen at 200% font.
+ * The big monthly price as a whole shekel, set smaller, and the number never breaks across
+ * lines, so it fits a 360px screen at 200% font.
  */
 function BigPrice({ minor }: { minor: number }) {
-  const [ils, ag] = shekels(minor).split('.');
   return (
     <span className="whitespace-nowrap text-2xl font-black text-on-dark min-[400px]:text-3xl md:text-4xl" data-testid="plan-price">
-      {ils}
-      {ag ? <span className="text-[0.6em]">.{ag}</span> : null} ₪
+      {shekels(minor)} ₪
     </span>
   );
 }
