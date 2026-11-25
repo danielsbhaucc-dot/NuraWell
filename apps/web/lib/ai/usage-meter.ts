@@ -309,8 +309,10 @@ const persistUsageRow = (params: {
   const { runId, started, userId, feature, reqModel } = params;
   return (usage, model, provider) => {
     if (runId) finishParentOk(runId, started, usage);
-    if (!usage) return;
-    return record(usageEventRow({ userId, feature, model: model ?? reqModel, provider, usage }));
+    if (usage) {
+      ignoreFloatingPromise(Promise.resolve(record(usageEventRow({ userId, feature, model: model ?? reqModel, provider, usage }))));
+    }
+    return undefined;
   };
 };
 
@@ -469,7 +471,7 @@ const dispatchMeteredBody = async (
   return meterOpenRouterCall({ base, input, nextInit, body, shield, url, ctx, userId });
 };
 
-const runMeteredFetch = async (
+const runMeteredFetch = (
   base: typeof fetch,
   fixedMeta: { userId?: string | null; feature: string } | undefined,
   input: Parameters<typeof fetch>[0],
@@ -479,7 +481,7 @@ const runMeteredFetch = async (
   const nextInit = withIgnoreIfOpenRouter(url, init);
   if (!isMeteredAiUrl(url) || typeof nextInit?.body !== 'string') return base(input, nextInit);
   const body = parseJsonBody(nextInit.body);
-  if (!body) return base(input, nextInit);
+  if (!body) return Promise.resolve(base(input, nextInit));
   return dispatchMeteredBody(base, fixedMeta, input, nextInit, body, url);
 };
 

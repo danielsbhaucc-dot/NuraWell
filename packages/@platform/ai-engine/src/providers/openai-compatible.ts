@@ -16,7 +16,7 @@ export type OpenAiCompatibleOptions = {
 type Usage = { prompt_tokens?: number; completion_tokens?: number; cost?: number; prompt_tokens_details?: { cached_tokens?: number } };
 
 /** Minimal Chat Completions client (OpenRouter by default) that returns billed usage. */
-export function createOpenAiCompatibleProvider(o: OpenAiCompatibleOptions): AiProvider {
+export const createOpenAiCompatibleProvider = (o: OpenAiCompatibleOptions): AiProvider => {
   const base = (o.baseURL ?? 'https://openrouter.ai/api/v1').replace(/\/$/, '');
   const f = withTimeoutFetch(o.fetch ?? fetch, o.timeoutMs === undefined ? 60_000 : o.timeoutMs);
   return {
@@ -59,4 +59,4 @@ export function createOpenAiCompatibleProvider(o: OpenAiCompatibleOptions): AiPr
       };
     },
   };
-}
+};

@@ -82,11 +82,11 @@ async function callOpenRouterSync(params: {
  * OpenRouter Batch API — אצווה א-synchronous; כרגע fallback ל-sync אם לא הוגדר batch key.
  * https://openrouter.ai/docs/features/batch-api
  */
-async function callOpenRouterBatch(params: {
+const callOpenRouterBatch = async (params: {
   customId: string;
   userContent: string;
   maxTokens: number;
-}): Promise<string | null> {
+}): Promise<string | null> => {
   const key = process.env.OPENROUTER_API_KEY?.trim();
   if (!key) return null;
 

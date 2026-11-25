@@ -89,7 +89,7 @@ async function fetchInsightPage(baseUrl, serviceKey, pageSize, offset) {
   return Array.isArray(rows) ? rows : [];
 }
 
-async function embedTexts(texts, apiKey) {
+const embedTexts = async (texts, apiKey) => {
   const { applyOpenRouterProviderIgnore } = await import(
     '../../../packages/@platform/ai-engine/src/openrouter-request.ts'
   );
@@ -116,7 +116,7 @@ async function embedTexts(texts, apiKey) {
     }
     return vec;
   });
-}
+};
 
 async function upsertUpstash(vectorUrl, vectorToken, row, vector) {
   const ns = encodeURIComponent('user-memory');
