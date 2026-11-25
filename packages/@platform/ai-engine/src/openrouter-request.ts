@@ -24,40 +24,34 @@ export const OPENROUTER_IGNORED_PROVIDERS: readonly string[] = Object.freeze([
   'GMI Cloud',
 ]);
 
-export function isOpenRouterApiUrl(url: string): boolean {
+export const isOpenRouterApiUrl = (url: string): boolean => {
   try {
-    const u = new URL(url);
+    const parsedUrl = new URL(url);
     return (
-      (u.hostname === 'openrouter.ai' ||
-        u.hostname === 'eu.openrouter.ai' ||
-        u.hostname === 'us.openrouter.ai') &&
-      u.pathname.startsWith('/api/')
+      (parsedUrl.hostname === 'openrouter.ai' ||
+        parsedUrl.hostname === 'eu.openrouter.ai' ||
+        parsedUrl.hostname === 'us.openrouter.ai') &&
+      parsedUrl.pathname.startsWith('/api/')
     );
   } catch {
     return /https?:\/\/(eu\.|us\.)?openrouter\.ai\/api\//.test(url);
   }
-}
+};
 
 /** Chat, completions, embeddings, responses, messages, or the Batch API. */
-export function isOpenRouterInferenceUrl(url: string): boolean {
-  return (
-    isOpenRouterApiUrl(url) &&
-    /\/(chat\/completions|completions|embeddings|responses|messages|batches)(\/|\?|$)/.test(
-      url
-    )
-  );
-}
+export const isOpenRouterInferenceUrl = (url: string): boolean =>
+  isOpenRouterApiUrl(url) &&
+  /\/(chat\/completions|completions|embeddings|responses|messages|batches)(\/|\?|$)/.test(url);
 
-function asRecord(value: unknown): Record<string, unknown> | null {
-  return value !== null && typeof value === 'object' && !Array.isArray(value)
+const asRecord = (value: unknown): Record<string, unknown> | null =>
+  value !== null && typeof value === 'object' && !Array.isArray(value)
     ? { ...(value as Record<string, unknown>) }
     : null;
-}
 
-function alreadyIgnored(ignore: string[], slug: string): boolean {
+const alreadyIgnored = (ignore: string[], slug: string): boolean => {
   const key = slug.toLowerCase();
   return ignore.some((item) => item.toLowerCase() === key);
-}
+};
 
 /**
  * Merge caller provider prefs with the required ignore list.
@@ -70,7 +64,7 @@ function alreadyIgnored(ignore: string[], slug: string): boolean {
  * routing the request to GMI Cloud. That error is the safe outcome; the ignore
  * list is never dropped to make the request succeed.
  */
-export function mergeOpenRouterProviderPrefs(existing: unknown): Record<string, unknown> {
+export const mergeOpenRouterProviderPrefs = (existing: unknown): Record<string, unknown> => {
   const base = asRecord(existing) ?? {};
   const prev = Array.isArray(base.ignore)
     ? base.ignore.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
@@ -80,36 +74,34 @@ export function mergeOpenRouterProviderPrefs(existing: unknown): Record<string, 
     if (!alreadyIgnored(ignore, slug)) ignore.push(slug);
   }
   return { ...base, ignore };
-}
+};
 
-export function applyOpenRouterProviderIgnore(
+export const applyOpenRouterProviderIgnore = (
   body: Record<string, unknown>
-): Record<string, unknown> {
-  return { ...body, provider: mergeOpenRouterProviderPrefs(body.provider) };
-}
+): Record<string, unknown> => ({ ...body, provider: mergeOpenRouterProviderPrefs(body.provider) });
 
 /**
  * Apply the ignore list to a chat/embeddings body, or to each inner request.body
  * of an OpenRouter Batch API payload.
  */
-export function applyOpenRouterProviderIgnoreToPayload(
+export const applyOpenRouterProviderIgnoreToPayload = (
   payload: Record<string, unknown>
-): Record<string, unknown> {
-  if (Array.isArray(payload.requests)) {
-    return {
-      ...payload,
-      requests: payload.requests.map((req) => {
-        const rec = asRecord(req);
-        if (!rec) return req;
-        const inner = asRecord(rec.body);
-        return inner ? { ...rec, body: applyOpenRouterProviderIgnore(inner) } : rec;
-      }),
-    };
+): Record<string, unknown> => {
+  if (!Array.isArray(payload.requests)) {
+    return applyOpenRouterProviderIgnore(payload);
   }
-  return applyOpenRouterProviderIgnore(payload);
-}
+  return {
+    ...payload,
+    requests: payload.requests.map((req) => {
+      const rec = asRecord(req);
+      if (!rec) return req;
+      const inner = asRecord(rec.body);
+      return inner ? { ...rec, body: applyOpenRouterProviderIgnore(inner) } : rec;
+    }),
+  };
+};
 
-export function applyOpenRouterProviderIgnoreToBodyString(body: string): string {
+export const applyOpenRouterProviderIgnoreToBodyString = (body: string): string => {
   try {
     const parsed: unknown = JSON.parse(body);
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return body;
@@ -117,25 +109,27 @@ export function applyOpenRouterProviderIgnoreToBodyString(body: string): string 
   } catch {
     return body;
   }
-}
+};
 
-export function applyOpenRouterProviderIgnoreToInit(
+const isOpenRouterKeyOrGenerationUrl = (url: string): boolean =>
+  /\/api\/v1\/key(\/|$|\?)/.test(url) || /\/api\/v1\/generation/.test(url);
+
+export const applyOpenRouterProviderIgnoreToInit = (
   url: string,
   init?: RequestInit
-): RequestInit | undefined {
-  if (!init || typeof init.body !== 'string') return init;
-  if (!isOpenRouterApiUrl(url)) return init;
-  // Key lookup and generation polling are not inference requests.
-  if (/\/api\/v1\/key(\/|$|\?)/.test(url) || /\/api\/v1\/generation/.test(url)) return init;
+): RequestInit | undefined => {
+  if (!init || typeof init.body !== 'string' || !isOpenRouterApiUrl(url) || isOpenRouterKeyOrGenerationUrl(url)) {
+    return init;
+  }
   const next = applyOpenRouterProviderIgnoreToBodyString(init.body);
   return next === init.body ? init : { ...init, body: next };
-}
+};
 
 /** Read the serving provider name from an OpenRouter JSON object. Name only. */
-export function readOpenRouterProvider(payload: unknown): string | null {
+export const readOpenRouterProvider = (payload: unknown): string | null => {
   if (!payload || typeof payload !== 'object') return null;
   const value = (payload as { provider?: unknown }).provider;
   if (typeof value !== 'string') return null;
   const name = value.trim();
   return name ? name.slice(0, 80) : null;
-}
+};

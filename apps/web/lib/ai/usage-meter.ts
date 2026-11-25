@@ -67,47 +67,59 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 type Usage = { cost?: number; prompt_tokens?: number; completion_tokens?: number; prompt_tokens_details?: { cached_tokens?: number } };
 
-export function _parseSseUsage(text: string): { usage: Usage | null; model: string | null; provider: string | null } {
+type SseChunk = { usage?: Usage; model?: string; provider?: unknown };
+
+const parseSseDataLine = (line: string): SseChunk | null => {
+  if (!line.startsWith('data:')) return null;
+  const raw = line.slice(5).trim();
+  if (!raw || raw === '[DONE]') return null;
+  if (!raw.includes('"usage"') && !raw.includes('"provider"') && !raw.includes('"model"')) return null;
+  try {
+    return JSON.parse(raw) as SseChunk;
+  } catch {
+    /* partial line */
+    return null;
+  }
+};
+
+export const _parseSseUsage = (text: string): { usage: Usage | null; model: string | null; provider: string | null } => {
   let usage: Usage | null = null;
   let model: string | null = null;
   let provider: string | null = null;
   for (const line of text.split('\n')) {
-    if (!line.startsWith('data:')) continue;
-    const raw = line.slice(5).trim();
-    if (!raw || raw === '[DONE]') continue;
-    if (!raw.includes('"usage"') && !raw.includes('"provider"') && !raw.includes('"model"')) continue;
-    try {
-      const j = JSON.parse(raw) as { usage?: Usage; model?: string; provider?: unknown };
-      if (j.usage) usage = j.usage;
-      if (j.model) model = j.model;
-      const p = readOpenRouterProvider(j);
-      if (p) provider = p;
-    } catch {
-      /* partial line */
-    }
+    const parsed = parseSseDataLine(line);
+    if (!parsed) continue;
+    if (parsed.usage) usage = parsed.usage;
+    if (parsed.model) model = parsed.model;
+    const parsedProvider = readOpenRouterProvider(parsed);
+    if (parsedProvider) provider = parsedProvider;
   }
   return { usage, model, provider };
-}
+};
 
-function postgrestErrorCode(body: string): string | null {
+const postgrestErrorCode = (body: string): string | null => {
   try {
     const parsed = JSON.parse(body) as { code?: unknown };
     return typeof parsed.code === 'string' && parsed.code.trim() ? parsed.code.trim().slice(0, 40) : null;
   } catch {
-    const m = body.match(/\bPGRST\d{3}\b/);
-    return m ? m[0] : null;
+    const codeMatch = body.match(/\bPGRST\d{3}\b/);
+    return codeMatch ? codeMatch[0] : null;
   }
-}
+};
 
 /** PostgREST PGRST204 when ai_usage_events.provider has not been added yet. */
-function isMissingProviderColumn(status: number, body: string): boolean {
+const isMissingProviderColumn = (status: number, body: string): boolean => {
   if (status !== 400 && status !== 404) return false;
   const code = postgrestErrorCode(body);
   if (code === 'PGRST204' && /provider/i.test(body)) return true;
   return /could not find the ['"]provider['"] column/i.test(body);
-}
+};
 
-async function record(row: Record<string, unknown>) {
+const warnInsertFailure = (label: string, status: number, body: string) => {
+  console.warn(label, { status, code: postgrestErrorCode(body) });
+};
+
+const record = async (row: Record<string, unknown>): Promise<void> => {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
   if (!url || !key) return;
@@ -132,49 +144,43 @@ async function record(row: Record<string, unknown>) {
       const retry = await post(rest);
       if (retry.ok) return;
       const retryText = await retry.text().catch(() => '');
-      console.warn('[usage-meter] ai_usage_events insert retry failed', {
-        status: retry.status,
-        code: postgrestErrorCode(retryText),
-      });
+      warnInsertFailure('[usage-meter] ai_usage_events insert retry failed', retry.status, retryText);
       return;
     }
-    console.warn('[usage-meter] ai_usage_events insert failed', {
-      status: res.status,
-      code: postgrestErrorCode(text),
-    });
+    warnInsertFailure('[usage-meter] ai_usage_events insert failed', res.status, text);
   } catch {
     console.warn('[usage-meter] ai_usage_events insert failed', { error: 'network' });
   }
-}
+};
 
 /**
  * For calls that bypass meteredFetch (OpenRouter Batch API): record the usage a batch result carries,
  * so batch jobs (periodic chat summaries) show up in ai_usage_events instead of looking like they never ran.
  */
-export async function recordBatchUsage(params: {
+export const recordBatchUsage = async (params: {
   feature: string;
   model: string | null;
   usage: { prompt_tokens?: number; completion_tokens?: number; cost?: number; prompt_tokens_details?: { cached_tokens?: number } } | null | undefined;
   /** OpenRouter serving provider name only; never prompt, completion, or personal data. */
   provider?: string | null;
-}): Promise<void> {
-  const u = params.usage;
-  if (!u) return;
+}): Promise<void> => {
+  const usage = params.usage;
+  if (!usage) return;
   const userId = currentAiUserId();
   await record({
     user_id: userId && UUID.test(userId) ? userId : null,
     feature: params.feature.slice(0, 60),
     model: params.model,
     provider: params.provider ?? null,
-    prompt_tokens: u.prompt_tokens ?? null,
-    completion_tokens: u.completion_tokens ?? null,
-    cached_tokens: u.prompt_tokens_details?.cached_tokens ?? null,
-    cost_usd: typeof u.cost === 'number' ? u.cost : 0,
+    prompt_tokens: usage.prompt_tokens ?? null,
+    completion_tokens: usage.completion_tokens ?? null,
+    cached_tokens: usage.prompt_tokens_details?.cached_tokens ?? null,
+    cost_usd: typeof usage.cost === 'number' ? usage.cost : 0,
   });
-}
+};
 
-function schedule(p: Promise<unknown>) {
-  const safe = p.catch(() => {});
+const schedule = (p: Promise<unknown>) => {
+  const safe = p.catch(() => undefined);
   try {
     after(safe);
     return;
@@ -182,104 +188,138 @@ function schedule(p: Promise<unknown>) {
     /* outside a request scope */
   }
   void safe;
-}
+};
 
 /** Runtime fallback: no feature tag reached the meter. Name the caller so it can be fixed. */
-export function _callerFromStack(stack: string | undefined): string {
+export const _callerFromStack = (stack: string | undefined): string => {
   for (const line of (stack ?? '').split('\n').slice(1)) {
     if (/usage-meter|node_modules|node:internal|openai|@ai-sdk|\(native\)/.test(line)) continue;
-    const m = line.match(/(?:app|lib)\/[\w\-./\[\]]+?\.(?:ts|tsx|js)/) ?? line.match(/([\w\-.]+\.(?:ts|tsx|js))/);
-    if (m) return m[0].replace(/^.*?((?:app|lib)\/)/, '$1').slice(-50);
+    const match = line.match(/(?:app|lib)\/[\w\-./\[\]]+?\.(?:ts|tsx|js)/) ?? line.match(/([\w\-.]+\.(?:ts|tsx|js))/);
+    if (match) return match[0].replace(/^.*?((?:app|lib)\/)/, '$1').slice(-50);
   }
   return 'unknown';
-}
-function untaggedFeature(url: string): string {
+};
+
+const untaggedFeature = (url: string): string => {
   const caller = _callerFromStack(new Error().stack);
   console.warn('[usage-meter] AI call without feature tag', { caller, url });
   return `untagged:${caller}`;
-}
+};
 
-export function meteredFetch(baseFetch?: typeof fetch, fixedMeta?: { userId?: string | null; feature: string }): typeof fetch {
-  const base: typeof fetch = (i, n) => (baseFetch ?? globalThis.fetch)(i, n);
-  return async (input, init) => {
-    const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
-    const isOpenRouter = /openrouter\.ai/.test(url);
-    let nextInit = init;
-    if (isOpenRouter && typeof init?.body === 'string') {
-      nextInit = applyOpenRouterProviderIgnoreToInit(url, init) ?? init;
-    }
-    const isAi = /(openrouter\.ai\/api\/v1|api\.groq\.com\/openai\/v1|api\.deepseek\.com\/v1)\/(chat\/completions|embeddings)$/.test(url);
-    if (!isAi || typeof nextInit?.body !== 'string') return base(input, nextInit);
-    const rawBody = nextInit.body;
-    init = nextInit;
-    let body: Record<string, unknown>;
-    try {
-      body = JSON.parse(rawBody);
-    } catch {
-      return base(input, init);
-    }
-    const store = als?.getStore() ?? {};
-    const ctx: AiUsageStore = { userId: fixedMeta?.userId ?? store.userId, feature: fixedMeta?.feature ?? store.feature };
-    const userId = ctx.userId ?? (typeof body.user === 'string' && UUID.test(body.user) ? body.user : null);
-    // Central PII guard: nothing identifying leaves; replies are restored below.
-    const shield = await guardOutboundBody(body, userId && UUID.test(userId) ? userId : null);
-    try {
-      shield.assertNoRawPii(JSON.stringify(body));
-    } catch {
-      // never prints the value; visible in Vercel logs for auditing
-      console.error('[pii-guard] residual identifier in outbound AI payload', { feature: ctx.feature ?? null, url });
-    }
-    if (!/openrouter\.ai/.test(url)) {
-      return restoreAiResponse(await base(input, { ...init, body: JSON.stringify(body) }), shield);
-    }
-    const feature = ctx.feature ?? (url.endsWith('embeddings') ? 'embeddings' : untaggedFeature(url));
-    const reqModel = typeof body.model === 'string' ? body.model : null;
-    if (!url.endsWith('embeddings')) body.usage = { include: true };
-    if (isOpenRouter) body = applyOpenRouterProviderIgnoreToPayload(body);
-    const estimate = estimateCallUsd(body);
-    const started = Date.now();
-    const admitted = await parentAiAdmit({ feature, model: estimate.model, estUsd: estimate.estUsd, maxTokens: estimate.maxTokens });
-    if (admitted.status === 'blocked' || admitted.status === 'approval_required') {
-      return blockedProviderResponse(admitted.reason);
-    }
-    const runId = admitted.status === 'run' ? admitted.runId : null;
-    const res = restoreAiResponse(await base(input, { ...init, body: JSON.stringify(body) }), shield);
-    if (!res.ok || !res.body) {
-      if (runId) void parentAiFinish(runId, { ok: false, costUsd: 0, tokensIn: 0, tokensOut: 0, ms: Date.now() - started, error: `provider_${res.status}` });
-      return res;
-    }
+type UsageSave = (usage: Usage | null, model: string | null, provider: string | null) => unknown;
 
-    const save = (u: Usage | null, model: string | null, provider: string | null) => {
-      if (runId) {
-        void parentAiFinish(runId, {
-          ok: true, costUsd: typeof u?.cost === 'number' ? u.cost : 0,
-          tokensIn: u?.prompt_tokens ?? 0, tokensOut: u?.completion_tokens ?? 0, ms: Date.now() - started,
-        });
-      }
-      return u && record({
-        user_id: userId && UUID.test(userId) ? userId : null,
-        feature: feature.slice(0, 60),
-        model: model ?? reqModel,
-        provider,
-        prompt_tokens: u.prompt_tokens ?? null,
-        completion_tokens: u.completion_tokens ?? null,
-        cached_tokens: u.prompt_tokens_details?.cached_tokens ?? null,
-        cost_usd: typeof u.cost === 'number' ? u.cost : 0,
+const persistUsageRow = (
+  params: {
+    runId: string | null;
+    started: number;
+    userId: string | null;
+    feature: string;
+    reqModel: string | null;
+  }
+): UsageSave => {
+  const { runId, started, userId, feature, reqModel } = params;
+  return (usage, model, provider) => {
+    if (runId) {
+      void parentAiFinish(runId, {
+        ok: true, costUsd: typeof usage?.cost === 'number' ? usage.cost : 0,
+        tokensIn: usage?.prompt_tokens ?? 0, tokensOut: usage?.completion_tokens ?? 0, ms: Date.now() - started,
       });
-    };
-
-    const isStream = (res.headers.get('content-type') ?? '').includes('event-stream');
-    if (!isStream) {
-      // awaited (bounded): serverless functions can freeze right after the caller returns, dropping a detached insert
-      const job = res.clone().json().then((j: { usage?: Usage; model?: string; provider?: unknown }) => save(j.usage ?? null, j.model ?? null, readOpenRouterProvider(j))).catch(() => {});
-      await Promise.race([job, new Promise((r) => setTimeout(r, 1500))]);
-      return res;
     }
-    const [a, b] = res.body.tee();
-    schedule(new Response(b).text().then((t) => {
-      const { usage, model, provider } = _parseSseUsage(t);
-      return save(usage, model, provider);
-    }));
-    return new Response(a, { status: res.status, statusText: res.statusText, headers: res.headers });
+    return usage && record({
+      user_id: userId && UUID.test(userId) ? userId : null,
+      feature: feature.slice(0, 60),
+      model: model ?? reqModel,
+      provider,
+      prompt_tokens: usage.prompt_tokens ?? null,
+      completion_tokens: usage.completion_tokens ?? null,
+      cached_tokens: usage.prompt_tokens_details?.cached_tokens ?? null,
+      cost_usd: typeof usage.cost === 'number' ? usage.cost : 0,
+    });
   };
-}
+};
+
+const recordJsonResponseUsage = async (res: Response, save: UsageSave): Promise<void> => {
+  const job = res
+    .clone()
+    .json()
+    .then((payload: SseChunk) => save(payload.usage ?? null, payload.model ?? null, readOpenRouterProvider(payload)))
+    .catch(() => undefined);
+  // awaited (bounded): serverless functions can freeze right after the caller returns, dropping a detached insert
+  await Promise.race([job, new Promise((resolve) => setTimeout(resolve, 1500))]);
+};
+
+const attachSseUsageLogger = (res: Response, save: UsageSave): Response => {
+  if (!res.body) return res;
+  const [primary, secondary] = res.body.tee();
+  schedule(
+    new Response(secondary).text().then((text) => {
+      const parsed = _parseSseUsage(text);
+      return save(parsed.usage, parsed.model, parsed.provider);
+    })
+  );
+  return new Response(primary, { status: res.status, statusText: res.statusText, headers: res.headers });
+};
+
+const runMeteredFetch = async (
+  base: typeof fetch,
+  fixedMeta: { userId?: string | null; feature: string } | undefined,
+  input: Parameters<typeof fetch>[0],
+  init?: Parameters<typeof fetch>[1]
+): Promise<Response> => {
+  const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+  const nextInit =
+    /openrouter\.ai/.test(url) && typeof init?.body === 'string'
+      ? (applyOpenRouterProviderIgnoreToInit(url, init) ?? init)
+      : init;
+  const isAi = /(openrouter\.ai\/api\/v1|api\.groq\.com\/openai\/v1|api\.deepseek\.com\/v1)\/(chat\/completions|embeddings)$/.test(url);
+  if (!isAi || typeof nextInit?.body !== 'string') return base(input, nextInit);
+  const rawBody = nextInit.body;
+  let body: Record<string, unknown>;
+  try {
+    body = JSON.parse(rawBody);
+  } catch {
+    return base(input, nextInit);
+  }
+  const store = als?.getStore() ?? {};
+  const ctx: AiUsageStore = { userId: fixedMeta?.userId ?? store.userId, feature: fixedMeta?.feature ?? store.feature };
+  const userId = ctx.userId ?? (typeof body.user === 'string' && UUID.test(body.user) ? body.user : null);
+  // Central PII guard: nothing identifying leaves; replies are restored below.
+  const shield = await guardOutboundBody(body, userId && UUID.test(userId) ? userId : null);
+  try {
+    shield.assertNoRawPii(JSON.stringify(body));
+  } catch {
+    // never prints the value; visible in Vercel logs for auditing
+    console.error('[pii-guard] residual identifier in outbound AI payload', { feature: ctx.feature ?? null, url });
+  }
+  if (!/openrouter\.ai/.test(url)) {
+    return restoreAiResponse(await base(input, { ...nextInit, body: JSON.stringify(body) }), shield);
+  }
+  const feature = ctx.feature ?? (url.endsWith('embeddings') ? 'embeddings' : untaggedFeature(url));
+  const reqModel = typeof body.model === 'string' ? body.model : null;
+  if (!url.endsWith('embeddings')) body.usage = { include: true };
+  body = applyOpenRouterProviderIgnoreToPayload(body);
+  const estimate = estimateCallUsd(body);
+  const started = Date.now();
+  const admitted = await parentAiAdmit({ feature, model: estimate.model, estUsd: estimate.estUsd, maxTokens: estimate.maxTokens });
+  if (admitted.status === 'blocked' || admitted.status === 'approval_required') {
+    return blockedProviderResponse(admitted.reason);
+  }
+  const runId = admitted.status === 'run' ? admitted.runId : null;
+  const res = restoreAiResponse(await base(input, { ...nextInit, body: JSON.stringify(body) }), shield);
+  if (!res.ok || !res.body) {
+    if (runId) void parentAiFinish(runId, { ok: false, costUsd: 0, tokensIn: 0, tokensOut: 0, ms: Date.now() - started, error: `provider_${res.status}` });
+    return res;
+  }
+  const save = persistUsageRow({ runId, started, userId, feature, reqModel });
+  const isStream = (res.headers.get('content-type') ?? '').includes('event-stream');
+  if (!isStream) {
+    await recordJsonResponseUsage(res, save);
+    return res;
+  }
+  return attachSseUsageLogger(res, save);
+};
+
+export const meteredFetch = (baseFetch?: typeof fetch, fixedMeta?: { userId?: string | null; feature: string }): typeof fetch => {
+  const base: typeof fetch = (input, nextInit) => (baseFetch ?? globalThis.fetch)(input, nextInit);
+  return (input, init) => runMeteredFetch(base, fixedMeta, input, init);
+};

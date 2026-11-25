@@ -16,8 +16,6 @@
  *   BACKFILL_EMBED_DELAY_MS=250, CONFIRM_PROD_BACKFILL=1
  */
 
-import { applyOpenRouterProviderIgnore } from '../../../packages/@platform/ai-engine/src/openrouter-request.ts';
-
 const EMBEDDING_MODEL = 'openai/text-embedding-3-small';
 const EMBEDDING_DIM = 1536;
 const INSIGHT_PREFIX = 'insight:';
@@ -92,6 +90,9 @@ async function fetchInsightPage(baseUrl, serviceKey, pageSize, offset) {
 }
 
 async function embedTexts(texts, apiKey) {
+  const { applyOpenRouterProviderIgnore } = await import(
+    '../../../packages/@platform/ai-engine/src/openrouter-request.ts'
+  );
   const res = await fetch('https://openrouter.ai/api/v1/embeddings', {
     method: 'POST',
     headers: {

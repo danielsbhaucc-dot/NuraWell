@@ -16,21 +16,33 @@ import {
 
 const { _parseSseUsage, meteredFetch, recordBatchUsage, withAiUsage } = await import('@/lib/ai/usage-meter');
 const { _setPiiSeedLoader } = await import('@/lib/ai/privacy/outbound-pii-guard');
-_setPiiSeedLoader(async () => null);
+_setPiiSeedLoader(() => Promise.resolve(null));
 
 const WEB_ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const REPO_ROOT = join(WEB_ROOT, '../..');
 
-function expectIgnored(provider: { ignore?: unknown } | null | undefined) {
+const expectIgnored = (provider: { ignore?: unknown } | null | undefined) => {
   expect(provider).toBeTruthy();
-  const ignore = provider!.ignore;
-  expect(Array.isArray(ignore)).toBe(true);
-  const lower = (ignore as string[]).map((item) => item.toLowerCase());
+  if (!provider || !Array.isArray(provider.ignore)) {
+    throw new Error('expected provider.ignore to be an array');
+  }
+  const ignore = provider.ignore;
+  const lower = ignore
+    .filter((item): item is string => typeof item === 'string')
+    .map((item) => item.toLowerCase());
   for (const slug of OPENROUTER_IGNORED_PROVIDERS) {
     expect(lower).toContain(slug.toLowerCase());
   }
   expect(lower).toContain(OPENROUTER_GMI_CLOUD_SLUG);
-}
+};
+
+const usageEventBody = (calls: { url: string; body: string }[]): Record<string, unknown> => {
+  const match = calls.find((call) => call.url.includes('ai_usage_events'));
+  if (!match) {
+    throw new Error('ai_usage_events insert was not sent');
+  }
+  return JSON.parse(match.body) as Record<string, unknown>;
+};
 
 describe('OpenRouter central request builder (GMI Cloud ignore)', () => {
   it('keeps the official slug and display-name variants in sync with the JSON list', () => {
@@ -123,11 +135,11 @@ describe('OpenRouter central request builder (GMI Cloud ignore)', () => {
 
 describe('usage meter records the answering provider (name only)', () => {
   it('parses provider from an earlier SSE chunk and usage from the last', () => {
-    const t =
+    const sseText =
       'data: {"provider":"Amazon Bedrock","choices":[{"delta":{"content":"hi"}}]}\n\n' +
       'data: {"model":"openai/gpt-5-mini","provider":"Amazon Bedrock","usage":{"prompt_tokens":4,"completion_tokens":2,"cost":0.01}}\n\n' +
       'data: [DONE]\n';
-    expect(_parseSseUsage(t)).toEqual({
+    expect(_parseSseUsage(sseText)).toEqual({
       usage: { prompt_tokens: 4, completion_tokens: 2, cost: 0.01 },
       model: 'openai/gpt-5-mini',
       provider: 'Amazon Bedrock',
@@ -144,26 +156,28 @@ describe('usage meter records the answering provider (name only)', () => {
     process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://db.test';
     process.env.SUPABASE_SERVICE_ROLE_KEY = 'k';
     const calls: { url: string; body: string }[] = [];
-    const base = vi.fn(async (u: string, init: RequestInit) => {
-      calls.push({ url: String(u), body: String(init.body ?? '') });
-      if (String(u).includes('openrouter')) {
-        return new Response(
-          JSON.stringify({ model: 'm', provider: 'Google AI Studio', usage: { cost: 0.03, prompt_tokens: 2, completion_tokens: 1 } }),
-          { headers: { 'content-type': 'application/json' } }
+    const base = vi.fn((requestUrl: string, init: RequestInit) => {
+      calls.push({ url: String(requestUrl), body: String(init.body ?? '') });
+      if (String(requestUrl).includes('openrouter')) {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({ model: 'm', provider: 'Google AI Studio', usage: { cost: 0.03, prompt_tokens: 2, completion_tokens: 1 } }),
+            { headers: { 'content-type': 'application/json' } }
+          )
         );
       }
-      return new Response('', { status: 201 });
+      return Promise.resolve(new Response('', { status: 201 }));
     });
     vi.stubGlobal('fetch', base);
-    const f = meteredFetch(base as never);
+    const fetchWithMeter = meteredFetch(base as never);
     await withAiUsage({ feature: 'stream_test', userId: '11111111-1111-4111-8111-111111111111' }, () =>
-      f('https://openrouter.ai/api/v1/chat/completions', {
+      fetchWithMeter('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
         body: JSON.stringify({ model: 'm', messages: [{ role: 'user', content: 'secret-prompt-text' }] }),
       })
     );
-    await new Promise((r) => setTimeout(r, 20));
-    const rec = JSON.parse(calls.find((c) => c.url.includes('ai_usage_events'))!.body) as Record<string, unknown>;
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    const rec = usageEventBody(calls);
     expect(rec.provider).toBe('Google AI Studio');
     expect(rec.feature).toBe('stream_test');
     expect(JSON.stringify(rec)).not.toContain('secret-prompt-text');
@@ -178,32 +192,31 @@ describe('usage meter records the answering provider (name only)', () => {
       'data: {"provider":"Groq","choices":[{"delta":{"content":"ok"}}]}\n\n' +
       'data: {"provider":"Groq","model":"openai/gpt-oss-20b","usage":{"cost":0.004,"prompt_tokens":3,"completion_tokens":1}}\n\n' +
       'data: [DONE]\n';
-    const base = vi.fn(async (u: string, init: RequestInit) => {
-      calls.push({ url: String(u), body: String(init.body ?? '') });
-      if (String(u).includes('openrouter')) {
-        return new Response(sse, { headers: { 'content-type': 'text/event-stream' } });
+    const base = vi.fn((requestUrl: string, init: RequestInit) => {
+      calls.push({ url: String(requestUrl), body: String(init.body ?? '') });
+      if (String(requestUrl).includes('openrouter')) {
+        return Promise.resolve(new Response(sse, { headers: { 'content-type': 'text/event-stream' } }));
       }
-      return new Response('', { status: 201 });
+      return Promise.resolve(new Response('', { status: 201 }));
     });
     vi.stubGlobal('fetch', base);
-    const f = meteredFetch(base as never);
+    const fetchWithMeter = meteredFetch(base as never);
     const res = await withAiUsage({ feature: 'chat_stream' }, () =>
-      f('https://openrouter.ai/api/v1/chat/completions', {
+      fetchWithMeter('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
         body: JSON.stringify({ model: 'openai/gpt-oss-20b', messages: [], stream: true }),
       })
     );
     await res.text();
-    await new Promise((r) => setTimeout(r, 40));
-    const rec = calls.find((c) => c.url.includes('ai_usage_events'));
-    expect(rec).toBeTruthy();
-    expect(JSON.parse(rec!.body)).toMatchObject({
+    await new Promise((resolve) => setTimeout(resolve, 40));
+    const rec = usageEventBody(calls);
+    expect(rec).toMatchObject({
       feature: 'chat_stream',
       provider: 'Groq',
       model: 'openai/gpt-oss-20b',
       cost_usd: 0.004,
     });
-    expect(JSON.parse(rec!.body)).not.toHaveProperty('content');
+    expect(rec).not.toHaveProperty('content');
     vi.unstubAllGlobals();
   });
 
@@ -211,9 +224,9 @@ describe('usage meter records the answering provider (name only)', () => {
     process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://db.test';
     process.env.SUPABASE_SERVICE_ROLE_KEY = 'k';
     const calls: { url: string; body: string }[] = [];
-    const base = vi.fn(async (u: string, init: RequestInit) => {
-      calls.push({ url: String(u), body: String(init.body ?? '') });
-      return new Response('', { status: 201 });
+    const base = vi.fn((requestUrl: string, init: RequestInit) => {
+      calls.push({ url: String(requestUrl), body: String(init.body ?? '') });
+      return Promise.resolve(new Response('', { status: 201 }));
     });
     vi.stubGlobal('fetch', base);
     await recordBatchUsage({
@@ -222,12 +235,43 @@ describe('usage meter records the answering provider (name only)', () => {
       usage: { prompt_tokens: 10, completion_tokens: 5, cost: 0.001 },
       provider: 'Together',
     });
-    await new Promise((r) => setTimeout(r, 20));
-    const rec = JSON.parse(calls.find((c) => c.url.includes('ai_usage_events'))!.body) as Record<string, unknown>;
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    const rec = usageEventBody(calls);
     expect(rec).toMatchObject({ feature: 'chat_periodic_summary', provider: 'Together', cost_usd: 0.001 });
     expect(Object.keys(rec).sort()).toEqual(
       ['cached_tokens', 'completion_tokens', 'cost_usd', 'feature', 'model', 'prompt_tokens', 'provider', 'user_id'].sort()
     );
+    vi.unstubAllGlobals();
+  });
+
+  it('stores provider as null when the JSON response omits it, and does not throw', async () => {
+    process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://db.test';
+    process.env.SUPABASE_SERVICE_ROLE_KEY = 'k';
+    const calls: { url: string; body: string }[] = [];
+    const base = vi.fn((requestUrl: string, init: RequestInit) => {
+      calls.push({ url: String(requestUrl), body: String(init.body ?? '') });
+      if (String(requestUrl).includes('openrouter')) {
+        return Promise.resolve(
+          new Response(JSON.stringify({ model: 'm', usage: { cost: 0.02, prompt_tokens: 1, completion_tokens: 1 } }), {
+            headers: { 'content-type': 'application/json' },
+          })
+        );
+      }
+      return Promise.resolve(new Response('', { status: 201 }));
+    });
+    vi.stubGlobal('fetch', base);
+    const fetchWithMeter = meteredFetch(base as never);
+    await withAiUsage({ feature: 'no_provider' }, () =>
+      fetchWithMeter('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        body: JSON.stringify({ model: 'm', messages: [] }),
+      })
+    );
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    const rec = usageEventBody(calls);
+    expect(rec.provider).toBeNull();
+    expect(rec.cost_usd).toBe(0.02);
+    expect(rec.feature).toBe('no_provider');
     vi.unstubAllGlobals();
   });
 });
@@ -239,15 +283,15 @@ const PGRST204_PROVIDER = {
 };
 
 describe('ai_usage_events insert tolerates a missing provider column', () => {
-  async function postUsage(handler: (url: string, init: RequestInit, call: number) => Response) {
+  const postUsage = async (handler: (requestUrl: string, init: RequestInit, call: number) => Response) => {
     process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://db.test';
     process.env.SUPABASE_SERVICE_ROLE_KEY = 'k';
     let call = 0;
     const calls: { url: string; body: string }[] = [];
-    const base = vi.fn(async (u: string, init: RequestInit) => {
+    const base = vi.fn((requestUrl: string, init: RequestInit) => {
       call += 1;
-      calls.push({ url: String(u), body: String(init.body ?? '') });
-      return handler(String(u), init, call);
+      calls.push({ url: String(requestUrl), body: String(init.body ?? '') });
+      return Promise.resolve(handler(String(requestUrl), init, call));
     });
     vi.stubGlobal('fetch', base);
     await recordBatchUsage({
@@ -256,12 +300,12 @@ describe('ai_usage_events insert tolerates a missing provider column', () => {
       usage: { prompt_tokens: 2, completion_tokens: 1, cost: 0.01 },
       provider: 'Groq',
     });
-    await new Promise((r) => setTimeout(r, 20));
+    await new Promise((resolve) => setTimeout(resolve, 20));
     return { calls, base };
-  }
+  };
 
   it('sends provider when the column exists', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     const { calls } = await postUsage(() => new Response('', { status: 201 }));
     expect(calls).toHaveLength(1);
     expect(JSON.parse(calls[0].body).provider).toBe('Groq');
@@ -272,7 +316,7 @@ describe('ai_usage_events insert tolerates a missing provider column', () => {
   });
 
   it('retries the cost insert without provider when PostgREST reports a missing column', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     const { calls } = await postUsage((_u, _i, n) => {
       if (n === 1) {
         return new Response(JSON.stringify(PGRST204_PROVIDER), {
@@ -295,7 +339,7 @@ describe('ai_usage_events insert tolerates a missing provider column', () => {
   });
 
   it('logs other insert errors and does not retry', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     const { calls } = await postUsage(
       () =>
         new Response(JSON.stringify({ code: '42501', message: 'permission denied for table ai_usage_events' }), {
@@ -319,16 +363,16 @@ describe('ai_usage_events insert tolerates a missing provider column', () => {
 const SOURCE_EXTS = new Set(['.ts', '.tsx', '.js', '.mjs']);
 const SKIP_DIR = new Set(['node_modules', '.git', '.next', 'dist', 'coverage', 'build', 'out']);
 
-function walk(dir: string, acc: string[] = []): string[] {
+const walkSourceFiles = (dir: string, acc: string[] = []): string[] => {
   for (const name of readdirSync(dir)) {
     if (SKIP_DIR.has(name)) continue;
     const full = join(dir, name);
     const st = statSync(full);
-    if (st.isDirectory()) walk(full, acc);
+    if (st.isDirectory()) walkSourceFiles(full, acc);
     else if (SOURCE_EXTS.has(extname(name))) acc.push(full);
   }
   return acc;
-}
+};
 
 const WRAPPER_RE =
   /\b(meteredFetch|groqCompatFetch|createAiProvider|createOpenRouterAiProvider|openRouterChatFetch|applyOpenRouterProviderIgnore(?:ToPayload|ToBodyString|ToInit)?|createOpenAiCompatibleProvider)\b/;
@@ -336,33 +380,47 @@ const WRAPPER_RE =
 const INFERENCE_RE =
   /openrouter\.ai\/api\/v1\/(?:chat\/completions|completions|embeddings|responses|messages|batches)\b|openrouter\.(?:chat|embeddings)\.|\.embeddings\.create\(/;
 
+const hasOpenRouterInferenceCall = (source: string): boolean => {
+  if (!INFERENCE_RE.test(source) && !/openrouter\.ai\/api\/v1/.test(source)) return false;
+  // Mention of the API host alone is not a call (CSP, privacy link, cost vendor, base URL helper).
+  const hasCall =
+    INFERENCE_RE.test(source) ||
+    /fetch\(\s*[`'"]https:\/\/(?:eu\.|us\.)?openrouter\.ai/.test(source) ||
+    /fetch\(\s*`\$\{[^}]*\}https:\/\/openrouter\.ai/.test(source) ||
+    /fetch\(\s*(OPENROUTER_URL|`\$\{base\}\/chat\/completions`)/.test(source);
+  if (!hasCall) return false;
+  // Skip files that only hit /key or compare endpoint strings, with no inference POST.
+  return /chat\/completions|\/embeddings|\/batches(?!\/\$)|\/responses|\/messages|embeddings\.create|chat\.completions/.test(
+    source
+  );
+};
+
+const siteUsesBuilder = (rel: string, source: string): boolean => {
+  if (WRAPPER_RE.test(source)) return true;
+  // SDK client (`openrouter` from lib/ai/client) sends every request through groqCompatFetch → meteredFetch.
+  if (/\bopenrouter\.(chat|embeddings)\b/.test(source)) return true;
+  if (rel.endsWith('lib/ai/client.ts') && /fetch:\s*groqCompatFetch/.test(source)) return true;
+  if (rel.endsWith('lib/ai/groq-compat.ts')) return true;
+  if (rel.endsWith('lib/ai/usage-meter.ts')) return true;
+  if (rel.endsWith('openrouter-request.ts')) return true;
+  if (!rel.endsWith('backfill-insight-vectors-upstash.mjs')) return false;
+  return (
+    source.includes('packages/@platform/ai-engine/src/openrouter-request.ts') &&
+    source.includes('applyOpenRouterProviderIgnore') &&
+    !source.includes('function applyOpenRouterProviderIgnore')
+  );
+};
+
 describe('every OpenRouter inference call site goes through the central builder', () => {
   const files = [
-    ...walk(join(REPO_ROOT, 'apps/web')),
-    ...walk(join(REPO_ROOT, 'packages/@platform/ai-engine/src')),
-    ...walk(join(REPO_ROOT, 'apps/sample-product')),
-  ].filter((f) => !f.includes('/tests/') && !f.endsWith('.test.ts') && !f.endsWith('.test.tsx'));
+    ...walkSourceFiles(join(REPO_ROOT, 'apps/web')),
+    ...walkSourceFiles(join(REPO_ROOT, 'packages/@platform/ai-engine/src')),
+    ...walkSourceFiles(join(REPO_ROOT, 'apps/sample-product')),
+  ].filter((path) => !path.includes('/tests/') && !path.endsWith('.test.ts') && !path.endsWith('.test.tsx'));
 
   const sites = files
     .map((file) => ({ file, src: readFileSync(file, 'utf8') }))
-    .filter(({ src, file }) => {
-      if (!INFERENCE_RE.test(src) && !/openrouter\.ai\/api\/v1/.test(src)) return false;
-      // Mention of the API host alone is not a call (CSP, privacy link, cost vendor, base URL helper).
-      const hasCall =
-        INFERENCE_RE.test(src) ||
-        /fetch\(\s*[`'"]https:\/\/(?:eu\.|us\.)?openrouter\.ai/.test(src) ||
-        /fetch\(\s*`\$\{[^}]*\}https:\/\/openrouter\.ai/.test(src) ||
-        /fetch\(\s*(OPENROUTER_URL|`\$\{base\}\/chat\/completions`)/.test(src);
-      if (!hasCall) return false;
-      // Skip files that only hit /key or compare endpoint strings, with no inference POST.
-      const onlyKeyOrCompare =
-        !/chat\/completions|\/embeddings|\/batches(?!\/\$)|\/responses|\/messages|embeddings\.create|chat\.completions/.test(
-          src
-        );
-      if (onlyKeyOrCompare) return false;
-      void file;
-      return true;
-    });
+    .filter(({ src }) => hasOpenRouterInferenceCall(src));
 
   it('finds the known inference call sites', () => {
     const rels = sites.map(({ file }) => relative(REPO_ROOT, file)).sort();
@@ -373,27 +431,10 @@ describe('every OpenRouter inference call site goes through the central builder'
   });
 
   it('each call site uses the builder or a wrapper that already goes through it', () => {
-    const missing: string[] = [];
-    for (const { file, src } of sites) {
-      const rel = relative(REPO_ROOT, file);
-      if (WRAPPER_RE.test(src)) continue;
-      // SDK client (`openrouter` from lib/ai/client) sends every request through groqCompatFetch → meteredFetch.
-      if (/\bopenrouter\.(chat|embeddings)\b/.test(src)) continue;
-      if (rel.endsWith('lib/ai/client.ts') && /fetch:\s*groqCompatFetch/.test(src)) continue;
-      if (rel.endsWith('lib/ai/groq-compat.ts')) continue;
-      if (rel.endsWith('lib/ai/usage-meter.ts')) continue;
-      if (rel.endsWith('openrouter-request.ts')) continue;
-      if (rel.endsWith('backfill-insight-vectors-upstash.mjs')) {
-        if (
-          src.includes('packages/@platform/ai-engine/src/openrouter-request.ts') &&
-          src.includes('applyOpenRouterProviderIgnore') &&
-          !src.includes('function applyOpenRouterProviderIgnore')
-        ) {
-          continue;
-        }
-      }
-      missing.push(rel);
-    }
+    const missing = sites
+      .map(({ file, src }) => ({ rel: relative(REPO_ROOT, file), src }))
+      .filter(({ rel, src }) => !siteUsesBuilder(rel, src))
+      .map(({ rel }) => rel);
     expect(missing).toEqual([]);
   });
 
