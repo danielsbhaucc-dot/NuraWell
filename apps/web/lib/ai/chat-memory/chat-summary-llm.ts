@@ -162,8 +162,8 @@ const recordAndDetokenizeBatchLine = async (line: string, shield: Detokenize): P
   const body = batchResultBody(line);
   await recordBatchUsage({
     feature: 'chat_periodic_summary',
-    model: body && body.model ? body.model : CHAT_SUMMARY_MODEL,
-    usage: body ? body.usage : undefined,
+    model: body?.model ?? CHAT_SUMMARY_MODEL,
+    usage: body?.usage,
     provider: readOpenRouterProvider(body),
   }).catch(() => undefined);
   const out = batchChoiceText(body);
