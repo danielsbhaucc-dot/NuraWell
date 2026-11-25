@@ -287,10 +287,35 @@ describe('billing interval toggle tap target', () => {
     const html = render(fallbackPricing());
     expect(html).toContain('aria-label="תדירות חיוב"');
     expect(html.match(/<button[^>]*role="radio"[^>]*class="[^"]*min-h-11[^"]*"/g)).toHaveLength(2);
-    expect(html.match(/<button[^>]*role="radio"[^>]*class="[^"]*whitespace-nowrap[^"]*"/g)).toHaveLength(2);
+    expect(html.match(/<button[^>]*role="radio"[^>]*class="[^"]*whitespace-nowrap[^"]*"/g)).toHaveLength(1);
     expect(html).toContain('>חודשי<');
     expect(html).toMatch(/שנתי · עד \d+% חיסכון/);
+    expect(html).toMatch(/role="radio"[^>]*class="[^"]*\[overflow-wrap:break-word\]/);
     expect(html).not.toMatch(/role="radio"[^>]*min-h-10/);
+  });
+});
+
+
+describe('pricing card wrap: words stay whole', () => {
+  it('CTA and copy keep WhatsApp in a nowrap bdi, wrap at word boundaries, and stack below lg', () => {
+    const html = render(parseCatalog(live, NOW)!);
+    expect(html).toMatch(/<bdi class="inline-block max-w-full whitespace-nowrap">WhatsApp<\/bdi>/);
+    expect(html.match(/<bdi class="inline-block max-w-full whitespace-nowrap">WhatsApp<\/bdi>/g)!.length).toBeGreaterThan(1);
+    expect(visibleText(html)).toContain('בחירה בבסיסי + WhatsApp');
+    expect(html).toContain('[overflow-wrap:break-word]');
+    expect(html).not.toContain('overflow-wrap:anywhere');
+    expect(html).not.toContain('break-all');
+    expect(html).toContain('lg:grid-cols-3');
+    expect(html).toContain('flex-wrap');
+    expect(html).toContain('inline-block max-w-full whitespace-nowrap');
+    expect(html).not.toContain('md:grid-cols-3');
+    const card = html.match(/data-plan="whatsapp"[\s\S]*?<\/section>/)?.[0] ?? '';
+    expect(card).toContain('[overflow-wrap:break-word]');
+    expect(card).toContain('data-testid="plan-buy"');
+    expect(card).toContain('<bdi class="inline-block max-w-full whitespace-nowrap">WhatsApp</bdi>');
+    expect(card).toContain('min-h-12');
+    expect(card).toContain('min-w-0 max-w-full [overflow-wrap:break-word]');
+    expect(card).toContain('flex min-w-0 gap-2');
   });
 });
 
