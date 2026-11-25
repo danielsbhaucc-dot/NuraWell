@@ -380,36 +380,48 @@ const WRAPPER_RE =
 const INFERENCE_RE =
   /openrouter\.ai\/api\/v1\/(?:chat\/completions|completions|embeddings|responses|messages|batches)\b|openrouter\.(?:chat|embeddings)\.|\.embeddings\.create\(/;
 
-const hasOpenRouterInferenceCall = (source: string): boolean => {
-  if (!INFERENCE_RE.test(source) && !/openrouter\.ai\/api\/v1/.test(source)) return false;
-  // Mention of the API host alone is not a call (CSP, privacy link, cost vendor, base URL helper).
-  const hasCall =
-    INFERENCE_RE.test(source) ||
-    /fetch\(\s*[`'"]https:\/\/(?:eu\.|us\.)?openrouter\.ai/.test(source) ||
-    /fetch\(\s*`\$\{[^}]*\}https:\/\/openrouter\.ai/.test(source) ||
-    /fetch\(\s*(OPENROUTER_URL|`\$\{base\}\/chat\/completions`)/.test(source);
-  if (!hasCall) return false;
-  // Skip files that only hit /key or compare endpoint strings, with no inference POST.
-  return /chat\/completions|\/embeddings|\/batches(?!\/\$)|\/responses|\/messages|embeddings\.create|chat\.completions/.test(
-    source
-  );
+const mentionsOpenRouterHost = (source: string): boolean =>
+  INFERENCE_RE.test(source) || /openrouter\.ai\/api\/v1/.test(source);
+
+const hasFetchToOpenRouter = (source: string): boolean => {
+  if (INFERENCE_RE.test(source)) return true;
+  if (/fetch\(\s*[`'"]https:\/\/(?:eu\.|us\.)?openrouter\.ai/.test(source)) return true;
+  if (/fetch\(\s*`\$\{[^}]*\}https:\/\/openrouter\.ai/.test(source)) return true;
+  return /fetch\(\s*(OPENROUTER_URL|`\$\{base\}\/chat\/completions`)/.test(source);
 };
 
-const siteUsesBuilder = (rel: string, source: string): boolean => {
-  if (WRAPPER_RE.test(source)) return true;
-  // SDK client (`openrouter` from lib/ai/client) sends every request through groqCompatFetch → meteredFetch.
-  if (/\bopenrouter\.(chat|embeddings)\b/.test(source)) return true;
-  if (rel.endsWith('lib/ai/client.ts') && /fetch:\s*groqCompatFetch/.test(source)) return true;
-  if (rel.endsWith('lib/ai/groq-compat.ts')) return true;
-  if (rel.endsWith('lib/ai/usage-meter.ts')) return true;
-  if (rel.endsWith('openrouter-request.ts')) return true;
-  if (!rel.endsWith('backfill-insight-vectors-upstash.mjs')) return false;
-  return (
-    source.includes('packages/@platform/ai-engine/src/openrouter-request.ts') &&
-    source.includes('applyOpenRouterProviderIgnore') &&
-    !source.includes('function applyOpenRouterProviderIgnore')
+// Skip files that only hit /key or compare endpoint strings, with no inference POST.
+const hasInferencePath = (source: string): boolean =>
+  /chat\/completions|\/embeddings|\/batches(?!\/\$)|\/responses|\/messages|embeddings\.create|chat\.completions/.test(
+    source
   );
+
+const hasOpenRouterInferenceCall = (source: string): boolean =>
+  mentionsOpenRouterHost(source) && hasFetchToOpenRouter(source) && hasInferencePath(source);
+
+const BUILDER_PATH_SUFFIXES = ['lib/ai/groq-compat.ts', 'lib/ai/usage-meter.ts', 'openrouter-request.ts'];
+
+const clientUsesGroqCompat = (rel: string, source: string): boolean =>
+  rel.endsWith('lib/ai/client.ts') && /fetch:\s*groqCompatFetch/.test(source);
+
+const backfillUsesSharedBuilder = (rel: string, source: string): boolean =>
+  rel.endsWith('backfill-insight-vectors-upstash.mjs') &&
+  source.includes('packages/@platform/ai-engine/src/openrouter-request.ts') &&
+  source.includes('applyOpenRouterProviderIgnore') &&
+  !source.includes('function applyOpenRouterProviderIgnore');
+
+const siteUsesBuilder = (rel: string, source: string): boolean => {
+  if (WRAPPER_RE.test(source) || /\bopenrouter\.(chat|embeddings)\b/.test(source)) return true;
+  if (BUILDER_PATH_SUFFIXES.some((suffix) => rel.endsWith(suffix))) return true;
+  if (clientUsesGroqCompat(rel, source)) return true;
+  return backfillUsesSharedBuilder(rel, source);
 };
+
+const relativeSitesMissingBuilder = (sites: { file: string; src: string }[]): string[] =>
+  sites
+    .map(({ file, src }) => ({ rel: relative(REPO_ROOT, file), src }))
+    .filter(({ rel, src }) => !siteUsesBuilder(rel, src))
+    .map(({ rel }) => rel);
 
 describe('every OpenRouter inference call site goes through the central builder', () => {
   const files = [
@@ -431,11 +443,7 @@ describe('every OpenRouter inference call site goes through the central builder'
   });
 
   it('each call site uses the builder or a wrapper that already goes through it', () => {
-    const missing = sites
-      .map(({ file, src }) => ({ rel: relative(REPO_ROOT, file), src }))
-      .filter(({ rel, src }) => !siteUsesBuilder(rel, src))
-      .map(({ rel }) => rel);
-    expect(missing).toEqual([]);
+    expect(relativeSitesMissingBuilder(sites)).toEqual([]);
   });
 
   it('the local migration exists and says it must not be applied to the live database in this change', () => {

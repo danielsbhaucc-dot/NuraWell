@@ -69,11 +69,17 @@ type Usage = { cost?: number; prompt_tokens?: number; completion_tokens?: number
 
 type SseChunk = { usage?: Usage; model?: string; provider?: unknown };
 
-const parseSseDataLine = (line: string): SseChunk | null => {
+const sseRaw = (line: string): string | null => {
   if (!line.startsWith('data:')) return null;
   const raw = line.slice(5).trim();
-  if (!raw || raw === '[DONE]') return null;
-  if (!raw.includes('"usage"') && !raw.includes('"provider"') && !raw.includes('"model"')) return null;
+  if (raw === '' || raw === '[DONE]') return null;
+  return raw;
+};
+
+const sseLineHasMeta = (raw: string): boolean =>
+  raw.includes('"usage"') || raw.includes('"provider"') || raw.includes('"model"');
+
+const parseSseJson = (raw: string): SseChunk | null => {
   try {
     return JSON.parse(raw) as SseChunk;
   } catch {
@@ -82,47 +88,66 @@ const parseSseDataLine = (line: string): SseChunk | null => {
   }
 };
 
-export const _parseSseUsage = (text: string): { usage: Usage | null; model: string | null; provider: string | null } => {
-  let usage: Usage | null = null;
-  let model: string | null = null;
-  let provider: string | null = null;
+const parseSseDataLine = (line: string): SseChunk | null => {
+  const raw = sseRaw(line);
+  if (!raw) return null;
+  if (!sseLineHasMeta(raw)) return null;
+  return parseSseJson(raw);
+};
+
+type ParsedSse = { usage: Usage | null; model: string | null; provider: string | null };
+
+const applySseChunk = (state: ParsedSse, parsed: SseChunk): void => {
+  if (parsed.usage) state.usage = parsed.usage;
+  if (parsed.model) state.model = parsed.model;
+  const parsedProvider = readOpenRouterProvider(parsed);
+  if (parsedProvider) state.provider = parsedProvider;
+};
+
+export const _parseSseUsage = (text: string): ParsedSse => {
+  const state: ParsedSse = { usage: null, model: null, provider: null };
   for (const line of text.split('\n')) {
     const parsed = parseSseDataLine(line);
-    if (!parsed) continue;
-    if (parsed.usage) usage = parsed.usage;
-    if (parsed.model) model = parsed.model;
-    const parsedProvider = readOpenRouterProvider(parsed);
-    if (parsedProvider) provider = parsedProvider;
+    if (parsed) applySseChunk(state, parsed);
   }
-  return { usage, model, provider };
+  return state;
+};
+
+const codeFromJson = (body: string): string | null => {
+  try {
+    const parsed = JSON.parse(body) as { code?: unknown };
+    if (typeof parsed.code !== 'string') return null;
+    const code = parsed.code.trim();
+    return code ? code.slice(0, 40) : null;
+  } catch {
+    return null;
+  }
 };
 
 const postgrestErrorCode = (body: string): string | null => {
-  try {
-    const parsed = JSON.parse(body) as { code?: unknown };
-    return typeof parsed.code === 'string' && parsed.code.trim() ? parsed.code.trim().slice(0, 40) : null;
-  } catch {
-    const codeMatch = body.match(/\bPGRST\d{3}\b/);
-    return codeMatch ? codeMatch[0] : null;
-  }
+  const fromJson = codeFromJson(body);
+  if (fromJson) return fromJson;
+  const codeMatch = body.match(/\bPGRST\d{3}\b/);
+  return codeMatch ? codeMatch[0] : null;
 };
+
+const isPgrst204Provider = (body: string): boolean =>
+  postgrestErrorCode(body) === 'PGRST204' && /provider/i.test(body);
 
 /** PostgREST PGRST204 when ai_usage_events.provider has not been added yet. */
 const isMissingProviderColumn = (status: number, body: string): boolean => {
   if (status !== 400 && status !== 404) return false;
-  const code = postgrestErrorCode(body);
-  if (code === 'PGRST204' && /provider/i.test(body)) return true;
-  return /could not find the ['"]provider['"] column/i.test(body);
+  return isPgrst204Provider(body) || /could not find the ['"]provider['"] column/i.test(body);
 };
 
 const warnInsertFailure = (label: string, status: number, body: string) => {
   console.warn(label, { status, code: postgrestErrorCode(body) });
 };
 
-const record = async (row: Record<string, unknown>): Promise<void> => {
+const usageEventsPoster = (): ((payload: Record<string, unknown>) => Promise<Response>) | null => {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
-  if (!url || !key) return;
+  if (!url || !key) return null;
   const endpoint = `${url.replace(/\/$/, '')}/rest/v1/ai_usage_events`;
   const headers = {
     apikey: key,
@@ -131,27 +156,74 @@ const record = async (row: Record<string, unknown>): Promise<void> => {
     Prefer: 'return=minimal',
     'User-Agent': 'NuraWell-Server/usage-meter/1',
   };
-  const post = (payload: Record<string, unknown>) =>
+  return (payload: Record<string, unknown>) =>
     fetch(endpoint, { method: 'POST', headers, body: JSON.stringify(payload) });
+};
+
+const shouldRetryMissingProvider = (status: number, text: string, row: Record<string, unknown>): boolean =>
+  isMissingProviderColumn(status, text) && Object.prototype.hasOwnProperty.call(row, 'provider');
+
+const retryWithoutProviderColumn = async (
+  post: (payload: Record<string, unknown>) => Promise<Response>,
+  row: Record<string, unknown>
+): Promise<void> => {
+  const rest = { ...row };
+  delete rest.provider;
+  console.warn('[usage-meter] ai_usage_events.provider column is missing; retrying the cost insert without it');
+  const retry = await post(rest);
+  if (retry.ok) return;
+  const retryText = await retry.text().catch(() => '');
+  warnInsertFailure('[usage-meter] ai_usage_events insert retry failed', retry.status, retryText);
+};
+
+const writeUsageEvent = async (
+  post: (payload: Record<string, unknown>) => Promise<Response>,
+  row: Record<string, unknown>
+): Promise<void> => {
+  const res = await post(row);
+  if (res.ok) return;
+  const text = await res.text().catch(() => '');
+  if (shouldRetryMissingProvider(res.status, text, row)) {
+    await retryWithoutProviderColumn(post, row);
+    return;
+  }
+  warnInsertFailure('[usage-meter] ai_usage_events insert failed', res.status, text);
+};
+
+const record = async (row: Record<string, unknown>): Promise<void> => {
+  const post = usageEventsPoster();
+  if (!post) return;
   try {
-    const res = await post(row);
-    if (res.ok) return;
-    const text = await res.text().catch(() => '');
-    if (isMissingProviderColumn(res.status, text) && Object.prototype.hasOwnProperty.call(row, 'provider')) {
-      const rest = { ...row };
-      delete rest.provider;
-      console.warn('[usage-meter] ai_usage_events.provider column is missing; retrying the cost insert without it');
-      const retry = await post(rest);
-      if (retry.ok) return;
-      const retryText = await retry.text().catch(() => '');
-      warnInsertFailure('[usage-meter] ai_usage_events insert retry failed', retry.status, retryText);
-      return;
-    }
-    warnInsertFailure('[usage-meter] ai_usage_events insert failed', res.status, text);
+    await writeUsageEvent(post, row);
   } catch {
     console.warn('[usage-meter] ai_usage_events insert failed', { error: 'network' });
   }
 };
+
+const scopedUserId = (userId: string | null | undefined): string | null =>
+  userId && UUID.test(userId) ? userId : null;
+
+const orNull = (value: number | undefined): number | null => (value === undefined ? null : value);
+
+const costUsdOf = (usage: Usage | null | undefined): number =>
+  typeof usage?.cost === 'number' ? usage.cost : 0;
+
+const usageEventRow = (params: {
+  userId: string | null;
+  feature: string;
+  model: string | null;
+  provider: string | null;
+  usage: Usage;
+}): Record<string, unknown> => ({
+  user_id: scopedUserId(params.userId),
+  feature: params.feature.slice(0, 60),
+  model: params.model,
+  provider: params.provider,
+  prompt_tokens: orNull(params.usage.prompt_tokens),
+  completion_tokens: orNull(params.usage.completion_tokens),
+  cached_tokens: orNull(params.usage.prompt_tokens_details?.cached_tokens),
+  cost_usd: costUsdOf(params.usage),
+});
 
 /**
  * For calls that bypass meteredFetch (OpenRouter Batch API): record the usage a batch result carries,
@@ -166,17 +238,13 @@ export const recordBatchUsage = async (params: {
 }): Promise<void> => {
   const usage = params.usage;
   if (!usage) return;
-  const userId = currentAiUserId();
-  await record({
-    user_id: userId && UUID.test(userId) ? userId : null,
-    feature: params.feature.slice(0, 60),
+  await record(usageEventRow({
+    userId: currentAiUserId(),
+    feature: params.feature,
     model: params.model,
     provider: params.provider ?? null,
-    prompt_tokens: usage.prompt_tokens ?? null,
-    completion_tokens: usage.completion_tokens ?? null,
-    cached_tokens: usage.prompt_tokens_details?.cached_tokens ?? null,
-    cost_usd: typeof usage.cost === 'number' ? usage.cost : 0,
-  });
+    usage,
+  }));
 };
 
 const ignoreFloatingPromise = (job: Promise<unknown>): undefined => {
@@ -195,12 +263,20 @@ const schedule = (p: Promise<unknown>) => {
   ignoreFloatingPromise(safe);
 };
 
+const callerFromLine = (line: string): string | null => {
+  if (/usage-meter|node_modules|node:internal|openai|@ai-sdk|\(native\)/.test(line)) return null;
+  const fromPath = line.match(/(?:app|lib)\/[\w./[\]-]+?\.(?:ts|tsx|js)/);
+  if (fromPath) return fromPath[0].replace(/^.*?((?:app|lib)\/)/, '$1').slice(-50);
+  const fromName = line.match(/([\w.-]+\.(?:ts|tsx|js))/);
+  if (fromName) return fromName[0].replace(/^.*?((?:app|lib)\/)/, '$1').slice(-50);
+  return null;
+};
+
 /** Runtime fallback: no feature tag reached the meter. Name the caller so it can be fixed. */
 export const _callerFromStack = (stack: string | undefined): string => {
   for (const line of (stack ?? '').split('\n').slice(1)) {
-    if (/usage-meter|node_modules|node:internal|openai|@ai-sdk|\(native\)/.test(line)) continue;
-    const match = line.match(/(?:app|lib)\/[\w./[\]-]+?\.(?:ts|tsx|js)/) ?? line.match(/([\w.-]+\.(?:ts|tsx|js))/);
-    if (match) return match[0].replace(/^.*?((?:app|lib)\/)/, '$1').slice(-50);
+    const caller = callerFromLine(line);
+    if (caller) return caller;
   }
   return 'unknown';
 };
@@ -213,33 +289,28 @@ const untaggedFeature = (url: string): string => {
 
 type UsageSave = (usage: Usage | null, model: string | null, provider: string | null) => unknown;
 
-const persistUsageRow = (
-  params: {
-    runId: string | null;
-    started: number;
-    userId: string | null;
-    feature: string;
-    reqModel: string | null;
-  }
-): UsageSave => {
+const finishParentOk = (runId: string, started: number, usage: Usage | null) => {
+  ignoreFloatingPromise(parentAiFinish(runId, {
+    ok: true,
+    costUsd: costUsdOf(usage),
+    tokensIn: usage?.prompt_tokens ?? 0,
+    tokensOut: usage?.completion_tokens ?? 0,
+    ms: Date.now() - started,
+  }));
+};
+
+const persistUsageRow = (params: {
+  runId: string | null;
+  started: number;
+  userId: string | null;
+  feature: string;
+  reqModel: string | null;
+}): UsageSave => {
   const { runId, started, userId, feature, reqModel } = params;
   return (usage, model, provider) => {
-    if (runId) {
-      ignoreFloatingPromise(parentAiFinish(runId, {
-        ok: true, costUsd: typeof usage?.cost === 'number' ? usage.cost : 0,
-        tokensIn: usage?.prompt_tokens ?? 0, tokensOut: usage?.completion_tokens ?? 0, ms: Date.now() - started,
-      }));
-    }
-    return usage && record({
-      user_id: userId && UUID.test(userId) ? userId : null,
-      feature: feature.slice(0, 60),
-      model: model ?? reqModel,
-      provider,
-      prompt_tokens: usage.prompt_tokens ?? null,
-      completion_tokens: usage.completion_tokens ?? null,
-      cached_tokens: usage.prompt_tokens_details?.cached_tokens ?? null,
-      cost_usd: typeof usage.cost === 'number' ? usage.cost : 0,
-    });
+    if (runId) finishParentOk(runId, started, usage);
+    if (!usage) return;
+    return record(usageEventRow({ userId, feature, model: model ?? reqModel, provider, usage }));
   };
 };
 
@@ -268,10 +339,11 @@ const attachSseUsageLogger = (res: Response, save: UsageSave): Response => {
 const requestUrlOf = (input: Parameters<typeof fetch>[0]): string =>
   typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
 
-const withIgnoreIfOpenRouter = (url: string, init?: RequestInit): RequestInit | undefined =>
-  /openrouter\.ai/.test(url) && typeof init?.body === 'string'
-    ? (applyOpenRouterProviderIgnoreToInit(url, init) ?? init)
-    : init;
+const withIgnoreIfOpenRouter = (url: string, init?: RequestInit): RequestInit | undefined => {
+  if (!/openrouter\.ai/.test(url)) return init;
+  if (typeof init?.body !== 'string') return init;
+  return applyOpenRouterProviderIgnoreToInit(url, init) ?? init;
+};
 
 const isMeteredAiUrl = (url: string): boolean =>
   /(openrouter\.ai\/api\/v1|api\.groq\.com\/openai\/v1|api\.deepseek\.com\/v1)\/(chat\/completions|embeddings)$/.test(url);
@@ -284,14 +356,25 @@ const parseJsonBody = (raw: string): Record<string, unknown> | null => {
   }
 };
 
+const userIdFromBody = (body: Record<string, unknown>): string | null =>
+  typeof body.user === 'string' && UUID.test(body.user) ? body.user : null;
+
+const firstPresent = <T,>(a: T | null | undefined, b: T | null | undefined): T | undefined => {
+  if (a) return a;
+  if (b) return b;
+  return undefined;
+};
+
 const usageContextOf = (
   fixedMeta: { userId?: string | null; feature: string } | undefined,
   body: Record<string, unknown>
 ): { ctx: AiUsageStore; userId: string | null } => {
-  const store = als?.getStore() ?? {};
-  const ctx: AiUsageStore = { userId: fixedMeta?.userId ?? store.userId, feature: fixedMeta?.feature ?? store.feature };
-  const fromBody = typeof body.user === 'string' && UUID.test(body.user) ? body.user : null;
-  return { ctx, userId: ctx.userId ?? fromBody };
+  const store = als?.getStore();
+  const ctx: AiUsageStore = {
+    userId: firstPresent(fixedMeta?.userId, store?.userId),
+    feature: firstPresent(fixedMeta?.feature, store?.feature),
+  };
+  return { ctx, userId: scopedUserId(ctx.userId) ?? userIdFromBody(body) };
 };
 
 const assertShieldedBody = (shield: { assertNoRawPii: (raw: string) => void }, body: Record<string, unknown>, feature: string | undefined, url: string) => {
@@ -303,8 +386,42 @@ const assertShieldedBody = (shield: { assertNoRawPii: (raw: string) => void }, b
   }
 };
 
-const featureForCall = (ctx: AiUsageStore, url: string): string =>
-  ctx.feature ?? (url.endsWith('embeddings') ? 'embeddings' : untaggedFeature(url));
+const featureForCall = (ctx: AiUsageStore, url: string): string => {
+  if (ctx.feature) return ctx.feature;
+  if (url.endsWith('embeddings')) return 'embeddings';
+  return untaggedFeature(url);
+};
+
+const prepareOpenRouterBody = (body: Record<string, unknown>, url: string): { body: Record<string, unknown>; reqModel: string | null } => {
+  const reqModel = typeof body.model === 'string' ? body.model : null;
+  const next = { ...body };
+  if (!url.endsWith('embeddings')) next.usage = { include: true };
+  return { body: applyOpenRouterProviderIgnoreToPayload(next), reqModel };
+};
+
+type Admission = { blocked: Response } | { runId: string | null; started: number };
+
+const admitOrBlock = async (feature: string, body: Record<string, unknown>): Promise<Admission> => {
+  const estimate = estimateCallUsd(body);
+  const started = Date.now();
+  const admitted = await parentAiAdmit({ feature, model: estimate.model, estUsd: estimate.estUsd, maxTokens: estimate.maxTokens });
+  if (admitted.status === 'blocked' || admitted.status === 'approval_required') {
+    return { blocked: blockedProviderResponse(admitted.reason) };
+  }
+  return { runId: admitted.status === 'run' ? admitted.runId : null, started };
+};
+
+const recordResponseUsage = async (res: Response, save: UsageSave): Promise<Response> => {
+  const contentType = res.headers.get('content-type') ?? '';
+  if (contentType.includes('event-stream')) return attachSseUsageLogger(res, save);
+  await recordJsonResponseUsage(res, save);
+  return res;
+};
+
+const finishFailedRun = (runId: string | null, started: number, status: number) => {
+  if (!runId) return;
+  ignoreFloatingPromise(parentAiFinish(runId, { ok: false, costUsd: 0, tokensIn: 0, tokensOut: 0, ms: Date.now() - started, error: `provider_${status}` }));
+};
 
 const meterOpenRouterCall = async (params: {
   base: typeof fetch;
@@ -317,31 +434,39 @@ const meterOpenRouterCall = async (params: {
   userId: string | null;
 }): Promise<Response> => {
   const { base, input, nextInit, shield, url, ctx, userId } = params;
-  let { body } = params;
+  const prepared = prepareOpenRouterBody(params.body, url);
   const feature = featureForCall(ctx, url);
-  const reqModel = typeof body.model === 'string' ? body.model : null;
-  if (!url.endsWith('embeddings')) body.usage = { include: true };
-  body = applyOpenRouterProviderIgnoreToPayload(body);
-  const estimate = estimateCallUsd(body);
-  const started = Date.now();
-  const admitted = await parentAiAdmit({ feature, model: estimate.model, estUsd: estimate.estUsd, maxTokens: estimate.maxTokens });
-  if (admitted.status === 'blocked' || admitted.status === 'approval_required') {
-    return blockedProviderResponse(admitted.reason);
-  }
-  const runId = admitted.status === 'run' ? admitted.runId : null;
-  const res = restoreAiResponse(await base(input, { ...nextInit, body: JSON.stringify(body) }), shield);
+  const admission = await admitOrBlock(feature, prepared.body);
+  if ('blocked' in admission) return admission.blocked;
+  const res = restoreAiResponse(await base(input, { ...nextInit, body: JSON.stringify(prepared.body) }), shield);
   if (!res.ok || !res.body) {
-    if (runId) {
-      ignoreFloatingPromise(parentAiFinish(runId, { ok: false, costUsd: 0, tokensIn: 0, tokensOut: 0, ms: Date.now() - started, error: `provider_${res.status}` }));
-    }
+    finishFailedRun(admission.runId, admission.started, res.status);
     return res;
   }
-  const save = persistUsageRow({ runId, started, userId, feature, reqModel });
-  if ((res.headers.get('content-type') ?? '').includes('event-stream')) {
-    return attachSseUsageLogger(res, save);
+  return recordResponseUsage(res, persistUsageRow({
+    runId: admission.runId,
+    started: admission.started,
+    userId,
+    feature,
+    reqModel: prepared.reqModel,
+  }));
+};
+
+const dispatchMeteredBody = async (
+  base: typeof fetch,
+  fixedMeta: { userId?: string | null; feature: string } | undefined,
+  input: Parameters<typeof fetch>[0],
+  nextInit: RequestInit,
+  body: Record<string, unknown>,
+  url: string
+): Promise<Response> => {
+  const { ctx, userId } = usageContextOf(fixedMeta, body);
+  const shield = await guardOutboundBody(body, scopedUserId(userId));
+  assertShieldedBody(shield, body, ctx.feature, url);
+  if (!/openrouter\.ai/.test(url)) {
+    return restoreAiResponse(await base(input, { ...nextInit, body: JSON.stringify(body) }), shield);
   }
-  await recordJsonResponseUsage(res, save);
-  return res;
+  return meterOpenRouterCall({ base, input, nextInit, body, shield, url, ctx, userId });
 };
 
 const runMeteredFetch = async (
@@ -355,13 +480,7 @@ const runMeteredFetch = async (
   if (!isMeteredAiUrl(url) || typeof nextInit?.body !== 'string') return base(input, nextInit);
   const body = parseJsonBody(nextInit.body);
   if (!body) return base(input, nextInit);
-  const { ctx, userId } = usageContextOf(fixedMeta, body);
-  const shield = await guardOutboundBody(body, userId && UUID.test(userId) ? userId : null);
-  assertShieldedBody(shield, body, ctx.feature, url);
-  if (!/openrouter\.ai/.test(url)) {
-    return restoreAiResponse(await base(input, { ...nextInit, body: JSON.stringify(body) }), shield);
-  }
-  return meterOpenRouterCall({ base, input, nextInit, body, shield, url, ctx, userId });
+  return dispatchMeteredBody(base, fixedMeta, input, nextInit, body, url);
 };
 
 export const meteredFetch = (baseFetch?: typeof fetch, fixedMeta?: { userId?: string | null; feature: string }): typeof fetch => {

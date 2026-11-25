@@ -114,13 +114,14 @@ export const applyOpenRouterProviderIgnoreToBodyString = (body: string): string 
 const isOpenRouterKeyOrGenerationUrl = (url: string): boolean =>
   /\/api\/v1\/key(\/|$|\?)/.test(url) || /\/api\/v1\/generation/.test(url);
 
+const shouldRewriteOpenRouterInit = (url: string, init?: RequestInit): init is RequestInit & { body: string } =>
+  Boolean(init) && typeof init?.body === 'string' && isOpenRouterApiUrl(url) && !isOpenRouterKeyOrGenerationUrl(url);
+
 export const applyOpenRouterProviderIgnoreToInit = (
   url: string,
   init?: RequestInit
 ): RequestInit | undefined => {
-  if (!init || typeof init.body !== 'string' || !isOpenRouterApiUrl(url) || isOpenRouterKeyOrGenerationUrl(url)) {
-    return init;
-  }
+  if (!shouldRewriteOpenRouterInit(url, init)) return init;
   const next = applyOpenRouterProviderIgnoreToBodyString(init.body);
   return next === init.body ? init : { ...init, body: next };
 };
