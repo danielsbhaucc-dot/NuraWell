@@ -419,7 +419,6 @@ export function AccessibilityWidget() {
         let bestOffset = offset;
         let bestArea = area(box, hits);
         let bestBox = box;
-        let bestHits = hits;
         for (let off = 0; off <= liftCap && bestArea > 0; off += 6) {
           const trial = place(size, off, lift, rtl, vw, vh);
           if (trial.top < -1) break;
@@ -429,12 +428,10 @@ export function AccessibilityWidget() {
             bestArea = a;
             bestOffset = off;
             bestBox = trial;
-            bestHits = trialHits;
           }
         }
         offset = bestOffset;
         box = bestBox;
-        hits = bestHits;
       }
 
       const outside = box.top < -1 || box.left < -1 || box.right > vw + 1 || box.bottom > vh + 1;
