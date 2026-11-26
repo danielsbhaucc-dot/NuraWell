@@ -406,6 +406,37 @@ export function AccessibilityWidget() {
         guard += 1;
       }
 
+      // No banner and still a hit: no clear slot was found by the walk. Keep the
+      // FAB visible and pick the offset that covers the least text or control
+      // area (ties go to the lowest offset), instead of hiding the entry point.
+      if (hits.length && !bannerVisible) {
+        const area = (b: Box, hs: Box[]) =>
+          hs.reduce((sum, h) => {
+            const w = Math.min(b.right, h.right) - Math.max(b.left, h.left);
+            const hh = Math.min(b.bottom, h.bottom) - Math.max(b.top, h.top);
+            return sum + (w > 0 && hh > 0 ? w * hh : 0);
+          }, 0);
+        let bestOffset = offset;
+        let bestArea = area(box, hits);
+        let bestBox = box;
+        let bestHits = hits;
+        for (let off = 0; off <= liftCap && bestArea > 0; off += 6) {
+          const trial = place(size, off, lift, rtl, vw, vh);
+          if (trial.top < -1) break;
+          const trialHits = hitsFor(trial, wrap);
+          const a = area(trial, trialHits);
+          if (a < bestArea) {
+            bestArea = a;
+            bestOffset = off;
+            bestBox = trial;
+            bestHits = trialHits;
+          }
+        }
+        offset = bestOffset;
+        box = bestBox;
+        hits = bestHits;
+      }
+
       const outside = box.top < -1 || box.left < -1 || box.right > vw + 1 || box.bottom > vh + 1;
       const overlaps = (a: Box, b: { left: number; top: number; right: number; bottom: number }) =>
         a.bottom > b.top + 1 && a.top < b.bottom - 1 && a.right > b.left + 1 && a.left < b.right - 1;
