@@ -291,9 +291,10 @@ export function CookieNotice() {
                 מה בדיוק נשמר?
               </button>
               {a11yAlt ? (
+                // design-lint-allow: in-banner a11y alternative must reuse the existing banner gold button
                 <button
                   type="button"
-                  className="cn-btn a11y"
+                  className="cn-btn p a11y"
                   onClick={() => openAccessibilityPanel()}
                   aria-haspopup="dialog"
                   aria-label="פתח תפריט נגישות"

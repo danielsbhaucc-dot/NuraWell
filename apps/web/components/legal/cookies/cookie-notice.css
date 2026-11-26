@@ -60,8 +60,7 @@
 .cn-btn.p{background:linear-gradient(135deg,#f2cf7a,#e8b54a 55%,#c9973a);color:#3a2c0e;box-shadow:0 10px 24px -12px #b8862e}
 .cn-btn.p:hover{transform:translateY(-1px)}
 .cn-btn.g{background:transparent;color:var(--cn-fg2);box-shadow:inset 0 0 0 1.5px var(--cn-olive)}
-.cn-btns .cn-btn.a11y{flex:0 0 auto;min-width:44px;min-height:48px;padding:0 18px;background:linear-gradient(135deg,#f7eed8,#f2cf7a 60%,#e8d5a3);color:#3a2c0e;box-shadow:inset 0 0 0 1.5px #c9973a,0 8px 18px -12px #b8862e}
-.cn-btn.a11y:hover{transform:translateY(-1px)}
+.cn-btns .cn-btn.a11y{flex:0 0 auto;min-width:44px;min-height:48px;padding:0 18px}
 .cn-btns .cn-btn{flex:1}
 /* The FAB stays in the bottom corner (z-80) so it is not lifted through mid-page text. */
 .cn-banner.cn-compact .cn-art{display:none!important;height:0!important;min-height:0!important;flex-basis:0!important}
