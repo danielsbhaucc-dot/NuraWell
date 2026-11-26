@@ -26,6 +26,7 @@ import { cn } from '@/lib/cn';
 import { countActiveAccessibilityPreferences } from '@/lib/a11y/count-active-preferences';
 import type { FontScale, LineSpacing, SaturationLevel } from '@/lib/a11y/types';
 import { useAccessibility } from './AccessibilityProvider';
+import { A11Y_PANEL_OPEN_EVENT, setAccessibilityBannerAlt } from './a11y-panel-events';
 
 type SectionKey = 'visual' | 'content' | 'navigation';
 
@@ -145,6 +146,7 @@ export function AccessibilityWidget() {
   const panelRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
+  const [endSpace, setEndSpace] = useState(false);
   useEffect(() => { setMounted(true); }, []);
   const toggleRef = useRef<HTMLButtonElement>(null);
 
@@ -163,64 +165,117 @@ export function AccessibilityWidget() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [open]);
 
+  useEffect(() => {
+    const onOpen = () => {
+      if (!preferences.widgetHidden) setOpen(true);
+    };
+    window.addEventListener(A11Y_PANEL_OPEN_EVENT, onOpen);
+    return () => window.removeEventListener(A11Y_PANEL_OPEN_EVENT, onOpen);
+  }, [preferences.widgetHidden]);
+
+  useEffect(() => {
+    if (!mounted) return;
+    const check = () => setEndSpace(!!document.querySelector('[data-a11y-shell]'));
+    check();
+    const mo = new MutationObserver(check);
+    mo.observe(document.body, { childList: true, subtree: true });
+    return () => mo.disconnect();
+  }, [mounted]);
+
   const toggleSection = (key: SectionKey) => {
     setSections((current) => ({ ...current, [key]: !current[key] }));
   };
 
 
-  // Lift the FAB above fixed bottom chrome (nav and cookie banner) via
-  // --a11y-fab-offset-bottom. If a tall banner leaves no room, hide the FAB
-  // so it cannot cover a banner control.
+  // Place the FAB so it does not cover text or controls. Prefer lift / shrink
+  // (min 44px). Hide the floating button only when the cookie banner genuinely
+  // covers its corner, and only then ask the banner to show a «נגישות» alternative
+  // that opens this same panel.
   useLayoutEffect(() => {
-    // The FAB is portaled only after `mounted` is true. Running this effect
-    // earlier leaves rootRef null, so the first sync is a no-op and may never
-    // republish --a11y-fab-offset-bottom.
     if (preferences.widgetHidden || !mounted) return;
     const root = document.documentElement;
+    const GAP = 16;
+    const END = 12;
+    const DEFAULT_SIZE = 52;
+    const MIN_SIZE = 44;
+    const CLEAR = 8;
+    const FAB_BOTTOM =
+      'calc(var(--a11y-fab-gap, 16px) + var(--a11y-fab-lift, 0px) + var(--a11y-fab-offset-bottom, 0px) + env(safe-area-inset-bottom, 0px))';
+
+    const maxChromeOffset = (vh: number): number =>
+      Math.min(220, Math.max(120, Math.floor(vh * 0.28)));
+
+    const topChromeBottom = (vh: number): number => {
+      let bottom = 0;
+      for (const el of document.querySelectorAll<HTMLElement>('header')) {
+        const cs = getComputedStyle(el);
+        if (cs.display === 'none' || cs.visibility === 'hidden' || Number(cs.opacity) === 0) continue;
+        if (cs.position !== 'fixed' && cs.position !== 'sticky') continue;
+        const r = el.getBoundingClientRect();
+        if (r.height < 1 || r.top > 8 || r.bottom > vh * 0.5) continue;
+        bottom = Math.max(bottom, Math.ceil(r.bottom));
+      }
+      return bottom;
+    };
+
     const bottomClearance = (): number => {
       let clear = 0;
       const vh = window.innerHeight;
+      const cap = maxChromeOffset(vh);
       for (const el of document.querySelectorAll<HTMLElement>('[data-a11y-clear="bottom"]')) {
         const cs = getComputedStyle(el);
         if (cs.display === 'none' || cs.visibility === 'hidden' || Number(cs.opacity) === 0) continue;
         const r = el.getBoundingClientRect();
         if (r.height < 1) continue;
         if (r.bottom < vh - 32 || r.top >= vh) continue;
+        // Tall cookie cards start mid-page; lifting the FAB over them covers
+        // content. Only short bottom chrome (BottomNav, compact bar) is a lift.
+        if (r.top < vh - cap - 8) continue;
         clear = Math.max(clear, Math.ceil(vh - r.top));
       }
       return clear;
     };
-    const FAB_BOTTOM =
-      'calc(var(--a11y-fab-gap, 16px) + var(--a11y-fab-lift, 0px) + var(--a11y-fab-offset-bottom, 0px) + env(safe-area-inset-bottom, 0px))';
-    const suppressFab = (fab: HTMLElement, wrap: HTMLElement, on: boolean) => {
+
+    const hideFabButton = (fab: HTMLElement, wrap: HTMLElement, on: boolean) => {
       if (on) {
         wrap.setAttribute('data-a11y-fab-suppressed', 'true');
         fab.setAttribute('aria-hidden', 'true');
         fab.setAttribute('tabindex', '-1');
         fab.style.visibility = 'hidden';
         fab.style.pointerEvents = 'none';
-        // Parking is a CSS rule on [data-a11y-fab-suppressed] so we never
-        // clobber the React `bottom: calc(...)` inline style.
       } else if (wrap.hasAttribute('data-a11y-fab-suppressed')) {
         wrap.removeAttribute('data-a11y-fab-suppressed');
         fab.removeAttribute('aria-hidden');
         fab.removeAttribute('tabindex');
         fab.style.visibility = '';
         fab.style.pointerEvents = '';
-        if (!wrap.style.bottom) wrap.style.bottom = FAB_BOTTOM;
       }
+      if (!wrap.style.bottom) wrap.style.bottom = FAB_BOTTOM;
     };
-    const contentUnder = (box: { left: number; top: number; right: number; bottom: number }, wrapEl: HTMLElement): boolean => {
+
+    type Box = { left: number; top: number; right: number; bottom: number };
+    const place = (size: number, offset: number, lift: number, rtl: boolean, vw: number, vh: number): Box => {
+      const bottom = vh - (GAP + offset + lift);
+      return {
+        left: rtl ? END : vw - END - size,
+        right: rtl ? END + size : vw - END,
+        top: bottom - size,
+        bottom,
+      };
+    };
+
+    const hitsFor = (box: Box, wrapEl: HTMLElement): Box[] => {
       const vw = window.innerWidth;
       const vh = window.innerHeight;
-      const f = box;
-      if (f.right - f.left < 1 || f.bottom - f.top < 1) return false;
+      const hits: Box[] = [];
+      if (box.right - box.left < 1 || box.bottom - box.top < 1) return hits;
       const inter = (r: DOMRect) => {
-        const x1 = Math.max(r.left, f.left);
-        const y1 = Math.max(r.top, f.top);
-        const x2 = Math.min(r.right, f.right);
-        const y2 = Math.min(r.bottom, f.bottom);
-        return x2 - x1 > 1 && y2 - y1 > 1 ? { x1, y1, x2, y2 } : null;
+        const pad = 4;
+        const x1 = Math.max(r.left, box.left - pad);
+        const y1 = Math.max(r.top, box.top - pad);
+        const x2 = Math.min(r.right, box.right + pad);
+        const y2 = Math.min(r.bottom, box.bottom + pad);
+        return x2 - x1 > 0 && y2 - y1 > 0 ? { left: x1, top: y1, right: x2, bottom: y2 } : null;
       };
       const prev = wrapEl.style.visibility;
       wrapEl.style.visibility = 'hidden';
@@ -233,45 +288,73 @@ export function AccessibilityWidget() {
           if (r.width * r.height > 0.6 * vw * vh) continue;
           const i = inter(r);
           if (!i) continue;
-          const top = document.elementFromPoint((i.x1 + i.x2) / 2, (i.y1 + i.y2) / 2);
-          if (top && (el === top || el.contains(top) || top.contains(el))) return true;
+          const top = document.elementFromPoint((i.left + i.right) / 2, (i.top + i.bottom) / 2);
+          if (top && (el === top || el.contains(top) || top.contains(el))) hits.push({ left: r.left, top: r.top, right: r.right, bottom: r.bottom });
         }
+        const pushTextHits = (el: Element) => {
+          for (const n of el.childNodes) {
+            if (n.nodeType !== Node.TEXT_NODE || !n.textContent?.trim()) continue;
+            const rg = document.createRange();
+            rg.selectNodeContents(n);
+            for (const rr of rg.getClientRects()) {
+              if (inter(rr)) hits.push({ left: rr.left, top: rr.top, right: rr.right, bottom: rr.bottom });
+            }
+          }
+        };
         const seen = new Set<Element>();
         for (let gx = 0; gx < 5; gx++) {
           for (let gy = 0; gy < 5; gy++) {
-            const x = f.left + 2 + ((f.right - f.left) - 4) * gx / 4;
-            const y = f.top + 2 + ((f.bottom - f.top) - 4) * gy / 4;
+            const x = box.left + 2 + ((box.right - box.left) - 4) * gx / 4;
+            const y = box.top + 2 + ((box.bottom - box.top) - 4) * gy / 4;
             if (x < 0 || y < 0 || x >= vw || y >= vh) continue;
             const el = document.elementFromPoint(x, y);
             if (!el || seen.has(el)) continue;
             seen.add(el);
-            for (const n of el.childNodes) {
-              if (n.nodeType !== Node.TEXT_NODE || !n.textContent?.trim()) continue;
-              const rg = document.createRange();
-              rg.selectNodeContents(n);
-              for (const rr of rg.getClientRects()) {
-                if (inter(rr)) return true;
-              }
-            }
+            pushTextHits(el);
           }
         }
-        return false;
+        for (const el of document.querySelectorAll('p,h1,h2,h3,h4,span,li,label,small,strong,em,button,a,div')) {
+          if (wrapEl.contains(el) || seen.has(el)) continue;
+          const r = el.getBoundingClientRect();
+          if (r.width < 2 || r.height < 2) continue;
+          if (r.width * r.height > 0.45 * vw * vh) continue;
+          if (r.right < box.left - 4 || r.left > box.right + 4 || r.bottom < box.top - 4 || r.top > box.bottom + 4) continue;
+          seen.add(el);
+          pushTextHits(el);
+        }
       } finally {
         wrapEl.style.visibility = prev;
       }
+      return hits;
     };
+
+    const applySize = (fab: HTMLElement, size: number) => {
+      if (size === DEFAULT_SIZE) {
+        fab.style.width = '';
+        fab.style.height = '';
+        fab.style.minWidth = '';
+        fab.style.minHeight = '';
+      } else {
+        fab.style.width = `${size}px`;
+        fab.style.height = `${size}px`;
+        fab.style.minWidth = `${size}px`;
+        fab.style.minHeight = `${size}px`;
+      }
+    };
+
+    let lastNeedAlt: boolean | null = null;
     const sync = () => {
       const wrap = rootRef.current;
       const fab = wrap?.querySelector<HTMLElement>('.a11y-widget-fab');
       if (!wrap || !fab) return;
-      const gap = 16;
       const vw = window.innerWidth;
       const vh = window.innerHeight;
-      let offset = bottomClearance();
-      const size = (fab.getBoundingClientRect().height || 52);
+      const lift = Number.parseFloat(getComputedStyle(root).getPropertyValue('--a11y-fab-lift')) || 0;
+      const rtl = getComputedStyle(root).direction === 'rtl';
       const banner = document.querySelector<HTMLElement>('.cn-banner');
       let bannerVisible = false;
       let bannerTop = vh;
+      let bannerBox: DOMRect | null = null;
       if (banner) {
         const cs = getComputedStyle(banner);
         const r = banner.getBoundingClientRect();
@@ -280,34 +363,81 @@ export function AccessibilityWidget() {
           cs.visibility !== 'hidden' &&
           Number(cs.opacity) !== 0 &&
           r.height > 1;
-        if (bannerVisible) bannerTop = r.top;
+        if (bannerVisible) {
+          bannerTop = r.top;
+          bannerBox = r;
+        }
       }
-      const lift = Number.parseFloat(getComputedStyle(root).getPropertyValue('--a11y-fab-lift')) || 0;
-      const rtl = getComputedStyle(root).direction === 'rtl';
-      const endGap = 12;
-      const liftedBottom = vh - (gap + offset + lift);
-      const box = {
-        left: rtl ? endGap : vw - endGap - size,
-        right: rtl ? endGap + size : vw - endGap,
-        top: liftedBottom - size,
-        bottom: liftedBottom,
-      };
-      const tight = bannerVisible && bannerTop < size + gap + 8;
+
+      let size = DEFAULT_SIZE;
+      let offset = bottomClearance();
+      let box = place(size, offset, lift, rtl, vw, vh);
+      let hits = hitsFor(box, wrap);
+
+      if (hits.length) {
+        size = MIN_SIZE;
+        applySize(fab, size);
+        box = place(size, offset, lift, rtl, vw, vh);
+        hits = hitsFor(box, wrap);
+      } else {
+        applySize(fab, size);
+      }
+
+      // Walk the FAB up over stacked collisions (e.g. a full-width login pill,
+      // then the button above it). With a banner, stay in the bottom chrome
+      // band and fall through to the in-banner alternative. With no banner,
+      // keep the FAB on screen and prefer a clear slot over a remaining hit.
+      const viewportCap = Math.max(0, vh - GAP - lift - size - CLEAR);
+      const headerCap = Math.max(0, vh - GAP - lift - size - topChromeBottom(vh) - CLEAR);
+      const liftCap = bannerVisible
+        ? Math.min(viewportCap, maxChromeOffset(vh), headerCap)
+        : Math.min(viewportCap, headerCap);
+      let guard = 0;
+      while (hits.length && guard < 8) {
+        const topMost = Math.min(...hits.map((h) => h.top));
+        const needed = Math.ceil(vh - GAP - lift - (topMost - CLEAR));
+        const candidate = Math.max(offset, Math.min(needed, liftCap));
+        if (candidate <= offset) break;
+        const trial = place(size, candidate, lift, rtl, vw, vh);
+        if (trial.top < -1) break;
+        offset = candidate;
+        box = trial;
+        hits = hitsFor(trial, wrap);
+        guard += 1;
+      }
+
       const outside = box.top < -1 || box.left < -1 || box.right > vw + 1 || box.bottom > vh + 1;
-      const hide = tight || outside || contentUnder(box, wrap);
-      if (hide) {
-        suppressFab(fab, wrap, true);
+      const overlaps = (a: Box, b: { left: number; top: number; right: number; bottom: number }) =>
+        a.bottom > b.top + 1 && a.top < b.bottom - 1 && a.right > b.left + 1 && a.left < b.right - 1;
+      const boxHitsBanner = bannerVisible && bannerBox != null && overlaps(box, bannerBox);
+      const noRoomAboveBanner = bannerVisible && bannerTop < MIN_SIZE + GAP + CLEAR;
+      // Hide the floating button only when the placed FAB still sits on the
+      // banner (or there is no 44px gap above it). A successful shrink/lift
+      // that clears the banner keeps the FAB visible. Empty banner padding is
+      // still a real cover — do not require a control hit.
+      const needAlt = bannerVisible && (noRoomAboveBanner || boxHitsBanner);
+
+      if (needAlt) {
+        hideFabButton(fab, wrap, true);
         offset = 0;
       } else {
-        suppressFab(fab, wrap, false);
+        // No banner, or room to sit without a real collision: always visible.
+        hideFabButton(fab, wrap, false);
+        if (outside) {
+          const maxOffset = Math.max(0, vh - GAP - lift - size - CLEAR);
+          offset = Math.min(offset, maxOffset);
+        }
+      }
+      if (lastNeedAlt !== needAlt) {
+        lastNeedAlt = needAlt;
+        setAccessibilityBannerAlt(needAlt);
       }
       root.style.setProperty('--a11y-fab-offset-bottom', `${offset}px`);
-      const fr = hide ? { height: size } : fab.getBoundingClientRect();
-      const block = Math.max(0, Math.ceil((fr.height || 52) + gap * 2));
-      root.style.setProperty('--a11y-fab-reserve-block', `${block}px`);
-      root.style.setProperty('--a11y-fab-size', `${Math.round(fr.height || 52)}px`);
+      root.style.setProperty('--a11y-fab-reserve-block', `${Math.max(0, size + GAP * 2)}px`);
+      root.style.setProperty('--a11y-fab-size', `${size}px`);
       if (!wrap.style.bottom) wrap.style.bottom = FAB_BOTTOM;
     };
+
     sync();
     let raf = 0;
     const retry = () => {
@@ -317,8 +447,14 @@ export function AccessibilityWidget() {
       });
     };
     retry();
+    const later = window.setTimeout(sync, 400);
+    const later2 = window.setTimeout(sync, 900);
+    const later3 = window.setTimeout(sync, 1800);
+    void document.fonts?.ready.then(() => { if (!preferences.widgetHidden) sync(); });
     const ro = new ResizeObserver(sync);
     if (rootRef.current) ro.observe(rootRef.current);
+    const shell = document.querySelector('[data-a11y-shell], main');
+    if (shell) ro.observe(shell);
     const observeClear = () => {
       for (const el of document.querySelectorAll('[data-a11y-clear="bottom"], .cn-banner')) {
         ro.observe(el);
@@ -334,10 +470,14 @@ export function AccessibilityWidget() {
     mo.observe(document.body, { childList: true, subtree: true });
     return () => {
       cancelAnimationFrame(raf);
+      window.clearTimeout(later);
+      window.clearTimeout(later2);
+      window.clearTimeout(later3);
       ro.disconnect();
       mo.disconnect();
       window.removeEventListener('resize', sync);
       window.visualViewport?.removeEventListener('resize', sync);
+      setAccessibilityBannerAlt(false);
       root.style.removeProperty('--a11y-fab-offset-bottom');
       root.style.removeProperty('--a11y-fab-reserve-block');
       root.style.removeProperty('--a11y-fab-size');
@@ -608,16 +748,18 @@ export function AccessibilityWidget() {
   const tree = (
     <>
       {widget}
-      <div
-        className="a11y-fab-end-space"
-        aria-hidden
-        style={{
-          height: 'calc(var(--a11y-fab-reserve-block, 84px) + env(safe-area-inset-bottom, 0px))',
-          width: 1,
-          pointerEvents: 'none',
-          overflow: 'hidden',
-        }}
-      />
+      {endSpace ? (
+        <div
+          className="a11y-fab-end-space"
+          aria-hidden
+          style={{
+            height: 'calc(var(--a11y-fab-reserve-block, 84px) + env(safe-area-inset-bottom, 0px))',
+            width: 1,
+            pointerEvents: 'none',
+            overflow: 'hidden',
+          }}
+        />
+      ) : null}
     </>
   );
   return createPortal(tree, document.body);

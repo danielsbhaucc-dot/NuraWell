@@ -7909,10 +7909,7 @@ html:has(.a11y-widget-root) {
    end inset so card text (e.g. on /progress) is not covered. Public pages and /home
    do not opt in, so they stay visually aligned with main at 100% font. */
 [data-a11y-shell] [data-a11y-fab-gutter] {
-  padding-inline-end: calc(var(--a11y-fab-size, 52px) + 8px);
-}
-.a11y-widget-root[data-a11y-fab-suppressed] {
-  bottom: -200px !important;
+  padding-inline-end: calc(var(--a11y-fab-size, 52px) + 24px);
 }
 
 

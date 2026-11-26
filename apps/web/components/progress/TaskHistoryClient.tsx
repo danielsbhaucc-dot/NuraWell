@@ -811,7 +811,7 @@ export function TaskHistoryClient({
           style={{ background: 'radial-gradient(circle, rgba(45,212,191,0.45), transparent 70%)' }}
         />
 
-        <div className="relative z-10 px-5 pb-14 pt-3">
+        <div data-a11y-fab-gutter className="relative z-10 px-5 pb-14 pt-3">
           <div className="mb-3 flex justify-start">
             <PageBackButton href="/progress" label="להתקדמות" />
           </div>

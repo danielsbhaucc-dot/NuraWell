@@ -423,14 +423,14 @@ export function ProgressPageClient({
           style={{ background: 'radial-gradient(circle, rgba(45,212,191,0.45), transparent 70%)' }}
         />
 
-        <div className="relative z-10 px-5 pb-18 pt-3">
+        <div data-a11y-fab-gutter className="relative z-10 px-5 pb-18 pt-3">
           <div className="flex items-start gap-3">
             <div className="-mt-3">
               <AlmogAvatarChipWithNameTag size={92} nameTagVariant="prominent" />
             </div>
             <div className="min-w-0 flex-1 text-start">
               <p
-                className="text-[15px] font-black text-on-dark leading-tight"
+                className="text-[15px] font-black text-on-dark leading-tight wrap-break-word"
                 style={{ fontFamily: hebrewFont }}
               >
                 {progressPageGreeting(firstName)}
@@ -462,7 +462,7 @@ export function ProgressPageClient({
                 ההתקדמות שלי
               </h1>
               <p
-                className="mt-2 text-sm font-black leading-relaxed"
+                className="mt-2 text-sm font-black leading-relaxed wrap-break-word"
                 style={{ color: '#f2f2f6', fontFamily: "'Rubik', 'Heebo', sans-serif" }}
               >
                 {almogHeroBody}

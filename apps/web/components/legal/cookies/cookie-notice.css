@@ -14,7 +14,7 @@
 .cn-bwrap{padding:18px 20px}
 .cn-chips{display:none;gap:8px;flex-wrap:wrap;margin-top:12px}
 .cn-chips span{font-size:12.5px;font-weight:700;padding:4px 10px;border-radius:99px;background:rgba(4,120,87,.07);color:var(--cn-em);border:1px solid var(--cn-hair)}
-.cn-btns{display:flex;gap:10px;margin-top:14px;padding-top:14px;border-top:1px solid var(--cn-hair)}
+.cn-btns{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;padding-top:14px;border-top:1px solid var(--cn-hair)}
 .cn-btn:focus-visible,.cn-x:focus-visible,.cn-cat summary:focus-visible,.cn-more:focus-visible{outline:3px solid var(--cn-em);outline-offset:2px}
 @media(min-width:760px){.cn-banner{display:flex;bottom:24px}.cn-banner .cn-art{flex:0 0 330px;height:auto;min-height:220px;border-bottom:0;border-inline-end:1px solid var(--cn-hair)}.cn-bwrap{flex:1;padding:24px 26px}.cn-chips{display:flex}.cn-btns .cn-btn{flex:0 0 auto}}
 .cn-ov{position:fixed;inset:0;z-index:70;background:rgba(6,40,30,.32);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);display:flex;align-items:flex-end;justify-content:center;animation:cn-fade .2s}
@@ -54,12 +54,14 @@
 @keyframes cn-fade{from{opacity:0}}
 @media(prefers-reduced-motion:reduce){.cn-banner,.cn-pn,.cn-ov{animation:none}}
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.cn-banner,.cn-pn{background:#f2f2f6}}
-.cn-btns{display:flex;gap:10px;margin-top:14px;padding-top:14px;border-top:1px dashed var(--cn-line)}
+.cn-btns{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;padding-top:14px;border-top:1px dashed var(--cn-line)}
 .cn-btn{font:inherit;font-weight:700;font-size:15px;min-height:48px;padding:0 20px;border-radius:99px;border:0;cursor:pointer;transition:transform .15s,box-shadow .15s}
 .cn-btn:focus-visible,.cn-x:focus-visible,.cn-cat summary:focus-visible,.cn-more:focus-visible{outline:3px solid #c9973a;outline-offset:2px}
 .cn-btn.p{background:linear-gradient(135deg,#f2cf7a,#e8b54a 55%,#c9973a);color:#3a2c0e;box-shadow:0 10px 24px -12px #b8862e}
 .cn-btn.p:hover{transform:translateY(-1px)}
 .cn-btn.g{background:transparent;color:var(--cn-fg2);box-shadow:inset 0 0 0 1.5px var(--cn-olive)}
+.cn-btns .cn-btn.a11y{flex:0 0 auto;min-width:44px;min-height:48px;padding:0 18px;background:linear-gradient(135deg,#f7eed8,#f2cf7a 60%,#e8d5a3);color:#3a2c0e;box-shadow:inset 0 0 0 1.5px #c9973a,0 8px 18px -12px #b8862e}
+.cn-btn.a11y:hover{transform:translateY(-1px)}
 .cn-btns .cn-btn{flex:1}
 /* The FAB stays in the bottom corner (z-80) so it is not lifted through mid-page text. */
 .cn-banner.cn-compact .cn-art{display:none!important;height:0!important;min-height:0!important;flex-basis:0!important}
