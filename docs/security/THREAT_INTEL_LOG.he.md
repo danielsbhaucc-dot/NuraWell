@@ -2,6 +2,17 @@
 
 כל רשומה: מה נבדק, מה רלוונטי לנו, מה תוקן ומה נשאר. הכי חדש למעלה. בלי סודות ובלי נתוני משתמשים.
 
+## 2026-11-26 (סריקה לילית, 02:50 שעון ישראל)
+- main ‏8aab0761 (מאז f3273c20 רק שינויי יומן). gitleaks על כל ההיסטוריה: נקי. TruffleHog: אפס סודות. Semgrep ‏(p/default): ‏28 ממצאים, זהה לבסיס. npm audit: ‏9 בינוניות (minimatch דרך eslint, כלי פיתוח בלבד), 0 גבוהות. OSV: רק GHSA-g3hv-75wg-m249 הידוע.
+- ייעוצי npm חדשים מאז 24.11: ‏GHSA-crj3-q72p-ggqm ‏(@waline/client) ו-GHSA-c4hm-4h84-2cf3 ‏(ruflo) – לא ב-lockfile. ‏208 חבילות זדוניות חדשות – אף אחת לא אצלנו.
+- React ‏CVE-2026-130165 ‏(DoS בפונקציות שרת, רשומת CVE מ-23.11 לייעוץ GHSA-h3gv-c5rc-p453 מ-14.10): אין אצלנו react-server-dom ישיר; ה-React המובנה ב-Next מתוקן דרך GHSA-p3m5-59mp-jv5r ‏(תוקן ב-16.4.1, אצלנו 16.4.5). לא חל.
+- תולעת PolinRider ‏(טוען נסתר ב-api.js, ב-jest/postcss config ובקובצי פונט מזויפים, דרך PR-ים שעברו force-push): אין במאגר api.js, אין `node api.js` ב-package.json, אין קובצי .vscode/.cursor/.claude חשודים, וקובצי ה-config נקיים.
+- CISA KEV ‏(24–25.11): ‏Juniper Session Smart, ‏Xen Orchestra, ‏Danfoss, ‏Mitel MiCollab, ‏Optimizely, ‏Idunno AntiCsrf, ‏Drupal – לא בשימוש אצלנו.
+- Better Auth ‏(עדכון אבטחה, נובמבר) – לא בשימוש. pgjdbc ו-pgactive – לא בשימוש. Vercel, ‏Supabase, ‏Node, ‏Telegram, ‏SimpleWebAuthn ‏(14.0.3) – אין ייעוץ חדש שחל. OpenRouter: אין חדש מעבר לאירוע GMI Cloud מאתמול (טיוטת החסימה ב-PR ‏#508 עדיין פתוחה).
+- Dependabot: אין PR אבטחה; התראה פתוחה אחת (minimatch, בינונית, כלי פיתוח). אין התראות חדשות של CodeQL או של סריקת סודות.
+- Supabase: ‏NuraWell ‏169/169 טבלאות עם RLS, אין מיגרציה חדשה מאז 20.11, אין ERROR, אזהרות ידועות ומכוונות בלבד. במרכז: אין ERROR, וההערה על central.console_sync בלי RLS כבר לא מופיעה; נשארו search_path ב-identity.host_ok ו-central.is_sealed_v1 (ידוע, אצל אברהם).
+- פריסת הייצור היא 8aab0761 (=main), האתר מחזיר 200. לא נדרש תיקון בקוד.
+
 ## 2026-11-25 (סריקה לילית, 03:00 שעון ישראל)
 - main ‏f3273c20 ללא שינוי מאז 21.11 (אין סריקות לילה ב-22–24.11; המודיעין כאן מכסה את כל התקופה מ-21.11). gitleaks על כל ההיסטוריה (1,406 קומיטים): נקי. TruffleHog: אפס סודות מאומתים. Semgrep: ‏28 ממצאים, זהה לבסיס. npm audit: ‏9 בינוניות (minimatch דרך eslint, כלי פיתוח בלבד), 0 גבוהות. OSV: רק GHSA-g3hv-75wg-m249 הידוע.
 - ייעוצי npm חדשים מאז 21.11 (4): ‏ruflo, ‏xo-server, ‏isomorphic-git, ‏i18next – אף אחת לא ב-lockfile. ‏262 חבילות זדוניות חדשות – אף אחת לא אצלנו. אין ייעוץ חדש ל-Next.js, ‏React, ‏Supabase, ‏SimpleWebAuthn ‏(14.0.3, כבר מעל התיקון של GHSA-j3h4-m3m2-7p7j), ‏undici או ‏dompurify ‏(3.4.17, מתוקן).
