@@ -168,9 +168,14 @@ export function AccessibilityWidget() {
   };
 
 
-  // Publish reserved bottom space and lift the FAB above fixed bottom nav (not the cookie banner).
+  // Lift the FAB above fixed bottom chrome (nav and cookie banner) via
+  // --a11y-fab-offset-bottom. If a tall banner leaves no room, hide the FAB
+  // so it cannot cover a banner control.
   useLayoutEffect(() => {
-    if (preferences.widgetHidden) return;
+    // The FAB is portaled only after `mounted` is true. Running this effect
+    // earlier leaves rootRef null, so the first sync is a no-op and may never
+    // republish --a11y-fab-offset-bottom.
+    if (preferences.widgetHidden || !mounted) return;
     const root = document.documentElement;
     const bottomClearance = (): number => {
       let clear = 0;
@@ -180,51 +185,164 @@ export function AccessibilityWidget() {
         if (cs.display === 'none' || cs.visibility === 'hidden' || Number(cs.opacity) === 0) continue;
         const r = el.getBoundingClientRect();
         if (r.height < 1) continue;
-        if (r.bottom < vh - 8 || r.top >= vh) continue;
+        if (r.bottom < vh - 32 || r.top >= vh) continue;
         clear = Math.max(clear, Math.ceil(vh - r.top));
       }
       return clear;
+    };
+    const FAB_BOTTOM =
+      'calc(var(--a11y-fab-gap, 16px) + var(--a11y-fab-lift, 0px) + var(--a11y-fab-offset-bottom, 0px) + env(safe-area-inset-bottom, 0px))';
+    const suppressFab = (fab: HTMLElement, wrap: HTMLElement, on: boolean) => {
+      if (on) {
+        wrap.setAttribute('data-a11y-fab-suppressed', 'true');
+        fab.setAttribute('aria-hidden', 'true');
+        fab.setAttribute('tabindex', '-1');
+        fab.style.visibility = 'hidden';
+        fab.style.pointerEvents = 'none';
+        // Parking is a CSS rule on [data-a11y-fab-suppressed] so we never
+        // clobber the React `bottom: calc(...)` inline style.
+      } else if (wrap.hasAttribute('data-a11y-fab-suppressed')) {
+        wrap.removeAttribute('data-a11y-fab-suppressed');
+        fab.removeAttribute('aria-hidden');
+        fab.removeAttribute('tabindex');
+        fab.style.visibility = '';
+        fab.style.pointerEvents = '';
+        if (!wrap.style.bottom) wrap.style.bottom = FAB_BOTTOM;
+      }
+    };
+    const contentUnder = (box: { left: number; top: number; right: number; bottom: number }, wrapEl: HTMLElement): boolean => {
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const f = box;
+      if (f.right - f.left < 1 || f.bottom - f.top < 1) return false;
+      const inter = (r: DOMRect) => {
+        const x1 = Math.max(r.left, f.left);
+        const y1 = Math.max(r.top, f.top);
+        const x2 = Math.min(r.right, f.right);
+        const y2 = Math.min(r.bottom, f.bottom);
+        return x2 - x1 > 1 && y2 - y1 > 1 ? { x1, y1, x2, y2 } : null;
+      };
+      const prev = wrapEl.style.visibility;
+      wrapEl.style.visibility = 'hidden';
+      try {
+        const sel = 'a,button,input,select,textarea,label,summary,[role=button],[role=tab],[role=link],[role=radio],[role=checkbox],[tabindex]:not([tabindex="-1"])';
+        for (const el of document.querySelectorAll<HTMLElement>(sel)) {
+          if (wrapEl.contains(el)) continue;
+          const r = el.getBoundingClientRect();
+          if (r.width < 4 || r.height < 4) continue;
+          if (r.width * r.height > 0.6 * vw * vh) continue;
+          const i = inter(r);
+          if (!i) continue;
+          const top = document.elementFromPoint((i.x1 + i.x2) / 2, (i.y1 + i.y2) / 2);
+          if (top && (el === top || el.contains(top) || top.contains(el))) return true;
+        }
+        const seen = new Set<Element>();
+        for (let gx = 0; gx < 5; gx++) {
+          for (let gy = 0; gy < 5; gy++) {
+            const x = f.left + 2 + ((f.right - f.left) - 4) * gx / 4;
+            const y = f.top + 2 + ((f.bottom - f.top) - 4) * gy / 4;
+            if (x < 0 || y < 0 || x >= vw || y >= vh) continue;
+            const el = document.elementFromPoint(x, y);
+            if (!el || seen.has(el)) continue;
+            seen.add(el);
+            for (const n of el.childNodes) {
+              if (n.nodeType !== Node.TEXT_NODE || !n.textContent?.trim()) continue;
+              const rg = document.createRange();
+              rg.selectNodeContents(n);
+              for (const rr of rg.getClientRects()) {
+                if (inter(rr)) return true;
+              }
+            }
+          }
+        }
+        return false;
+      } finally {
+        wrapEl.style.visibility = prev;
+      }
     };
     const sync = () => {
       const wrap = rootRef.current;
       const fab = wrap?.querySelector<HTMLElement>('.a11y-widget-fab');
       if (!wrap || !fab) return;
       const gap = 16;
+      const vw = window.innerWidth;
       const vh = window.innerHeight;
-      const offset = bottomClearance();
+      let offset = bottomClearance();
+      const size = (fab.getBoundingClientRect().height || 52);
+      const banner = document.querySelector<HTMLElement>('.cn-banner');
+      let bannerVisible = false;
+      let bannerTop = vh;
+      if (banner) {
+        const cs = getComputedStyle(banner);
+        const r = banner.getBoundingClientRect();
+        bannerVisible =
+          cs.display !== 'none' &&
+          cs.visibility !== 'hidden' &&
+          Number(cs.opacity) !== 0 &&
+          r.height > 1;
+        if (bannerVisible) bannerTop = r.top;
+      }
+      const lift = Number.parseFloat(getComputedStyle(root).getPropertyValue('--a11y-fab-lift')) || 0;
+      const rtl = getComputedStyle(root).direction === 'rtl';
+      const endGap = 12;
+      const liftedBottom = vh - (gap + offset + lift);
+      const box = {
+        left: rtl ? endGap : vw - endGap - size,
+        right: rtl ? endGap + size : vw - endGap,
+        top: liftedBottom - size,
+        bottom: liftedBottom,
+      };
+      const tight = bannerVisible && bannerTop < size + gap + 8;
+      const outside = box.top < -1 || box.left < -1 || box.right > vw + 1 || box.bottom > vh + 1;
+      const hide = tight || outside || contentUnder(box, wrap);
+      if (hide) {
+        suppressFab(fab, wrap, true);
+        offset = 0;
+      } else {
+        suppressFab(fab, wrap, false);
+      }
       root.style.setProperty('--a11y-fab-offset-bottom', `${offset}px`);
-      const fr = fab.getBoundingClientRect();
+      const fr = hide ? { height: size } : fab.getBoundingClientRect();
       const block = Math.max(0, Math.ceil((fr.height || 52) + gap * 2));
       root.style.setProperty('--a11y-fab-reserve-block', `${block}px`);
       root.style.setProperty('--a11y-fab-size', `${Math.round(fr.height || 52)}px`);
-      const size = fr.height || 52;
-      const maxBottom = Math.max(8, vh - size - 8);
-      const computedBottom = Number.parseFloat(getComputedStyle(wrap).bottom) || 0;
-      if (computedBottom > maxBottom) {
-        wrap.style.setProperty('bottom', `${maxBottom}px`, 'important');
-      } else if (wrap.style.getPropertyPriority('bottom') === 'important') {
-        wrap.style.removeProperty('bottom');
-      }
+      if (!wrap.style.bottom) wrap.style.bottom = FAB_BOTTOM;
     };
     sync();
+    let raf = 0;
+    const retry = () => {
+      raf = requestAnimationFrame(() => {
+        sync();
+        raf = requestAnimationFrame(sync);
+      });
+    };
+    retry();
     const ro = new ResizeObserver(sync);
     if (rootRef.current) ro.observe(rootRef.current);
-    for (const el of document.querySelectorAll('[data-a11y-clear="bottom"]')) ro.observe(el);
+    const observeClear = () => {
+      for (const el of document.querySelectorAll('[data-a11y-clear="bottom"], .cn-banner')) {
+        ro.observe(el);
+      }
+    };
+    observeClear();
     window.addEventListener('resize', sync);
+    window.visualViewport?.addEventListener('resize', sync);
     const mo = new MutationObserver(() => {
-      for (const el of document.querySelectorAll('[data-a11y-clear="bottom"]')) ro.observe(el);
+      observeClear();
       sync();
     });
     mo.observe(document.body, { childList: true, subtree: true });
     return () => {
+      cancelAnimationFrame(raf);
       ro.disconnect();
       mo.disconnect();
       window.removeEventListener('resize', sync);
+      window.visualViewport?.removeEventListener('resize', sync);
       root.style.removeProperty('--a11y-fab-offset-bottom');
       root.style.removeProperty('--a11y-fab-reserve-block');
       root.style.removeProperty('--a11y-fab-size');
     };
-  }, [preferences.widgetHidden, open]);
+  }, [preferences.widgetHidden, open, mounted]);
 
   if (preferences.widgetHidden) return null;
 

@@ -170,6 +170,7 @@ export function AdminShell({
     <div
       className="min-h-dvh bg-gc-canvas font-sans text-ink antialiased touch-manipulation"
       dir="rtl"
+      data-a11y-shell="app"
     >
       <OpsSessionGuard />
 

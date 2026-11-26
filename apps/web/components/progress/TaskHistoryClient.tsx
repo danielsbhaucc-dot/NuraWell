@@ -787,7 +787,7 @@ export function TaskHistoryClient({
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35 }}
-        data-a11y-full-bleed className="-mt-16 relative overflow-hidden pt-16"
+        className="-mt-16 relative overflow-hidden pt-16"
         style={{
           background:
             'linear-gradient(155deg, #034d3a 0%, #059669 35%, #0d9488 65%, #10b981 85%, #34d399 100%)',
@@ -865,7 +865,7 @@ export function TaskHistoryClient({
         </div>
       </motion.header>
 
-      <div className="container-mobile relative z-3 -mt-8 pb-10 space-y-7">
+      <div data-a11y-fab-gutter className="container-mobile relative z-3 -mt-8 pb-10 space-y-7">
         {/* ─── Stats grid (4 cards — same as progress page) ─── */}
         <section>
           <motion.div

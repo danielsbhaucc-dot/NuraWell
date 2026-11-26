@@ -7905,19 +7905,16 @@ html:has(.a11y-widget-root) {
   scroll-padding-block-end: calc(var(--a11y-fab-reserve-block, 84px) + var(--a11y-fab-offset-bottom, 0px) + env(safe-area-inset-bottom, 0px));
 }
 
-/* Signed-in shell only: inset max-width content stacks so full-width cards clear the
-   FAB column. Surrounding sheets and heroes stay full-bleed. Public pages unchanged. */
-html:has(.a11y-widget-root) #main-content [class~="max-w-md"],
-html:has(.a11y-widget-root) #main-content [class~="max-w-lg"],
-html:has(.a11y-widget-root) #main-content [class~="max-w-xl"],
-html:has(.a11y-widget-root) #main-content [class~="max-w-2xl"],
-html:has(.a11y-widget-root) #main-content [class~="max-w-3xl"],
-html:has(.a11y-widget-root) #main-content [class~="max-w-4xl"],
-html:has(.a11y-widget-root) #main-content [class~="max-w-5xl"],
-html:has(.a11y-widget-root) #main-content [class~="max-w-6xl"],
-html:has(.a11y-widget-root) #main-content [class~="max-w-7xl"] {
+/* Signed-in shell only: stacks that opt in with data-a11y-fab-gutter keep a FAB-sized
+   end inset so card text (e.g. on /progress) is not covered. Public pages and /home
+   do not opt in, so they stay visually aligned with main at 100% font. */
+[data-a11y-shell] [data-a11y-fab-gutter] {
   padding-inline-end: calc(var(--a11y-fab-size, 52px) + 8px);
 }
+.a11y-widget-root[data-a11y-fab-suppressed] {
+  bottom: -200px !important;
+}
+
 
 .a11y-widget-fab {
   backdrop-filter: blur(10px);

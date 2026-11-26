@@ -255,7 +255,7 @@ export function CookieNotice() {
   return (
     <>
       {banner && !panel ? (
-        <div ref={bannerRef} className="cn-root cn-banner" role="region" aria-label="הודעה על עוגיות" dir="rtl">
+        <div ref={bannerRef} className="cn-root cn-banner" data-a11y-clear="bottom" role="region" aria-label="הודעה על עוגיות" dir="rtl">
           <div className="cn-art" role="img" aria-label="צנצנת עוגיות נעולה במנעול על אדן חלון שטוף שמש" />
           <div className="cn-bwrap">
             <h2 className="cn-h">
