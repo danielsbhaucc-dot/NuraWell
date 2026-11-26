@@ -7896,6 +7896,23 @@ html.a11y-reduce-motion *::after {
     linear-gradient(165deg, rgba(242,242,246,0.92) 0%, rgba(242,242,246,0.88) 100%);
 }
 
+
+/* Site-wide: keep scroll clearance for the FAB, but do not add a side gutter.
+   A body padding-inline-end squeezes the legal TOC and the pricing launch banner
+   already at 100% font. Vertical space is reserved by a document-end spacer in
+   the widget, and --a11y-fab-offset-bottom lifts the button above fixed bottom nav. */
+html:has(.a11y-widget-root) {
+  scroll-padding-block-end: calc(var(--a11y-fab-reserve-block, 84px) + var(--a11y-fab-offset-bottom, 0px) + env(safe-area-inset-bottom, 0px));
+}
+
+/* Signed-in shell only: stacks that opt in with data-a11y-fab-gutter keep a FAB-sized
+   end inset so card text (e.g. on /progress) is not covered. Public pages and /home
+   do not opt in, so they stay visually aligned with main at 100% font. */
+[data-a11y-shell] [data-a11y-fab-gutter] {
+  padding-inline-end: calc(var(--a11y-fab-size, 52px) + 24px);
+}
+
+
 .a11y-widget-fab {
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);

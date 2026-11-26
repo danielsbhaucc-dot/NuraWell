@@ -93,7 +93,7 @@ export default async function DashboardLayout({
         }}
       >
         <ActionHubProvider>
-          <div className="min-h-screen bg-dashboard">
+          <div className="min-h-screen bg-dashboard" data-a11y-shell="app">
             <DolevFirstLoginHost show={Boolean(showDolevWelcome)} profile={profileForDrawer} />
             <AlmogFirstLoginHost show={Boolean(showAlmogWelcome)} profile={profileForDrawer} />
             <MobileHeader user={user} profileFullName={profile?.full_name ?? null} />

@@ -5,6 +5,7 @@ import {
   getPlan,
   isPlanId,
   annualSavePercent,
+  formatIls,
   maxAnnualSavePercent,
 } from '@/lib/billing/plans';
 
@@ -60,5 +61,19 @@ describe('plans config', () => {
   it('defaults to basic', () => {
     expect(getPlan(null).id).toBe('basic');
     expect(isPlanId('nope')).toBe(false);
+  });
+});
+
+describe('formatIls', () => {
+  it('formats annual amounts with a thousands comma and ₪ after a space', () => {
+    expect(formatIls(1490)).toBe('1,490 ₪');
+    expect(formatIls(1690)).toBe('1,690 ₪');
+    expect(formatIls(3790)).toBe('3,790 ₪');
+    expect(formatIls(2148)).toBe('2,148 ₪');
+    expect(formatIls(124)).toBe('124 ₪');
+  });
+
+  it('does not change the stored annual amounts', () => {
+    expect(PLANS.map((p) => p.annualIls)).toEqual([1490, 1690, 3790]);
   });
 });

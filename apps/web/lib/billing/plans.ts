@@ -5,6 +5,16 @@
 export type PlanId = 'basic' | 'whatsapp' | 'premium';
 export type PlanInterval = 'monthly' | 'annual';
 
+/** Display an ILS amount like the monthly price: thousands comma, shekel after a space («1,490 ₪»). Format only. */
+export function formatIls(amount: number): string {
+  if (!Number.isFinite(amount)) return '';
+  const body = Number.isInteger(amount)
+    ? amount.toLocaleString('he-IL')
+    : amount.toLocaleString('he-IL', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return `${body} ₪`;
+}
+
+
 export const PLAN_DEFAULT: PlanId = 'basic';
 /** Launch price: percent off for the first N months. Set percentOff to 0 to turn off. */
 export const LAUNCH_DISCOUNT = { percentOff: 40, months: 3 };

@@ -11,6 +11,7 @@ import {
   OPEN_COOKIE_PANEL_EVENT,
 } from '@/lib/legal/cookie-inventory';
 import { COOKIE_HEADLINES } from './cookie-headlines';
+import { A11Y_BANNER_ALT_EVENT, isAccessibilityBannerAltNeeded, openAccessibilityPanel } from '@/lib/module-api/a11y/components-a11y-a11y-panel-events';
 import './cookie-notice.css';
 
 const HIDDEN_PREFIXES = ['/ops', '/gideon', '/device-check', '/auth/'];
@@ -103,6 +104,7 @@ export function CookieNotice() {
   const pathname = usePathname() || '/';
   const [banner, setBanner] = useState(false);
   const [panel, setPanel] = useState(false);
+  const [a11yAlt, setA11yAlt] = useState(false);
   // Stable default on SSR/first render; random pick only after mount (no hydration mismatch).
   const [hi, setHi] = useState(0);
   useEffect(() => {
@@ -118,6 +120,16 @@ export function CookieNotice() {
     if (!hidden && !readSeen()) setBanner(true);
   }, [hidden]);
 
+  useEffect(() => {
+    const onAlt = (event: Event) => {
+      const needed = Boolean((event as CustomEvent<{ needed?: boolean }>).detail?.needed);
+      setA11yAlt(needed);
+    };
+    window.addEventListener(A11Y_BANNER_ALT_EVENT, onAlt);
+    setA11yAlt(isAccessibilityBannerAltNeeded());
+    return () => window.removeEventListener(A11Y_BANNER_ALT_EVENT, onAlt);
+  }, []);
+
   // Lift floating buttons (accessibility FAB) above the banner while it is visible.
   useEffect(() => {
     const root = document.documentElement;
@@ -126,7 +138,21 @@ export function CookieNotice() {
       delete root.dataset.cookieBanner;
       return;
     }
-    const sync = () => root.style.setProperty('--cn-banner-h', `${Math.ceil(el.getBoundingClientRect().height)}px`);
+    const sync = () => {
+      // Compact only when the root font is scaled (125% and above). At 100% font
+      // the banner must match main, including landscape.
+      const rootFont = Number.parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+      const scaled = rootFont > 18;
+      const header = document.querySelector('.ld-top');
+      const headerBottom = header instanceof HTMLElement ? header.getBoundingClientRect().bottom : 80;
+      const gap = window.innerHeight - headerBottom;
+      const compact = scaled && gap - 120 < 500;
+      const compactSm = scaled && gap < 360;
+      el.classList.toggle('cn-compact', compact || compactSm);
+      el.classList.toggle('cn-compact-sm', compactSm);
+      const box = el.getBoundingClientRect();
+      root.style.setProperty('--cn-banner-h', `${Math.ceil(box.height)}px`);
+    };
     sync();
     root.dataset.cookieBanner = 'on';
     const ro = new ResizeObserver(sync);
@@ -155,7 +181,21 @@ export function CookieNotice() {
       delete root.dataset.cookieBanner;
       return;
     }
-    const sync = () => root.style.setProperty('--cn-banner-h', `${Math.ceil(el.getBoundingClientRect().height)}px`);
+    const sync = () => {
+      // Compact only when the root font is scaled (125% and above). At 100% font
+      // the banner must match main, including landscape.
+      const rootFont = Number.parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+      const scaled = rootFont > 18;
+      const header = document.querySelector('.ld-top');
+      const headerBottom = header instanceof HTMLElement ? header.getBoundingClientRect().bottom : 80;
+      const gap = window.innerHeight - headerBottom;
+      const compact = scaled && gap - 120 < 500;
+      const compactSm = scaled && gap < 360;
+      el.classList.toggle('cn-compact', compact || compactSm);
+      el.classList.toggle('cn-compact-sm', compactSm);
+      const box = el.getBoundingClientRect();
+      root.style.setProperty('--cn-banner-h', `${Math.ceil(box.height)}px`);
+    };
     sync();
     root.dataset.cookieBanner = 'on';
     const ro = new ResizeObserver(sync);
@@ -227,7 +267,7 @@ export function CookieNotice() {
   return (
     <>
       {banner && !panel ? (
-        <div ref={bannerRef} className="cn-root cn-banner" role="region" aria-label="הודעה על עוגיות" dir="rtl">
+        <div ref={bannerRef} className="cn-root cn-banner" data-a11y-clear="bottom" role="region" aria-label="הודעה על עוגיות" dir="rtl">
           <div className="cn-art" role="img" aria-label="צנצנת עוגיות נעולה במנעול על אדן חלון שטוף שמש" />
           <div className="cn-bwrap">
             <h2 className="cn-h">
@@ -250,6 +290,18 @@ export function CookieNotice() {
               <button type="button" className="cn-btn g" onClick={openPanel} aria-haspopup="dialog">
                 מה בדיוק נשמר?
               </button>
+              {a11yAlt ? (
+                // design-lint-allow: in-banner a11y alternative must reuse the existing banner gold button
+                <button
+                  type="button"
+                  className="cn-btn p a11y"
+                  onClick={() => openAccessibilityPanel()}
+                  aria-haspopup="dialog"
+                  aria-label="פתח תפריט נגישות"
+                >
+                  נגישות
+                </button>
+              ) : null}
             </div>
           </div>
         </div>

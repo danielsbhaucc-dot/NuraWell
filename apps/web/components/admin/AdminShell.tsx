@@ -170,6 +170,7 @@ export function AdminShell({
     <div
       className="min-h-dvh bg-gc-canvas font-sans text-ink antialiased touch-manipulation"
       dir="rtl"
+      data-a11y-shell="app"
     >
       <OpsSessionGuard />
 
@@ -615,6 +616,7 @@ export function AdminShell({
       </main>
 
       <nav
+        data-a11y-clear="bottom"
         className="fixed bottom-0 inset-e-0 inset-s-0 z-30 flex border-t border-forest-950/8 bg-gc/90 px-1 py-1.5 backdrop-blur-xl safe-area-bottom lg:hidden"
         aria-label="ניווט מהיר"
       >

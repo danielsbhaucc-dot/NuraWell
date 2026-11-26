@@ -2,7 +2,7 @@
 # Module inventory
 
 Catalog modules: 21 (core: 8). Packaged modules (module.json): 10.
-App code already modular: 100% (1882/1882 files; the rest is on modules/legacy-app-files.txt and may only shrink).
+App code already modular: 100% (1885/1885 files; the rest is on modules/legacy-app-files.txt and may only shrink).
 
 | id | name | core (cannot disable) | tier | always-on | area manifest | owned app files | packaged |
 |---|---|---|---|---|---|---|---|
@@ -19,8 +19,8 @@ App code already modular: 100% (1882/1882 files; the rest is on modules/legacy-a
 | `billing` | תשלומים | no | shareable | - | yes | 49 | not yet |
 | `notifications` | התראות למשתמשים | no | shareable | - | yes | 71 | not yet |
 | `costs` | עלויות | no | internal | - | yes | 3 | not yet |
-| `legal` | משפטי | no | shareable | terms-acceptance, legal-evidence | yes | 133 | not yet |
-| `a11y` | נגישות | no | sellable | - | yes | 21 | not yet |
+| `legal` | משפטי | no | shareable | terms-acceptance, legal-evidence | yes | 134 | not yet |
+| `a11y` | נגישות | no | sellable | - | yes | 23 | not yet |
 | `qc` | בקרת איכות | no | shareable | - | yes | 2 | yes |
 | `agent` | מנוע סוכן | no | internal | - | yes | 395 | not yet |
 | `reminders` | תזכורות | no | internal | - | yes | 95 | not yet |

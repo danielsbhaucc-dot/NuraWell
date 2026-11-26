@@ -811,7 +811,7 @@ export function TaskHistoryClient({
           style={{ background: 'radial-gradient(circle, rgba(45,212,191,0.45), transparent 70%)' }}
         />
 
-        <div className="relative z-10 px-5 pb-14 pt-3">
+        <div data-a11y-fab-gutter className="relative z-10 px-5 pb-14 pt-3">
           <div className="mb-3 flex justify-start">
             <PageBackButton href="/progress" label="להתקדמות" />
           </div>
@@ -865,7 +865,7 @@ export function TaskHistoryClient({
         </div>
       </motion.header>
 
-      <div className="container-mobile relative z-3 -mt-8 pb-10 space-y-7">
+      <div data-a11y-fab-gutter className="container-mobile relative z-3 -mt-8 pb-10 space-y-7">
         {/* ─── Stats grid (4 cards — same as progress page) ─── */}
         <section>
           <motion.div

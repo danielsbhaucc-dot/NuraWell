@@ -4,6 +4,7 @@ import { LEGAL_NAV } from '../legal-nav';
 import { HeroArt } from './HeroArt';
 import { PrintExpand } from './PrintExpand';
 import { LEGAL_THEME } from './theme';
+import { LdAnchorScroll } from './LdAnchorScroll';
 
 export type LdStat = { big: string; label: string; text?: string };
 
@@ -31,6 +32,7 @@ export function LdChrome({
 }) {
   return (
     <div className="ld public-dark" data-theme={LEGAL_THEME} dir="rtl" lang="he">
+      <LdAnchorScroll />
       <PrintExpand />
       <a href="#ld-main" className="ld-skip">דילוג לתוכן</a>
       <header className="ld-top ld-glass">
