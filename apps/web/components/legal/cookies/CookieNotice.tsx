@@ -11,7 +11,7 @@ import {
   OPEN_COOKIE_PANEL_EVENT,
 } from '@/lib/legal/cookie-inventory';
 import { COOKIE_HEADLINES } from './cookie-headlines';
-import { A11Y_BANNER_ALT_EVENT, isAccessibilityBannerAltNeeded, openAccessibilityPanel } from '@/components/a11y/a11y-panel-events';
+import { A11Y_BANNER_ALT_EVENT, isAccessibilityBannerAltNeeded, openAccessibilityPanel } from '@/lib/module-api/a11y/components-a11y-a11y-panel-events';
 import './cookie-notice.css';
 
 const HIDDEN_PREFIXES = ['/ops', '/gideon', '/device-check', '/auth/'];
